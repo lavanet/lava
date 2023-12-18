@@ -2,7 +2,6 @@ import * as http from "http";
 import * as https from "https";
 import * as url from "url";
 import { grpc } from "@improbable-eng/grpc-web";
-import { Logger } from "../logger/logger";
 
 export function NodeHttpTransport(
   httpsOptions?: https.RequestOptions
@@ -40,18 +39,18 @@ class NodeHttp implements grpc.Transport {
   }
 
   responseCallback(response: http.IncomingMessage) {
-    Logger.debug("NodeHttp.response", response.statusCode);
+    // Logger.debug("NodeHttp.response", response.statusCode);
     const headers = filterHeadersForUndefined(response.headers);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     this.options.onHeaders(new grpc.Metadata(headers), response.statusCode!);
 
     response.on("data", (chunk) => {
-      Logger.debug("NodeHttp.data", chunk);
+      // Logger.debug("NodeHttp.data", chunk);
       this.options.onChunk(toArrayBuffer(chunk as Buffer));
     });
 
     response.on("end", () => {
-      Logger.debug("NodeHttp.end");
+      // Logger.debug("NodeHttp.end");
       this.options.onEnd();
     });
   }
@@ -82,13 +81,13 @@ class NodeHttp implements grpc.Transport {
       );
     }
     this.request.on("error", (err) => {
-      Logger.debug("NodeHttp.error", err);
+      // Logger.debug("NodeHttp.error", err);
       this.options.onEnd(err);
     });
   }
 
   cancel() {
-    Logger.debug("NodeHttp.abort");
+    // Logger.debug("NodeHttp.abort");
     this.request.destroy();
   }
 }

@@ -5,9 +5,10 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"golang.org/x/exp/slices"
 )
 
 // Wrapper struct
@@ -45,6 +46,10 @@ func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAd
 // create new delegation period record
 // add description
 func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+	if DisableDualstakingHook {
+		return nil
+	}
+
 	diff, err := h.k.VerifyDelegatorBalance(ctx, delAddr)
 	if err != nil {
 		return err
@@ -56,13 +61,13 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 	} else if diff.IsPositive() {
 		// less provider delegations,a delegation operation was done, delegate to empty provider
 		err = h.k.delegate(ctx, delAddr.String(), types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID,
-			sdk.NewCoin(epochstoragetypes.TokenDenom, diff))
+			sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), diff))
 		if err != nil {
 			return err
 		}
 	} else if diff.IsNegative() {
 		// more provider delegation, unbond operation was done, unbond from providers
-		err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(epochstoragetypes.TokenDenom, diff.Neg()))
+		err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), diff.Neg()))
 		if err != nil {
 			return err
 		}
@@ -90,18 +95,30 @@ func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, f
 			utils.Attribute{Key: "validator_address", Value: valAddr.String()},
 		)
 	}
-	slashAmount := sdk.NewDecFromInt(val.Tokens).Mul(fraction)
 
+	// unbond from providers according to slash
+	// sort the delegations from lowest to highest so if there's a remainder,
+	// remove it from the highest delegation in the last iteration
+	remainingTokensToSlash := fraction.MulInt(val.Tokens).TruncateInt()
 	delegations := h.k.stakingKeeper.GetValidatorDelegations(ctx, valAddr)
-	for _, d := range delegations {
-		err := h.k.UnbondUniformProviders(ctx, d.String(), sdk.NewCoin(epochstoragetypes.TokenDenom, slashAmount.TruncateInt()))
+	slices.SortFunc(delegations, func(i, j stakingtypes.Delegation) bool {
+		return val.TokensFromShares(i.Shares).LT(val.TokensFromShares(j.Shares))
+	})
+	for i, d := range delegations {
+		tokens := val.TokensFromShares(d.Shares)
+		tokensToSlash := fraction.Mul(tokens).TruncateInt()
+		if i == len(delegations)-1 {
+			tokensToSlash = remainingTokensToSlash
+		}
+		err := h.k.UnbondUniformProviders(ctx, d.DelegatorAddress, sdk.NewCoin(commontypes.TokenDenom, tokensToSlash))
 		if err != nil {
 			return utils.LavaFormatError("slash hook failed", err,
 				utils.Attribute{Key: "validator_address", Value: valAddr.String()},
-				utils.Attribute{Key: "delegator_address", Value: d.String()},
-				utils.Attribute{Key: "slash_amount", Value: slashAmount.String()},
+				utils.Attribute{Key: "delegator_address", Value: d.DelegatorAddress},
+				utils.Attribute{Key: "slash_amount", Value: tokensToSlash.String()},
 			)
 		}
+		remainingTokensToSlash = remainingTokensToSlash.Sub(tokensToSlash)
 	}
 
 	details := make(map[string]string)
@@ -125,6 +142,10 @@ func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ 
 }
 
 func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+	if DisableDualstakingHook {
+		return nil
+	}
+
 	delegation, found := h.k.stakingKeeper.GetDelegation(ctx, delAddr, valAddr)
 	if !found {
 		return fmt.Errorf("could not find delegation for dualstaking hook")
@@ -134,7 +155,7 @@ func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, 
 		return nil
 	}
 	amount := validator.TokensFromSharesRoundUp(delegation.Shares).TruncateInt()
-	err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(epochstoragetypes.TokenDenom, amount))
+	err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), amount))
 	if err != nil {
 		return utils.LavaFormatError("delegation removed hook failed", err,
 			utils.Attribute{Key: "validator_address", Value: valAddr.String()},

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -75,6 +76,29 @@ func (pm *baseChainMessageContainer) UpdateLatestBlockInMessage(latestBlock int6
 
 func (pm *baseChainMessageContainer) GetExtensions() []*spectypes.Extension {
 	return pm.extensions
+}
+
+// adds the following extensions
+func (pm *baseChainMessageContainer) OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser) {
+	existingExtensions := map[string]struct{}{}
+	for _, extension := range pm.extensions {
+		existingExtensions[extension.Name] = struct{}{}
+	}
+	for _, extensionName := range extensionNames {
+		if _, ok := existingExtensions[extensionName]; !ok {
+			existingExtensions[extensionName] = struct{}{}
+			extensionKey := extensionslib.ExtensionKey{
+				Extension:      extensionName,
+				ConnectionType: pm.apiCollection.CollectionData.Type,
+				InternalPath:   pm.apiCollection.CollectionData.InternalPath,
+				Addon:          pm.apiCollection.CollectionData.AddOn,
+			}
+			extension := extensionParser.GetExtension(extensionKey)
+			if extension != nil {
+				pm.extensions = append(pm.extensions, extension)
+			}
+		}
+	}
 }
 
 func (pm *baseChainMessageContainer) SetExtension(extension *spectypes.Extension) {

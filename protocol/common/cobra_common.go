@@ -16,6 +16,10 @@ const (
 )
 
 const (
+	ProcessStartLogText = "Process Started"
+)
+
+const (
 	defaultRollingLogState        = "off"                 // off
 	defaultRollingLogMaxSize      = "100"                 // 100MB
 	defaultRollingLogMaxAge       = "1"                   // 1 day

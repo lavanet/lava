@@ -9,7 +9,6 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
@@ -1099,7 +1098,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	freePlan := planstypes.Plan{
 		Index: "free",
 		Block: uint64(ctx.BlockHeight()),
-		Price: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		Price: sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
 		PlanPolicy: planstypes.Policy{
 			GeolocationProfile: 4, // USE
 			TotalCuLimit:       10,
@@ -1111,7 +1110,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	basicPlan := planstypes.Plan{
 		Index: "basic",
 		Block: uint64(ctx.BlockHeight()),
-		Price: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		Price: sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
 		PlanPolicy: planstypes.Policy{
 			GeolocationProfile: 0, // GLS
 			TotalCuLimit:       10,
@@ -1123,7 +1122,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	premiumPlan := planstypes.Plan{
 		Index: "premium",
 		Block: uint64(ctx.BlockHeight()),
-		Price: sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewInt(1)),
+		Price: sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
 		PlanPolicy: planstypes.Policy{
 			GeolocationProfile: 65535, // GL
 			TotalCuLimit:       10,

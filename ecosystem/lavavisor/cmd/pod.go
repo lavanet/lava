@@ -36,6 +36,7 @@ provider example:
 	flags.AddQueryFlagsToCmd(cmdLavavisorPod)
 	cmdLavavisorPod.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	// cmdLavavisorPod.Flags().Bool("auto-download", false, "Automatically download missing binaries")
+	cmdLavavisorPod.Flags().Bool(KeyRingPasswordFlag, false, "If you are using keyring OS you will need to enter the keyring password for it.")
 	cmdLavavisorPod.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdLavavisorPod.Flags().String("cmd", "", "the command to execute")
 	cmdLavavisorPod.MarkFlagRequired("cmd")
@@ -43,6 +44,7 @@ provider example:
 }
 
 func LavavisorPod(cmd *cobra.Command) error {
+	keyRingPassword := getKeyringPassword(cmd)
 	dir, err := cmd.Flags().GetString("directory")
 	if err != nil {
 		return err
@@ -65,11 +67,11 @@ func LavavisorPod(cmd *cobra.Command) error {
 	}
 
 	lavavisor := LavaVisor{}
-	err = lavavisor.PodStart(ctx, txFactory, clientCtx, runCommand, dir)
+	err = lavavisor.PodStart(ctx, txFactory, clientCtx, runCommand, dir, keyRingPassword)
 	return err
 }
 
-func (lv *LavaVisor) PodStart(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, runCommand string, lavavisorDir string) (err error) {
+func (lv *LavaVisor) PodStart(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, runCommand string, lavavisorDir string, keyRingPassword *processmanager.KeyRingPassword) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -119,7 +121,7 @@ func (lv *LavaVisor) PodStart(ctx context.Context, txFactory tx.Factory, clientC
 		}
 	}()
 
-	versionMonitor.StartProcess()
+	versionMonitor.StartProcess(keyRingPassword)
 
 	// tear down
 	select {

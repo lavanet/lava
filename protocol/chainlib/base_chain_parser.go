@@ -125,14 +125,15 @@ func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons
 			if supportedToCheck == "" {
 				continue
 			}
-			if !bcp.isExtension(supportedToCheck) {
-				// neither is an error
-				return nil, nil, utils.LavaFormatError("invalid supported to check, is neither an addon or an extension", nil, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "supported", Value: supportedToCheck})
+			if bcp.isExtension(supportedToCheck) {
+				extensions = append(extensions, supportedToCheck)
+				continue
 			}
-			extensions = append(extensions, supportedToCheck)
+			// neither is an error
+			err = utils.LavaFormatError("invalid supported to check, is neither an addon or an extension", err, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "supported", Value: supportedToCheck})
 		}
 	}
-	return addons, extensions, nil
+	return addons, extensions, err
 }
 
 // gets all verifications for an endpoint supporting multiple addons and extensions
@@ -217,12 +218,12 @@ func (apip *BaseChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatError("api not supported", nil, utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, utils.LavaFormatInfo("api not supported", utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
 	}
 
 	// Return an error if api is disabled
 	if !apiCont.api.Enabled {
-		return nil, utils.LavaFormatError("api is disabled", nil, utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, utils.LavaFormatInfo("api is disabled", utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
 	}
 
 	return &apiCont, nil
@@ -349,6 +350,10 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 	return serverApis, taggedApis, apiCollections, headers, verifications
 }
 
+func (bcp *BaseChainParser) ExtensionsParser() *extensionslib.ExtensionParser {
+	return &bcp.extensionParser
+}
+
 // matchSpecApiByName returns service api which match given name
 func matchSpecApiByName(name, connectionType string, serverApis map[ApiKey]ApiContainer) (*ApiContainer, bool) {
 	// TODO: make it faster and better by not doing a regex instead using a better algorithm
@@ -371,6 +376,7 @@ func matchSpecApiByName(name, connectionType string, serverApis map[ApiKey]ApiCo
 		utils.LavaFormatWarning("API was found on a different connection type", nil,
 			utils.Attribute{Key: "connection_type_found", Value: foundNameOnDifferentConnectionType},
 			utils.Attribute{Key: "connection_type_requested", Value: connectionType},
+			utils.LogAttr("requested_api", name),
 		)
 	}
 	return nil, false

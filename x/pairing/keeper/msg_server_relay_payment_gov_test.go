@@ -103,6 +103,9 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
+	_, err = ts.TxDualstakingClaimRewards(providerAcct.Addr.String(), providerAcct.Addr.String())
+	require.Nil(t, err)
+
 	newBalance := ts.GetBalance(providerAcct.Addr)
 
 	// check that the provider's balance is increased by planPrice * 60 / 160 (both relay with QosWeight=0.7)

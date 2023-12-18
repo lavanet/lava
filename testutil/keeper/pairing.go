@@ -48,7 +48,7 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	)
 
 	tsKeeper := timerstorekeeper.NewKeeper(cdc)
-	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil)
+	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil, nil)
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,

@@ -6,6 +6,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"golang.org/x/net/context"
 )
 
@@ -117,7 +118,7 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 }
 
 func (pu *PairingUpdater) updateConsummerSessionManager(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, consumerSessionManager *lavasession.ConsumerSessionManager, epoch uint64) (err error) {
-	pairingListForThisCSM, err := pu.filterPairingListByEndpoint(ctx, pairingList, consumerSessionManager.RPCEndpoint(), epoch)
+	pairingListForThisCSM, err := pu.filterPairingListByEndpoint(ctx, planstypes.Geolocation(consumerSessionManager.RPCEndpoint().Geolocation), pairingList, consumerSessionManager.RPCEndpoint(), epoch)
 	if err != nil {
 		return err
 	}
@@ -125,7 +126,7 @@ func (pu *PairingUpdater) updateConsummerSessionManager(ctx context.Context, pai
 	return
 }
 
-func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, rpcEndpoint lavasession.RPCEndpoint, epoch uint64) (filteredList map[uint64]*lavasession.ConsumerSessionsWithProvider, err error) {
+func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, currentGeo planstypes.Geolocation, pairingList []epochstoragetypes.StakeEntry, rpcEndpoint lavasession.RPCEndpoint, epoch uint64) (filteredList map[uint64]*lavasession.ConsumerSessionsWithProvider, err error) {
 	// go over stake entries, and filter endpoints that match geolocation and api interface
 	pairing := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 	for providerIdx, provider := range pairingList {
@@ -152,7 +153,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 			continue
 		}
 
-		maxcu, err := pu.stateQuery.GetMaxCUForUser(ctx, provider.Chain, epoch)
+		maxCu, err := pu.stateQuery.GetMaxCUForUser(ctx, provider.Chain, epoch)
 		if err != nil {
 			return nil, err
 		}
@@ -167,17 +168,18 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, pairi
 			for _, extension := range relevantEndpoint.Extensions {
 				extensions[extension] = struct{}{}
 			}
-			endp := &lavasession.Endpoint{NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0, Addons: addons, Extensions: extensions}
+
+			endp := &lavasession.Endpoint{Geolocation: planstypes.Geolocation(relevantEndpoint.Geolocation), NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0, Addons: addons, Extensions: extensions}
 			pairingEndpoints[idx] = endp
 		}
-
-		pairing[uint64(providerIdx)] = &lavasession.ConsumerSessionsWithProvider{
-			PublicLavaAddress: provider.Address,
-			Endpoints:         pairingEndpoints,
-			Sessions:          map[int64]*lavasession.SingleConsumerSession{},
-			MaxComputeUnits:   maxcu,
-			PairingEpoch:      epoch,
-		}
+		lavasession.SortByGeolocations(pairingEndpoints, currentGeo)
+		pairing[uint64(providerIdx)] = lavasession.NewConsumerSessionWithProvider(
+			provider.Address,
+			pairingEndpoints,
+			maxCu,
+			epoch,
+			provider.Stake,
+		)
 	}
 	if len(pairing) == 0 {
 		return nil, utils.LavaFormatError("Failed getting pairing for consumer, pairing is empty", err, utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface}, utils.Attribute{Key: "ChainID", Value: rpcEndpoint.ChainID}, utils.Attribute{Key: "geolocation", Value: rpcEndpoint.Geolocation})

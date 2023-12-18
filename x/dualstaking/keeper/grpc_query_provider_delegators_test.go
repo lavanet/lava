@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,14 +20,14 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 	spec := ts.Spec("mock")
 
 	amountUint64 := uint64(100)
-	amount := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(amountUint64))
+	amount := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(amountUint64))
 
 	// delegate and query
 	_, err := ts.TxDualstakingDelegate(delegator, provider, spec.Index, amount)
 	require.Nil(t, err)
 	ts.AdvanceEpoch()
 
-	delegation := types.NewDelegation(delegator, provider, spec.Index, ts.BlockTime())
+	delegation := types.NewDelegation(delegator, provider, spec.Index, ts.Ctx.BlockTime(), ts.TokenDenom())
 	delegation.Amount = amount
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
@@ -43,7 +42,7 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 	require.True(t, delegation.Equal(&delegationRes))
 
 	// partially unbond and query
-	unbondAmount := amount.Sub(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.OneInt()))
+	unbondAmount := amount.Sub(sdk.NewCoin(ts.TokenDenom(), sdk.OneInt()))
 	_, err = ts.TxDualstakingUnbond(delegator, provider, spec.Index, unbondAmount)
 	require.Nil(t, err)
 	ts.AdvanceEpoch()
@@ -83,9 +82,9 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	spec := ts.Spec("mock")
 
 	amountUint64 := uint64(100)
-	amount := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(amountUint64))
+	amount := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(amountUint64))
 
-	delegation1 := types.NewDelegation(delegator1, provider, spec.Index, ts.BlockTime())
+	delegation1 := types.NewDelegation(delegator1, provider, spec.Index, ts.Ctx.BlockTime(), ts.TokenDenom())
 	delegation1.Amount = amount
 
 	// delegate without advancing an epoch
@@ -133,7 +132,7 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	require.True(t, delegationRes.Equal(&delegation1))
 
 	// delegate delegator2 and query again
-	delegation2 := types.NewDelegation(delegator2, provider, spec.Index, ts.BlockTime())
+	delegation2 := types.NewDelegation(delegator2, provider, spec.Index, ts.Ctx.BlockTime(), ts.TokenDenom())
 	delegation2.Amount = amount
 	_, err = ts.TxDualstakingDelegate(delegator2, provider, spec.Index, amount)
 	require.Nil(t, err)
@@ -181,7 +180,7 @@ func TestQueryProviderDelegatorsProviderMultipleDelegators(t *testing.T) {
 	require.Nil(t, err)
 
 	amountUint64 := uint64(100)
-	amount := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(amountUint64))
+	amount := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(amountUint64))
 
 	delegations := []types.Delegation{}
 	for i := 0; i < len(delegators); i++ {
@@ -194,7 +193,7 @@ func TestQueryProviderDelegatorsProviderMultipleDelegators(t *testing.T) {
 		_, err := ts.TxDualstakingDelegate(delegators[i], provider, chainID, amount)
 		require.Nil(t, err)
 
-		delegation := types.NewDelegation(delegators[i], provider, chainID, ts.BlockTime())
+		delegation := types.NewDelegation(delegators[i], provider, chainID, ts.Ctx.BlockTime(), ts.TokenDenom())
 		delegation.Amount = amount
 		delegations = append(delegations, delegation)
 	}
@@ -227,14 +226,14 @@ func TestQueryProviderDelegatorsDelegatorMultipleProviders(t *testing.T) {
 	spec := ts.Spec("mock")
 
 	amountUint64 := uint64(100)
-	amount := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(amountUint64))
+	amount := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(amountUint64))
 
 	delegations := []types.Delegation{}
 	for i := 0; i < len(providers); i++ {
 		_, err := ts.TxDualstakingDelegate(delegator, providers[i], spec.Index, amount)
 		require.Nil(t, err)
 
-		delegation := types.NewDelegation(delegator, providers[i], spec.Index, ts.BlockTime())
+		delegation := types.NewDelegation(delegator, providers[i], spec.Index, ts.Ctx.BlockTime(), ts.TokenDenom())
 		delegation.Amount = amount
 		delegations = append(delegations, delegation)
 	}
@@ -267,7 +266,7 @@ func TestQueryProviderDelegatorsDelegatorUnstakedProvider(t *testing.T) {
 	spec := ts.Spec("mock")
 
 	amountUint64 := uint64(100)
-	amount := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(amountUint64))
+	amount := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(amountUint64))
 
 	// shouldn't be able to delegate to unstaked provider
 	_, err := ts.TxDualstakingDelegate(delegator, unstakedProvider, spec.Index, amount)

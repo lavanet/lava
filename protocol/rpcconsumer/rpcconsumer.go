@@ -307,6 +307,11 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.LavaFormatInfo(common.ProcessStartLogText)
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
 			// set viper
 			config_name := DefaultRPCConsumerFileName
 			if len(args) == 1 {
@@ -325,11 +330,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			closeLoggerOnFinish := common.SetupRollingLogger()
 			defer closeLoggerOnFinish()
 
-			utils.LavaFormatInfo("RPCConsumer started", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
+			utils.LavaFormatInfo("RPCConsumer started:", utils.Attribute{Key: "args", Value: strings.Join(args, ",")})
 
 			// setting the insecure option on provider dial, this should be used in development only!
 			lavasession.AllowInsecureConnectionToProviders = viper.GetBool(lavasession.AllowInsecureConnectionToProvidersFlag)

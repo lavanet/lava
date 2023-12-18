@@ -43,6 +43,7 @@ func EpochstorageKeeperWithDB(t testing.TB) (*keeper.Keeper, storetypes.CommitMu
 		nil,
 		nil,
 		nil,
+		nil,
 	)
 
 	return k, stateStore, db
