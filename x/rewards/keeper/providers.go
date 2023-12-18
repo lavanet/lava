@@ -5,6 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
+	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustmentDenom uint64, rewards math.Int) {
@@ -40,13 +41,17 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 			if err != nil {
 				continue
 			}
-			_, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, reward, "reward pool", false, false, false)
+			_, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, reward, string(types.ProviderDistributionPool), false, false, false)
 			if err != nil {
 				utils.LavaFormatError("Failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 			}
 		}
 	}
 	k.removeAllBasePay(ctx)
+	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, string(types.ProviderDistributionPool), subscriptionTypes.ModuleName, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalRewarded)))
+	if err != nil {
+		utils.LavaFormatError("Failed to send bonus rewards to subscription module", err, utils.LogAttr("amount", totalRewarded.String()))
+	}
 	tokensToBurn := total.Sub(totalRewarded)
 	k.BurnPoolTokens(ctx, types.ProviderDistributionPool, tokensToBurn)
 }
