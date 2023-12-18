@@ -3,12 +3,14 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/lavanet/lava/testutil/common"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	rewardsTypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -28,6 +30,9 @@ func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTesterRaw(t)}
 
 	ts.addValidators(1)
+	val, _ := ts.GetAccount(common.VALIDATOR, 0)
+	_, err := ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(testStake)))
+	require.Nil(ts.T, err)
 
 	ts.plan = common.CreateMockPlan()
 	monthlyProvidersPool := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardsTypes.ProviderDistributionPool)

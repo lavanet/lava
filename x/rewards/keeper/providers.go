@@ -55,7 +55,6 @@ func (k Keeper) SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, to
 	specPayoutAllocation := spec.Emission.MulInt(totalMonthlyPayout)
 	// TODO yarom move the param read to a method
 	rewardBoost := totalProvidersBaseRewards.MulInt64(int64(k.GetParams(ctx).Providers.MaxRewardBoost))
-	// TODO yarom test all edge cases
 	diminishingRewards := sdk.MaxDec(sdk.ZeroDec(), (sdk.NewDecWithPrec(15, 1).Mul(specPayoutAllocation)).Sub(sdk.NewDecWithPrec(5, 1).Mul(totalProvidersBaseRewards)))
 	return sdk.MinDec(sdk.MinDec(specPayoutAllocation, rewardBoost), diminishingRewards)
 }
@@ -81,7 +80,7 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emisions []types.SpecEmmisio
 
 	for _, chainID := range chainIDs {
 		if stake, ok := chainStake[chainID]; ok {
-			if totalStake.IsZero() {
+			if stake.IsZero() {
 				continue
 			}
 
