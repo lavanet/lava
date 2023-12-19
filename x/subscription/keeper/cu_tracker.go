@@ -212,13 +212,14 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		} else {
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.MonthlyCuTrackerProviderRewardEventName, map[string]string{
-				"provider":   provider,
-				"sub":        sub,
-				"plan":       plan.Index,
-				"tracked_cu": strconv.FormatUint(trackedCu, 10),
-				"plan_price": plan.Price.String(),
-				"reward":     providerReward.String(),
-				"block":      strconv.FormatInt(ctx.BlockHeight(), 10),
+				"provider":       provider,
+				"sub":            sub,
+				"plan":           plan.Index,
+				"tracked_cu":     strconv.FormatUint(trackedCu, 10),
+				"plan_price":     plan.Price.String(),
+				"reward":         providerReward.String(),
+				"block":          strconv.FormatInt(ctx.BlockHeight(), 10),
+				"adjustment_raw": providerAdjustment.String(),
 			}, "Provider got monthly reward successfully")
 		}
 	}
