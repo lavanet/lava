@@ -107,11 +107,6 @@ type Servers struct {
 	RewardsServer      rewardstypes.MsgServer
 }
 
-type RewardsPools struct {
-	ValidatorsAllocationPool   mockRewardsPool
-	ValidatorsDistributionPool mockRewardsPool
-}
-
 type KeeperBeginBlocker interface {
 	BeginBlock(ctx sdk.Context)
 }
@@ -120,7 +115,7 @@ type KeeperEndBlocker interface {
 	EndBlock(ctx sdk.Context)
 }
 
-func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Context) {
+func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	seed := time.Now().Unix()
 	// seed = 1695297312 // uncomment this to debug a specific scenario
 	Randomizer = sigs.NewZeroReader(seed)
@@ -305,11 +300,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 
 	// pools
 	allocationPoolBalance := uint64(30000000000000)
-	p := RewardsPools{}
-	p.ValidatorsAllocationPool = mockRewardsPool{}
-	p.ValidatorsDistributionPool = mockRewardsPool{}
 	err := ks.BankKeeper.AddToBalance(
-		p.ValidatorsAllocationPool.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
+		GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
 		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.Nil(t, err)
 
@@ -329,7 +321,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 
 	NewBlock(ctx, &ks)
 
-	return &ss, &ks, &p, sdk.WrapSDKContext(ctx)
+	return &ss, &ks, sdk.WrapSDKContext(ctx)
 }
 
 func SimulateParamChange(ctx sdk.Context, paramKeeper paramskeeper.Keeper, subspace, key, value string) (err error) {
@@ -491,4 +483,8 @@ func EndBlock(ctx sdk.Context, ks *Keepers) {
 			endBlocker.EndBlock(ctx)
 		}
 	}
+}
+
+func GetModuleAddress(moduleName string) sdk.AccAddress {
+	return sdk.AccAddress([]byte(moduleName))
 }
