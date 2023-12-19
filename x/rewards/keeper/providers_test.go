@@ -77,7 +77,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAAcc.Addr.String(), providerAAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, res.Rewards[0].Amount.Amount.Uint64(), baserewards*subscription.LIMIT_TOKEN_PER_CU+baserewards*subscription.LIMIT_TOKEN_PER_CU*ts.Keepers.Rewards.GetParams(ts.Ctx).Providers.MaxRewardBoost)
+	require.Equal(t, res.Rewards[0].Amount.Amount.Uint64(), baserewards*subscription.LIMIT_TOKEN_PER_CU+baserewards*subscription.LIMIT_TOKEN_PER_CU*ts.Keepers.Rewards.GetParams(ts.Ctx).MaxRewardBoost)
 }
 
 // the rewards here is spec payout allocation (full rewards from the pool), in this test the rewards for the providers are medium (second third of the graph)

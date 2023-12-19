@@ -29,31 +29,6 @@ func (k Keeper) getBasePay(
 	return val, true
 }
 
-// RemoveBasePay removes a BasePay from the store
-func (k Keeper) removeBasePay(
-	ctx sdk.Context,
-	index types.BasePayIndex,
-) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
-	store.Delete([]byte(index.String()))
-}
-
-// GetAllBasePay returns all BasePay
-func (k Keeper) getAllBasePay(ctx sdk.Context) (list []types.BasePayWithIndex) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte{})
-
-	defer iterator.Close()
-
-	for ; iterator.Valid(); iterator.Next() {
-		var val types.BasePay
-		k.cdc.MustUnmarshal(iterator.Value(), &val)
-		list = append(list, types.BasePayWithIndex{BasePayIndex: types.BasePayKeyRecover(string(iterator.Key())), BasePay: val})
-	}
-
-	return
-}
-
 func (k Keeper) popAllBasePayForChain(ctx sdk.Context, chainID string) (list []types.BasePayWithIndex) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte(chainID))

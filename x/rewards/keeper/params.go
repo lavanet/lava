@@ -12,7 +12,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.MaxBondedTarget(ctx),
 		k.LowFactor(ctx),
 		k.LeftoverBurnRate(ctx),
-		k.Providers(ctx),
+		k.MaxRewardBoost(ctx),
 	)
 }
 
@@ -45,8 +45,8 @@ func (k Keeper) LeftoverBurnRate(ctx sdk.Context) (res sdk.Dec) {
 	return
 }
 
-// Providers returns the Providers param
-func (k Keeper) Providers(ctx sdk.Context) (res types.Providers) {
-	k.paramstore.Get(ctx, types.KeyProviders, &res)
+// MaxRewardBoost returns the MaxRewardBoost param
+func (k Keeper) MaxRewardBoost(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeyMaxRewardBoost, &res)
 	return
 }

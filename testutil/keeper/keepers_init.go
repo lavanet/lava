@@ -315,7 +315,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 	require.Nil(t, err)
 
 	err = ks.BankKeeper.AddToBalance(
-		p.ValidatorsAllocationPool.GetModuleAddress(string(rewardstypes.ProvidersAllocationPool)),
+		p.ProvidersAllocationPool.GetModuleAddress(string(rewardstypes.ProvidersAllocationPool)),
 		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.Nil(t, err)
 

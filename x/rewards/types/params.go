@@ -31,8 +31,8 @@ var (
 )
 
 var (
-	KeyProviders     = []byte("Providers")
-	DefaultProviders = Providers{MaxRewardBoost: 5}
+	KeyMaxRewardBoost     = []byte("MaxRewardBoost")
+	DefaultMaxRewardBoost = uint64(5)
 )
 
 // ParamKeyTable the param key table for launch module
@@ -46,14 +46,14 @@ func NewParams(
 	maxBondedTarget sdk.Dec,
 	lowFactor sdk.Dec,
 	leftoverBurnRate sdk.Dec,
-	providers Providers,
+	maxRewardBoost uint64,
 ) Params {
 	return Params{
 		MinBondedTarget:  minBondedTarget,
 		MaxBondedTarget:  maxBondedTarget,
 		LowFactor:        lowFactor,
 		LeftoverBurnRate: leftoverBurnRate,
-		Providers:        providers,
+		MaxRewardBoost:   maxRewardBoost,
 	}
 }
 
@@ -64,7 +64,7 @@ func DefaultParams() Params {
 		DefaultMaxBondedTarget,
 		DefaultLowFactor,
 		DefaultLeftOverBurnRate,
-		DefaultProviders,
+		DefaultMaxRewardBoost,
 	)
 }
 
@@ -75,7 +75,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyMaxBondedTarget, &p.MaxBondedTarget, validateDec),
 		paramtypes.NewParamSetPair(KeyLowFactor, &p.LowFactor, validateDec),
 		paramtypes.NewParamSetPair(KeyLeftoverBurnRate, &p.LeftoverBurnRate, validateDec),
-		paramtypes.NewParamSetPair(KeyProviders, &p.Providers, validateProviders),
+		paramtypes.NewParamSetPair(KeyMaxRewardBoost, &p.MaxRewardBoost, validateuint64),
 	}
 }
 
@@ -124,8 +124,8 @@ func validateDec(v interface{}) error {
 	return nil
 }
 
-func validateProviders(v interface{}) error {
-	_, ok := v.(Providers)
+func validateuint64(v interface{}) error {
+	_, ok := v.(uint64)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
