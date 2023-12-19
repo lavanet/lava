@@ -13,6 +13,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.LowFactor(ctx),
 		k.LeftoverBurnRate(ctx),
 		k.MaxRewardBoost(ctx),
+		k.ValidatorsSubscriptionParticipation(ctx),
 	)
 }
 
@@ -48,5 +49,11 @@ func (k Keeper) LeftoverBurnRate(ctx sdk.Context) (res sdk.Dec) {
 // MaxRewardBoost returns the MaxRewardBoost param
 func (k Keeper) MaxRewardBoost(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyMaxRewardBoost, &res)
+	return
+}
+
+// ValidatorsSubscriptionParticipation returns the ValidatorsSubscriptionParticipation param
+func (k Keeper) ValidatorsSubscriptionParticipation(ctx sdk.Context) (res sdk.Dec) {
+	k.paramstore.Get(ctx, types.KeyValidatorsSubscriptionParticipation, &res)
 	return
 }
