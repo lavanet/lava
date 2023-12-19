@@ -64,6 +64,10 @@ var Upgrade_0_33_0 = Upgrade{
 			// voting
 			params.ExpeditedVotingPeriod = &info.ExpeditedVotingPeriod
 
+			if err = params.ValidateBasic(); err != nil {
+				return nil, err
+			}
+
 			if err := keepers.GovKeeper.SetParams(ctx, params); err != nil {
 				return nil, err
 			}
