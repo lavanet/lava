@@ -51,6 +51,20 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
 	for relayIdx, relay := range msg.Relays {
+		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
+		if err != nil {
+			return nil, utils.LavaFormatWarning("invalid provider address in relay msg", err,
+				utils.Attribute{Key: "provider", Value: relay.Provider},
+				utils.Attribute{Key: "creator", Value: msg.Creator},
+			)
+		}
+		if !providerAddr.Equals(creator) {
+			return nil, utils.LavaFormatWarning("invalid provider address in relay msg", fmt.Errorf("creator and signed provider mismatch"),
+				utils.Attribute{Key: "provider", Value: relay.Provider},
+				utils.Attribute{Key: "creator", Value: msg.Creator},
+			)
+		}
+
 		var newBadgeTimerExpiry uint64 // if the badge is new and need to setup a timer, this will be a non-zero value
 		if relay.LavaChainId != lavaChainID {
 			utils.LavaFormatWarning("relay request for the wrong lava chain", fmt.Errorf("relay_payment_wrong_lava_chain_id"),
@@ -95,24 +109,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			badgeSig = badgeData.Badge.ProjectSig
 		}
 
-		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
-		if err != nil {
-			utils.LavaFormatWarning("invalid provider address in relay msg", err,
-				utils.Attribute{Key: "provider", Value: relay.Provider},
-				utils.Attribute{Key: "creator", Value: msg.Creator},
-			)
-			rejectedCu += relay.CuSum
-			continue
-		}
-		if !providerAddr.Equals(creator) {
-			utils.LavaFormatWarning("invalid provider address in relay msg", fmt.Errorf("creator and signed provider mismatch"),
-				utils.Attribute{Key: "provider", Value: relay.Provider},
-				utils.Attribute{Key: "creator", Value: msg.Creator},
-			)
-			rejectedCu += relay.CuSum
-			continue
-		}
-
 		project, err := k.GetProjectData(ctx, clientAddr, relay.SpecId, uint64(relay.Epoch))
 		if err != nil {
 			utils.LavaFormatWarning("invalid project data", err)
@@ -121,21 +117,21 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		epochStart, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, uint64(relay.Epoch))
-		if err == nil {
-			if k.IsDoubleSpend(ctx, relay.SpecId, epochStart, project.Index, providerAddr, strconv.FormatUint(relay.SessionId, 16)) {
-				utils.LavaFormatWarning("double spending detected", err,
-					utils.Attribute{Key: "epoch", Value: epochStart},
-					utils.Attribute{Key: "client", Value: clientAddr.String()},
-					utils.Attribute{Key: "provider", Value: providerAddr.String()},
-					utils.Attribute{Key: "unique_ID", Value: relay.SessionId},
-				)
-				rejectedCu += relay.CuSum
-				continue
-			}
-		} else {
+		if err != nil {
 			utils.LavaFormatWarning("problem getting epoch start", err,
 				utils.Attribute{Key: "relayEpoch", Value: relay.Epoch},
 				utils.Attribute{Key: "epochStart", Value: epochStart},
+			)
+			rejectedCu += relay.CuSum
+			continue
+		}
+
+		if k.IsDoubleSpend(ctx, relay.SpecId, epochStart, project.Index, providerAddr, strconv.FormatUint(relay.SessionId, 16)) {
+			utils.LavaFormatWarning("double spending detected", err,
+				utils.Attribute{Key: "epoch", Value: epochStart},
+				utils.Attribute{Key: "client", Value: clientAddr.String()},
+				utils.Attribute{Key: "provider", Value: providerAddr.String()},
+				utils.Attribute{Key: "unique_ID", Value: relay.SessionId},
 			)
 			rejectedCu += relay.CuSum
 			continue
