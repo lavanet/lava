@@ -721,7 +721,7 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 				Relays:  slices.Slice(relaySession),
 			}
 
-			ts.relayPaymentWithoutPay(relayPaymentMessage, true)
+			ts.relayPaymentWithoutPay(relayPaymentMessage, tt.valid)
 
 			if tt.valid {
 				usedCuSoFar += tt.cuSum

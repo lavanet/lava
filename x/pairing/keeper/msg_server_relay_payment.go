@@ -50,6 +50,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 
 	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
+	var rejected_relays_num int
 	for relayIdx, relay := range msg.Relays {
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
 		if err != nil {
@@ -71,6 +72,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "relay.LavaChainId", Value: relay.LavaChainId},
 				utils.Attribute{Key: "expected_ChainID", Value: lavaChainID},
 			)
+			rejected_relays_num++
 			rejectedCu += relay.CuSum
 			continue
 		}
@@ -79,6 +81,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "blockheight", Value: ctx.BlockHeight()},
 				utils.Attribute{Key: "relayBlock", Value: relay.Epoch},
 			)
+			rejected_relays_num++
 			rejectedCu += relay.CuSum
 			continue
 		}
@@ -88,6 +91,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			utils.LavaFormatWarning("recover PubKey from relay failed", err,
 				utils.Attribute{Key: "sig", Value: relay.Sig},
 			)
+			rejected_relays_num++
 			rejectedCu += relay.CuSum
 			continue
 		}
@@ -100,6 +104,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			newBadgeTimerExpiry, err = k.checkBadge(ctx, badgeData, clientAddr.String(), relay)
 			if err != nil {
 				utils.LavaFormatWarning("badge check failed", err)
+				rejected_relays_num++
 				rejectedCu += relay.CuSum
 				continue
 			}
@@ -112,6 +117,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		project, err := k.GetProjectData(ctx, clientAddr, relay.SpecId, uint64(relay.Epoch))
 		if err != nil {
 			utils.LavaFormatWarning("invalid project data", err)
+			rejected_relays_num++
 			rejectedCu += relay.CuSum
 			continue
 		}
@@ -122,6 +128,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "relayEpoch", Value: relay.Epoch},
 				utils.Attribute{Key: "epochStart", Value: epochStart},
 			)
+			rejected_relays_num++
 			rejectedCu += relay.CuSum
 			continue
 		}
@@ -133,9 +140,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "provider", Value: providerAddr.String()},
 				utils.Attribute{Key: "unique_ID", Value: relay.SessionId},
 			)
+			rejected_relays_num++
 			rejectedCu += relay.CuSum
 			continue
 		}
+
+		// *** up until here we checked non-critical traits of the relay and didn't fail the TX
+		// if they failed (one relay should affect all of them). From here on, every check will
+		// fail the TX ***
 
 		totalCUInEpochForUserProvider := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 
@@ -243,7 +255,15 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 	}
 
-	// event for rejected CU
+	// if all relays failed, fail the TX
+	if rejected_relays_num == len(msg.Relays) {
+		return nil, utils.LavaFormatWarning("relay payment failed", fmt.Errorf("all relays rejected"),
+			utils.Attribute{Key: "provider", Value: msg.Creator},
+			utils.Attribute{Key: "description", Value: msg.DescriptionString},
+		)
+	}
+
+	// only some of the relays were rejected - event for rejected CU
 	var rejected_relays bool
 	if rejectedCu != 0 {
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.RejectedCuEventName, map[string]string{"rejected_cu": strconv.FormatUint(rejectedCu, 10)}, "Total rejected CU (not paid) in current RelayPayment TX")
@@ -374,7 +394,8 @@ func (k Keeper) checkBadge(ctx sdk.Context, badgeData BadgeData, client string, 
 	badgeUsedCuKey := types.BadgeUsedCuKey(badgeData.Badge.ProjectSig, relay.Provider)
 	badgeUsedCuMapEntry, found := k.GetBadgeUsedCu(ctx, badgeUsedCuKey)
 	if !found {
-		// setting a timer with a callback to delete the badgeUsedCuEntry after badge.Epoch+blocksToSave (see keeper.go)
+		// calculate the expiry timestamp for a new timer that will be created later
+		// (the timer with a callback to delete the badgeUsedCuEntry after badge.Epoch+blocksToSave (see keeper.go))
 		badgeUsedCuTimerExpiryBlock := k.BadgeUsedCuExpiry(ctx, badgeData.Badge)
 		if badgeUsedCuTimerExpiryBlock <= uint64(ctx.BlockHeight()) {
 			return 0, utils.LavaFormatWarning("badge rejected", fmt.Errorf("badge used CU entry validity expired"),
