@@ -149,6 +149,11 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		totalTokenAmount = sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
 	}
 
+	// get the adjustment factor, and delete the entries
+	adjustments := k.GetConsumerAdjustments(ctx, sub)
+	adjustmentFactorForProvider := k.GetAdjustmentFactorProvider(ctx, adjustments)
+	k.RemoveConsumerAdjustments(ctx, sub)
+
 	for _, trackedCuInfo := range trackedCuList {
 		trackedCu := trackedCuInfo.trackedCu
 		provider := trackedCuInfo.provider
@@ -168,7 +173,12 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 		// provider monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
 		// TODO: deal with the reward's remainder (uint division...)
-
+		providerAdjustment, ok := adjustmentFactorForProvider[provider]
+		if !ok {
+			providerAdjustment = math.LegacyZeroDec()
+		}
+		// TODO: send the adjustment to rewards module and cap adjustment by rewards module params
+		_ = providerAdjustment
 		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
 
 		// calculate the provider reward (smaller than totalMonthlyReward

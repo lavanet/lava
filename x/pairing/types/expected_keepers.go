@@ -88,6 +88,7 @@ type SubscriptionKeeper interface {
 	CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, trackedCu uint64, totalCuUsedBySub uint64) math.Int
 	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, block uint64) error
 	GetAllSubscriptionsIndices(ctx sdk.Context) []string
+	AppendAdjustment(ctx sdk.Context, consumer string, provider string, totalConsumerUsage uint64, usageWithThisProvider uint64)
 }
 
 type PlanKeeper interface {
