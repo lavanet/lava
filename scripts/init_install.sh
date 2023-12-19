@@ -84,8 +84,8 @@ fi
 if ! command_exists yq; then
 
     if ! check_go_version; then
-        echo "Go 1.20 is not installed. Installing..."
-        sudo apt install -y golang-1.20
+        echo "Go 1.21 is not installed. Installing..."
+        sudo apt install -y golang-1.21
     fi
     go install github.com/mikefarah/yq/v4@latest 
 

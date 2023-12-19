@@ -7,14 +7,17 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gogo/status"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type ProviderListener struct {
@@ -53,7 +56,8 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 
 	// GRPC
 	lis := chainlib.GetListenerWithRetryGrpc("tcp", networkAddress.Address)
-	grpcServer := grpc.NewServer()
+	serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(1024 * 1024 * 32) // setting receive size to 32mb instead of 4mb default
+	grpcServer := grpc.NewServer(serverReceiveMaxMessageSize)
 
 	wrappedServer := grpcweb.WrapServer(grpcServer)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
@@ -144,10 +148,12 @@ func (rs *relayServer) findReceiver(apiInterface string, specID string) (RelayRe
 		for k := range rs.relayReceivers {
 			keys = append(keys, k)
 		}
-		return nil, utils.LavaFormatError("got called with unhandled relay receiver", nil, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
+		err := utils.LavaFormatError("got called with unhandled relay receiver", lavaprotocol.UnhandledRelayReceiverError, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
+		return nil, status.Error(codes.Code(lavaprotocol.UnhandledRelayReceiverError.ABCICode()), err.Error())
 	}
 	if !relayReceiver.enabled {
-		return nil, utils.LavaFormatError("relayReceiver is disabled", nil, utils.Attribute{Key: "relayReceiver", Value: endpoint.Key()})
+		err := utils.LavaFormatError("relayReceiver is disabled", lavaprotocol.DisabledRelayReceiverError, utils.Attribute{Key: "relayReceiver", Value: endpoint.Key()})
+		return nil, status.Error(codes.Code(lavaprotocol.DisabledRelayReceiverError.ABCICode()), err.Error())
 	}
 	return *relayReceiver.relayReceiver, nil
 }

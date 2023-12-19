@@ -69,9 +69,6 @@ import (
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/cosmos/cosmos-sdk/x/mint"
-	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
@@ -127,6 +124,9 @@ import (
 	protocolmodule "github.com/lavanet/lava/x/protocol"
 	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
 	protocolmoduletypes "github.com/lavanet/lava/x/protocol/types"
+	rewardsmodule "github.com/lavanet/lava/x/rewards"
+	rewardsmodulekeeper "github.com/lavanet/lava/x/rewards/keeper"
+	rewardsmoduletypes "github.com/lavanet/lava/x/rewards/types"
 	specmodule "github.com/lavanet/lava/x/spec"
 	specmoduleclient "github.com/lavanet/lava/x/spec/client"
 	specmodulekeeper "github.com/lavanet/lava/x/spec/keeper"
@@ -203,7 +203,6 @@ var (
 		bank.AppModuleBasic{},
 		capability.AppModuleBasic{},
 		staking.AppModuleBasic{},
-		mint.AppModuleBasic{},
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic(getGovProposalHandlers()),
 		params.AppModuleBasic{},
@@ -225,6 +224,7 @@ var (
 		protocolmodule.AppModuleBasic{},
 		plansmodule.AppModuleBasic{},
 		downtimemodule.AppModuleBasic{},
+		rewardsmodule.AppModuleBasic{},
 		// this line is used by starport scaffolding # stargate/app/moduleBasic
 	)
 
@@ -232,15 +232,14 @@ var (
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName:               nil,
 		distrtypes.ModuleName:                    nil,
-		minttypes.ModuleName:                     {authtypes.Minter},
 		stakingtypes.BondedPoolName:              {authtypes.Burner, authtypes.Staking},
 		stakingtypes.NotBondedPoolName:           {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:                      {authtypes.Burner},
-		ibctransfertypes.ModuleName:              {authtypes.Minter, authtypes.Burner},
-		subscriptionmoduletypes.ModuleName:       {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		ibctransfertypes.ModuleName:              {authtypes.Burner},
+		subscriptionmoduletypes.ModuleName:       {authtypes.Burner, authtypes.Staking},
 		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
 		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		pairingmoduletypes.ModuleName:            {authtypes.Minter, authtypes.Burner, authtypes.Staking},
+		pairingmoduletypes.ModuleName:            {authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -314,7 +313,7 @@ func New(
 
 	keys := sdk.NewKVStoreKeys(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey,
-		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
+		distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, consensusparamtypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, crisistypes.StoreKey, ibctransfertypes.StoreKey, ibcexported.StoreKey, capabilitytypes.StoreKey,
 		specmoduletypes.StoreKey,
@@ -326,6 +325,7 @@ func New(
 		projectsmoduletypes.StoreKey,
 		plansmoduletypes.StoreKey,
 		downtimemoduletypes.StoreKey,
+		rewardsmoduletypes.StoreKey,
 		// this line is used by starport scaffolding # stargate/app/storeKey
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
@@ -369,11 +369,6 @@ func New(
 	)
 	app.StakingKeeper = stakingkeeper.NewKeeper(
 		appCodec, keys[stakingtypes.StoreKey], app.AccountKeeper, app.BankKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-	app.MintKeeper = mintkeeper.NewKeeper(
-		appCodec, keys[minttypes.StoreKey], app.StakingKeeper,
-		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	app.DistrKeeper = distrkeeper.NewKeeper(
@@ -521,6 +516,20 @@ func New(
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.RewardsKeeper = *rewardsmodulekeeper.NewKeeper(
+		appCodec,
+		keys[rewardsmoduletypes.StoreKey],
+		keys[rewardsmoduletypes.MemStoreKey],
+		app.GetSubspace(rewardsmoduletypes.ModuleName),
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.DowntimeKeeper,
+		app.StakingKeeper,
+		authtypes.FeeCollectorName,
+		app.TimerStoreKeeper,
+	)
+	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
+
 	// register the proposal types
 	govRouter := v1beta1.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, v1beta1.ProposalHandler).
@@ -624,7 +633,6 @@ func New(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
@@ -645,6 +653,7 @@ func New(
 		plansModule,
 		protocolModule,
 		downtimeModule,
+		rewardsModule,
 
 		crisis.NewAppModule(&app.CrisisKeeper, skipGenesisInvariants, app.GetSubspace(crisistypes.ModuleName)), // always be last to make sure that it checks for all invariants and not only part of them
 		// this line is used by starport scaffolding # stargate/app/appModule
@@ -661,11 +670,11 @@ func New(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
+		rewardsmoduletypes.ModuleName, // rewards needs to run before distribution to fill the validator rewards pool
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
-		minttypes.ModuleName,
 		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -693,7 +702,6 @@ func New(
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
-		minttypes.ModuleName,
 		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -709,6 +717,7 @@ func New(
 		protocolmoduletypes.ModuleName,
 		plansmoduletypes.ModuleName,
 		vestingtypes.ModuleName,
+		rewardsmoduletypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
@@ -731,7 +740,6 @@ func New(
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
-		minttypes.ModuleName,
 		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -748,6 +756,7 @@ func New(
 		vestingtypes.ModuleName,
 		upgradetypes.ModuleName,
 		feegrant.ModuleName,
+		rewardsmoduletypes.ModuleName,
 		paramstypes.ModuleName,
 		fixationtypes.ModuleName,       // fixation store has no init genesis but module manager requires it.
 		timerstoretypes.ModuleName,     // timer store has no init genesis but module manager requires it.
@@ -769,7 +778,6 @@ func New(
 		capability.NewAppModule(appCodec, *app.CapabilityKeeper, false),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, app.GetSubspace(minttypes.ModuleName)),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
 		slashing.NewAppModule(appCodec, app.SlashingKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(slashingtypes.ModuleName)),
@@ -786,6 +794,7 @@ func New(
 		projectsModule,
 		protocolModule,
 		plansModule,
+		rewardsModule,
 		// this line is used by starport scaffolding # stargate/app/appModule
 	)
 	app.sm.RegisterStoreDecoders()
@@ -995,7 +1004,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(authtypes.ModuleName)
 	paramsKeeper.Subspace(banktypes.ModuleName)
 	paramsKeeper.Subspace(stakingtypes.ModuleName)
-	paramsKeeper.Subspace(minttypes.ModuleName)
 	paramsKeeper.Subspace(distrtypes.ModuleName)
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(v1.ParamKeyTable()) //nolint:staticcheck
@@ -1012,6 +1020,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(protocolmoduletypes.ModuleName)
 	paramsKeeper.Subspace(plansmoduletypes.ModuleName)
 	paramsKeeper.Subspace(downtimemoduletypes.ModuleName)
+	paramsKeeper.Subspace(rewardsmoduletypes.ModuleName)
 	// this line is used by starport scaffolding # stargate/app/paramSubspace
 
 	return paramsKeeper

@@ -47,7 +47,7 @@ func validatePortNumber(ipPort string) string {
 	return ipPort
 }
 
-func performCORSCheck(endpoint epochstoragetypes.Endpoint) error {
+func PerformCORSCheck(endpoint epochstoragetypes.Endpoint) error {
 	utils.LavaFormatDebug("Checking CORS", utils.Attribute{Key: "endpoint", Value: endpoint})
 	// Construct the URL for the RPC endpoint
 	endpointURL := "https://" + endpoint.IPPORT // Providers must have HTTPS support
@@ -165,7 +165,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				}
 
 				// CORS check
-				if err := performCORSCheck(endpoint); err != nil {
+				if err := PerformCORSCheck(endpoint); err != nil {
 					return 0, versions, 0, err
 				}
 

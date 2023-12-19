@@ -24,6 +24,7 @@ import (
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/protocopy"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -659,7 +660,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		reply = cacheReply.GetReply()
 		ignoredMetadata = cacheReply.GetOptionalMetadata()
 		if err != nil && performance.NotConnectedError.Is(err) {
-			utils.LavaFormatWarning("cache not connected", err, utils.Attribute{Key: "GUID", Value: ctx})
+			utils.LavaFormatDebug("cache not connected", utils.LogAttr("err", err), utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}
 	if err != nil || reply == nil {
@@ -684,10 +685,21 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
 		if requestedBlockHash != nil || finalized {
-			err := cache.SetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, reply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
-			if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
-				utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
-			}
+			copyPrivateData := &pairingtypes.RelayPrivateData{}
+			copyErr := protocopy.DeepCopyProtoObject(request.RelayData, copyPrivateData)
+			go func() {
+				if copyErr != nil {
+					utils.LavaFormatError("Failed copying relay private data on TryRelay", copyErr)
+					return
+				}
+				new_ctx := context.Background()
+				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
+				defer cancel()
+				err := cache.SetEntry(new_ctx, copyPrivateData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, reply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
+				if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
+					utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
+				}
+			}()
 		}
 	}
 

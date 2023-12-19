@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -163,4 +164,8 @@ func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCo
 
 func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	return pst.stateQuery.GetProtocolVersion(ctx)
+}
+
+func (pst *ProviderStateTracker) GetAverageBlockTime() time.Duration {
+	return pst.StateTracker.GetAverageBlockTime()
 }

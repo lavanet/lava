@@ -21,7 +21,7 @@ import (
 var ReturnMaskedErrors = "false"
 
 const (
-	webSocketCloseMessage = "websocket: close 1005 (no status)"
+	webSocketCloseMessage = "websocket: close "
 	RefererHeaderKey      = "Referer"
 	OriginHeaderKey       = "Origin"
 	UserAgentHeaderKey    = "User-Agent"
@@ -114,8 +114,9 @@ func (rpccl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error,
 // We dont want to alert error monitoring for that purpses.
 func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string, timeTaken time.Duration) {
 	if err != nil {
-		if err.Error() == webSocketCloseMessage {
-			utils.LavaFormatInfo("Websocket connection closed by the user, " + err.Error())
+		errMessage := err.Error()
+		if strings.Contains(errMessage, webSocketCloseMessage) {
+			utils.LavaFormatInfo("Websocket connection closed by the user, " + errMessage)
 			return
 		}
 		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, timeTaken, err)
