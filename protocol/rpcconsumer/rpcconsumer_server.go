@@ -81,29 +81,16 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.consumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
-	consumerPolicy, err := rpccs.consumerTxSender.GetConsumerPolicy(ctx, consumerAddress.String(), listenEndpoint.ChainID)
-	if err != nil {
-		return err
-	}
-	consumerAddons, err := consumerPolicy.GetSupportedAddons(listenEndpoint.ChainID)
-	if err != nil {
-		return err
-	}
-	consumerExtensions, err := consumerPolicy.GetSupportedExtensions(listenEndpoint.ChainID)
-	if err != nil {
-		return err
-	}
-	rpccs.consumerServices = make(map[string]struct{})
-	for _, consumerAddon := range consumerAddons {
-		rpccs.consumerServices[consumerAddon] = struct{}{}
-	}
-	for _, consumerExtension := range consumerExtensions {
-		// store only relevant apiInterface extensions
-		if consumerExtension.ApiInterface == listenEndpoint.ApiInterface {
-			rpccs.consumerServices[consumerExtension.Extension] = struct{}{}
-		}
-	}
-	rpccs.chainParser.SetConfiguredExtensions(rpccs.consumerServices) // configure possible extensions as set by the policy
+	// TODO: remove after validation
+	// consumerPolicy, err := rpccs.consumerTxSender.GetConsumerPolicy(ctx, consumerAddress.String(), listenEndpoint.ChainID)
+	// if err != nil {
+	// 	return err
+	// }
+	// consumerServices, err := rpccs.chainParser.BuildMapFromPolicyQuery(consumerPolicy, listenEndpoint.ChainID, listenEndpoint.ApiInterface)
+	// if err != nil {
+	// 	return err
+	// }
+	// rpccs.chainParser.SetPolicy(consumerServices) // configure possible extensions as set by the policy
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
 		return err
@@ -213,12 +200,6 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	}
 
 	rpccs.HandleDirectiveHeadersForMessage(chainMessage, directiveHeaders)
-	if _, ok := rpccs.consumerServices[chainlib.GetAddon(chainMessage)]; !ok {
-		utils.LavaFormatError("unsupported addon usage, consumer policy does not allow", nil,
-			utils.Attribute{Key: "addon", Value: chainlib.GetAddon(chainMessage)},
-			utils.Attribute{Key: "allowed", Value: rpccs.consumerServices},
-		)
-	}
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
 	reqBlock, _ := chainMessage.RequestedBlock()
 	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(dappID, consumerIp)

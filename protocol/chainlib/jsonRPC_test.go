@@ -206,7 +206,7 @@ func TestExtensions(t *testing.T) {
 	spec, err := keepertest.GetASpec(specname, "../../", nil, nil)
 	require.NoError(t, err)
 
-	chainParser.SetConfiguredExtensions(configuredExtensions)
+	chainParser.SetPolicy(configuredExtensions)
 	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	require.True(t, ok)
 	cuCost := uint64(0)

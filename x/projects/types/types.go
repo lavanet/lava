@@ -15,4 +15,5 @@ const (
 const (
 	AddProjectKeyEventName = "add_key_to_project_event"
 	DelProjectKeyEventName = "del_key_from_project_event"
+	PolicyUpdateEventName  = "policy_update_event"
 )

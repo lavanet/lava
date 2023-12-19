@@ -3,8 +3,11 @@ package updaters
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/exp/slices"
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -13,6 +16,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	projecttypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -141,11 +145,43 @@ func (et *EventTracker) getLatestSpecModifyEvents(latestBlock int64) (updated bo
 	if et.latestUpdatedBlock != latestBlock {
 		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
 	}
+	eventsListToListenTo := []string{
+		utils.EventPrefix + spectypes.SpecModifyEventName,
+		utils.EventPrefix + spectypes.SpecRefreshEventName,
+	}
 	for _, event := range et.blockResults.EndBlockEvents {
-		if event.Type == utils.EventPrefix+spectypes.SpecModifyEventName {
+		if slices.Contains(eventsListToListenTo, event.Type) {
+			utils.LavaFormatInfo("Spec update event identified", utils.LogAttr("Event", event.Type))
 			return true, nil
 		}
 	}
+	return false, nil
+}
+
+func (et *EventTracker) getLatestPolicyModifyEvents(latestBlock int64, consumerAddress string) (updated bool, err error) {
+	et.lock.RLock()
+	defer et.lock.RUnlock()
+	if et.latestUpdatedBlock != latestBlock {
+		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
+	}
+	// TODO ranlavanet: we cant update immidietly because the policy changes will take effect only next epoch... meaning we need to know when a new epoch hit?
+	for _, tx := range et.blockResults.TxsResults {
+		for _, event := range tx.Events {
+			if event.Type == utils.EventPrefix+projecttypes.PolicyUpdateEventName {
+				utils.LavaFormatInfo("Policy Updated", utils.LogAttr("event", event))
+				for _, eventAttr := range event.Attributes {
+					if eventAttr.Key == "project_ids" {
+						utils.LavaFormatInfo("comparing values", utils.LogAttr("eventAttr.Value", eventAttr.Value), utils.LogAttr("consumerAddress", consumerAddress))
+						if strings.Contains(eventAttr.Value, consumerAddress) {
+							return true, nil
+						}
+					}
+				}
+				return true, nil
+			}
+		}
+	}
+
 	return false, nil
 }
 

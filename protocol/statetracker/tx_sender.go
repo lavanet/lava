@@ -235,6 +235,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 			Txhash: resultData.Txhash,
 			Code:   int(txRes.TxResult.Code),
 		}
+		utils.LavaFormatDebug("Tx Hash found on blockchain", utils.LogAttr("Txhash", string(resultData.Txhash)), utils.LogAttr("Code", resultData.Code))
 		break
 	case <-time.After(5 * time.Minute):
 		return common.TxResultData{}, utils.LavaFormatError("failed sending tx, wasn't found after timeout", nil, utils.Attribute{Key: "hash", Value: string(resultData.Txhash)})
