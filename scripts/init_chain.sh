@@ -28,6 +28,10 @@ if [ "$1" == "debug" ]; then
         | jq '.app_state.gov.params.min_deposit[0].denom = "ulava"' \
         | jq '.app_state.gov.params.min_deposit[0].amount = "100"' \
         | jq '.app_state.gov.params.voting_period = "3s"' \
+        | jq '.app_state.gov.params.expedited_voting_period = "1s"' \
+        | jq '.app_state.gov.params.expedited_min_deposit[0].denom = "ulava"' \
+        | jq '.app_state.gov.params.expedited_min_deposit[0].amount = "200"' \
+        | jq '.app_state.gov.params.expedited_threshold = "0.67"' \
         | jq '.app_state.mint.params.mint_denom = "ulava"' \
         | jq '.app_state.staking.params.bond_denom = "ulava"' \
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
@@ -40,6 +44,11 @@ else
         | jq '.app_state.gov.params.min_deposit[0].denom = "ulava"' \
         | jq '.app_state.gov.params.min_deposit[0].amount = "100"' \
         | jq '.app_state.gov.params.voting_period = "3s"' \
+        | jq '.app_state.gov.params.expedited_voting_period = "1s"' \
+        | jq '.app_state.gov.params.expedited_min_deposit[0].denom = "ulava"' \
+        | jq '.app_state.gov.params.expedited_min_deposit[0].amount = "200"' \
+        | jq '.app_state.gov.params.expedited_threshold = "0.67"' \
+        | jq '.app_state.mint.params.mint_denom = "ulava"' \
         | jq '.app_state.mint.params.mint_denom = "ulava"' \
         | jq '.app_state.staking.params.bond_denom = "ulava"' \
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
@@ -50,6 +59,7 @@ fi
 
 echo -n "$data" > "$path$genesis"
 
+echo "using genesis file"
 echo $(cat "$path$genesis")
 
 # Determine OS
