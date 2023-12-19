@@ -29,6 +29,31 @@ func (k Keeper) getBasePay(
 	return val, true
 }
 
+// GetAllBasePay returns all BasePay
+func (k Keeper) GetAllBasePay(ctx sdk.Context) (list []types.BasePayGenesis) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var val types.BasePay
+		k.cdc.MustUnmarshal(iterator.Value(), &val)
+		list = append(list, types.BasePayGenesis{Index: string(iterator.Key()), BasePay: val})
+	}
+
+	return
+}
+
+// SetAllBasePay sets all BasePay
+func (k Keeper) SetAllBasePay(ctx sdk.Context, list []types.BasePayGenesis) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
+	for _, bp := range list {
+		b := k.cdc.MustMarshal(&bp.BasePay)
+		store.Set([]byte(bp.Index), b)
+	}
+}
+
 func (k Keeper) popAllBasePayForChain(ctx sdk.Context, chainID string) (list []types.BasePayWithIndex) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte(chainID))

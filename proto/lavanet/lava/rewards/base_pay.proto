@@ -21,3 +21,9 @@ message BasePay {
     (gogoproto.nullable)   = false
     ];
 }
+
+// aggregated rewards for the provider through out the month
+message BasePayGenesis {
+  string index = 1; 
+  BasePay base_pay = 2 [(gogoproto.nullable)   = false ];
+}

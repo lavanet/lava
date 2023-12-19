@@ -240,8 +240,8 @@ var (
 		pairingmoduletypes.ModuleName:                                    {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsAllocationPoolName):   {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsDistributionPoolName): {authtypes.Burner, authtypes.Staking},
-		string(rewardsmoduletypes.ProviderDistributionPool):              {authtypes.Burner, authtypes.Staking},
-		string(rewardsmoduletypes.ProvidersAllocationPool):               {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ProviderRewardsDistributionPool):       {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ProvidersRewardsAllocationPool):        {authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )

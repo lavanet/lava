@@ -21,8 +21,8 @@ const (
 )
 
 const (
-	ProvidersAllocationPool  Pool = "providers_allocation_pool"
-	ProviderDistributionPool Pool = "providers_distribution_pool"
+	ProvidersRewardsAllocationPool  Pool = "providers_rewards_allocation_pool"
+	ProviderRewardsDistributionPool Pool = "providers_rewards_distribution_pool"
 )
 
 // Refill reward pools time stores constants:

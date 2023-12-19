@@ -109,7 +109,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
-	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderDistributionPool)
+	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool)
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAAcc.Addr.String(), providerAAcc.Addr.String(), "")
@@ -150,7 +150,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
-	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderDistributionPool)
+	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool)
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAAcc.Addr.String(), providerAAcc.Addr.String(), "")
@@ -245,7 +245,7 @@ func Test2SpecsZeroShares(t *testing.T) {
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
-	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderDistributionPool)
+	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool)
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAAcc.Addr.String(), providerAAcc.Addr.String(), "")
@@ -362,7 +362,7 @@ func TestBonusRewards3Providers(t *testing.T) {
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
-	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderDistributionPool)
+	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool)
 	ts.AdvanceEpoch()
 
 	res1, err := ts.QueryDualstakingDelegatorRewards(providerAcc1.Addr.String(), "", "")

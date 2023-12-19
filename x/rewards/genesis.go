@@ -12,19 +12,18 @@ import (
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
-	// TODO yarom: add base pay and timerstore
 	k.InitRewardsRefillTS(ctx, *timerstoretypes.DefaultGenesis())
 	k.RefillRewardsPools(ctx, nil, nil)
+	k.SetAllBasePay(ctx, genState.BasePays)
 }
 
 // ExportGenesis returns the capability module's exported genesis.
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 	genesis.Params = k.GetParams(ctx)
-
-	// TODO yarom: add base pay and timerstore
-
 	genesis.RefillRewardsTS = k.ExportRewardsRefillTS(ctx)
+	genesis.BasePays = k.GetAllBasePay(ctx)
+
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis

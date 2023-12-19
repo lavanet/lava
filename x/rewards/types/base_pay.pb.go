@@ -66,8 +66,62 @@ func (m *BasePay) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_BasePay proto.InternalMessageInfo
 
+// aggregated rewards for the provider through out the month
+type BasePayGenesis struct {
+	Index   string  `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
+	BasePay BasePay `protobuf:"bytes,2,opt,name=base_pay,json=basePay,proto3" json:"base_pay"`
+}
+
+func (m *BasePayGenesis) Reset()         { *m = BasePayGenesis{} }
+func (m *BasePayGenesis) String() string { return proto.CompactTextString(m) }
+func (*BasePayGenesis) ProtoMessage()    {}
+func (*BasePayGenesis) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a2fb0eb917a4ee4e, []int{1}
+}
+func (m *BasePayGenesis) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *BasePayGenesis) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_BasePayGenesis.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *BasePayGenesis) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BasePayGenesis.Merge(m, src)
+}
+func (m *BasePayGenesis) XXX_Size() int {
+	return m.Size()
+}
+func (m *BasePayGenesis) XXX_DiscardUnknown() {
+	xxx_messageInfo_BasePayGenesis.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_BasePayGenesis proto.InternalMessageInfo
+
+func (m *BasePayGenesis) GetIndex() string {
+	if m != nil {
+		return m.Index
+	}
+	return ""
+}
+
+func (m *BasePayGenesis) GetBasePay() BasePay {
+	if m != nil {
+		return m.BasePay
+	}
+	return BasePay{}
+}
+
 func init() {
 	proto.RegisterType((*BasePay)(nil), "lavanet.lava.rewards.BasePay")
+	proto.RegisterType((*BasePayGenesis)(nil), "lavanet.lava.rewards.BasePayGenesis")
 }
 
 func init() {
@@ -75,7 +129,7 @@ func init() {
 }
 
 var fileDescriptor_a2fb0eb917a4ee4e = []byte{
-	// 276 bytes of a gzipped FileDescriptorProto
+	// 329 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0xce, 0x49, 0x2c, 0x4b,
 	0xcc, 0x4b, 0x2d, 0xd1, 0x07, 0xd1, 0xfa, 0x45, 0xa9, 0xe5, 0x89, 0x45, 0x29, 0xc5, 0xfa, 0x49,
 	0x89, 0xc5, 0xa9, 0xf1, 0x05, 0x89, 0x95, 0x7a, 0x05, 0x45, 0xf9, 0x25, 0xf9, 0x42, 0x22, 0x50,
@@ -89,11 +143,14 @@ var fileDescriptor_a2fb0eb917a4ee4e = []byte{
 	0xe3, 0xa0, 0x94, 0x6e, 0x71, 0x4a, 0xb6, 0x7e, 0x49, 0x65, 0x41, 0x6a, 0xb1, 0x9e, 0x67, 0x5e,
 	0xc9, 0xa5, 0x2d, 0xba, 0x5c, 0x50, 0xdb, 0x3c, 0xf3, 0x4a, 0x82, 0x20, 0x46, 0x09, 0x85, 0x70,
 	0xf1, 0x82, 0x19, 0x8e, 0x29, 0x59, 0xa5, 0xc5, 0x25, 0xa9, 0x29, 0x12, 0x4c, 0x60, 0xb3, 0xf5,
-	0x48, 0x30, 0xdb, 0x25, 0x35, 0x39, 0x08, 0xd5, 0x10, 0x27, 0xc7, 0x13, 0x8f, 0xe4, 0x18, 0x2f,
-	0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18,
-	0x6e, 0x3c, 0x96, 0x63, 0x88, 0x52, 0x47, 0x32, 0x10, 0x25, 0xe4, 0x2b, 0xe0, 0x61, 0x0f, 0x36,
-	0x35, 0x89, 0x0d, 0xec, 0x7f, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0x86, 0x20, 0x87, 0x3d,
-	0xa0, 0x01, 0x00, 0x00,
+	0x48, 0x30, 0xdb, 0x25, 0x35, 0x39, 0x08, 0xd5, 0x10, 0xa5, 0x34, 0x2e, 0x3e, 0xa8, 0xa3, 0xdd,
+	0x53, 0xf3, 0x52, 0x8b, 0x33, 0x8b, 0x85, 0x44, 0xb8, 0x58, 0x33, 0xf3, 0x52, 0x52, 0x2b, 0x20,
+	0x6e, 0x0f, 0x82, 0x70, 0x84, 0xec, 0xb8, 0x38, 0x60, 0x21, 0x0d, 0xb6, 0x98, 0xdb, 0x48, 0x56,
+	0x0f, 0x5b, 0x50, 0xeb, 0x41, 0x4d, 0x73, 0x62, 0x01, 0xb9, 0x2b, 0x88, 0x3d, 0x09, 0xca, 0x75,
+	0x3c, 0xf1, 0x48, 0x8e, 0xf1, 0xc2, 0x23, 0x39, 0xc6, 0x07, 0x8f, 0xe4, 0x18, 0x27, 0x3c, 0x96,
+	0x63, 0xb8, 0xf0, 0x58, 0x8e, 0xe1, 0xc6, 0x63, 0x39, 0x86, 0x28, 0x75, 0x24, 0x87, 0xa3, 0xc4,
+	0x70, 0x05, 0x3c, 0x8e, 0xc1, 0xae, 0x4f, 0x62, 0x03, 0x87, 0xb3, 0x31, 0x20, 0x00, 0x00, 0xff,
+	0xff, 0x65, 0x93, 0x8f, 0x17, 0x08, 0x02, 0x00, 0x00,
 }
 
 func (m *BasePay) Marshal() (dAtA []byte, err error) {
@@ -139,6 +196,46 @@ func (m *BasePay) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *BasePayGenesis) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *BasePayGenesis) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *BasePayGenesis) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.BasePay.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintBasePay(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	if len(m.Index) > 0 {
+		i -= len(m.Index)
+		copy(dAtA[i:], m.Index)
+		i = encodeVarintBasePay(dAtA, i, uint64(len(m.Index)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintBasePay(dAtA []byte, offset int, v uint64) int {
 	offset -= sovBasePay(v)
 	base := offset
@@ -159,6 +256,21 @@ func (m *BasePay) Size() (n int) {
 	l = m.Total.Size()
 	n += 1 + l + sovBasePay(uint64(l))
 	l = m.TotalAdjusted.Size()
+	n += 1 + l + sovBasePay(uint64(l))
+	return n
+}
+
+func (m *BasePayGenesis) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Index)
+	if l > 0 {
+		n += 1 + l + sovBasePay(uint64(l))
+	}
+	l = m.BasePay.Size()
 	n += 1 + l + sovBasePay(uint64(l))
 	return n
 }
@@ -263,6 +375,121 @@ func (m *BasePay) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.TotalAdjusted.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipBasePay(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthBasePay
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *BasePayGenesis) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowBasePay
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BasePayGenesis: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BasePayGenesis: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Index", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBasePay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthBasePay
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthBasePay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Index = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BasePay", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowBasePay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthBasePay
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthBasePay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.BasePay.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

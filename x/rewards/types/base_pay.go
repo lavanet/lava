@@ -1,11 +1,8 @@
 package types
 
 import (
-	"encoding/binary"
 	fmt "fmt"
 )
-
-var _ binary.ByteOrder
 
 const (
 	// StakeStorageKeyPrefix is the prefix to retrieve all StakeStorage
