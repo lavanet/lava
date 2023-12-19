@@ -56,12 +56,15 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 		}
 	}
 	k.removeAllBasePay(ctx)
-	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, string(types.ProviderRewardsDistributionPool), subscriptionTypes.ModuleName, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalToSendRewarded)))
-	if err != nil {
-		utils.LavaFormatError("failed to send bonus rewards to subscription module", err, utils.LogAttr("amount", totalRewarded.String()))
+	if !totalToSendRewarded.IsZero() {
+		err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, string(types.ProviderRewardsDistributionPool), subscriptionTypes.ModuleName, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalToSendRewarded)))
+		if err != nil {
+			utils.LavaFormatError("failed to send bonus rewards to subscription module", err, utils.LogAttr("amount", totalRewarded.String()))
+		}
 	}
+
 	tokensToBurn := total.Sub(totalRewarded)
-	err = k.BurnPoolTokens(ctx, types.ProviderRewardsDistributionPool, tokensToBurn)
+	err := k.BurnPoolTokens(ctx, types.ProviderRewardsDistributionPool, tokensToBurn)
 	if err != nil {
 		utils.LavaFormatError("Failed to burn left over bonus rewards", err, utils.LogAttr("amount", tokensToBurn.String()))
 	}

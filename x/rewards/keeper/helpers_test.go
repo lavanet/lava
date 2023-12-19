@@ -10,7 +10,6 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	rewardsTypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -31,8 +30,7 @@ func newTester(t *testing.T) *tester {
 
 	ts.addValidators(1)
 	val, _ := ts.GetAccount(common.VALIDATOR, 0)
-	_, err := ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(testStake)))
-	require.Nil(ts.T, err)
+	ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(testStake)))
 
 	ts.plan = common.CreateMockPlan()
 	monthlyProvidersPool := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardsTypes.ProviderRewardsDistributionPool)

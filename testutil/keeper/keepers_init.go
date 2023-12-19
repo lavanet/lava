@@ -315,7 +315,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 
 	err = ks.BankKeeper.AddToBalance(
 		p.ProvidersAllocationPool.GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
-		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
+		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.Nil(t, err)
 
 	ctx = ctx.WithBlockTime(time.Now())
