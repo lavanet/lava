@@ -168,13 +168,11 @@ func (k mockBankKeeper) SetBalance(ctx sdk.Context, addr sdk.AccAddress, amounts
 func (k mockBankKeeper) AddToBalance(addr sdk.AccAddress, amounts sdk.Coins) error {
 	if _, ok := balance[addr.String()]; ok {
 		for _, coin := range amounts {
-			fmt.Printf("before balance[addr.String()].String(): %v\n", balance[addr.String()].String())
 			balance[addr.String()] = balance[addr.String()].Add(coin)
 		}
 	} else {
 		balance[addr.String()] = amounts
 	}
-	fmt.Printf("after balance[addr.String()].String(): %v\n", balance[addr.String()].String())
 	return nil
 }
 

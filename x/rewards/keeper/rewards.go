@@ -29,16 +29,16 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 			utils.Attribute{Key: "distribution_pool_balance", Value: distributionPoolBalance.String()},
 			utils.Attribute{Key: "blocks_to_next_timer_expiry", Value: strconv.FormatInt(blocksToNextTimerExpiry, 10)},
 		)
-	}
+	} else {
+		coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards))
 
-	coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards))
-
-	// distribute rewards to validators (same as Cosmos mint module)
-	err := k.addCollectedFees(ctx, coins)
-	if err != nil {
-		utils.LavaFormatError("critical - could not send validators rewards to fee collector", err,
-			utils.Attribute{Key: "rewards", Value: coins.String()},
-		)
+		// distribute rewards to validators (same as Cosmos mint module)
+		err := k.addCollectedFees(ctx, coins)
+		if err != nil {
+			utils.LavaFormatError("critical - could not send validators rewards to fee collector", err,
+				utils.Attribute{Key: "rewards", Value: coins.String()},
+			)
+		}
 	}
 }
 
