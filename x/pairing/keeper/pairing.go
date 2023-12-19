@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 	"math"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -15,7 +16,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error) {
+func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error) {
 	// TODO: add support for spec changes
 	foundAndActive, _, providersType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !foundAndActive {
@@ -111,16 +112,16 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, err
 	}
 
-	providers, _, err = k.getPairingForClient(ctx, chainID, clientAddress, uint64(ctx.BlockHeight()), project)
+	providers, _, err = k.getPairingForClient(ctx, chainID, uint64(ctx.BlockHeight()), project)
 	return providers, err
 }
 
 // function used to get a new pairing from provider and client
 // first argument has all metadata, second argument is only the addresses
-func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64, project projectstypes.Project) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, errorRet error) {
+func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint64, project projectstypes.Project) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, errorRet error) {
 	var strictestPolicy *planstypes.Policy
 
-	epoch, providersType, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
+	epoch, providersType, err := k.VerifyPairingData(ctx, chainID, block)
 	if err != nil {
 		return nil, 0, fmt.Errorf("invalid pairing data: %s", err)
 	}
@@ -302,7 +303,7 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 	return slices.Min(slice), effectiveTotalCuOfProject
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress, providerAddress sdk.AccAddress, reqEpoch uint64, project projectstypes.Project) (isValidPairing bool, allowedCU, pairedProviders uint64, errorRet error) {
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, providerAddress sdk.AccAddress, reqEpoch uint64, project projectstypes.Project) (isValidPairing bool, allowedCU, pairedProviders uint64, errorRet error) {
 	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, reqEpoch)
 	if err != nil {
 		return false, allowedCU, 0, err
@@ -310,8 +311,12 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 	if epoch != reqEpoch {
 		return false, allowedCU, 0, utils.LavaFormatError("requested block is not an epoch start", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "requested", Value: reqEpoch})
 	}
+	clientAddr, err := sdk.AccAddressFromBech32(project.Subscription)
+	if err != nil {
+		return false, allowedCU, 0, err
+	}
 
-	validAddresses, allowedCU, err := k.getPairingForClient(ctx, chainID, clientAddress, epoch, project)
+	validAddresses, allowedCU, err := k.getPairingForClient(ctx, chainID, epoch, project)
 	if err != nil {
 		return false, allowedCU, 0, err
 	}
@@ -322,9 +327,9 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 			// panic:ok: provider address saved on chain must be valid
 			utils.LavaFormatPanic("critical: invalid provider address for payment", err,
 				utils.Attribute{Key: "chainID", Value: chainID},
-				utils.Attribute{Key: "client", Value: clientAddress},
-				utils.Attribute{Key: "provider", Value: providerAccAddr},
-				utils.Attribute{Key: "epochBlock", Value: epoch},
+				utils.Attribute{Key: "client", Value: clientAddr.String()},
+				utils.Attribute{Key: "provider", Value: providerAccAddr.String()},
+				utils.Attribute{Key: "epochBlock", Value: strconv.FormatUint(epoch, 10)},
 			)
 		}
 

@@ -166,7 +166,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		isValidPairing, allowedCU, servicersToPair, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.SpecId,
-			clientAddr,
 			providerAddr,
 			uint64(relay.Epoch),
 			project,

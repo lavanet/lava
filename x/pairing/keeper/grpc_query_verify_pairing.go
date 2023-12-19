@@ -38,7 +38,7 @@ func (k Keeper) VerifyPairing(goCtx context.Context, req *types.QueryVerifyPairi
 		return nil, err
 	}
 
-	isValidPairing, cuPerEpoch, providersToPair, err := k.ValidatePairingForClient(ctx, req.ChainID, clientAddr, providerAddr, req.Block, project)
+	isValidPairing, cuPerEpoch, providersToPair, err := k.ValidatePairingForClient(ctx, req.ChainID, providerAddr, req.Block, project)
 
 	return &types.QueryVerifyPairingResponse{Valid: isValidPairing, PairedProviders: providersToPair, CuPerEpoch: cuPerEpoch, ProjectId: project.Index}, err
 }
