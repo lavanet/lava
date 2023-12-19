@@ -548,7 +548,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	// this, we'll call the reward calculation function directly with a fabricated reward just to
 	// verify that the delegator gets nothing from the total reward
 	fakeReward := sdk.NewInt(testStake)
-	providerReward, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, providerAcc.Addr, ts.spec.Index,
+	providerReward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, providerAcc.Addr, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, true, true)
 	require.Nil(t, err)
 	require.True(t, fakeReward.Equal(providerReward)) // if the delegator got anything, this would fail
@@ -612,11 +612,11 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	// verify that the delegator gets nothing from the total reward from provider1 but does get
 	// reward from provider
 	fakeReward := sdk.NewInt(testStake)
-	provider1Reward, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider1Acc.Addr, ts.spec.Index,
+	provider1Reward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider1Acc.Addr, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, false, true)
 	require.Nil(t, err)
 	require.True(t, fakeReward.Equal(provider1Reward)) // if the delegator got anything, this would fail
-	providerReward, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, providerAcc.Addr, ts.spec.Index,
+	providerReward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, providerAcc.Addr, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, false, true)
 	require.Nil(t, err)
 	require.False(t, fakeReward.Equal(providerReward)) // the delegator should have rewards

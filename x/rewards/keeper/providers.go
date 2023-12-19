@@ -25,6 +25,7 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 	total := k.TotalPoolTokens(ctx, types.ProviderDistributionPool)
 	totalRewarded := sdk.ZeroInt()
+	totalToSendRewarded := sdk.ZeroInt()
 	specs := k.SpecEmissionParts(ctx)
 	for _, spec := range specs {
 		basepays, totalbasepay := k.SpecProvidersBasePay(ctx, spec.ChainID)
@@ -41,14 +42,15 @@ func (k Keeper) DistributeMonthlyBonusRewards(ctx sdk.Context) {
 			if err != nil {
 				continue
 			}
-			_, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, reward, string(types.ProviderDistributionPool), false, false, false)
+			_, totalSent, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, reward, string(types.ProviderDistributionPool), false, false, false)
 			if err != nil {
 				utils.LavaFormatError("Failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 			}
+			totalToSendRewarded = totalToSendRewarded.Add(totalSent)
 		}
 	}
 	k.removeAllBasePay(ctx)
-	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, string(types.ProviderDistributionPool), subscriptionTypes.ModuleName, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalRewarded)))
+	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, string(types.ProviderDistributionPool), subscriptionTypes.ModuleName, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalToSendRewarded)))
 	if err != nil {
 		utils.LavaFormatError("Failed to send bonus rewards to subscription module", err, utils.LogAttr("amount", totalRewarded.String()))
 	}
