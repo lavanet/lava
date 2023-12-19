@@ -272,20 +272,23 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 				utils.LavaFormatWarning("subscription auto renewal failed. removing subscription", err,
 					utils.Attribute{Key: "consumer", Value: sub.Consumer},
 				)
-				k.RemoveExpiredSubscription(ctx, consumer, block)
+				k.RemoveExpiredSubscription(ctx, consumer, block, sub.PlanIndex, sub.PlanBlock)
 			}
 		} else {
-			k.RemoveExpiredSubscription(ctx, consumer, block)
+			k.RemoveExpiredSubscription(ctx, consumer, block, sub.PlanIndex, sub.PlanBlock)
 		}
 	}
 }
 
-func (k Keeper) RemoveExpiredSubscription(ctx sdk.Context, consumer string, block uint64) {
+func (k Keeper) RemoveExpiredSubscription(ctx sdk.Context, consumer string, block uint64, planIndex string, planBlock uint64) {
 	// delete all projects before deleting
 	k.delAllProjectsFromSubscription(ctx, consumer)
 
 	// delete subscription effective now (don't wait for end of epoch)
 	k.subsFS.DelEntry(ctx, consumer, block)
+
+	// decrease plan ref count
+	k.plansKeeper.PutPlan(ctx, planIndex, planBlock)
 
 	details := map[string]string{"consumer": consumer}
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ExpireSubscriptionEventName, details, "subscription expired")
