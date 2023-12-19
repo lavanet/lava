@@ -7,8 +7,5 @@ import (
 
 // BeginBlocker calculates the validators block rewards and transfers them to the fee collector
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
-	err := k.DistributeBlockReward(ctx)
-	if err != nil {
-		panic(err)
-	}
+	k.DistributeBlockReward(ctx)
 }

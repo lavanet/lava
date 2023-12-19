@@ -12,7 +12,7 @@ import (
 	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
-func (k Keeper) DistributeBlockReward(ctx sdk.Context) error {
+func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	// get params for validator rewards calculation
 	bondedTargetFactor := k.bondedTargetFactor(ctx)
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
@@ -29,7 +29,6 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) error {
 			utils.Attribute{Key: "distribution_pool_balance", Value: distributionPoolBalance.String()},
 			utils.Attribute{Key: "blocks_to_next_timer_expiry", Value: strconv.FormatInt(blocksToNextTimerExpiry, 10)},
 		)
-		return nil
 	}
 
 	coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards))
@@ -37,10 +36,10 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) error {
 	// distribute rewards to validators (same as Cosmos mint module)
 	err := k.addCollectedFees(ctx, coins)
 	if err != nil {
-		return err
+		utils.LavaFormatError("critical - could not send validators rewards to fee collector", err,
+			utils.Attribute{Key: "rewards", Value: coins.String()},
+		)
 	}
-
-	return nil
 }
 
 // addCollectedFees transfer the validators block rewards from the validators distribution pool to
