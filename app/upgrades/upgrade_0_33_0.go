@@ -12,13 +12,13 @@ import (
 	"github.com/lavanet/lava/app/keepers"
 )
 
-type Upgrade_0_32_0_Info struct {
+type Upgrade_0_33_0_Info struct {
 	ExpeditedMinDeposit   sdk.Coins
 	ExpeditedThreshold    math.LegacyDec
 	ExpeditedVotingPeriod time.Duration
 }
 
-func (u *Upgrade_0_32_0_Info) FromPlan(plan upgradetypes.Plan) error {
+func (u *Upgrade_0_33_0_Info) FromPlan(plan upgradetypes.Plan) error {
 	info := plan.Info
 	intermediaryInfo := struct {
 		ExpeditedMinDeposit   string `json:"expedited_min_deposit"`
@@ -45,11 +45,11 @@ func (u *Upgrade_0_32_0_Info) FromPlan(plan upgradetypes.Plan) error {
 	return nil
 }
 
-var Upgrade_0_32_0 = Upgrade{
-	UpgradeName: "v0.32.0",
+var Upgrade_0_33_0 = Upgrade{
+	UpgradeName: "v0.33.0",
 	CreateUpgradeHandler: func(mm *module.Manager, configurator module.Configurator, _ BaseAppParamManager, keepers *keepers.LavaKeepers) upgradetypes.UpgradeHandler {
 		return func(ctx sdk.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-			var info Upgrade_0_32_0_Info
+			var info Upgrade_0_33_0_Info
 			err := info.FromPlan(plan)
 			if err != nil {
 				return nil, err
