@@ -14,9 +14,7 @@ import (
 func (k Keeper) SetAdjustment(ctx sdk.Context, adjustment types.Adjustment) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
 	b := k.cdc.MustMarshal(&adjustment)
-	store.Set(types.AdjustmentKey(
-		adjustment.Index,
-	), b)
+	store.Set([]byte(adjustment.Index), b)
 }
 
 // GetUniquePaymentStorageClientProvider returns a uniquePaymentStorageClientProvider from its index
@@ -25,9 +23,7 @@ func (k Keeper) GetAdjustment(
 	index string,
 ) (val types.Adjustment, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
-	b := store.Get(types.AdjustmentKey(
-		index,
-	))
+	b := store.Get([]byte(index))
 	if b == nil {
 		return val, false
 	}
@@ -42,9 +38,7 @@ func (k Keeper) RemoveAdjustment(
 	index string,
 ) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
-	store.Delete(types.AdjustmentKey(
-		index,
-	))
+	store.Delete([]byte(index))
 }
 
 // GetAllUniquePaymentStorageClientProvider returns all uniquePaymentStorageClientProvider
@@ -85,12 +79,23 @@ func (k Keeper) AppendAdjustment(ctx sdk.Context, consumer string, provider stri
 	// this epoch adjustment = usageWithThisProvider / totalConsumerUsage
 	// adjustment = sum(epoch_adjustment * cu_used_this_epoch) / total_used_cu
 	// so we need to save:
-	// 1. sum(epoch_adjustment * cu_used_this_epoch) = sum(usageWithThisProvider)
+	// 1. sum(epoch_adjustment * total_cu_used_this_epoch)
 	// 2. total_used_cu = sum(totalConsumerUsage)
 
+	maxRewardsBoost := int64(5) // TODO: yarom, this needs to be read from rewards module
+
+	// check for adjustment limits: adjustment = min(1,1/rewardsMaxBoost * epoch_sum_cu/cu_with_provider)
+	if totalConsumerUsage >= uint64(maxRewardsBoost)*usageWithThisProvider {
+		// epoch adjustment is 1
+		adjustment.TotalUsage += totalConsumerUsage
+		adjustment.AdjustedUsage += totalConsumerUsage
+	} else {
+		// totalConsumerUsage < uint64(maxRewardsBoost)*usageWithThisProvider
+		adjustment.TotalUsage += totalConsumerUsage
+		// epoch adjustment is (1/maxRewardsBoost * totalConsumerUsage/usageWithThisProvider) * totalConsumerUsage
+		adjustment.AdjustedUsage += (totalConsumerUsage / uint64(maxRewardsBoost)) * (totalConsumerUsage / usageWithThisProvider)
+	}
 	// we need to append, in both cases of existing adjustment or a not found one
-	adjustment.TotalUsage += totalConsumerUsage
-	adjustment.AdjustedUsage += usageWithThisProvider
 	adjustment.Index = index
 	k.SetAdjustment(ctx, adjustment)
 }
@@ -152,7 +157,7 @@ func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types
 			totalUsage := providerUsage[provider].total
 			totalAdjustedUsage := providerUsage[provider].adjusted
 			// indexes may repeat but we only need to handle each provider once
-			sdk.OneDec().MulInt64(int64(totalAdjustedUsage)).QuoInt64(int64(totalUsage))
+			providerAdjustment[provider] = sdk.OneDec().MulInt64(int64(totalAdjustedUsage)).QuoInt64(int64(totalUsage))
 		}
 	}
 	return providerAdjustment

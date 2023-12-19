@@ -1139,9 +1139,9 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	basicUser := common.CreateNewAccount(_ctx, *keepers, 10000)
 	premiumUser := common.CreateNewAccount(_ctx, *keepers, 10000)
 
-	common.BuySubscription(t, _ctx, *keepers, *servers, freeUser, freePlan.Index)
-	common.BuySubscription(t, _ctx, *keepers, *servers, basicUser, basicPlan.Index)
-	common.BuySubscription(t, _ctx, *keepers, *servers, premiumUser, premiumPlan.Index)
+	common.BuySubscription(_ctx, *keepers, *servers, freeUser, freePlan.Index)
+	common.BuySubscription(_ctx, *keepers, *servers, basicUser, basicPlan.Index)
+	common.BuySubscription(_ctx, *keepers, *servers, premiumUser, premiumPlan.Index)
 
 	templates := []struct {
 		name           string
