@@ -1,5 +1,3 @@
-import { Logger } from "../logger/logger";
-
 export class ConsumerConsistency {
   private specId: string;
   private latestSeen: number;

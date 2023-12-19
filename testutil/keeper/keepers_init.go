@@ -27,6 +27,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/utils/sigs"
 	conflictkeeper "github.com/lavanet/lava/x/conflict/keeper"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -241,28 +242,31 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 	ks.TimerStoreKeeper = timerstorekeeper.NewKeeper(cdc)
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{}
+	init_balance()
 	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	ks.SlashingKeeper = slashingkeeper.NewKeeper(cdc, legacyCdc, slashingStoreKey, ks.StakingKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace)
-	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec)
+	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace, ks.StakingKeeper)
+	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.StakingKeeper)
 	ks.FixationStoreKeeper = fixationkeeper.NewKeeper(cdc, ks.TimerStoreKeeper, ks.Epochstorage.BlocksToSaveRaw)
 	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.StakingKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)
-	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)
+	// register the staking hooks
+	ks.StakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(ks.Dualstaking.Hooks()))
+	ks.SlashingKeeper = slashingkeeper.NewKeeper(cdc, legacyCdc, slashingStoreKey, ks.StakingKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper, ks.StakingKeeper)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage, ks.FixationStoreKeeper)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
 	ks.Downtime = downtimekeeper.NewKeeper(cdc, downtimeKey, downtimeParamsSubspace, ks.Epochstorage)
 	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Spec, ks.Epochstorage, ks.Downtime, ks.StakingKeeper, ks.Dualstaking, authtypes.FeeCollectorName, ks.TimerStoreKeeper)
-	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans, ks.Dualstaking, ks.Rewards, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
+	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans, ks.Dualstaking, ks.Rewards, ks.FixationStoreKeeper, ks.TimerStoreKeeper, ks.StakingKeeper)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime, ks.Dualstaking, &ks.StakingKeeper, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
 	ks.ParamsKeeper = paramsKeeper
-	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec)
+	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec, ks.StakingKeeper)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	// Initialize params
 	stakingparams := stakingtypes.DefaultParams()
-	stakingparams.BondDenom = epochstoragetypes.TokenDenom
+	stakingparams.BondDenom = commonconsts.TestTokenDenom
 	ks.StakingKeeper.SetParams(ctx, stakingparams)
 	slashingParams := slashingtypes.DefaultParams()
 	ks.SlashingKeeper.SetParams(ctx, slashingParams)
@@ -280,11 +284,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 	ks.Downtime.SetParams(ctx, downtimev1.DefaultParams())
 	ks.Rewards.SetParams(ctx, rewardstypes.DefaultParams())
-
-	// register the staking hooks
-	ks.StakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(ks.Dualstaking.Hooks()),
-	)
 
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
 
@@ -311,7 +310,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 	p := RewardsPools{}
 	err := ks.BankKeeper.AddToBalance(
 		p.ValidatorsAllocationPool.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
-		sdk.NewCoins(sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
+		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.Nil(t, err)
 
 	err = ks.BankKeeper.AddToBalance(

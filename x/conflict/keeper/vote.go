@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"golang.org/x/exp/slices"
 )
 
@@ -58,7 +57,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 	secondProviderVotes := sdk.ZeroInt()
 	noneProviderVotes := sdk.ZeroInt()
 	var providersWithoutVote []string
-	rewardPool := sdk.NewCoin(epochstoragetypes.TokenDenom, sdk.ZeroInt())
+	rewardPool := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
 	rewardCount := math.ZeroInt()
 	votersStake := map[string]math.Int{} // this is needed in order to give rewards for each voter according to their stake(so we dont take this data twice from the keeper)
 	ConsensusVote := true
@@ -123,7 +122,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 			providersWithoutVote = append(providersWithoutVote, vote.Address)
 			bail := stake
 			bail.Quo(sdk.NewIntFromUint64(BailStakeDiv))
-			k.pairingKeeper.JailEntry(ctx, accAddress, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(epochstoragetypes.TokenDenom, bail))
+			k.pairingKeeper.JailEntry(ctx, accAddress, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), bail))
 			slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, conflictVote.ChainID, SlashStakePercent)
 			rewardPool = rewardPool.Add(slashed)
 			if err != nil {
@@ -222,7 +221,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 					utils.Attribute{Key: "voteAddress", Value: winnersAddr},
 				)
 			} else {
-				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accWinnerAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, winnerReward.TruncateInt()))
+				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accWinnerAddress, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), winnerReward.TruncateInt()))
 				if !ok {
 					utils.LavaFormatWarning("failed to credit client", err)
 				}
@@ -249,7 +248,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 					)
 					continue
 				}
-				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accAddress, sdk.NewCoin(epochstoragetypes.TokenDenom, rewardVoter.TruncateInt()))
+				ok, err := k.pairingKeeper.CreditStakeEntry(ctx, conflictVote.ChainID, accAddress, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), rewardVoter.TruncateInt()))
 				if !ok {
 					details := map[string]string{}
 					if err != nil {

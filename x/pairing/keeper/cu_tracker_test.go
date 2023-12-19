@@ -249,12 +249,24 @@ func TestTrackedCuWithQos(t *testing.T) {
 			}
 			ts.relayPaymentWithoutPay(relayPaymentMessage2, true)
 
-			balance1 := ts.GetBalance(provider1Acc.Addr)
-			balance2 := ts.GetBalance(provider2Acc.Addr)
-
 			// advance month + blocksToSave + 1 to trigger the provider monthly payment
 			ts.AdvanceMonths(1)
 			ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+			balance1 := ts.GetBalance(provider1Acc.Addr)
+			balance2 := ts.GetBalance(provider2Acc.Addr)
+
+			reward, err := ts.QueryDualstakingDelegatorRewards(provider1Acc.Addr.String(), provider1Acc.Addr.String(), ts.spec.Index)
+			require.Nil(ts.T, err)
+			require.Equal(ts.T, tt.p1ExpectedReward, reward.Rewards[0].Amount.Amount.Int64())
+			_, err = ts.TxDualstakingClaimRewards(provider1Acc.Addr.String(), provider1Acc.Addr.String())
+			require.Nil(ts.T, err)
+
+			reward, err = ts.QueryDualstakingDelegatorRewards(provider2Acc.Addr.String(), provider2Acc.Addr.String(), ts.spec.Index)
+			require.Nil(ts.T, err)
+			require.Equal(ts.T, tt.p2ExpectedReward, reward.Rewards[0].Amount.Amount.Int64())
+			_, err = ts.TxDualstakingClaimRewards(provider2Acc.Addr.String(), provider2Acc.Addr.String())
+			require.Nil(ts.T, err)
 
 			newBalance1 := ts.GetBalance(provider1Acc.Addr)
 			newBalance2 := ts.GetBalance(provider2Acc.Addr)
@@ -349,6 +361,12 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	reward, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), ts.spec.Index)
+	require.Nil(ts.T, err)
+	require.Equal(ts.T, originalPlanPrice, reward.Rewards[0].Amount.Amount.Int64())
+	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
+	require.Nil(ts.T, err)
 
 	balance := ts.GetBalance(providerAcc.Addr)
 	require.Equal(t, balanceBeforePay+originalPlanPrice, balance)
@@ -453,6 +471,9 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	_, err = ts.TxDualstakingClaimRewards(providerAcct.Addr.String(), providerAcct.Addr.String())
+	require.Nil(ts.T, err)
 
 	balance := ts.GetBalance(providerAcct.Addr)
 	require.Equal(t, expectedTotalPayout, uint64(balance-oldBalance))
@@ -576,6 +597,9 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
+	_, err = ts.TxDualstakingClaimRewards(providerAcct.Addr.String(), providerAcct.Addr.String())
+	require.Nil(ts.T, err)
+
 	balance := ts.GetBalance(providerAcct.Addr)
 	require.Equal(t, expectedTotalPayout, uint64(balance-oldBalance))
 
@@ -613,8 +637,14 @@ func TestFrozenProviderGetReward(t *testing.T) {
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
-	balance := ts.GetBalance(providerAcc.Addr)
 	planPrice := ts.plan.Price.Amount.Int64()
+	reward, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), ts.spec.Index)
+	require.Nil(ts.T, err)
+	require.Equal(ts.T, planPrice, reward.Rewards[0].Amount.Amount.Int64())
+	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
+	require.Nil(ts.T, err)
+
+	balance := ts.GetBalance(providerAcc.Addr)
 	require.Equal(t, balanceBeforePay+planPrice, balance)
 }
 

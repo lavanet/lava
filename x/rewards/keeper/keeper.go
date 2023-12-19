@@ -93,10 +93,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // redeclaring BeginBlock for testing (this is not called outside of unit tests)
 func (k Keeper) BeginBlock(ctx sdk.Context) {
-	err := k.DistributeBlockReward(ctx)
-	if err != nil {
-		panic(err)
-	}
+	k.DistributeBlockReward(ctx)
 }
 
 // bondedTargetFactor calculates the bonded target factor which is used to calculate the validators

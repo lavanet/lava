@@ -15,7 +15,10 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
+
+const KeyRingPasswordFlag = "enter-keyring-password"
 
 func CreateLavaVisorWrapCobraCommand() *cobra.Command {
 	cmdLavavisorWrap := &cobra.Command{
@@ -37,13 +40,34 @@ provider example:
 	flags.AddQueryFlagsToCmd(cmdLavavisorWrap)
 	cmdLavavisorWrap.Flags().String("directory", os.ExpandEnv("~/"), "Protocol Flags Directory")
 	cmdLavavisorWrap.Flags().Bool("auto-download", false, "Automatically download missing binaries")
+	cmdLavavisorWrap.Flags().Bool(KeyRingPasswordFlag, false, "If you are using keyring OS you will need to enter the keyring password for it.")
 	cmdLavavisorWrap.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdLavavisorWrap.Flags().String("cmd", "", "the command to execute")
 	cmdLavavisorWrap.MarkFlagRequired("cmd")
 	return cmdLavavisorWrap
 }
 
+func getKeyringPassword(cmd *cobra.Command) *processmanager.KeyRingPassword {
+	password, err := cmd.Flags().GetBool(KeyRingPasswordFlag)
+	if err != nil {
+		utils.LavaFormatFatal("failed fetching flag", err)
+	}
+	var passphrase string
+	if password {
+		utils.LavaFormatInfo("[Lavavisor] Please enter the keyring password:")
+		passwordBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
+		if err != nil {
+			utils.LavaFormatFatal("failed reading password from user", err)
+		}
+		passphrase = string(passwordBytes)
+		utils.LavaFormatInfo("[Lavavisor] Password received")
+	}
+	return &processmanager.KeyRingPassword{Password: password, Passphrase: passphrase}
+}
+
 func LavavisorWrap(cmd *cobra.Command) error {
+	keyRingPassword := getKeyringPassword(cmd)
+
 	dir, err := cmd.Flags().GetString("directory")
 	if err != nil {
 		return err
@@ -80,11 +104,11 @@ func LavavisorWrap(cmd *cobra.Command) error {
 	}
 
 	lavavisor := LavaVisor{}
-	err = lavavisor.Wrap(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, runCommand)
+	err = lavavisor.Wrap(ctx, txFactory, clientCtx, lavavisorPath, autoDownload, runCommand, keyRingPassword)
 	return err
 }
 
-func (lv *LavaVisor) Wrap(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool, runCommand string) (err error) {
+func (lv *LavaVisor) Wrap(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, lavavisorPath string, autoDownload bool, runCommand string, keyringPassword *processmanager.KeyRingPassword) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -127,7 +151,7 @@ func (lv *LavaVisor) Wrap(ctx context.Context, txFactory tx.Factory, clientCtx c
 		}
 	}()
 
-	versionMonitor.StartProcess()
+	versionMonitor.StartProcess(keyringPassword)
 
 	// tear down
 	select {

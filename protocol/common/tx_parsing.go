@@ -28,6 +28,7 @@ type TxResultData struct {
 
 func ParseTransactionResult(parsedValues map[string]any) (retData TxResultData, err error) {
 	ret := TxResultData{}
+	utils.LavaFormatDebug("result", utils.LogAttr("parsedValues", parsedValues))
 	txHash, ok := parsedValues["txhash"]
 	if ok {
 		txHashStr, ok := txHash.(string)

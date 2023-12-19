@@ -38,6 +38,10 @@ var balance map[string]sdk.Coins = make(map[string]sdk.Coins)
 
 type mockBankKeeper struct{}
 
+func init_balance() {
+	balance = make(map[string]sdk.Coins)
+}
+
 func (k mockBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	return nil
 }

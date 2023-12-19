@@ -161,7 +161,9 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_30_0,
 	upgrades.Upgrade_0_30_1,
 	upgrades.Upgrade_0_30_2,
-	upgrades.Upgrade_remove_mint_add_rewards,
+	upgrades.Upgrade_0_31_0,
+	upgrades.Upgrade_0_31_1,
+	upgrades.Upgrade_0_32_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -235,9 +237,6 @@ var (
 		govtypes.ModuleName:                                              {authtypes.Burner},
 		ibctransfertypes.ModuleName:                                      {authtypes.Burner},
 		subscriptionmoduletypes.ModuleName:                               {authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.BondedPoolName:                            {authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.NotBondedPoolName:                         {authtypes.Burner, authtypes.Staking},
-		pairingmoduletypes.ModuleName:                                    {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsAllocationPoolName):   {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsDistributionPoolName): {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ProviderRewardsDistributionPool):       {authtypes.Burner, authtypes.Staking},
@@ -414,6 +413,7 @@ func New(
 		keys[specmoduletypes.StoreKey],
 		keys[specmoduletypes.MemStoreKey],
 		app.GetSubspace(specmoduletypes.ModuleName),
+		app.StakingKeeper,
 	)
 	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -426,6 +426,7 @@ func New(
 		app.BankKeeper,
 		app.AccountKeeper,
 		app.SpecKeeper,
+		app.StakingKeeper,
 	)
 	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -448,6 +449,7 @@ func New(
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
 		app.FixationStoreKeeper,
+		app.StakingKeeper,
 	)
 	plansModule := plansmodule.NewAppModule(appCodec, app.PlansKeeper)
 
@@ -508,6 +510,7 @@ func New(
 		app.RewardsKeeper,
 		app.FixationStoreKeeper,
 		app.TimerStoreKeeper,
+		app.StakingKeeper,
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -589,6 +592,7 @@ func New(
 		app.PairingKeeper,
 		app.EpochstorageKeeper,
 		app.SpecKeeper,
+		app.StakingKeeper,
 	)
 	conflictModule := conflictmodule.NewAppModule(appCodec, app.ConflictKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -813,6 +817,7 @@ func New(
 		NewAnteHandler(
 			app.AccountKeeper,
 			app.BankKeeper,
+			app.DualstakingKeeper,
 			encodingConfig.TxConfig.SignModeHandler(),
 			app.FeeGrantKeeper,
 			ante.DefaultSigVerificationGasConsumer),
