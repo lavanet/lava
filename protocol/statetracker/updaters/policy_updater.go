@@ -88,6 +88,7 @@ func (pu *PolicyUpdater) Update(latestBlock int64) {
 	defer pu.lock.RUnlock()
 	policyUpdated, err := pu.eventTracker.getLatestPolicyModifyEvents(latestBlock, pu.consumerAddress)
 	if policyUpdated || err != nil {
+		utils.LavaFormatInfo("Policy Changed, fetching new policy and updating the effective policy")
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
 		policy, err := pu.policyFetcher.GetEffectivePolicy(ctx, pu.consumerAddress, pu.chainId)
@@ -103,3 +104,5 @@ func (pu *PolicyUpdater) Update(latestBlock int64) {
 		}
 	}
 }
+
+// TODO ranlavanet: we cant update immidietly because the policy changes will take effect only next epoch... meaning we need to know when a new epoch hit?

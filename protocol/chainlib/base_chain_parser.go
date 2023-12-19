@@ -127,6 +127,7 @@ func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy *plantypes.Policy, ch
 func (bcp *BaseChainParser) SetPolicy(policyInformation map[string]struct{}) error {
 	bcp.rwLock.Lock()
 	defer bcp.rwLock.Unlock()
+	utils.LavaFormatInfo("BaseChainParser Setting Policy", utils.LogAttr("policy_information", policyInformation))
 	// reset the current one in case we configured it previously
 	configuredExtensions := make(map[extensionslib.ExtensionKey]*spectypes.Extension)
 	for collectionKey, apiCollection := range bcp.apiCollections {

@@ -164,14 +164,11 @@ func (et *EventTracker) getLatestPolicyModifyEvents(latestBlock int64, consumerA
 	if et.latestUpdatedBlock != latestBlock {
 		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
 	}
-	// TODO ranlavanet: we cant update immidietly because the policy changes will take effect only next epoch... meaning we need to know when a new epoch hit?
 	for _, tx := range et.blockResults.TxsResults {
 		for _, event := range tx.Events {
 			if event.Type == utils.EventPrefix+projecttypes.PolicyUpdateEventName {
-				utils.LavaFormatInfo("Policy Updated", utils.LogAttr("event", event))
 				for _, eventAttr := range event.Attributes {
 					if eventAttr.Key == "project_ids" {
-						utils.LavaFormatInfo("comparing values", utils.LogAttr("eventAttr.Value", eventAttr.Value), utils.LogAttr("consumerAddress", consumerAddress))
 						if strings.Contains(eventAttr.Value, consumerAddress) {
 							return true, nil
 						}
