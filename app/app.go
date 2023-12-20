@@ -490,6 +490,7 @@ func New(
 		app.DowntimeKeeper,
 		app.StakingKeeper,
 		app.DualstakingKeeper,
+		app.DistrKeeper,
 		authtypes.FeeCollectorName,
 		app.TimerStoreKeeper,
 	)

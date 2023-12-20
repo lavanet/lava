@@ -64,6 +64,7 @@ type DualStakingKeeper interface {
 
 type RewardsKeeper interface {
 	AggregateRewards(ctx sdk.Context, provider, chainid string, adjustmentDenom uint64, rewards math.Int)
+	ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward math.Int, senderModule string) (updatedReward math.Int, err error)
 }
 
 type StakingKeeper interface {

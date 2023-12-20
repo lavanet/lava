@@ -20,13 +20,15 @@ type (
 		memKey     storetypes.StoreKey
 		paramstore paramtypes.Subspace
 
-		bankKeeper        types.BankKeeper
-		accountKeeper     types.AccountKeeper
-		specKeeper        types.SpecKeeper
-		epochstorage      types.EpochstorageKeeper
-		downtimeKeeper    types.DowntimeKeeper
-		stakingKeeper     types.StakingKeeper
-		dualstakingKeeper types.DualStakingKeeper
+		bankKeeper         types.BankKeeper
+		accountKeeper      types.AccountKeeper
+		specKeeper         types.SpecKeeper
+		epochstorage       types.EpochstorageKeeper
+		downtimeKeeper     types.DowntimeKeeper
+		stakingKeeper      types.StakingKeeper
+		dualstakingKeeper  types.DualStakingKeeper
+		distributionKeeper types.DistributionKeeper
+
 		// account name used by the distribution module to reward validators
 		feeCollectorName string
 
@@ -50,6 +52,7 @@ func NewKeeper(
 	downtimeKeeper types.DowntimeKeeper,
 	stakingKeeper types.StakingKeeper,
 	dualstakingKeeper types.DualStakingKeeper,
+	distributionKeeper types.DistributionKeeper,
 	feeCollectorName string,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
@@ -64,13 +67,14 @@ func NewKeeper(
 		memKey:     memKey,
 		paramstore: ps,
 
-		bankKeeper:        bankKeeper,
-		accountKeeper:     accountKeeper,
-		specKeeper:        specKeeper,
-		epochstorage:      epochStorageKeeper,
-		downtimeKeeper:    downtimeKeeper,
-		stakingKeeper:     stakingKeeper,
-		dualstakingKeeper: dualstakingKeeper,
+		bankKeeper:         bankKeeper,
+		accountKeeper:      accountKeeper,
+		specKeeper:         specKeeper,
+		epochstorage:       epochStorageKeeper,
+		downtimeKeeper:     downtimeKeeper,
+		stakingKeeper:      stakingKeeper,
+		dualstakingKeeper:  dualstakingKeeper,
+		distributionKeeper: distributionKeeper,
 
 		feeCollectorName: feeCollectorName,
 	}

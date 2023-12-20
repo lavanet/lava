@@ -181,6 +181,13 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
+		// Transfer some of the total monthly reward to validators contribution and community pool
+		totalMonthlyReward, err = k.rewardsKeeper.ContributeToValidatorsAndCommunityPool(ctx, totalMonthlyReward, types.ModuleName)
+		if err != nil {
+			utils.LavaFormatError("could not contribute to validators and community pool", err,
+				utils.Attribute{Key: "total_monthly_reward", Value: totalMonthlyReward.String() + k.stakingKeeper.BondDenom(ctx)})
+		}
+
 		// aggregate the reward for the provider
 		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, 1, totalMonthlyReward)
 

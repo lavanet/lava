@@ -1,8 +1,11 @@
 package keeper
 
 import (
+	"fmt"
+
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
 	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
@@ -120,4 +123,91 @@ func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string) ([]types.B
 		totalBasePay = totalBasePay.Add(basepay.Total)
 	}
 	return basepays, totalBasePay
+}
+
+// ContributeToValidatorsAndCommunityPool transfers some of the providers' rewards to the validators and community pool
+// the function return the updated reward after the participation deduction
+func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward math.Int, senderModule string) (updatedReward math.Int, err error) {
+	communityTax := k.distributionKeeper.GetParams(ctx).CommunityTax
+	if communityTax.Equal(sdk.OneDec()) {
+		err := k.fundCommunityPoolFromModule(ctx, reward, senderModule)
+		if err != nil {
+			return reward, utils.LavaFormatError("failed funding the community pool with whole reward", err,
+				utils.Attribute{Key: "reward", Value: reward.String()},
+				utils.Attribute{Key: "community_tax", Value: communityTax.String()},
+			)
+		}
+		return sdk.ZeroInt(), nil
+	}
+
+	// validators_participation = validators_participation_param / (1-community_tax)
+	validatorsParticipationParam := k.GetParams(ctx).ValidatorsSubscriptionParticipation
+	validatorsParticipation := validatorsParticipationParam.Quo((sdk.OneDec().Sub(communityTax)))
+	if validatorsParticipation.GT(sdk.OneDec()) {
+		return reward, utils.LavaFormatError("validators participation bigger than 100%", fmt.Errorf("validators participation calc failed"),
+			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
+			utils.Attribute{Key: "validators_subscription_participation_param", Value: validatorsParticipationParam.String()},
+			utils.Attribute{Key: "community_tax", Value: communityTax.String()},
+		)
+	}
+
+	// community_participation = (community_tax + validators_participation_param) - validators_participation
+	communityParticipation := communityTax.Add(validatorsParticipationParam).Sub(validatorsParticipation)
+	if communityParticipation.IsNegative() || communityParticipation.GT(sdk.OneDec()) {
+		return reward, utils.LavaFormatError("community participation is negative or bigger than 100%", fmt.Errorf("community participation calc failed"),
+			utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
+			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
+			utils.Attribute{Key: "validators_subscription_participation_param", Value: validatorsParticipationParam.String()},
+			utils.Attribute{Key: "community_tax", Value: communityTax.String()},
+		)
+	}
+
+	// check the participation rewards are not more than 100%
+	if validatorsParticipation.Add(communityParticipation).GT(sdk.OneDec()) {
+		return reward, utils.LavaFormatError("validators and community participation parts are bigger than 100%", fmt.Errorf("validators and community participation aborted"),
+			utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
+			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
+		)
+	}
+
+	// send validators participation and update reward
+	validatorsParticipationReward := validatorsParticipation.MulInt(reward).TruncateInt()
+	coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsParticipationReward))
+	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, k.feeCollectorName, coins)
+	if err != nil {
+		return reward, utils.LavaFormatError("sending validators participation failed", err,
+			utils.Attribute{Key: "validators_participation_reward", Value: coins.String()},
+			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
+			utils.Attribute{Key: "reward", Value: reward.String()},
+		)
+	}
+	reward = reward.Sub(validatorsParticipationReward)
+
+	// send community participation and update reward
+	communityParticipationReward := communityParticipation.MulInt(reward).TruncateInt()
+	coins = sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), communityParticipationReward))
+	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, k.feeCollectorName, coins)
+	if err != nil {
+		return reward, utils.LavaFormatError("sending community participation failed", err,
+			utils.Attribute{Key: "community_participation_reward", Value: coins.String()},
+			utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
+			utils.Attribute{Key: "reward", Value: reward.String()},
+		)
+	}
+	reward = reward.Sub(communityParticipationReward)
+
+	return reward, nil
+}
+
+func (k Keeper) fundCommunityPoolFromModule(ctx sdk.Context, amount math.Int, senderModule string) error {
+	coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount))
+	if err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, distributiontypes.ModuleName, coins); err != nil {
+		return err
+	}
+
+	feePool := k.distributionKeeper.GetFeePool(ctx)
+	feePool.CommunityPool = feePool.CommunityPool.Add(sdk.NewDecCoinsFromCoins(coins...)...)
+	k.distributionKeeper.SetFeePool(ctx, feePool)
+
+	return nil
 }

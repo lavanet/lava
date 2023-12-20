@@ -186,6 +186,10 @@ func (k mockBankKeeper) SubFromBalance(addr sdk.AccAddress, amounts sdk.Coins) e
 	return nil
 }
 
+func (k mockBankKeeper) BlockedAddr(addr sdk.AccAddress) bool {
+	return false
+}
+
 type MockBlockStore struct {
 	height       int64
 	blockHistory map[int64]*tenderminttypes.Block
