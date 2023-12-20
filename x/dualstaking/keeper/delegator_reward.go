@@ -156,22 +156,22 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward math.Int, err error) {
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward math.Int, totalRewards math.Int, err error) {
 	block := uint64(ctx.BlockHeight())
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
 	if err != nil {
-		return math.ZeroInt(), utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
+		return math.ZeroInt(), math.ZeroInt(), utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
 			utils.Attribute{Key: "block", Value: block},
 		)
 	}
 	stakeEntry, err := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddr, epoch)
 	if err != nil {
-		return math.ZeroInt(), err
+		return math.ZeroInt(), math.ZeroInt(), err
 	}
 
 	delegations, err := k.GetProviderDelegators(ctx, providerAddr.String(), epoch)
 	if err != nil {
-		return math.ZeroInt(), utils.LavaFormatError("cannot get provider's delegators", err)
+		return math.ZeroInt(), math.ZeroInt(), utils.LavaFormatError("cannot get provider's delegators", err)
 	}
 
 	// make sure this is post boost when rewards pool is introduced
@@ -185,7 +185,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 		if !calcOnlyContributer {
 			err = k.PayContributors(ctx, senderModule, contributorAddresses, contributorReward, chainID)
 			if err != nil {
-				return math.ZeroInt(), err
+				return math.ZeroInt(), math.ZeroInt(), err
 			}
 		}
 	}
@@ -206,7 +206,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 		}
 	}
 
-	return fullProviderReward, nil
+	return fullProviderReward, totalReward, nil
 }
 
 // updateDelegatorsReward updates the delegator rewards map

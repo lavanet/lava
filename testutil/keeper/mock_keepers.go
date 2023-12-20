@@ -6,34 +6,41 @@ import (
 
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 // account keeper mock
 type mockAccountKeeper struct{}
 
-func (k mockAccountKeeper) IterateAccounts(ctx sdk.Context, process func(types.AccountI) (stop bool)) {
+func (k mockAccountKeeper) IterateAccounts(ctx sdk.Context, process func(authtypes.AccountI) (stop bool)) {
 }
 
-func (k mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) types.AccountI {
+func (k mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
 	return nil
 }
 
-func (k mockAccountKeeper) GetModuleAccount(ctx sdk.Context, module string) types.ModuleAccountI {
-	return nil
+func (k mockAccountKeeper) GetModuleAccount(ctx sdk.Context, module string) authtypes.ModuleAccountI {
+	moduleAddress := authtypes.NewModuleAddress(module).String()
+	baseAccount := authtypes.NewBaseAccount(nil, nil, 0, 0)
+	baseAccount.Address = moduleAddress
+	return authtypes.NewModuleAccount(baseAccount, module, authtypes.Burner, authtypes.Staking)
 }
 
 func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
 	return sdk.AccAddress([]byte(moduleName))
 }
 
-func (k mockAccountKeeper) SetModuleAccount(sdk.Context, types.ModuleAccountI) {
+func (k mockAccountKeeper) SetModuleAccount(sdk.Context, authtypes.ModuleAccountI) {
 }
 
 // mock bank keeper
 var balance map[string]sdk.Coins = make(map[string]sdk.Coins)
 
 type mockBankKeeper struct{}
+
+func init_balance() {
+	balance = make(map[string]sdk.Coins)
+}
 
 func (k mockBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	return nil
@@ -199,7 +206,7 @@ func (b *MockBlockStore) AdvanceBlock(blockTime time.Duration) {
 	if prevBlock, ok := b.blockHistory[b.height-1]; ok {
 		blockHeader.Time = prevBlock.Time.Add(blockTime)
 	} else {
-		blockHeader.Time = time.Now()
+		blockHeader.Time = time.Now().Add(blockTime)
 	}
 
 	// update the blockstore's block history with current block
@@ -263,4 +270,11 @@ func (b *MockBlockStore) LoadBlockMetaByHash(hash []byte) *tenderminttypes.Block
 
 func (b *MockBlockStore) DeleteLatestBlock() error {
 	return nil
+}
+
+// rewards pool mock
+type mockRewardsPool struct{}
+
+func (k mockRewardsPool) GetModuleAddress(moduleName string) sdk.AccAddress {
+	return sdk.AccAddress([]byte(moduleName))
 }

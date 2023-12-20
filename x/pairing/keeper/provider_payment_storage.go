@@ -64,6 +64,7 @@ func (k Keeper) GetAllProviderPaymentStorage(ctx sdk.Context) (list []types.Prov
 
 	return
 }
+
 func (k Keeper) GetProviderFromProviderPaymentStorage(providerPaymentStorage *types.ProviderPaymentStorage) (string, error) {
 	index := providerPaymentStorage.Index
 	// index consists of chain_epoch_providerAddress

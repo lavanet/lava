@@ -17,7 +17,7 @@ func (k Keeper) NextToMonthExpiry(goCtx context.Context, req *types.QueryNextToM
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	subAddrs, expiries := k.subsTS.GetFrontTimers(ctx, timertypes.BlockTime)
+	subAddrs, expiries, _ := k.subsTS.GetFrontTimers(ctx, timertypes.BlockTime)
 	if len(subAddrs) == 0 {
 		return &types.QueryNextToMonthExpiryResponse{}, nil
 	}

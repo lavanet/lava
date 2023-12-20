@@ -1,6 +1,8 @@
 package types
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	TimeFormat = "2006-January-02 15:04:05"

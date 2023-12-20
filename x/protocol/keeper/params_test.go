@@ -29,7 +29,7 @@ type testStruct struct {
 }
 
 func NewTestStruct(t *testing.T) *testStruct {
-	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
+	servers, keepers, _, _ctx := testkeeper.InitAllKeepers(t)
 
 	_ctx = testkeeper.AdvanceEpoch(_ctx, keepers)
 	ctx := sdk.UnwrapSDKContext(_ctx)

@@ -173,7 +173,7 @@ func (ts *TestStruct) BondDenom() string {
 func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMostPath string) TestStruct {
 	rand.InitRandomSeed()
 	ts := TestStruct{}
-	ts.Servers, ts.Keepers, ts.Ctx = keepertest.InitAllKeepers(t)
+	ts.Servers, ts.Keepers, _, ts.Ctx = keepertest.InitAllKeepers(t)
 
 	// init keepers state
 	var balance int64 = 100000000000
