@@ -8,7 +8,7 @@ const MONTHS_IN_YEAR = 12
 // adjusting for end-of-months differences if needed.
 func NextMonth(date time.Time) time.Time {
 	// End-of-month days are tricky because months differ in days counts.
-	// To avoid this complixity, we trim day-of-month greater than 28 back to
+	// To avoid this complexity, we trim day-of-month greater than 28 back to
 	// day 28, which all months always have (at the cost of the user possibly
 	// losing 1 (and up to 3) days of subscription in the first month.
 

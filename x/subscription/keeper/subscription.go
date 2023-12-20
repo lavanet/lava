@@ -3,7 +3,6 @@ package keeper
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -223,7 +222,6 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 }
 
 func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *types.Subscription, toPlanIndex string, toPlanBlock uint64) error {
-	date := ctx.BlockTime()
 	block := uint64(ctx.BlockHeight())
 
 	// Track CU for the previous subscription
@@ -231,7 +229,7 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 
 	if sub.DurationLeft == 0 {
 		// Subscription was already expired. Can't upgrade.
-		k.handleZeroDurationLeftForSubscription(ctx, block, date, sub)
+		k.handleZeroDurationLeftForSubscription(ctx, block, sub)
 		return utils.LavaFormatError("Trying to upgrade subscription, but subscription was already expired", nil,
 			utils.LogAttr("consumer", sub.Consumer))
 	}
@@ -250,13 +248,12 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 	sub.PlanIndex = toPlanIndex
 	sub.PlanBlock = toPlanBlock
 
-	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, date)
+	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch)
 
 	return nil
 }
 
 func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
-	date := ctx.BlockTime()
 	block := uint64(ctx.BlockHeight())
 	consumer := string(subkey)
 
@@ -268,7 +265,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 	k.addCuTrackerTimerForSubscription(ctx, block, &sub)
 
 	if sub.DurationLeft == 0 {
-		k.handleZeroDurationLeftForSubscription(ctx, block, date, &sub)
+		k.handleZeroDurationLeftForSubscription(ctx, block, &sub)
 		return
 	}
 
@@ -276,7 +273,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 
 	if sub.DurationLeft > 0 {
 		sub.DurationTotal += 1
-		k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, date)
+		k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block)
 	} else {
 		if sub.AutoRenewal {
 			// apply the DurationLeft decrease to 0 and buy an extra month
@@ -320,7 +317,7 @@ func (k Keeper) addCuTrackerTimerForSubscription(ctx sdk.Context, block uint64, 
 	}
 }
 
-func (k Keeper) handleZeroDurationLeftForSubscription(ctx sdk.Context, block uint64, blockTime time.Time, sub *types.Subscription) {
+func (k Keeper) handleZeroDurationLeftForSubscription(ctx sdk.Context, block uint64, sub *types.Subscription) {
 	// subscription duration has already reached zero before and should have
 	// been removed before. Extend duration by another month (without adding
 	// CUs) to allow smooth operation.
@@ -332,11 +329,11 @@ func (k Keeper) handleZeroDurationLeftForSubscription(ctx sdk.Context, block uin
 	)
 	// normally would panic! but can "recover" by auto-extending by 1 month
 	// (don't bother to modify sub.MonthExpiryTime to minimize state changes)
-	expiry := uint64(utils.NextMonth(blockTime).UTC().Unix())
+	expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
 	k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(sub.Consumer), []byte{})
 }
 
-func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *types.Subscription, block uint64, blockTime time.Time) {
+func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *types.Subscription, block uint64) {
 	// reset projects CU allowance for this coming month
 	k.projectsKeeper.SnapshotSubscriptionProjects(ctx, sub.Consumer, block)
 
@@ -345,7 +342,8 @@ func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *typ
 	sub.Block = block
 
 	// restart timer and append new (fixated) version of this subscription
-	expiry := uint64(utils.NextMonth(blockTime).UTC().Unix())
+	// the timer will expire in exactly one month from now
+	expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
 	sub.MonthExpiryTime = expiry
 	k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(sub.Consumer), []byte{})
 
