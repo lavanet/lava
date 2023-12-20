@@ -211,7 +211,7 @@ func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 
 			requestedBlock, _ := chainMessage.RequestedBlock()
 			require.Equal(t, test.requestedBlock, requestedBlock)
-			reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
+			reply, _, _, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)
 			require.NoError(t, err)
@@ -280,7 +280,7 @@ func TestSettingBlocksHeadersGrpc(t *testing.T) {
 			chainMessage.UpdateLatestBlockInMessage(test.block, true) // will update the request only if it's latest
 			requestedBlock, _ = chainMessage.RequestedBlock()
 			require.Equal(t, test.block, requestedBlock)
-			reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
+			reply, _, _, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
 			parserInput, err := FormatResponseForParsing(reply, chainMessage)
 			require.NoError(t, err)
