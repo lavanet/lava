@@ -175,10 +175,9 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		// TODO: deal with the reward's remainder (uint division...)
 		providerAdjustment, ok := adjustmentFactorForProvider[provider]
 		if !ok {
-			providerAdjustment = math.LegacyZeroDec()
+			providerAdjustment = sdk.OneDec().QuoInt64(int64(k.rewardsKeeper.MaxRewardBoost(ctx)))
 		}
-		// TODO: send the adjustment to rewards module and cap adjustment by rewards module params
-		_ = providerAdjustment
+
 		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
 
 		// calculate the provider reward (smaller than totalMonthlyReward
@@ -192,7 +191,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		}
 
 		// aggregate the reward for the provider
-		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, 1, totalMonthlyReward)
+		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, providerAdjustment, totalMonthlyReward)
 
 		// Note: if the reward function doesn't reward the provider
 		// because he was unstaked, we only print an error and not returning

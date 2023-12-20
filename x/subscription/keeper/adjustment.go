@@ -74,7 +74,10 @@ func (k Keeper) AdjustmentIndex(consumer string, provider string) string {
 
 func (k Keeper) AppendAdjustment(ctx sdk.Context, consumer string, provider string, totalConsumerUsage uint64, usageWithThisProvider uint64) {
 	index := k.AdjustmentIndex(consumer, provider)
-	adjustment, _ := k.GetAdjustment(ctx, index)
+	adjustment, found := k.GetAdjustment(ctx, index)
+	if !found {
+		adjustment = types.Adjustment{Index: index, AdjustedUsage: 0, TotalUsage: 0}
+	}
 	// adjustment = weighted average(adjustment/epoch)
 	// this epoch adjustment = usageWithThisProvider / totalConsumerUsage
 	// adjustment = sum(epoch_adjustment * cu_used_this_epoch) / total_used_cu
@@ -82,10 +85,10 @@ func (k Keeper) AppendAdjustment(ctx sdk.Context, consumer string, provider stri
 	// 1. sum(epoch_adjustment * total_cu_used_this_epoch)
 	// 2. total_used_cu = sum(totalConsumerUsage)
 
-	maxRewardsBoost := int64(5) // TODO: yarom, this needs to be read from rewards module
+	maxRewardsBoost := k.rewardsKeeper.MaxRewardBoost(ctx)
 
 	// check for adjustment limits: adjustment = min(1,1/rewardsMaxBoost * epoch_sum_cu/cu_with_provider)
-	if totalConsumerUsage >= uint64(maxRewardsBoost)*usageWithThisProvider {
+	if totalConsumerUsage >= maxRewardsBoost*usageWithThisProvider {
 		// epoch adjustment is 1
 		adjustment.TotalUsage += totalConsumerUsage
 		adjustment.AdjustedUsage += totalConsumerUsage
@@ -93,10 +96,9 @@ func (k Keeper) AppendAdjustment(ctx sdk.Context, consumer string, provider stri
 		// totalConsumerUsage < uint64(maxRewardsBoost)*usageWithThisProvider
 		adjustment.TotalUsage += totalConsumerUsage
 		// epoch adjustment is (1/maxRewardsBoost * totalConsumerUsage/usageWithThisProvider) * totalConsumerUsage
-		adjustment.AdjustedUsage += (totalConsumerUsage / uint64(maxRewardsBoost)) * (totalConsumerUsage / usageWithThisProvider)
+		adjustment.AdjustedUsage += (totalConsumerUsage / maxRewardsBoost) * (totalConsumerUsage / usageWithThisProvider)
 	}
-	// we need to append, in both cases of existing adjustment or a not found one
-	adjustment.Index = index
+
 	k.SetAdjustment(ctx, adjustment)
 }
 
