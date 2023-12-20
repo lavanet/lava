@@ -479,28 +479,33 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				)
 			}
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(chainMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
-			// copy private data so if it changes it doesn't panic mid async send
-			copyPrivateData := &pairingtypes.RelayPrivateData{}
-			copyErr := protocopy.DeepCopyProtoObject(localRelayResult.Request.RelayData, copyPrivateData)
-			// set cache in a nonblocking call
-			go func() {
-				// deal with copying error.
-				if copyErr != nil {
-					utils.LavaFormatError("Failed copying relay private data sendRelayToProvider", copyErr)
-					return
-				}
-				requestedBlock, _ := chainMessage.RequestedBlock()
-				if requestedBlock == spectypes.NOT_APPLICABLE {
-					return
-				}
-				new_ctx := context.Background()
-				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
-				defer cancel()
-				err2 := rpccs.cache.SetEntry(new_ctx, copyPrivateData, nil, chainID, localRelayResult.Reply, localRelayResult.Finalized, localRelayResult.Request.RelaySession.Provider, nil) // caching in the portal doesn't care about hashes
-				if err2 != nil && !performance.NotInitialisedError.Is(err2) {
-					utils.LavaFormatWarning("error updating cache with new entry", err2)
-				}
-			}()
+
+			if rpccs.cache.CacheActive() {
+				// copy private data so if it changes it doesn't panic mid async send
+				copyPrivateData := &pairingtypes.RelayPrivateData{}
+				copyRequestErr := protocopy.DeepCopyProtoObject(localRelayResult.Request.RelayData, copyPrivateData)
+				copyReply := &pairingtypes.RelayReply{}
+				copyReplyErr := protocopy.DeepCopyProtoObject(localRelayResult.Reply, copyReply)
+				// set cache in a non blocking call
+				go func() {
+					// deal with copying error.
+					if copyRequestErr != nil || copyReplyErr != nil {
+						utils.LavaFormatError("Failed copying relay private data sendRelayToProvider", nil, utils.LogAttr("copyReplyErr", copyReplyErr), utils.LogAttr("copyRequestErr", copyRequestErr))
+						return
+					}
+					requestedBlock, _ := chainMessage.RequestedBlock()
+					if requestedBlock == spectypes.NOT_APPLICABLE {
+						return
+					}
+					new_ctx := context.Background()
+					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
+					defer cancel()
+					err2 := rpccs.cache.SetEntry(new_ctx, copyPrivateData, nil, chainID, copyReply, localRelayResult.Finalized, localRelayResult.Request.RelaySession.Provider, nil) // caching in the portal doesn't care about hashes
+					if err2 != nil {
+						utils.LavaFormatWarning("error updating cache with new entry", err2)
+					}
+				}()
+			}
 		}(providerPublicAddress, sessionInfo)
 	}
 

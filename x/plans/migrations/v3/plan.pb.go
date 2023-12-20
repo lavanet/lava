@@ -8,10 +8,10 @@ import (
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	v3 "github.com/lavanet/lava/x/projects/migrations/v3"
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	v3 "github.com/lavanet/lava/x/projects/migrations/v3"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -26,15 +26,15 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Plan struct {
-	Index                    string        `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
-	Block                    uint64        `protobuf:"varint,3,opt,name=block,proto3" json:"block,omitempty"`
-	Price                    types.Coin    `protobuf:"bytes,4,opt,name=price,proto3" json:"price"`
-	AllowOveruse             bool          `protobuf:"varint,8,opt,name=allow_overuse,json=allowOveruse,proto3" json:"allow_overuse,omitempty"`
-	OveruseRate              uint64        `protobuf:"varint,9,opt,name=overuse_rate,json=overuseRate,proto3" json:"overuse_rate,omitempty"`
-	Description              string        `protobuf:"bytes,11,opt,name=description,proto3" json:"description,omitempty"`
-	Type                     string        `protobuf:"bytes,12,opt,name=type,proto3" json:"type,omitempty"`
-	AnnualDiscountPercentage uint64        `protobuf:"varint,13,opt,name=annual_discount_percentage,json=annualDiscountPercentage,proto3" json:"annual_discount_percentage,omitempty"`
-	PlanPolicy               v3.Policy `protobuf:"bytes,14,opt,name=plan_policy,json=planPolicy,proto3" json:"plan_policy"`
+	Index                    string     `protobuf:"bytes,1,opt,name=index,proto3" json:"index,omitempty"`
+	Block                    uint64     `protobuf:"varint,3,opt,name=block,proto3" json:"block,omitempty"`
+	Price                    types.Coin `protobuf:"bytes,4,opt,name=price,proto3" json:"price"`
+	AllowOveruse             bool       `protobuf:"varint,8,opt,name=allow_overuse,json=allowOveruse,proto3" json:"allow_overuse,omitempty"`
+	OveruseRate              uint64     `protobuf:"varint,9,opt,name=overuse_rate,json=overuseRate,proto3" json:"overuse_rate,omitempty"`
+	Description              string     `protobuf:"bytes,11,opt,name=description,proto3" json:"description,omitempty"`
+	Type                     string     `protobuf:"bytes,12,opt,name=type,proto3" json:"type,omitempty"`
+	AnnualDiscountPercentage uint64     `protobuf:"varint,13,opt,name=annual_discount_percentage,json=annualDiscountPercentage,proto3" json:"annual_discount_percentage,omitempty"`
+	PlanPolicy               v3.Policy  `protobuf:"bytes,14,opt,name=plan_policy,json=planPolicy,proto3" json:"plan_policy"`
 }
 
 func (m *Plan) Reset()         { *m = Plan{} }

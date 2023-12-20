@@ -48,7 +48,7 @@ function prepare() {
         exit 1
     fi
 
-    specific_dir="$GOPATH/pkg/mod/github.com/cosmos/cosmos-sdk@v0.47.3"
+    specific_dir="$GOPATH/pkg/mod/github.com/lavanet/cosmos-sdk@v0.47.7-0.20231211141641-2a9ea55b724d"
 
     if [[ ! -d "$specific_dir" ]]; then
         echo "Error: The cosmos-sdk directory ('$specific_dir') does not exist under '$GOPATH/pkg/mod'." >&2
