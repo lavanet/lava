@@ -3,7 +3,6 @@ package updaters
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	projecttypes "github.com/lavanet/lava/x/projects/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -155,30 +153,6 @@ func (et *EventTracker) getLatestSpecModifyEvents(latestBlock int64) (updated bo
 			return true, nil
 		}
 	}
-	return false, nil
-}
-
-func (et *EventTracker) getLatestPolicyModifyEvents(latestBlock int64, consumerAddress string) (updated bool, err error) {
-	et.lock.RLock()
-	defer et.lock.RUnlock()
-	if et.latestUpdatedBlock != latestBlock {
-		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
-	}
-	for _, tx := range et.blockResults.TxsResults {
-		for _, event := range tx.Events {
-			if event.Type == utils.EventPrefix+projecttypes.PolicyUpdateEventName {
-				for _, eventAttr := range event.Attributes {
-					if eventAttr.Key == "project_ids" {
-						if strings.Contains(eventAttr.Value, consumerAddress) {
-							return true, nil
-						}
-					}
-				}
-				return true, nil
-			}
-		}
-	}
-
 	return false, nil
 }
 

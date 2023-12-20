@@ -84,7 +84,6 @@ type ConsumerStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
 	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
-	RegisterForPolicyUpdates(ctx context.Context, policyUpdatable updaters.PolicySetter, endpoint lavasession.RPCEndpoint, consumerAddress string) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
 	TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error
@@ -160,6 +159,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
+	policyUpdaters := make(map[string]*updaters.PolicyUpdater) // per chainId we have one policy updater
+	// policyUpdater := updaters.NewPolicyUpdater(rpcEndpoint,chainParser, *rpcEndpoint, consumerAddr.String())
 
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
@@ -171,6 +172,10 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				return err
 			}
 			chainID := rpcEndpoint.ChainID
+			if policyUpdater, ok := policyUpdaters[rpcEndpoint.ChainID]; ok {
+				policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
+			}
+			// policyUpdater := updaters.NewPolicyUpdater(consumerAddr.String())
 			// register for spec updates
 			err = rpcc.consumerStateTracker.RegisterForSpecUpdates(ctx, chainParser, *rpcEndpoint)
 			if err != nil {
@@ -178,13 +183,13 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				errCh <- err
 				return err
 			}
-			// register for policy updates
-			err = rpcc.consumerStateTracker.RegisterForPolicyUpdates(ctx, chainParser, *rpcEndpoint, consumerAddr.String())
-			if err != nil {
-				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
-				errCh <- err
-				return err
-			}
+			// // register for policy updates
+			// err = rpcc.consumerStateTracker.RegisterForPolicyUpdates(ctx, chainParser, *rpcEndpoint, consumerAddr.String())
+			// if err != nil {
+			// 	err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+			// 	errCh <- err
+			// 	return err
+			// }
 
 			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 			var optimizer *provideroptimizer.ProviderOptimizer

@@ -95,6 +95,7 @@ func (csq *StateQuery) GetDowntimeParams(ctx context.Context) (*downtimev1.Param
 
 type ConsumerStateQuery struct {
 	StateQuery
+	EpochStateQuery
 	clientCtx   client.Context
 	lastChainID string
 }

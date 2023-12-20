@@ -111,17 +111,6 @@ func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, spe
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
 
-func (cst *ConsumerStateTracker) RegisterForPolicyUpdates(ctx context.Context, policyUpdatable updaters.PolicySetter, endpoint lavasession.RPCEndpoint, consumerAddress string) error {
-	// register for spec updates sets spec and updates when a spec has been modified
-	policyUpdater := updaters.NewPolicyUpdater(endpoint.ChainID, cst.stateQuery, cst.EventTracker, consumerAddress)
-	policyUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, policyUpdater)
-	policyUpdater, ok := policyUpdaterRaw.(*updaters.PolicyUpdater)
-	if !ok {
-		utils.LavaFormatFatal("invalid updater type returned from RegisterForPolicyUpdates", nil, utils.Attribute{Key: "updater", Value: policyUpdaterRaw})
-	}
-	return policyUpdater.RegisterPolicyUpdatable(ctx, &policyUpdatable, endpoint)
-}
-
 func (cst *ConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error) {
 	return cst.stateQuery.GetEffectivePolicy(ctx, consumerAddress, chainID)
 }
