@@ -143,6 +143,65 @@ func RollingLoggerSetup(rollingLogLevel string, filePath string, maxSize string,
 	return func() { rollingLogOutput.Close() }
 }
 
+func StrValueForLog(val interface{}, key string, idx int, attributes []Attribute) string {
+	st_val := ""
+	switch value := val.(type) {
+	case context.Context:
+		// we don't want to print the whole context so change it
+		switch key {
+		case "GUID":
+			guid, found := GetUniqueIdentifier(value)
+			if found {
+				st_val = strconv.FormatUint(guid, 10)
+				attributes[idx] = Attribute{Key: key, Value: guid}
+			} else {
+				attributes[idx] = Attribute{Key: key, Value: "no-guid"}
+			}
+		default:
+			attributes[idx] = Attribute{Key: key, Value: "context-masked"}
+		}
+	default:
+		st_val = StrValue(val)
+	}
+	return st_val
+}
+
+func StrValue(val interface{}) string {
+	st_val := ""
+	switch value := val.(type) {
+	case context.Context:
+		// we don't want to print the whole context so change it
+	case bool:
+		if value {
+			st_val = "true"
+		} else {
+			st_val = "false"
+		}
+	case fmt.Stringer:
+		st_val = value.String()
+	case string:
+		st_val = value
+	case int:
+		st_val = strconv.Itoa(value)
+	case int64:
+		st_val = strconv.FormatInt(value, 10)
+	case uint64:
+		st_val = strconv.FormatUint(value, 10)
+	case error:
+		st_val = value.Error()
+	case []string:
+		st_val = strings.Join(value, ",")
+	// needs to come after stringer so byte inheriting objects will use their string method if implemented (like AccAddress)
+	case []byte:
+		st_val = string(value)
+	case nil:
+		st_val = ""
+	default:
+		st_val = fmt.Sprintf("%+v", value)
+	}
+	return st_val
+}
+
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	if JsonFormat {
@@ -157,11 +216,15 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 	case LAVA_LOG_PANIC:
 		// prefix = "Panic:"
 		logEvent = zerologlog.Panic()
-		rollingLoggerEvent = rollingLogLogger.Panic()
+		if rollingLogLogger.GetLevel() != zerolog.Disabled {
+			rollingLoggerEvent = rollingLogLogger.Panic()
+		}
 	case LAVA_LOG_FATAL:
 		// prefix = "Fatal:"
 		logEvent = zerologlog.Fatal()
-		rollingLoggerEvent = rollingLogLogger.Fatal()
+		if rollingLogLogger.GetLevel() != zerolog.Disabled {
+			rollingLoggerEvent = rollingLogLogger.Fatal()
+		}
 	case LAVA_LOG_ERROR:
 		// prefix = "Error:"
 		logEvent = zerologlog.Error()
@@ -190,50 +253,7 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		for idx, attr := range attributes {
 			key := attr.Key
 			val := attr.Value
-			st_val := ""
-			switch value := val.(type) {
-			case context.Context:
-				// we don't want to print the whole context so change it
-				switch key {
-				case "GUID":
-					guid, found := GetUniqueIdentifier(value)
-					if found {
-						st_val = strconv.FormatUint(guid, 10)
-						attributes[idx] = Attribute{Key: key, Value: guid}
-					} else {
-						attributes[idx] = Attribute{Key: key, Value: "no-guid"}
-					}
-				default:
-					attributes[idx] = Attribute{Key: key, Value: "context-masked"}
-				}
-			case bool:
-				if value {
-					st_val = "true"
-				} else {
-					st_val = "false"
-				}
-			case fmt.Stringer:
-				st_val = value.String()
-			case string:
-				st_val = value
-			case int:
-				st_val = strconv.Itoa(value)
-			case int64:
-				st_val = strconv.FormatInt(value, 10)
-			case uint64:
-				st_val = strconv.FormatUint(value, 10)
-			case error:
-				st_val = value.Error()
-			case []string:
-				st_val = strings.Join(value, ",")
-			// needs to come after stringer so byte inheriting objects will use their string method if implemented (like AccAddress)
-			case []byte:
-				st_val = string(value)
-			case nil:
-				st_val = ""
-			default:
-				st_val = fmt.Sprintf("%+v", value)
-			}
+			st_val := StrValueForLog(val, key, idx, attributes)
 			logEvent = logEvent.Str(key, st_val)
 			rollingLoggerEvent = rollingLoggerEvent.Str(key, st_val)
 			attrStrings = append(attrStrings, fmt.Sprintf("%s:%s", attr.Key, st_val))

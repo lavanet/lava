@@ -71,6 +71,7 @@ type ProviderStateTrackerInf interface {
 	GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx context.Context) (uint64, error)
 	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
 	GetVirtualEpoch(epoch uint64) uint64
+	GetAverageBlockTime() time.Duration
 }
 
 type RPCProvider struct {
@@ -308,7 +309,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		// Add the chain fetcher to the spec validator
 		err := specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
 		if err != nil {
-			return err
+			return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 		}
 
 		var found bool

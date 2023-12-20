@@ -53,9 +53,9 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
-# Function to check the Go version is at least 1.20
+# Function to check the Go version is at least 1.21
 check_go_version() {
-  local GO_VERSION=1.20
+  local GO_VERSION=1.21
 
   if ! command_exists go; then
     return 1
@@ -80,4 +80,41 @@ latest_vote() {
       exit 1
   fi
   lavad q gov proposals 2> /dev/null | yq eval '.proposals[].id'  | wc -l
+}
+
+create_health_config() {
+  local source_file="$1"
+  local destination_file="${source_file%.*}_gen.yml"
+  local subscription_address="$2"
+  local provider_address_1="$3"
+  local provider_address_2="$4"
+  local provider_address_3="$5"
+
+  # Use awk to find the line number of the comment
+  local comment_line_number=$(awk '/#REPLACED/ {print NR; exit}' "$source_file")
+
+  # If the comment is found, create a new file with the updated content
+  if [ -n "$comment_line_number" ]; then
+    # Use awk to update the content and create a new file
+    awk -v line="$comment_line_number" -v sub_addr="$subscription_address" \
+        -v prov_addr_1="$provider_address_1" -v prov_addr_2="$provider_address_2" \
+        -v prov_addr_3="$provider_address_3" \
+        '{
+            if (NR <= line) {
+                print;
+            } else if (NR == line + 1) {
+                print "subscription_addresses:";
+                print "  - " sub_addr;
+                print "provider_addresses:";
+                print "  - " prov_addr_1;
+                print "  - " prov_addr_2;
+                print "  - " prov_addr_3;
+            }
+        }' "$source_file" > "$destination_file"
+
+    echo "File $destination_file created successfully."
+  else
+    echo "Comment #REPLACED not found in the file."
+    exit 1
+  fi
 }

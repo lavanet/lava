@@ -25,6 +25,7 @@ type StateTracker struct {
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
 	EventTracker         *EventTracker
+	AverageBlockTime     time.Duration
 }
 
 type Updater interface {
@@ -54,15 +55,19 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, utils.LavaFormatError("failed getting blockResults after retries", err)
 	}
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
-	specResponse, err := specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-		ChainID: "LAV1",
-	})
-	for i := 0; i < BlockResultRetry && err != nil; i++ {
+	var specResponse *spectypes.QueryGetSpecResponse
+	for i := 0; i < BlockResultRetry; i++ {
 		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 			ChainID: "LAV1",
 		})
+		if err == nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
-
+	if err != nil {
+		utils.LavaFormatFatal("failed querying lava spec for state tracker", err)
+	}
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
@@ -71,8 +76,22 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		AverageBlockTime:  time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
 		ServerBlockMemory: 25 + BlocksToSaveLavaChainTracker,
 	}
+	cst.AverageBlockTime = chainTrackerConfig.AverageBlockTime
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
+	cst.chainTracker.RegisterForBlockTimeUpdates(cst) // registering for block time updates.
 	return cst, err
+}
+
+func (st *StateTracker) UpdateBlockTime(blockTime time.Duration) {
+	st.registrationLock.Lock()
+	defer st.registrationLock.Unlock()
+	st.AverageBlockTime = blockTime
+}
+
+func (st *StateTracker) GetAverageBlockTime() time.Duration {
+	st.registrationLock.RLock()
+	defer st.registrationLock.RUnlock()
+	return st.AverageBlockTime
 }
 
 func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
