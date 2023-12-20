@@ -49,10 +49,7 @@ func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayPri
 }
 
 func (cache *Cache) CacheActive() bool {
-	if cache == nil {
-		return false
-	}
-	return true
+	return cache == nil
 }
 
 func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayPrivateData, blockHash []byte, chainID string, reply *pairingtypes.RelayReply, finalized bool, provider string, optionalMetadata []pairingtypes.Metadata) error {
