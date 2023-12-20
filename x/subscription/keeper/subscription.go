@@ -234,6 +234,8 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 			utils.LogAttr("consumer", sub.Consumer))
 	}
 
+	sub.DurationTotal = 0
+
 	// The "old" subscription's duration is now expired
 	// If called from CreateSubscription, the duration will reset to the duration bought
 	sub.DurationLeft = 0
