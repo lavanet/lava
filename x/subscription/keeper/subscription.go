@@ -266,6 +266,7 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 	date := ctx.BlockTime()
 	block := uint64(ctx.BlockHeight())
 
+	// Track CU for the previous subscription
 	k.addCuTrackerTimerForSubscription(ctx, block, sub)
 
 	if sub.DurationLeft == 0 {
