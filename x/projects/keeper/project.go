@@ -3,7 +3,6 @@ package keeper
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -328,14 +327,6 @@ func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *p
 			)
 		}
 	}
-	utils.LogLavaEvent(
-		ctx,
-		k.Logger(ctx),
-		types.PolicyUpdateEventName,
-		map[string]string{"policy_enum": strconv.Itoa(int(setPolicyEnum)),
-			"project_ids": strings.Join(projectIDs, ",")},
-		"Update policy for projects, will take effect in the next epoch",
-	)
 	return nil
 }
 
