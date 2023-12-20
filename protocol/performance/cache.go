@@ -48,6 +48,13 @@ func (cache *Cache) GetEntry(ctx context.Context, request *pairingtypes.RelayPri
 	return cache.client.GetRelay(ctx, &pairingtypes.RelayCacheGet{Request: request, BlockHash: blockHash, ChainID: chainID, Finalized: finalized, Provider: provider})
 }
 
+func (cache *Cache) CacheActive() bool {
+	if cache == nil {
+		return false
+	}
+	return true
+}
+
 func (cache *Cache) SetEntry(ctx context.Context, request *pairingtypes.RelayPrivateData, blockHash []byte, chainID string, reply *pairingtypes.RelayReply, finalized bool, provider string, optionalMetadata []pairingtypes.Metadata) error {
 	if cache == nil {
 		// TODO: try to connect again once in a while
