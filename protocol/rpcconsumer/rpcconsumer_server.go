@@ -81,16 +81,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.consumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
-	// TODO: remove after validation
-	// consumerPolicy, err := rpccs.consumerTxSender.GetConsumerPolicy(ctx, consumerAddress.String(), listenEndpoint.ChainID)
-	// if err != nil {
-	// 	return err
-	// }
-	// consumerServices, err := rpccs.chainParser.BuildMapFromPolicyQuery(consumerPolicy, listenEndpoint.ChainID, listenEndpoint.ApiInterface)
-	// if err != nil {
-	// 	return err
-	// }
-	// rpccs.chainParser.SetPolicy(consumerServices) // configure possible extensions as set by the policy
+
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
 		return err

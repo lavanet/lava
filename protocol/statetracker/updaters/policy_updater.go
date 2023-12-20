@@ -20,12 +20,11 @@ type PolicySetter interface {
 }
 
 type PolicyFetcher interface {
-	GetEffectivePolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
+	GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error)
 }
 
 type PolicyUpdater struct {
 	lock                  sync.RWMutex
-	eventTracker          *EventTracker
 	chainId               string
 	consumerAddress       string
 	lastTimeUpdatedPolicy uint64
@@ -33,12 +32,11 @@ type PolicyUpdater struct {
 	policyUpdatables      map[string]PolicySetter // key is apiInterface.
 }
 
-func NewPolicyUpdater(chainId string, policyFetcher PolicyFetcher, eventTracker *EventTracker, consumerAddress string) *PolicyUpdater {
+func NewPolicyUpdater(chainId string, policyFetcher PolicyFetcher, consumerAddress string, policyUpdatable PolicySetter, endpoint lavasession.RPCEndpoint) *PolicyUpdater {
 	return &PolicyUpdater{
 		chainId:               chainId,
 		policyFetcher:         policyFetcher,
-		eventTracker:          eventTracker,
-		policyUpdatables:      make(map[string]PolicySetter),
+		policyUpdatables:      map[string]PolicySetter{endpoint.ApiInterface: policyUpdatable},
 		consumerAddress:       consumerAddress,
 		lastTimeUpdatedPolicy: 0,
 	}
@@ -49,7 +47,7 @@ func (pu *PolicyUpdater) AddPolicySetter(policyUpdatable PolicySetter, endpoint 
 	defer pu.lock.Unlock()
 	existingPolicySetter, found := pu.policyUpdatables[endpoint.ApiInterface]
 	if found {
-		return utils.LavaFormatError("panic level error Trying to register to policy updates on already registered", nil,
+		return utils.LavaFormatError("Trying to register to policy updates on already registered api interface", nil,
 			utils.Attribute{Key: "endpoint", Value: endpoint},
 			utils.Attribute{Key: "policyUpdatable", Value: existingPolicySetter})
 	}
@@ -76,21 +74,19 @@ func (pu *PolicyUpdater) BuildPolicyMapAndSetPolicy(policyUpdatable PolicySetter
 func (pu *PolicyUpdater) UpdateEpoch(epoch uint64) {
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
-	if pu.lastTimeUpdatedPolicy < epoch {
-		// update policy now
-		utils.LavaFormatInfo("Epoch Changed, fetching current policy and updating the effective policy")
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-		defer cancel()
-		policy, err := pu.policyFetcher.GetEffectivePolicy(ctx, pu.consumerAddress, pu.chainId)
+	// update policy now
+	utils.LavaFormatDebug("PolicyUpdater, fetching current policy and updating the effective policy", utils.LogAttr("epoch", epoch), utils.LogAttr("chainId", pu.chainId))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	policy, err := pu.policyFetcher.GetConsumerPolicy(ctx, pu.consumerAddress, pu.chainId)
+	if err != nil {
+		utils.LavaFormatError("could not get GetConsumerPolicy updated, did not update policy", err, utils.LogAttr("epoch", epoch))
+		return
+	}
+	for apiInterface, policyUpdatable := range pu.policyUpdatables {
+		err = pu.BuildPolicyMapAndSetPolicy(policyUpdatable, policy, apiInterface)
 		if err != nil {
-			utils.LavaFormatError("could not get spec when updated, did not update specs and needed to", err)
-			return
-		}
-		for apiInterface, policyUpdatable := range pu.policyUpdatables {
-			err = pu.BuildPolicyMapAndSetPolicy(policyUpdatable, policy, apiInterface)
-			if err != nil {
-				utils.LavaFormatError("Failed Updating policy", err, utils.LogAttr("apiInterface", apiInterface), utils.LogAttr("chainId", pu.chainId))
-			}
+			utils.LavaFormatError("Failed Updating policy", err, utils.LogAttr("apiInterface", apiInterface), utils.LogAttr("chainId", pu.chainId))
 		}
 	}
 }
