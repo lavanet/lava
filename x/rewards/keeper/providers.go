@@ -128,46 +128,21 @@ func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string) ([]types.B
 // ContributeToValidatorsAndCommunityPool transfers some of the providers' rewards to the validators and community pool
 // the function return the updated reward after the participation deduction
 func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward math.Int, senderModule string) (updatedReward math.Int, err error) {
-	communityTax := k.distributionKeeper.GetParams(ctx).CommunityTax
-	if communityTax.Equal(sdk.OneDec()) {
+	// calculate validators and community participation fractions
+	validatorsParticipation, communityParticipation, err := k.CalculateValidatorsAndCommunityContribution(ctx, reward, senderModule)
+	if err != nil {
+		return reward, err
+	}
+
+	if communityParticipation.Equal(sdk.OneDec()) {
 		err := k.fundCommunityPoolFromModule(ctx, reward, senderModule)
 		if err != nil {
 			return reward, utils.LavaFormatError("failed funding the community pool with whole reward", err,
 				utils.Attribute{Key: "reward", Value: reward.String()},
-				utils.Attribute{Key: "community_tax", Value: communityTax.String()},
+				utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
 			)
 		}
 		return sdk.ZeroInt(), nil
-	}
-
-	// validators_participation = validators_participation_param / (1-community_tax)
-	validatorsParticipationParam := k.GetParams(ctx).ValidatorsSubscriptionParticipation
-	validatorsParticipation := validatorsParticipationParam.Quo((sdk.OneDec().Sub(communityTax)))
-	if validatorsParticipation.GT(sdk.OneDec()) {
-		return reward, utils.LavaFormatError("validators participation bigger than 100%", fmt.Errorf("validators participation calc failed"),
-			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
-			utils.Attribute{Key: "validators_subscription_participation_param", Value: validatorsParticipationParam.String()},
-			utils.Attribute{Key: "community_tax", Value: communityTax.String()},
-		)
-	}
-
-	// community_participation = (community_tax + validators_participation_param) - validators_participation
-	communityParticipation := communityTax.Add(validatorsParticipationParam).Sub(validatorsParticipation)
-	if communityParticipation.IsNegative() || communityParticipation.GT(sdk.OneDec()) {
-		return reward, utils.LavaFormatError("community participation is negative or bigger than 100%", fmt.Errorf("community participation calc failed"),
-			utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
-			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
-			utils.Attribute{Key: "validators_subscription_participation_param", Value: validatorsParticipationParam.String()},
-			utils.Attribute{Key: "community_tax", Value: communityTax.String()},
-		)
-	}
-
-	// check the participation rewards are not more than 100%
-	if validatorsParticipation.Add(communityParticipation).GT(sdk.OneDec()) {
-		return reward, utils.LavaFormatError("validators and community participation parts are bigger than 100%", fmt.Errorf("validators and community participation aborted"),
-			utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
-			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
-		)
 	}
 
 	// send validators participation and update reward
@@ -197,6 +172,45 @@ func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward m
 	reward = reward.Sub(communityParticipationReward)
 
 	return reward, nil
+}
+
+func (k Keeper) CalculateValidatorsAndCommunityContribution(ctx sdk.Context, reward math.Int, senderModule string) (validatorsParticipation math.LegacyDec, communityParticipation math.LegacyDec, err error) {
+	communityTax := k.distributionKeeper.GetParams(ctx).CommunityTax
+	if communityTax.Equal(sdk.OneDec()) {
+		return sdk.ZeroDec(), sdk.OneDec(), nil
+	}
+
+	// validators_participation = validators_participation_param / (1-community_tax)
+	validatorsParticipationParam := k.GetParams(ctx).ValidatorsSubscriptionParticipation
+	validatorsParticipation = validatorsParticipationParam.Quo((sdk.OneDec().Sub(communityTax)))
+	if validatorsParticipation.GT(sdk.OneDec()) {
+		return sdk.ZeroDec(), sdk.ZeroDec(), utils.LavaFormatError("validators participation bigger than 100%", fmt.Errorf("validators participation calc failed"),
+			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
+			utils.Attribute{Key: "validators_subscription_participation_param", Value: validatorsParticipationParam.String()},
+			utils.Attribute{Key: "community_tax", Value: communityTax.String()},
+		)
+	}
+
+	// community_participation = (community_tax + validators_participation_param) - validators_participation
+	communityParticipation = communityTax.Add(validatorsParticipationParam).Sub(validatorsParticipation)
+	if communityParticipation.IsNegative() || communityParticipation.GT(sdk.OneDec()) {
+		return sdk.ZeroDec(), sdk.ZeroDec(), utils.LavaFormatError("community participation is negative or bigger than 100%", fmt.Errorf("community participation calc failed"),
+			utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
+			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
+			utils.Attribute{Key: "validators_subscription_participation_param", Value: validatorsParticipationParam.String()},
+			utils.Attribute{Key: "community_tax", Value: communityTax.String()},
+		)
+	}
+
+	// check the participation rewards are not more than 100%
+	if validatorsParticipation.Add(communityParticipation).GT(sdk.OneDec()) {
+		return sdk.ZeroDec(), sdk.ZeroDec(), utils.LavaFormatError("validators and community participation parts are bigger than 100%", fmt.Errorf("validators and community participation aborted"),
+			utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
+			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
+		)
+	}
+
+	return validatorsParticipation, communityParticipation, nil
 }
 
 func (k Keeper) fundCommunityPoolFromModule(ctx sdk.Context, amount math.Int, senderModule string) error {
