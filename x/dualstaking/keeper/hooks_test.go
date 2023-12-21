@@ -1,9 +1,7 @@
 package keeper_test
 
 import (
-	"fmt"
 	"math/rand"
-	"strconv"
 	"testing"
 	"time"
 
@@ -489,11 +487,6 @@ func TestHooksRandomDelegations(t *testing.T) {
 			delegator = prevDelegator
 		}
 		_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(int64(d))))
-		if err == nil {
-			fmt.Printf("%v: delegated %v\n", strconv.Itoa(i), strconv.Itoa(d))
-		} else {
-			fmt.Printf("%v: failed delegating %v. err: %s\n", strconv.Itoa(i), strconv.Itoa(d), err.Error())
-		}
 		require.Nil(t, err)
 
 		_, found := ts.Keepers.StakingKeeper.GetDelegation(ts.Ctx, delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr))
