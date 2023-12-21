@@ -50,8 +50,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 
 	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
-	var rejected_relays_num int
+	var rejected_relays_num int = len(msg.Relays)
 	for relayIdx, relay := range msg.Relays {
+		rejectedCu += relay.CuSum
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
 		if err != nil {
 			return nil, utils.LavaFormatWarning("invalid provider address in relay msg", err,
@@ -72,8 +73,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "relay.LavaChainId", Value: relay.LavaChainId},
 				utils.Attribute{Key: "expected_ChainID", Value: lavaChainID},
 			)
-			rejected_relays_num++
-			rejectedCu += relay.CuSum
 			continue
 		}
 		if relay.Epoch > ctx.BlockHeight() {
@@ -81,8 +80,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "blockheight", Value: ctx.BlockHeight()},
 				utils.Attribute{Key: "relayBlock", Value: relay.Epoch},
 			)
-			rejected_relays_num++
-			rejectedCu += relay.CuSum
 			continue
 		}
 
@@ -91,8 +88,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			utils.LavaFormatWarning("recover PubKey from relay failed", err,
 				utils.Attribute{Key: "sig", Value: relay.Sig},
 			)
-			rejected_relays_num++
-			rejectedCu += relay.CuSum
 			continue
 		}
 
@@ -104,8 +99,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			newBadgeTimerExpiry, err = k.checkBadge(ctx, badgeData, clientAddr.String(), relay)
 			if err != nil {
 				utils.LavaFormatWarning("badge check failed", err)
-				rejected_relays_num++
-				rejectedCu += relay.CuSum
 				continue
 			}
 
@@ -117,8 +110,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		project, err := k.GetProjectData(ctx, clientAddr, relay.SpecId, uint64(relay.Epoch))
 		if err != nil {
 			utils.LavaFormatWarning("invalid project data", err)
-			rejected_relays_num++
-			rejectedCu += relay.CuSum
 			continue
 		}
 
@@ -128,8 +119,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "relayEpoch", Value: relay.Epoch},
 				utils.Attribute{Key: "epochStart", Value: epochStart},
 			)
-			rejected_relays_num++
-			rejectedCu += relay.CuSum
 			continue
 		}
 
@@ -140,8 +129,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "provider", Value: providerAddr.String()},
 				utils.Attribute{Key: "unique_ID", Value: relay.SessionId},
 			)
-			rejected_relays_num++
-			rejectedCu += relay.CuSum
 			continue
 		}
 
@@ -195,8 +182,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "totalCUInEpochForUserProvider", Value: totalCUInEpochForUserProvider},
 			)
 		}
-
-		rejectedCu += relay.CuSum - rewardedCU
 
 		// pairing is valid, we can pay provider for work
 		rewardedCUDec := sdk.NewDec(int64(rewardedCU))
@@ -252,10 +237,12 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
+		rejectedCu += relay.CuSum
+		rejected_relays_num--
 	}
 
 	// if all relays failed, fail the TX
-	if rejected_relays_num == len(msg.Relays) {
+	if rejected_relays_num == 0 {
 		return nil, utils.LavaFormatWarning("relay payment failed", fmt.Errorf("all relays rejected"),
 			utils.Attribute{Key: "provider", Value: msg.Creator},
 			utils.Attribute{Key: "description", Value: msg.DescriptionString},
