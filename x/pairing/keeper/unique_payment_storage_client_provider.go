@@ -61,15 +61,17 @@ func (k Keeper) GetAllUniquePaymentStorageClientProvider(ctx sdk.Context) (list 
 	return
 }
 
-func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID string, block uint64, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) (isUnique bool, entryAddr *types.UniquePaymentStorageClientProvider) {
+func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID string, block uint64, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) *types.UniquePaymentStorageClientProvider {
 	key := k.EncodeUniquePaymentKey(ctx, projectID, providerAddress, uniqueIdentifier, chainID)
-	entry, found := k.GetUniquePaymentStorageClientProvider(ctx, key)
-	if found {
-		return false, &entry
-	}
-	entry = types.UniquePaymentStorageClientProvider{Index: key, Block: block, UsedCU: usedCU}
+	entry := types.UniquePaymentStorageClientProvider{Index: key, Block: block, UsedCU: usedCU}
 	k.SetUniquePaymentStorageClientProvider(ctx, entry)
-	return true, &entry
+	return &entry
+}
+
+func (k Keeper) IsDoubleSpend(ctx sdk.Context, chainID string, block uint64, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string) bool {
+	key := k.EncodeUniquePaymentKey(ctx, projectID, providerAddress, uniqueIdentifier, chainID)
+	_, found := k.GetUniquePaymentStorageClientProvider(ctx, key)
+	return found
 }
 
 func (k Keeper) GetConsumerFromUniquePayment(uniquePaymentStorageClientProvider *types.UniquePaymentStorageClientProvider) string {
