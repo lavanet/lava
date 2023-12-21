@@ -50,7 +50,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 
 	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
-	var rejected_relays_num int = len(msg.Relays)
+	var rejected_relays_num = len(msg.Relays)
 	for relayIdx, relay := range msg.Relays {
 		rejectedCu += relay.CuSum
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
