@@ -160,7 +160,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			}...)
 		}
 	}
-	utils.LavaFormatInfo("[+] verified successfully", utils.Attribute{Key: "endpoint", Value: cf.endpoint.String()}, utils.Attribute{Key: "verification", Value: verification.Name}, utils.Attribute{Key: "value", Value: parsedResult}, utils.Attribute{Key: "verificationKey", Value: verification.VerificationKey})
+	utils.LavaFormatInfo("[+] verified successfully", utils.Attribute{Key: "endpoint", Value: cf.endpoint.String()}, utils.Attribute{Key: "verification", Value: verification.Name}, utils.Attribute{Key: "value", Value: parser.CapStringLen(parsedResult)}, utils.Attribute{Key: "verificationKey", Value: verification.VerificationKey})
 	return nil
 }
 
