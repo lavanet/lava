@@ -36,4 +36,5 @@ var BlocksToTimerExpirySlackFactor math.LegacyDec = sdk.NewDecWithPrec(105, 2) /
 // pools once a month.
 const (
 	RefillRewardsPoolTimerPrefix = "refill-rewards-pool-ts"
+	RefillRewardsPoolTimerName   = "refill-rewards-timer"
 )
