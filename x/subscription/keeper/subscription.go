@@ -237,6 +237,9 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 			utils.LogAttr("consumer", sub.Consumer))
 	}
 
+	// Remove one refcount for previous plan
+	k.plansKeeper.PutPlan(ctx, sub.PlanIndex, sub.PlanBlock)
+
 	sub.PlanIndex = toPlanIndex
 	sub.PlanBlock = toPlanBlock
 
