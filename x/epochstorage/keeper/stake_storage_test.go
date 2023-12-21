@@ -85,7 +85,7 @@ func removeAllEntriesBeforeBlock(keeper keeper.Keeper, ctx sdk.Context, block ui
 
 func TestStakeStorageRemoveAllPriorToBlock(t *testing.T) {
 	// keeper, ctx := keepertest.EpochstorageKeeper(t)
-	_, allkeepers, _, ctxx := testkeeper.InitAllKeepers(t)
+	_, allkeepers, ctxx := testkeeper.InitAllKeepers(t)
 
 	keeper := allkeepers.Epochstorage
 	ctx := sdk.UnwrapSDKContext(ctxx)

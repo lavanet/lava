@@ -7,5 +7,5 @@ import (
 
 // BeginBlocker calculates the validators block rewards and transfers them to the fee collector
 func BeginBlocker(ctx sdk.Context, k keeper.Keeper) {
-	k.DistributeBlockReward(ctx)
+	k.BeginBlock(ctx)
 }

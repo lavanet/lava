@@ -20,7 +20,7 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	distributionPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
 
 	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
-	validatorsRewards := bondedTargetFactor.MulInt(distributionPoolBalance).TruncateInt().QuoRaw(blocksToNextTimerExpiry)
+	validatorsRewards := bondedTargetFactor.MulInt(distributionPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
 	if validatorsRewards.IsZero() {
 		// no rewards is not necessarily an error -> print warning
 		// utils.LavaFormatWarning("validators block rewards is zero", fmt.Errorf(""),
@@ -34,7 +34,7 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 		// distribute rewards to validators (same as Cosmos mint module)
 		err := k.addCollectedFees(ctx, coins)
 		if err != nil {
-			utils.LavaFormatError("critical - could not send validators rewards to fee collector", err,
+			utils.LavaFormatWarning("could not send validators rewards to fee collector", err,
 				utils.Attribute{Key: "rewards", Value: coins.String()},
 			)
 		}
@@ -100,16 +100,15 @@ func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, alloc
 	}
 
 	// transfer the new monthly quota (if allocation pool is expired, rewards=0)
-	monthlyQuota := sdk.Coins{sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: sdk.ZeroInt()}}
 	allocPoolBalance := k.TotalPoolTokens(ctx, allocationPool)
 	if monthsLeft != 0 && !allocPoolBalance.IsZero() {
-		monthlyQuota[0] = monthlyQuota[0].AddAmount(allocPoolBalance.QuoRaw(int64(monthsLeft)))
+		monthlyQuota := sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: allocPoolBalance.QuoRaw(int64(monthsLeft))}
 
 		err = k.bankKeeper.SendCoinsFromModuleToModule(
 			ctx,
 			string(allocationPool),
 			string(distributionPool),
-			monthlyQuota,
+			sdk.NewCoins(monthlyQuota),
 		)
 		if err != nil {
 			panic(err)
