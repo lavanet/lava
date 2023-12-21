@@ -1617,7 +1617,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 	consumerBalance -= freePlan.Price.Amount.MulRaw(freePlanDuration).Int64()
-	// Make sure that creator1 payed for the subscription
+	// Make sure that creator1 paid for the subscription
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
 
 	// Creator1 buys a future subscription
@@ -1625,7 +1625,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(creator1Addr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
 	require.Nil(t, err)
 
-	// Make sure that creator1 payed for the new subscription
+	// Make sure that creator1 paid for the new subscription
 	creator1Balance -= premiumPlan.Price.Amount.MulRaw(int64(newSubDuration)).Int64()
 	require.Equal(t, creator1Balance, ts.GetBalance(creator1Acc.Addr))
 
@@ -1641,7 +1641,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(creator2Addr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
 	require.Nil(t, err)
 
-	// Make sure that creator2 payed for the new subscription
+	// Make sure that creator2 paid for the new subscription
 	creator2Balance -= premiumPlan.Price.Amount.MulRaw(int64(newSubDuration)).Int64()
 	require.Equal(t, creator2Balance, ts.GetBalance(creator2Acc.Addr))
 
@@ -1657,7 +1657,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
 	require.Nil(t, err)
 
-	// Make sure that consumer payed for the new subscription
+	// Make sure that consumer paid for the new subscription
 	consumerBalance -= premiumPlan.Price.Amount.MulRaw(int64(newSubDuration)).Int64()
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
 
