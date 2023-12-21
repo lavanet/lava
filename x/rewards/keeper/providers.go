@@ -12,6 +12,7 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 	index := types.BasePayIndex{Provider: provider, ChainID: chainid}
 	basepay, found := k.getBasePay(ctx, index)
 	adjustedPay := sdk.NewDecFromInt(rewards).QuoInt64(int64(adjustmentDenom))
+	adjustedPay = sdk.MinDec(adjustedPay, sdk.NewDecFromInt(rewards))
 	if !found {
 		basepay = types.BasePay{Total: rewards, TotalAdjusted: adjustedPay}
 	} else {
@@ -62,12 +63,6 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 			utils.LavaFormatError("failed to send bonus rewards to subscription module", err, utils.LogAttr("amount", totalRewarded.String()))
 		}
 	}
-
-	tokensToBurn := total.Sub(totalRewarded)
-	err := k.BurnPoolTokens(ctx, types.ProviderRewardsDistributionPool, tokensToBurn)
-	if err != nil {
-		utils.LavaFormatError("Failed to burn left over bonus rewards", err, utils.LogAttr("amount", tokensToBurn.String()))
-	}
 }
 
 func (k Keeper) specTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec types.SpecEmmisionPart) math.LegacyDec {
@@ -77,13 +72,17 @@ func (k Keeper) specTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, to
 	return sdk.MinDec(sdk.MinDec(specPayoutAllocation, rewardBoost), diminishingRewards)
 }
 
-func (k Keeper) specEmissionParts(ctx sdk.Context) (emisions []types.SpecEmmisionPart) {
+func (k Keeper) specEmissionParts(ctx sdk.Context) (emissions []types.SpecEmmisionPart) {
 	chainIDs := k.specKeeper.GetAllChainIDs(ctx)
 	totalStake := sdk.ZeroDec()
 	chainStake := map[string]sdk.Dec{}
 	for _, chainID := range chainIDs {
 		spec, found := k.specKeeper.GetSpec(ctx, chainID)
 		if !found {
+			continue
+		}
+
+		if !spec.Enabled || spec.Shares == 0 {
 			continue
 		}
 
@@ -100,17 +99,21 @@ func (k Keeper) specEmissionParts(ctx sdk.Context) (emisions []types.SpecEmmisio
 		totalStake = totalStake.Add(chainStake[chainID])
 	}
 
+	if totalStake.IsZero() {
+		return emissions
+	}
+
 	for _, chainID := range chainIDs {
 		if stake, ok := chainStake[chainID]; ok {
-			if stake.IsZero() || totalStake.IsZero() {
+			if stake.IsZero() {
 				continue
 			}
 
-			emisions = append(emisions, types.SpecEmmisionPart{ChainID: chainID, Emission: stake.Quo(totalStake)})
+			emissions = append(emissions, types.SpecEmmisionPart{ChainID: chainID, Emission: stake.Quo(totalStake)})
 		}
 	}
 
-	return emisions
+	return emissions
 }
 
 func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string) ([]types.BasePayWithIndex, math.Int) {
