@@ -181,24 +181,25 @@ func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 		return nil, "", err
 	}
 
-	planPolicy := plan.GetPlanPolicy()
-	policies := []*planstypes.Policy{&planPolicy}
+	projectPolicies := []*planstypes.Policy{}
 	if project.SubscriptionPolicy != nil {
-		policies = append(policies, project.SubscriptionPolicy)
+		projectPolicies = append(projectPolicies, project.SubscriptionPolicy)
 	}
 	if project.AdminPolicy != nil {
-		policies = append(policies, project.AdminPolicy)
+		projectPolicies = append(projectPolicies, project.AdminPolicy)
 	}
-	chainPolicy, allowed := planstypes.GetStrictestChainPolicyForSpec(chainID, policies)
+	allPolicies := []*planstypes.Policy{&plan.PlanPolicy}
+	allPolicies = append(allPolicies, projectPolicies...)
+	chainPolicy, allowed := planstypes.GetStrictestChainPolicyForSpec(chainID, allPolicies)
 	if !allowed {
-		return nil, "", fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", policies)
+		return nil, "", fmt.Errorf("chain ID not allowed in all policies, or collections specified and have no intersection %#v", allPolicies)
 	}
-	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(policies)
+	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(allPolicies)
 	if err != nil {
 		return nil, "", err
 	}
 
-	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(policies)
+	providersToPair, err := k.CalculateEffectiveProvidersToPairFromPolicies(allPolicies)
 	if err != nil {
 		return nil, "", err
 	}
@@ -207,9 +208,11 @@ func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes
 	if !found {
 		return nil, "", fmt.Errorf("could not find subscription with address %s", project.GetSubscription())
 	}
-	allowedCUEpoch, allowedCUTotal := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
 
-	selectedProvidersMode, selectedProvidersList := k.CalculateEffectiveSelectedProviders(policies)
+	allowedCUEpoch, allowedCUTotal := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(
+		&plan, projectPolicies, project.GetUsedCu(), sub.GetMonthCuLeft())
+
+	selectedProvidersMode, selectedProvidersList := k.CalculateEffectiveSelectedProviders(allPolicies)
 
 	strictestPolicy := &planstypes.Policy{
 		GeolocationProfile:    geolocation,
@@ -280,10 +283,14 @@ func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*planst
 	return providersToPair, nil
 }
 
-func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*planstypes.Policy, cuUsedInProject, cuLeftInSubscription uint64) (allowedCUThisEpoch, allowedCUTotal uint64) {
+func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(plan *planstypes.Plan, projectPolicies []*planstypes.Policy, cuUsedInProject, cuLeftInSubscription uint64) (allowedCUThisEpoch, allowedCUTotal uint64) {
 	var policyEpochCuLimit []uint64
 	var policyTotalCuLimit []uint64
-	for _, policy := range policies {
+	planPolicy := plan.GetPlanPolicy()
+
+	allPolicies := []*planstypes.Policy{&planPolicy}
+	allPolicies = append(allPolicies, projectPolicies...)
+	for _, policy := range allPolicies {
 		if policy != nil {
 			if policy.EpochCuLimit != 0 {
 				policyEpochCuLimit = append(policyEpochCuLimit, policy.GetEpochCuLimit())

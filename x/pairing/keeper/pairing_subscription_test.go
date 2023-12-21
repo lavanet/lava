@@ -75,14 +75,17 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, sub.Sub)
 
-	policies := slices.Slice(
+	plan, err := ts.GetPlanFromSubscription(client1Addr, ts.BlockHeight())
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	projectPolicies := slices.Slice(
 		proj.Project.AdminPolicy,
 		proj.Project.SubscriptionPolicy,
-		&ts.plan.PlanPolicy,
 	)
 
 	allowedCu, _ := ts.Keepers.Pairing.CalculateEffectiveAllowedCuPerEpochFromPolicies(
-		policies, proj.Project.UsedCu, sub.Sub.MonthCuLeft)
+		&ts.plan, projectPolicies, proj.Project.UsedCu, sub.Sub.MonthCuLeft)
 
 	tests := []struct {
 		name string

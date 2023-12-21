@@ -46,20 +46,26 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 	}
 
 	planPolicy := plan.GetPlanPolicy()
-	policies := []*planstypes.Policy{&planPolicy, project.AdminPolicy, project.SubscriptionPolicy}
+	projectPolicies := []*planstypes.Policy{project.AdminPolicy, project.SubscriptionPolicy}
+	allPolicies := []*planstypes.Policy{&planPolicy}
+	allPolicies = append(allPolicies, projectPolicies...)
 	// geolocation is a bitmap. common denominator can be calculated with logical AND
-	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(policies)
+	geolocation, err := k.CalculateEffectiveGeolocationFromPolicies(allPolicies)
 	if err != nil {
 		return nil, err
 	}
-	allowedCU, allowedCUTotal := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(policies, project.GetUsedCu(), sub.GetMonthCuLeft())
+	allowedCU, allowedCUTotal := k.CalculateEffectiveAllowedCuPerEpochFromPolicies(
+		&plan, projectPolicies, project.GetUsedCu(), sub.GetMonthCuLeft())
 	if !planstypes.VerifyTotalCuUsage(allowedCUTotal, project.GetUsedCu()) {
 		allowedCU = 0
 	}
 
-	return &types.QueryUserEntryResponse{Consumer: epochstoragetypes.StakeEntry{
-		Geolocation: geolocation,
-		Address:     req.Address,
-		Chain:       req.ChainID,
-	}, MaxCU: allowedCU}, nil
+	return &types.QueryUserEntryResponse{
+		MaxCU: allowedCU,
+		Consumer: epochstoragetypes.StakeEntry{
+			Geolocation: geolocation,
+			Address:     req.Address,
+			Chain:       req.ChainID,
+		},
+	}, nil
 }
