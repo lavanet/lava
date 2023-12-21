@@ -10,14 +10,14 @@ import (
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
-// SetUniquePaymentStorageClientProvider set a specific uniquePaymentStorageClientProvider in the store from its index
+// SetAdjustment set a specific Adjustment in the store from its index
 func (k Keeper) SetAdjustment(ctx sdk.Context, adjustment types.Adjustment) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
 	b := k.cdc.MustMarshal(&adjustment)
 	store.Set([]byte(adjustment.Index), b)
 }
 
-// GetUniquePaymentStorageClientProvider returns a uniquePaymentStorageClientProvider from its index
+// GetAdjustment returns a Adjustment from its index
 func (k Keeper) GetAdjustment(
 	ctx sdk.Context,
 	index string,
@@ -32,7 +32,7 @@ func (k Keeper) GetAdjustment(
 	return val, true
 }
 
-// RemoveUniquePaymentStorageClientProvider removes a uniquePaymentStorageClientProvider from the store
+// RemoveAdjustment removes a Adjustment from the store
 func (k Keeper) RemoveAdjustment(
 	ctx sdk.Context,
 	index string,
@@ -41,7 +41,7 @@ func (k Keeper) RemoveAdjustment(
 	store.Delete([]byte(index))
 }
 
-// GetAllUniquePaymentStorageClientProvider returns all uniquePaymentStorageClientProvider
+// GetAllAdjustment returns all Adjustment
 func (k Keeper) GetAllAdjustment(ctx sdk.Context) (list []types.Adjustment) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.AdjustmentKeyPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
@@ -55,6 +55,13 @@ func (k Keeper) GetAllAdjustment(ctx sdk.Context) (list []types.Adjustment) {
 	}
 
 	return
+}
+
+// SetAllAdjustment sets all adjustments to the store
+func (k Keeper) SetAllAdjustment(ctx sdk.Context, list []types.Adjustment) {
+	for _, a := range list {
+		k.SetAdjustment(ctx, a)
+	}
 }
 
 func (k Keeper) GetProviderFromAdjustment(adjustment *types.Adjustment) (string, error) {
