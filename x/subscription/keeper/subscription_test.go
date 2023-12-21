@@ -31,6 +31,8 @@ func newTester(t *testing.T) *tester {
 	premiumPlan.Index = "premium"
 	premiumPlan.Price = freePlan.Price.AddAmount(math.NewInt(100))
 	premiumPlan.Block = ts.BlockHeight()
+	premiumPlan.PlanPolicy.TotalCuLimit += 100
+	premiumPlan.PlanPolicy.EpochCuLimit += 10
 	ts.AddPlan(premiumPlan.Index, premiumPlan)
 
 	return ts
@@ -1114,8 +1116,10 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 func TestSubscriptionAdvancePurchaseStartsOnExpirationOfCurrent(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	ts.AddSpec("myspec", common.CreateMockSpec())
 
 	consumerAcc, consumerAddr := ts.Account("sub1")
+	spec := ts.Spec("myspec")
 	freePlan := ts.Plan("free")
 	premiumPlan := ts.Plan("premium")
 	consumerBalance := ts.GetBalance(consumerAcc.Addr)
@@ -1166,7 +1170,12 @@ func TestSubscriptionAdvancePurchaseStartsOnExpirationOfCurrent(t *testing.T) {
 	require.Equal(t, premiumPlan.Block, sub.PlanBlock)
 	require.Equal(t, newSubDuration, sub.DurationBought)
 	require.Equal(t, newSubDuration, sub.DurationLeft)
-	require.Equal(t, uint64(2), sub.DurationTotal)
+	require.Equal(t, uint64(0), sub.DurationTotal)
+	require.Equal(t, premiumPlan.PlanPolicy.TotalCuLimit, sub.MonthCuTotal)
+
+	pairingEffectivePolicy, err := ts.QueryPairingEffectivePolicy(spec.Index, consumerAddr)
+	require.NoError(t, err)
+	require.Equal(t, premiumPlan.PlanPolicy.EpochCuLimit, pairingEffectivePolicy.Policy.EpochCuLimit)
 }
 
 func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_SameBlock(t *testing.T) {
