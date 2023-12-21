@@ -54,10 +54,22 @@ lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2265,1" 1 -y --from ser
 # (actually, only user1 is used in testutils/e2e/e2e.go, but having same count
 # in both chains simplifies the e2e logic that expects same amount of staked
 # clients in all tested chains)
-lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy "EmergencyModePlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx subscription buy "DefaultPlan" -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx subscription buy "DefaultPlan" -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx subscription buy "EmergencyModePlan" -y --from user5 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+# Test plan upgrade
+echo ---- Subscription plan upgrade ----
+wait_next_block
+lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+plan_index=$(lavad q subscription current $(lavad keys show user1 -a) | yq .sub.plan_index)
+if [ "$plan_index" != "EmergencyModePlan" ]; then "echo subscription ${user1addr}: wrong plan index $plane_index instead of EmergencyModePlan"; exit 1; fi
+
+sleep_until_next_epoch
+
+plan_index=$(lavad q subscription current $(lavad keys show user1 -a) | yq .sub.plan_index)
+if [ "$plan_index" != "DefaultPlan" ]; then "echo subscription ${user1addr}: wrong plan index $plane_index instead of DefaultPlan"; exit 1; fi
 
 user3addr=$(lavad keys show user3 -a)
 
