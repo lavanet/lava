@@ -30,12 +30,12 @@ func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
 
 	err := ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
-		ts.Pools.ValidatorsAllocationPool.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
+		ts.Keepers.AccountKeeper.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
 		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
 	require.Nil(ts.T, err)
 
 	err = ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
-		ts.Pools.ProvidersAllocationPool.GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
+		ts.Keepers.AccountKeeper.GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
 		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
 	require.Nil(ts.T, err)
 

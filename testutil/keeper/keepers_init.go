@@ -315,13 +315,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	// pools
 	allocationPoolBalance := uint64(30000000000000)
 
-	err := ks.BankKeeper.AddToBalance(
-		GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
+	err := ks.BankKeeper.AddToBalance(GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
 		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.Nil(t, err)
 
-	err = ks.BankKeeper.AddToBalance(
-		p.ProvidersAllocationPool.GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
+	err = ks.BankKeeper.AddToBalance(GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
 		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.Nil(t, err)
 
