@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/x/rewards/types"
 	subscription "github.com/lavanet/lava/x/subscription/keeper"
@@ -430,4 +431,61 @@ func TestBonusRewards3Providers(t *testing.T) {
 	require.Equal(t, res3.Rewards[0].Amount.Amount, distBalance.QuoRaw(7).MulRaw(4).AddRaw(6))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc3.Addr.String(), providerAcc3.Addr.String())
 	require.Nil(t, err)
+}
+
+// TestValidatorsAndCommunityParticipation checks that the validators and community participation funds
+// are as expected (according to communityTax and validatorsSubscriptionParticipation params)
+func TestValidatorsAndCommunityParticipation(t *testing.T) {
+	ts := newTester(t)
+
+	// set the communityTax and validatorsSubscriptionParticipation params to const values
+	// communityTax = 50%
+	// validatorsSubscriptionParticipation = 10%
+	distParams := distributiontypes.DefaultParams()
+	distParams.CommunityTax = sdk.NewDecWithPrec(5, 1) // 0.5
+	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	require.Nil(t, err)
+
+	paramKey := string(types.KeyValidatorsSubscriptionParticipation)
+	newDecParam, err := sdk.NewDecWithPrec(1, 1).MarshalJSON() // 0.1
+	require.Nil(ts.T, err)
+	paramVal := string(newDecParam)
+	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
+	require.Nil(ts.T, err)
+
+	// create provider+comsumer, send relay and send relay payment TX
+	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
+	err = ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+
+	consumerAcc, _ := ts.AddAccount(common.CONSUMER, 1, ts.plan.Price.Amount.Int64())
+	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false)
+	require.Nil(t, err)
+
+	baserewards := uint64(100)
+	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, baserewards)
+	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+	require.Nil(t, err)
+
+	// first months there are no bonus rewards, just payment from the subscription
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
+	require.Nil(t, err)
+	require.Len(t, res.Rewards, 1)
+	rewardWithParticipation := res.Rewards[0].Amount.Amount
+	_, validatorsParticipation, communityParticipation := ts.DeductParticipationFees(rewardWithParticipation)
+
+	validatorsPerc := validatorsParticipation.MulRaw(100).Quo(rewardWithParticipation)
+	communityPerc := communityParticipation.MulRaw(100).Quo(rewardWithParticipation)
+
+	// check participation percentages values accoding to hard-coded values
+	// validators participation percentage = (validatorsSubscriptionParticipation / (1 - communityTax)) = (10% / 100% - 50%) = 0.2
+	// community participation percentage = (validatorsSubscriptionParticipation + communityTax) - validators participation percentage = (10% + 50%) - 0.2 = 0.4
+	require.Equal(t, int64(20), validatorsPerc.Int64())
+	require.Equal(t, int64(40), communityPerc.Int64())
 }
