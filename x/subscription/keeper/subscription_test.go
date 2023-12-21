@@ -935,6 +935,9 @@ func TestSubscriptionUpgrade(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
 
+	ts.AddSpec("myspec", common.CreateMockSpec())
+	spec := ts.Spec("myspec")
+
 	_, consumer := ts.Account("sub1")
 	freePlan := ts.Plan("free")
 
@@ -942,13 +945,20 @@ func TestSubscriptionUpgrade(t *testing.T) {
 	upgradedPlan := common.CreateMockPlan()
 	upgradedPlan.Index = "premium"
 	upgradedPlan.Price = freePlan.Price.AddAmount(math.NewInt(100))
+	upgradedPlan.PlanPolicy.TotalCuLimit += 10000
+	upgradedPlan.PlanPolicy.EpochCuLimit += 1000
 	ts.AddPlan(upgradedPlan.Index, upgradedPlan)
 
 	// Buy free plan
 	_, err := ts.TxSubscriptionBuy(consumer, consumer, freePlan.Index, 1, false)
 	require.NoError(t, err)
 	// Verify subscription found inside getSubscription
-	getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
+	sub := getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
+	require.Equal(t, freePlan.PlanPolicy.TotalCuLimit, sub.MonthCuTotal)
+
+	pairingEffectivePolicy, err := ts.QueryPairingEffectivePolicy(spec.Index, consumer)
+	require.NoError(t, err)
+	require.Equal(t, freePlan.PlanPolicy.EpochCuLimit, pairingEffectivePolicy.Policy.EpochCuLimit)
 
 	// Charge CU from project so we can differentiate the old project from the new one
 	projectCuUsed := uint64(100)
@@ -961,7 +971,7 @@ func TestSubscriptionUpgrade(t *testing.T) {
 	require.Equal(t, projectCuUsed, project.UsedCu)
 
 	ts.AdvanceEpochs(2)
-	sub := getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
+	sub = getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
 	currentDurationTotal := sub.DurationTotal
 
 	// Buy premium plan
@@ -985,6 +995,11 @@ func TestSubscriptionUpgrade(t *testing.T) {
 	// Test that the subscription is now updated
 	sub = getSubscriptionAndFailTestIfNotFound(t, ts, consumer)
 	require.Equal(t, upgradedPlan.Index, sub.PlanIndex)
+	require.Equal(t, upgradedPlan.PlanPolicy.TotalCuLimit, sub.MonthCuTotal)
+
+	pairingEffectivePolicy, err = ts.QueryPairingEffectivePolicy(spec.Index, consumer)
+	require.NoError(t, err)
+	require.Equal(t, upgradedPlan.PlanPolicy.EpochCuLimit, pairingEffectivePolicy.Policy.EpochCuLimit)
 
 	// Test that the project is now updated
 	project = getProjectAndFailTestIfNotFound(t, ts, consumer, ts.BlockHeight())

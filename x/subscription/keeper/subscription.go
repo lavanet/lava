@@ -111,7 +111,7 @@ func (k Keeper) CreateSubscription(
 					utils.LogAttr("block", block),
 				)
 			}
-			err = k.upgradeSubscriptionPlan(ctx, duration, &sub, plan.Index, plan.Block)
+			err = k.upgradeSubscriptionPlan(ctx, duration, &sub, &plan)
 			if err != nil {
 				return err
 			}
@@ -232,7 +232,7 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 	return sub, nil
 }
 
-func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *types.Subscription, toPlanIndex string, toPlanBlock uint64) error {
+func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *types.Subscription, toPlan *planstypes.Plan) error {
 	block := uint64(ctx.BlockHeight())
 
 	// Track CU for the previous subscription
@@ -258,8 +258,9 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 			utils.LogAttr("consumer", sub.Consumer))
 	}
 
-	sub.PlanIndex = toPlanIndex
-	sub.PlanBlock = toPlanBlock
+	sub.PlanIndex = toPlan.Index
+	sub.PlanBlock = toPlan.Block
+	sub.MonthCuTotal = toPlan.PlanPolicy.TotalCuLimit
 
 	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, true)
 
