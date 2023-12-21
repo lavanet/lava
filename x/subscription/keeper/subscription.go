@@ -57,7 +57,18 @@ func (k Keeper) CreateSubscription(
 	}
 
 	var sub types.Subscription
-	found = k.subsFS.FindEntry(ctx, consumer, block, &sub)
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
+	if err != nil {
+		return utils.LavaFormatError("Got an error while trying to get next epoch on CreateSubscription", err,
+			utils.LogAttr("consumer", sub.Consumer),
+			utils.LogAttr("block", block),
+		)
+	}
+
+	// When we make a subscription upgrade, we append the new subscription entry on the next epoch,
+	// 	but, we want to get the most updated subscription here.
+	// Hence, in case of user making double upgrade in the same epoch, we take the next epoch.
+	found = k.subsFS.FindEntry(ctx, consumer, nextEpoch, &sub)
 
 	// Subscription creation:
 	//   When: if not already exists for consumer address)
@@ -250,7 +261,7 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 	sub.PlanIndex = toPlanIndex
 	sub.PlanBlock = toPlanBlock
 
-	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch)
+	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, true)
 
 	return nil
 }
@@ -275,7 +286,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 
 	if sub.DurationLeft > 0 {
 		sub.DurationTotal += 1
-		k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block)
+		k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, false)
 	} else {
 		if sub.AutoRenewal {
 			// apply the DurationLeft decrease to 0 and buy an extra month
@@ -335,7 +346,7 @@ func (k Keeper) handleZeroDurationLeftForSubscription(ctx sdk.Context, block uin
 	k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(sub.Consumer), []byte{})
 }
 
-func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *types.Subscription, block uint64) {
+func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *types.Subscription, block uint64, deleteOldTimer bool) {
 	// reset projects CU allowance for this coming month
 	k.projectsKeeper.SnapshotSubscriptionProjects(ctx, sub.Consumer, block)
 
@@ -346,8 +357,23 @@ func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *typ
 	// restart timer and append new (fixated) version of this subscription
 	// the timer will expire in exactly one month from now
 	expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
+
+	tsKey := []byte(sub.Consumer)
+
+	if deleteOldTimer {
+		if k.subsTS.HasTimerByBlockTime(ctx, sub.MonthExpiryTime, tsKey) {
+			k.subsTS.DelTimerByBlockTime(ctx, sub.MonthExpiryTime, tsKey)
+		} else {
+			utils.LavaFormatError("Delete timer failed: timer key was not found", nil,
+				utils.LogAttr("expiryTime", sub.MonthExpiryTime),
+				utils.LogAttr("consumer", sub.Consumer),
+				utils.LogAttr("block", block),
+			)
+		}
+	}
+	k.subsTS.AddTimerByBlockTime(ctx, expiry, tsKey, []byte{})
+
 	sub.MonthExpiryTime = expiry
-	k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(sub.Consumer), []byte{})
 
 	// since the total duration increases, the cluster might change
 	sub.Cluster = types.GetClusterKey(*sub)
