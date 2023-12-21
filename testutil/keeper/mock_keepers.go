@@ -271,10 +271,3 @@ func (b *MockBlockStore) LoadBlockMetaByHash(hash []byte) *tenderminttypes.Block
 func (b *MockBlockStore) DeleteLatestBlock() error {
 	return nil
 }
-
-// rewards pool mock
-type mockRewardsPool struct{}
-
-func (k mockRewardsPool) GetModuleAddress(moduleName string) sdk.AccAddress {
-	return sdk.AccAddress([]byte(moduleName))
-}
