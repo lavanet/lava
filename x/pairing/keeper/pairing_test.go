@@ -2240,3 +2240,217 @@ func TestPairingPerformance(t *testing.T) {
 	duration := time.Since(before)
 	require.Less(t, duration.Nanoseconds(), time.Second.Nanoseconds())
 }
+
+func TestCalculateEffectiveAllowedCuPerEpochFromPolicies_WithProjectPolicies(t *testing.T) {
+	ts := newTester(t)
+
+	// Create plan with no overuse
+	plan := &planstypes.Plan{
+		PlanPolicy: planstypes.Policy{
+			EpochCuLimit: 100,
+			TotalCuLimit: 500,
+		},
+	}
+
+	// Create project policies
+	projectPolicies := []*planstypes.Policy{
+		{EpochCuLimit: 50, TotalCuLimit: 250},
+		{EpochCuLimit: 80, TotalCuLimit: 200},
+	}
+
+	// effectiveEpochCuOfProject = Min { 100, 50, 80 } = 50
+	// effectiveTotalCuOfProject = Min { 500, 250, 200 } = 200
+
+	testCases := []struct {
+		allowedOveruse            bool
+		cuUsedInProject           uint64
+		cuLeftInSubscription      uint64
+		expectedAllowedCUForEpoch uint64
+	}{
+		{
+			allowedOveruse:       false,
+			cuUsedInProject:      40,
+			cuLeftInSubscription: 160,
+
+			// cuLeftInProject = effectiveTotalCuOfProject - cuUsedInProject = 200 - 40 = 160
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription }
+			//  = Min { 50, 160, 160 } = 50
+
+			expectedAllowedCUForEpoch: 50,
+		},
+		{
+			allowedOveruse:       false,
+			cuUsedInProject:      0,
+			cuLeftInSubscription: 10,
+
+			// cuLeftInProject = effectiveTotalCuOfProject - cuUsedInProject = 200 - 0 = 200
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription }
+			//  = Min { 50, 200, 10 } = 10
+
+			expectedAllowedCUForEpoch: 10,
+		},
+		{
+			allowedOveruse:       false,
+			cuUsedInProject:      200,
+			cuLeftInSubscription: 100,
+
+			// cuLeftInProject = effectiveTotalCuOfProject - cuUsedInProject = 200 - 200 = 0
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription }
+			//  = Min { 50, 0, 100 } = 0
+
+			expectedAllowedCUForEpoch: 0,
+		},
+		{
+			allowedOveruse:       false,
+			cuUsedInProject:      200,
+			cuLeftInSubscription: 0,
+
+			// cuLeftInProject = effectiveTotalCuOfProject - cuUsedInProject = 200 - 200 = 0
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription }
+			//  = Min { 50, 0, 0 } = 0
+
+			expectedAllowedCUForEpoch: 0,
+		},
+		{
+			allowedOveruse:       true,
+			cuUsedInProject:      100,
+			cuLeftInSubscription: 0, // This should not be taken into consideration when allowedOveruse = true
+
+			// cuLeftInProject = effectiveTotalCuOfProject - cuUsedInProject = 200 - 100 = 100
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject, cuLeftInProject }
+			//  = Min { 50, 100 } = 50
+
+			expectedAllowedCUForEpoch: 50,
+		},
+		{
+			allowedOveruse:       true,
+			cuUsedInProject:      200,
+			cuLeftInSubscription: 100, // This should not be taken into consideration when allowedOveruse = true
+
+			// cuLeftInProject = effectiveTotalCuOfProject - cuUsedInProject = 200 - 200 = 0
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject, cuLeftInProject }
+			//  = Min { 50, 0 } = 0
+
+			expectedAllowedCUForEpoch: 0,
+		},
+	}
+
+	for _, testCase := range testCases {
+		plan.AllowOveruse = testCase.allowedOveruse
+		allowedCUForEpoch, allowedCUTotal := ts.Keepers.Pairing.CalculateEffectiveAllowedCuPerEpochFromPolicies(
+			plan, projectPolicies, testCase.cuUsedInProject, testCase.cuLeftInSubscription)
+
+		require.Equal(t, testCase.expectedAllowedCUForEpoch, allowedCUForEpoch, testCase)
+
+		// allowedCUTotal is dependent only on project policies
+		// allowedCUTotal = effectiveTotalCuOfProject = 200
+		require.Equal(t, uint64(200), allowedCUTotal, testCase)
+	}
+}
+
+func TestCalculateEffectiveAllowedCuPerEpochFromPolicies_WithoutProjectPolicies(t *testing.T) {
+	ts := newTester(t)
+
+	// Create plan with no overuse
+	plan := &planstypes.Plan{
+		PlanPolicy: planstypes.Policy{
+			EpochCuLimit: 100,
+			TotalCuLimit: 500,
+		},
+	}
+
+	// Create empty project policies
+	projectPolicies := []*planstypes.Policy{}
+
+	// effectiveEpochCuOfProject = 100
+	// effectiveTotalCuOfProject = 500
+
+	testCases := []struct {
+		allowedOveruse            bool
+		cuUsedInProject           uint64
+		cuLeftInSubscription      uint64
+		expectedAllowedCUForEpoch uint64
+	}{
+		{
+			allowedOveruse:       false,
+			cuUsedInProject:      340,
+			cuLeftInSubscription: 200,
+
+			// cuLeftInProject = effectiveTotalCuOfProject - cuUsedInProject = 500 - 340 = 160
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription }
+			//  = Min { 100, 160, 200 } = 100
+
+			expectedAllowedCUForEpoch: 100,
+		},
+		{
+			allowedOveruse:       false,
+			cuUsedInProject:      0,
+			cuLeftInSubscription: 10,
+
+			// cuLeftInProject = effectiveTotalCuOfProject - cuUsedInProject = 500 - 0 = 500
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription }
+			//  = Min { 100, 500, 10 } = 10
+
+			expectedAllowedCUForEpoch: 10,
+		},
+		{
+			allowedOveruse:       false,
+			cuUsedInProject:      500,
+			cuLeftInSubscription: 50,
+
+			// cuLeftInProject = effectiveTotalCuOfProject - cuUsedInProject = 500 - 500 = 0
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription }
+			//  = Min { 100, 0, 50 } = 0
+
+			expectedAllowedCUForEpoch: 0,
+		},
+		{
+			allowedOveruse:       false,
+			cuUsedInProject:      500,
+			cuLeftInSubscription: 0,
+
+			// cuLeftInProject = effectiveTotalCuOfProject - cuUsedInProject = 500 - 500 = 0
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription }
+			//  = Min { 100, 0, 0 } = 0
+
+			expectedAllowedCUForEpoch: 0,
+		},
+		{
+			allowedOveruse: true,
+
+			// This should not be taken into consideration when allowedOveruse = true and projects policies is empty
+			cuUsedInProject: 10,
+
+			// This should not be taken into consideration when allowedOveruse = true
+			cuLeftInSubscription: 100,
+
+			// allowedCUForEpoch
+			// 	= Min { effectiveEpochCuOfProject }
+			//  = Min { 100 } = 100
+
+			expectedAllowedCUForEpoch: 100,
+		},
+	}
+
+	for _, testCase := range testCases {
+		plan.AllowOveruse = testCase.allowedOveruse
+		allowedCUForEpoch, allowedCUTotal := ts.Keepers.Pairing.CalculateEffectiveAllowedCuPerEpochFromPolicies(
+			plan, projectPolicies, testCase.cuUsedInProject, testCase.cuLeftInSubscription)
+
+		require.Equal(t, testCase.expectedAllowedCUForEpoch, allowedCUForEpoch, testCase)
+
+		// allowedCUTotal is dependent only on project policies
+		// allowedCUTotal = effectiveTotalCuOfProject = 500
+		require.Equal(t, uint64(500), allowedCUTotal, testCase)
+	}
+}

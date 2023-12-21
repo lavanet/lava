@@ -284,13 +284,12 @@ func (k Keeper) CalculateEffectiveProvidersToPairFromPolicies(policies []*planst
 }
 
 func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(plan *planstypes.Plan, projectPolicies []*planstypes.Policy, cuUsedInProject, cuLeftInSubscription uint64) (allowedCUThisEpoch, allowedCUTotal uint64) {
-	var policyEpochCuLimit []uint64
-	var policyTotalCuLimit []uint64
+	allowOveruse := plan.AllowOveruse
 	planPolicy := plan.GetPlanPolicy()
+	policyEpochCuLimit := []uint64{planPolicy.GetEpochCuLimit()}
+	policyTotalCuLimit := []uint64{planPolicy.GetTotalCuLimit()}
 
-	allPolicies := []*planstypes.Policy{&planPolicy}
-	allPolicies = append(allPolicies, projectPolicies...)
-	for _, policy := range allPolicies {
+	for _, policy := range projectPolicies {
 		if policy != nil {
 			if policy.EpochCuLimit != 0 {
 				policyEpochCuLimit = append(policyEpochCuLimit, policy.GetEpochCuLimit())
@@ -302,11 +301,28 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(plan *planstypes
 	}
 
 	effectiveTotalCuOfProject := slices.Min(policyTotalCuLimit)
-	cuLeftInProject := effectiveTotalCuOfProject - cuUsedInProject
-
 	effectiveEpochCuOfProject := slices.Min(policyEpochCuLimit)
 
-	slice := []uint64{effectiveEpochCuOfProject, cuLeftInProject, cuLeftInSubscription}
+	cuLeftInProject := effectiveTotalCuOfProject - cuUsedInProject
+
+	slice := []uint64{effectiveEpochCuOfProject}
+
+	// When allowOveruse = false :
+	// 	- Business as usual, meaning, we need cuLeftInProject and cuLeftInSubscription
+	// When allowOveruse = true :
+	// 	- We don't want to take cuLeftInSubscription,
+	//		since CU overuse doesn't care how much CU is left in subscription
+	// 	- If there are any projects, we do want to take their policies into consideration,
+	// 		since project policy is stronger than the subscription's
+	//  - If there are no projects for this subscription,
+	//		then only thing that matters, is the subscription's epoch CU limit
+
+	if !allowOveruse {
+		slice = append(slice, cuLeftInProject, cuLeftInSubscription)
+	} else if len(projectPolicies) != 0 {
+		slice = append(slice, cuLeftInProject)
+	}
+
 	return slices.Min(slice), effectiveTotalCuOfProject
 }
 
