@@ -10,6 +10,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -98,6 +99,16 @@ func (ts *tester) addProviderExtra(
 // setupForPayments creates staked providers and clients with subscriptions. They can be accessed
 // using ts.Account(common.PROVIDER, idx) and ts.Account(common.PROVIDER, idx) respectively.
 func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair int) *tester {
+	err := ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
+		ts.Pools.ValidatorsAllocationPool.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
+	require.Nil(ts.T, err)
+
+	err = ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
+		ts.Pools.ProvidersAllocationPool.GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
+	require.Nil(ts.T, err)
+
 	ts.addValidators(1)
 	if providersToPair > 0 {
 		// will overwrite the default "free" plan
@@ -106,7 +117,7 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 	}
 
 	ts.addClient(clientsCount)
-	err := ts.addProvider(providersCount)
+	err = ts.addProvider(providersCount)
 	require.Nil(ts.T, err)
 
 	ts.AdvanceEpoch()
