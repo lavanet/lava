@@ -159,7 +159,7 @@ func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, l
 	return pairingResp.Providers, pairingResp.CurrentEpoch, pairingResp.BlockOfNextPairing, nil
 }
 
-func (csq *ConsumerStateQuery) GetMaxCUForUser(ctx context.Context, chainID string, epoch uint64) (maxCu uint64, err error) {
+func (csq *ConsumerStateQuery) GetMaxCuPerEpochForUser(ctx context.Context, chainID string, epoch uint64) (maxCu uint64, err error) {
 	address := csq.clientCtx.FromAddress.String()
 	UserEntryRes, err := csq.PairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: epoch})
 	if err != nil {
@@ -198,7 +198,7 @@ func NewProviderStateQuery(ctx context.Context, clientCtx client.Context) *Provi
 	return csq
 }
 
-func (psq *ProviderStateQuery) GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {
+func (psq *ProviderStateQuery) GetMaxCuPerEpochForUser(ctx context.Context, consumerAddress, chainID string, epoch uint64) (maxCu uint64, err error) {
 	key := psq.entryKey(consumerAddress, chainID, epoch, "")
 	cachedInterface, found := psq.ResponsesCache.Get(MaxCuResponseKey + key)
 	var userEntryRes *pairingtypes.QueryUserEntryResponse = nil

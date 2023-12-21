@@ -153,7 +153,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 			continue
 		}
 
-		maxCu, err := pu.stateQuery.GetMaxCUForUser(ctx, provider.Chain, epoch)
+		maxCu, err := pu.stateQuery.GetMaxCuPerEpochForUser(ctx, provider.Chain, epoch)
 		if err != nil {
 			return nil, err
 		}

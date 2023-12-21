@@ -70,7 +70,7 @@ type RewardServerInf interface {
 
 type StateTrackerInf interface {
 	LatestBlock() int64
-	GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epocu uint64) (maxCu uint64, err error)
+	GetMaxCuPerEpochForUser(ctx context.Context, consumerAddress, chainID string, epocu uint64) (maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error)
 	GetVirtualEpoch(epoch uint64) uint64
 }
@@ -511,9 +511,9 @@ func (rpcps *RPCProviderServer) getSingleProviderSession(ctx context.Context, re
 					utils.Attribute{Key: "relayNum", Value: request.RelayNum},
 				)
 			}
-			maxCuForConsumer, getMaxCuError := rpcps.stateTracker.GetMaxCuForUser(ctx, consumerAddressString, request.SpecId, uint64(request.Epoch))
+			maxCuForConsumer, getMaxCuError := rpcps.stateTracker.GetMaxCuPerEpochForUser(ctx, consumerAddressString, request.SpecId, uint64(request.Epoch))
 			if getMaxCuError != nil {
-				return nil, utils.LavaFormatError("ConsumerNotRegisteredYet: GetMaxCuForUser failed", getMaxCuError,
+				return nil, utils.LavaFormatError("ConsumerNotRegisteredYet: GetMaxCuPerEpochForUser failed", getMaxCuError,
 					utils.Attribute{Key: "GUID", Value: ctx},
 					utils.Attribute{Key: "epoch", Value: request.Epoch},
 					utils.Attribute{Key: "sessionID", Value: request.SessionId},
