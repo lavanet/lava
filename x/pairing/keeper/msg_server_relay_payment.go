@@ -237,7 +237,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if err != nil {
 			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
 		}
-		rejectedCu += relay.CuSum
+		rejectedCu -= relay.CuSum
 		rejected_relays_num--
 	}
 
