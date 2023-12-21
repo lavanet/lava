@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -9,6 +10,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
+	updaters "github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
@@ -17,7 +19,7 @@ import (
 // ProviderStateTracker PST is a class for tracking provider data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type ProviderStateTracker struct {
-	stateQuery *ProviderStateQuery
+	stateQuery *updaters.ProviderStateQuery
 	txSender   *ProviderTxSender
 	*StateTracker
 	*EmergencyTracker
@@ -35,7 +37,7 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	}
 	pst := &ProviderStateTracker{
 		StateTracker:     stateTrackerBase,
-		stateQuery:       NewProviderStateQuery(ctx, clientCtx),
+		stateQuery:       updaters.NewProviderStateQuery(ctx, clientCtx),
 		txSender:         txSender,
 		EmergencyTracker: emergencyTracker,
 	}
@@ -45,52 +47,52 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	return pst, err
 }
 
-func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable EpochUpdatable) {
-	epochUpdater := NewEpochUpdater(&pst.stateQuery.EpochStateQuery)
+func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
+	epochUpdater := updaters.NewEpochUpdater(&pst.stateQuery.EpochStateQuery)
 	epochUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, epochUpdater)
-	epochUpdater, ok := epochUpdaterRaw.(*EpochUpdater)
+	epochUpdater, ok := epochUpdaterRaw.(*updaters.EpochUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: epochUpdaterRaw})
 	}
 	epochUpdater.RegisterEpochUpdatable(ctx, epochUpdatable, 0) // adding 0 delay for provider updater
 }
 
-func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
+func (pst *ProviderStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
 	// register for spec updates sets spec and updates when a spec has been modified
-	specUpdater := NewSpecUpdater(endpoint.ChainID, pst.stateQuery, pst.EventTracker)
+	specUpdater := updaters.NewSpecUpdater(endpoint.ChainID, pst.stateQuery, pst.EventTracker)
 	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
-	specUpdater, ok := specUpdaterRaw.(*SpecUpdater)
+	specUpdater, ok := specUpdaterRaw.(*updaters.SpecUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
 	}
 	return specUpdater.RegisterSpecUpdatable(ctx, &specUpdatable, endpoint)
 }
 
-func (pst *ProviderStateTracker) RegisterForSpecVerifications(ctx context.Context, specVerifier SpecVerifier, endpoint lavasession.RPCEndpoint) error {
+func (pst *ProviderStateTracker) RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, endpoint lavasession.RPCEndpoint) error {
 	// register for spec verifications sets spec and verifies when a spec has been modified
-	specUpdater := NewSpecUpdater(endpoint.ChainID, pst.stateQuery, pst.EventTracker)
+	specUpdater := updaters.NewSpecUpdater(endpoint.ChainID, pst.stateQuery, pst.EventTracker)
 	specUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, specUpdater)
-	specUpdater, ok := specUpdaterRaw.(*SpecUpdater)
+	specUpdater, ok := specUpdaterRaw.(*updaters.SpecUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForSpecVerifications", nil, utils.Attribute{Key: "updater", Value: specUpdaterRaw})
 	}
 	return specUpdater.RegisterSpecVerifier(ctx, &specVerifier, endpoint)
 }
 
-func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator VersionValidationInf) {
-	versionUpdater := NewVersionUpdater(pst.stateQuery, pst.EventTracker, version, versionValidator)
+func (pst *ProviderStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
+	versionUpdater := updaters.NewVersionUpdater(pst.stateQuery, pst.EventTracker, version, versionValidator)
 	versionUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, versionUpdater)
-	versionUpdater, ok := versionUpdaterRaw.(*VersionUpdater)
+	versionUpdater, ok := versionUpdaterRaw.(*updaters.VersionUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: versionUpdaterRaw})
 	}
 	versionUpdater.RegisterVersionUpdatable()
 }
 
-func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
-	voteUpdater := NewVoteUpdater(pst.EventTracker)
+func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint) {
+	voteUpdater := updaters.NewVoteUpdater(pst.EventTracker)
 	voteUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, voteUpdater)
-	voteUpdater, ok := voteUpdaterRaw.(*VoteUpdater)
+	voteUpdater, ok := voteUpdaterRaw.(*updaters.VoteUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: voteUpdaterRaw})
 	}
@@ -98,10 +100,10 @@ func (pst *ProviderStateTracker) RegisterReliabilityManagerForVoteUpdates(ctx co
 	voteUpdater.RegisterVoteUpdatable(ctx, &voteUpdatable, endpoint)
 }
 
-func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable PaymentUpdatable) {
-	paymentUpdater := NewPaymentUpdater(pst.EventTracker)
+func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context.Context, paymentUpdatable updaters.PaymentUpdatable) {
+	paymentUpdater := updaters.NewPaymentUpdater(pst.EventTracker)
 	paymentUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, paymentUpdater)
-	paymentUpdater, ok := paymentUpdaterRaw.(*PaymentUpdater)
+	paymentUpdater, ok := paymentUpdaterRaw.(*updaters.PaymentUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: paymentUpdaterRaw})
 	}
@@ -109,11 +111,11 @@ func (pst *ProviderStateTracker) RegisterPaymentUpdatableForPayments(ctx context
 	paymentUpdater.RegisterPaymentUpdatable(ctx, &paymentUpdatable)
 }
 
-func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable DowntimeParamsUpdatable) error {
+func (pst *ProviderStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {
 	// register for downtimeParams updates sets downtimeParams and updates when downtimeParams has been changed
-	downtimeParamsUpdater := NewDowntimeParamsUpdater(pst.stateQuery, pst.EventTracker)
+	downtimeParamsUpdater := updaters.NewDowntimeParamsUpdater(pst.stateQuery, pst.EventTracker)
 	downtimeParamsUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, downtimeParamsUpdater)
-	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*DowntimeParamsUpdater)
+	downtimeParamsUpdater, ok := downtimeParamsUpdaterRaw.(*updaters.DowntimeParamsUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: downtimeParamsUpdaterRaw})
 	}
@@ -161,6 +163,10 @@ func (pst *ProviderStateTracker) GetEpochSizeMultipliedByRecommendedEpochNumToCo
 	return pst.stateQuery.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 }
 
-func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
+func (pst *ProviderStateTracker) GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error) {
 	return pst.stateQuery.GetProtocolVersion(ctx)
+}
+
+func (pst *ProviderStateTracker) GetAverageBlockTime() time.Duration {
+	return pst.StateTracker.GetAverageBlockTime()
 }

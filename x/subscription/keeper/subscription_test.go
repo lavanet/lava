@@ -902,6 +902,44 @@ func TestNextToMonthExpiryQuery(t *testing.T) {
 	require.Equal(t, 0, len(res.Subscriptions))
 }
 
+// TestPlanRemovedWhenSubscriptionExpires checks that if a subscription is expired
+// the plan's refcount is decreased.
+// in this test, we buy a subscription, update the plan and expire the subscription
+// since the old plan version's refcount is decreased, the old plan should be removed
+// note that we had to update the plan because latest versions (of every fixation object)
+// is never deleted
+func TestPlanRemovedWhenSubscriptionExpires(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	months := 1
+	plan := ts.Plan("free")
+
+	_, sub1 := ts.Account("sub1")
+
+	// buy sub with plan first version
+	_, err := ts.TxSubscriptionBuy(sub1, sub1, plan.Index, months, false, false)
+	require.Nil(t, err)
+	oldPlanBlock := ts.BlockHeight()
+
+	// update plan
+	ts.AdvanceEpoch()
+	plan.OveruseRate++
+	err = ts.Keepers.Plans.AddPlan(ts.Ctx, plan, false)
+	require.Nil(t, err)
+
+	// expire the subscription
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlock(6)
+	res, err := ts.QuerySubscriptionCurrent(sub1)
+	require.Nil(t, err)
+	require.Nil(t, res.Sub)
+
+	// wait the stale period and check old plan doesn't exist
+	ts.AdvanceBlockUntilStale()
+	_, found := ts.Keepers.Plans.FindPlan(ts.Ctx, plan.Index, oldPlanBlock)
+	require.False(t, found)
+}
+
 func TestSubscriptionUpgrade(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev

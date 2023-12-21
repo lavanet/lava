@@ -1,5 +1,7 @@
 #!/bin/bash
 source ./scripts/prepare_protobufs.sh
+# in some cases there will be persmission denied so use -s.
+echo "to use sudo add -s"
 
 # Flag variable
 use_sudo=false

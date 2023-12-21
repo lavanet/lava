@@ -20,9 +20,8 @@ import (
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/utils/rand"
 
-	"github.com/lavanet/lava/protocol/statetracker"
-
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cobra"
@@ -30,8 +29,8 @@ import (
 )
 
 type LavavisorStateTrackerInf interface {
-	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator statetracker.VersionValidationInf)
-	GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error)
+	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
+	GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error)
 }
 
 type LavaVisor struct {

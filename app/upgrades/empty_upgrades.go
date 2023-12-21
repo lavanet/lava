@@ -4,12 +4,14 @@ import (
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 )
 
 func defaultUpgradeHandler(
@@ -169,4 +171,13 @@ var Upgrade_0_31_1 = Upgrade{
 	UpgradeName:          "v0.31.1",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_0_32_0 = Upgrade{
+	UpgradeName:          "v0.32.0",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades: store.StoreUpgrades{
+		Added:   []string{rewardstypes.StoreKey},
+		Deleted: []string{minttypes.StoreKey},
+	},
 }

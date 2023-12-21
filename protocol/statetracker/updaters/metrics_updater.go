@@ -1,4 +1,4 @@
-package statetracker
+package updaters
 
 const (
 	CallbackKeyForMetricUpdate = "metric-update"

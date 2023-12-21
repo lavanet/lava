@@ -48,9 +48,8 @@ func TestGetPairingForSubscription(t *testing.T) {
 	_, err = ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
 	require.NotNil(t, err)
 
-	verify, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, providerAddr, ts.BlockHeight())
+	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, providerAddr, ts.BlockHeight())
 	require.NotNil(t, err)
-	require.False(t, verify.Valid)
 }
 
 func TestRelayPaymentSubscription(t *testing.T) {
