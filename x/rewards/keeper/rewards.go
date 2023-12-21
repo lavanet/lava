@@ -74,8 +74,8 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	// calculate the block in which the timer will expire (+5% for errors)
 	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC().Unix()
 	durationUntilNextMonth := nextMonth - ctx.BlockTime().UTC().Unix()
-	blockCreationTime := k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds()
-	blocksToNextTimerExpiry := ((durationUntilNextMonth / int64(blockCreationTime)) * 105 / 100) + ctx.BlockHeight()
+	blockCreationTime := int64(k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds())
+	blocksToNextTimerExpiry := types.BlocksToTimerExpirySlackFactor.MulInt64(durationUntilNextMonth).QuoInt64(blockCreationTime).TruncateInt64() + ctx.BlockHeight()
 
 	// update the months left of the allocation pool and encode it
 	monthsLeftBytes := make([]byte, 8)

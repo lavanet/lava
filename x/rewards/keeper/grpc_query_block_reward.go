@@ -24,7 +24,7 @@ func (k Keeper) BlockReward(goCtx context.Context, req *types.QueryBlockRewardRe
 	blockPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
 
 	// validators bonus rewards = (blockPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
-	validatorsRewards := bondedTargetFactor.MulInt(blockPoolBalance).TruncateInt().QuoRaw(blocksToNextTimerExpiry)
+	validatorsRewards := bondedTargetFactor.MulInt(blockPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
 	reward := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards)
 
 	return &types.QueryBlockRewardResponse{Reward: reward}, nil
