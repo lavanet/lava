@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -23,12 +22,12 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
 	validatorsRewards := bondedTargetFactor.MulInt(distributionPoolBalance).TruncateInt().QuoRaw(blocksToNextTimerExpiry)
 	if validatorsRewards.IsZero() {
-		// no rewards is not necessarily an error -> print warning and return
-		utils.LavaFormatWarning("validators block rewards is zero", fmt.Errorf(""),
-			utils.Attribute{Key: "bonded_target_factor", Value: bondedTargetFactor.String()},
-			utils.Attribute{Key: "distribution_pool_balance", Value: distributionPoolBalance.String()},
-			utils.Attribute{Key: "blocks_to_next_timer_expiry", Value: strconv.FormatInt(blocksToNextTimerExpiry, 10)},
-		)
+		// no rewards is not necessarily an error -> print warning
+		// utils.LavaFormatWarning("validators block rewards is zero", fmt.Errorf(""),
+		// 	utils.Attribute{Key: "bonded_target_factor", Value: bondedTargetFactor.String()},
+		// 	utils.Attribute{Key: "distribution_pool_balance", Value: distributionPoolBalance.String()},
+		// 	utils.Attribute{Key: "blocks_to_next_timer_expiry", Value: strconv.FormatInt(blocksToNextTimerExpiry, 10)},
+		// )
 	} else {
 		coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards))
 

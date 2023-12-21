@@ -271,14 +271,18 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec, ks.StakingKeeper)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
 
+	// register cosmos module params in the params keeper (Lava module do it in their NewKeeper function)
+	distSubspace, _ := paramsKeeper.GetSubspace(distributiontypes.ModuleName)
+	distSubspace = distSubspace.WithKeyTable(distributiontypes.ParamKeyTable())
+
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
 	// Initialize params
 	stakingparams := stakingtypes.DefaultParams()
 	stakingparams.BondDenom = commonconsts.TestTokenDenom
 	ks.StakingKeeper.SetParams(ctx, stakingparams)
-	slashingParams := slashingtypes.DefaultParams()
-	ks.SlashingKeeper.SetParams(ctx, slashingParams)
+	ks.Distribution.SetParams(ctx, distributiontypes.DefaultParams())
+	ks.SlashingKeeper.SetParams(ctx, slashingtypes.DefaultParams())
 	ks.Pairing.SetParams(ctx, pairingtypes.DefaultParams())
 	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
 	ks.Subscription.SetParams(ctx, subscriptiontypes.DefaultParams())
@@ -309,6 +313,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 	ss.StakingServer = stakingkeeper.NewMsgServerImpl(&ks.StakingKeeper)
 	ss.SlashingServer = slashingkeeper.NewMsgServerImpl(ks.SlashingKeeper)
 	ss.RewardsServer = rewardskeeper.NewMsgServerImpl(ks.Rewards)
+	ss.DistributionServer = distributionkeeper.NewMsgServerImpl(ks.Distribution)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
@@ -340,6 +345,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, *RewardsPools, context.Co
 	ks.Projects.InitProjects(ctx, *fixationtypes.DefaultGenesis())
 	ks.Rewards.InitRewardsRefillTS(ctx, *timerstoretypes.DefaultGenesis())
 	ks.Rewards.RefillRewardsPools(ctx, nil, nil)
+	ks.Distribution.InitGenesis(ctx, *distributiontypes.DefaultGenesisState())
 
 	NewBlock(ctx, &ks)
 

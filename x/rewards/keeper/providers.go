@@ -129,13 +129,13 @@ func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string) ([]types.B
 // the function return the updated reward after the participation deduction
 func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward math.Int, senderModule string) (updatedReward math.Int, err error) {
 	// calculate validators and community participation fractions
-	validatorsParticipation, communityParticipation, err := k.CalculateValidatorsAndCommunityContribution(ctx, reward, senderModule)
+	validatorsParticipation, communityParticipation, err := k.CalculateContributionPercentages(ctx, reward, senderModule)
 	if err != nil {
 		return reward, err
 	}
 
 	if communityParticipation.Equal(sdk.OneDec()) {
-		err := k.fundCommunityPoolFromModule(ctx, reward, senderModule)
+		err := k.FundCommunityPoolFromModule(ctx, reward, senderModule)
 		if err != nil {
 			return reward, utils.LavaFormatError("failed funding the community pool with whole reward", err,
 				utils.Attribute{Key: "reward", Value: reward.String()},
@@ -145,36 +145,42 @@ func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward m
 		return sdk.ZeroInt(), nil
 	}
 
-	// send validators participation and update reward
+	// send validators participation
 	validatorsParticipationReward := validatorsParticipation.MulInt(reward).TruncateInt()
-	coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsParticipationReward))
-	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, k.feeCollectorName, coins)
-	if err != nil {
-		return reward, utils.LavaFormatError("sending validators participation failed", err,
-			utils.Attribute{Key: "validators_participation_reward", Value: coins.String()},
-			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
-			utils.Attribute{Key: "reward", Value: reward.String()},
-		)
+	if !validatorsParticipationReward.IsZero() {
+		coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsParticipationReward))
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, k.feeCollectorName, coins)
+		if err != nil {
+			return reward, utils.LavaFormatError("sending validators participation failed", err,
+				utils.Attribute{Key: "validators_participation_reward", Value: coins.String()},
+				utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
+				utils.Attribute{Key: "reward", Value: reward.String()},
+			)
+		}
 	}
-	reward = reward.Sub(validatorsParticipationReward)
 
-	// send community participation and update reward
+	// send community participation
 	communityParticipationReward := communityParticipation.MulInt(reward).TruncateInt()
-	coins = sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), communityParticipationReward))
-	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, k.feeCollectorName, coins)
-	if err != nil {
-		return reward, utils.LavaFormatError("sending community participation failed", err,
-			utils.Attribute{Key: "community_participation_reward", Value: coins.String()},
-			utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
-			utils.Attribute{Key: "reward", Value: reward.String()},
-		)
+	if !communityParticipationReward.IsZero() {
+		coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), communityParticipationReward))
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, k.feeCollectorName, coins)
+		if err != nil {
+			return reward, utils.LavaFormatError("sending community participation failed", err,
+				utils.Attribute{Key: "community_participation_reward", Value: coins.String()},
+				utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
+				utils.Attribute{Key: "reward", Value: reward.String()},
+			)
+		}
 	}
-	reward = reward.Sub(communityParticipationReward)
+
+	// update reward amount
+	reward = reward.Sub(communityParticipationReward).Sub(validatorsParticipationReward)
 
 	return reward, nil
 }
 
-func (k Keeper) CalculateValidatorsAndCommunityContribution(ctx sdk.Context, reward math.Int, senderModule string) (validatorsParticipation math.LegacyDec, communityParticipation math.LegacyDec, err error) {
+// CalculateContributionPercentages calculates the providers' rewards participation to the validators and community pool
+func (k Keeper) CalculateContributionPercentages(ctx sdk.Context, reward math.Int, senderModule string) (validatorsParticipation math.LegacyDec, communityParticipation math.LegacyDec, err error) {
 	communityTax := k.distributionKeeper.GetParams(ctx).CommunityTax
 	if communityTax.Equal(sdk.OneDec()) {
 		return sdk.ZeroDec(), sdk.OneDec(), nil
@@ -213,7 +219,7 @@ func (k Keeper) CalculateValidatorsAndCommunityContribution(ctx sdk.Context, rew
 	return validatorsParticipation, communityParticipation, nil
 }
 
-func (k Keeper) fundCommunityPoolFromModule(ctx sdk.Context, amount math.Int, senderModule string) error {
+func (k Keeper) FundCommunityPoolFromModule(ctx sdk.Context, amount math.Int, senderModule string) error {
 	coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount))
 	if err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, distributiontypes.ModuleName, coins); err != nil {
 		return err

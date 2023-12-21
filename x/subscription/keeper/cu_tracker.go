@@ -149,6 +149,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		totalTokenAmount = sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
 	}
 
+	totalTokenRewarded := sdk.ZeroInt()
 	for _, trackedCuInfo := range trackedCuList {
 		trackedCu := trackedCuInfo.trackedCu
 		provider := trackedCuInfo.provider
@@ -166,10 +167,8 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
-		// provider monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
-		// TODO: deal with the reward's remainder (uint division...)
-
 		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
+		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyReward)
 
 		// calculate the provider reward (smaller than totalMonthlyReward
 		// because it's shared with delegators)
@@ -181,15 +180,15 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
+		// aggregate the reward for the provider
+		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, 1, totalMonthlyReward)
+
 		// Transfer some of the total monthly reward to validators contribution and community pool
 		totalMonthlyReward, err = k.rewardsKeeper.ContributeToValidatorsAndCommunityPool(ctx, totalMonthlyReward, types.ModuleName)
 		if err != nil {
 			utils.LavaFormatError("could not contribute to validators and community pool", err,
 				utils.Attribute{Key: "total_monthly_reward", Value: totalMonthlyReward.String() + k.stakingKeeper.BondDenom(ctx)})
 		}
-
-		// aggregate the reward for the provider
-		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, 1, totalMonthlyReward)
 
 		// Note: if the reward function doesn't reward the provider
 		// because he was unstaked, we only print an error and not returning
@@ -222,11 +221,20 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			}, "Provider got monthly reward successfully")
 		}
 	}
+
+	// send remainder of rewards to the community pool
+	rewardsRemainder := totalTokenAmount.Sub(totalTokenRewarded)
+	if !rewardsRemainder.IsZero() {
+		err = k.rewardsKeeper.FundCommunityPoolFromModule(ctx, rewardsRemainder, types.ModuleName)
+		if err != nil {
+			utils.LavaFormatError("failed sending remainder of rewards to the community pool", err,
+				utils.Attribute{Key: "rewards_remainder", Value: rewardsRemainder.String()},
+			)
+		}
+	}
 }
 
 func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, trackedCu uint64, totalCuUsedBySub uint64) math.Int {
-	// TODO: deal with the reward's remainder (uint division...)
-	// monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
 	if totalCuUsedBySub == 0 {
 		return math.ZeroInt()
 	}
