@@ -3,8 +3,10 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/rewards/types"
 	subscription "github.com/lavanet/lava/x/subscription/keeper"
 	"github.com/stretchr/testify/require"
@@ -419,4 +421,138 @@ func TestBonusRewards3Providers(t *testing.T) {
 	require.Equal(t, res3.Rewards[0].Amount.Amount, distBalance.QuoRaw(7*int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))).MulRaw(4).AddRaw(1))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc3.Addr.String(), providerAcc3.Addr.String())
 	require.Nil(t, err)
+}
+
+func TestBonusRewardsEquall5Providers(t *testing.T) {
+	ts := newTester(t)
+
+	count := 5
+	providerAccs := []sigs.Account{}
+	consAccs := []sigs.Account{}
+
+	for i := 0; i < count; i++ {
+		providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
+		err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+		providerAccs = append(providerAccs, providerAcc)
+		require.Nil(t, err)
+
+		consumerAcc, _ := ts.AddAccount(common.CONSUMER, 1, ts.plan.Price.Amount.Int64())
+		_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false)
+		consAccs = append(consAccs, consumerAcc)
+		require.Nil(t, err)
+	}
+
+	for i := 1; i < 10; i++ {
+		ts.AdvanceEpoch()
+
+		for _, providerAcc := range providerAccs {
+			for _, consAcc := range consAccs {
+				msg := ts.SendRelay(providerAcc.Addr.String(), consAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64()/uint64(count)/1000)
+				_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+				require.Nil(t, err)
+			}
+		}
+	}
+
+	// first months there are no bonus rewards, just payment ffrom the subscription
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	for _, providerAcc := range providerAccs {
+		res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), "", "")
+		require.Nil(t, err)
+		require.Len(t, res.Rewards, 1)
+		_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), "")
+		require.Nil(t, err)
+	}
+
+	// now the provider should get all of the provider allocation
+	ts.AdvanceMonths(1)
+	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool)
+	ts.AdvanceEpoch()
+
+	for _, providerAcc := range providerAccs {
+		res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), "", "")
+		require.Nil(t, err)
+		require.Len(t, res.Rewards, 1)
+		require.Equal(t, distBalance.QuoRaw(int64(count)), res.Rewards[0].Amount.Amount)
+		_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), "")
+		require.Nil(t, err)
+	}
+}
+
+// in this test we have 5 providers and 5 consumers
+// all the providers serve the same amount of cu in total
+// cons1 relays only to prov1 -> expected adjustment 1/5 (1 out of maxrewardboost)
+// cons2-5 relays to all prov2-5 -> expected adjustment 4/5 (1 out of maxrewardboost)
+func TestBonusRewards5Providers(t *testing.T) {
+	ts := newTester(t)
+
+	count := 5
+	providerAccs := []sigs.Account{}
+	consAccs := []sigs.Account{}
+
+	for i := 0; i < count; i++ {
+		providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
+		err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+		providerAccs = append(providerAccs, providerAcc)
+		require.Nil(t, err)
+
+		consumerAcc, _ := ts.AddAccount(common.CONSUMER, 1, ts.plan.Price.Amount.Int64())
+		_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false)
+		consAccs = append(consAccs, consumerAcc)
+		require.Nil(t, err)
+	}
+
+	for i := 1; i < 10; i++ {
+		ts.AdvanceEpoch()
+
+		msg := ts.SendRelay(providerAccs[0].Addr.String(), consAccs[0], []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64()/100)
+		_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.Nil(t, err)
+
+		for _, providerAcc := range providerAccs[1:] {
+			for _, consAcc := range consAccs[1:] {
+				msg := ts.SendRelay(providerAcc.Addr.String(), consAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64()/uint64(count)/100)
+				_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+				require.Nil(t, err)
+			}
+		}
+	}
+
+	// first months there are no bonus rewards, just payment ffrom the subscription
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	for _, providerAcc := range providerAccs {
+		res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), "", "")
+		require.Nil(t, err)
+		require.Len(t, res.Rewards, 1)
+		_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), "")
+		require.Nil(t, err)
+	}
+
+	// now the provider should get all of the provider allocation
+	ts.AdvanceMonths(1)
+	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool)
+	ts.AdvanceEpoch()
+
+	// distribution pool divided between all providers (5) equally (they served the same amount of CU in total)
+	fullProvReward := distBalance.QuoRaw(5)
+	for i, providerAcc := range providerAccs {
+		var expected math.Int
+		if i == 0 {
+			// gets only 1/5 of the full reward (sub 1 for trancating)
+			expected = fullProvReward.MulRaw(1).QuoRaw(5).SubRaw(1)
+		} else {
+			// gets only 4/5 of the full reward (sub 2 for trancating)
+			expected = fullProvReward.MulRaw(4).QuoRaw(5).SubRaw(2)
+		}
+		res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), "", "")
+		require.Nil(t, err)
+		require.Len(t, res.Rewards, 1)
+		require.Equal(t, expected, res.Rewards[0].Amount.Amount)
+		_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), "")
+		require.Nil(t, err)
+	}
 }
