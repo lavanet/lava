@@ -43,6 +43,7 @@ fi
 
 echo -n "$data" > "$path$genesis"
 
+echo "using genesis file"
 echo $(cat "$path$genesis")
 
 # Determine OS
