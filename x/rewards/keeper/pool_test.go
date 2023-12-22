@@ -170,19 +170,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 	amount := sdk.NewIntFromUint64(uint64(valInitBalance))
 	ts.TxCreateValidator(validator, amount)
 
-	// transfer the bonded pool tokens to staking module's bonded pool tokens (which is used to calculate BondedRatio)
-	// in our testing env, the bonded pool account's address is sdk.AccAddress("bonded_tokens_pool")
-	// in staking module's actual bonded pool, the AccAddress is different, so we manually transfer funds there
-	stakingBondedPool := ts.Keepers.StakingKeeper.GetBondedPool(ts.Ctx)
-	bondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, testkeeper.GetModuleAddress(stakingtypes.BondedPoolName), ts.TokenDenom())
-	require.False(ts.T, bondedPoolBalance.IsZero())
-	err := ts.Keepers.BankKeeper.SendCoinsFromModuleToAccount(ts.Ctx, stakingtypes.BondedPoolName, stakingBondedPool.GetAddress(), sdk.NewCoins(bondedPoolBalance))
-	require.Nil(ts.T, err)
-	stakingBondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, stakingBondedPool.GetAddress(), ts.TokenDenom())
-	require.False(ts.T, stakingBondedPoolBalance.IsZero())
-
-	bondedRatio := ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
-	require.True(t, bondedRatio.Equal(sdk.NewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
+	ts.makeBondedRatioNonZero()
 
 	// by default, BondedRatio staking module param is smaller than MinBonded rewards module param
 	// so bondedTargetFactor = 1. We change MinBonded to zero to change bondedTargetFactor
@@ -284,4 +272,79 @@ func TestBlocksAndTimeToNextExpiry(t *testing.T) {
 	expectedBlocksToExpiry := blocksInAMonth - 3
 	blocksToExpiry = ts.Keepers.Rewards.BlocksToNextTimerExpiry(ts.Ctx)
 	require.Equal(t, expectedBlocksToExpiry, blocksToExpiry)
+}
+
+// TestBondedTargetFactorEdgeCases checks the bondedTargetFactor's calculation edge cases
+// BondedTargetFactor = 1  --  if bondedRatio < minBonded
+// BondedTargetFactor = (maxBonded - bondedRatio) / (maxBonded - minBonded) + lowFactor * (bondedRatio - minBonded) / (maxBonded - minBonded)  --  if bondedRatio > minBonded
+// BondedTargetFactor = 1  --  if bondedRatio > maxBonded
+func TestBondedTargetFactorEdgeCases(t *testing.T) {
+	ts := newTester(t)
+
+	// create validator (for making BondedRatio non-zero in some test cases)
+	valInitBalance := int64(30000000000000 / 3) // specifically picked to make staking module's BondedRatio to be 0.25
+	ts.AddAccount(common.VALIDATOR, 0, valInitBalance)
+	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
+	amount := sdk.NewIntFromUint64(uint64(valInitBalance))
+	ts.TxCreateValidator(validator, amount)
+
+	// Initial BondedRatio value is 0
+	playbook := []struct {
+		name                       string
+		minBonded                  string
+		maxBonded                  string // must be maxBonded > minBonded for all testcases
+		lowFactor                  string
+		unzeroBondedRatio          bool // make bondedRatio value to be 0.25
+		expectedBondedTargetFactor string
+	}{
+		{"bondedRatio < minBonded", "0.6", "0.8", "0.5", false, "1"},                              // expected = 1
+		{"bondedRatio < minBonded different params", "0.001", "0.3", "0.1", false, "1"},           // expected = 1
+		{"bondedRatio = minBonded", "0.25", "0.3", "0.1", true, "1"},                              // expected = 1, from here down BondedRatio = 0.25
+		{"bondedRatio > minBonded (bondedRatio < maxBonded)", "0.2", "0.3", "0.5", false, "0.75"}, // expected = long calc = 0.75
+		{"bondedRatio > maxBonded", "0.1", "0.2", "0.7", false, "0.7"},                            // expected = LowFactor
+	}
+
+	for _, tt := range playbook {
+		t.Run(tt.name, func(t *testing.T) {
+			params := types.Params{
+				MinBondedTarget:  sdk.MustNewDecFromStr(tt.minBonded),
+				MaxBondedTarget:  sdk.MustNewDecFromStr(tt.maxBonded),
+				LowFactor:        sdk.MustNewDecFromStr(tt.lowFactor),
+				LeftoverBurnRate: types.DefaultLeftOverBurnRate,
+			}
+			ts.Keepers.Rewards.SetParams(ts.Ctx, params)
+
+			if tt.unzeroBondedRatio {
+				ts.makeBondedRatioNonZero()
+			}
+
+			bondedTargetFactor := ts.Keepers.Rewards.BondedTargetFactor(ts.Ctx)
+			require.True(t, bondedTargetFactor.Equal(sdk.MustNewDecFromStr(tt.expectedBondedTargetFactor)))
+		})
+	}
+}
+
+// makeBondedRatioNonZero makes BondedRatio() to be 0.25
+// assumptions:
+//  1. validators was created using addValidators(1) and TxCreateValidator
+//  2. TxCreateValidator was used with init funds of 30000000000000/3
+func (ts *tester) makeBondedRatioNonZero() {
+	bondedRatio := ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
+	if bondedRatio.Equal(sdk.NewDecWithPrec(25, 2)) {
+		return
+	}
+
+	// transfer the bonded pool tokens to staking module's bonded pool tokens (which is used to calculate BondedRatio)
+	// in our testing env, the bonded pool account's address is sdk.AccAddress("bonded_tokens_pool")
+	// in staking module's actual bonded pool, the AccAddress is different, so we manually transfer funds there
+	stakingBondedPool := ts.Keepers.StakingKeeper.GetBondedPool(ts.Ctx)
+	bondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, testkeeper.GetModuleAddress(stakingtypes.BondedPoolName), ts.TokenDenom())
+	require.False(ts.T, bondedPoolBalance.IsZero())
+	err := ts.Keepers.BankKeeper.SendCoinsFromModuleToAccount(ts.Ctx, stakingtypes.BondedPoolName, stakingBondedPool.GetAddress(), sdk.NewCoins(bondedPoolBalance))
+	require.Nil(ts.T, err)
+	stakingBondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, stakingBondedPool.GetAddress(), ts.TokenDenom())
+	require.False(ts.T, stakingBondedPoolBalance.IsZero())
+
+	bondedRatio = ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
+	require.True(ts.T, bondedRatio.Equal(sdk.NewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
 }
