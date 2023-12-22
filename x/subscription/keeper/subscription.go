@@ -455,10 +455,11 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 	if sub.FutureSubscription != nil {
 		// Consumer already has a future subscription
 		// If the new plan's price > current future subscription's plan - change and charge the diff
-		currentPlan, err := k.GetPlanFromSubscription(ctx, consumer, block)
-		if err != nil {
-			return utils.LavaFormatError("panic: could not get active subscription's plan. aborting", err,
+		currentPlan, found := k.plansKeeper.FindPlan(ctx, sub.FutureSubscription.PlanIndex, sub.FutureSubscription.PlanBlock)
+		if !found {
+			return utils.LavaFormatError("panic: could not future subscription's plan. aborting", err,
 				utils.Attribute{Key: "creator", Value: creator},
+				utils.Attribute{Key: "planIndex", Value: sub.FutureSubscription.PlanIndex},
 			)
 		}
 
