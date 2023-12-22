@@ -248,9 +248,7 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 	sub.PlanIndex = toPlanIndex
 	sub.PlanBlock = toPlanBlock
 
-	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, date)
-
-	return nil
+	return k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, date)
 }
 
 func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
@@ -358,7 +356,7 @@ func (k Keeper) handleZeroDurationLeftForSubscription(ctx sdk.Context, block uin
 	k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(sub.Consumer), []byte{})
 }
 
-func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *types.Subscription, block uint64, blockTime time.Time) {
+func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *types.Subscription, block uint64, blockTime time.Time) error {
 	// reset projects CU allowance for this coming month
 	k.projectsKeeper.SnapshotSubscriptionProjects(ctx, sub.Consumer, block)
 
@@ -376,14 +374,19 @@ func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *typ
 
 	err := k.subsFS.AppendEntry(ctx, sub.Consumer, block, sub)
 	if err != nil {
+		// Remove new timer if failed
+		k.subsTS.DelTimerByBlockTime(ctx, expiry, []byte(sub.Consumer))
+
 		// normally would panic! but ok to ignore - the subscription remains
 		// as is with same remaining duration (but not renewed CU)
-		utils.LavaFormatError("critical: failed to recharge subscription", err,
+		return utils.LavaFormatError("critical: failed to recharge subscription", err,
 			utils.Attribute{Key: "consumer", Value: sub.Consumer},
 			utils.Attribute{Key: "plan", Value: sub.PlanIndex},
 			utils.Attribute{Key: "block", Value: block},
 		)
 	}
+
+	return nil
 }
 
 func (k Keeper) applyPlanDiscountIfEligible(duration uint64, plan *planstypes.Plan, price *sdk.Coin) {
