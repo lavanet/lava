@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
@@ -160,41 +162,63 @@ func TestAllocationPoolMonthlyQuota(t *testing.T) {
 // the reward should be: (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
 func TestValidatorBlockRewards(t *testing.T) {
 	ts := newTester(t)
-	res, err := ts.QueryRewardsBlockReward()
-	require.Nil(t, err)
-	refBlockReward := res.Reward.Amount
+
+	// create validator
+	valInitBalance := int64(30000000000000 / 3) // specifically picked to make staking module's BondedRatio to be 0.25
+	ts.AddAccount(common.VALIDATOR, 0, valInitBalance)
+	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
+	amount := sdk.NewIntFromUint64(uint64(valInitBalance))
+	ts.TxCreateValidator(validator, amount)
+
+	// transfer the bonded pool tokens to staking module's bonded pool tokens (which is used to calculate BondedRatio)
+	// in our testing env, the bonded pool account's address is sdk.AccAddress("bonded_tokens_pool")
+	// in staking module's actual bonded pool, the AccAddress is different, so we manually transfer funds there
+	stakingBondedPool := ts.Keepers.StakingKeeper.GetBondedPool(ts.Ctx)
+	bondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, testkeeper.GetModuleAddress(stakingtypes.BondedPoolName), ts.TokenDenom())
+	require.False(ts.T, bondedPoolBalance.IsZero())
+	err := ts.Keepers.BankKeeper.SendCoinsFromModuleToAccount(ts.Ctx, stakingtypes.BondedPoolName, stakingBondedPool.GetAddress(), sdk.NewCoins(bondedPoolBalance))
+	require.Nil(ts.T, err)
+	stakingBondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, stakingBondedPool.GetAddress(), ts.TokenDenom())
+	require.False(ts.T, stakingBondedPoolBalance.IsZero())
+
+	bondedRatio := ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
+	require.True(t, bondedRatio.Equal(sdk.NewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
 
 	// by default, BondedRatio staking module param is smaller than MinBonded rewards module param
 	// so bondedTargetFactor = 1. We change MinBonded to zero to change bondedTargetFactor
-	paramKey := string(types.KeyMinBondedTarget)
-	zeroMinBonded, err := sdk.ZeroDec().MarshalJSON()
-	require.Nil(t, err)
-	paramVal := string(zeroMinBonded)
-	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	params := types.DefaultParams()
+	params.MinBondedTarget = sdk.ZeroDec()
+	params.MaxBondedTarget = sdk.NewDecWithPrec(8, 1) // 0.8
+	params.LowFactor = sdk.NewDecWithPrec(5, 1)       // 0.5
+	params.LeftoverBurnRate = sdk.OneDec()
+	ts.Keepers.Rewards.SetParams(ts.Ctx, params)
 
+	// calc the expected BondedTargetFactor with its formula. with the values defined above,
+	// and bondedRatio = 0.25, should be (0.8 - 0.25) / 0.8 + 0.5 * (0.25/0.8) = 0.84375
 	// compare the new block reward to refBlockReward
-	params := ts.Keepers.Rewards.GetParams(ts.Ctx)
-	maxBonded := params.MaxBondedTarget
-	bonded := ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
-	lowFactor := params.LowFactor
-	e1 := maxBonded.Sub(bonded).Quo(maxBonded)
-	e2 := bonded.Quo(maxBonded)
-	expectedBondedTargetFactor := e1.Add(e2.Mul(lowFactor))
-	expectedBlockReward := expectedBondedTargetFactor.MulInt(refBlockReward).TruncateInt()
+	expectedBondedTargetFactor := sdk.NewDecWithPrec(84375, 5).TruncateInt() // 0.84375
 
-	res, err = ts.QueryRewardsBlockReward()
+	// verify that the current reward amount is as expected by checking the bondedTargetFactor alone
+	res, err := ts.QueryRewardsBlockReward()
 	require.Nil(t, err)
 	blockReward := res.Reward.Amount
-	require.True(t, blockReward.Equal(expectedBlockReward))
+	distPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
+	blocksToNextExpiry := ts.Keepers.Rewards.BlocksToNextTimerExpiry(ts.Ctx)
+	bondedTargetFactor := sdk.OneDec().MulInt(blockReward).MulInt64(blocksToNextExpiry).QuoInt(distPoolBalance).TruncateInt()
+	require.True(t, bondedTargetFactor.Equal(expectedBondedTargetFactor))
 
 	// return the params to default values
 	ts.Keepers.Rewards.SetParams(ts.Ctx, types.DefaultParams())
 	minBonded := ts.Keepers.Rewards.GetParams(ts.Ctx).MinBondedTarget
 	require.True(t, minBonded.Equal(types.DefaultMinBondedTarget))
 
-	// transfer funds from the distribution pool to the allocation pool and check reward
-	distPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
+	// get new reference reward
+	res, err = ts.QueryRewardsBlockReward()
+	require.Nil(t, err)
+	blockReward = res.Reward.Amount
+
+	// transfer half of the total distribution pool balance to the allocation pool
+	distPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
 	err = ts.Keepers.BankKeeper.SendCoinsFromModuleToModule(
 		ts.Ctx,
 		string(types.ValidatorsRewardsDistributionPoolName),
@@ -203,7 +227,8 @@ func TestValidatorBlockRewards(t *testing.T) {
 	)
 	require.Nil(t, err)
 
-	expectedBlockReward = refBlockReward.QuoRaw(2)
+	// since we only halved the distribution pool balance, the reward should be half of the reference block reward
+	expectedBlockReward := blockReward.QuoRaw(2)
 	res, err = ts.QueryRewardsBlockReward()
 	require.Nil(t, err)
 	blockReward = res.Reward.Amount
@@ -218,16 +243,19 @@ func TestValidatorBlockRewards(t *testing.T) {
 	)
 	require.Nil(t, err)
 
-	// advance block -> both distPoolBalance and blocksToNextTimerExpiry are changed
-	expectedBlocksToExpiry := ts.Keepers.Rewards.BlocksToNextTimerExpiry(ts.Ctx) - 1
-	expectedDistPoolBalance := distPoolBalance.Sub(refBlockReward)
-	expectedBlockReward = expectedDistPoolBalance.QuoRaw(expectedBlocksToExpiry)
+	// finally, check that the blocksToNextExpiry affects the block reward as expected
+	// first, get the reference blockToExpiry and advance a block
+	refBlocksToExpiry := ts.Keepers.Rewards.BlocksToNextTimerExpiry(ts.Ctx) - 1
 	ts.AdvanceBlock()
 
+	// query for the current reward and isolate the blocksToExpiry. Compare it to the ref value
 	res, err = ts.QueryRewardsBlockReward()
 	require.Nil(t, err)
 	blockReward = res.Reward.Amount
-	require.True(t, blockReward.Equal(expectedBlockReward))
+	bondedTargetFactor = ts.Keepers.Rewards.BondedTargetFactor(ts.Ctx).TruncateInt()
+	distPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
+	blocksToNextExpiry = bondedTargetFactor.Mul(distPoolBalance).Quo(blockReward).Int64()
+	require.Equal(t, refBlocksToExpiry, blocksToNextExpiry)
 }
 
 // TestBlocksAndTimeToNextExpiry tests that the time/blocks to the next timer expiry are as expected
@@ -241,9 +269,9 @@ func TestBlocksAndTimeToNextExpiry(t *testing.T) {
 	timeToExpiry := ts.Keepers.Rewards.TimeToNextTimerExpiry(ts.Ctx)
 	require.Equal(t, secondsInAMonth, timeToExpiry)
 
-	// BlocksToNextTimerExpiry should be equal to the number of blocks that pass in a month +5%
+	// BlocksToNextTimerExpiry should be equal to the number of blocks that pass in a month (rounding up) +5%
 	blockCreationTime := int64(ts.Keepers.Downtime.GetParams(ts.Ctx).DowntimeDuration.Seconds())
-	blocksInAMonth := (secondsInAMonth / blockCreationTime) * 105 / 100
+	blocksInAMonth := types.BlocksToTimerExpirySlackFactor.MulInt64(secondsInAMonth).QuoInt64(blockCreationTime).Ceil().TruncateInt64()
 	blocksToExpiry := ts.Keepers.Rewards.BlocksToNextTimerExpiry(ts.Ctx)
 	require.Equal(t, blocksInAMonth, blocksToExpiry)
 

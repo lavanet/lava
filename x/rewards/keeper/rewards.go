@@ -14,7 +14,7 @@ import (
 
 func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	// get params for validator rewards calculation
-	bondedTargetFactor := k.bondedTargetFactor(ctx)
+	bondedTargetFactor := k.BondedTargetFactor(ctx)
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
 
 	// get validator distribution pool balance
@@ -115,7 +115,7 @@ func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, alloc
 func (k Keeper) BlocksToNextTimerExpiry(ctx sdk.Context) int64 {
 	timeToNextTimerExpiry := k.TimeToNextTimerExpiry(ctx)
 	blockCreationTime := int64(k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds())
-	blocksToNextTimerExpiry := types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry).QuoInt64(blockCreationTime).Ceil().TruncateInt64() + ctx.BlockHeight()
+	blocksToNextTimerExpiry := types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry).QuoInt64(blockCreationTime).Ceil().TruncateInt64()
 	if blocksToNextTimerExpiry < 2 {
 		return 2
 	}
