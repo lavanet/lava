@@ -462,7 +462,18 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 	}
 
 	var sub types.Subscription
-	found := k.subsFS.FindEntry(ctx, consumer, block, &sub)
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
+	if err != nil {
+		return utils.LavaFormatError("Got an error while trying to get next epoch on CreateSubscription", err,
+			utils.LogAttr("consumer", sub.Consumer),
+			utils.LogAttr("block", block),
+		)
+	}
+
+	// When we make a subscription upgrade, we append the new subscription entry on the next epoch,
+	// 	but, we want to get the most updated subscription here.
+	// Hence, in case of user making double upgrade in the same epoch, we take the next epoch.
+	found := k.subsFS.FindEntry(ctx, consumer, nextEpoch, &sub)
 
 	if !found {
 		return utils.LavaFormatWarning("could not find active subscription. advanced purchase is only available for an active subscription", nil,
