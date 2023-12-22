@@ -1,9 +1,9 @@
 # Function to show ticker (full cycle)
 display_ticker() {
-  animation='/ - \ |'
-  for c in $loading_animation; do
-    sleep 0.2
-    /bin/echo -e -n "$c" "\r"
+  spinner="-\\|/-\\|/"
+  for i in $(seq 0 ${#spinner}); do
+      echo -ne "\r${spinner:i:1}"
+      sleep 0.1
   done
 }
 
@@ -11,7 +11,6 @@ display_ticker() {
 sleep_until_next_epoch() {
   epoch_start=$(lavad query epochstorage show-epoch-details | grep "startBlock: ")
   echo "Waiting for the next epoch for the changes to be active"
-  loading_animation='/ - \ |'
   while true; do
     epoch_now=$(lavad query epochstorage show-epoch-details | grep "startBlock: ")
     display_ticker
