@@ -35,7 +35,7 @@ func (k Keeper) CreateSubscription(
 	var err error
 
 	block := uint64(ctx.BlockHeight())
-	creatorAcct, plan, err := k.verifySubscriptionBuyInput(ctx, block, creator, consumer, planIndex)
+	creatorAcct, plan, err := k.verifySubscriptionBuyInputAndGetPlan(ctx, block, creator, consumer, planIndex)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func (k Keeper) CreateSubscription(
 	return err
 }
 
-func (k Keeper) verifySubscriptionBuyInput(ctx sdk.Context, block uint64, creator, consumer, planIndex string) (creatorAcct sdk.AccAddress, plan planstypes.Plan, err error) {
+func (k Keeper) verifySubscriptionBuyInputAndGetPlan(ctx sdk.Context, block uint64, creator, consumer, planIndex string) (creatorAcct sdk.AccAddress, plan planstypes.Plan, err error) {
 	EMPTY_PLAN := planstypes.Plan{}
 
 	if _, err := sdk.AccAddressFromBech32(consumer); err != nil {
@@ -420,7 +420,7 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 	var err error
 
 	block := uint64(ctx.BlockHeight())
-	creatorAcct, plan, err := k.verifySubscriptionBuyInput(ctx, block, creator, consumer, planIndex)
+	creatorAcct, plan, err := k.verifySubscriptionBuyInputAndGetPlan(ctx, block, creator, consumer, planIndex)
 	if err != nil {
 		return err
 	}
