@@ -278,7 +278,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			// Consumer made advance purchase. Now we activate it.
 			newSubInfo := sub.FutureSubscription
 
-			plan, found := k.plansKeeper.GetPlan(ctx, newSubInfo.PlanIndex)
+			plan, found := k.plansKeeper.FindPlan(ctx, newSubInfo.PlanIndex, newSubInfo.PlanBlock)
 			if !found {
 				utils.LavaFormatWarning("subscription advance purchase failed: could not find plan. removing subscription", nil,
 					utils.Attribute{Key: "consumer", Value: sub.Consumer},
