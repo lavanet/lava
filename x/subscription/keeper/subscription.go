@@ -512,7 +512,7 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		consumerPaid := currentPlan.Price.Amount.MulRaw(int64(consumerOriginalBoughtDuration))
 		// Take into consideration the annually discount
 		consumerPaidCoin := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), consumerPaid)
-		k.applyPlanDiscountIfEligible(uint64(consumerOriginalBoughtDuration), &plan, &consumerPaidCoin)
+		k.applyPlanDiscountIfEligible(consumerOriginalBoughtDuration, &plan, &consumerPaidCoin)
 		consumerPaid = consumerPaidCoin.Amount
 
 		if newPlanCostForDuration.GT(consumerPaid) {
