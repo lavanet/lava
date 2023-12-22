@@ -443,11 +443,11 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		)
 	}
 
-	createFutureSubscription := func(sub *types.Subscription, creator, planIndex string, planBlock, duration uint64) {
+	createFutureSubscription := func() {
 		sub.FutureSubscription = &types.FutureSubscription{
 			Creator:        creator,
-			PlanIndex:      planIndex,
-			PlanBlock:      planBlock,
+			PlanIndex:      plan.Index,
+			PlanBlock:      plan.Block,
 			DurationBought: duration,
 		}
 	}
@@ -483,7 +483,8 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 				return err
 			}
 
-			createFutureSubscription(&sub, creator, plan.Index, plan.Block, duration)
+			createFutureSubscription()
+			k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
 
 			details := map[string]string{
 				"creator":      creator,
@@ -510,8 +511,7 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		return err
 	}
 
-	createFutureSubscription(&sub, creator, plan.Index, plan.Block, duration)
-
+	createFutureSubscription()
 	k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
 	return nil
 }
