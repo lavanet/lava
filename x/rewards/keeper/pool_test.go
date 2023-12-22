@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -345,27 +345,38 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 	}
 }
 
-// makeBondedRatioNonZero makes BondedRatio() to be 0.25
-// assumptions:
-//  1. validators was created using addValidators(1) and TxCreateValidator
-//  2. TxCreateValidator was used with init funds of 30000000000000/3
-func (ts *tester) makeBondedRatioNonZero() {
-	bondedRatio := ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
-	if bondedRatio.Equal(sdk.NewDecWithPrec(25, 2)) {
-		return
+// TestRefillPoolsTimerStore checks that the refill rewards pool timer store acts as expected:
+// 1. There's a single timer at all times the expires after a month
+// 2. The timer's data contains the months left before the allocation pool's funds are depleted
+func TestRefillPoolsTimerStore(t *testing.T) {
+	ts := newTester(t)
+	lifetime := types.RewardsAllocationPoolsLifetime
+
+	req := &timerstoretypes.QueryAllTimersRequest{
+		StoreKey: types.StoreKey,
+		Prefix:   types.RefillRewardsPoolTimerPrefix,
 	}
+	// check everything throughout the entire lifetime of the allocation pool (and beyond)
+	month := ts.GetNextMonth(ts.BlockTime()) - ts.BlockTime().UTC().Unix()
+	for i := 0; i < int(lifetime+2); i++ {
+		res, err := ts.Keepers.TimerStoreKeeper.AllTimers(ts.GoCtx, req)
+		require.Nil(t, err)
+		require.Equal(t, 1, len(res.BlockTimeTimers))
+		require.Equal(t, 0, len(res.BlockHeightTimers))
 
-	// transfer the bonded pool tokens to staking module's bonded pool tokens (which is used to calculate BondedRatio)
-	// in our testing env, the bonded pool account's address is sdk.AccAddress("bonded_tokens_pool")
-	// in staking module's actual bonded pool, the AccAddress is different, so we manually transfer funds there
-	stakingBondedPool := ts.Keepers.StakingKeeper.GetBondedPool(ts.Ctx)
-	bondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, testkeeper.GetModuleAddress(stakingtypes.BondedPoolName), ts.TokenDenom())
-	require.False(ts.T, bondedPoolBalance.IsZero())
-	err := ts.Keepers.BankKeeper.SendCoinsFromModuleToAccount(ts.Ctx, stakingtypes.BondedPoolName, stakingBondedPool.GetAddress(), sdk.NewCoins(bondedPoolBalance))
-	require.Nil(ts.T, err)
-	stakingBondedPoolBalance := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, stakingBondedPool.GetAddress(), ts.TokenDenom())
-	require.False(ts.T, stakingBondedPoolBalance.IsZero())
+		expiry := ts.Keepers.Rewards.TimeToNextTimerExpiry(ts.Ctx)
+		require.Equal(t, month, expiry)
 
-	bondedRatio = ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
-	require.True(ts.T, bondedRatio.Equal(sdk.NewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
+		var expectedMonthsLeft int64
+		if i < int(lifetime) {
+			expectedMonthsLeft = lifetime - int64(i) - 1 // setup progressed one month so we check with -1
+		}
+		monthsLeft := ts.Keepers.Rewards.AllocationPoolMonthsLeft(ts.Ctx)
+		require.Equal(t, expectedMonthsLeft, monthsLeft)
+
+		ts.AdvanceMonths(1)
+		month = ts.GetNextMonth(ts.BlockTime()) - ts.BlockTime().UTC().Unix()
+		ts.AdvanceBlock()
+		testkeeper.EndBlock(ts.Ctx, ts.Keepers)
+	}
 }
