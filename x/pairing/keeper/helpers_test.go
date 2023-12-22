@@ -155,8 +155,12 @@ func (ts *tester) payAndVerifyBalance(
 	require.True(ts.T, found)
 
 	// perform payment
-	_, err = ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
+	res, err := ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
 	if !validPayment {
+		if err == nil {
+			require.True(ts.T, res.RejectedRelays)
+			return
+		}
 		require.NotNil(ts.T, err)
 		return
 	}

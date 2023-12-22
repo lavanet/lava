@@ -11,6 +11,7 @@ const (
 	ProviderJailedEventName                        = "provider_jailed"
 	ProviderReportedEventName                      = "provider_reported"
 	LatestBlocksReportEventName                    = "provider_latest_block_report"
+	RejectedCuEventName                            = "rejected_cu"
 )
 
 // unstake description strings

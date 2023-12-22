@@ -371,6 +371,12 @@ func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime tim
 	if err != nil {
 		return nil, utils.LavaFormatError("reflectionConnection Error", err)
 	}
+	// this connection is kept open so it needs to be closed on teardown
+	go func() {
+		<-ctx.Done()
+		utils.LavaFormatInfo("tearing down reflection connection, context done")
+		conn.ReturnRpc(reflectionConnection)
+	}()
 
 	err = parser.(*GrpcChainParser).setupForProvider(reflectionConnection)
 	if err != nil {
