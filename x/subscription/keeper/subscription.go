@@ -233,6 +233,8 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		return
 	}
 
+	expiry := uint64(utils.NextMonth(date).UTC().Unix())
+	sub.MonthExpiryTime = expiry
 	sub.DurationLeft -= 1
 
 	if sub.DurationLeft > 0 {
@@ -244,8 +246,6 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		sub.Block = block
 
 		// restart timer and append new (fixated) version of this subscription
-		expiry := uint64(utils.NextMonth(date).UTC().Unix())
-		sub.MonthExpiryTime = expiry
 		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 
 		sub.DurationTotal += 1
@@ -273,6 +273,8 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 					utils.Attribute{Key: "consumer", Value: sub.Consumer},
 				)
 				k.RemoveExpiredSubscription(ctx, consumer, block)
+			} else {
+				k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
 			}
 		} else {
 			k.RemoveExpiredSubscription(ctx, consumer, block)
