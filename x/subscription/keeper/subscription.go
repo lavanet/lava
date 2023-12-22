@@ -491,6 +491,10 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		}
 	}
 
+	newPlanPrice := plan.GetPrice()
+	newPlanPrice.Amount = newPlanPrice.Amount.MulRaw(int64(duration))
+	k.applyPlanDiscountIfEligible(duration, &plan, &newPlanPrice)
+
 	if sub.FutureSubscription != nil {
 		// Consumer already has a future subscription
 		// If the new plan's price > current future subscription's plan - change and charge the diff
@@ -502,28 +506,13 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 			)
 		}
 
-		newPlanCostForDuration := plan.Price.Amount.MulRaw(int64(duration))
-		// Take into consideration the annually discount
-		newPlanCostCoin := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), newPlanCostForDuration)
-		k.applyPlanDiscountIfEligible(duration, &plan, &newPlanCostCoin)
-		newPlanCostForDuration = newPlanCostCoin.Amount
+		consumerBoughDuration := sub.FutureSubscription.DurationBought
+		consumerPaid := currentPlan.GetPrice()
+		consumerPaid.Amount = consumerPaid.Amount.MulRaw(int64(consumerBoughDuration))
+		k.applyPlanDiscountIfEligible(consumerBoughDuration, &plan, &consumerPaid)
 
-		consumerOriginalBoughtDuration := sub.FutureSubscription.DurationBought
-		consumerPaid := currentPlan.Price.Amount.MulRaw(int64(consumerOriginalBoughtDuration))
-		// Take into consideration the annually discount
-		consumerPaidCoin := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), consumerPaid)
-		k.applyPlanDiscountIfEligible(consumerOriginalBoughtDuration, &plan, &consumerPaidCoin)
-		consumerPaid = consumerPaidCoin.Amount
-
-		if newPlanCostForDuration.GT(consumerPaid) {
-			priceDiff := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), newPlanCostForDuration.Sub(consumerPaid))
-			err = k.chargeFromCreatorAccountToModule(ctx, creatorAcct, priceDiff)
-			if err != nil {
-				return err
-			}
-
-			createFutureSubscription()
-			k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
+		if newPlanPrice.Amount.GT(consumerPaid.Amount) {
+			newPlanPrice.Amount = newPlanPrice.Amount.Sub(consumerPaid.Amount)
 
 			details := map[string]string{
 				"creator":      creator,
@@ -535,17 +524,12 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 				"newPlanBlock": strconv.FormatUint(plan.Block, 10),
 			}
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.AdvancedBuyUpgradeSubscriptionEventName, details, "advanced subscription upgraded")
-			return nil
 		} else {
 			return utils.LavaFormatWarning("can't purchase another plan in advanced with a lower price", nil)
 		}
 	}
 
-	price := plan.GetPrice()
-	price.Amount = price.Amount.MulRaw(int64(duration))
-	k.applyPlanDiscountIfEligible(duration, &plan, &price)
-
-	err = k.chargeFromCreatorAccountToModule(ctx, creatorAcct, price)
+	err = k.chargeFromCreatorAccountToModule(ctx, creatorAcct, newPlanPrice)
 	if err != nil {
 		return err
 	}
