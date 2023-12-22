@@ -1316,14 +1316,17 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_SameBlock(t *testing.T)
 	// Make sure the balance checks out
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
 
+	prevPlanPrice := originalPlanCost
 	for _, testCase := range testCases {
 		testName := fmt.Sprintf("%s -> Price: %d", testCase.name, testCase.price)
 		// Buy new plan
 		_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, testCase.plan.Index, int(testCase.duration), false, true)
 		require.Nil(t, err, testName)
 
-		priceDiff := testCase.price - originalPlanCost
+		priceDiff := testCase.price - prevPlanPrice
 		consumerBalance -= priceDiff
+
+		prevPlanPrice = testCase.price
 
 		// Make sure the balance is updated
 		require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr), testName)
@@ -1350,8 +1353,6 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_NewBlock(t *testing.T) 
 	// 		4. Same plan && more expensive && more duration
 
 	startingDuration := int64(2)
-	originalPlanCost := mediumPlan.Price.Amount.MulRaw(startingDuration)
-	// Original cost: 200 * 2 = 400
 
 	consumerAcc, consumerAddr := ts.Account("sub1")
 	consumerBalance := ts.GetBalance(consumerAcc.Addr)
@@ -1373,7 +1374,8 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_NewBlock(t *testing.T) 
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 
 	// Make sure the balance checks out
-	consumerBalance -= mediumPlan.Price.Amount.MulRaw(startingDuration).Int64()
+	prevPlanCost := mediumPlan.Price.Amount.MulRaw(startingDuration).Int64()
+	consumerBalance -= prevPlanCost
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
 
 	ts.AdvanceBlock()
@@ -1391,8 +1393,10 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_NewBlock(t *testing.T) 
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlanCheaper.Index, int(newPlanDuration), false, true)
 	require.NoError(t, err, "Same plan && cheaper && more duration -> Price: "+newPlanCost.String())
 
-	priceDiff := newPlanCost.Sub(mediumPlan.Price.Amount).Int64()
+	priceDiff := newPlanCost.SubRaw(prevPlanCost).Int64()
 	consumerBalance -= priceDiff
+
+	prevPlanCost = newPlanCost.Int64()
 
 	// Make sure the balance has changed
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
@@ -1412,8 +1416,10 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_NewBlock(t *testing.T) 
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlanExpensive.Index, int(newPlanDuration), false, true)
 	require.NoError(t, err, "Same plan && more expensive && less duration -> Price: "+newPlanCost.String())
 
-	priceDiff = newPlanCost.Sub(originalPlanCost).Int64()
+	priceDiff = newPlanCost.SubRaw(prevPlanCost).Int64()
 	consumerBalance -= priceDiff
+
+	prevPlanCost = newPlanCost.Int64()
 
 	// Make sure the balance has changed
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
@@ -1424,8 +1430,10 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_NewBlock(t *testing.T) 
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlanExpensive.Index, int(newPlanDuration), false, true)
 	require.NoError(t, err, "Same plan && more expensive && same duration -> Price: "+newPlanCost.String())
 
-	priceDiff = newPlanCost.Sub(originalPlanCost).Int64()
+	priceDiff = newPlanCost.SubRaw(prevPlanCost).Int64()
 	consumerBalance -= priceDiff
+
+	prevPlanCost = newPlanCost.Int64()
 
 	// Make sure the balance has changed
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
@@ -1436,7 +1444,7 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_NewBlock(t *testing.T) 
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlanExpensive.Index, int(newPlanDuration), false, true)
 	require.NoError(t, err, "Same plan && more expensive && more duration -> Price: "+newPlanCost.String())
 
-	priceDiff = newPlanCost.Sub(originalPlanCost).Int64()
+	priceDiff = newPlanCost.SubRaw(prevPlanCost).Int64()
 	consumerBalance -= priceDiff
 
 	// Make sure the balance has changed
