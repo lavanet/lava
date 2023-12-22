@@ -130,31 +130,52 @@ func TestAllocationPoolMonthlyQuota(t *testing.T) {
 	require.Equal(t, expectedMonthlyQuota, feeCollectorBalance+currentDistPoolBalance.Int64())
 
 	// check the monthly quota is as expected with advancement of months
-	// the last three iterations will be after the allocation pool's funds are depleted
-	var feeCollectorFinalBalance int64
-	for i := 0; i < int(lifetime+2); i++ {
+	for i := 0; i < int(lifetime-2); i++ {
 		// to see why these 3 are called, see general note 2
 		ts.AdvanceMonths(1)
 		ts.AdvanceBlock()
 		testkeeper.EndBlock(ts.Ctx, ts.Keepers)
 
-		// check the allocation pool transfers the expected monthly quota each month
-		if i >= 47 {
-			expectedMonthlyQuota = 0
-			if feeCollectorFinalBalance == 0 {
-				feeCollectorFinalBalance = ts.GetBalance(ts.feeCollector())
-			} else {
-				// fee collector balance should not increase (rewards = 0)
-				balance := ts.GetBalance(ts.feeCollector())
-				require.Equal(t, feeCollectorFinalBalance, balance)
-			}
-		} else {
-			// adding 1 because setup did the first month
-			expectedMonthlyQuota = currentAllocPoolBalance.Int64() / (lifetime - (int64(i) + 1))
-		}
+		monthsLeft := ts.Keepers.Rewards.AllocationPoolMonthsLeft(ts.Ctx)
 		prevAllocPoolBalance := currentAllocPoolBalance
 		currentAllocPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsAllocationPoolName)
-		require.Equal(t, expectedMonthlyQuota, prevAllocPoolBalance.Sub(currentAllocPoolBalance).Int64())
+
+		var monthlyQuota int64
+		if monthsLeft != 0 {
+			monthlyQuota = currentAllocPoolBalance.Int64() / monthsLeft
+			require.Equal(t, expectedMonthlyQuota, monthlyQuota) // the monthly quota is constant throughout the allocation pool lifetime
+		}
+
+		require.Equal(t, monthlyQuota, prevAllocPoolBalance.Sub(currentAllocPoolBalance).Int64())
+	}
+
+	// in the last month, the allocation pool's balance should be equal to the monthly quota
+	require.Equal(t, expectedMonthlyQuota, currentAllocPoolBalance.Int64())
+
+	// advance month to deplet the allocation pool funds
+	// advance 2 blocks to transfer the last quota and send it to the fee collector
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlock()
+	testkeeper.EndBlock(ts.Ctx, ts.Keepers)
+	currentAllocPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsAllocationPoolName)
+	require.True(t, currentAllocPoolBalance.IsZero())
+
+	// advance another month to distribute the last quota to the fee collector
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlock()
+	feeCollectorBalance = ts.GetBalance(ts.feeCollector())
+
+	// the several more months and verify the allocation pool is empty and that the fee collector balance is the same
+	for i := 0; i < 3; i++ {
+		ts.AdvanceMonths(1)
+		ts.AdvanceBlock()
+		testkeeper.EndBlock(ts.Ctx, ts.Keepers)
+
+		currentAllocPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsAllocationPoolName)
+		require.True(t, currentAllocPoolBalance.IsZero())
+
+		currentFeeCollectorBalance := ts.GetBalance(ts.feeCollector())
+		require.Equal(t, feeCollectorBalance, currentFeeCollectorBalance)
 	}
 }
 
