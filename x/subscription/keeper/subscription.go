@@ -84,10 +84,15 @@ func (k Keeper) CreateSubscription(
 					utils.LogAttr("block", block),
 				)
 			}
+			originalPlanIndex := sub.PlanIndex
+			originalPlanBlock := sub.PlanBlock
 			err = k.upgradeSubscriptionPlan(ctx, duration, &sub, plan.Index, plan.Block)
 			if err != nil {
 				return err
 			}
+
+			// Upgrade worked, now we can decrease the old plan's refcount
+			k.plansKeeper.PutPlan(ctx, originalPlanIndex, originalPlanBlock)
 
 			details := map[string]string{
 				"consumer": consumer,
