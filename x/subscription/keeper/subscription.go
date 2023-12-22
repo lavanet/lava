@@ -80,7 +80,10 @@ func (k Keeper) CreateSubscription(
 		// If the plan index is different - upgrade if the price is higher
 		// If the plan index is the same but the plan block is different - treat as advanced purchase
 		if plan.Index != sub.PlanIndex {
-			return k.upgradeSubscriptionPlan(ctx, consumer, duration, &sub, &plan)
+			err := k.upgradeSubscriptionPlan(ctx, consumer, duration, &sub, &plan)
+			if err != nil {
+				return err
+			}
 		} else if plan.Block != sub.PlanBlock {
 			return k.CreateFutureSubscription(ctx, creator, consumer, planIndex, duration)
 		}
@@ -219,7 +222,6 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, consumer string, durati
 	// The "old" subscription's duration is now expired
 	// If called from CreateSubscription, the duration will reset to the duration bought
 	sub.DurationLeft = 0
-	sub.Cluster = types.GetClusterKey(*sub)
 
 	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
 	if err != nil {
