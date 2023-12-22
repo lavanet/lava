@@ -464,7 +464,18 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		}
 
 		newPlanCostForDuration := plan.Price.Amount.MulRaw(int64(duration))
-		consumerPaid := currentPlan.Price.Amount.MulRaw(int64(sub.FutureSubscription.DurationBought))
+		// Take into consideration the annually discount
+		newPlanCostCoin := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), newPlanCostForDuration)
+		k.applyPlanDiscountIfEligible(duration, &plan, &newPlanCostCoin)
+		newPlanCostForDuration = newPlanCostCoin.Amount
+
+		consumerOriginalBoughtDuration := sub.FutureSubscription.DurationBought
+		consumerPaid := currentPlan.Price.Amount.MulRaw(int64(consumerOriginalBoughtDuration))
+		// Take into consideration the annually discount
+		consumerPaidCoin := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), consumerPaid)
+		k.applyPlanDiscountIfEligible(uint64(consumerOriginalBoughtDuration), &plan, &consumerPaidCoin)
+		consumerPaid = consumerPaidCoin.Amount
+
 		if newPlanCostForDuration.GT(consumerPaid) {
 			priceDiff := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), newPlanCostForDuration.Sub(consumerPaid))
 			err = k.chargeFromCreatorAccountToModule(ctx, creatorAcct, priceDiff)

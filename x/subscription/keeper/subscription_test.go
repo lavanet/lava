@@ -31,6 +31,7 @@ func newTester(t *testing.T) *tester {
 	premiumPlan.Index = "premium"
 	premiumPlan.Price = freePlan.Price.AddAmount(math.NewInt(100))
 	premiumPlan.Block = ts.BlockHeight()
+	premiumPlan.AnnualDiscountPercentage += 5
 	premiumPlan.PlanPolicy.TotalCuLimit += 100
 	premiumPlan.PlanPolicy.EpochCuLimit += 10
 	ts.AddPlan(premiumPlan.Index, premiumPlan)
@@ -1715,4 +1716,62 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	sub = getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 	require.Nil(t, sub.FutureSubscription)
 	require.Equal(t, consumerAddr, sub.Creator)
+}
+
+func TestSubscriptionAdvancePurchaseAnnuallyDiscount(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+
+	consumerAcc, consumerAddr := ts.Account("sub1")
+	consumerBalance := ts.GetBalance(consumerAcc.Addr)
+	freePlan := ts.Plan("free")
+	premiumPlan := ts.Plan("premium")
+
+	premiumPlusPlan := common.CreateMockPlan()
+	premiumPlusPlan.Index = "premiumPlus"
+	premiumPlusPlan.Price = premiumPlan.Price.AddAmount(math.NewInt(100))
+	premiumPlusPlan.Block = ts.BlockHeight()
+	premiumPlusPlan.AnnualDiscountPercentage += 5
+	premiumPlusPlan.PlanPolicy.TotalCuLimit += 100
+	premiumPlusPlan.PlanPolicy.EpochCuLimit += 10
+	ts.AddPlan(premiumPlusPlan.Index, premiumPlusPlan)
+
+	// Buy free plan
+	freePlanDuration := int64(12)
+	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, int(freePlanDuration), false, false)
+	require.Nil(t, err)
+	// Verify subscription found inside getSubscription
+	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
+
+	discount := freePlan.GetAnnualDiscountPercentage()
+	factor := int64(100 - discount)
+	freePlanPriceAfterDiscount := freePlan.Price.Amount.MulRaw(freePlanDuration).MulRaw(factor).QuoRaw(100).Int64()
+	consumerBalance -= freePlanPriceAfterDiscount
+
+	// Make sure that consumer paid for the subscription
+	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
+
+	// Consumer buys a future premium subscription
+	newSubDuration := uint64(12)
+	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
+	require.Nil(t, err)
+
+	// Make sure that consumer paid for the new subscription
+	discount = premiumPlan.GetAnnualDiscountPercentage()
+	factor = int64(100 - discount)
+	premiumPlanPriceAfterDiscount := premiumPlan.Price.Amount.MulRaw(int64(newSubDuration)).MulRaw(factor).QuoRaw(100).Int64()
+	consumerBalance -= premiumPlanPriceAfterDiscount
+	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
+
+	// Consumer buys a future premiumPlus subscription
+	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlusPlan.Index, int(newSubDuration), false, true)
+	require.Nil(t, err)
+
+	// Make sure that consumer paid for the new subscription
+	discount = premiumPlusPlan.GetAnnualDiscountPercentage()
+	factor = int64(100 - discount)
+	premiumPlusPlanPriceAfterDiscount := premiumPlusPlan.Price.Amount.MulRaw(int64(newSubDuration)).MulRaw(factor).QuoRaw(100).Int64()
+	diffPrice := premiumPlusPlanPriceAfterDiscount - premiumPlanPriceAfterDiscount
+	consumerBalance -= diffPrice
+	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
 }
