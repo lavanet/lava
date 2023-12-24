@@ -39,7 +39,7 @@ func TestGetCluster(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ts.TxSubscriptionBuy(tt.sub, tt.sub, tt.plan, 12, false)
+			_, err := ts.TxSubscriptionBuy(tt.sub, tt.sub, tt.plan, 12, false, false)
 			require.Nil(t, err)
 
 			prevCluster := ""

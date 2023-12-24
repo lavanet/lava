@@ -72,7 +72,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 			_, delegator2 := ts.GetAccount(common.CONSUMER, 2)
 
-			ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
+			ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
 
 			ts.AdvanceEpoch() // to apply pairing
 
@@ -203,7 +203,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 
 	ts.AdvanceEpoch() // to apply pairing
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
+	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
 
 	delegationAmount1 := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(uint64(testStake)/2))
 	delegationAmount2 := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(uint64(testStake)))
@@ -251,7 +251,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	delegator1Acc, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
+	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
 
 	ts.AdvanceEpoch() // to apply pairing
 
@@ -349,7 +349,7 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 	_, delegator2 := ts.GetAccount(common.CONSUMER, 2) // delegates to no one
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
+	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
 
 	spec1 := common.CreateMockSpec()
 	spec1.Index = "mock1"

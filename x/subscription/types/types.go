@@ -2,6 +2,8 @@ package types
 
 const (
 	BuySubscriptionEventName                = "buy_subscription_event"
+	AdvancedBuySubscriptionEventName        = "advanced_buy_subscription_event"
+	AdvancedBuyUpgradeSubscriptionEventName = "advanced_buy_upgrade_subscription_event"
 	UpgradeSubscriptionEventName            = "upgrade_subscription_event"
 	ExpireSubscriptionEventName             = "expire_subscription_event"
 	AddProjectEventName                     = "add_project_to_subscription_event"

@@ -200,7 +200,7 @@ func TestProjectsServerAPI(t *testing.T) {
 	err := ts.TxProposalAddPlans(plan)
 	require.Nil(t, err)
 
-	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
+	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
 	require.Nil(t, err)
 
 	projectData := types.ProjectData{
@@ -1050,7 +1050,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 				require.NotNil(t, err)
 			}
 
-			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
 			require.Nil(t, err)
 
 			res, err := ts.QuerySubscriptionListProjects(sub1Addr)
@@ -1224,7 +1224,7 @@ func TestPendingProject(t *testing.T) {
 
 	_, sub := ts.Account("sub1")
 
-	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1, false)
+	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1, false, false)
 	require.Nil(t, err)
 
 	res, err := ts.QuerySubscriptionListProjects(sub)
