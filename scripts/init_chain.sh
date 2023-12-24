@@ -96,6 +96,10 @@ for user in "${users[@]}"; do
     lavad add-genesis-account "$user" 50000000000000ulava
 done
 
-lavad gentx alice 100000000000ulava --chain-id lava
+# add validators_allocation_pool for validators block rewards
+# its total balance is 3% from the total tokens amount: 10^9 * 10^6 ulava
+lavad add-genesis-account validators_rewards_allocation_pool 30000000000000ulava --module-account 
+lavad add-genesis-account providers_rewards_allocation_pool 30000000000000ulava --module-account 
+lavad gentx alice 10000000000000ulava --chain-id lava
 lavad collect-gentxs
 lavad start --pruning=nothing

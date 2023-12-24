@@ -13,6 +13,7 @@
                 "blocks_in_finalization_proof": 10,
                 "average_block_time": 400,
                 "allowed_block_lag_for_qos_sync": 25,
+                                "shares" : 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -1213,6 +1214,7 @@
                 "blocks_in_finalization_proof": 10,
                 "average_block_time": 600,
                 "allowed_block_lag_for_qos_sync": 17,
+                                "shares" : 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

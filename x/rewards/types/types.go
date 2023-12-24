@@ -25,6 +25,11 @@ const (
 	ValidatorsRewardsDistributionPoolName Pool = "validators_rewards_distribution_pool"
 )
 
+const (
+	ProvidersRewardsAllocationPool  Pool = "providers_rewards_allocation_pool"
+	ProviderRewardsDistributionPool Pool = "providers_rewards_distribution_pool"
+)
+
 // BlocksToTimerExpirySlackFactor is used to calculate the number of blocks until the
 // next timer expiry which determine the validators block rewards.
 // since the time/blocks conversion can be errornous, we multiply our calculated number

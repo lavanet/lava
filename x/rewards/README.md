@@ -61,18 +61,49 @@ Where:
 
 ### Providers Rewards Pool
 
-TBD
+Providers get rewards for their services from the funds used to buy subscriptions (see subscription module readme).
+
+Besides these rewards, the provider also get monthly bonus rewards from a pre-allocated rewards pools. To manage this, like the validators, the providers have an allocation and distribution rewards pools. The bonus rewards exist to provide additional rewards when there is no much demand (few subscriptions).
+
+The total monthly bonus rewards ("total spec payout") are calculated per spec by the following formula:
+
+$$\text{Total spec payout}=\\\min\{RewardsMaxBoost\cdot\text{Total Base Payouts}, \\ \text{Spec Payout Cap}, \\ \max\{0,1.5(\text{Spec Payout Cap})-0.5(\text{Total Base Payouts})\}\}$$
+
+Where:
+* $\text{RewardsMaxBoost}$ - A module's parameter (see [below](#maxrewardsboost)).
+* $\text{Total Base Payouts}$ - The sum of all base payouts the providers for this spec collected = $\sum_{provider_1.._n} (\text{{provider base rewards}}_i)$
+* $\text{Spec Payout Cap}$ - The max value for this spec bonus rewards = $\frac{specStake\cdot specShares}{\sum_i{specStake \cdot specShares}_i}$.
+* SpecStake = Total effective stake of providers in this spec.
+* SpecShares = Weight factor for the spec (determined in each spec)
+
+The total spec payout is distributed between providers proportional to the rewards they collected from subscriptions throughtout the month. Each provider will get bonus rewards according to the following formula:
+
+$$Provider Bonus Rewards = Total Spec Payout \cdot \frac{\sum_{\text{payment} \; i} (\text{{provider base rewards}}_{i,j} \times \text{{adjustment}}_{i,j})}{\sum_{\text{provider}\;j'}\sum_{\text{payment} \; i}  (\text{{provider base rewards}}_{i,j'}  )}
+$$
+
+Where:
+* Adjustment - TBD
+
+Note that some of the providers rewards are sent to the community pool (according to the `CommunityTax` parameter, determined by the distribution module) and to the validators block rewards (according to the `ValidatorsSubscriptionParticipation` parameter, see [below](#validatorssubscriptionparticipation)).
+
+The participation fees are calculated according to the following formulas:
+
+$$\text{Validators Participation Fee} = \frac{ValidatorsSubscriptionParticipation}{1-CommunityTax}$$
+
+$$\text{Community Participation Fee} = ValidatorsSubscriptionParticipation + CommunityTax\\ - \text{Validators Participation Fee}$$
 
 ## Parameters
 
 The rewards module contains the following parameters:
 
-| Key                | Type            | Default Value |
-| ------------------ | --------------- | ------------- |
-| MinBondedTarget    | math.LegacyDec  | 0.6           |
-| MaxBondedTarget    | math.LegacyDec  | 0.8           |
-| LowFactor          | math.LegacyDec  | 0.5           |
-| LeftOverBurnRate   | math.LegacyDec  | 1             |
+| Key                                    | Type                    | Default Value    |
+| -------------------------------------- | ----------------------- | -----------------|
+| MinBondedTarget                        | math.LegacyDec          | 0.6              |
+| MaxBondedTarget                        | math.LegacyDec          | 0.8              |
+| LowFactor                              | math.LegacyDec          | 0.5              |
+| LeftOverBurnRate                       | math.LegacyDec          | 1                |
+| MaxRewardsBoost                        | uint64                  | 5                |
+| ValidatorsSubscriptionParticipation    | math.LegacyDec          | 0.05             |
 
 ### MinBondedTarget
 
@@ -103,3 +134,10 @@ $$\text{BondedTargetFactor}= \\\begin{cases}
 \text{LowFactor} & \text{$\text{BondRatio} > \text{MaxBonded}$}\\
 \end{cases}$$
 
+### MaxRewardsBoost
+
+TBD
+
+### ValidatorsSubscriptionParticipation
+
+ValidatorsSubscriptionParticipation is used to calculate the providers rewards participation fees.

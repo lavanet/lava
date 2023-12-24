@@ -11,6 +11,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
@@ -963,4 +964,51 @@ func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 // starting from the current block's timestamp
 func (ts *Tester) AdvanceMonths(months int) *Tester {
 	return ts.AdvanceMonthsFrom(ts.BlockTime(), months)
+}
+
+var sessionID uint64
+
+func (ts *Tester) SendRelay(provider string, clientAcc sigs.Account, chainIDs []string, cuSum uint64) pairingtypes.MsgRelayPayment {
+	var relays []*pairingtypes.RelaySession
+	epoch := int64(ts.EpochStart(ts.BlockHeight()))
+
+	// Create relay request. Change session ID each call to avoid double spending error
+	for i, chainID := range chainIDs {
+		relaySession := &pairingtypes.RelaySession{
+			Provider:    provider,
+			ContentHash: []byte("apiname"),
+			SessionId:   sessionID,
+			SpecId:      chainID,
+			CuSum:       cuSum,
+			Epoch:       epoch,
+			RelayNum:    uint64(i),
+		}
+		sessionID += 1
+
+		// Sign and send the payment requests
+		sig, err := sigs.Sign(clientAcc.SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(ts.T, err)
+
+		relays = append(relays, relaySession)
+	}
+
+	return pairingtypes.MsgRelayPayment{Creator: provider, Relays: relays}
+}
+
+// DisableParticipationFees zeros validators and community participation fees
+func (ts *Tester) DisableParticipationFees() {
+	distParams := distributiontypes.DefaultParams()
+	distParams.CommunityTax = sdk.ZeroDec()
+	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	require.Nil(ts.T, err)
+	require.True(ts.T, ts.Keepers.Distribution.GetParams(ts.Ctx).CommunityTax.IsZero())
+
+	paramKey := string(rewardstypes.KeyValidatorsSubscriptionParticipation)
+	zeroDec, err := sdk.ZeroDec().MarshalJSON()
+	require.Nil(ts.T, err)
+	paramVal := string(zeroDec)
+	err = ts.TxProposalChangeParam(rewardstypes.ModuleName, paramKey, paramVal)
+	require.Nil(ts.T, err)
+	require.True(ts.T, ts.Keepers.Rewards.GetParams(ts.Ctx).ValidatorsSubscriptionParticipation.IsZero())
 }

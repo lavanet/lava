@@ -154,6 +154,19 @@ func (k Keeper) CreateSubscription(
 		return utils.LavaFormatWarning("create subscription failed", err)
 	}
 
+	if !found || autoRenewalFlag {
+		expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
+		sub.MonthExpiryTime = expiry
+		sub.Block = block
+		err = k.subsFS.AppendEntry(ctx, consumer, block, &sub)
+		if err != nil {
+			return err
+		}
+		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
+	} else {
+		k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
+	}
+
 	// subscription looks good; let's charge the creator
 	price := plan.GetPrice()
 	price.Amount = price.Amount.MulRaw(int64(duration))
@@ -164,16 +177,7 @@ func (k Keeper) CreateSubscription(
 		return err
 	}
 
-	if !found {
-		expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
-		sub.MonthExpiryTime = expiry
-		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
-		err = k.subsFS.AppendEntry(ctx, consumer, block, &sub)
-	} else {
-		k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
-	}
-
-	return err
+	return nil
 }
 
 func (k Keeper) verifySubscriptionBuyInputAndGetPlan(ctx sdk.Context, block uint64, creator, consumer, planIndex string) (creatorAcct sdk.AccAddress, plan planstypes.Plan, err error) {

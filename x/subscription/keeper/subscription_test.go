@@ -37,6 +37,7 @@ func newTester(t *testing.T) *tester {
 	premiumPlan.PlanPolicy.EpochCuLimit += 10
 	ts.AddPlan(premiumPlan.Index, premiumPlan)
 
+	ts.DisableParticipationFees()
 	return ts
 }
 
