@@ -81,13 +81,9 @@ func (k Keeper) GetProviderPaymentStorageKey(ctx sdk.Context, chainID string, ep
 }
 
 // Function to add a payment (which is represented by a uniquePaymentStorageClientProvider object) to a providerPaymentStorage object
-func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ProviderPaymentStorage, usedCUConsumerTotal uint64, err error) {
+func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ProviderPaymentStorage, usedCUConsumerTotal uint64) {
 	// create an uniquePaymentStorageClientProvider object and set it in the KVStore
-	isUnique, uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, chainID, epoch, projectID, providerAddress, uniqueIdentifier, usedCU)
-	if !isUnique {
-		// the uniquePaymentStorageClientProvider object is not unique -> tried to use an existing identifier!
-		return nil, 0, fmt.Errorf("failed to add user payment since uniqueIdentifier was already detected, and created on block %d", uniquePaymentStorageClientProviderEntryAddr.Block)
-	}
+	uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, chainID, epoch, projectID, providerAddress, uniqueIdentifier, usedCU)
 
 	// get the providerPaymentStorage object
 	providerPaymentStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, providerAddress)
@@ -101,20 +97,17 @@ func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch
 		userPaymentStorageInEpoch.UniquePaymentStorageClientProviderKeys = append(userPaymentStorageInEpoch.UniquePaymentStorageClientProviderKeys, uniquePaymentStorageClientProviderEntryAddr.GetIndex())
 
 		// sum up the used CU for this provider and this consumer over this epoch
-		usedCUConsumerTotal, err = k.GetTotalUsedCUForConsumerPerEpoch(ctx, projectID, userPaymentStorageInEpoch.GetUniquePaymentStorageClientProviderKeys(), providerAddress.String())
-		if err != nil {
-			return nil, 0, err
-		}
+		usedCUConsumerTotal = k.GetTotalUsedCUForConsumerPerEpoch(ctx, projectID, userPaymentStorageInEpoch.GetUniquePaymentStorageClientProviderKeys(), providerAddress.String())
 	}
 
 	// set the providerPaymentStorage object in the KVStore
 	k.SetProviderPaymentStorage(ctx, userPaymentStorageInEpoch)
 
-	return &userPaymentStorageInEpoch, usedCUConsumerTotal, nil
+	return &userPaymentStorageInEpoch, usedCUConsumerTotal
 }
 
 // Function to get the total serviced CU by a provider in this epoch for a specific consumer
-func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, projectID string, uniquePaymentStorageKeys []string, providerAddress string) (uint64, error) {
+func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, projectID string, uniquePaymentStorageKeys []string, providerAddress string) uint64 {
 	usedCUProviderTotal := uint64(0)
 
 	// go over the uniquePaymentStorageKeys
@@ -122,10 +115,11 @@ func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, projectID str
 		// get the uniquePaymentStorageClientProvider object
 		uniquePayment, found := k.GetUniquePaymentStorageClientProvider(ctx, uniquePaymentKey)
 		if !found {
-			return 0, utils.LavaFormatError("could not find uniquePaymentStorageClientProvider object", fmt.Errorf("unique payment object not found"),
+			utils.LavaFormatError("could not find uniquePaymentStorageClientProvider object", fmt.Errorf("unique payment object not found"),
 				utils.Attribute{Key: "providerAddress", Value: providerAddress},
 				utils.Attribute{Key: "projectID", Value: projectID},
 			)
+			continue
 		}
 
 		// if the uniquePaymentStorageClientProvider object is between the provider and the specific consumer, add the serviced CU
@@ -133,5 +127,5 @@ func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, projectID str
 			usedCUProviderTotal += uniquePayment.UsedCU
 		}
 	}
-	return usedCUProviderTotal, nil
+	return usedCUProviderTotal
 }

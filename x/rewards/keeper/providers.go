@@ -5,13 +5,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
-	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int) {
 	index := types.BasePayIndex{Provider: provider, ChainID: chainid}
 	basepay, found := k.getBasePay(ctx, index)
 	adjustedPay := adjustment.MulInt(rewards)
+	adjustedPay = sdk.MinDec(adjustedPay, sdk.NewDecFromInt(rewards))
 	if !found {
 		basepay = types.BasePay{Total: rewards, TotalAdjusted: adjustedPay}
 	} else {
@@ -22,19 +22,24 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 	k.setBasePay(ctx, index, basepay)
 }
 
+// Distribute bonus rewards to providers across all chains based on performance
 func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	total := k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)
 	totalRewarded := sdk.ZeroInt()
-	totalToSendRewarded := sdk.ZeroInt()
+	// specs emissions from the total reward pool base on stake
 	specs := k.specEmissionParts(ctx)
 	for _, spec := range specs {
+		// all providers basepays and the total basepay of the spec
 		basepays, totalbasepay := k.specProvidersBasePay(ctx, spec.ChainID)
 		if totalbasepay.IsZero() {
 			continue
 		}
 
+		// calculate the maximum rewards for the spec
 		specTotalPayout := k.specTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
+		// distribute the rewards to all providers
 		for _, basepay := range basepays {
+			// calculate the providers bonus base on adjusted base pay
 			reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(totalbasepay).TruncateInt()
 			totalRewarded = totalRewarded.Add(reward)
 			if totalRewarded.GT(total) {
@@ -48,42 +53,37 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 			if err != nil {
 				continue
 			}
-			_, totalSent, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, reward, string(types.ProviderRewardsDistributionPool), false, false, false)
+			_, _, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, reward, string(types.ProviderRewardsDistributionPool), false, false, false)
 			if err != nil {
-				utils.LavaFormatError("Failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
+				utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 			}
-			totalToSendRewarded = totalToSendRewarded.Add(totalSent)
 		}
 	}
 	k.removeAllBasePay(ctx)
-	if !totalToSendRewarded.IsZero() {
-		err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, string(types.ProviderRewardsDistributionPool), subscriptionTypes.ModuleName, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalToSendRewarded)))
-		if err != nil {
-			utils.LavaFormatError("failed to send bonus rewards to subscription module", err, utils.LogAttr("amount", totalRewarded.String()))
-		}
-	}
-
-	tokensToBurn := total.Sub(totalRewarded)
-	err := k.BurnPoolTokens(ctx, types.ProviderRewardsDistributionPool, tokensToBurn)
-	if err != nil {
-		utils.LavaFormatError("Failed to burn left over bonus rewards", err, utils.LogAttr("amount", tokensToBurn.String()))
-	}
 }
 
-func (k Keeper) specTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec types.SpecEmmisionPart) math.LegacyDec {
+// specTotalPayout calculates the total bonus for a specific spec
+// specPayoutAllocation: maximum rewards that the spec can have
+// rewardBoost: bonus based on the total rewards providers got factored by maxboost
+// diminishingRewards: makes sure to diminish the bonuses in case there are enough consumers on the chain
+func (k Keeper) specTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec types.SpecEmissionPart) math.LegacyDec {
 	specPayoutAllocation := spec.Emission.MulInt(totalMonthlyPayout)
 	rewardBoost := totalProvidersBaseRewards.MulInt64(int64(k.MaxRewardBoost(ctx)))
 	diminishingRewards := sdk.MaxDec(sdk.ZeroDec(), (sdk.NewDecWithPrec(15, 1).Mul(specPayoutAllocation)).Sub(sdk.NewDecWithPrec(5, 1).Mul(totalProvidersBaseRewards)))
 	return sdk.MinDec(sdk.MinDec(specPayoutAllocation, rewardBoost), diminishingRewards)
 }
 
-func (k Keeper) specEmissionParts(ctx sdk.Context) (emisions []types.SpecEmmisionPart) {
+func (k Keeper) specEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissionPart) {
 	chainIDs := k.specKeeper.GetAllChainIDs(ctx)
 	totalStake := sdk.ZeroDec()
 	chainStake := map[string]sdk.Dec{}
 	for _, chainID := range chainIDs {
 		spec, found := k.specKeeper.GetSpec(ctx, chainID)
 		if !found {
+			continue
+		}
+
+		if !spec.Enabled || spec.Shares == 0 {
 			continue
 		}
 
@@ -100,17 +100,21 @@ func (k Keeper) specEmissionParts(ctx sdk.Context) (emisions []types.SpecEmmisio
 		totalStake = totalStake.Add(chainStake[chainID])
 	}
 
+	if totalStake.IsZero() {
+		return emissions
+	}
+
 	for _, chainID := range chainIDs {
 		if stake, ok := chainStake[chainID]; ok {
-			if stake.IsZero() || totalStake.IsZero() {
+			if stake.IsZero() {
 				continue
 			}
 
-			emisions = append(emisions, types.SpecEmmisionPart{ChainID: chainID, Emission: stake.Quo(totalStake)})
+			emissions = append(emissions, types.SpecEmissionPart{ChainID: chainID, Emission: stake.Quo(totalStake)})
 		}
 	}
 
-	return emisions
+	return emissions
 }
 
 func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string) ([]types.BasePayWithIndex, math.Int) {

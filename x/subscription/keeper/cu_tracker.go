@@ -131,10 +131,8 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		return
 	}
 
-	// note: there is an implicit assumption here that the subscription's
-	// plan didn't change throughout the month. Currently there is no way
-	// of altering the subscription's plan after being bought, but if there
-	// might be in the future, this code should change
+	// Note: We take the subscription from the FixationStore, based on the given block.
+	// So, even if the plan changed during the month, we still take the original plan, based on the given block.
 	block = trackedCuList[0].block
 	plan, err := k.GetPlanFromSubscription(ctx, sub, block)
 	if err != nil {

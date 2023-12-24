@@ -598,7 +598,7 @@ func TestChargeComputeUnits(t *testing.T) {
 	ts.AdvanceEpoch()
 	block3 := ts.BlockHeight()
 
-	ts.Keepers.Projects.SnapshotSubscriptionProjects(ts.Ctx, sub1Addr)
+	ts.Keepers.Projects.SnapshotSubscriptionProjects(ts.Ctx, sub1Addr, block3)
 
 	// try to charge CUs: should update oldest and second-oldest entries, but not the latest
 	// (because the latter is in a new snapshot)
@@ -1084,7 +1084,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 }
 
 func TestSetPolicyByGeolocation(t *testing.T) {
-	servers, keepers, _, _ctx := testkeeper.InitAllKeepers(t)
+	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
 	// for convinience

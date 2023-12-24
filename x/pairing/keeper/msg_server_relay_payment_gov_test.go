@@ -601,8 +601,12 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 }
 
 func (ts tester) relayPaymentWithoutPay(relayPayment pairingtypes.MsgRelayPayment, validPayment bool) {
-	_, err := ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
+	res, err := ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
 	if !validPayment {
+		if err == nil {
+			require.True(ts.T, res.RejectedRelays)
+			return
+		}
 		require.NotNil(ts.T, err)
 		return
 	}

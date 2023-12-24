@@ -117,7 +117,7 @@ LeftOverBurnRate = 0 means there is no burn.
 
 In Lava we wanted to make validator rewards decrease linearly with the increase in stake. The BondedTargetFactor encapsulates this behaviour.
 
-To calculate the `BondedTargetFactor` see the following formula (note that the staking module's `BondRatio` parameter is used, which is the fraction of the staking tokens which are currently bonded):
+To calculate the `BondedTargetFactor` see the following formula (note that the staking module's `BondedRatio` parameter is used, which is the fraction of the staking tokens which are currently bonded):
 
 $$\text{BondedTargetFactor}= \\\begin{cases}
 1 & \text{$\text{BondRatio} < \text{MinBonded}$}\\

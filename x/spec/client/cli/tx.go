@@ -5,7 +5,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
 	"github.com/spf13/cobra"
 
@@ -26,6 +29,7 @@ const (
 	flagPacketTimeoutTimestamp = "packet-timeout-timestamp"
 	listSeparator              = ","
 	devTestFlagName            = "lava-dev-test"
+	expeditedFlagName          = "expedited"
 )
 
 // GetTxCmd returns the transaction commands for this module
@@ -78,6 +82,11 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 				return err
 			}
 
+			isExpedited, err := cmd.Flags().GetBool(expeditedFlagName)
+			if err != nil {
+				return err
+			}
+
 			from := clientCtx.GetFromAddress()
 			content := &proposal.Proposal
 			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
@@ -96,14 +105,22 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 				}
 			}
 
-			msg, err := v1beta1.NewMsgSubmitProposal(content, deposit, from)
+			contentAny, err := codectypes.NewAnyWithValue(content)
 			if err != nil {
 				return err
 			}
 
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+			msgExecLegacy := govv1.NewMsgExecLegacyContent(contentAny, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+
+			submitPropMsg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgExecLegacy}, deposit, from.String(), proposal.Proposal.Description, proposal.Proposal.Title, "Add a new spec", isExpedited)
+			if err != nil {
+				return err
+			}
+
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), submitPropMsg)
 		},
 	}
 	cmd.Flags().Bool(devTestFlagName, false, "set to true to modify the average block time for lava spec")
+	cmd.Flags().Bool(expeditedFlagName, false, "set to true to make the spec proposal expedited")
 	return cmd
 }

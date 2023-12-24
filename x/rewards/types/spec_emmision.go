@@ -2,7 +2,7 @@ package types
 
 import sdk "github.com/cosmos/cosmos-sdk/types"
 
-type SpecEmmisionPart struct {
+type SpecEmissionPart struct {
 	ChainID  string
 	Emission sdk.Dec
 }

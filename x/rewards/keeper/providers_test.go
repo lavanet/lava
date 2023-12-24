@@ -14,7 +14,7 @@ import (
 
 // for this test there are no relays, this means no rewards will be given to the providers, and this means no bonus rewards should be sent
 func TestZeroProvidersRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
@@ -47,7 +47,7 @@ func TestZeroProvidersRewards(t *testing.T) {
 
 // the rewards here is maxboost*totalbaserewards, in this test the rewards for the providers are low (first third of the graph)
 func TestBasicBoostProvidersRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
@@ -88,7 +88,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 
 // the rewards here is spec payout allocation (full rewards from the pool), in this test the rewards for the providers are medium (second third of the graph)
 func TestSpecAllocationProvidersRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
@@ -130,7 +130,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 
 // the rewards here is the diminishing part of the reward, in this test the rewards for the providers are high (third third of the graph)
 func TestProvidersDiminishingRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
@@ -175,7 +175,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 
 // the rewards here is the zero since base rewards are very big, in this test the rewards for the providers are at the end of the graph
 func TestProvidersEndRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
@@ -218,7 +218,7 @@ func TestProvidersEndRewards(t *testing.T) {
 // in this test we create 2 specs with 1 provider each, one of the specs shares is zero
 // this means that no matter how much rewards the providers in this spec will get, they will get 0 bonus rewards
 func Test2SpecsZeroShares(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 	spec2 := ts.spec
 	spec2.Index = "mock2"
 	spec2.Name = spec2.Index
@@ -280,7 +280,7 @@ func Test2SpecsZeroShares(t *testing.T) {
 // the providers will have the same amount of CU used, thus the same rewards
 // the bonus for the provider with double the shares should be double than the other provider
 func Test2SpecsDoubleShares(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 	spec2 := ts.spec
 	spec2.Index = "mock2"
 	spec2.Name = spec2.Index
@@ -339,7 +339,7 @@ func Test2SpecsDoubleShares(t *testing.T) {
 // in this test we setup 3 providers, each with different cu used (-> 3 different rewards from the plan) (1,2,4)
 // the providers should get bonus rewards according to their plan rewards
 func TestBonusRewards3Providers(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc1, _ := ts.AddAccount(common.PROVIDER, 1, 2*testBalance)
 	err := ts.StakeProvider(providerAcc1.Addr.String(), ts.spec, testBalance)
@@ -423,8 +423,51 @@ func TestBonusRewards3Providers(t *testing.T) {
 	require.Nil(t, err)
 }
 
+func TestBonusReward49months(t *testing.T) {
+	ts := newTester(t, true)
+	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
+	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+
+	consumerAcc, _ := ts.AddAccount(common.CONSUMER, 1, ts.plan.Price.Amount.Int64()*100)
+	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, true)
+	require.Nil(t, err)
+
+	for i := 0; i < 50; i++ {
+		ts.AdvanceMonths(1)
+		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	}
+
+	baserewards := uint64(100)
+	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, baserewards)
+	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+	require.Nil(t, err)
+
+	// first months there are no bonus rewards, just payment ffrom the subscription
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
+	require.Nil(t, err)
+	require.Len(t, res.Rewards, 1)
+	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
+	require.Nil(t, err)
+
+	// now the provider should get all of the provider allocation (but there arent any)
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+
+	// there should be no bonus rewards
+	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
+	require.Nil(t, err)
+	require.Len(t, res.Rewards, 0)
+}
+
 func TestBonusRewardsEquall5Providers(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	count := 5
 	providerAccs := []sigs.Account{}
@@ -486,7 +529,7 @@ func TestBonusRewardsEquall5Providers(t *testing.T) {
 // cons1 relays only to prov1 -> expected adjustment 1/5 (1 out of maxrewardboost)
 // cons2-5 relays to all prov2-5 -> expected adjustment 4/5 (1 out of maxrewardboost)
 func TestBonusRewards5Providers(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	count := 5
 	providerAccs := []sigs.Account{}
