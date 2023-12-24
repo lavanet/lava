@@ -160,8 +160,8 @@ func (m Migrator) Migrate6to7(ctx sdk.Context) error {
 		for _, block := range m.keeper.subsFS.GetAllEntryVersions(ctx, index) {
 			var subscriptionV6 v6.Subscription
 			var subscriptionV7 types.Subscription
-			foundOld := m.keeper.subsFS.FindEntry(ctx, index, uint64(block), &subscriptionV6)
-			foundNew := m.keeper.subsFS.FindEntry(ctx, index, uint64(block), &subscriptionV7)
+			foundOld := m.keeper.subsFS.FindEntry(ctx, index, block, &subscriptionV6)
+			foundNew := m.keeper.subsFS.FindEntry(ctx, index, block, &subscriptionV7)
 			if !foundOld || !foundNew {
 				utils.LavaFormatError("cannot migrate sub", fmt.Errorf("sub not found"),
 					utils.Attribute{Key: "index", Value: index},
