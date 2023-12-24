@@ -13,7 +13,7 @@ import (
 
 // for this test there are no relays, this means no rewards will be given to the providers, and this means no bonus rewards should be sent
 func TestZeroProvidersRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
@@ -46,7 +46,7 @@ func TestZeroProvidersRewards(t *testing.T) {
 
 // the rewards here is maxboost*totalbaserewards, in this test the rewards for the providers are low (first third of the graph)
 func TestBasicBoostProvidersRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
@@ -90,7 +90,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 
 // the rewards here is spec payout allocation (full rewards from the pool), in this test the rewards for the providers are medium (second third of the graph)
 func TestSpecAllocationProvidersRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
@@ -133,7 +133,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 
 // the rewards here is the diminishing part of the reward, in this test the rewards for the providers are high (third third of the graph)
 func TestProvidersDiminishingRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
@@ -181,7 +181,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 
 // the rewards here is the zero since base rewards are very big, in this test the rewards for the providers are at the end of the graph
 func TestProvidersEndRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
@@ -226,7 +226,7 @@ func TestProvidersEndRewards(t *testing.T) {
 // in this test we create 2 specs with 1 provider each, one of the specs shares is zero
 // this means that no matter how much rewards the providers in this spec will get, they will get 0 bonus rewards
 func Test2SpecsZeroShares(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 	spec2 := ts.spec
 	spec2.Index = "mock2"
 	spec2.Name = spec2.Index
@@ -289,7 +289,7 @@ func Test2SpecsZeroShares(t *testing.T) {
 // the providers will have the same amount of CU used, thus the same rewards
 // the bonus for the provider with double the shares should be double than the other provider
 func Test2SpecsDoubleShares(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 	spec2 := ts.spec
 	spec2.Index = "mock2"
 	spec2.Name = spec2.Index
@@ -349,7 +349,7 @@ func Test2SpecsDoubleShares(t *testing.T) {
 // in this test we setup 3 providers, each with different cu used (-> 3 different rewards from the plan) (1,2,4)
 // the providers should get bonus rewards according to their plan rewards
 func TestBonusRewards3Providers(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	providerAcc1, _ := ts.AddAccount(common.PROVIDER, 1, 2*testBalance)
 	err := ts.StakeProvider(providerAcc1.Addr.String(), ts.spec, testBalance)
@@ -436,7 +436,7 @@ func TestBonusRewards3Providers(t *testing.T) {
 // TestValidatorsAndCommunityParticipation checks that the validators and community participation funds
 // are as expected (according to communityTax and validatorsSubscriptionParticipation params)
 func TestValidatorsAndCommunityParticipation(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 
 	// set the communityTax and validatorsSubscriptionParticipation params to const values
 	// communityTax = 50%
@@ -497,7 +497,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 }
 
 func TestBonusReward49months(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
 	require.Nil(t, err)

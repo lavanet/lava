@@ -504,5 +504,8 @@ func EndBlock(ctx sdk.Context, ks *Keepers) {
 }
 
 func GetModuleAddress(moduleName string) sdk.AccAddress {
-	return sdk.AccAddress([]byte(moduleName))
+	moduleAddress := authtypes.NewModuleAddress(moduleName).String()
+	baseAccount := authtypes.NewBaseAccount(nil, nil, 0, 0)
+	baseAccount.Address = moduleAddress
+	return authtypes.NewModuleAccount(baseAccount, moduleName, authtypes.Burner, authtypes.Staking).GetAddress()
 }

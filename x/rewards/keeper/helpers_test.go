@@ -29,12 +29,14 @@ type tester struct {
 	spec spectypes.Spec
 }
 
-func newTester(t *testing.T) *tester {
+func newTester(t *testing.T, addValidator bool) *tester {
 	ts := &tester{Tester: *common.NewTesterRaw(t)}
 
-	ts.addValidators(1)
-	val, _ := ts.GetAccount(common.VALIDATOR, 0)
-	ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(testStake)))
+	if addValidator {
+		ts.addValidators(1)
+		val, _ := ts.GetAccount(common.VALIDATOR, 0)
+		ts.TxCreateValidator(val, math.NewIntFromUint64(uint64(testStake)))
+	}
 
 	ts.plan = common.CreateMockPlan()
 	monthlyProvidersPool := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardsTypes.ProviderRewardsDistributionPool)
@@ -55,7 +57,7 @@ func (ts *tester) addValidators(count int) {
 }
 
 func (ts *tester) feeCollector() sdk.AccAddress {
-	return sdk.AccAddress([]byte(feeCollectorName))
+	return testkeeper.GetModuleAddress(feeCollectorName)
 }
 
 // deductParticipationFees calculates the validators and community participation
