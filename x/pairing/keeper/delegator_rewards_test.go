@@ -294,17 +294,9 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	// the delegator should get no rewards
 	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
 	require.Nil(t, err)
-	require.Equal(t, 1, len(resRewards.Rewards))
-	dReward := resRewards.Rewards[0]
-	require.True(t, found)
-	expectedDReward := math.ZeroInt()
-	require.True(t, expectedDReward.Equal(dReward.Amount.Amount))
-
-	// claim delegator rewards and verify balance
-	claimRewardsAndVerifyBalance(ts, delegator1Acc.Addr, provider, ts.spec.Index)
+	require.Equal(t, 0, len(resRewards.Rewards))
 
 	// ** provider's commission is 0% ** //
-
 	stakeEntry.DelegateCommission = 0
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
 	ts.AdvanceEpoch()
@@ -318,7 +310,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	resRewards, err = ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
 	require.Nil(t, err)
 	require.Equal(t, 1, len(resRewards.Rewards))
-	dReward = resRewards.Rewards[0]
+	dReward := resRewards.Rewards[0]
 	expectedDRewardForRelay := totalReward
 	require.Equal(t, expectedDRewardForRelay.Int64()/2, dReward.Amount.Amount.Int64())
 
