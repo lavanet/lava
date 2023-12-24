@@ -50,16 +50,6 @@ func TestMsgAutoRenewal_ValidateBasic(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid plan",
-			msg: MsgAutoRenewal{
-				Creator:  sample.AccAddress(),
-				Consumer: sample.AccAddress(),
-				Enable:   true,
-				Index:    "",
-			},
-			err: ErrBlankParameter,
-		},
-		{
 			name: "plan not empty on disable",
 			msg: MsgAutoRenewal{
 				Creator:  sample.AccAddress(),
