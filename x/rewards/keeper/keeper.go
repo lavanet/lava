@@ -20,11 +20,13 @@ type (
 		memKey     storetypes.StoreKey
 		paramstore paramtypes.Subspace
 
-		bankKeeper     types.BankKeeper
-		accountKeeper  types.AccountKeeper
-		downtimeKeeper types.DowntimeKeeper // used to get the approximate creation time for blocks
-		stakingKeeper  types.StakingKeeper
-
+		bankKeeper        types.BankKeeper
+		accountKeeper     types.AccountKeeper
+		specKeeper        types.SpecKeeper
+		epochstorage      types.EpochstorageKeeper
+		downtimeKeeper    types.DowntimeKeeper
+		stakingKeeper     types.StakingKeeper
+		dualstakingKeeper types.DualStakingKeeper
 		// account name used by the distribution module to reward validators
 		feeCollectorName string
 
@@ -43,8 +45,11 @@ func NewKeeper(
 	ps paramtypes.Subspace,
 	bankKeeper types.BankKeeper,
 	accountKeeper types.AccountKeeper,
+	specKeeper types.SpecKeeper,
+	epochStorageKeeper types.EpochstorageKeeper,
 	downtimeKeeper types.DowntimeKeeper,
 	stakingKeeper types.StakingKeeper,
+	dualstakingKeeper types.DualStakingKeeper,
 	feeCollectorName string,
 	timerStoreKeeper types.TimerStoreKeeper,
 ) *Keeper {
@@ -59,15 +64,19 @@ func NewKeeper(
 		memKey:     memKey,
 		paramstore: ps,
 
-		bankKeeper:     bankKeeper,
-		accountKeeper:  accountKeeper,
-		downtimeKeeper: downtimeKeeper,
-		stakingKeeper:  stakingKeeper,
+		bankKeeper:        bankKeeper,
+		accountKeeper:     accountKeeper,
+		specKeeper:        specKeeper,
+		epochstorage:      epochStorageKeeper,
+		downtimeKeeper:    downtimeKeeper,
+		stakingKeeper:     stakingKeeper,
+		dualstakingKeeper: dualstakingKeeper,
 
 		feeCollectorName: feeCollectorName,
 	}
 
 	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, data []byte) {
+		keeper.distributeMonthlyBonusRewards(ctx)
 		keeper.RefillRewardsPools(ctx, subkey, data)
 	}
 

@@ -11,6 +11,7 @@ import (
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
+	k.SetAllBasePay(ctx, genState.BasePays)
 	k.InitRewardsRefillTS(ctx, genState.RefillRewardsTS)
 
 	// refill pools only if it's a new chain (RefillRewardsTS will have no timers)
@@ -25,6 +26,8 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 	genesis.Params = k.GetParams(ctx)
 	genesis.RefillRewardsTS = k.ExportRewardsRefillTS(ctx)
+	genesis.BasePays = k.GetAllBasePay(ctx)
+
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis

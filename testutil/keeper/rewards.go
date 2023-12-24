@@ -80,8 +80,11 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		paramsSubspace,
 		mockBankKeeper{},
 		mockAccountKeeper{},
+		nil,
+		nil,
 		downtimeKeeper,
 		stakingKeeper,
+		nil,
 		authtypes.FeeCollectorName,
 		timerstorekeeper.NewKeeper(cdc),
 	)

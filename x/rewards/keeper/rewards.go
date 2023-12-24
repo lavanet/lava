@@ -4,7 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"strconv"
+
+	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -24,11 +25,6 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	validatorsRewards := bondedTargetFactor.MulInt(distributionPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
 	if validatorsRewards.IsZero() {
 		// no rewards is not necessarily an error -> print warning and return
-		utils.LavaFormatWarning("validators block rewards is zero", fmt.Errorf(""),
-			utils.Attribute{Key: "bonded_target_factor", Value: bondedTargetFactor.String()},
-			utils.Attribute{Key: "distribution_pool_balance", Value: distributionPoolBalance.String()},
-			utils.Attribute{Key: "blocks_to_next_timer_expiry", Value: strconv.FormatInt(blocksToNextTimerExpiry, 10)},
-		)
 	} else {
 		coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards))
 
@@ -65,7 +61,8 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 		monthsLeft = binary.BigEndian.Uint64(data)
 	}
 
-	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName)
+	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName, k.GetParams(ctx).LeftoverBurnRate)
+	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, sdk.OneDec())
 
 	if monthsLeft > 0 {
 		monthsLeft -= 1
@@ -80,9 +77,8 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), []byte(types.RefillRewardsPoolTimerName), monthsLeftBytes)
 }
 
-func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool) {
+func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate sdkmath.LegacyDec) {
 	// burn remaining tokens in the distribution pool
-	burnRate := k.GetParams(ctx).LeftoverBurnRate
 	tokensToBurn := burnRate.MulInt(k.TotalPoolTokens(ctx, distributionPool)).TruncateInt()
 	err := k.BurnPoolTokens(ctx, distributionPool, tokensToBurn)
 	if err != nil {

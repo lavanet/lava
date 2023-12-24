@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
@@ -39,7 +40,7 @@ import (
 //
 // the validator got rewards
 func TestRewardsModuleSetup(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, false)
 	lifetime := types.RewardsAllocationPoolsLifetime
 
 	// on init, the allocation pool lifetime should decrease by one
@@ -75,18 +76,19 @@ func TestRewardsModuleSetup(t *testing.T) {
 // BurnRate = 1 -> on monthly refill, burn all previous funds in the distribution pool
 // BurnRate = 0 -> on monthly refill, burn none of the previous funds in the distribution pool
 func TestBurnRateParam(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, true)
 	lifetime := types.RewardsAllocationPoolsLifetime
 	allocPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsAllocationPoolName).Int64()
 
 	// advance a month to trigger monthly pool refill callback
 	// to see why these 3 are called, see general note 2
-	ts.AdvanceMonths(1)
-	ts.AdvanceBlock()
+	resp, err := ts.QueryRewardsPools()
+	require.Nil(t, err)
+	ts.AdvanceBlock(time.Duration(resp.TimeToRefill) * time.Second)
 	testkeeper.EndBlock(ts.Ctx, ts.Keepers)
 
 	// default burn rate = 1, distribution pool's old balance should be wiped
-	// current balance should be exactly the expected monthly quota
+	// current balance should be exactly the expected monthly quota minus block reward
 	expectedMonthlyQuota := allocPoolBalance / (lifetime - 1)
 	distPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName).Int64()
 	require.Equal(t, expectedMonthlyQuota, distPoolBalance)
@@ -100,8 +102,9 @@ func TestBurnRateParam(t *testing.T) {
 	require.Nil(t, err)
 
 	// advance a month to trigger monthly pool refill callback
-	ts.AdvanceMonths(1)
-	ts.AdvanceBlock()
+	resp, err = ts.QueryRewardsPools()
+	require.Nil(t, err)
+	ts.AdvanceBlock(time.Duration(resp.TimeToRefill) * time.Second)
 	prevDistPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName).Int64()
 	testkeeper.EndBlock(ts.Ctx, ts.Keepers)
 
@@ -116,7 +119,7 @@ func TestBurnRateParam(t *testing.T) {
 // no months left, quota = 0 (and the chain doesn't panic)
 func TestAllocationPoolMonthlyQuota(t *testing.T) {
 	// after init, the allocation pool transfers funds to the distribution pool (no need to wait a month)
-	ts := newTester(t)
+	ts := newTester(t, false)
 	lifetime := types.RewardsAllocationPoolsLifetime
 
 	// calc expectedMonthlyQuota. Check that it was subtracted from the allocation pool and added
@@ -182,16 +185,14 @@ func TestAllocationPoolMonthlyQuota(t *testing.T) {
 // TestValidatorBlockRewards tests that the expected block reward is transferred to the fee collector
 // the reward should be: (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
 func TestValidatorBlockRewards(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, false)
 
 	// create validator
-	valInitBalance := int64(30000000000000 / 3) // specifically picked to make staking module's BondedRatio to be 0.25
-	ts.AddAccount(common.VALIDATOR, 0, valInitBalance)
+	stakingSupply := ts.Keepers.StakingKeeper.StakingTokenSupply(ts.Ctx)
+	valInitBalance := stakingSupply.QuoRaw(3) // specifically picked to make staking module's BondedRatio to be 0.25
+	ts.AddAccount(common.VALIDATOR, 0, valInitBalance.Int64())
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
-	amount := sdk.NewIntFromUint64(uint64(valInitBalance))
-	ts.TxCreateValidator(validator, amount)
-
-	ts.makeBondedRatioNonZero()
+	ts.TxCreateValidator(validator, valInitBalance)
 
 	// by default, BondedRatio staking module param is smaller than MinBonded rewards module param
 	// so bondedTargetFactor = 1. We change MinBonded to zero to change bondedTargetFactor
@@ -269,7 +270,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 
 // TestBlocksAndTimeToNextExpiry tests that the time/blocks to the next timer expiry are as expected
 func TestBlocksAndTimeToNextExpiry(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, false)
 
 	// TimeToNextTimerExpiry should be equal to the number of seconds in a month
 	blockTime := ts.BlockTime()
@@ -300,15 +301,7 @@ func TestBlocksAndTimeToNextExpiry(t *testing.T) {
 // BondedTargetFactor = (maxBonded - bondedRatio) / (maxBonded - minBonded) + lowFactor * (bondedRatio - minBonded) / (maxBonded - minBonded)  --  if bondedRatio > minBonded
 // BondedTargetFactor = 1  --  if bondedRatio > maxBonded
 func TestBondedTargetFactorEdgeCases(t *testing.T) {
-	ts := newTester(t)
-
-	// create validator (for making BondedRatio non-zero in some test cases)
-	valInitBalance := int64(30000000000000 / 3) // specifically picked to make staking module's BondedRatio to be 0.25
-	ts.AddAccount(common.VALIDATOR, 0, valInitBalance)
-	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
-	amount := sdk.NewIntFromUint64(uint64(valInitBalance))
-	ts.TxCreateValidator(validator, amount)
-
+	ts := newTester(t, false)
 	// Initial BondedRatio value is 0
 	playbook := []struct {
 		name                       string
@@ -336,11 +329,15 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 			ts.Keepers.Rewards.SetParams(ts.Ctx, params)
 
 			if tt.unzeroBondedRatio {
-				ts.makeBondedRatioNonZero()
+				stakingSupply := ts.Keepers.StakingKeeper.StakingTokenSupply(ts.Ctx)
+				valInitBalance := stakingSupply.QuoRaw(3) // specifically picked to make staking module's BondedRatio to be 0.25
+				ts.AddAccount(common.VALIDATOR, 0, valInitBalance.Int64())
+				validator, _ := ts.GetAccount(common.VALIDATOR, 0)
+				ts.TxCreateValidator(validator, valInitBalance)
 			}
 
 			bondedTargetFactor := ts.Keepers.Rewards.BondedTargetFactor(ts.Ctx)
-			require.True(t, bondedTargetFactor.Equal(sdk.MustNewDecFromStr(tt.expectedBondedTargetFactor)))
+			require.Equal(t, sdk.MustNewDecFromStr(tt.expectedBondedTargetFactor), bondedTargetFactor)
 		})
 	}
 }
@@ -349,7 +346,7 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 // 1. There's a single timer at all times the expires after a month
 // 2. The timer's data contains the months left before the allocation pool's funds are depleted
 func TestRefillPoolsTimerStore(t *testing.T) {
-	ts := newTester(t)
+	ts := newTester(t, false)
 	lifetime := types.RewardsAllocationPoolsLifetime
 
 	req := &timerstoretypes.QueryAllTimersRequest{

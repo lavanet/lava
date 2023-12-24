@@ -186,6 +186,19 @@ func (k Keeper) CreateSubscription(
 		)
 	}
 
+	if !found || autoRenewalFlag {
+		expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
+		sub.MonthExpiryTime = expiry
+		sub.Block = block
+		err = k.subsFS.AppendEntry(ctx, consumer, block, &sub)
+		if err != nil {
+			return err
+		}
+		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
+	} else {
+		k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
+	}
+
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creatorAcct, types.ModuleName, []sdk.Coin{price})
 	if err != nil {
 		return utils.LavaFormatError("create subscription failed. funds transfer failed", err,
@@ -194,16 +207,7 @@ func (k Keeper) CreateSubscription(
 		)
 	}
 
-	if !found {
-		expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
-		sub.MonthExpiryTime = expiry
-		k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(consumer), []byte{})
-		err = k.subsFS.AppendEntry(ctx, consumer, block, &sub)
-	} else {
-		k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
-	}
-
-	return err
+	return nil
 }
 
 func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, creator, consumer string,

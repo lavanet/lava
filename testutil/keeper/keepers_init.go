@@ -247,13 +247,13 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Plans = *planskeeper.NewKeeper(cdc, plansStoreKey, plansMemStoreKey, plansparamsSubspace, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper, ks.StakingKeeper)
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage, ks.FixationStoreKeeper)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
-	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans, ks.Dualstaking, ks.FixationStoreKeeper, ks.TimerStoreKeeper, ks.StakingKeeper)
 	ks.Downtime = downtimekeeper.NewKeeper(cdc, downtimeKey, downtimeParamsSubspace, ks.Epochstorage)
+	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Spec, ks.Epochstorage, ks.Downtime, ks.StakingKeeper, ks.Dualstaking, authtypes.FeeCollectorName, ks.TimerStoreKeeper)
+	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans, ks.Dualstaking, ks.Rewards, ks.FixationStoreKeeper, ks.TimerStoreKeeper, ks.StakingKeeper)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime, ks.Dualstaking, &ks.StakingKeeper, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
 	ks.ParamsKeeper = paramsKeeper
 	ks.Conflict = *conflictkeeper.NewKeeper(cdc, conflictStoreKey, conflictMemStoreKey, conflictparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Pairing, ks.Epochstorage, ks.Spec, ks.StakingKeeper)
 	ks.BlockStore = MockBlockStore{height: 0, blockHistory: make(map[int64]*tenderminttypes.Block)}
-	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Downtime, ks.StakingKeeper, authtypes.FeeCollectorName, ks.TimerStoreKeeper)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())
 
@@ -300,8 +300,14 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	// pools
 	allocationPoolBalance := uint64(30000000000000)
+
 	err := ks.BankKeeper.AddToBalance(
 		GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
+		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
+	require.Nil(t, err)
+
+	err = ks.BankKeeper.AddToBalance(
+		GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
 		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.Nil(t, err)
 
@@ -488,5 +494,8 @@ func EndBlock(ctx sdk.Context, ks *Keepers) {
 }
 
 func GetModuleAddress(moduleName string) sdk.AccAddress {
-	return sdk.AccAddress([]byte(moduleName))
+	moduleAddress := authtypes.NewModuleAddress(moduleName).String()
+	baseAccount := authtypes.NewBaseAccount(nil, nil, 0, 0)
+	baseAccount.Address = moduleAddress
+	return authtypes.NewModuleAccount(baseAccount, moduleName, authtypes.Burner, authtypes.Staking).GetAddress()
 }
