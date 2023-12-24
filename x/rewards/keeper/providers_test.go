@@ -589,7 +589,7 @@ func TestCommunityTaxOne(t *testing.T) {
 	require.True(t, validatorsParticipation.IsZero())
 
 	// check actual balance of the commuinty pool
-	// community pool should have 40% of expected reward
+	// community pool should have 100% of expected reward
 	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
 	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
 	require.Equal(t, expectedReward, communityBalance)
