@@ -124,23 +124,34 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			require.Nil(t, err)
 			resRewards2, err := ts.QueryDualstakingDelegatorRewards(delegator2, provider, stakeEntry.Chain)
 			require.Nil(t, err)
-			d1Reward := resRewards1.Rewards[0].Amount.Amount.Int64()
-			d2Reward := resRewards2.Rewards[0].Amount.Amount.Int64()
 
-			require.Equal(t, tt.d1Reward, d1Reward)
-			require.Equal(t, tt.d2Reward, d2Reward)
+			d1Reward := int64(0)
+			if tt.d1Reward == 0 {
+				require.Len(t, resRewards1.Rewards, 0)
+			} else {
+				d1Reward = resRewards1.Rewards[0].Amount.Amount.Int64()
+				require.Equal(t, tt.d1Reward, d1Reward)
+				// claim delegator rewards and verify balance
+				delegator1Addr, err := sdk.AccAddressFromBech32(delegator1)
+				require.Nil(t, err)
+				claimRewardsAndVerifyBalance(ts, delegator1Addr, provider, stakeEntry.Chain)
+			}
+
+			d2Reward := int64(0)
+			if tt.d2Reward == 0 {
+				require.Len(t, resRewards2.Rewards, 0)
+			} else {
+				d2Reward = resRewards2.Rewards[0].Amount.Amount.Int64()
+				require.Equal(t, tt.d2Reward, d2Reward)
+				// claim delegator rewards and verify balance
+				delegator2Addr, err := sdk.AccAddressFromBech32(delegator2)
+				require.Nil(t, err)
+				claimRewardsAndVerifyBalance(ts, delegator2Addr, provider, stakeEntry.Chain)
+			}
 
 			// check the delegators rewards sum up to the expected total
 			totalDelegatorsReward := totalReward.TruncateInt64() * (100 - int64(tt.providerReward)) / 100
 			require.Equal(t, totalDelegatorsReward, d1Reward+d2Reward)
-
-			// claim delegator rewards and verify balance
-			delegator1Addr, err := sdk.AccAddressFromBech32(delegator1)
-			require.Nil(t, err)
-			delegator2Addr, err := sdk.AccAddressFromBech32(delegator2)
-			require.Nil(t, err)
-			claimRewardsAndVerifyBalance(ts, delegator1Addr, provider, stakeEntry.Chain)
-			claimRewardsAndVerifyBalance(ts, delegator2Addr, provider, stakeEntry.Chain)
 		})
 	}
 }
