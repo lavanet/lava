@@ -45,9 +45,10 @@ type Tester struct {
 }
 
 const (
-	PROVIDER  string = "provider"
-	CONSUMER  string = "consumer"
-	VALIDATOR string = "validator"
+	PROVIDER  string = "provider_"
+	CONSUMER  string = "consumer_"
+	VALIDATOR string = "validator_"
+	DEVELOPER string = "developer_"
 )
 
 func NewTester(t *testing.T) *Tester {
@@ -160,13 +161,16 @@ func (ts *Tester) StakeProviderExtra(
 
 	// if necessary, generate mock endpoints
 	if endpoints == nil {
-		apiInterface := spec.ApiCollections[0].CollectionData.ApiInterface
+		apiInterfaces := []string{}
+		for _, apiCollection := range spec.ApiCollections {
+			apiInterfaces = append(apiInterfaces, apiCollection.CollectionData.ApiInterface)
+		}
 		geolocations := planstypes.GetGeolocationsFromUint(geoloc)
 
 		for _, geo := range geolocations {
 			endpoint := epochstoragetypes.Endpoint{
 				IPPORT:        "123",
-				ApiInterfaces: []string{apiInterface},
+				ApiInterfaces: apiInterfaces,
 				Geolocation:   int32(geo),
 			}
 			endpoints = append(endpoints, endpoint)
@@ -174,7 +178,7 @@ func (ts *Tester) StakeProviderExtra(
 	}
 
 	stake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(amount))
-	_, err := ts.TxPairingStakeProvider(addr, spec.Name, stake, endpoints, geoloc, moniker)
+	_, err := ts.TxPairingStakeProvider(addr, spec.Index, stake, endpoints, geoloc, moniker)
 
 	return err
 }
@@ -962,10 +966,74 @@ func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 	return ts
 }
 
+func (ts *Tester) BondDenom() string {
+	return ts.Keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ts.Ctx))
+}
+
 // AdvanceMonth advanced blocks by given months, like AdvanceMonthsFrom,
 // starting from the current block's timestamp
 func (ts *Tester) AdvanceMonths(months int) *Tester {
 	return ts.AdvanceMonthsFrom(ts.BlockTime(), months)
+}
+
+func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validators int, subscriptions int, projectsInSubscription int, providers int) error {
+	var balance int64 = 100000000000
+
+	start := len(ts.Accounts(VALIDATOR))
+	for i := 0; i < validators; i++ {
+		acc, _ := ts.AddAccount(VALIDATOR, start+i, balance)
+		ts.TxCreateValidator(acc, math.NewInt(balance))
+	}
+
+	sdkContext := sdk.UnwrapSDKContext(ts.Ctx)
+	spec, err := testkeeper.GetASpec(specId, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
+	if err != nil {
+		return err
+	}
+	ts.AddSpec(spec.Index, spec)
+	ts.Keepers.Spec.SetSpec(sdk.UnwrapSDKContext(ts.Ctx), spec)
+	start = len(ts.Accounts(CONSUMER))
+	for i := 0; i < subscriptions; i++ {
+		// setup consumer
+		consumerAcc, consumerAddress := ts.AddAccount(CONSUMER, start+i, balance)
+		ts.AddPlan("free", CreateMockPlan())
+		ts.AddPolicy("mock", CreateMockPolicy())
+		plan := ts.plans["free"]
+		// subscribe consumer
+		BuySubscription(ts.Ctx, *ts.Keepers, *ts.Servers, consumerAcc, plan.Index)
+		// create projects:
+		_, pd2both := ts.AddAccount(DEVELOPER, start+i, 10000)
+		keys_1_admin_dev := []projectstypes.ProjectKey{
+			projectstypes.NewProjectKey(pd2both).
+				AddType(projectstypes.ProjectKey_ADMIN).
+				AddType(projectstypes.ProjectKey_DEVELOPER),
+		}
+		policy := ts.Policy("mock")
+		pd := projectstypes.ProjectData{
+			Name:        "proj",
+			Enabled:     true,
+			ProjectKeys: keys_1_admin_dev,
+			Policy:      &policy,
+		}
+		ts.AddProjectData("projdata", pd)
+		err = ts.Keepers.Projects.CreateProject(ts.Ctx, consumerAddress, pd, plan)
+		if err != nil {
+			return err
+		}
+	}
+	// setup providers
+	start = len(ts.Accounts(PROVIDER))
+	for i := 0; i < providers; i++ {
+		_, addr := ts.AddAccount(PROVIDER, start+i, balance)
+		err := ts.StakeProviderExtra(addr, spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, "prov"+strconv.Itoa(start+i))
+		if err != nil {
+			return err
+		}
+	}
+
+	// advance for the staking to be valid
+	ts.AdvanceEpoch()
+	return nil
 }
 
 var sessionID uint64

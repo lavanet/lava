@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -62,6 +63,16 @@ func (k Keeper) GetAllProviderPaymentStorage(ctx sdk.Context) (list []types.Prov
 	}
 
 	return
+}
+
+func (k Keeper) GetProviderFromProviderPaymentStorage(providerPaymentStorage *types.ProviderPaymentStorage) (string, error) {
+	index := providerPaymentStorage.Index
+	// index consists of chain_epoch_providerAddress
+	lastIndex := strings.LastIndex(index, "_")
+	if lastIndex != -1 {
+		return index[lastIndex+1:], nil
+	}
+	return "", fmt.Errorf("invalid provider payment storage key %s", index)
 }
 
 // Function to get a providerPaymentStorage object's key (key is chainID_epoch_providerAddress, epoch in hex representation)
