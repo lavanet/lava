@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	v2 "github.com/lavanet/lava/x/subscription/migrations/v2"
 	v5 "github.com/lavanet/lava/x/subscription/migrations/v5"
+	v6 "github.com/lavanet/lava/x/subscription/migrations/v6"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -144,6 +145,37 @@ func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 
 		if sub.MonthExpiryTime < uint64(currentTime) {
 			m.keeper.advanceMonth(ctx, []byte(ind))
+		}
+	}
+
+	return nil
+}
+
+// Migrate6to7 implements store migration from v6 to v7:
+// -- if subscription's auto_renewal = true, set auto_renewal_next_plan to the current's subscription plan
+func (m Migrator) Migrate6to7(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate 6->7: subscriptions")
+
+	for _, index := range m.keeper.subsFS.GetAllEntryIndices(ctx) {
+		for _, block := range m.keeper.subsFS.GetAllEntryVersions(ctx, index) {
+			var subscriptionV6 v6.Subscription
+			var subscriptionV7 types.Subscription
+			foundOld := m.keeper.subsFS.FindEntry(ctx, index, uint64(block), &subscriptionV6)
+			foundNew := m.keeper.subsFS.FindEntry(ctx, index, uint64(block), &subscriptionV7)
+			if !foundOld || !foundNew {
+				utils.LavaFormatError("cannot migrate sub", fmt.Errorf("sub not found"),
+					utils.Attribute{Key: "index", Value: index},
+					utils.Attribute{Key: "block", Value: block},
+				)
+			}
+
+			if subscriptionV6.AutoRenewal {
+				subscriptionV7.AutoRenewalNextPlan = subscriptionV7.PlanIndex
+			} else {
+				subscriptionV7.AutoRenewalNextPlan = types.AUTO_RENEWAL_PLAN_NONE
+			}
+
+			m.keeper.subsFS.ModifyEntry(ctx, index, block, &subscriptionV7)
 		}
 	}
 
