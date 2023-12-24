@@ -196,7 +196,7 @@ func v0_32_0_UpgradeHandler(
 		if err != nil {
 			return nil, err
 		}
-		allocate := totalSupply.Supply.QuoInt(sdk.NewIntFromUint64(500))
+		allocate := totalSupply.Supply.QuoInt(sdk.NewIntFromUint64(33))
 		err = lk.BankKeeper.MintCoins(ctx, string(rewardstypes.ValidatorsRewardsAllocationPoolName), allocate)
 		if err != nil {
 			return nil, err
