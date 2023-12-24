@@ -20,12 +20,14 @@ const (
 
 func CmdAutoRenewal() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "auto-renewal --[enable/disable] [plan-index] [optional: consumer]",
+		Use:   "auto-renewal --[enable/disable] [optional: plan-index] [optional: consumer]",
 		Short: "Enable/Disable auto-renewal to a subscription",
 		Long: `The auto-renewal command allows the subscription owner (consumer) to enable/disable
 auto-renewal to a subscription. When a subscription with enabled auto-renewal expires, it's 
-automatically extended by one month indefinitely, until the auto-renewal is disabled.`,
+automatically extended by one month indefinitely, until the auto-renewal is disabled.
+If --enable is set, and plan-index is not, the current plan is assumed.`,
 		Example: `Required flags: --from <subscription_consumer>
+lavad tx subscription auto-renewal --enable --from <subscription_consumer>
 lavad tx subscription auto-renewal --enable explorer --from <subscription_consumer>
 lavad tx subscription auto-renewal --enable explorer <subscription_consumer> --from <subscription_creator>
 lavad tx subscription auto-renewal --disable --from <subscription_consumer>
@@ -62,7 +64,7 @@ lavad tx subscription auto-renewal --disable <subscription_consumer> --from <sub
 				return fmt.Errorf("this command requires the %s or %s flag", EnableAutoRenewalFlag, DisableAutoRenewalFlag)
 			}
 
-			planIndex := types.AUTO_RENEWAL_PLAN_NONE
+			planIndex := ""
 			consumer := creator
 			switch len(args) {
 			case 1:

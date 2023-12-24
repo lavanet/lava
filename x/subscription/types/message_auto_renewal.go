@@ -53,10 +53,6 @@ func (msg *MsgAutoRenewal) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid consumer address (%s)", err)
 	}
 
-	if msg.Enable && strings.TrimSpace(msg.Index) == "" {
-		return sdkerrors.Wrapf(ErrBlankParameter, "invalid plan index (%s)", msg.Index)
-	}
-
 	if !msg.Enable && strings.TrimSpace(msg.Index) != "" {
 		return sdkerrors.Wrapf(ErrInvalidParameter, "can't use plan index when `--disable` flag is passed")
 	}

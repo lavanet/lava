@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -38,6 +39,10 @@ func (k msgServer) AutoRenewal(goCtx context.Context, msg *types.MsgAutoRenewal)
 
 	// If msg.Enable == true, verify plan index
 	if msg.Enable {
+		if strings.TrimSpace(msg.Index) == "" {
+			msg.Index = sub.PlanIndex
+		}
+
 		if _, found := k.plansKeeper.FindPlan(ctx, msg.Index, uint64(ctx.BlockHeight())); !found {
 			return nil, utils.LavaFormatWarning("could not change auto-renewal of subscription", fmt.Errorf("could not find plan (%s)", msg.Index),
 				utils.Attribute{Key: "creator", Value: msg.Creator},
