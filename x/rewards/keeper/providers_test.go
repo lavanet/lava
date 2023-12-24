@@ -538,3 +538,59 @@ func TestBonusReward49months(t *testing.T) {
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 0)
 }
+
+// TestCommunityTaxOne checks the edge case in which the community tax is 100%
+// the expected behaviour is that all the provider's reward will transfer to the community pool
+func TestCommunityTaxOne(t *testing.T) {
+	ts := newTester(t, true)
+
+	// set the communityTax and validatorsSubscriptionParticipation params to const values
+	// communityTax = 100%
+	// validatorsSubscriptionParticipation = 10%
+	distParams := distributiontypes.DefaultParams()
+	distParams.CommunityTax = sdk.OneDec()
+	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	require.Nil(t, err)
+
+	paramKey := string(types.KeyValidatorsSubscriptionParticipation)
+	newDecParam, err := sdk.NewDecWithPrec(1, 1).MarshalJSON() // 0.1
+	require.Nil(ts.T, err)
+	paramVal := string(newDecParam)
+	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
+	require.Nil(ts.T, err)
+
+	// create provider+comsumer, send relay and send relay payment TX
+	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
+	err = ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+
+	consumerAcc, _ := ts.AddAccount(common.CONSUMER, 1, ts.plan.Price.Amount.Int64())
+	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false)
+	require.Nil(t, err)
+
+	baserewards := uint64(100)
+	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, baserewards)
+	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+	require.Nil(t, err)
+
+	// first months there are no bonus rewards, just payment from the subscription
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	expectedReward := sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU)
+	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
+	require.Nil(t, err)
+	require.Len(t, res.Rewards, 0)
+	_, validatorsParticipation, communityParticipation := ts.DeductParticipationFees(expectedReward)
+	require.True(t, expectedReward.Equal(communityParticipation))
+	require.True(t, validatorsParticipation.IsZero())
+
+	// check actual balance of the commuinty pool
+	// community pool should have 40% of expected reward
+	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
+	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
+	require.Equal(t, expectedReward, communityBalance)
+}
