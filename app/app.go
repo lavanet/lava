@@ -231,16 +231,15 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:               nil,
-		distrtypes.ModuleName:                    nil,
-		stakingtypes.BondedPoolName:              {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:           {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                      {authtypes.Burner},
-		ibctransfertypes.ModuleName:              {authtypes.Burner},
-		subscriptionmoduletypes.ModuleName:       {authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		pairingmoduletypes.ModuleName:            {authtypes.Burner, authtypes.Staking},
+		authtypes.FeeCollectorName:                                       nil,
+		distrtypes.ModuleName:                                            nil,
+		stakingtypes.BondedPoolName:                                      {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:                                   {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                                              {authtypes.Burner},
+		ibctransfertypes.ModuleName:                                      {authtypes.Burner},
+		subscriptionmoduletypes.ModuleName:                               {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ValidatorsRewardsAllocationPoolName):   {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ValidatorsRewardsDistributionPoolName): {authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -671,7 +670,7 @@ func New(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		rewardsmoduletypes.ModuleName, // rewards needs to run before distribution to fill the validator rewards pool
+		rewardsmoduletypes.ModuleName, // rewards needs to run before distribution to send rewards to the fee collector
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,

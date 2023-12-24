@@ -8,7 +8,7 @@ sidebar_position: 1
 
 This document specifies the rewards module of Lava Protocol.
 
-The rewards module is responsible for distributing rewards to validators and providers. Rewards are collected from the validators' and providers' pools, respectively. The pools' funds originate from the treasury account - a continuous vesting account that holds all the pre-allocated Lava tokens of the network. It is important to note that the pre-allocated amount is constant, and there will be no minting of new Lava tokens in the future.
+The rewards module is responsible for distributing rewards to validators and providers. Rewards are collected from the validators' and providers' pools, respectively. The pools' funds originate from the treasury account - a module account that holds all the pre-allocated Lava tokens of the network. It is important to note that the pre-allocated amount is constant, and there will be no minting of new Lava tokens in the future.
 
 Please note that this module replaces Cosmos SDK's mint module, which is typically responsible for minting rewards for validators.
 
@@ -28,28 +28,36 @@ Please note that this module replaces Cosmos SDK's mint module, which is typical
 
 ### The Treasury
 
-As per Lava's vision, there is a constant supply of Lava tokens from the chain's genesis. There will be no minting of new tokens in the future like other Cosmos-SDK based chains.
+As per Lava's vision, there is a constant supply of Lava tokens from the chain's genesis. There will be no minting of new tokens in the future like other Cosmos-SDK based chains. The treasury account holds all of Lava's pre-allocated tokens. The total amount of coins will be $10^9 * 10^6$ ulava.
 
-The treasury account holds all of Lava's pre-allocated tokens. It's a continous vesting account which releases tokens continuously over time, linearly, to token pools that are used to reward validators and providers. The vesting period is 4 years minus one month.
+### Rewards Pools
 
-### Validators Rewards Pool
+The rewards module is responsible on distributing rewards for validators that create new blocks, and providers that provide RPC service for their consumers.
 
-In Cosmos-SDK chains, validator get rewards for creating blocks by the Cosmos' distribution module. Each new block new tokens are minted and distributed to all eligible accounts for the new block creation.
+To manage the rewards, the module uses two rewards pools: allocation pools and distribution pools. Note that there are two allocation pools and two distribution pools to manage the validators and providers rewards independently.
 
-In Lava, the Cosmos validators reward distribution mechanism remains as is, but the source of the tokens comes from the rewards module (and not the mint module). The rewards module uses two pools to manage rewards for the validators: `validators_pool` and `validators_block_pool`.
+The allocation pools get some of the treasury account's tokens and hold onto it. Once a month, the allocation pools transfer a fixed amount of funds to the distribution pools. This monthly transfer will last for 4 years, after which the alocation pools' funds will be depleted (the allocation pools lifetime (4 years) is a pre-defined constant in the module's code). Note that before the allocation pools transfer the funds, the distribution pools' tokens are burned according to the `LeftOverBurnRate` parameter (see [below](#leftoverburnrate)).
 
-The `validators_pool` is the recepient pool of the vesting from the treasury. In other words, it's continously receiving funds from the treasury account.
+The distribution pools use the monthly quota of funds to distribute rewards for validators and providers.
 
-The `validators_block_pool` is the pool used to reward validators for block creation. Once a month, the `validators_block_pool` gets month-worth rewards from the `validators_pool`. These funds are used to reward validators for each block. Note that before the `validators_pool` transfers the funds, the `validators_block_pool`'s tokens are burned according to the `LeftOverBurnRate` parameter (see below). Same as Cosmos' mint module, the `validators_block_pool` transters the block rewards to the fee collection account which is used by the distribution module to reward the validators.
+#### Validators Rewards
 
-Validators block reward is calculated using the following formula:
+In Cosmos-SDK chains, validators get rewards for creating blocks by the Cosmos' distribution module. For each new block, new tokens are minted and distributed to all the accounts that contributed to the new block creation.
 
-$$ Reward = \frac{{\text{{validators\_block\_pool\_balance}}} \cdot {\text{bonded\_target\_factor}}}{\text{{remaining\_blocks\_until\_next\_emission}}}$$
+In Lava, the Cosmos validators reward distribution mechanism remains as is, but the source of the tokens comes from the rewards module (and not the mint module). As stated above, the rewards are managed using two pools: an allocation pool and a distribution pool.
+
+The allocation pool of validators, `validators_rewards_allocation_pool`, gets 3% of the tokens of the treasury account.
+
+The distribution pool of validators, `validators_rewards_distribution_pool`, uses its funds to reward validators for proposing new blocks. Same as Cosmos' mint module, the `validators_rewards_distribution_pool` transfers the block rewards to the fee collection account which is used by Cosmos' distribution module to reward the validators.
+
+The validators block reward is calculated using the following formula:
+
+$$ Reward = \frac{{\text{{validators\_distribution\_pool\_balance}}} \cdot {\text{bonded\_target\_factor}}}{\text{{remaining\_blocks\_until\_next\_emission}}}$$
 
 Where:
-* $\text{validators\_block\_pool\_balance}$ - The remaining balance in the `validators_block_pool`.
-* $\text{bonded\_target\_factor}$ - A factor calculated with the module's params. TBD (better explain).
-* $\text{remaining\_blocks\_until\_next\_emission}$ - The amount of blocks until the next monthly refill of the `validators_block_pool`.
+* $\text{validators\_distribution\_pool\_balance}$ - The remaining balance in the `validators_rewards_distribution_pool`.
+* $\text{bonded\_target\_factor}$ - A factor calculated with the module's params (see [below](#bondedtargetfactor)).
+* $\text{remaining\_blocks\_until\_next\_emission}$ - The amount of blocks until the next monthly refill of the `validators_rewards_distribution_pool`.
 
 ### Providers Rewards Pool
 
@@ -68,17 +76,30 @@ The rewards module contains the following parameters:
 
 ### MinBondedTarget
 
-TBD
+MinBondedTarget is used to calculate the [BondedTargetFactor](#bondedtargetfactor). This is the percentage of stake vs token supply that above it, reduction in validators block rewards is done.
 
 ### MaxBondedTarget
 
-TBD
+MaxBondedTarget is used to calculate the [BondedTargetFactor](#bondedtargetfactor). This is the percentage in which the validators block rewards reduction is capped and reaches LowFactor.
 
 ### LowFactor
 
-TBD
+LowFactor is used to calculate the [BondedTargetFactor](#bondedtargetfactor). This is the linear reduction rate/slope of the validators block rewards.
 
 ### LeftOverBurnRate
 
-Value between 0-1 that determines the tokens to burn when refilling the validators block rewards pool. 
+LeftOverBurnRate determines the percentage of tokens to burn before refilling the distribution rewards pool with the monthly quota (from the allocation pool). 
 LeftOverBurnRate = 0 means there is no burn.
+
+### BondedTargetFactor
+
+In Lava we wanted to make validator rewards decrease linearly with the increase in stake. The BondedTargetFactor encapsulates this behaviour.
+
+To calculate the `BondedTargetFactor` see the following formula (note that the staking module's `BondedRatio` parameter is used, which is the fraction of the staking tokens which are currently bonded):
+
+$$\text{BondedTargetFactor}= \\\begin{cases}
+1 & \text{$\text{BondRatio} < \text{MinBonded}$}\\
+\frac{\text{MaxBonded}-\text{BondRatio}}{\text{MaxBonded}-\text{MinBonded}} + (\text{LowFactor})\frac{\text{BondRatio}-\text{MinBonded}}{\text{MaxBonded}-\text{MinBonded}}  & \text{$\text{MinBonded} < \text{BondRatio} < \text{MaxBonded}$}\\
+\text{LowFactor} & \text{$\text{BondRatio} > \text{MaxBonded}$}\\
+\end{cases}$$
+

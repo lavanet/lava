@@ -22,6 +22,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -617,29 +618,7 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 	require.Nil(ts.T, err)
 	_, err = ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
 	require.Nil(ts.T, err)
-
-	// **** Make validator boded ****
-	// move validator's coins from unbonded pool to bonded
-	val, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(validator.Addr))
-	require.True(ts.T, found)
-	valTokens := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), amount))
-	err = ts.Keepers.BankKeeper.SendCoinsFromModuleToModule(ts.Ctx, stakingtypes.NotBondedPoolName, stakingtypes.BondedPoolName, valTokens)
-	require.Nil(ts.T, err)
-
-	// before changing the validaor's state, run the BeforeValidatorModified hook manually
-	err = ts.Keepers.StakingKeeper.Hooks().BeforeValidatorModified(ts.Ctx, val.GetOperator())
-	require.Nil(ts.T, err)
-
-	// update the validator status to "bonded" and apply
-	val = val.UpdateStatus(stakingtypes.Bonded)
-	ts.Keepers.StakingKeeper.SetValidator(ts.Ctx, val)
-	ts.Keepers.StakingKeeper.SetValidatorByPowerIndex(ts.Ctx, val)
-
-	// run the AfterValidatorBonded hook manually
-	consAddr, err := val.GetConsAddr()
-	require.Nil(ts.T, err)
-	err = ts.Keepers.StakingKeeper.Hooks().AfterValidatorBonded(ts.Ctx, consAddr, val.GetOperator())
-	require.Nil(ts.T, err)
+	ts.AdvanceBlock() // advance block to run staking keeper's endBlocker that makes the validator bonded
 }
 
 // TxDelegateValidator: implement 'tx staking delegate'
@@ -844,6 +823,18 @@ func (ts *Tester) QueryFixationEntry(storeKey string, prefix string, key string,
 	return ts.Keepers.FixationStoreKeeper.Entry(ts.GoCtx, msg)
 }
 
+// QueryRewardsPools implements 'q rewards pools'
+func (ts *Tester) QueryRewardsPools() (*rewardstypes.QueryPoolsResponse, error) {
+	msg := &rewardstypes.QueryPoolsRequest{}
+	return ts.Keepers.Rewards.Pools(ts.GoCtx, msg)
+}
+
+// QueryRewardsBlockReward implements 'q rewards block-reward'
+func (ts *Tester) QueryRewardsBlockReward() (*rewardstypes.QueryBlockRewardResponse, error) {
+	msg := &rewardstypes.QueryBlockRewardRequest{}
+	return ts.Keepers.Rewards.BlockReward(ts.GoCtx, msg)
+}
+
 // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
@@ -959,7 +950,6 @@ func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
 func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 	for next := from; months > 0; months -= 1 {
 		next = utils.NextMonth(next)
-		fmt.Printf("next: %v\n", next.Unix())
 		delta := next.Sub(ts.BlockTime())
 		if months == 1 {
 			delta -= 5 * time.Second
