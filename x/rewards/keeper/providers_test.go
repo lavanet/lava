@@ -474,18 +474,24 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
+	expectedReward := sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU)
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 1)
-	rewardWithParticipation := res.Rewards[0].Amount.Amount
-	_, validatorsParticipation, communityParticipation := ts.DeductParticipationFees(rewardWithParticipation)
-
-	validatorsPerc := validatorsParticipation.MulRaw(100).Quo(rewardWithParticipation)
-	communityPerc := communityParticipation.MulRaw(100).Quo(rewardWithParticipation)
+	deductedReward, validatorsParticipation, communityParticipation := ts.DeductParticipationFees(expectedReward)
+	require.True(t, expectedReward.Equal(deductedReward.Add(validatorsParticipation).Add(communityParticipation)))
 
 	// check participation percentages values accoding to hard-coded values
 	// validators participation percentage = (validatorsSubscriptionParticipation / (1 - communityTax)) = (10% / 100% - 50%) = 0.2
 	// community participation percentage = (validatorsSubscriptionParticipation + communityTax) - validators participation percentage = (10% + 50%) - 0.2 = 0.4
+	validatorsPerc := validatorsParticipation.MulRaw(100).Quo(expectedReward)
+	communityPerc := communityParticipation.MulRaw(100).Quo(expectedReward)
 	require.Equal(t, int64(20), validatorsPerc.Int64())
 	require.Equal(t, int64(40), communityPerc.Int64())
+
+	// check actual balance of the commuinty pool
+	// community pool should have 40% of expected reward
+	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
+	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
+	require.True(t, expectedReward.Mul(communityPerc).QuoRaw(100).Equal(communityBalance))
 }
