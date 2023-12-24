@@ -30,6 +30,18 @@ const (
 func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
 
+	err := ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
+		ts.Keepers.AccountKeeper.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
+	require.Nil(ts.T, err)
+
+	err = ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
+		ts.Keepers.AccountKeeper.GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
+	require.Nil(ts.T, err)
+
+	ts.DisableParticipationFees()
+
 	ts.addValidators(1)
 
 	ts.plan = ts.AddPlan("free", common.CreateMockPlan()).Plan("free")

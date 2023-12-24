@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/x/rewards/types"
 	subscription "github.com/lavanet/lava/x/subscription/keeper"
@@ -70,7 +71,10 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, res.Rewards[0].Amount.Amount.Uint64(), baserewards*subscription.LIMIT_TOKEN_PER_CU)
+	expectedReward, _, _ := ts.DeductParticipationFees(sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU))
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
+	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
+	require.Nil(t, err)
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
@@ -79,7 +83,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, res.Rewards[0].Amount.Amount.Uint64(), baserewards*subscription.LIMIT_TOKEN_PER_CU+baserewards*subscription.LIMIT_TOKEN_PER_CU*ts.Keepers.Rewards.GetParams(ts.Ctx).MaxRewardBoost)
+	require.Equal(t, res.Rewards[0].Amount.Amount.Uint64(), baserewards*subscription.LIMIT_TOKEN_PER_CU*ts.Keepers.Rewards.GetParams(ts.Ctx).MaxRewardBoost)
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.Nil(t, err)
 }
@@ -109,7 +113,10 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, res.Rewards[0].Amount, ts.plan.Price)
+	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
+	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
+	require.Nil(t, err)
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
@@ -119,7 +126,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, res.Rewards[0].Amount, ts.plan.Price.AddAmount(distBalance))
+	require.Equal(t, res.Rewards[0].Amount.Amount, distBalance)
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.Nil(t, err)
 }
@@ -151,7 +158,10 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, res.Rewards[0].Amount.Amount, ts.plan.Price.Amount.MulRaw(7))
+
+	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
+	expectedReward = expectedReward.MulRaw(7) // the participation fees are done separately on each of the 7 relays
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.Nil(t, err)
 
@@ -196,7 +206,9 @@ func TestProvidersEndRewards(t *testing.T) {
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, res.Rewards[0].Amount.Amount, ts.plan.Price.Amount.MulRaw(50))
+	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
+	expectedReward = expectedReward.MulRaw(50) // the participation fees are done separately on each of the 50 relays
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.Nil(t, err)
 
@@ -253,8 +265,9 @@ func Test2SpecsZeroShares(t *testing.T) {
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 2)
-	require.Equal(t, res.Rewards[0].Amount, ts.plan.Price)
-	require.Equal(t, res.Rewards[1].Amount, ts.plan.Price)
+	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
+	require.Equal(t, expectedReward, res.Rewards[1].Amount.Amount)
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 
@@ -315,8 +328,9 @@ func Test2SpecsDoubleShares(t *testing.T) {
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 2)
-	require.Equal(t, res.Rewards[0].Amount, ts.plan.Price)
-	require.Equal(t, res.Rewards[1].Amount, ts.plan.Price)
+	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
+	require.Equal(t, expectedReward, res.Rewards[1].Amount.Amount)
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 
@@ -419,6 +433,69 @@ func TestBonusRewards3Providers(t *testing.T) {
 	require.Nil(t, err)
 }
 
+// TestValidatorsAndCommunityParticipation checks that the validators and community participation funds
+// are as expected (according to communityTax and validatorsSubscriptionParticipation params)
+func TestValidatorsAndCommunityParticipation(t *testing.T) {
+	ts := newTester(t, true)
+
+	// set the communityTax and validatorsSubscriptionParticipation params to const values
+	// communityTax = 50%
+	// validatorsSubscriptionParticipation = 10%
+	distParams := distributiontypes.DefaultParams()
+	distParams.CommunityTax = sdk.NewDecWithPrec(5, 1) // 0.5
+	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	require.Nil(t, err)
+
+	paramKey := string(types.KeyValidatorsSubscriptionParticipation)
+	newDecParam, err := sdk.NewDecWithPrec(1, 1).MarshalJSON() // 0.1
+	require.Nil(ts.T, err)
+	paramVal := string(newDecParam)
+	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
+	require.Nil(ts.T, err)
+
+	// create provider+comsumer, send relay and send relay payment TX
+	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
+	err = ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+
+	consumerAcc, _ := ts.AddAccount(common.CONSUMER, 1, ts.plan.Price.Amount.Int64())
+	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false)
+	require.Nil(t, err)
+
+	baserewards := uint64(100)
+	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, baserewards)
+	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+	require.Nil(t, err)
+
+	// first months there are no bonus rewards, just payment from the subscription
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	expectedReward := sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU)
+	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
+	require.Nil(t, err)
+	require.Len(t, res.Rewards, 1)
+	deductedReward, validatorsParticipation, communityParticipation := ts.DeductParticipationFees(expectedReward)
+	require.True(t, expectedReward.Equal(deductedReward.Add(validatorsParticipation).Add(communityParticipation)))
+
+	// check participation percentages values accoding to hard-coded values
+	// validators participation percentage = (validatorsSubscriptionParticipation / (1 - communityTax)) = (10% / 100% - 50%) = 0.2
+	// community participation percentage = (validatorsSubscriptionParticipation + communityTax) - validators participation percentage = (10% + 50%) - 0.2 = 0.4
+	validatorsPerc := validatorsParticipation.MulRaw(100).Quo(expectedReward)
+	communityPerc := communityParticipation.MulRaw(100).Quo(expectedReward)
+	require.Equal(t, int64(20), validatorsPerc.Int64())
+	require.Equal(t, int64(40), communityPerc.Int64())
+
+	// check actual balance of the commuinty pool
+	// community pool should have 40% of expected reward
+	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
+	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
+	require.True(t, expectedReward.Mul(communityPerc).QuoRaw(100).Equal(communityBalance))
+}
+
 func TestBonusReward49months(t *testing.T) {
 	ts := newTester(t, true)
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
@@ -460,4 +537,60 @@ func TestBonusReward49months(t *testing.T) {
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.Nil(t, err)
 	require.Len(t, res.Rewards, 0)
+}
+
+// TestCommunityTaxOne checks the edge case in which the community tax is 100%
+// the expected behaviour is that all the provider's reward will transfer to the community pool
+func TestCommunityTaxOne(t *testing.T) {
+	ts := newTester(t, true)
+
+	// set the communityTax and validatorsSubscriptionParticipation params to const values
+	// communityTax = 100%
+	// validatorsSubscriptionParticipation = 10%
+	distParams := distributiontypes.DefaultParams()
+	distParams.CommunityTax = sdk.OneDec()
+	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	require.Nil(t, err)
+
+	paramKey := string(types.KeyValidatorsSubscriptionParticipation)
+	newDecParam, err := sdk.NewDecWithPrec(1, 1).MarshalJSON() // 0.1
+	require.Nil(ts.T, err)
+	paramVal := string(newDecParam)
+	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
+	require.Nil(ts.T, err)
+
+	// create provider+comsumer, send relay and send relay payment TX
+	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
+	err = ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+
+	consumerAcc, _ := ts.AddAccount(common.CONSUMER, 1, ts.plan.Price.Amount.Int64())
+	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false)
+	require.Nil(t, err)
+
+	baserewards := uint64(100)
+	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, baserewards)
+	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+	require.Nil(t, err)
+
+	// first months there are no bonus rewards, just payment from the subscription
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	expectedReward := sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU)
+	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
+	require.Nil(t, err)
+	require.Len(t, res.Rewards, 0)
+	_, validatorsParticipation, communityParticipation := ts.DeductParticipationFees(expectedReward)
+	require.True(t, expectedReward.Equal(communityParticipation))
+	require.True(t, validatorsParticipation.IsZero())
+
+	// check actual balance of the commuinty pool
+	// community pool should have 100% of expected reward
+	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
+	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
+	require.Equal(t, expectedReward, communityBalance)
 }

@@ -12,6 +12,7 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	rewardsTypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,6 +58,16 @@ func (ts *tester) addValidators(count int) {
 
 func (ts *tester) feeCollector() sdk.AccAddress {
 	return testkeeper.GetModuleAddress(feeCollectorName)
+}
+
+// deductParticipationFees calculates the validators and community participation
+// fees and returns the providers reward after deducting them
+func (ts *tester) DeductParticipationFees(reward math.Int) (updatedReward math.Int, valParticipation math.Int, communityParticipation math.Int) {
+	valPerc, communityPerc, err := ts.Keepers.Rewards.CalculateContributionPercentages(ts.Ctx, reward, subscriptiontypes.ModuleName)
+	require.Nil(ts.T, err)
+	valParticipation = valPerc.MulInt(reward).TruncateInt()
+	communityParticipation = communityPerc.MulInt(reward).TruncateInt()
+	return reward.Sub(valParticipation).Sub(communityParticipation), valParticipation, communityParticipation
 }
 
 // makeBondedRatioNonZero makes BondedRatio() to be 0.25

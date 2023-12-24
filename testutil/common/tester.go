@@ -11,6 +11,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
@@ -992,4 +993,21 @@ func (ts *Tester) SendRelay(provider string, clientAcc sigs.Account, chainIDs []
 	}
 
 	return pairingtypes.MsgRelayPayment{Creator: provider, Relays: relays}
+}
+
+// DisableParticipationFees zeros validators and community participation fees
+func (ts *Tester) DisableParticipationFees() {
+	distParams := distributiontypes.DefaultParams()
+	distParams.CommunityTax = sdk.ZeroDec()
+	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	require.Nil(ts.T, err)
+	require.True(ts.T, ts.Keepers.Distribution.GetParams(ts.Ctx).CommunityTax.IsZero())
+
+	paramKey := string(rewardstypes.KeyValidatorsSubscriptionParticipation)
+	zeroDec, err := sdk.ZeroDec().MarshalJSON()
+	require.Nil(ts.T, err)
+	paramVal := string(zeroDec)
+	err = ts.TxProposalChangeParam(rewardstypes.ModuleName, paramKey, paramVal)
+	require.Nil(ts.T, err)
+	require.True(ts.T, ts.Keepers.Rewards.GetParams(ts.Ctx).ValidatorsSubscriptionParticipation.IsZero())
 }
