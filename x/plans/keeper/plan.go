@@ -20,8 +20,8 @@ func (k Keeper) AddPlan(ctx sdk.Context, planToAdd types.Plan, modify bool) erro
 		var planFromStore types.Plan
 		block, _, _, found := k.plansFS.FindEntryDetailed(ctx, planToAdd.GetIndex(), planToAdd.Block, &planFromStore)
 		if found {
-			if planFromStore.Price.Amount.LT(planToAdd.Price.Amount) {
-				return utils.LavaFormatError("failed modifying plan in planFS", fmt.Errorf("plan price cannot be increased"),
+			if !planFromStore.Price.Amount.Equal(planToAdd.Price.Amount) {
+				return utils.LavaFormatError("failed modifying plan in planFS", fmt.Errorf("plan price cannot be modified"),
 					utils.Attribute{Key: "planToAdd", Value: planToAdd},
 					utils.Attribute{Key: "originalPlan", Value: planFromStore},
 				)

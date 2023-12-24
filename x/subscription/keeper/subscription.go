@@ -34,26 +34,9 @@ func (k Keeper) CreateSubscription(
 	var err error
 
 	block := uint64(ctx.BlockHeight())
-
-	if _, err = sdk.AccAddressFromBech32(consumer); err != nil {
-		return utils.LavaFormatWarning("invalid subscription consumer address", err,
-			utils.Attribute{Key: "consumer", Value: consumer},
-		)
-	}
-
-	creatorAcct, err := sdk.AccAddressFromBech32(creator)
+	creatorAcct, plan, err := k.verifySubscriptionBuyInputAndGetPlan(ctx, block, creator, consumer, planIndex)
 	if err != nil {
-		return utils.LavaFormatWarning("invalid subscription creator address", err,
-			utils.Attribute{Key: "creator", Value: creator},
-		)
-	}
-
-	plan, found := k.plansKeeper.GetPlan(ctx, planIndex)
-	if !found {
-		return utils.LavaFormatWarning("cannot create subscription with invalid plan", err,
-			utils.Attribute{Key: "plan", Value: planIndex},
-			utils.Attribute{Key: "block", Value: block},
-		)
+		return err
 	}
 
 	var sub types.Subscription
@@ -68,7 +51,7 @@ func (k Keeper) CreateSubscription(
 	// When we make a subscription upgrade, we append the new subscription entry on the next epoch,
 	// 	but, we want to get the most updated subscription here.
 	// Hence, in case of user making double upgrade in the same epoch, we take the next epoch.
-	found = k.subsFS.FindEntry(ctx, consumer, nextEpoch, &sub)
+	found := k.subsFS.FindEntry(ctx, consumer, nextEpoch, &sub)
 
 	// Subscription creation:
 	//   When: if not already exists for consumer address)
@@ -111,10 +94,15 @@ func (k Keeper) CreateSubscription(
 					utils.LogAttr("block", block),
 				)
 			}
+			originalPlanIndex := sub.PlanIndex
+			originalPlanBlock := sub.PlanBlock
 			err = k.upgradeSubscriptionPlan(ctx, duration, &sub, &plan)
 			if err != nil {
 				return err
 			}
+
+			// Upgrade worked, now we can decrease the old plan's refcount
+			k.plansKeeper.PutPlan(ctx, originalPlanIndex, originalPlanBlock)
 
 			details := map[string]string{
 				"consumer": consumer,
@@ -166,26 +154,6 @@ func (k Keeper) CreateSubscription(
 		return utils.LavaFormatWarning("create subscription failed", err)
 	}
 
-	// subscription looks good; let's charge the creator
-	price := plan.GetPrice()
-	price.Amount = price.Amount.MulRaw(int64(duration))
-
-	if duration >= utils.MONTHS_IN_YEAR {
-		// adjust cost if discount given
-		discount := plan.GetAnnualDiscountPercentage()
-		if discount > 0 {
-			factor := int64(100 - discount)
-			price.Amount = price.Amount.MulRaw(factor).QuoRaw(100)
-		}
-	}
-
-	if k.bankKeeper.GetBalance(ctx, creatorAcct, k.stakingKeeper.BondDenom(ctx)).IsLT(price) {
-		return utils.LavaFormatWarning("create subscription failed", legacyerrors.ErrInsufficientFunds,
-			utils.Attribute{Key: "creator", Value: creator},
-			utils.Attribute{Key: "price", Value: price},
-		)
-	}
-
 	if !found || autoRenewalFlag {
 		expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
 		sub.MonthExpiryTime = expiry
@@ -199,15 +167,45 @@ func (k Keeper) CreateSubscription(
 		k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
 	}
 
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creatorAcct, types.ModuleName, []sdk.Coin{price})
+	// subscription looks good; let's charge the creator
+	price := plan.GetPrice()
+	price.Amount = price.Amount.MulRaw(int64(duration))
+	k.applyPlanDiscountIfEligible(duration, &plan, &price)
+
+	err = k.chargeFromCreatorAccountToModule(ctx, creatorAcct, price)
 	if err != nil {
-		return utils.LavaFormatError("create subscription failed. funds transfer failed", err,
-			utils.Attribute{Key: "creator", Value: creator},
-			utils.Attribute{Key: "price", Value: price},
-		)
+		return err
 	}
 
 	return nil
+}
+
+func (k Keeper) verifySubscriptionBuyInputAndGetPlan(ctx sdk.Context, block uint64, creator, consumer, planIndex string) (creatorAcct sdk.AccAddress, plan planstypes.Plan, err error) {
+	EMPTY_PLAN := planstypes.Plan{}
+
+	if _, err := sdk.AccAddressFromBech32(consumer); err != nil {
+		return nil, EMPTY_PLAN, utils.LavaFormatWarning("invalid subscription consumer address", err,
+			utils.Attribute{Key: "consumer", Value: consumer},
+		)
+	}
+
+	creatorAcct, err = sdk.AccAddressFromBech32(creator)
+	if err != nil {
+		return nil, EMPTY_PLAN, utils.LavaFormatWarning("invalid subscription creator address", err,
+			utils.Attribute{Key: "creator", Value: creator},
+		)
+	}
+
+	plan, found := k.plansKeeper.GetPlan(ctx, planIndex)
+	if !found {
+		return nil, EMPTY_PLAN, utils.LavaFormatWarning("cannot create subscription with invalid plan", nil,
+			utils.Attribute{Key: "creator", Value: creator},
+			utils.Attribute{Key: "consumer", Value: consumer},
+			utils.Attribute{Key: "plan", Value: planIndex},
+			utils.Attribute{Key: "block", Value: block},
+		)
+	}
+	return
 }
 
 func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, creator, consumer string,
@@ -262,13 +260,14 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, duration uint64, sub *t
 			utils.LogAttr("consumer", sub.Consumer))
 	}
 
+	// Remove one refcount for previous plan
+	k.plansKeeper.PutPlan(ctx, sub.PlanIndex, sub.PlanBlock)
+
 	sub.PlanIndex = toPlan.Index
 	sub.PlanBlock = toPlan.Block
 	sub.MonthCuTotal = toPlan.PlanPolicy.TotalCuLimit
 
-	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, true)
-
-	return nil
+	return k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, true)
 }
 
 func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
@@ -293,7 +292,31 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 		sub.DurationTotal += 1
 		k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, false)
 	} else {
-		if sub.AutoRenewal {
+		if sub.FutureSubscription != nil {
+			// Consumer made advance purchase. Now we activate it.
+			newSubInfo := sub.FutureSubscription
+
+			plan, found := k.plansKeeper.FindPlan(ctx, newSubInfo.PlanIndex, newSubInfo.PlanBlock)
+			if !found {
+				utils.LavaFormatWarning("subscription advance purchase failed: could not find plan. removing subscription", nil,
+					utils.Attribute{Key: "consumer", Value: sub.Consumer},
+					utils.Attribute{Key: "planIndex", Value: newSubInfo.PlanIndex},
+				)
+				k.RemoveExpiredSubscription(ctx, consumer, block, sub.PlanIndex, sub.PlanBlock)
+				return
+			}
+
+			sub.Creator = newSubInfo.Creator
+			sub.PlanIndex = newSubInfo.PlanIndex
+			sub.PlanBlock = newSubInfo.PlanBlock
+			sub.DurationBought = newSubInfo.DurationBought
+			sub.DurationLeft = newSubInfo.DurationBought
+			sub.DurationTotal = 0
+			sub.FutureSubscription = nil
+			sub.MonthCuTotal = plan.PlanPolicy.TotalCuLimit
+
+			k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, false)
+		} else if sub.AutoRenewal {
 			// apply the DurationLeft decrease to 0 and buy an extra month
 			k.subsFS.ModifyEntry(ctx, sub.Consumer, sub.Block, &sub)
 			err := k.CreateSubscription(ctx, sub.Creator, sub.Consumer, sub.PlanIndex, 1, sub.AutoRenewal)
@@ -351,7 +374,7 @@ func (k Keeper) handleZeroDurationLeftForSubscription(ctx sdk.Context, block uin
 	k.subsTS.AddTimerByBlockTime(ctx, expiry, []byte(sub.Consumer), []byte{})
 }
 
-func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *types.Subscription, block uint64, deleteOldTimer bool) {
+func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *types.Subscription, block uint64, deleteOldTimer bool) error {
 	// reset projects CU allowance for this coming month
 	k.projectsKeeper.SnapshotSubscriptionProjects(ctx, sub.Consumer, block)
 
@@ -385,14 +408,138 @@ func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *typ
 
 	err := k.subsFS.AppendEntry(ctx, sub.Consumer, block, sub)
 	if err != nil {
+		// Remove new timer if failed
+		k.subsTS.DelTimerByBlockTime(ctx, expiry, []byte(sub.Consumer))
+
 		// normally would panic! but ok to ignore - the subscription remains
 		// as is with same remaining duration (but not renewed CU)
-		utils.LavaFormatError("critical: failed to recharge subscription", err,
+		return utils.LavaFormatError("critical: failed to recharge subscription", err,
 			utils.Attribute{Key: "consumer", Value: sub.Consumer},
 			utils.Attribute{Key: "plan", Value: sub.PlanIndex},
 			utils.Attribute{Key: "block", Value: block},
 		)
 	}
+
+	return nil
+}
+
+func (k Keeper) applyPlanDiscountIfEligible(duration uint64, plan *planstypes.Plan, price *sdk.Coin) {
+	if duration >= utils.MONTHS_IN_YEAR {
+		// adjust cost if discount given
+		discount := plan.GetAnnualDiscountPercentage()
+		if discount > 0 {
+			factor := int64(100 - discount)
+			price.Amount = price.Amount.MulRaw(factor).QuoRaw(100)
+		}
+	}
+}
+
+func (k Keeper) chargeFromCreatorAccountToModule(ctx sdk.Context, creator sdk.AccAddress, price sdk.Coin) error {
+	if k.bankKeeper.GetBalance(ctx, creator, k.stakingKeeper.BondDenom(ctx)).IsLT(price) {
+		return utils.LavaFormatWarning("create subscription failed", legacyerrors.ErrInsufficientFunds,
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("price", price),
+		)
+	}
+
+	err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, creator, types.ModuleName, []sdk.Coin{price})
+	if err != nil {
+		return utils.LavaFormatError("create subscription failed. funds transfer failed", err,
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("price", price),
+		)
+	}
+
+	return nil
+}
+
+func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
+	creator string,
+	consumer string,
+	planIndex string,
+	duration uint64,
+) error {
+	var err error
+
+	block := uint64(ctx.BlockHeight())
+	creatorAcct, plan, err := k.verifySubscriptionBuyInputAndGetPlan(ctx, block, creator, consumer, planIndex)
+	if err != nil {
+		return err
+	}
+
+	var sub types.Subscription
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
+	if err != nil {
+		return utils.LavaFormatError("Got an error while trying to get next epoch on CreateSubscription", err,
+			utils.LogAttr("consumer", sub.Consumer),
+			utils.LogAttr("block", block),
+		)
+	}
+
+	// When we make a subscription upgrade, we append the new subscription entry on the next epoch,
+	// 	but, we want to get the most updated subscription here.
+	// Hence, in case of user making double upgrade in the same epoch, we take the next epoch.
+	found := k.subsFS.FindEntry(ctx, consumer, nextEpoch, &sub)
+
+	if !found {
+		return utils.LavaFormatWarning("could not find active subscription. advanced purchase is only available for an active subscription", nil,
+			utils.LogAttr("consumer", consumer),
+			utils.LogAttr("block", block),
+		)
+	}
+
+	newPlanPrice := plan.GetPrice()
+	newPlanPrice.Amount = newPlanPrice.Amount.MulRaw(int64(duration))
+	k.applyPlanDiscountIfEligible(duration, &plan, &newPlanPrice)
+
+	if sub.FutureSubscription != nil {
+		// Consumer already has a future subscription
+		// If the new plan's price > current future subscription's plan - change and charge the diff
+		currentPlan, found := k.plansKeeper.FindPlan(ctx, sub.FutureSubscription.PlanIndex, sub.FutureSubscription.PlanBlock)
+		if !found {
+			return utils.LavaFormatError("panic: could not future subscription's plan. aborting", err,
+				utils.Attribute{Key: "creator", Value: creator},
+				utils.Attribute{Key: "planIndex", Value: sub.FutureSubscription.PlanIndex},
+			)
+		}
+
+		consumerBoughDuration := sub.FutureSubscription.DurationBought
+		consumerPaid := currentPlan.GetPrice()
+		consumerPaid.Amount = consumerPaid.Amount.MulRaw(int64(consumerBoughDuration))
+		k.applyPlanDiscountIfEligible(consumerBoughDuration, &plan, &consumerPaid)
+
+		if newPlanPrice.Amount.GT(consumerPaid.Amount) {
+			newPlanPrice.Amount = newPlanPrice.Amount.Sub(consumerPaid.Amount)
+
+			details := map[string]string{
+				"creator":      creator,
+				"consumer":     consumer,
+				"duration":     strconv.FormatUint(duration, 10),
+				"oldPlanIndex": currentPlan.Index,
+				"oldPlanBlock": strconv.FormatUint(currentPlan.Block, 10),
+				"newPlanIndex": plan.Index,
+				"newPlanBlock": strconv.FormatUint(plan.Block, 10),
+			}
+			utils.LogLavaEvent(ctx, k.Logger(ctx), types.AdvancedBuyUpgradeSubscriptionEventName, details, "advanced subscription upgraded")
+		} else {
+			return utils.LavaFormatWarning("can't purchase another plan in advanced with a lower price", nil)
+		}
+	}
+
+	err = k.chargeFromCreatorAccountToModule(ctx, creatorAcct, newPlanPrice)
+	if err != nil {
+		return err
+	}
+
+	sub.FutureSubscription = &types.FutureSubscription{
+		Creator:        creator,
+		PlanIndex:      plan.Index,
+		PlanBlock:      plan.Block,
+		DurationBought: duration,
+	}
+
+	k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
+	return nil
 }
 
 func (k Keeper) RemoveExpiredSubscription(ctx sdk.Context, consumer string, block uint64, planIndex string, planBlock uint64) {

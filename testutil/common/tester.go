@@ -446,13 +446,14 @@ func (ts *Tester) TxDualstakingClaimRewards(
 }
 
 // TxSubscriptionBuy: implement 'tx subscription buy'
-func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int, autoRenewal bool) (*subscriptiontypes.MsgBuyResponse, error) {
+func (ts *Tester) TxSubscriptionBuy(creator, consumer, plan string, months int, autoRenewal, advancePurchase bool) (*subscriptiontypes.MsgBuyResponse, error) {
 	msg := &subscriptiontypes.MsgBuy{
-		Creator:     creator,
-		Consumer:    consumer,
-		Index:       plan,
-		Duration:    uint64(months),
-		AutoRenewal: autoRenewal,
+		Creator:         creator,
+		Consumer:        consumer,
+		Index:           plan,
+		Duration:        uint64(months),
+		AutoRenewal:     autoRenewal,
+		AdvancePurchase: advancePurchase,
 	}
 	return ts.Servers.SubscriptionServer.Buy(ts.GoCtx, msg)
 }
