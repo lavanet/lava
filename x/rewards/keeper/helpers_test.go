@@ -43,6 +43,7 @@ func newTester(t *testing.T, addValidator bool) *tester {
 	ts.plan.Price.Amount = monthlyProvidersPool.QuoRaw(5).AddRaw(5)
 	ts.plan.PlanPolicy.EpochCuLimit = monthlyProvidersPool.Uint64() * 5
 	ts.plan.PlanPolicy.TotalCuLimit = monthlyProvidersPool.Uint64() * 5
+	ts.plan.PlanPolicy.MaxProvidersToPair = 5
 	ts.AddPlan(ts.plan.Index, ts.plan)
 	ts.spec = ts.AddSpec("mock", common.CreateMockSpec()).Spec("mock")
 

@@ -596,7 +596,7 @@ func TestBadgeValidation(t *testing.T) {
 				ts.AdvanceBlock()
 
 				// remove past payments to avoid double spending (first  error payment succeeded)
-				ts.Keepers.Pairing.RemoveAllEpochPaymentsForBlock(ts.Ctx, tt.epoch)
+				ts.Keepers.Pairing.RemoveAllEpochPaymentsForBlockAppendAdjustments(ts.Ctx, tt.epoch)
 			}
 
 			badge := types.CreateBadge(badgeCuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})

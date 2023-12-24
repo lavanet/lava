@@ -10,10 +10,10 @@ import (
 	"github.com/lavanet/lava/x/rewards/types"
 )
 
-func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustmentDenom uint64, rewards math.Int) {
+func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int) {
 	index := types.BasePayIndex{Provider: provider, ChainID: chainid}
 	basepay, found := k.getBasePay(ctx, index)
-	adjustedPay := sdk.NewDecFromInt(rewards).QuoInt64(int64(adjustmentDenom))
+	adjustedPay := adjustment.MulInt(rewards)
 	adjustedPay = sdk.MinDec(adjustedPay, sdk.NewDecFromInt(rewards))
 	if !found {
 		basepay = types.BasePay{Total: rewards, TotalAdjusted: adjustedPay}
