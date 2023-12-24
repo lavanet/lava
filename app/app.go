@@ -237,10 +237,10 @@ var (
 		govtypes.ModuleName:                                              {authtypes.Burner},
 		ibctransfertypes.ModuleName:                                      {authtypes.Burner},
 		subscriptionmoduletypes.ModuleName:                               {authtypes.Burner, authtypes.Staking},
-		string(rewardsmoduletypes.ValidatorsRewardsAllocationPoolName):   {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ValidatorsRewardsAllocationPoolName):   {authtypes.Minter, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsDistributionPoolName): {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ProviderRewardsDistributionPool):       {authtypes.Burner, authtypes.Staking},
-		string(rewardsmoduletypes.ProvidersRewardsAllocationPool):        {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ProvidersRewardsAllocationPool):        {authtypes.Minter, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )

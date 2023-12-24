@@ -80,20 +80,17 @@ func v0_32_0_UpgradeHandler(
 		}
 
 		// expedited proposal
-		var info Upgrade_0_33_0_Info
-		err = info.FromPlan(plan)
-		if err != nil {
-			return nil, err
-		}
 		// deposit
 		params := lk.GovKeeper.GetParams(ctx)
-		params.ExpeditedMinDeposit = info.ExpeditedMinDeposit
+		params.ExpeditedMinDeposit = append(params.ExpeditedMinDeposit, params.MinDeposit[0].AddAmount(sdk.NewIntFromUint64(1000)))
 
 		// tally
-		params.ExpeditedThreshold = info.ExpeditedThreshold.String()
+		params.ExpeditedThreshold = "0.75"
 
 		// voting
-		params.ExpeditedVotingPeriod = &info.ExpeditedVotingPeriod
+		seconds := params.VotingPeriod.Nanoseconds()
+		duration := time.Duration(seconds/10) * time.Nanosecond
+		params.ExpeditedVotingPeriod = &duration
 
 		if err = params.ValidateBasic(); err != nil {
 			return nil, err
