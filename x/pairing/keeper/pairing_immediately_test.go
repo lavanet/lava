@@ -13,12 +13,12 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
 
-	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
+	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
 	epoch := ts.EpochStart()
 
 	// check pairing in the same epoch
-	_, _, err := ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, client1Acct.Addr, epoch)
+	_, _, err := ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, epoch)
 	require.Nil(t, err)
 
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
@@ -34,7 +34,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
 
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
-	dev1Acct, dev1Addr := ts.Account("dev1")
+	_, dev1Addr := ts.Account("dev1")
 
 	// takes effect retroactively in the current epoch
 
@@ -61,7 +61,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 	epoch := ts.EpochStart()
 
 	// check pairing in the same epoch (key added retroactively to this epoch)
-	_, _, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, dev1Acct.Addr, epoch)
+	_, _, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, epoch)
 	require.Nil(t, err)
 
 	res2, err := ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
@@ -78,7 +78,7 @@ func TestAddKeyCreateProject(t *testing.T) {
 	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
 
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
-	dev1Acct, dev1Addr := ts.Account("dev1")
+	_, dev1Addr := ts.Account("dev1")
 
 	devkey := projectTypes.ProjectDeveloperKey(dev1Addr)
 
@@ -105,7 +105,7 @@ func TestAddKeyCreateProject(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	_, _, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, dev1Acct.Addr, epoch)
+	_, _, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, epoch)
 	require.Nil(t, err)
 
 	res2, err := ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)

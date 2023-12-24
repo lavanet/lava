@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
@@ -13,7 +15,7 @@ import (
 
 func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	// get params for validator rewards calculation
-	bondedTargetFactor := k.bondedTargetFactor(ctx)
+	bondedTargetFactor := k.BondedTargetFactor(ctx)
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
 
 	// get validator distribution pool balance
@@ -57,32 +59,24 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 		monthsLeft = binary.BigEndian.Uint64(data)
 	}
 
-	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName)
-	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool)
+	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName, k.GetParams(ctx).LeftoverBurnRate)
+	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, sdk.OneDec())
 
 	if monthsLeft > 0 {
 		monthsLeft -= 1
 	}
-
-	// calculate the block in which the timer will expire (+5% for errors)
-	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC().Unix()
-	durationUntilNextMonth := nextMonth - ctx.BlockTime().UTC().Unix()
-	blockCreationTime := k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds()
-	blocksToNextTimerExpiry := ((durationUntilNextMonth / int64(blockCreationTime)) * 105 / 100) + ctx.BlockHeight()
 
 	// update the months left of the allocation pool and encode it
 	monthsLeftBytes := make([]byte, 8)
 	binary.BigEndian.PutUint64(monthsLeftBytes, monthsLeft)
 
 	// open a new timer for next month
-	blocksToNextTimerExpirybytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(blocksToNextTimerExpirybytes, uint64(blocksToNextTimerExpiry))
-	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), blocksToNextTimerExpirybytes, monthsLeftBytes)
+	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC().Unix()
+	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), []byte(types.RefillRewardsPoolTimerName), monthsLeftBytes)
 }
 
-func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool) {
+func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate sdkmath.LegacyDec) {
 	// burn remaining tokens in the distribution pool
-	burnRate := k.GetParams(ctx).LeftoverBurnRate
 	tokensToBurn := burnRate.MulInt(k.TotalPoolTokens(ctx, distributionPool)).TruncateInt()
 	err := k.BurnPoolTokens(ctx, distributionPool, tokensToBurn)
 	if err != nil {
@@ -111,14 +105,16 @@ func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, alloc
 
 // BlocksToNextTimerExpiry extracts the timer's expiry block from the timer's subkey
 // and returns the amount of blocks remaining (according to the current block height)
+// the calculated blocks are multiplied with a slack factor (for error margin)
 func (k Keeper) BlocksToNextTimerExpiry(ctx sdk.Context) int64 {
-	keys, _, _ := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
-	if len(keys) == 0 {
-		// something is wrong, don't panic but make validators rewards 0
-		utils.LavaFormatError("could not get blocks to next timer expiry", fmt.Errorf("no timers found"))
-		return math.MaxInt64
+	timeToNextTimerExpiry := k.TimeToNextTimerExpiry(ctx)
+	blockCreationTime := int64(k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds())
+	blocksToNextTimerExpiry := types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry).QuoInt64(blockCreationTime).Ceil().TruncateInt64()
+	if blocksToNextTimerExpiry < 2 {
+		return 2
 	}
-	return int64(binary.BigEndian.Uint64(keys[0])) - ctx.BlockHeight()
+
+	return blocksToNextTimerExpiry
 }
 
 // TimeToNextTimerExpiry returns the time in which the timer will expire (according

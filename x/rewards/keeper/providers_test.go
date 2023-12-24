@@ -495,3 +495,46 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
 	require.True(t, expectedReward.Mul(communityPerc).QuoRaw(100).Equal(communityBalance))
 }
+
+func TestBonusReward49months(t *testing.T) {
+	ts := newTester(t)
+	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
+	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	require.Nil(t, err)
+
+	ts.AdvanceEpoch()
+
+	consumerAcc, _ := ts.AddAccount(common.CONSUMER, 1, ts.plan.Price.Amount.Int64()*100)
+	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, true)
+	require.Nil(t, err)
+
+	for i := 0; i < 50; i++ {
+		ts.AdvanceMonths(1)
+		ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	}
+
+	baserewards := uint64(100)
+	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, baserewards)
+	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+	require.Nil(t, err)
+
+	// first months there are no bonus rewards, just payment ffrom the subscription
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
+	require.Nil(t, err)
+	require.Len(t, res.Rewards, 1)
+	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
+	require.Nil(t, err)
+
+	// now the provider should get all of the provider allocation (but there arent any)
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+
+	// there should be no bonus rewards
+	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
+	require.Nil(t, err)
+	require.Len(t, res.Rewards, 0)
+}
