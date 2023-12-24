@@ -12,7 +12,7 @@ type PairingKeeper interface {
 	UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unstakeDescription string) error
 	FreezeProvider(ctx sdk.Context, provider string, chainIDs []string, reason string) error
 	CreditStakeEntry(ctx sdk.Context, chainID string, lookUpAddress sdk.AccAddress, creditAmount sdk.Coin) (bool, error)
-	VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error)
+	VerifyPairingData(ctx sdk.Context, chainID string, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error)
 	VerifyClientStake(ctx sdk.Context, chainID string, clientAddress sdk.Address, block, epoch uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error)
 	JailEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, jailStartBlock, jailBlocks uint64, bail sdk.Coin) error
 	BailEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, bail sdk.Coin) error

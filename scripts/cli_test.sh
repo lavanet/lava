@@ -70,11 +70,11 @@ trace lavad q spec show-chain-info ETH1 >/dev/null
 trace lavad q spec show-spec ETH1 >/dev/null
  
 echo "Proposing plans"
-(trace lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/temporary-add.json $txoptions) >/dev/null 
+(trace lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/test_plans/default.json,./cookbook/plans/test_plans/temporary-add.json $txoptions) >/dev/null 
 wait_count_blocks 1 >/dev/null
 (lavad tx gov vote $(latest_vote) yes $txoptions) >/dev/null 
 wait_count_blocks 3 >/dev/null
-(trace lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/temporary-del.json $txoptions)>/dev/null 
+(trace lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/temporary-del.json $txoptions)>/dev/null 
 wait_count_blocks 1 >/dev/null
 (lavad tx gov vote $(latest_vote) yes $txoptions) >/dev/null 
 wait_count_blocks 2 >/dev/null

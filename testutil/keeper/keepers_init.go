@@ -315,7 +315,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.Nil(t, err)
 
-	err = ks.BankKeeper.AddToBalance(GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
+	err = ks.BankKeeper.AddToBalance(
+		GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
 		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.Nil(t, err)
 
@@ -490,6 +491,8 @@ func EndBlock(ctx sdk.Context, ks *Keepers) {
 	keepersType := reflect.TypeOf(*ks)
 	keepersValue := reflect.ValueOf(*ks)
 
+	ks.StakingKeeper.BlockValidatorUpdates(ctx) // staking module end blocker
+
 	// iterate over all keepers and call BeginBlock (if it's implemented by the keeper)
 	for i := 0; i < keepersType.NumField(); i++ {
 		fieldValue := keepersValue.Field(i)
@@ -501,5 +504,8 @@ func EndBlock(ctx sdk.Context, ks *Keepers) {
 }
 
 func GetModuleAddress(moduleName string) sdk.AccAddress {
-	return sdk.AccAddress([]byte(moduleName))
+	moduleAddress := authtypes.NewModuleAddress(moduleName).String()
+	baseAccount := authtypes.NewBaseAccount(nil, nil, 0, 0)
+	baseAccount.Address = moduleAddress
+	return authtypes.NewModuleAccount(baseAccount, moduleName, authtypes.Burner, authtypes.Staking).GetAddress()
 }

@@ -15,6 +15,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	k.InitSubscriptionsTimers(ctx, genState.SubsTS)
 	k.InitCuTrackers(ctx, genState.CuTrackerFS)
 	k.InitCuTrackerTimers(ctx, genState.CuTrackerTS)
+	k.SetAllAdjustment(ctx, genState.Adjustments)
 }
 
 // ExportGenesis returns the capability module's exported genesis.
@@ -25,6 +26,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.SubsTS = k.ExportSubscriptionsTimers(ctx)
 	genesis.CuTrackerFS = k.ExportCuTrackers(ctx)
 	genesis.CuTrackerTS = k.ExportCuTrackerTimers(ctx)
+	genesis.Adjustments = k.GetAllAdjustment(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis

@@ -48,9 +48,8 @@ func TestGetPairingForSubscription(t *testing.T) {
 	_, err = ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
 	require.NotNil(t, err)
 
-	verify, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, providerAddr, ts.BlockHeight())
+	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, providerAddr, ts.BlockHeight())
 	require.NotNil(t, err)
-	require.False(t, verify.Valid)
 }
 
 func TestRelayPaymentSubscription(t *testing.T) {
@@ -445,7 +444,7 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
 	// add 10 months to the subscription
-	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, ts.plan.Index, 10, false)
+	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, ts.plan.Index, 10, false, false)
 	require.Nil(t, err)
 
 	totalCuLimit := ts.plan.PlanPolicy.TotalCuLimit

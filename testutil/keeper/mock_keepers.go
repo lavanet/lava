@@ -27,7 +27,7 @@ func (k mockAccountKeeper) GetModuleAccount(ctx sdk.Context, module string) auth
 }
 
 func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
-	return sdk.AccAddress([]byte(moduleName))
+	return GetModuleAddress(moduleName)
 }
 
 func (k mockAccountKeeper) SetModuleAccount(sdk.Context, authtypes.ModuleAccountI) {
@@ -78,7 +78,7 @@ func (k mockBankKeeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk
 
 func (k mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	// TODO support multiple coins
-	moduleAcc := sdk.AccAddress([]byte(recipientModule))
+	moduleAcc := GetModuleAddress(recipientModule)
 	if amt.Len() > 1 {
 		return fmt.Errorf("mockbankkeeper dont support more than 1 coin")
 	}
@@ -100,8 +100,7 @@ func (k mockBankKeeper) UndelegateCoinsFromModuleToAccount(ctx sdk.Context, send
 
 func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	// TODO support multiple coins
-
-	moduleAcc := sdk.AccAddress([]byte(senderModule))
+	moduleAcc := GetModuleAddress(senderModule)
 
 	if amt.Len() > 1 {
 		return fmt.Errorf("mockbankkeeper doesn't support more than 1 coin")
@@ -123,8 +122,8 @@ func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModu
 func (k mockBankKeeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule string, recipientModule string, amt sdk.Coins) error {
 	// TODO support multiple coins
 
-	senderModuleAcc := sdk.AccAddress([]byte(senderModule))
-	recipientModuleAcc := sdk.AccAddress([]byte(recipientModule))
+	senderModuleAcc := GetModuleAddress(senderModule)
+	recipientModuleAcc := GetModuleAddress(recipientModule)
 
 	if amt.Len() > 1 {
 		return fmt.Errorf("mockbankkeeper doesn't support more than 1 coin")
@@ -149,13 +148,13 @@ func (k mockBankKeeper) DelegateCoinsFromAccountToModule(ctx sdk.Context, sender
 }
 
 func (k mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
-	acc := sdk.AccAddress([]byte(moduleName))
+	acc := GetModuleAddress(moduleName)
 	k.AddToBalance(acc, amounts)
 	return nil
 }
 
 func (k mockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
-	acc := sdk.AccAddress([]byte(moduleName))
+	acc := GetModuleAddress(moduleName)
 	k.SubFromBalance(acc, amounts)
 	return nil
 }

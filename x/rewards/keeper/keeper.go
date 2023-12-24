@@ -100,9 +100,9 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	k.DistributeBlockReward(ctx)
 }
 
-// bondedTargetFactor calculates the bonded target factor which is used to calculate the validators
+// BondedTargetFactor calculates the bonded target factor which is used to calculate the validators
 // block rewards
-func (k Keeper) bondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
+func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 	params := k.GetParams(ctx)
 
 	minBonded := params.MinBondedTarget

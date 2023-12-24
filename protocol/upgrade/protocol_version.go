@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lavanet/lava/protocol/statetracker"
+	"github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -23,7 +23,7 @@ func GetCurrentVersion() ProtocolVersion {
 	return lavaProtocolVersion
 }
 
-func (pv *ProtocolVersion) ValidateProtocolVersion(incoming *statetracker.ProtocolVersionResponse) error {
+func (pv *ProtocolVersion) ValidateProtocolVersion(incoming *updaters.ProtocolVersionResponse) error {
 	// check min version
 	if HasVersionMismatch(incoming.Version.ConsumerMin, lavaProtocolVersion.ConsumerVersion) || HasVersionMismatch(incoming.Version.ProviderMin, lavaProtocolVersion.ProviderVersion) {
 		utils.LavaFormatFatal("minimum protocol version mismatch!, you must update your protocol version to at least the minimum required protocol version",

@@ -259,7 +259,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 	client1Acct, client := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
+	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
 
 	epochBlocks := ts.EpochBlocks()
 	epochsToSave := ts.EpochsToSave()
@@ -601,8 +601,12 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 }
 
 func (ts tester) relayPaymentWithoutPay(relayPayment pairingtypes.MsgRelayPayment, validPayment bool) {
-	_, err := ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
+	res, err := ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
 	if !validPayment {
+		if err == nil {
+			require.True(ts.T, res.RejectedRelays)
+			return
+		}
 		require.NotNil(ts.T, err)
 		return
 	}

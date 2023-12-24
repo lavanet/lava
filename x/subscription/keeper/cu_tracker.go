@@ -131,10 +131,8 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		return
 	}
 
-	// note: there is an implicit assumption here that the subscription's
-	// plan didn't change throughout the month. Currently there is no way
-	// of altering the subscription's plan after being bought, but if there
-	// might be in the future, this code should change
+	// Note: We take the subscription from the FixationStore, based on the given block.
+	// So, even if the plan changed during the month, we still take the original plan, based on the given block.
 	block = trackedCuList[0].block
 	plan, err := k.GetPlanFromSubscription(ctx, sub, block)
 	if err != nil {
@@ -148,6 +146,11 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	if plan.Price.Amount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
 		totalTokenAmount = sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
 	}
+
+	// get the adjustment factor, and delete the entries
+	adjustments := k.GetConsumerAdjustments(ctx, sub)
+	adjustmentFactorForProvider := k.GetAdjustmentFactorProvider(ctx, adjustments)
+	k.RemoveConsumerAdjustments(ctx, sub)
 
 	totalTokenRewarded := sdk.ZeroInt()
 	for _, trackedCuInfo := range trackedCuList {
@@ -167,6 +170,13 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		}
 
+		// provider monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
+		// TODO: deal with the reward's remainder (uint division...)
+		providerAdjustment, ok := adjustmentFactorForProvider[provider]
+		if !ok {
+			providerAdjustment = sdk.OneDec().QuoInt64(int64(k.rewardsKeeper.MaxRewardBoost(ctx)))
+		}
+
 		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
 		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyReward)
 
@@ -181,7 +191,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		}
 
 		// aggregate the reward for the provider
-		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, 1, totalMonthlyReward)
+		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, providerAdjustment, totalMonthlyReward)
 
 		// Transfer some of the total monthly reward to validators contribution and community pool
 		totalMonthlyReward, err = k.rewardsKeeper.ContributeToValidatorsAndCommunityPool(ctx, totalMonthlyReward, types.ModuleName)
@@ -211,13 +221,14 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			return
 		} else {
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.MonthlyCuTrackerProviderRewardEventName, map[string]string{
-				"provider":   provider,
-				"sub":        sub,
-				"plan":       plan.Index,
-				"tracked_cu": strconv.FormatUint(trackedCu, 10),
-				"plan_price": plan.Price.String(),
-				"reward":     providerReward.String(),
-				"block":      strconv.FormatInt(ctx.BlockHeight(), 10),
+				"provider":       provider,
+				"sub":            sub,
+				"plan":           plan.Index,
+				"tracked_cu":     strconv.FormatUint(trackedCu, 10),
+				"plan_price":     plan.Price.String(),
+				"reward":         providerReward.String(),
+				"block":          strconv.FormatInt(ctx.BlockHeight(), 10),
+				"adjustment_raw": providerAdjustment.String(),
 			}, "Provider got monthly reward successfully")
 		}
 	}

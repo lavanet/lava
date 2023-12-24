@@ -7,6 +7,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	testutil "github.com/lavanet/lava/testutil/keeper"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -55,7 +56,7 @@ func (ts *tester) addClient(count int) {
 	start := len(ts.Accounts(common.CONSUMER))
 	for i := 0; i < count; i++ {
 		_, addr := ts.AddAccount(common.CONSUMER, start+i, testBalance)
-		_, err := ts.TxSubscriptionBuy(addr, addr, ts.plan.Index, 1, false)
+		_, err := ts.TxSubscriptionBuy(addr, addr, ts.plan.Index, 1, false, false)
 		if err != nil {
 			panic("addClient: failed to buy subscription: " + err.Error())
 		}
@@ -111,6 +112,16 @@ func (ts *tester) addProviderExtra(
 // setupForPayments creates staked providers and clients with subscriptions. They can be accessed
 // using ts.Account(common.PROVIDER, idx) and ts.Account(common.PROVIDER, idx) respectively.
 func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair int) *tester {
+	err := ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
+		testutil.GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
+	require.Nil(ts.T, err)
+
+	err = ts.Keepers.BankKeeper.SetBalance(ts.Ctx,
+		testutil.GetModuleAddress(string(rewardstypes.ProvidersRewardsAllocationPool)),
+		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())))
+	require.Nil(ts.T, err)
+
 	ts.addValidators(1)
 	if providersToPair > 0 {
 		// will overwrite the default "free" plan
@@ -119,7 +130,7 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 	}
 
 	ts.addClient(clientsCount)
-	err := ts.addProvider(providersCount)
+	err = ts.addProvider(providersCount)
 	require.Nil(ts.T, err)
 
 	ts.AdvanceEpoch()
@@ -168,8 +179,12 @@ func (ts *tester) payAndVerifyBalance(
 	require.True(ts.T, found)
 
 	// perform payment
-	_, err = ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
+	res, err := ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
 	if !validPayment {
+		if err == nil {
+			require.True(ts.T, res.RejectedRelays)
+			return
+		}
 		require.NotNil(ts.T, err)
 		return
 	}
