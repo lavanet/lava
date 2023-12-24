@@ -413,7 +413,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	// verify once again that the delegator's delegations balance is preserved
 	diff, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.Nil(t, err)
-	require.True(t, diff.IsZero())
+	require.Equal(t, sdk.OneInt(), diff)
 }
 
 // TestCancelUnbond checks that the providers-validators delegations balance is preserved when
