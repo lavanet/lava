@@ -35,6 +35,11 @@ var (
 	DefaultMaxRewardBoost = uint64(5)
 )
 
+var (
+	KeyValidatorsSubscriptionParticipation             = []byte("ValidatorsSubscriptionParticipation")
+	DefaultValidatorsSubscriptionParticipation sdk.Dec = sdk.NewDecWithPrec(5, 2) // 0.05
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -47,13 +52,15 @@ func NewParams(
 	lowFactor sdk.Dec,
 	leftoverBurnRate sdk.Dec,
 	maxRewardBoost uint64,
+	validatorsSubscriptionParticipation sdk.Dec,
 ) Params {
 	return Params{
-		MinBondedTarget:  minBondedTarget,
-		MaxBondedTarget:  maxBondedTarget,
-		LowFactor:        lowFactor,
-		LeftoverBurnRate: leftoverBurnRate,
-		MaxRewardBoost:   maxRewardBoost,
+		MinBondedTarget:                     minBondedTarget,
+		MaxBondedTarget:                     maxBondedTarget,
+		LowFactor:                           lowFactor,
+		LeftoverBurnRate:                    leftoverBurnRate,
+		MaxRewardBoost:                      maxRewardBoost,
+		ValidatorsSubscriptionParticipation: validatorsSubscriptionParticipation,
 	}
 }
 
@@ -65,6 +72,7 @@ func DefaultParams() Params {
 		DefaultLowFactor,
 		DefaultLeftOverBurnRate,
 		DefaultMaxRewardBoost,
+		DefaultValidatorsSubscriptionParticipation,
 	)
 }
 
@@ -76,17 +84,18 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyLowFactor, &p.LowFactor, validateDec),
 		paramtypes.NewParamSetPair(KeyLeftoverBurnRate, &p.LeftoverBurnRate, validateDec),
 		paramtypes.NewParamSetPair(KeyMaxRewardBoost, &p.MaxRewardBoost, validateuint64),
+		paramtypes.NewParamSetPair(KeyValidatorsSubscriptionParticipation, &p.ValidatorsSubscriptionParticipation, validateDec),
 	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
 	if err := validateDec(p.MinBondedTarget); err != nil {
-		return err
+		return fmt.Errorf("invalid MinBondedTarget. Error: %s", err.Error())
 	}
 
 	if err := validateDec(p.MaxBondedTarget); err != nil {
-		return err
+		return fmt.Errorf("invalid MaxBondedTarget. Error: %s", err.Error())
 	}
 
 	if p.MinBondedTarget.GT(p.MaxBondedTarget) {
@@ -94,11 +103,15 @@ func (p Params) Validate() error {
 	}
 
 	if err := validateDec(p.LowFactor); err != nil {
-		return err
+		return fmt.Errorf("invalid LowFactor. Error: %s", err.Error())
 	}
 
 	if err := validateDec(p.LeftoverBurnRate); err != nil {
-		return err
+		return fmt.Errorf("invalid LeftoverBurnRate. Error: %s", err.Error())
+	}
+
+	if err := validateDec(p.ValidatorsSubscriptionParticipation); err != nil {
+		return fmt.Errorf("invalid ValidatorsSubscriptionParticipation. Error: %s", err.Error())
 	}
 
 	return nil
@@ -118,7 +131,7 @@ func validateDec(v interface{}) error {
 	}
 
 	if param.GT(sdk.OneDec()) || param.LT(sdk.ZeroDec()) {
-		return fmt.Errorf("invalid parameter minBondedTarget")
+		return fmt.Errorf("invalid dec parameter")
 	}
 
 	return nil

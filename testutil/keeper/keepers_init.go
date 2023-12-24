@@ -19,6 +19,8 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -90,6 +92,7 @@ type Keepers struct {
 	Downtime            downtimekeeper.Keeper
 	SlashingKeeper      slashingkeeper.Keeper
 	Rewards             rewardskeeper.Keeper
+	Distribution        distributionkeeper.Keeper
 }
 
 type Servers struct {
@@ -105,6 +108,7 @@ type Servers struct {
 	PlansServer        planstypes.MsgServer
 	SlashingServer     slashingtypes.MsgServer
 	RewardsServer      rewardstypes.MsgServer
+	DistributionServer distributiontypes.MsgServer
 }
 
 type KeeperBeginBlocker interface {
@@ -128,6 +132,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	cryptocodec.RegisterInterfaces(registry)
 	cdc := codec.NewProtoCodec(registry)
 	legacyCdc := codec.NewLegacyAmino()
+
+	distributionStoreKey := sdk.NewKVStoreKey(distributiontypes.StoreKey)
+	stateStore.MountStoreWithDB(distributionStoreKey, storetypes.StoreTypeIAVL, db)
 
 	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
 	stateStore.MountStoreWithDB(stakingStoreKey, storetypes.StoreTypeIAVL, db)
@@ -202,6 +209,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	paramsKeeper.Subspace(protocoltypes.ModuleName)
 	paramsKeeper.Subspace(downtimemoduletypes.ModuleName)
 	paramsKeeper.Subspace(rewardstypes.ModuleName)
+	paramsKeeper.Subspace(distributiontypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
 	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
@@ -237,6 +245,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.BankKeeper = mockBankKeeper{}
 	init_balance()
 	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	ks.Distribution = distributionkeeper.NewKeeper(cdc, distributionStoreKey, ks.AccountKeeper, ks.BankKeeper, ks.StakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace, ks.StakingKeeper)
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.StakingKeeper)
 	ks.FixationStoreKeeper = fixationkeeper.NewKeeper(cdc, ks.TimerStoreKeeper, ks.Epochstorage.BlocksToSaveRaw)
@@ -248,7 +257,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage, ks.FixationStoreKeeper)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace)
 	ks.Downtime = downtimekeeper.NewKeeper(cdc, downtimeKey, downtimeParamsSubspace, ks.Epochstorage)
-	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Spec, ks.Epochstorage, ks.Downtime, ks.StakingKeeper, ks.Dualstaking, authtypes.FeeCollectorName, ks.TimerStoreKeeper)
+	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Spec, ks.Epochstorage, ks.Downtime, ks.StakingKeeper, ks.Dualstaking, ks.Distribution, authtypes.FeeCollectorName, ks.TimerStoreKeeper)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans, ks.Dualstaking, ks.Rewards, ks.FixationStoreKeeper, ks.TimerStoreKeeper, ks.StakingKeeper)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime, ks.Dualstaking, &ks.StakingKeeper, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
 	ks.ParamsKeeper = paramsKeeper
@@ -261,8 +270,8 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	stakingparams := stakingtypes.DefaultParams()
 	stakingparams.BondDenom = commonconsts.TestTokenDenom
 	ks.StakingKeeper.SetParams(ctx, stakingparams)
-	slashingParams := slashingtypes.DefaultParams()
-	ks.SlashingKeeper.SetParams(ctx, slashingParams)
+	ks.Distribution.SetParams(ctx, distributiontypes.DefaultParams())
+	ks.SlashingKeeper.SetParams(ctx, slashingtypes.DefaultParams())
 	ks.Pairing.SetParams(ctx, pairingtypes.DefaultParams())
 	ks.Spec.SetParams(ctx, spectypes.DefaultParams())
 	ks.Subscription.SetParams(ctx, subscriptiontypes.DefaultParams())
@@ -293,6 +302,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ss.StakingServer = stakingkeeper.NewMsgServerImpl(&ks.StakingKeeper)
 	ss.SlashingServer = slashingkeeper.NewMsgServerImpl(ks.SlashingKeeper)
 	ss.RewardsServer = rewardskeeper.NewMsgServerImpl(ks.Rewards)
+	ss.DistributionServer = distributionkeeper.NewMsgServerImpl(ks.Distribution)
 
 	core.SetEnvironment(&core.Environment{BlockStore: &ks.BlockStore})
 
@@ -301,8 +311,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	// pools
 	allocationPoolBalance := uint64(30000000000000)
 
-	err := ks.BankKeeper.AddToBalance(
-		GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
+	err := ks.BankKeeper.AddToBalance(GetModuleAddress(string(rewardstypes.ValidatorsRewardsAllocationPoolName)),
 		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.Nil(t, err)
 
@@ -324,6 +333,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Projects.InitProjects(ctx, *fixationtypes.DefaultGenesis())
 	ks.Rewards.InitRewardsRefillTS(ctx, *timerstoretypes.DefaultGenesis())
 	ks.Rewards.RefillRewardsPools(ctx, nil, nil)
+	ks.Distribution.InitGenesis(ctx, *distributiontypes.DefaultGenesisState())
 
 	NewBlock(ctx, &ks)
 

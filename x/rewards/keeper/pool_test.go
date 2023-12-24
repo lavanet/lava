@@ -321,10 +321,12 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 	for _, tt := range playbook {
 		t.Run(tt.name, func(t *testing.T) {
 			params := types.Params{
-				MinBondedTarget:  sdk.MustNewDecFromStr(tt.minBonded),
-				MaxBondedTarget:  sdk.MustNewDecFromStr(tt.maxBonded),
-				LowFactor:        sdk.MustNewDecFromStr(tt.lowFactor),
-				LeftoverBurnRate: types.DefaultLeftOverBurnRate,
+				MinBondedTarget:                     sdk.MustNewDecFromStr(tt.minBonded),
+				MaxBondedTarget:                     sdk.MustNewDecFromStr(tt.maxBonded),
+				LowFactor:                           sdk.MustNewDecFromStr(tt.lowFactor),
+				LeftoverBurnRate:                    types.DefaultLeftOverBurnRate,
+				MaxRewardBoost:                      types.DefaultMaxRewardBoost,
+				ValidatorsSubscriptionParticipation: types.DefaultValidatorsSubscriptionParticipation,
 			}
 			ts.Keepers.Rewards.SetParams(ts.Ctx, params)
 

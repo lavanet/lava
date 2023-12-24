@@ -23,9 +23,7 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 
 	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
 	validatorsRewards := bondedTargetFactor.MulInt(distributionPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
-	if validatorsRewards.IsZero() {
-		// no rewards is not necessarily an error -> print warning and return
-	} else {
+	if !validatorsRewards.IsZero() {
 		coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards))
 
 		// distribute rewards to validators (same as Cosmos mint module)
