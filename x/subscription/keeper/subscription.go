@@ -484,15 +484,6 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		)
 	}
 
-	createFutureSubscription := func() {
-		sub.FutureSubscription = &types.FutureSubscription{
-			Creator:        creator,
-			PlanIndex:      plan.Index,
-			PlanBlock:      plan.Block,
-			DurationBought: duration,
-		}
-	}
-
 	newPlanPrice := plan.GetPrice()
 	newPlanPrice.Amount = newPlanPrice.Amount.MulRaw(int64(duration))
 	k.applyPlanDiscountIfEligible(duration, &plan, &newPlanPrice)
@@ -536,7 +527,13 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		return err
 	}
 
-	createFutureSubscription()
+	sub.FutureSubscription = &types.FutureSubscription{
+		Creator:        creator,
+		PlanIndex:      plan.Index,
+		PlanBlock:      plan.Block,
+		DurationBought: duration,
+	}
+
 	k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
 	return nil
 }
