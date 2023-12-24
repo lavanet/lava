@@ -11,6 +11,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
@@ -22,6 +23,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -619,29 +621,7 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 	require.Nil(ts.T, err)
 	_, err = ts.Servers.StakingServer.CreateValidator(ts.GoCtx, msg)
 	require.Nil(ts.T, err)
-
-	// **** Make validator boded ****
-	// move validator's coins from unbonded pool to bonded
-	val, found := ts.Keepers.StakingKeeper.GetValidator(ts.Ctx, sdk.ValAddress(validator.Addr))
-	require.True(ts.T, found)
-	valTokens := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), amount))
-	err = ts.Keepers.BankKeeper.SendCoinsFromModuleToModule(ts.Ctx, stakingtypes.NotBondedPoolName, stakingtypes.BondedPoolName, valTokens)
-	require.Nil(ts.T, err)
-
-	// before changing the validaor's state, run the BeforeValidatorModified hook manually
-	err = ts.Keepers.StakingKeeper.Hooks().BeforeValidatorModified(ts.Ctx, val.GetOperator())
-	require.Nil(ts.T, err)
-
-	// update the validator status to "bonded" and apply
-	val = val.UpdateStatus(stakingtypes.Bonded)
-	ts.Keepers.StakingKeeper.SetValidator(ts.Ctx, val)
-	ts.Keepers.StakingKeeper.SetValidatorByPowerIndex(ts.Ctx, val)
-
-	// run the AfterValidatorBonded hook manually
-	consAddr, err := val.GetConsAddr()
-	require.Nil(ts.T, err)
-	err = ts.Keepers.StakingKeeper.Hooks().AfterValidatorBonded(ts.Ctx, consAddr, val.GetOperator())
-	require.Nil(ts.T, err)
+	ts.AdvanceBlock() // advance block to run staking keeper's endBlocker that makes the validator bonded
 }
 
 // TxDelegateValidator: implement 'tx staking delegate'
@@ -846,6 +826,18 @@ func (ts *Tester) QueryFixationEntry(storeKey string, prefix string, key string,
 	return ts.Keepers.FixationStoreKeeper.Entry(ts.GoCtx, msg)
 }
 
+// QueryRewardsPools implements 'q rewards pools'
+func (ts *Tester) QueryRewardsPools() (*rewardstypes.QueryPoolsResponse, error) {
+	msg := &rewardstypes.QueryPoolsRequest{}
+	return ts.Keepers.Rewards.Pools(ts.GoCtx, msg)
+}
+
+// QueryRewardsBlockReward implements 'q rewards block-reward'
+func (ts *Tester) QueryRewardsBlockReward() (*rewardstypes.QueryBlockRewardResponse, error) {
+	msg := &rewardstypes.QueryBlockRewardRequest{}
+	return ts.Keepers.Rewards.BlockReward(ts.GoCtx, msg)
+}
+
 // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
@@ -961,7 +953,6 @@ func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
 func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 	for next := from; months > 0; months -= 1 {
 		next = utils.NextMonth(next)
-		fmt.Printf("next: %v\n", next.Unix())
 		delta := next.Sub(ts.BlockTime())
 		if months == 1 {
 			delta -= 5 * time.Second
@@ -975,4 +966,51 @@ func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 // starting from the current block's timestamp
 func (ts *Tester) AdvanceMonths(months int) *Tester {
 	return ts.AdvanceMonthsFrom(ts.BlockTime(), months)
+}
+
+var sessionID uint64
+
+func (ts *Tester) SendRelay(provider string, clientAcc sigs.Account, chainIDs []string, cuSum uint64) pairingtypes.MsgRelayPayment {
+	var relays []*pairingtypes.RelaySession
+	epoch := int64(ts.EpochStart(ts.BlockHeight()))
+
+	// Create relay request. Change session ID each call to avoid double spending error
+	for i, chainID := range chainIDs {
+		relaySession := &pairingtypes.RelaySession{
+			Provider:    provider,
+			ContentHash: []byte("apiname"),
+			SessionId:   sessionID,
+			SpecId:      chainID,
+			CuSum:       cuSum,
+			Epoch:       epoch,
+			RelayNum:    uint64(i),
+		}
+		sessionID += 1
+
+		// Sign and send the payment requests
+		sig, err := sigs.Sign(clientAcc.SK, *relaySession)
+		relaySession.Sig = sig
+		require.Nil(ts.T, err)
+
+		relays = append(relays, relaySession)
+	}
+
+	return pairingtypes.MsgRelayPayment{Creator: provider, Relays: relays}
+}
+
+// DisableParticipationFees zeros validators and community participation fees
+func (ts *Tester) DisableParticipationFees() {
+	distParams := distributiontypes.DefaultParams()
+	distParams.CommunityTax = sdk.ZeroDec()
+	err := ts.Keepers.Distribution.SetParams(ts.Ctx, distParams)
+	require.Nil(ts.T, err)
+	require.True(ts.T, ts.Keepers.Distribution.GetParams(ts.Ctx).CommunityTax.IsZero())
+
+	paramKey := string(rewardstypes.KeyValidatorsSubscriptionParticipation)
+	zeroDec, err := sdk.ZeroDec().MarshalJSON()
+	require.Nil(ts.T, err)
+	paramVal := string(zeroDec)
+	err = ts.TxProposalChangeParam(rewardstypes.ModuleName, paramKey, paramVal)
+	require.Nil(ts.T, err)
+	require.True(ts.T, ts.Keepers.Rewards.GetParams(ts.Ctx).ValidatorsSubscriptionParticipation.IsZero())
 }

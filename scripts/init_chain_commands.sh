@@ -22,8 +22,20 @@ echo; echo "#### Waiting 4 blocks ####"
 wait_count_blocks 4
 sleep 4
 
+echo; echo "#### Sending proposal for test plans add ####"
+lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/test_plans/default.json,./cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+echo; echo "#### Waiting 2 blocks ####"
+wait_count_blocks 2
+
+echo; echo "#### Voting on plans test add proposal ####"
+lavad tx gov vote $(latest_vote) yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
+echo; echo "#### Waiting 4 blocks ####"
+wait_count_blocks 2
+
 echo; echo "#### Sending proposal for plans add ####"
-lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/whale.json,./cookbook/plans/explorer.json,./cookbook/plans/test_plans/default.json,./cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/explorer.json,./cookbook/plans/adventurer.json,./cookbook/plans/whale.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 echo; echo "#### Waiting 2 blocks ####"
 wait_count_blocks 2

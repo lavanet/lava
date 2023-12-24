@@ -36,4 +36,5 @@ message Spec {
   string contributor_percentage=18 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec"
     ];
+  uint64 shares = 19;
 }
