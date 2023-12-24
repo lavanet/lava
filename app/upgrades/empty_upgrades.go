@@ -1,9 +1,12 @@
 package upgrades
 
 import (
+	"fmt"
+
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/lavanet/lava/app/keepers"
@@ -175,9 +178,42 @@ var Upgrade_0_31_1 = Upgrade{
 
 var Upgrade_0_32_0 = Upgrade{
 	UpgradeName:          "v0.32.0",
-	CreateUpgradeHandler: defaultUpgradeHandler,
+	CreateUpgradeHandler: v0_32_0_UpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
 		Added:   []string{rewardstypes.StoreKey},
 		Deleted: []string{minttypes.StoreKey},
 	},
+}
+
+func v0_32_0_UpgradeHandler(
+	m *module.Manager,
+	c module.Configurator,
+	bapm BaseAppParamManager,
+	lk *keepers.LavaKeepers,
+) upgradetypes.UpgradeHandler {
+	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+		totalSupply, err := lk.BankKeeper.TotalSupply(ctx, &types.QueryTotalSupplyRequest{})
+		if err != nil {
+			return nil, err
+		}
+		allocate := totalSupply.Supply.QuoInt(sdk.NewIntFromUint64(500))
+		err = lk.BankKeeper.MintCoins(ctx, string(rewardstypes.ValidatorsRewardsAllocationPoolName), allocate)
+		if err != nil {
+			return nil, err
+		}
+		err = lk.BankKeeper.MintCoins(ctx, string(rewardstypes.ProvidersRewardsAllocationPool), allocate)
+		if err != nil {
+			return nil, err
+		}
+
+		rewards := lk.DualstakingKeeper.GetAllDelegatorReward(ctx)
+		for _, reward := range rewards {
+			lk.DualstakingKeeper.RemoveDelegatorReward(ctx, dualstakingtypes.DelegationKey(reward.Provider, reward.Delegator, reward.ChainId))
+		}
+		rewards = lk.DualstakingKeeper.GetAllDelegatorReward(ctx)
+		if len(rewards) != 0 {
+			return nil, fmt.Errorf("v0.32.0 UpgradeHandler: did not delete all rewards")
+		}
+		return m.RunMigrations(ctx, c, vm)
+	}
 }
