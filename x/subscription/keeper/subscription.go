@@ -186,7 +186,7 @@ func (k Keeper) CreateSubscription(
 		)
 	}
 
-	if !found || autoRenewalFlag {
+	if !found || sub.AutoRenewal {
 		expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
 		sub.MonthExpiryTime = expiry
 		sub.Block = block
