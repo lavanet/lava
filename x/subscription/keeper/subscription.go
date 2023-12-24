@@ -195,6 +195,8 @@ func (k Keeper) verifySubscriptionBuyInputAndGetPlan(ctx sdk.Context, block uint
 	plan, found := k.plansKeeper.GetPlan(ctx, planIndex)
 	if !found {
 		return nil, EMPTY_PLAN, utils.LavaFormatWarning("cannot create subscription with invalid plan", nil,
+			utils.Attribute{Key: "creator", Value: creator},
+			utils.Attribute{Key: "consumer", Value: consumer},
 			utils.Attribute{Key: "plan", Value: planIndex},
 			utils.Attribute{Key: "block", Value: block},
 		)
