@@ -107,7 +107,7 @@ func (k Keeper) CreateSubscription(
 		return utils.LavaFormatWarning("create subscription failed", err)
 	}
 
-	if !found || sub.AutoRenewal {
+	if !found || sub.AutoRenewalNextPlan != types.AUTO_RENEWAL_PLAN_NONE {
 		expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
 		sub.MonthExpiryTime = expiry
 		sub.Block = block
