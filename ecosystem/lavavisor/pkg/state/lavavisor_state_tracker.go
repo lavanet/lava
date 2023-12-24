@@ -7,7 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/statetracker"
+	"github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -15,7 +15,7 @@ import (
 
 // Lava visor doesn't require complicated state tracker, it just needs to periodically fetch the protocol version.
 type LavaVisorStateTracker struct {
-	stateQuery       *statetracker.StateQuery
+	stateQuery       *updaters.StateQuery
 	averageBlockTime time.Duration
 	ticker           *time.Ticker
 	versionUpdater   *LavaVisorVersionUpdater
@@ -37,20 +37,20 @@ func NewLavaVisorStateTracker(ctx context.Context, txFactory tx.Factory, clientC
 	if err != nil {
 		utils.LavaFormatFatal("blockchain missing LAV1 spec, cant initialize lavavisor", err)
 	}
-	for i := 0; i < statetracker.BlockResultRetry && err != nil; i++ {
+	for i := 0; i < updaters.BlockResultRetry && err != nil; i++ {
 		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 			ChainID: "LAV1",
 		})
 	}
 
-	lst := &LavaVisorStateTracker{stateQuery: statetracker.NewStateQuery(ctx, clientCtx), averageBlockTime: time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond}
+	lst := &LavaVisorStateTracker{stateQuery: updaters.NewStateQuery(ctx, clientCtx), averageBlockTime: time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond}
 	return lst, nil
 }
 
-func (lst *LavaVisorStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator statetracker.VersionValidationInf) {
-	lst.versionUpdater = &LavaVisorVersionUpdater{VersionUpdater: statetracker.VersionUpdater{
+func (lst *LavaVisorStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
+	lst.versionUpdater = &LavaVisorVersionUpdater{VersionUpdater: updaters.VersionUpdater{
 		VersionStateQuery:    lst.stateQuery,
-		LastKnownVersion:     &statetracker.ProtocolVersionResponse{Version: version, BlockNumber: "uninitialized"},
+		LastKnownVersion:     &updaters.ProtocolVersionResponse{Version: version, BlockNumber: "uninitialized"},
 		VersionValidationInf: versionValidator,
 	}}
 	lst.ticker = time.NewTicker(lst.averageBlockTime)
@@ -69,12 +69,12 @@ func (lst *LavaVisorStateTracker) RegisterForVersionUpdates(ctx context.Context,
 	}()
 }
 
-func (lst *LavaVisorStateTracker) GetProtocolVersion(ctx context.Context) (*statetracker.ProtocolVersionResponse, error) {
+func (lst *LavaVisorStateTracker) GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error) {
 	return lst.stateQuery.GetProtocolVersion(ctx)
 }
 
 type LavaVisorVersionUpdater struct {
-	statetracker.VersionUpdater
+	updaters.VersionUpdater
 }
 
 // monitor protocol version on each new block, this method overloads the update

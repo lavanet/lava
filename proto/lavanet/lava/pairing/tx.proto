@@ -57,6 +57,7 @@ message LatestBlockReport {
 }
 
 message MsgRelayPaymentResponse {
+  bool rejected_relays = 1; // true if there is any relay in the TX that was rejected
 }
 
 message MsgFreezeProvider {

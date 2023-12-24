@@ -302,33 +302,25 @@ func TestRelayPaymentDataModification(t *testing.T) {
 	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
-	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
-	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
-	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
-	relaySession.Sig = sig
-	require.Nil(t, err)
-
 	tests := []struct {
 		name     string
 		provider string
 		cu       uint64
-		id       int64
+		id       uint64
 	}{
-		{"ModifiedProvider", client1Addr, ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10, 1},
-		{"ModifiedCU", providerAddr, ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 9, 1},
-		{"ModifiedID", providerAddr, ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10, 2},
+		{"ModifiedProvider", client1Addr, relayCuSum * 10, 1},
+		{"ModifiedCU", providerAddr, relayCuSum * 9, 1},
+		{"ModifiedID", providerAddr, relayCuSum * 10, 2},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			relaySession.Provider = tt.provider
-			relaySession.CuSum = tt.cu
-			relaySession.SessionId = uint64(tt.id)
-
 			// do not re-sign relay session request - to trigger error
-
-			_, err := ts.TxPairingRelayPayment(providerAddr, relaySession)
-			require.NotNil(t, err)
+			msg := sendRelay(ts, providerAddr, client1Acct, []string{ts.spec.Index})
+			msg.Relays[0].Provider = tt.provider
+			msg.Relays[0].CuSum = tt.cu
+			msg.Relays[0].SessionId = tt.id
+			ts.relayPaymentWithoutPay(msg, false)
 		})
 	}
 }
@@ -340,14 +332,8 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
 	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
-	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
-	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
-	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
-	relaySession.Sig = sig
-	require.Nil(t, err)
-
-	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-	require.Nil(t, err)
+	msg := sendRelay(ts, providerAddr, client1Acct, []string{ts.spec.Index})
+	ts.relayPaymentWithoutPay(msg, true)
 
 	tests := []struct {
 		name    string
@@ -362,8 +348,7 @@ func TestRelayPaymentDelayedDoubleSpending(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ts.AdvanceEpochs(tt.advance)
-			_, err := ts.TxPairingRelayPayment(providerAddr, relaySession)
-			require.NotNil(t, err)
+			ts.relayPaymentWithoutPay(msg, false)
 		})
 	}
 }

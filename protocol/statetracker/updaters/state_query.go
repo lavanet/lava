@@ -1,4 +1,4 @@
-package statetracker
+package updaters
 
 import (
 	"context"
@@ -225,7 +225,7 @@ func (psq *ProviderStateQuery) entryKey(consumerAddress, chainID string, epoch u
 }
 
 func (psq *ProviderStateQuery) VoteEvents(ctx context.Context, latestBlock int64) (votes []*reliabilitymanager.VoteParams, err error) {
-	brp, err := tryIntoTendermintRPC(psq.clientCtx.Client)
+	brp, err := TryIntoTendermintRPC(psq.clientCtx.Client)
 	if err != nil {
 		return nil, utils.LavaFormatError("failed to get block result provider", err)
 	}

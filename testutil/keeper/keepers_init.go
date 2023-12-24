@@ -481,6 +481,8 @@ func EndBlock(ctx sdk.Context, ks *Keepers) {
 	keepersType := reflect.TypeOf(*ks)
 	keepersValue := reflect.ValueOf(*ks)
 
+	ks.StakingKeeper.BlockValidatorUpdates(ctx) // staking module end blocker
+
 	// iterate over all keepers and call BeginBlock (if it's implemented by the keeper)
 	for i := 0; i < keepersType.NumField(); i++ {
 		fieldValue := keepersValue.Field(i)

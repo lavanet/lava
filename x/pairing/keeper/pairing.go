@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 	"math"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -15,7 +16,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error) {
+func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, block uint64) (epoch uint64, providersType spectypes.Spec_ProvidersTypes, errorRet error) {
 	// TODO: add support for spec changes
 	foundAndActive, _, providersType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
 	if !foundAndActive {
@@ -106,36 +107,36 @@ func (k Keeper) GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, cha
 }
 
 func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress) (providers []epochstoragetypes.StakeEntry, errorRet error) {
-	providers, _, _, err := k.getPairingForClient(ctx, chainID, clientAddress, uint64(ctx.BlockHeight()))
+	project, err := k.GetProjectData(ctx, clientAddress, chainID, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return nil, err
+	}
+
+	providers, _, err = k.getPairingForClient(ctx, chainID, uint64(ctx.BlockHeight()), project)
 	return providers, err
 }
 
 // function used to get a new pairing from provider and client
 // first argument has all metadata, second argument is only the addresses
-func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress, block uint64) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, projectID string, errorRet error) {
+func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint64, project projectstypes.Project) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, errorRet error) {
 	var strictestPolicy *planstypes.Policy
 
-	epoch, providersType, err := k.VerifyPairingData(ctx, chainID, clientAddress, block)
+	epoch, providersType, err := k.VerifyPairingData(ctx, chainID, block)
 	if err != nil {
-		return nil, 0, "", fmt.Errorf("invalid pairing data: %s", err)
+		return nil, 0, fmt.Errorf("invalid pairing data: %s", err)
 	}
 	stakeEntries, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
 	if !found {
-		return nil, 0, "", fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
-	}
-
-	project, err := k.GetProjectData(ctx, clientAddress, chainID, block)
-	if err != nil {
-		return nil, 0, "", err
+		return nil, 0, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
 
 	strictestPolicy, cluster, err := k.GetProjectStrictestPolicy(ctx, project, chainID, block)
 	if err != nil {
-		return nil, 0, "", fmt.Errorf("invalid user for pairing: %s", err.Error())
+		return nil, 0, fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
 
 	if providersType == spectypes.Spec_static {
-		return stakeEntries, strictestPolicy.EpochCuLimit, project.Index, nil
+		return stakeEntries, strictestPolicy.EpochCuLimit, nil
 	}
 
 	filters := pairingfilters.GetAllFilters()
@@ -146,7 +147,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 	// filter relevant providers and add slotFiltering for mix filters
 	providerScores, err := pairingfilters.SetupScores(ctx, filters, stakeEntries, strictestPolicy, epoch, len(slots), cluster, k)
 	if err != nil {
-		return nil, 0, "", err
+		return nil, 0, err
 	}
 
 	if len(slots) >= len(providerScores) {
@@ -154,7 +155,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		for _, score := range providerScores {
 			filteredEntries = append(filteredEntries, *score.Provider)
 		}
-		return filteredEntries, strictestPolicy.EpochCuLimit, project.Index, nil
+		return filteredEntries, strictestPolicy.EpochCuLimit, nil
 	}
 
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
@@ -164,14 +165,14 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		diffSlot := group.Subtract(prevGroupSlot)
 		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot)
 		if err != nil {
-			return nil, 0, "", err
+			return nil, 0, err
 		}
 		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Indexes(), hashData)
 		providers = append(providers, pickedProviders...)
 		prevGroupSlot = group
 	}
 
-	return providers, strictestPolicy.EpochCuLimit, project.Index, err
+	return providers, strictestPolicy.EpochCuLimit, err
 }
 
 func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string, block uint64) (*planstypes.Policy, string, error) {
@@ -302,18 +303,22 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 	return slices.Min(slice), effectiveTotalCuOfProject
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, clientAddress, providerAddress sdk.AccAddress, reqEpoch uint64) (isValidPairing bool, allowedCU, pairedProviders uint64, projectID string, errorRet error) {
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, providerAddress sdk.AccAddress, reqEpoch uint64, project projectstypes.Project) (isValidPairing bool, allowedCU, pairedProviders uint64, errorRet error) {
 	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, reqEpoch)
 	if err != nil {
-		return false, allowedCU, 0, "", err
+		return false, allowedCU, 0, err
 	}
 	if epoch != reqEpoch {
-		return false, allowedCU, 0, "", utils.LavaFormatError("requested block is not an epoch start", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "requested", Value: reqEpoch})
+		return false, allowedCU, 0, utils.LavaFormatError("requested block is not an epoch start", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "requested", Value: reqEpoch})
+	}
+	clientAddr, err := sdk.AccAddressFromBech32(project.Subscription)
+	if err != nil {
+		return false, allowedCU, 0, err
 	}
 
-	validAddresses, allowedCU, projectID, err := k.getPairingForClient(ctx, chainID, clientAddress, epoch)
+	validAddresses, allowedCU, err := k.getPairingForClient(ctx, chainID, epoch, project)
 	if err != nil {
-		return false, allowedCU, 0, "", err
+		return false, allowedCU, 0, err
 	}
 
 	for _, possibleAddr := range validAddresses {
@@ -322,16 +327,16 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, client
 			// panic:ok: provider address saved on chain must be valid
 			utils.LavaFormatPanic("critical: invalid provider address for payment", err,
 				utils.Attribute{Key: "chainID", Value: chainID},
-				utils.Attribute{Key: "client", Value: clientAddress},
-				utils.Attribute{Key: "provider", Value: providerAccAddr},
-				utils.Attribute{Key: "epochBlock", Value: epoch},
+				utils.Attribute{Key: "client", Value: clientAddr.String()},
+				utils.Attribute{Key: "provider", Value: providerAccAddr.String()},
+				utils.Attribute{Key: "epochBlock", Value: strconv.FormatUint(epoch, 10)},
 			)
 		}
 
 		if providerAccAddr.Equals(providerAddress) {
-			return true, allowedCU, uint64(len(validAddresses)), projectID, nil
+			return true, allowedCU, uint64(len(validAddresses)), nil
 		}
 	}
 
-	return false, allowedCU, 0, projectID, nil
+	return false, allowedCU, 0, nil
 }

@@ -32,7 +32,13 @@ func (k Keeper) VerifyPairing(goCtx context.Context, req *types.QueryVerifyPairi
 	if err != nil {
 		return nil, fmt.Errorf("invalid creator address %s error: %s", req.Provider, err)
 	}
-	isValidPairing, cuPerEpoch, providersToPair, projectID, err := k.ValidatePairingForClient(ctx, req.ChainID, clientAddr, providerAddr, req.Block)
 
-	return &types.QueryVerifyPairingResponse{Valid: isValidPairing, PairedProviders: providersToPair, CuPerEpoch: cuPerEpoch, ProjectId: projectID}, err
+	project, err := k.GetProjectData(ctx, clientAddr, req.ChainID, req.Block)
+	if err != nil {
+		return nil, err
+	}
+
+	isValidPairing, cuPerEpoch, providersToPair, err := k.ValidatePairingForClient(ctx, req.ChainID, providerAddr, req.Block, project)
+
+	return &types.QueryVerifyPairingResponse{Valid: isValidPairing, PairedProviders: providersToPair, CuPerEpoch: cuPerEpoch, ProjectId: project.Index}, err
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
+	updaters "github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
@@ -52,7 +53,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	}
 
 	readEventsFromBlock := func(block int64, hash string) {
-		brp, err := tryIntoTendermintRPC(clientCtx.Client)
+		brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
 		if err != nil {
 			utils.LavaFormatFatal("invalid blockResults provider", err)
 		}
