@@ -30,7 +30,7 @@ lavad tx subscription auto-renewal --enable explorer --from <subscription_consum
 lavad tx subscription auto-renewal --enable explorer <subscription_consumer> --from <subscription_creator>
 lavad tx subscription auto-renewal --disable --from <subscription_consumer>
 lavad tx subscription auto-renewal --disable <subscription_consumer> --from <subscription_creator>`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.RangeArgs(0, 2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
