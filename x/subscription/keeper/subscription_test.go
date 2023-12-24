@@ -877,7 +877,6 @@ func TestNextToMonthExpiryQuery(t *testing.T) {
 
 	// advance month minus 4 seconds
 	ts.AdvanceMonths(1).AdvanceBlock(4 * time.Second)
-	ts.AdvanceBlock(time.Second) // separate so advanceMonth would trigger
 
 	// query - expect sub 3 in the output
 	res, err = ts.QuerySubscriptionNextToMonthExpiry()

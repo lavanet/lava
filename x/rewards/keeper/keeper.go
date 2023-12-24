@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 type (
@@ -21,10 +22,17 @@ type (
 
 		bankKeeper     types.BankKeeper
 		accountKeeper  types.AccountKeeper
-		downtimeKeeper types.DowntimeKeeper
+		downtimeKeeper types.DowntimeKeeper // used to get the approximate creation time for blocks
 		stakingKeeper  types.StakingKeeper
 
+		// account name used by the distribution module to reward validators
 		feeCollectorName string
+
+		// used to operate the monthly refill of the validators and providers rewards pool mechanism
+		// there is always a single timer that is expired in the next month
+		// the timer subkey holds the block in which the timer will expire (not exact)
+		// the timer data holds the number of months left for the allocation pools (until all funds are gone)
+		refillRewardsPoolTS timerstoretypes.TimerStore
 	}
 )
 
@@ -45,7 +53,7 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	return &Keeper{
+	keeper := Keeper{
 		cdc:        cdc,
 		storeKey:   storeKey,
 		memKey:     memKey,
@@ -58,12 +66,29 @@ func NewKeeper(
 
 		feeCollectorName: feeCollectorName,
 	}
+
+	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, data []byte) {
+		keeper.RefillRewardsPools(ctx, subkey, data)
+	}
+
+	// making an EndBlock timer store to make sure it'll happen after the BeginBlock that pays validators
+	keeper.refillRewardsPoolTS = *timerStoreKeeper.NewTimerStoreEndBlock(storeKey, types.RefillRewardsPoolTimerPrefix).
+		WithCallbackByBlockTime(refillRewardsPoolTimerCallback)
+
+	return &keeper
 }
 
 func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }
 
+// redeclaring BeginBlock for testing (this is not called outside of unit tests)
+func (k Keeper) BeginBlock(ctx sdk.Context) {
+	k.DistributeBlockReward(ctx)
+}
+
+// BondedTargetFactor calculates the bonded target factor which is used to calculate the validators
+// block rewards
 func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 	params := k.GetParams(ctx)
 
@@ -86,4 +111,14 @@ func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 		e2 := bonded.Sub(minBonded).Quo(min_max_diff)
 		return e1.Add(e2.Mul(lowFactor))
 	}
+}
+
+// InitRewardsRefillTS initializes the refill pools' timer store
+func (k Keeper) InitRewardsRefillTS(ctx sdk.Context, gs timerstoretypes.GenesisState) {
+	k.refillRewardsPoolTS.Init(ctx, gs)
+}
+
+// ExportRewardsRefillTS exports refill pools timers data (for genesis)
+func (k Keeper) ExportRewardsRefillTS(ctx sdk.Context) timerstoretypes.GenesisState {
+	return k.refillRewardsPoolTS.Export(ctx)
 }

@@ -24,7 +24,6 @@ type BankKeeper interface {
 
 type DowntimeKeeper interface {
 	GetParams(ctx sdk.Context) (params v1.Params)
-	// Methods imported from bank should be defined here
 }
 
 type StakingKeeper interface {
