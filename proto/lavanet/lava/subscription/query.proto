@@ -82,6 +82,7 @@ message ListInfoStruct {
   uint64 duration_total = 9;
   reserved 10;
   string auto_renewal_next_plan = 11;
+  FutureSubscription future_subscription = 12;
 }
 
 message QueryNextToMonthExpiryRequest {

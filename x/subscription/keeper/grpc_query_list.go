@@ -42,6 +42,7 @@ func (k Keeper) List(goCtx context.Context, req *types.QueryListRequest) (*types
 			DurationBought:      sub.DurationBought,
 			Cluster:             sub.Cluster,
 			AutoRenewalNextPlan: sub.AutoRenewalNextPlan,
+			FutureSubscription:  sub.FutureSubscription,
 		}
 
 		allSubsInfo = append(allSubsInfo, subInfoStruct)
