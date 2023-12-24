@@ -172,7 +172,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	if err != nil {
 		return math.ZeroInt(), math.ZeroInt(), utils.LavaFormatError("cannot get provider's delegators", err)
 	}
-
+	claimableRewards = totalReward
 	// make sure this is post boost when rewards pool is introduced
 	contributorAddresses, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
 	if contributorPart.GT(math.LegacyZeroDec()) {
