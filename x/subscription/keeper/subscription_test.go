@@ -24,6 +24,7 @@ type tester struct {
 func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
 	ts.AddPlan("free", common.CreateMockPlan())
+	ts.DisableParticipationFees()
 	return ts
 }
 
