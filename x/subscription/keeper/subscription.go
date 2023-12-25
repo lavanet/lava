@@ -80,7 +80,7 @@ func (k Keeper) CreateSubscription(
 		// If the plan index is different - upgrade if the price is higher
 		// If the plan index is the same but the plan block is different - treat as advanced purchase
 		if plan.Index != sub.PlanIndex {
-			err := k.upgradeSubscriptionPlan(ctx, consumer, duration, &sub, &plan)
+			err := k.upgradeSubscriptionPlan(ctx, &sub, &plan)
 			if err != nil {
 				return err
 			}
@@ -193,20 +193,20 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 	return sub, nil
 }
 
-func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, consumer string, duration uint64, sub *types.Subscription, newPlan *planstypes.Plan) error {
+func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, sub *types.Subscription, newPlan *planstypes.Plan) error {
 	block := uint64(ctx.BlockHeight())
 
-	currentPlan, err := k.GetPlanFromSubscription(ctx, consumer, block)
+	currentPlan, err := k.GetPlanFromSubscription(ctx, sub.Consumer, block)
 	if err != nil {
 		return utils.LavaFormatError("failed to find plan for current subscription", err,
-			utils.LogAttr("consumer", consumer),
+			utils.LogAttr("consumer", sub.Consumer),
 			utils.LogAttr("block", block),
 		)
 	}
 
 	if newPlan.Price.Amount.LT(currentPlan.Price.Amount) {
 		return utils.LavaFormatError("New plan's price must be higher than the old plan", nil,
-			utils.LogAttr("consumer", consumer),
+			utils.LogAttr("consumer", sub.Consumer),
 			utils.LogAttr("currentPlan", currentPlan),
 			utils.LogAttr("newPlan", newPlan),
 			utils.LogAttr("block", block),
@@ -245,7 +245,7 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, consumer string, durati
 	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, true)
 
 	details := map[string]string{
-		"consumer": consumer,
+		"consumer": sub.Consumer,
 		"oldPlan":  sub.PlanIndex,
 		"newPlan":  newPlan.Index,
 	}
