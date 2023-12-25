@@ -232,12 +232,12 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 				MaxProvidersToPair: 2,
 			}
 
-			_, err = ts.TxProjectSetPolicy(projectID, client1Addr, *adminPolicy)
+			_, err = ts.TxProjectSetPolicy(projectID, client1Addr, adminPolicy)
 			require.Nil(t, err)
 
 			ts.AdvanceEpoch()
 
-			_, err = ts.TxProjectSetSubscriptionPolicy(projectID, client1Addr, *subscriptionPolicy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(projectID, client1Addr, subscriptionPolicy)
 			require.Nil(t, err)
 
 			ts.AdvanceEpoch()
@@ -292,7 +292,7 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 				MaxProvidersToPair: tt.providersToPairSubPolicy,
 			}
 
-			_, err = ts.TxProjectSetPolicy(proj.Index, client1Addr, *adminPolicy)
+			_, err = ts.TxProjectSetPolicy(proj.Index, client1Addr, adminPolicy)
 			if !tt.adminPolicyValid {
 				require.NotNil(t, err)
 				return
@@ -302,7 +302,7 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 
 			ts.AdvanceEpoch()
 
-			_, err = ts.TxProjectSetSubscriptionPolicy(proj.Index, client1Addr, *subscriptionPolicy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(proj.Index, client1Addr, subscriptionPolicy)
 			if !tt.subscriptionPolicyValid {
 				require.NotNil(t, err)
 				return
@@ -394,12 +394,12 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				MaxProvidersToPair: ts.plan.PlanPolicy.MaxProvidersToPair,
 			}
 
-			_, err = ts.TxProjectSetPolicy(proj.Index, client1Addr, *adminPolicy)
+			_, err = ts.TxProjectSetPolicy(proj.Index, client1Addr, adminPolicy)
 			require.Nil(t, err)
 
 			ts.AdvanceEpoch()
 
-			_, err = ts.TxProjectSetSubscriptionPolicy(proj.Index, client1Addr, *subscriptionPolicy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(proj.Index, client1Addr, subscriptionPolicy)
 			require.Nil(t, err)
 
 			ts.AdvanceEpoch()
@@ -529,7 +529,7 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	adminPolicy := ts.plan.PlanPolicy
 	adminPolicy.EpochCuLimit = oldEpochCuLimit - 30
 
-	_, err = ts.TxProjectSetPolicy(proj.Project.Index, dev1Addr, adminPolicy)
+	_, err = ts.TxProjectSetPolicy(proj.Project.Index, dev1Addr, &adminPolicy)
 	require.Nil(t, err)
 
 	// advance epoch to set the new policy

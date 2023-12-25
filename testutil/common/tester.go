@@ -509,7 +509,7 @@ func (ts *Tester) TxProjectDelKeys(projectID, creator string, projectKeys ...pro
 }
 
 // TxProjectSetSubscriptionPolicy: implement 'tx project set-subscription-policy'
-func (ts *Tester) TxProjectSetSubscriptionPolicy(projectID, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetSubscriptionPolicyResponse, error) {
+func (ts *Tester) TxProjectSetSubscriptionPolicy(projectID, subkey string, policy *planstypes.Policy) (*projectstypes.MsgSetSubscriptionPolicyResponse, error) {
 	msg := &projectstypes.MsgSetSubscriptionPolicy{
 		Creator:  subkey,
 		Policy:   policy,
@@ -519,7 +519,7 @@ func (ts *Tester) TxProjectSetSubscriptionPolicy(projectID, subkey string, polic
 }
 
 // TxProjectSetPolicy: implement 'tx project set-policy'
-func (ts *Tester) TxProjectSetPolicy(projectID, subkey string, policy planstypes.Policy) (*projectstypes.MsgSetPolicyResponse, error) {
+func (ts *Tester) TxProjectSetPolicy(projectID, subkey string, policy *planstypes.Policy) (*projectstypes.MsgSetPolicyResponse, error) {
 	msg := &projectstypes.MsgSetPolicy{
 		Creator: subkey,
 		Policy:  policy,

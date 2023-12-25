@@ -532,7 +532,7 @@ func TestAddonPairing(t *testing.T) {
 			if tt.projChainPolicy != nil {
 				projPolicy := defaultPolicy()
 				projPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.projChainPolicy}
-				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, projPolicy)
+				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, &projPolicy)
 				require.Nil(t, err)
 			}
 
@@ -542,7 +542,7 @@ func TestAddonPairing(t *testing.T) {
 			if tt.subscChainPolicy != nil {
 				subscPolicy := defaultPolicy()
 				subscPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.subscChainPolicy}
-				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, subscPolicy)
+				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, &subscPolicy)
 				require.Nil(t, err)
 			}
 
@@ -724,7 +724,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			policy.SelectedProvidersMode = tt.projMode
 			policy.SelectedProviders = providersSet.projProviders
 
-			_, err = ts.TxProjectSetPolicy(project.Index, sub1Addr, *policy)
+			_, err = ts.TxProjectSetPolicy(project.Index, sub1Addr, policy)
 			require.Nil(t, err)
 
 			// skip epoch for the policy change to take effect
@@ -733,7 +733,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			policy.SelectedProvidersMode = tt.subMode
 			policy.SelectedProviders = providersSet.subProviders
 
-			_, err = ts.TxProjectSetSubscriptionPolicy(project.Index, sub1Addr, *policy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(project.Index, sub1Addr, policy)
 			require.Nil(t, err)
 
 			// skip epoch for the policy change to take effect
@@ -1051,7 +1051,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 			if tt.changePolicy {
 				newPolicy = tt.planPolicy
 				newPolicy.GeolocationProfile = tt.newGeo
-				_, err = ts.TxProjectSetPolicy(projIndex, tt.dev.Addr.String(), newPolicy)
+				_, err = ts.TxProjectSetPolicy(projIndex, tt.dev.Addr.String(), &newPolicy)
 				require.Nil(t, err)
 				policies = append(policies, &newPolicy)
 			}
@@ -1942,7 +1942,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			if tt.projChainPolicy != nil {
 				projPolicy := defaultPolicy()
 				projPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.projChainPolicy}
-				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, projPolicy)
+				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, &projPolicy)
 				require.Nil(t, err)
 			}
 
@@ -1952,7 +1952,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			if tt.subscChainPolicy != nil {
 				subscPolicy := defaultPolicy()
 				subscPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.subscChainPolicy}
-				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, subscPolicy)
+				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, &subscPolicy)
 				require.Nil(t, err)
 			}
 
