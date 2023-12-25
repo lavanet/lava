@@ -39,7 +39,7 @@ message MsgDelKeysResponse {
 message MsgSetPolicy {
   string creator = 1;
   string project = 2;
-  lavanet.lava.plans.Policy policy = 3 [(gogoproto.nullable) = false];
+  lavanet.lava.plans.Policy policy = 3;
 }
 
 message MsgSetPolicyResponse {
@@ -48,7 +48,7 @@ message MsgSetPolicyResponse {
 message MsgSetSubscriptionPolicy {
   string creator = 1;
   repeated string projects = 2;
-  lavanet.lava.plans.Policy policy = 3 [(gogoproto.nullable) = false];
+  lavanet.lava.plans.Policy policy = 3;
 }
 
 message MsgSetSubscriptionPolicyResponse {
