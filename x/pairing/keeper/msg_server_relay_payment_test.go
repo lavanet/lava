@@ -596,7 +596,7 @@ func TestBadgeValidation(t *testing.T) {
 				ts.AdvanceBlock()
 
 				// remove past payments to avoid double spending (first  error payment succeeded)
-				ts.Keepers.Pairing.RemoveAllEpochPaymentsForBlock(ts.Ctx, tt.epoch)
+				ts.Keepers.Pairing.RemoveAllEpochPaymentsForBlockAppendAdjustments(ts.Ctx, tt.epoch)
 			}
 
 			badge := types.CreateBadge(badgeCuAllocation, tt.epoch, tt.badgeAddress, tt.lavaChainID, []byte{})
@@ -746,7 +746,7 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
-	ts.TxSubscriptionBuy(client1Addr, client1Addr, "free", 1, false) // extend by a month so the sub won't expire
+	ts.TxSubscriptionBuy(client1Addr, client1Addr, "free", 1, false, false) // extend by a month so the sub won't expire
 
 	badgeAcct, _ := ts.AddAccount("badge", 0, testBalance)
 

@@ -9,7 +9,7 @@
         "type": "rpc",
         "price": {
           "denom": "ulava",
-          "amount": "100000"
+          "amount": "10000"
         },
         "annual_discount_percentage": 20,
         "allow_overuse": false,
@@ -17,7 +17,7 @@
         "plan_policy": {
           "chain_policies": [],
           "geolocation_profile": "GL",
-          "total_cu_limit": 1000000,
+          "total_cu_limit": 100000,
           "epoch_cu_limit": 50,
           "max_providers_to_pair": 5,
           "selected_providers_mode": "ALLOWED",

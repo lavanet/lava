@@ -1,15 +1,15 @@
 {
     "proposal": {
-        "title": "Add plan proposal: Premium",
-        "description": "A proposal for a new plan for a premium user",
+        "title": "Add plan proposal: Whale",
+        "description": "A proposal for a new plan for a whale user",
         "plans": [
             {
-                "index": "premium",
-                "description": "Plan for the premium Lava user",
+                "index": "whale",
+                "description": "Plan for the Lava whale",
                 "type": "rpc",
                 "price": {
                     "denom": "ulava",
-                    "amount": "600000000000"
+                    "amount": "100000000000000"
                 },
                 "annual_discount_percentage": 0,
                 "allow_overuse": false,
@@ -18,7 +18,10 @@
                     "geolocation_profile": "GL",
                     "total_cu_limit": 9223372036854775807,
                     "epoch_cu_limit": 9223372036854775807,
-                    "max_providers_to_pair": 14
+                    "max_providers_to_pair": 12,
+                    "chain_policies": [],
+                    "selected_providers": [],
+                    "selected_providers_mode": "ALLOWED"
                 }
             }
         ]

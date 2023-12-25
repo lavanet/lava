@@ -15,6 +15,9 @@ const (
 
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_rewards"
+
+	// prefix for the CU tracker timer store
+	MonthlyRewardsTSPrefix = "monthly-rewards-ts"
 )
 
 func KeyPrefix(p string) []byte {

@@ -25,20 +25,21 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Subscription struct {
-	Creator         string     `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
-	Consumer        string     `protobuf:"bytes,2,opt,name=consumer,proto3" json:"consumer,omitempty"`
-	Block           uint64     `protobuf:"varint,3,opt,name=block,proto3" json:"block,omitempty"`
-	PlanIndex       string     `protobuf:"bytes,4,opt,name=plan_index,json=planIndex,proto3" json:"plan_index,omitempty"`
-	PlanBlock       uint64     `protobuf:"varint,5,opt,name=plan_block,json=planBlock,proto3" json:"plan_block,omitempty"`
-	DurationBought  uint64     `protobuf:"varint,6,opt,name=duration_bought,json=durationBought,proto3" json:"duration_bought,omitempty"`
-	DurationLeft    uint64     `protobuf:"varint,7,opt,name=duration_left,json=durationLeft,proto3" json:"duration_left,omitempty"`
-	MonthExpiryTime uint64     `protobuf:"varint,8,opt,name=month_expiry_time,json=monthExpiryTime,proto3" json:"month_expiry_time,omitempty"`
-	MonthCuTotal    uint64     `protobuf:"varint,10,opt,name=month_cu_total,json=monthCuTotal,proto3" json:"month_cu_total,omitempty"`
-	MonthCuLeft     uint64     `protobuf:"varint,11,opt,name=month_cu_left,json=monthCuLeft,proto3" json:"month_cu_left,omitempty"`
-	Cluster         string     `protobuf:"bytes,13,opt,name=cluster,proto3" json:"cluster,omitempty"`
-	DurationTotal   uint64     `protobuf:"varint,14,opt,name=duration_total,json=durationTotal,proto3" json:"duration_total,omitempty"`
-	AutoRenewal     bool       `protobuf:"varint,15,opt,name=auto_renewal,json=autoRenewal,proto3" json:"auto_renewal,omitempty"`
-	OveruseBought   types.Coin `protobuf:"bytes,16,opt,name=overuse_bought,json=overuseBought,proto3" json:"overuse_bought"`
+	Creator            string              `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	Consumer           string              `protobuf:"bytes,2,opt,name=consumer,proto3" json:"consumer,omitempty"`
+	Block              uint64              `protobuf:"varint,3,opt,name=block,proto3" json:"block,omitempty"`
+	PlanIndex          string              `protobuf:"bytes,4,opt,name=plan_index,json=planIndex,proto3" json:"plan_index,omitempty"`
+	PlanBlock          uint64              `protobuf:"varint,5,opt,name=plan_block,json=planBlock,proto3" json:"plan_block,omitempty"`
+	DurationBought     uint64              `protobuf:"varint,6,opt,name=duration_bought,json=durationBought,proto3" json:"duration_bought,omitempty"`
+	DurationLeft       uint64              `protobuf:"varint,7,opt,name=duration_left,json=durationLeft,proto3" json:"duration_left,omitempty"`
+	MonthExpiryTime    uint64              `protobuf:"varint,8,opt,name=month_expiry_time,json=monthExpiryTime,proto3" json:"month_expiry_time,omitempty"`
+	MonthCuTotal       uint64              `protobuf:"varint,10,opt,name=month_cu_total,json=monthCuTotal,proto3" json:"month_cu_total,omitempty"`
+	MonthCuLeft        uint64              `protobuf:"varint,11,opt,name=month_cu_left,json=monthCuLeft,proto3" json:"month_cu_left,omitempty"`
+	Cluster            string              `protobuf:"bytes,13,opt,name=cluster,proto3" json:"cluster,omitempty"`
+	DurationTotal      uint64              `protobuf:"varint,14,opt,name=duration_total,json=durationTotal,proto3" json:"duration_total,omitempty"`
+	AutoRenewal        bool                `protobuf:"varint,15,opt,name=auto_renewal,json=autoRenewal,proto3" json:"auto_renewal,omitempty"`
+	FutureSubscription *FutureSubscription `protobuf:"bytes,16,opt,name=future_subscription,json=futureSubscription,proto3" json:"future_subscription,omitempty"`
+	OveruseBought      types.Coin          `protobuf:"bytes,17,opt,name=overuse_bought,json=overuseBought,proto3" json:"overuse_bought"`
 }
 
 func (m *Subscription) Reset()         { *m = Subscription{} }
@@ -165,6 +166,13 @@ func (m *Subscription) GetAutoRenewal() bool {
 	return false
 }
 
+func (m *Subscription) GetFutureSubscription() *FutureSubscription {
+	if m != nil {
+		return m.FutureSubscription
+	}
+	return nil
+}
+
 func (m *Subscription) GetOveruseBought() types.Coin {
 	if m != nil {
 		return m.OveruseBought
@@ -172,8 +180,77 @@ func (m *Subscription) GetOveruseBought() types.Coin {
 	return types.Coin{}
 }
 
+type FutureSubscription struct {
+	Creator        string `protobuf:"bytes,1,opt,name=creator,proto3" json:"creator,omitempty"`
+	PlanIndex      string `protobuf:"bytes,2,opt,name=plan_index,json=planIndex,proto3" json:"plan_index,omitempty"`
+	PlanBlock      uint64 `protobuf:"varint,3,opt,name=plan_block,json=planBlock,proto3" json:"plan_block,omitempty"`
+	DurationBought uint64 `protobuf:"varint,4,opt,name=duration_bought,json=durationBought,proto3" json:"duration_bought,omitempty"`
+}
+
+func (m *FutureSubscription) Reset()         { *m = FutureSubscription{} }
+func (m *FutureSubscription) String() string { return proto.CompactTextString(m) }
+func (*FutureSubscription) ProtoMessage()    {}
+func (*FutureSubscription) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c3bc5507ca237d79, []int{1}
+}
+func (m *FutureSubscription) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *FutureSubscription) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_FutureSubscription.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *FutureSubscription) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FutureSubscription.Merge(m, src)
+}
+func (m *FutureSubscription) XXX_Size() int {
+	return m.Size()
+}
+func (m *FutureSubscription) XXX_DiscardUnknown() {
+	xxx_messageInfo_FutureSubscription.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FutureSubscription proto.InternalMessageInfo
+
+func (m *FutureSubscription) GetCreator() string {
+	if m != nil {
+		return m.Creator
+	}
+	return ""
+}
+
+func (m *FutureSubscription) GetPlanIndex() string {
+	if m != nil {
+		return m.PlanIndex
+	}
+	return ""
+}
+
+func (m *FutureSubscription) GetPlanBlock() uint64 {
+	if m != nil {
+		return m.PlanBlock
+	}
+	return 0
+}
+
+func (m *FutureSubscription) GetDurationBought() uint64 {
+	if m != nil {
+		return m.DurationBought
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*Subscription)(nil), "lavanet.lava.subscription.Subscription")
+	proto.RegisterType((*FutureSubscription)(nil), "lavanet.lava.subscription.FutureSubscription")
 }
 
 func init() {
@@ -181,37 +258,40 @@ func init() {
 }
 
 var fileDescriptor_c3bc5507ca237d79 = []byte{
-	// 466 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x92, 0xc1, 0x6e, 0xd3, 0x40,
-	0x10, 0x86, 0x63, 0x70, 0x5b, 0x77, 0x13, 0x27, 0x61, 0xd5, 0xc3, 0x36, 0x12, 0x26, 0x14, 0x10,
-	0x11, 0xaa, 0x6c, 0x15, 0xde, 0x20, 0x15, 0x95, 0xa8, 0x38, 0x99, 0x9e, 0xb8, 0x58, 0x6b, 0x77,
-	0x9b, 0x58, 0xd8, 0x1e, 0x6b, 0xbd, 0x1b, 0xd2, 0xb7, 0xe0, 0xc0, 0x43, 0xf5, 0xd8, 0x23, 0x27,
-	0x84, 0x92, 0x17, 0x41, 0x3b, 0xeb, 0x58, 0xcd, 0xc9, 0x3b, 0xdf, 0xfc, 0xff, 0x8e, 0x77, 0xf4,
-	0x93, 0xf3, 0x82, 0xaf, 0x78, 0x25, 0x54, 0x64, 0xbe, 0x51, 0xa3, 0xd3, 0x26, 0x93, 0x79, 0xad,
-	0x72, 0xa8, 0xf6, 0x8a, 0xb0, 0x96, 0xa0, 0x80, 0x9e, 0xb6, 0xea, 0xd0, 0x7c, 0xc3, 0xa7, 0x82,
-	0x49, 0x90, 0x41, 0x53, 0x42, 0x13, 0xa5, 0xbc, 0x11, 0xd1, 0xea, 0x22, 0x15, 0x8a, 0x5f, 0x44,
-	0x19, 0xe4, 0xad, 0x75, 0x72, 0xb2, 0x80, 0x05, 0xe0, 0x31, 0x32, 0x27, 0x4b, 0xcf, 0x7e, 0xbb,
-	0x64, 0xf0, 0xed, 0xc9, 0x35, 0x94, 0x91, 0xa3, 0x4c, 0x0a, 0xae, 0x40, 0x32, 0x67, 0xea, 0xcc,
-	0x8e, 0xe3, 0x5d, 0x49, 0x27, 0xc4, 0xcb, 0xa0, 0x6a, 0x74, 0x29, 0x24, 0x7b, 0x86, 0xad, 0xae,
-	0xa6, 0x27, 0xe4, 0x20, 0x2d, 0x20, 0xfb, 0xc1, 0x9e, 0x4f, 0x9d, 0x99, 0x1b, 0xdb, 0x82, 0xbe,
-	0x24, 0xa4, 0x2e, 0x78, 0x95, 0xe4, 0xd5, 0xad, 0x58, 0x33, 0x17, 0x3d, 0xc7, 0x86, 0x7c, 0x31,
-	0xa0, 0x6b, 0x5b, 0xe7, 0x01, 0x3a, 0xb1, 0x3d, 0x47, 0xf7, 0x7b, 0x32, 0xba, 0xd5, 0x92, 0x9b,
-	0xbf, 0x4a, 0x52, 0xd0, 0x8b, 0xa5, 0x62, 0x87, 0xa8, 0x19, 0xee, 0xf0, 0x1c, 0x29, 0x7d, 0x43,
-	0xfc, 0x4e, 0x58, 0x88, 0x3b, 0xc5, 0x8e, 0x50, 0x36, 0xd8, 0xc1, 0xaf, 0xe2, 0x4e, 0xd1, 0x0f,
-	0xe4, 0x45, 0x09, 0x95, 0x5a, 0x26, 0x62, 0x5d, 0xe7, 0xf2, 0x3e, 0x51, 0x79, 0x29, 0x98, 0x87,
-	0xc2, 0x11, 0x36, 0x3e, 0x23, 0xbf, 0xc9, 0x4b, 0x41, 0xdf, 0x92, 0xa1, 0xd5, 0x66, 0x3a, 0x51,
-	0xa0, 0x78, 0xc1, 0x88, 0xbd, 0x11, 0xe9, 0xa5, 0xbe, 0x31, 0x8c, 0x9e, 0x11, 0xbf, 0x53, 0xe1,
-	0xd8, 0x3e, 0x8a, 0xfa, 0xad, 0x08, 0xa7, 0x9a, 0x6d, 0x16, 0xba, 0x51, 0x42, 0x32, 0xbf, 0xdd,
-	0xa6, 0x2d, 0xe9, 0x3b, 0xd2, 0x3d, 0xa3, 0x9d, 0x31, 0x44, 0x7b, 0xf7, 0x14, 0x3b, 0xe4, 0x35,
-	0x19, 0x70, 0xad, 0x20, 0x91, 0xa2, 0x12, 0x3f, 0x79, 0xc1, 0x46, 0x53, 0x67, 0xe6, 0xc5, 0x7d,
-	0xc3, 0x62, 0x8b, 0xe8, 0x15, 0x19, 0xc2, 0x4a, 0x48, 0xdd, 0x88, 0xdd, 0x9a, 0xc6, 0x53, 0x67,
-	0xd6, 0xff, 0x78, 0x1a, 0xda, 0x44, 0x84, 0x26, 0x11, 0x61, 0x9b, 0x88, 0xf0, 0x12, 0xf2, 0x6a,
-	0xee, 0x3e, 0xfc, 0x7d, 0xd5, 0x8b, 0xfd, 0xd6, 0x66, 0xd7, 0x78, 0xed, 0x7a, 0xc7, 0x63, 0x72,
-	0xed, 0x7a, 0x83, 0xb1, 0x3f, 0xbf, 0x7a, 0xd8, 0x04, 0xce, 0xe3, 0x26, 0x70, 0xfe, 0x6d, 0x02,
-	0xe7, 0xd7, 0x36, 0xe8, 0x3d, 0x6e, 0x83, 0xde, 0x9f, 0x6d, 0xd0, 0xfb, 0x7e, 0xbe, 0xc8, 0xd5,
-	0x52, 0xa7, 0x61, 0x06, 0x65, 0xb4, 0x17, 0xdd, 0xf5, 0x7e, 0x78, 0xd5, 0x7d, 0x2d, 0x9a, 0xf4,
-	0x10, 0x53, 0xf6, 0xe9, 0x7f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x60, 0x91, 0x1e, 0xd1, 0xe6, 0x02,
-	0x00, 0x00,
+	// 523 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x53, 0xcd, 0x6e, 0xd3, 0x40,
+	0x10, 0x8e, 0x5b, 0xb7, 0x4d, 0x36, 0xbf, 0x5d, 0x7a, 0xd8, 0x46, 0xc2, 0x84, 0x00, 0x22, 0x42,
+	0xc5, 0x56, 0xe1, 0x0d, 0x52, 0x11, 0x89, 0x8a, 0x93, 0xe9, 0x89, 0x03, 0xd6, 0xda, 0xdd, 0x24,
+	0x16, 0xb6, 0xd7, 0x5a, 0xef, 0x86, 0xf4, 0x2d, 0xb8, 0xf0, 0x4e, 0x3d, 0xf6, 0xc8, 0x09, 0xa1,
+	0xe4, 0x15, 0x78, 0x00, 0xb4, 0xb3, 0x8e, 0x95, 0xa8, 0x50, 0x71, 0xf2, 0xce, 0x37, 0xdf, 0x37,
+	0xe3, 0xdd, 0xf9, 0x06, 0x9d, 0x25, 0x74, 0x41, 0x33, 0x26, 0x3d, 0xfd, 0xf5, 0x0a, 0x15, 0x16,
+	0x91, 0x88, 0x73, 0x19, 0xf3, 0x6c, 0x27, 0x70, 0x73, 0xc1, 0x25, 0xc7, 0xa7, 0x25, 0xdb, 0xd5,
+	0x5f, 0x77, 0x9b, 0xd0, 0x77, 0x22, 0x5e, 0xa4, 0xbc, 0xf0, 0x42, 0x5a, 0x30, 0x6f, 0x71, 0x1e,
+	0x32, 0x49, 0xcf, 0xbd, 0x88, 0xc7, 0xa5, 0xb4, 0x7f, 0x32, 0xe3, 0x33, 0x0e, 0x47, 0x4f, 0x9f,
+	0x0c, 0x3a, 0xfc, 0x6d, 0xa3, 0xd6, 0xc7, 0xad, 0x32, 0x98, 0xa0, 0xa3, 0x48, 0x30, 0x2a, 0xb9,
+	0x20, 0xd6, 0xc0, 0x1a, 0x35, 0xfc, 0x4d, 0x88, 0xfb, 0xa8, 0x1e, 0xf1, 0xac, 0x50, 0x29, 0x13,
+	0x64, 0x0f, 0x52, 0x55, 0x8c, 0x4f, 0xd0, 0x41, 0x98, 0xf0, 0xe8, 0x0b, 0xd9, 0x1f, 0x58, 0x23,
+	0xdb, 0x37, 0x01, 0x7e, 0x8c, 0x50, 0x9e, 0xd0, 0x2c, 0x88, 0xb3, 0x6b, 0xb6, 0x24, 0x36, 0x68,
+	0x1a, 0x1a, 0x79, 0xaf, 0x81, 0x2a, 0x6d, 0x94, 0x07, 0xa0, 0x84, 0xf4, 0x18, 0xd4, 0x2f, 0x51,
+	0xf7, 0x5a, 0x09, 0xaa, 0xff, 0x2a, 0x08, 0xb9, 0x9a, 0xcd, 0x25, 0x39, 0x04, 0x4e, 0x67, 0x03,
+	0x8f, 0x01, 0xc5, 0xcf, 0x50, 0xbb, 0x22, 0x26, 0x6c, 0x2a, 0xc9, 0x11, 0xd0, 0x5a, 0x1b, 0xf0,
+	0x03, 0x9b, 0x4a, 0xfc, 0x0a, 0x1d, 0xa7, 0x3c, 0x93, 0xf3, 0x80, 0x2d, 0xf3, 0x58, 0xdc, 0x04,
+	0x32, 0x4e, 0x19, 0xa9, 0x03, 0xb1, 0x0b, 0x89, 0x77, 0x80, 0x5f, 0xc5, 0x29, 0xc3, 0xcf, 0x51,
+	0xc7, 0x70, 0x23, 0x15, 0x48, 0x2e, 0x69, 0x42, 0x90, 0xa9, 0x08, 0xe8, 0x85, 0xba, 0xd2, 0x18,
+	0x1e, 0xa2, 0x76, 0xc5, 0x82, 0xb6, 0x4d, 0x20, 0x35, 0x4b, 0x12, 0x74, 0xd5, 0xaf, 0x99, 0xa8,
+	0x42, 0x32, 0x41, 0xda, 0xe5, 0x6b, 0x9a, 0x10, 0xbf, 0x40, 0xd5, 0x35, 0xca, 0x1e, 0x1d, 0x90,
+	0x57, 0x57, 0x31, 0x4d, 0x9e, 0xa2, 0x16, 0x55, 0x92, 0x07, 0x82, 0x65, 0xec, 0x2b, 0x4d, 0x48,
+	0x77, 0x60, 0x8d, 0xea, 0x7e, 0x53, 0x63, 0xbe, 0x81, 0xf0, 0x67, 0xf4, 0x68, 0xaa, 0xa4, 0x12,
+	0x2c, 0xd8, 0xf6, 0x03, 0xe9, 0x0d, 0xac, 0x51, 0xf3, 0xcd, 0x6b, 0xf7, 0x9f, 0x8e, 0x71, 0x27,
+	0xa0, 0xda, 0x9e, 0xbe, 0x8f, 0xa7, 0xf7, 0x30, 0x3c, 0x41, 0x1d, 0xbe, 0x60, 0x42, 0x15, 0x6c,
+	0x33, 0x86, 0x63, 0x28, 0x7d, 0xea, 0x1a, 0xc7, 0xb9, 0xda, 0x71, 0x6e, 0xe9, 0x38, 0xf7, 0x82,
+	0xc7, 0xd9, 0xd8, 0xbe, 0xfd, 0xf9, 0xa4, 0xe6, 0xb7, 0x4b, 0x99, 0x19, 0xd3, 0xa5, 0x5d, 0x6f,
+	0xf4, 0xd0, 0xa5, 0x5d, 0x6f, 0xf5, 0xda, 0xc3, 0xef, 0x16, 0xc2, 0xf7, 0xdb, 0x3f, 0x60, 0xbe,
+	0x5d, 0x2b, 0xed, 0x3d, 0x6c, 0xa5, 0xfd, 0xff, 0xb0, 0x92, 0xfd, 0x37, 0x2b, 0x8d, 0x27, 0xb7,
+	0x2b, 0xc7, 0xba, 0x5b, 0x39, 0xd6, 0xaf, 0x95, 0x63, 0x7d, 0x5b, 0x3b, 0xb5, 0xbb, 0xb5, 0x53,
+	0xfb, 0xb1, 0x76, 0x6a, 0x9f, 0xce, 0x66, 0xb1, 0x9c, 0xab, 0xd0, 0x8d, 0x78, 0xea, 0xed, 0xac,
+	0xec, 0x72, 0x77, 0x69, 0xe5, 0x4d, 0xce, 0x8a, 0xf0, 0x10, 0xb6, 0xeb, 0xed, 0x9f, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0x6f, 0x6c, 0xbb, 0xdb, 0xde, 0x03, 0x00, 0x00,
 }
 
 func (m *Subscription) Marshal() (dAtA []byte, err error) {
@@ -245,7 +325,21 @@ func (m *Subscription) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i--
 	dAtA[i] = 0x1
 	i--
-	dAtA[i] = 0x82
+	dAtA[i] = 0x8a
+	if m.FutureSubscription != nil {
+		{
+			size, err := m.FutureSubscription.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintSubscription(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1
+		i--
+		dAtA[i] = 0x82
+	}
 	if m.AutoRenewal {
 		i--
 		if m.AutoRenewal {
@@ -327,6 +421,53 @@ func (m *Subscription) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *FutureSubscription) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *FutureSubscription) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *FutureSubscription) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.DurationBought != 0 {
+		i = encodeVarintSubscription(dAtA, i, uint64(m.DurationBought))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.PlanBlock != 0 {
+		i = encodeVarintSubscription(dAtA, i, uint64(m.PlanBlock))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.PlanIndex) > 0 {
+		i -= len(m.PlanIndex)
+		copy(dAtA[i:], m.PlanIndex)
+		i = encodeVarintSubscription(dAtA, i, uint64(len(m.PlanIndex)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Creator) > 0 {
+		i -= len(m.Creator)
+		copy(dAtA[i:], m.Creator)
+		i = encodeVarintSubscription(dAtA, i, uint64(len(m.Creator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintSubscription(dAtA []byte, offset int, v uint64) int {
 	offset -= sovSubscription(v)
 	base := offset
@@ -387,8 +528,35 @@ func (m *Subscription) Size() (n int) {
 	if m.AutoRenewal {
 		n += 2
 	}
+	if m.FutureSubscription != nil {
+		l = m.FutureSubscription.Size()
+		n += 2 + l + sovSubscription(uint64(l))
+	}
 	l = m.OveruseBought.Size()
 	n += 2 + l + sovSubscription(uint64(l))
+	return n
+}
+
+func (m *FutureSubscription) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Creator)
+	if l > 0 {
+		n += 1 + l + sovSubscription(uint64(l))
+	}
+	l = len(m.PlanIndex)
+	if l > 0 {
+		n += 1 + l + sovSubscription(uint64(l))
+	}
+	if m.PlanBlock != 0 {
+		n += 1 + sovSubscription(uint64(m.PlanBlock))
+	}
+	if m.DurationBought != 0 {
+		n += 1 + sovSubscription(uint64(m.DurationBought))
+	}
 	return n
 }
 
@@ -729,6 +897,42 @@ func (m *Subscription) Unmarshal(dAtA []byte) error {
 			m.AutoRenewal = bool(v != 0)
 		case 16:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FutureSubscription", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSubscription
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSubscription
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSubscription
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.FutureSubscription == nil {
+				m.FutureSubscription = &FutureSubscription{}
+			}
+			if err := m.FutureSubscription.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 17:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field OveruseBought", wireType)
 			}
 			var msglen int
@@ -760,6 +964,158 @@ func (m *Subscription) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSubscription(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthSubscription
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *FutureSubscription) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSubscription
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: FutureSubscription: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: FutureSubscription: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Creator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSubscription
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSubscription
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSubscription
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Creator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PlanIndex", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSubscription
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthSubscription
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSubscription
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PlanIndex = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PlanBlock", wireType)
+			}
+			m.PlanBlock = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSubscription
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.PlanBlock |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DurationBought", wireType)
+			}
+			m.DurationBought = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSubscription
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DurationBought |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSubscription(dAtA[iNdEx:])

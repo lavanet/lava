@@ -231,16 +231,17 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:               nil,
-		distrtypes.ModuleName:                    nil,
-		stakingtypes.BondedPoolName:              {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:           {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                      {authtypes.Burner},
-		ibctransfertypes.ModuleName:              {authtypes.Burner},
-		subscriptionmoduletypes.ModuleName:       {authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		dualstakingmoduletypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		pairingmoduletypes.ModuleName:            {authtypes.Burner, authtypes.Staking},
+		authtypes.FeeCollectorName:                                       nil,
+		distrtypes.ModuleName:                                            nil,
+		stakingtypes.BondedPoolName:                                      {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:                                   {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                                              {authtypes.Burner},
+		ibctransfertypes.ModuleName:                                      {authtypes.Burner},
+		subscriptionmoduletypes.ModuleName:                               {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ValidatorsRewardsAllocationPoolName):   {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ValidatorsRewardsDistributionPoolName): {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ProviderRewardsDistributionPool):       {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ProvidersRewardsAllocationPool):        {authtypes.Burner, authtypes.Staking},
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -430,6 +431,10 @@ func New(
 	)
 	epochstorageModule := epochstoragemodule.NewAppModule(appCodec, app.EpochstorageKeeper, app.AccountKeeper, app.BankKeeper)
 
+	// downtime module
+	app.DowntimeKeeper = downtimemodulekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
+	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
+
 	// timerstore keeper
 	app.TimerStoreKeeper = timerstorekeeper.NewKeeper(appCodec)
 
@@ -474,6 +479,24 @@ func New(
 	)
 	dualstakingModule := dualstakingmodule.NewAppModule(appCodec, app.DualstakingKeeper, app.AccountKeeper, app.BankKeeper)
 
+	app.RewardsKeeper = *rewardsmodulekeeper.NewKeeper(
+		appCodec,
+		keys[rewardsmoduletypes.StoreKey],
+		keys[rewardsmoduletypes.MemStoreKey],
+		app.GetSubspace(rewardsmoduletypes.ModuleName),
+		app.BankKeeper,
+		app.AccountKeeper,
+		app.SpecKeeper,
+		app.EpochstorageKeeper,
+		app.DowntimeKeeper,
+		app.StakingKeeper,
+		app.DualstakingKeeper,
+		app.DistrKeeper,
+		authtypes.FeeCollectorName,
+		app.TimerStoreKeeper,
+	)
+	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
+
 	app.SubscriptionKeeper = *subscriptionmodulekeeper.NewKeeper(
 		appCodec,
 		keys[subscriptionmoduletypes.StoreKey],
@@ -486,15 +509,12 @@ func New(
 		app.ProjectsKeeper,
 		app.PlansKeeper,
 		app.DualstakingKeeper,
+		app.RewardsKeeper,
 		app.FixationStoreKeeper,
 		app.TimerStoreKeeper,
 		app.StakingKeeper,
 	)
 	subscriptionModule := subscriptionmodule.NewAppModule(appCodec, app.SubscriptionKeeper, app.AccountKeeper, app.BankKeeper)
-
-	// downtime module
-	app.DowntimeKeeper = downtimemodulekeeper.NewKeeper(appCodec, keys[downtimemoduletypes.StoreKey], app.GetSubspace(downtimemoduletypes.ModuleName), app.EpochstorageKeeper)
-	downtimeModule := downtimemodule.NewAppModule(app.DowntimeKeeper)
 
 	app.PairingKeeper = *pairingmodulekeeper.NewKeeper(
 		appCodec,
@@ -516,20 +536,6 @@ func New(
 		app.TimerStoreKeeper,
 	)
 	pairingModule := pairingmodule.NewAppModule(appCodec, app.PairingKeeper, app.AccountKeeper, app.BankKeeper)
-
-	app.RewardsKeeper = *rewardsmodulekeeper.NewKeeper(
-		appCodec,
-		keys[rewardsmoduletypes.StoreKey],
-		keys[rewardsmoduletypes.MemStoreKey],
-		app.GetSubspace(rewardsmoduletypes.ModuleName),
-		app.BankKeeper,
-		app.AccountKeeper,
-		app.DowntimeKeeper,
-		app.StakingKeeper,
-		authtypes.FeeCollectorName,
-		app.TimerStoreKeeper,
-	)
-	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
 
 	// register the proposal types
 	govRouter := v1beta1.NewRouter()
@@ -671,7 +677,7 @@ func New(
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		rewardsmoduletypes.ModuleName, // rewards needs to run before distribution to fill the validator rewards pool
+		rewardsmoduletypes.ModuleName, // rewards needs to run before distribution to send rewards to the fee collector
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,

@@ -28,6 +28,7 @@ type EpochstorageKeeper interface {
 	BlocksToSave(ctx sdk.Context, block uint64) (uint64, error)
 	GetEpochStart(ctx sdk.Context) uint64
 	IsEpochStart(ctx sdk.Context) bool
+	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	// Methods imported from epochstorage should be defined here
 }
 
@@ -35,7 +36,7 @@ type ProjectsKeeper interface {
 	CreateAdminProject(ctx sdk.Context, subscriptionAddress string, plan planstypes.Plan) error
 	CreateProject(ctx sdk.Context, subscriptionAddress string, projectData projectstypes.ProjectData, plan planstypes.Plan) error
 	DeleteProject(ctx sdk.Context, creator, index string) error
-	SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string)
+	SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string, block uint64)
 	GetAllProjectsForSubscription(ctx sdk.Context, subscription string) []string
 	// Methods imported from projectskeeper should be defined here
 }
@@ -59,7 +60,14 @@ type TimerStoreKeeper interface {
 }
 
 type DualStakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward math.Int, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward math.Int, totalRewards math.Int, err error)
+}
+
+type RewardsKeeper interface {
+	AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int)
+	MaxRewardBoost(ctx sdk.Context) (res uint64)
+	ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward math.Int, senderModule string) (updatedReward math.Int, err error)
+	FundCommunityPoolFromModule(ctx sdk.Context, amount math.Int, senderModule string) error
 }
 
 type StakingKeeper interface {

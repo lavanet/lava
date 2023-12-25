@@ -112,9 +112,9 @@ import (
 // and the (marshalled) data of the entry.
 //
 // 3. FixationStore keeps the entry indices with a special prefix; and it keeps the
-// and the RawEntres with a prefix that includes their index (using the block as key).
+// and the RawEntries with a prefix that includes their index (using the block as key).
 // For instance, modules "packages" may have a package named "YourPackage" created at
-// block 110, and it was updated at block 220, and package named "MyPakcage" created
+// block 110, and it was updated at block 220, and package named "MyPackage" created
 // at block 150. The store with prefix "packages" will hold the following objects:
 //
 //     prefix: packages_Entry_Index_            key: MyPackage      data: MyPackage
@@ -887,7 +887,7 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 	// the target block, then we would trim it away. to illustrate, consider this
 	// example (with ctx.BlockHeight=100, "C"/"F" for current/future):
 	//   (C)Entry_95 -> (F)Entry_105 -> (F)Entry_110
-	// in this case, DelEntry(105) will use deletaAt=104 and find (C)Entry_95 and
+	// in this case, DelEntry(105) will use deleteAt=104 and find (C)Entry_95 and
 	// then trim the two future entries. DelEntry(110) will find (F)Entry_105 and
 	// trim the last future entry.
 	// this is correct because, if we left it intact, it would anyway be removed
@@ -905,7 +905,7 @@ func (fs *FixationStore) DelEntry(ctx sdk.Context, index string, block uint64) e
 	// future versions beyond it they can be trimmed too. to illustrate, consider
 	// this example (with ctx.BlockHeight=100, "C"/"F" for current/future):
 	//   (no current) -> (F)Entry_105 -> (F)Entry_110
-	// in this case, DelEntry(105) will use deletaAt=104 and fail to find previous
+	// in this case, DelEntry(105) will use deleteAt=104 and fail to find previous
 	// entry, then will find (F)Entry_105 and trim both future entries.
 
 	deleteAt := block

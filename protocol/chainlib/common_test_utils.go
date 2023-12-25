@@ -211,7 +211,7 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 	var stake int64 = 50000000000
 
 	// subscribe consumer
-	testcommon.BuySubscription(t, ts.Ctx, *ts.Keepers, *ts.Servers, ts.Consumer, ts.Plan.Index)
+	testcommon.BuySubscription(ts.Ctx, *ts.Keepers, *ts.Servers, ts.Consumer, ts.Plan.Index)
 
 	// stake providers
 	for _, provider := range ts.Providers {
