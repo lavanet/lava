@@ -1,11 +1,9 @@
 package upgrades
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -14,39 +12,6 @@ import (
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 )
-
-type Upgrade_0_33_0_Info struct {
-	ExpeditedMinDeposit   sdk.Coins
-	ExpeditedThreshold    math.LegacyDec
-	ExpeditedVotingPeriod time.Duration
-}
-
-func (u *Upgrade_0_33_0_Info) FromPlan(plan upgradetypes.Plan) error {
-	info := plan.Info
-	intermediaryInfo := struct {
-		ExpeditedMinDeposit   string `json:"expedited_min_deposit"`
-		ExpeditedThreshold    string `json:"expedited_threshold"`
-		ExpeditedVotingPeriod string `json:"expedited_voting_period"`
-	}{}
-	err := json.Unmarshal([]byte(info), &intermediaryInfo)
-	if err != nil {
-		return err
-	}
-
-	u.ExpeditedMinDeposit, err = sdk.ParseCoinsNormalized(intermediaryInfo.ExpeditedMinDeposit)
-	if err != nil {
-		return err
-	}
-	u.ExpeditedThreshold, err = math.LegacyNewDecFromStr(intermediaryInfo.ExpeditedThreshold)
-	if err != nil {
-		return err
-	}
-	u.ExpeditedVotingPeriod, err = time.ParseDuration(intermediaryInfo.ExpeditedVotingPeriod)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 func v0_32_0_UpgradeHandler(
 	m *module.Manager,
