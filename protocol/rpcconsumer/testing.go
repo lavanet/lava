@@ -17,7 +17,7 @@ import (
 	commonlib "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider"
-	"github.com/lavanet/lava/protocol/statetracker"
+	"github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/spf13/cobra"
@@ -32,7 +32,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 		signal.Stop(signalChan)
 		cancel()
 	}()
-	stateQuery := statetracker.NewConsumerStateQuery(ctx, clientCtx)
+	stateQuery := updaters.NewConsumerStateQuery(ctx, clientCtx)
 	for _, rpcProviderEndpoint := range rpcEndpoints {
 		go func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint) error {
 			chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)

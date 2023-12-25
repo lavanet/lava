@@ -684,19 +684,22 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		}
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
-		if requestedBlockHash != nil || finalized {
+		if cache.CacheActive() && (requestedBlockHash != nil || finalized) {
+			// copy request and reply as they change later on and we call SetEntry in a routine.
 			copyPrivateData := &pairingtypes.RelayPrivateData{}
-			copyErr := protocopy.DeepCopyProtoObject(request.RelayData, copyPrivateData)
+			copyRequestErr := protocopy.DeepCopyProtoObject(request.RelayData, copyPrivateData)
+			copyReply := &pairingtypes.RelayReply{}
+			copyReplyErr := protocopy.DeepCopyProtoObject(reply, copyReply)
 			go func() {
-				if copyErr != nil {
-					utils.LavaFormatError("Failed copying relay private data on TryRelay", copyErr)
+				if copyRequestErr != nil || copyReplyErr != nil {
+					utils.LavaFormatError("Failed copying relay private data on TryRelay", nil, utils.LogAttr("copyReplyErr", copyReplyErr), utils.LogAttr("copyRequestErr", copyRequestErr))
 					return
 				}
 				new_ctx := context.Background()
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
-				err := cache.SetEntry(new_ctx, copyPrivateData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, reply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
-				if err != nil && !performance.NotInitialisedError.Is(err) && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
+				err := cache.SetEntry(new_ctx, copyPrivateData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, copyReply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
+				if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 					utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
 				}
 			}()

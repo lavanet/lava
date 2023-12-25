@@ -22,6 +22,7 @@ message MsgBuy {
   string index = 3;
   uint64 duration = 4; // in months
   bool auto_renewal = 6;
+  bool advance_purchase = 7;
 }
 
 message MsgBuyResponse {

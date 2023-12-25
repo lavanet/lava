@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"
+	updaters "github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -15,7 +16,7 @@ import (
 const (
 	BlocksToSaveLavaChainTracker   = 1 // we only need the latest block
 	TendermintConsensusParamsQuery = "consensus_params"
-	BlockResultRetry               = 20
+	debug                          = false
 )
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
@@ -24,7 +25,7 @@ type StateTracker struct {
 	chainTracker         *chaintracker.ChainTracker
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
-	EventTracker         *EventTracker
+	EventTracker         *updaters.EventTracker
 	AverageBlockTime     time.Duration
 }
 
@@ -43,9 +44,9 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, utils.LavaFormatError("Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
 	}
 
-	eventTracker := &EventTracker{clientCtx: clientCtx}
-	for i := 0; i < BlockResultRetry; i++ {
-		err = eventTracker.updateBlockResults(0)
+	eventTracker := &updaters.EventTracker{ClientCtx: clientCtx}
+	for i := 0; i < updaters.BlockResultRetry; i++ {
+		err = eventTracker.UpdateBlockResults(0)
 		if err == nil {
 			break
 		}
@@ -56,7 +57,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	}
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
 	var specResponse *spectypes.QueryGetSpecResponse
-	for i := 0; i < BlockResultRetry; i++ {
+	for i := 0; i < updaters.BlockResultRetry; i++ {
 		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 			ChainID: "LAV1",
 		})
@@ -99,7 +100,7 @@ func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	st.registrationLock.RLock()
 	defer st.registrationLock.RUnlock()
 	// first update event tracker
-	err := st.EventTracker.updateBlockResults(latestBlock)
+	err := st.EventTracker.UpdateBlockResults(latestBlock)
 	if err != nil {
 		utils.LavaFormatWarning("calling update without updated events tracker", err)
 	}
@@ -121,6 +122,6 @@ func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater)
 }
 
 // For lavavisor access
-func (st *StateTracker) GetEventTracker() *EventTracker {
+func (st *StateTracker) GetEventTracker() *updaters.EventTracker {
 	return st.EventTracker
 }

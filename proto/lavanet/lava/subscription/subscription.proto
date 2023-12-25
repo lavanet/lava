@@ -19,4 +19,12 @@ message Subscription {
   string cluster = 13;         // cluster key
   uint64 duration_total = 14;  // continous subscription usage
   bool auto_renewal = 15; // automatic renewal when the subscription expires
+  FutureSubscription future_subscription = 16; // future subscription made with buy --advance-purchase
+}
+
+message FutureSubscription {
+  string creator = 1; // creator pays for the future subscription. Will replace the original one once activated
+  string plan_index = 2; // index (name) of plan
+  uint64 plan_block = 3; // when the plan was created
+  uint64 duration_bought = 4; // total requested duration in months
 }

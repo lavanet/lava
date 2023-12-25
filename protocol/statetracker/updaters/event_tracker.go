@@ -1,4 +1,4 @@
-package statetracker
+package updaters
 
 import (
 	"context"
@@ -17,24 +17,25 @@ import (
 )
 
 const (
-	debug = false
+	debug            = false
+	BlockResultRetry = 20
 )
 
 type EventTracker struct {
 	lock               sync.RWMutex
-	clientCtx          client.Context
+	ClientCtx          client.Context
 	blockResults       *ctypes.ResultBlockResults
 	latestUpdatedBlock int64
 }
 
-func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
+func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 	ctx := context.Background()
 
 	if latestBlock == 0 {
 		var res *ctypes.ResultStatus
 		for i := 0; i < 3; i++ {
 			timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
-			res, err = et.clientCtx.Client.Status(timeoutCtx)
+			res, err = et.ClientCtx.Client.Status(timeoutCtx)
 			cancel()
 			if err == nil {
 				break
@@ -45,7 +46,7 @@ func (et *EventTracker) updateBlockResults(latestBlock int64) (err error) {
 		}
 		latestBlock = res.SyncInfo.LatestBlockHeight
 	}
-	brp, err := tryIntoTendermintRPC(et.clientCtx.Client)
+	brp, err := TryIntoTendermintRPC(et.ClientCtx.Client)
 	if err != nil {
 		return utils.LavaFormatError("could not get block result provider", err)
 	}
@@ -207,7 +208,7 @@ type tendermintRPC interface {
 	) (*ctypes.ResultConsensusParams, error)
 }
 
-func tryIntoTendermintRPC(cl client.TendermintRPC) (tendermintRPC, error) {
+func TryIntoTendermintRPC(cl client.TendermintRPC) (tendermintRPC, error) {
 	brp, ok := cl.(tendermintRPC)
 	if !ok {
 		return nil, fmt.Errorf("client does not implement tendermintRPC: %T", cl)

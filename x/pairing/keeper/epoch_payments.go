@@ -67,7 +67,7 @@ func (k Keeper) GetAllEpochPayments(ctx sdk.Context) (list []types.EpochPayments
 // Function to remove epochPayments objects from deleted epochs (older than the chain's memory)
 func (k Keeper) RemoveOldEpochPayment(ctx sdk.Context) {
 	for _, epoch := range k.epochStorageKeeper.GetDeletedEpochs(ctx) {
-		k.RemoveAllEpochPaymentsForBlock(ctx, epoch)
+		k.RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx, epoch)
 	}
 }
 
@@ -79,12 +79,13 @@ func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochP
 }
 
 // Function to add an epoch payment to the epochPayments object
-func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (uint64, error) {
-	// add a uniquePaymentStorageClientProvider object (the object that represent the actual payment) to this epoch's providerPaymentPayment object
-	userPaymentProviderStorage, usedCUProviderTotal, err := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, projectID, providerAddress, usedCU, uniqueIdentifier)
-	if err != nil {
-		return 0, utils.LavaFormatError("could not add epoch payment", err, []utils.Attribute{{Key: "userAddress", Value: projectID}, {Key: "providerAddress", Value: providerAddress}, {Key: "uniqueIdentifier", Value: uniqueIdentifier}, {Key: "epoch", Value: epoch}, {Key: "chainID", Value: chainID}}...)
+func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) uint64 {
+	if epoch < k.epochStorageKeeper.GetEarliestEpochStart(ctx) {
+		return 0
 	}
+
+	// add a uniquePaymentStorageClientProvider object (the object that represent the actual payment) to this epoch's providerPaymentPayment object
+	userPaymentProviderStorage, usedCUProviderTotal := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, projectID, providerAddress, usedCU, uniqueIdentifier)
 
 	// get this epoch's epochPayments object
 	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
@@ -111,11 +112,11 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, p
 	// update the epochPayments object
 	k.SetEpochPayments(ctx, epochPayments)
 
-	return usedCUProviderTotal, nil
+	return usedCUProviderTotal
 }
 
 // Function to remove all epochPayments objects from a specific epoch
-func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete uint64) {
+func (k Keeper) RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx sdk.Context, blockForDelete uint64) {
 	// get the epochPayments object of blockForDelete
 	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, blockForDelete)
 	if !found {
@@ -123,18 +124,25 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 	}
 
 	// TODO: update Qos in providerQosFS. new consumers (cluster.subUsage = 0) get default QoS (what is default?)
-
+	consumerUsage := map[string]uint64{}
+	type couplingConsumerProvider struct {
+		consumer string
+		provider string
+	}
+	// we are keeping the iteration keys to keep determinism when going over the map
+	iterationOrder := []couplingConsumerProvider{}
+	couplingUsage := map[couplingConsumerProvider]uint64{}
 	// go over the epochPayments object's providerPaymentStorageKeys
 	userPaymentsStorageKeys := epochPayments.GetProviderPaymentStorageKeys()
 	for _, userPaymentStorageKey := range userPaymentsStorageKeys {
 		// get the providerPaymentStorage object
-		userPaymentStorage, found := k.GetProviderPaymentStorage(ctx, userPaymentStorageKey)
+		providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, userPaymentStorageKey)
 		if !found {
 			continue
 		}
 
 		// go over the providerPaymentStorage object's uniquePaymentStorageClientProviderKeys
-		uniquePaymentStoragesCliProKeys := userPaymentStorage.GetUniquePaymentStorageClientProviderKeys()
+		uniquePaymentStoragesCliProKeys := providerPaymentStorage.GetUniquePaymentStorageClientProviderKeys()
 		for _, uniquePaymentStorageKey := range uniquePaymentStoragesCliProKeys {
 			// get the uniquePaymentStorageClientProvider object
 			uniquePaymentStorage, found := k.GetUniquePaymentStorageClientProvider(ctx, uniquePaymentStorageKey)
@@ -156,12 +164,28 @@ func (k Keeper) RemoveAllEpochPaymentsForBlock(ctx sdk.Context, blockForDelete u
 
 			// delete the uniquePaymentStorageClientProvider object
 			k.RemoveUniquePaymentStorageClientProvider(ctx, uniquePaymentStorage.Index)
+			consumer := k.GetConsumerFromUniquePayment(&uniquePaymentStorage)
+
+			provider, err := k.GetProviderFromProviderPaymentStorage(&providerPaymentStorage)
+			if err != nil {
+				utils.LavaFormatError("failed getting provider from payment storage", err)
+				continue
+			}
+			coupling := couplingConsumerProvider{consumer: consumer, provider: provider}
+			if _, ok := couplingUsage[coupling]; !ok {
+				// only add it if it doesn't exist
+				iterationOrder = append(iterationOrder, coupling)
+			}
+			consumerUsage[consumer] += uniquePaymentStorage.UsedCU
+			couplingUsage[coupling] += uniquePaymentStorage.UsedCU
 		}
 
 		// after we're done deleting the uniquePaymentStorageClientProvider objects, delete the providerPaymentStorage object
-		k.RemoveProviderPaymentStorage(ctx, userPaymentStorage.Index)
+		k.RemoveProviderPaymentStorage(ctx, providerPaymentStorage.Index)
 	}
-
+	for _, coupling := range iterationOrder {
+		k.subscriptionKeeper.AppendAdjustment(ctx, coupling.consumer, coupling.provider, consumerUsage[coupling.consumer], couplingUsage[coupling])
+	}
 	// after we're done deleting the providerPaymentStorage objects, delete the epochPayments object
 	k.RemoveEpochPayments(ctx, key)
 }

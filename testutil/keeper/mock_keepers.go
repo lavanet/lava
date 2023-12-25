@@ -6,34 +6,41 @@ import (
 
 	tenderminttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 // account keeper mock
 type mockAccountKeeper struct{}
 
-func (k mockAccountKeeper) IterateAccounts(ctx sdk.Context, process func(types.AccountI) (stop bool)) {
+func (k mockAccountKeeper) IterateAccounts(ctx sdk.Context, process func(authtypes.AccountI) (stop bool)) {
 }
 
-func (k mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) types.AccountI {
+func (k mockAccountKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
 	return nil
 }
 
-func (k mockAccountKeeper) GetModuleAccount(ctx sdk.Context, module string) types.ModuleAccountI {
-	return nil
+func (k mockAccountKeeper) GetModuleAccount(ctx sdk.Context, module string) authtypes.ModuleAccountI {
+	moduleAddress := authtypes.NewModuleAddress(module).String()
+	baseAccount := authtypes.NewBaseAccount(nil, nil, 0, 0)
+	baseAccount.Address = moduleAddress
+	return authtypes.NewModuleAccount(baseAccount, module, authtypes.Burner, authtypes.Staking)
 }
 
 func (k mockAccountKeeper) GetModuleAddress(moduleName string) sdk.AccAddress {
-	return sdk.AccAddress([]byte(moduleName))
+	return GetModuleAddress(moduleName)
 }
 
-func (k mockAccountKeeper) SetModuleAccount(sdk.Context, types.ModuleAccountI) {
+func (k mockAccountKeeper) SetModuleAccount(sdk.Context, authtypes.ModuleAccountI) {
 }
 
 // mock bank keeper
 var balance map[string]sdk.Coins = make(map[string]sdk.Coins)
 
 type mockBankKeeper struct{}
+
+func init_balance() {
+	balance = make(map[string]sdk.Coins)
+}
 
 func (k mockBankKeeper) SpendableCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
 	return nil
@@ -71,7 +78,7 @@ func (k mockBankKeeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk
 
 func (k mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	// TODO support multiple coins
-	moduleAcc := sdk.AccAddress([]byte(recipientModule))
+	moduleAcc := GetModuleAddress(recipientModule)
 	if amt.Len() > 1 {
 		return fmt.Errorf("mockbankkeeper dont support more than 1 coin")
 	}
@@ -93,8 +100,7 @@ func (k mockBankKeeper) UndelegateCoinsFromModuleToAccount(ctx sdk.Context, send
 
 func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	// TODO support multiple coins
-
-	moduleAcc := sdk.AccAddress([]byte(senderModule))
+	moduleAcc := GetModuleAddress(senderModule)
 
 	if amt.Len() > 1 {
 		return fmt.Errorf("mockbankkeeper doesn't support more than 1 coin")
@@ -116,8 +122,8 @@ func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModu
 func (k mockBankKeeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule string, recipientModule string, amt sdk.Coins) error {
 	// TODO support multiple coins
 
-	senderModuleAcc := sdk.AccAddress([]byte(senderModule))
-	recipientModuleAcc := sdk.AccAddress([]byte(recipientModule))
+	senderModuleAcc := GetModuleAddress(senderModule)
+	recipientModuleAcc := GetModuleAddress(recipientModule)
 
 	if amt.Len() > 1 {
 		return fmt.Errorf("mockbankkeeper doesn't support more than 1 coin")
@@ -142,13 +148,13 @@ func (k mockBankKeeper) DelegateCoinsFromAccountToModule(ctx sdk.Context, sender
 }
 
 func (k mockBankKeeper) MintCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
-	acc := sdk.AccAddress([]byte(moduleName))
+	acc := GetModuleAddress(moduleName)
 	k.AddToBalance(acc, amounts)
 	return nil
 }
 
 func (k mockBankKeeper) BurnCoins(ctx sdk.Context, moduleName string, amounts sdk.Coins) error {
-	acc := sdk.AccAddress([]byte(moduleName))
+	acc := GetModuleAddress(moduleName)
 	k.SubFromBalance(acc, amounts)
 	return nil
 }
@@ -179,6 +185,10 @@ func (k mockBankKeeper) SubFromBalance(addr sdk.AccAddress, amounts sdk.Coins) e
 	return nil
 }
 
+func (k mockBankKeeper) BlockedAddr(addr sdk.AccAddress) bool {
+	return false
+}
+
 type MockBlockStore struct {
 	height       int64
 	blockHistory map[int64]*tenderminttypes.Block
@@ -199,7 +209,7 @@ func (b *MockBlockStore) AdvanceBlock(blockTime time.Duration) {
 	if prevBlock, ok := b.blockHistory[b.height-1]; ok {
 		blockHeader.Time = prevBlock.Time.Add(blockTime)
 	} else {
-		blockHeader.Time = time.Now()
+		blockHeader.Time = time.Now().Add(blockTime)
 	}
 
 	// update the blockstore's block history with current block
