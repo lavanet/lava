@@ -52,9 +52,8 @@ func (k msgServer) AutoRenewal(goCtx context.Context, msg *types.MsgAutoRenewal)
 		}
 	}
 
-	newPlanIndex := msg.Index
 	if !msg.Enable {
-		newPlanIndex = types.AUTO_RENEWAL_PLAN_NONE
+		msg.Index = types.AUTO_RENEWAL_PLAN_NONE
 	}
 
 	// For the event log
@@ -62,7 +61,7 @@ func (k msgServer) AutoRenewal(goCtx context.Context, msg *types.MsgAutoRenewal)
 	prevAutoRenewalNextPlan := sub.AutoRenewalNextPlan
 
 	sub.Creator = msg.Creator
-	sub.AutoRenewalNextPlan = newPlanIndex
+	sub.AutoRenewalNextPlan = msg.Index
 	err := k.subsFS.AppendEntry(ctx, msg.Consumer, sub.Block, &sub)
 	if err != nil {
 		return nil, utils.LavaFormatError("could not change auto-renewal of subscription", err,
