@@ -169,6 +169,9 @@ func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types
 			totalUsage := providerUsage[provider].total
 			totalAdjustedUsage := providerUsage[provider].adjusted
 			// indexes may repeat but we only need to handle each provider once
+			if totalUsage == 0 {
+				continue
+			}
 			providerAdjustment[provider] = sdk.NewDec(totalAdjustedUsage).QuoInt64(totalUsage)
 		}
 	}
