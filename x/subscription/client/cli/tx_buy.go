@@ -28,7 +28,7 @@ If the plan index is different than the consumer's current plan, it will upgrade
 		lavad tx subscription buy [plan-index] --from <creator_address>
 		lavad tx subscription buy [plan-index] --from <creator_address> <consumer_address> 12
 		lavad tx subscription buy [plan-index] --from <creator_address> <consumer_address> 12 --enable-auto-renewal
-		lavad tx subscription buy [plan-index] --from <creator_address> <consumer_address> 12 --advanced-purchase`,
+		lavad tx subscription buy [plan-index] --from <creator_address> <consumer_address> 12 --advance-purchase`,
 		Args: cobra.RangeArgs(1, 3),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
