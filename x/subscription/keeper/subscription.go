@@ -407,7 +407,6 @@ func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *typ
 			)
 		}
 	}
-	k.subsTS.AddTimerByBlockTime(ctx, expiry, tsKey, []byte{})
 
 	sub.MonthExpiryTime = expiry
 
@@ -427,6 +426,8 @@ func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *typ
 			utils.Attribute{Key: "block", Value: block},
 		)
 	}
+
+	k.subsTS.AddTimerByBlockTime(ctx, expiry, tsKey, []byte{})
 
 	return nil
 }
