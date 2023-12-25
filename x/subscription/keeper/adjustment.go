@@ -100,6 +100,9 @@ func (k Keeper) AppendAdjustment(ctx sdk.Context, consumer string, provider stri
 		adjustment.TotalUsage += totalConsumerUsage
 		adjustment.AdjustedUsage += totalConsumerUsage
 	} else {
+		if usageWithThisProvider == 0 || maxRewardsBoost == 0 {
+			return
+		}
 		// totalConsumerUsage < uint64(maxRewardsBoost)*usageWithThisProvider
 		adjustment.TotalUsage += totalConsumerUsage
 		// epoch adjustment is (1/maxRewardsBoost * totalConsumerUsage/usageWithThisProvider) * totalConsumerUsage
