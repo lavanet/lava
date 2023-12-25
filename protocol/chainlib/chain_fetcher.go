@@ -170,7 +170,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		utils.Attribute{Key: "chainId", Value: chainId},
 		utils.Attribute{Key: "nodeUrl", Value: proxyUrl.Url},
 		utils.Attribute{Key: "verification", Value: verification.Name},
-		utils.Attribute{Key: "value", Value: parsedResult},
+		utils.Attribute{Key: "value", Value: parser.CapStringLen(parsedResult)},
 		utils.Attribute{Key: "verificationKey", Value: verification.VerificationKey},
 	)
 	return nil
