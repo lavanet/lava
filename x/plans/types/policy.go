@@ -27,6 +27,9 @@ var policyDefaultValues = map[string]interface{}{
 }
 
 func (policy *Policy) ContainsChainID(chainID string) bool {
+	if policy == nil {
+		return false
+	}
 	if len(policy.ChainPolicies) == 0 {
 		// empty chainPolicies -> support all chains
 		return true
