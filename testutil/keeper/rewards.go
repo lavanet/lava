@@ -12,6 +12,8 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -66,6 +68,9 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
 	stakingKeeper := *stakingkeeper.NewKeeper(cdc, stakingStoreKey, mockAccountKeeper{}, mockBankKeeper{}, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
+	distributionStoreKey := sdk.NewKVStoreKey(distributiontypes.StoreKey)
+	distributionKeeper := distributionkeeper.NewKeeper(cdc, distributionStoreKey, mockAccountKeeper{}, mockBankKeeper{}, stakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+
 	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil, stakingKeeper)
 	downtimeKeeper := downtimekeeper.NewKeeper(cdc, downtimeKey, paramsSubspaceDowntime, epochstorageKeeper)
 
@@ -80,8 +85,12 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		paramsSubspace,
 		mockBankKeeper{},
 		mockAccountKeeper{},
+		nil,
+		nil,
 		downtimeKeeper,
 		stakingKeeper,
+		nil,
+		distributionKeeper,
 		authtypes.FeeCollectorName,
 		timerstorekeeper.NewKeeper(cdc),
 	)

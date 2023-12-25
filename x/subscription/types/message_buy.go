@@ -12,13 +12,14 @@ const TypeMsgBuy = "buy"
 
 var _ sdk.Msg = &MsgBuy{}
 
-func NewMsgBuy(creator, consumer, index string, duration uint64, autoRenewal bool) *MsgBuy {
+func NewMsgBuy(creator, consumer, index string, duration uint64, autoRenewal, advancePurchase bool) *MsgBuy {
 	return &MsgBuy{
-		Creator:     creator,
-		Consumer:    consumer,
-		Index:       index,
-		Duration:    duration,
-		AutoRenewal: autoRenewal,
+		Creator:         creator,
+		Consumer:        consumer,
+		Index:           index,
+		Duration:        duration,
+		AutoRenewal:     autoRenewal,
+		AdvancePurchase: advancePurchase,
 	}
 }
 
@@ -57,6 +58,9 @@ func (msg *MsgBuy) ValidateBasic() error {
 	}
 	if msg.Duration == 0 || msg.Duration > MAX_SUBSCRIPTION_DURATION {
 		return sdkerrors.Wrapf(ErrInvalidParameter, "invalid subscription duration (%s)", msg.Index)
+	}
+	if msg.AutoRenewal && msg.AdvancePurchase {
+		return sdkerrors.Wrapf(ErrInvalidParameter, "can't use enable-auto-renewal and advance-purchase flags together")
 	}
 
 	return nil
