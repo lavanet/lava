@@ -39,3 +39,7 @@ func (sub Subscription) ValidateSubscription() error {
 
 	return nil
 }
+
+func (sub Subscription) IsAutoRenewalOn() bool {
+	return sub.AutoRenewalNextPlan != AUTO_RENEWAL_PLAN_NONE
+}

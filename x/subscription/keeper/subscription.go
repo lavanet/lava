@@ -107,7 +107,7 @@ func (k Keeper) CreateSubscription(
 		return utils.LavaFormatWarning("create subscription failed", err)
 	}
 
-	if !found || sub.AutoRenewalNextPlan != types.AUTO_RENEWAL_PLAN_NONE {
+	if !found || sub.IsAutoRenewalOn() {
 		expiry := uint64(utils.NextMonth(ctx.BlockTime()).UTC().Unix())
 		sub.MonthExpiryTime = expiry
 		sub.Block = block
@@ -324,7 +324,7 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			sub.MonthCuTotal = plan.PlanPolicy.TotalCuLimit
 
 			k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, false)
-		} else if sub.AutoRenewalNextPlan != types.AUTO_RENEWAL_PLAN_NONE {
+		} else if sub.IsAutoRenewalOn() {
 			// apply the DurationLeft decrease to 0 and buy an extra month
 			k.subsFS.ModifyEntry(ctx, sub.Consumer, sub.Block, &sub)
 			err := k.renewSubscription(ctx, &sub)
