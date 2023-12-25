@@ -109,6 +109,9 @@ func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, alloc
 func (k Keeper) BlocksToNextTimerExpiry(ctx sdk.Context) int64 {
 	timeToNextTimerExpiry := k.TimeToNextTimerExpiry(ctx)
 	blockCreationTime := int64(k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds())
+	if blockCreationTime == 0 {
+		return 30
+	}
 	blocksToNextTimerExpiry := types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry).QuoInt64(blockCreationTime).Ceil().TruncateInt64()
 	if blocksToNextTimerExpiry < 2 {
 		return 2
