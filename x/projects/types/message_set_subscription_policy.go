@@ -11,7 +11,7 @@ const TypeMsgSetSubscriptionPolicy = "set_subscription_policy"
 
 var _ sdk.Msg = &MsgSetSubscriptionPolicy{}
 
-func NewMsgSetSubscriptionPolicy(creator string, projects []string, policy planstypes.Policy) *MsgSetSubscriptionPolicy {
+func NewMsgSetSubscriptionPolicy(creator string, projects []string, policy *planstypes.Policy) *MsgSetSubscriptionPolicy {
 	return &MsgSetSubscriptionPolicy{
 		Creator:  creator,
 		Projects: projects,
