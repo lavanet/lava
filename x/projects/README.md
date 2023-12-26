@@ -17,8 +17,8 @@ Note that the plans module is closely connected to the subscription and projects
 * [Parameters](#parameters)
 * [Queries](#queries)
 * [Transactions](#transactions)
-  * [Project Policy JSON](#project-policy-json)
-  * [Project Keys JSON](#project-keys-json)
+  * [Project Policy YAML](#project-policy-yaml)
+  * [Project Keys YAML](#project-keys-yaml)
 * [Proposals](#proposals)
 
 ## Concepts
@@ -133,15 +133,15 @@ The projects module supports the following transactions:
 
 Note that the `add-keys` and `del-keys` transactions also support key management with flags, in addition to file input. Refer to the help section of the commands for more details.
 
-To get more details about the policy and project keys JSON file format, see below.
+To get more details about the policy and project keys YAML file format, see below.
 
-### Project Policy JSON
+### Project Policy YAML
 
-Both the `set-policy` and `set-subscription-policy` transactions use the same policy JSON format.
+Both the `set-policy` and `set-subscription-policy` transactions use the same policy YAML format.
 
-Example of a policy JSON file:
+Example of a policy YAML file:
 
-```json
+```yaml
 Policy:
   geolocation_profile: 1  # USC
   total_cu_limit: 10000
@@ -152,13 +152,13 @@ Policy:
     - chain_id: ETH1
       requirements:
         - collection:
-            api_interface: "jsonrpc"
+            api_interface: "YAMLrpc"
             type: "POST"
             add_on: "debug"
     - chain_id: EVMOS
       requirements:
         - collection:
-            api_interface: "jsonrpc"
+            api_interface: "YAMLrpc"
             type: "POST"
           extensions:
             - "archive"
@@ -186,13 +186,13 @@ Policy:
 
 All fields are not mandatory. An unfilled field will be replaced with a default value or be ignored.
 
-### Project Keys JSON
+### Project Keys YAML
 
-Both the `add-keys` and `del-keys` transactions use the same project key JSON format.
+Both the `add-keys` and `del-keys` transactions use the same project key YAML format.
 
-Example of a project key JSON file:
+Example of a project key YAML file:
 
-```json
+```yaml
 Project-Keys:
   - key: "lava@1xtfqykth53pkt97v955h3lql8zkj2m4s4rq9cr"
     Kinds: 3
