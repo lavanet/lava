@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # `x/rewards`
 
 ## Abstract
@@ -40,7 +36,7 @@ The allocation pools get some of the treasury account's tokens and hold onto it.
 
 The distribution pools use the monthly quota of funds to distribute rewards for validators and providers.
 
-#### Validators Rewards
+#### Validators Rewards Pool
 
 In Cosmos-SDK chains, validators get rewards for creating blocks by the Cosmos' distribution module. For each new block, new tokens are minted and distributed to all the accounts that contributed to the new block creation.
 
@@ -52,14 +48,15 @@ The distribution pool of validators, `validators_rewards_distribution_pool`, use
 
 The validators block reward is calculated using the following formula:
 
-$$ Reward = \frac{{\text{{validators\_distribution\_pool\_balance}}} \cdot {\text{bonded\_target\_factor}}}{\text{{remaining\_blocks\_until\_next\_emission}}}$$
-
+```math
+Reward = \frac{{\text{{validators\_distribution\_pool\_balance}}} \cdot {\text{bonded\_target\_factor}}}{\text{{remaining\_blocks\_until\_next\_emission}}}
+```
 Where:
-* $\text{validators\_distribution\_pool\_balance}$ - The remaining balance in the `validators_rewards_distribution_pool`.
-* $\text{bonded\_target\_factor}$ - A factor calculated with the module's params (see [below](#bondedtargetfactor)).
-* $\text{remaining\_blocks\_until\_next\_emission}$ - The amount of blocks until the next monthly refill of the `validators_rewards_distribution_pool`.
+* $`\text{validators\_distribution\_pool\_balance}`$ - The remaining balance in the `validators_rewards_distribution_pool`.
+* $`\text{bonded\_target\_factor}`$ - A factor calculated with the module's params (see [below](#bondedtargetfactor)).
+* $`\text{remaining\_blocks\_until\_next\_emission}`$ - The amount of blocks until the next monthly refill of the `validators_rewards_distribution_pool`.
 
-### Providers Rewards Pool
+#### Providers Rewards Pool
 
 Providers get rewards for their services from the funds used to buy subscriptions (see subscription module readme).
 
@@ -67,19 +64,22 @@ Besides these rewards, the provider also get monthly bonus rewards from a pre-al
 
 The total monthly bonus rewards ("total spec payout") are calculated per spec by the following formula:
 
-$$\text{Total spec payout}=\\\min\{RewardsMaxBoost\cdot\text{Total Base Payouts}, \\ \text{Spec Payout Cap}, \\ \max\{0,1.5(\text{Spec Payout Cap})-0.5(\text{Total Base Payouts})\}\}$$
+```math
+\text{Total spec payout}=\\\min\{RewardsMaxBoost\cdot\text{Total Base Payouts}, \\ \text{Spec Payout Cap}, \\ \max\{0,1.5(\text{Spec Payout Cap})-0.5(\text{Total Base Payouts})\}\}
+```
 
 Where:
-* $\text{RewardsMaxBoost}$ - A module's parameter (see [below](#maxrewardsboost)).
-* $\text{Total Base Payouts}$ - The sum of all base payouts the providers for this spec collected = $\sum_{provider_1.._n} (\text{{provider base rewards}}_i)$
-* $\text{Spec Payout Cap}$ - The max value for this spec bonus rewards = $\frac{specStake\cdot specShares}{\sum_i{specStake \cdot specShares}_i}$.
+* $`\text{RewardsMaxBoost}`$ - A module's parameter (see [below](#maxrewardsboost)).
+* $`\text{Total Base Payouts}`$ - The sum of all base payouts the providers for this spec collected = $`\sum_{provider_1.._n} (\text{{provider base rewards}}_i)`$
+* $`\text{Spec Payout Cap}`$ - The max value for this spec bonus rewards = $`\frac{specStake\cdot specShares}{\sum_i{specStake \cdot specShares}_i}`$.
 * SpecStake = Total effective stake of providers in this spec.
 * SpecShares = Weight factor for the spec (determined in each spec)
 
 The total spec payout is distributed between providers proportional to the rewards they collected from subscriptions throughtout the month. Each provider will get bonus rewards according to the following formula:
 
-$$Provider Bonus Rewards = Total Spec Payout \cdot \frac{\sum_{\text{payment} \; i} (\text{{provider base rewards}}_{i,j} \times \text{{adjustment}}_{i,j})}{\sum_{\text{provider}\;j'}\sum_{\text{payment} \; i}  (\text{{provider base rewards}}_{i,j'}  )}
-$$
+```math
+Provider Bonus Rewards = Total Spec Payout \cdot \frac{\sum_{\text{payment} \; i} (\text{{provider base rewards}}_{i,j} \times \text{{adjustment}}_{i,j})}{\sum_{\text{provider}\;j'}\sum_{\text{payment} \; i}  (\text{{provider base rewards}}_{i,j'}  )}
+```
 
 Where:
 * Adjustment - TBD
@@ -88,10 +88,13 @@ Note that some of the providers rewards are sent to the community pool (accordin
 
 The participation fees are calculated according to the following formulas:
 
-$$\text{Validators Participation Fee} = \frac{ValidatorsSubscriptionParticipation}{1-CommunityTax}$$
+```math
+\text{Validators Participation Fee} = \frac{ValidatorsSubscriptionParticipation}{1-CommunityTax}
+```
 
-$$\text{Community Participation Fee} = ValidatorsSubscriptionParticipation + CommunityTax\\ - \text{Validators Participation Fee}$$
-
+```math
+\text{Community Participation Fee} = ValidatorsSubscriptionParticipation + CommunityTax\\ - \text{Validators Participation Fee}
+```
 ## Parameters
 
 The rewards module contains the following parameters:
@@ -128,11 +131,13 @@ In Lava we wanted to make validator rewards decrease linearly with the increase 
 
 To calculate the `BondedTargetFactor` see the following formula (note that the staking module's `BondedRatio` parameter is used, which is the fraction of the staking tokens which are currently bonded):
 
-$$\text{BondedTargetFactor}= \\\begin{cases}
+```math
+\text{BondedTargetFactor}= \\\begin{cases}
 1 & \text{$\text{BondRatio} < \text{MinBonded}$}\\
 \frac{\text{MaxBonded}-\text{BondRatio}}{\text{MaxBonded}-\text{MinBonded}} + (\text{LowFactor})\frac{\text{BondRatio}-\text{MinBonded}}{\text{MaxBonded}-\text{MinBonded}}  & \text{$\text{MinBonded} < \text{BondRatio} < \text{MaxBonded}$}\\
 \text{LowFactor} & \text{$\text{BondRatio} > \text{MaxBonded}$}\\
-\end{cases}$$
+\end{cases}
+```
 
 ### MaxRewardsBoost
 
