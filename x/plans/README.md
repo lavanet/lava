@@ -135,7 +135,7 @@ enum Geolocation {
 }
 ```
 
-The "GLS" geolocation means that the policy is global and not configurable.
+The `GLS` geolocation means that the policy is global and not configurable.
 
 #### Selected Providers
 
@@ -186,7 +186,7 @@ lavad tx gov vote <latest_proposal_id> yes --from alice <gas-flags>
 
 A valid `plans-add` JSON proposal format:
 
-```
+```json
 {
     "proposal": {
         "title": "Add temporary to-delete plan proposal",
@@ -236,7 +236,7 @@ A valid `plans-add` JSON proposal format:
 
 A valid `plans-del` JSON proposal format:
 
-```
+```json
 {
     "proposal": {
         "title": "Delete temporary (to-delete) plan proposal",
