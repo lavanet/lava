@@ -62,7 +62,7 @@ type ApiCollection struct {
 	Apis            []*Api              // list of api's in the collection
 	Headers         []*Header           // list of headers supported by the interface and their behaviour
 	InheritanceApis []*CollectionData   // list of other ApiCollection to inherite from
-	ParseDirectives []*ParseDirective   // list of parsing instructions of specific api's
+	ParseDirectives []*[ParseDirective](#parsedirective)   // list of parsing instructions of specific api's
 	Extensions      []*Extension        // list of extensions that providers can support in addition to the basic behaviour (for example, archive node)
 	Verifications   []*Verification     // list of verifications that providers must pass to make sure they provide full functionality
 }
@@ -88,6 +88,44 @@ The `InternalPath` field is utilized for chains that have varying RPC API sets i
 The `Type` field lets the user define APIs that have different functionalities depending on their type. the valid types are: `GET` and `POST`. An example of such API is Cosmos' `/cosmos/tx/v1beta1/txs` API. If it's sent as a `GET` request, it fetches transactions by event and if it's sent as a `POST` request, it sends a transaction.
 
 The `AddOn` field lets you use additional optional APIs like debug, trace, 
+
+### Api
+
+Api define a specific api in the api collection
+
+```
+type Api struct {
+	Enabled           bool          // enable/disable the api
+	Name              string        // api name
+	ComputeUnits      uint64        // the amount of cu of this api (can be defined as the "price" of using this api)
+	ExtraComputeUnits uint64        // not used
+	Category          SpecCategory  // defines the property of the api
+	BlockParsing      BlockParser   // specify how to parse the block from the api request
+	TimeoutMs         uint64        // specifies the timeout expected for the api
+}
+```
+
+example of an api definition:
+```json
+    {
+        "name": "eth_getBlockByNumber",
+        "block_parsing": {
+            "parser_arg": [
+                "0"
+            ],
+            "parser_func": "PARSE_BY_ARG"
+        },
+        "compute_units": 20,
+        "enabled": true,
+        "category": {
+            "deterministic": true,
+            "local": false,
+            "subscription": false,
+            "stateful": 0
+        },
+        "extra_compute_units": 0
+    },
+```
 
 ### ParseDirective
 
@@ -125,6 +163,15 @@ type Verification struct {
 }
 
 ### Import
+
+Specs can import from other specs, this allows easy creation and maintanance of specs. the specs imports the api collection of the base specs.
+A good example for this is cosmos base specs. all cosmos chains support querie/tx of the bank module and are defines in a cosmos spec (which is disabled), when creating a cosmos base spec we can import the cosmos spec and we get all the api's of the bank module. this makes it so specs need to define only the api's that are unique to the new chain.
+
+rules:
+* an import cycle of specs is prohibited
+* specs can override/disable/add api's from the imported api collection
+* specs imports the verificaions, they can also be overridden and sometimes it is a must (for example chain-id value must be overwritten)
+
 
 ## Parameters
 
