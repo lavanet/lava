@@ -13,7 +13,7 @@ import (
 
 const (
 	MetricsListenFlagName = "metrics-listen-address"
-	UsageServerFlagName   = "usage-server-address"
+	RelayServerFlagName   = "relay-server-address"
 	DisabledFlagOption    = "disabled"
 )
 

@@ -34,21 +34,21 @@ type RPCConsumerLogs struct {
 	excludeMetricsReferrers   string
 	excludedUserAgent         []string
 	consumerMetricsManager    *ConsumerMetricsManager
-	consumerUsageserverClient *ConsumerUsageserverClient
+	ConsumerRelayserverClient *ConsumerRelayserverClient
 }
 
-func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumerUsageserverClient *ConsumerUsageserverClient) (*RPCConsumerLogs, error) {
+func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, ConsumerRelayserverClient *ConsumerRelayserverClient) (*RPCConsumerLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file")
-		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, consumerUsageserverClient: consumerUsageserverClient}, nil // newRelicApplication is nil safe to use
+		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: ConsumerRelayserverClient}, nil // newRelicApplication is nil safe to use
 	}
 
 	newRelicAppName := os.Getenv("NEW_RELIC_APP_NAME")
 	newRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
 	if newRelicAppName == "" || newRelicLicenseKey == "" {
 		utils.LavaFormatInfo("New relic missing environment variables")
-		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, consumerUsageserverClient: consumerUsageserverClient}, nil
+		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: ConsumerRelayserverClient}, nil
 	}
 
 	newRelicApplication, err := newrelic.NewApplication(
@@ -72,7 +72,7 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumer
 		newrelic.ConfigFromEnvironment(),
 	)
 
-	rpcConsumerLogs := &RPCConsumerLogs{newRelicApplication: newRelicApplication, StoreMetricData: false, consumerMetricsManager: consumerMetricsManager, consumerUsageserverClient: consumerUsageserverClient}
+	rpcConsumerLogs := &RPCConsumerLogs{newRelicApplication: newRelicApplication, StoreMetricData: false, consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: ConsumerRelayserverClient}
 	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
 	if isMetricEnabled {
 		rpcConsumerLogs.StoreMetricData = true
@@ -154,7 +154,7 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.consumerUsageserverClient.SetRelayMetrics(data, err)
+	rpccl.ConsumerRelayserverClient.SetRelayMetrics(data)
 	refererHeaderValue := strings.Join(headers[RefererHeaderKey], ", ")
 	userAgentHeaderValue := strings.Join(headers[UserAgentHeaderKey], ", ")
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -165,7 +165,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, he
 
 func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.consumerUsageserverClient.SetRelayMetrics(data, err)
+	rpccl.ConsumerRelayserverClient.SetRelayMetrics(data)
 	refererHeaderValue, _ := c.Locals(RefererHeaderKey).(string)
 	userAgentHeaderValue, _ := c.Locals(UserAgentHeaderKey).(string)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -184,7 +184,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, me
 		return headerValue
 	}
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.consumerUsageserverClient.SetRelayMetrics(data, err)
+	rpccl.ConsumerRelayserverClient.SetRelayMetrics(data)
 	refererHeaderValue := getMetadataHeaderOrDefault(RefererHeaderKey)
 	userAgentHeaderValue := getMetadataHeaderOrDefault(UserAgentHeaderKey)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
