@@ -8,7 +8,7 @@ The plans module is responsible for managing Lava's subscription plans and handl
 
 Note that the plans module is closely connected to the subscription and projects modules. To fully understand how subscriptions, plans, and projects work together, please also refer to their respective READMEs.
 
-This document is focuses on the plans' technical aspects and does not include current subscription plans and prices. For more information on those, please visit Lava's official website.
+This document focuses on the plans' technical aspects and does not include current subscription plans and prices. For more information on those, please visit Lava's official website.
 
 ## Contents
 
