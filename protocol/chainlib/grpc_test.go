@@ -154,6 +154,31 @@ func TestGrpcChainProxy(t *testing.T) {
 	}
 }
 
+func TestGrpcLocal(t *testing.T) {
+	client := &http.Client{
+		Transport: &http.Transport{
+			// Specify HTTP/2 support
+		},
+	}
+
+	// Creating an HTTP/2 request
+	req, err := http.NewRequest("GET", "http://127.0.0.1:3362/health", nil)
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+
+	// Executing the request
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error making request:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("Response Status:", resp.Status)
+}
+
 func TestParsingRequestedBlocksHeadersGrpc(t *testing.T) {
 	ctx := context.Background()
 	callbackHeaderNameToCheck := ""

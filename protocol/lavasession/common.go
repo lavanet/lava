@@ -112,6 +112,16 @@ func GetCaCertificate(serverCertPath, serverKeyPath string) (*tls.Config, error)
 	}, nil
 }
 
+func GetSelfSignedConfig() *tls.Config {
+	cert, err := GenerateSelfSignedCertificate()
+	if err != nil {
+		utils.LavaFormatFatal("failed to generate TLS certificate", err)
+	}
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+}
+
 func GetTlsConfig(networkAddress NetworkAddressData) *tls.Config {
 	var tlsConfig *tls.Config
 	var err error
@@ -122,13 +132,7 @@ func GetTlsConfig(networkAddress NetworkAddressData) *tls.Config {
 			utils.LavaFormatFatal("failed to generate TLS certificate", err)
 		}
 	} else {
-		cert, err := GenerateSelfSignedCertificate()
-		if err != nil {
-			utils.LavaFormatFatal("failed to generate TLS certificate", err)
-		}
-		tlsConfig = &tls.Config{
-			Certificates: []tls.Certificate{cert},
-		}
+		tlsConfig = GetSelfSignedConfig()
 	}
 	return tlsConfig
 }
