@@ -113,7 +113,7 @@ The `InternalPath` field is utilized for chains that have varying RPC API sets i
 
 The `Type` field lets the user define APIs that have different functionalities depending on their type. the valid types are: `GET` and `POST`. An example of such API is Cosmos' `/cosmos/tx/v1beta1/txs` API. If it's sent as a `GET` request, it fetches transactions by event and if it's sent as a `POST` request, it sends a transaction.
 
-The `AddOn` field lets you use additional optional APIs like debug, trace, 
+The `AddOn` field lets you use additional optional APIs (debug, trace and more). Overall, the add-ons can be: `debug`, `trace` and `convex`.
 
 #### Geolocation
 
