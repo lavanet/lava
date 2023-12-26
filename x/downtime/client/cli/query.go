@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -11,7 +12,11 @@ import (
 
 func NewQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: types.ModuleName + "query commands",
+		Use:                        types.ModuleName,
+		Short:                      fmt.Sprintf("Querying commands for the %s module", types.ModuleName),
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
 	}
 
 	cmd.AddCommand(CmdQueryDowntime(), CmdQueryParams())

@@ -59,4 +59,10 @@ Policy:
             api_interface: "jsonrpc"
             type: "POST"
             add_on: "debug"
+    - chain_id: STRK
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "trace"
     - chain_id: "*" # allows all other chains without specifying

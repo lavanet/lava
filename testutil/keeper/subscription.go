@@ -78,6 +78,7 @@ func SubscriptionKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		projectskeeper.NewKeeper(cdc, nil, nil, paramsSubspaceProjects, nil, fsKeeper),
 		planskeeper.NewKeeper(cdc, nil, nil, paramsSubspacePlans, nil, nil, fsKeeper, nil),
 		dualstakingkeeper.NewKeeper(cdc, nil, nil, paramsSubspace, nil, nil, mockAccountKeeper{}, nil, nil, fsKeeper),
+		nil,
 		fsKeeper,
 		tsKeeper,
 		nil,

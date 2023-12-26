@@ -1,0 +1,66 @@
+syntax = "proto3";
+package lavanet.lava.rewards;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "lavanet/lava/rewards/params.proto";
+import "cosmos/base/v1beta1/coin.proto";
+// this line is used by starport scaffolding # 1
+
+option go_package = "github.com/lavanet/lava/x/rewards/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Parameters queries the parameters of the module.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/params";
+  }
+
+  // Pools queries all the pools' info
+  rpc Pools(QueryPoolsRequest) returns (QueryPoolsResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/pools";
+  }
+
+  // BlockReward queries for the validators reward for proposing a block
+  rpc BlockReward(QueryBlockRewardRequest) returns (QueryBlockRewardResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/block_reward";
+  }
+  // this line is used by starport scaffolding # 2
+}
+
+// QueryParamsRequest is request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params holds all the parameters of this module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryPoolsRequest is request type for the Query/Pools RPC method.
+message QueryPoolsRequest {}
+
+message PoolInfo {
+  string name = 1; // pool name
+  cosmos.base.v1beta1.Coin balance = 2 [(gogoproto.nullable) = false]; // pool balance
+}
+
+// QueryPoolsResponse is response type for the Query/Pools RPC method.
+message QueryPoolsResponse {
+  // details holds all the info of this module's pools.
+  repeated PoolInfo pools = 1 [(gogoproto.nullable) = false];
+  int64 time_to_refill = 2; // number of seconds until block pools refill
+  int64 estimated_blocks_to_refill = 3; // estimated number of blocks until block pools are refilled
+  int64 allocation_pool_months_left = 4; // amount of months until the allocation pools will run out of funds
+}
+
+// QueryBlockRewardRequest is request type for the Query/BlockReward RPC method.
+message QueryBlockRewardRequest {}
+
+// QueryBlockRewardResponse is response type for the Query/BlockReward RPC method.
+message QueryBlockRewardResponse {
+  cosmos.base.v1beta1.Coin reward = 1 [(gogoproto.nullable) = false];
+}
+
+// this line is used by starport scaffolding # 3

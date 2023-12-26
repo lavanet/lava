@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/statetracker"
+	"github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
@@ -193,7 +193,7 @@ func (vm *VersionMonitor) validateLinkPointsToTheRightTarget() error {
 	return err
 }
 
-func (vm *VersionMonitor) ValidateProtocolVersion(incoming *statetracker.ProtocolVersionResponse) error {
+func (vm *VersionMonitor) ValidateProtocolVersion(incoming *updaters.ProtocolVersionResponse) error {
 	if !vm.lock.TryLock() { // if an upgrade is currently ongoing we don't need to check versions. just wait for the flow to end.
 		utils.LavaFormatDebug("[Lavavisor] ValidateProtocolVersion is locked, assuming upgrade is ongoing")
 		return nil

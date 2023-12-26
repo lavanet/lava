@@ -404,25 +404,24 @@ func (tstore *TimerStore) tickValue(ctx sdk.Context, which TimerType, tickValue 
 	}
 }
 
-func (tstore *TimerStore) GetFrontTimers(ctx sdk.Context, which TimerType) ([][]byte, []uint64) {
+func (tstore *TimerStore) GetFrontTimers(ctx sdk.Context, which TimerType) (keys [][]byte, expiries []uint64, data [][]byte) {
 	store := tstore.getStoreTimer(ctx, which)
 	nextTimeoutValue := tstore.getNextTimeout(ctx, which)
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 	defer iterator.Close()
 
-	var values []uint64
-	var keys [][]byte
 	for ; iterator.Valid(); iterator.Next() {
 		value, key := DecodeBlockAndKey(iterator.Key())
 		if value > nextTimeoutValue {
 			break
 		}
-		values = append(values, value)
+		expiries = append(expiries, value)
 		keys = append(keys, key)
+		data = append(data, iterator.Value())
 	}
 
-	return keys, values
+	return keys, expiries, data
 }
 
 // Tick advances the timer by a block. It should be called at the beginning of each block.

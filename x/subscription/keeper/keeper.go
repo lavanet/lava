@@ -28,6 +28,7 @@ type (
 		projectsKeeper     types.ProjectsKeeper
 		plansKeeper        types.PlansKeeper
 		dualstakingKeeper  types.DualStakingKeeper
+		rewardsKeeper      types.RewardsKeeper
 		stakingKeeper      types.StakingKeeper
 
 		subsFS fixationtypes.FixationStore
@@ -50,6 +51,7 @@ func NewKeeper(
 	projectsKeeper types.ProjectsKeeper,
 	plansKeeper types.PlansKeeper,
 	dualstakingKeeper types.DualStakingKeeper,
+	rewardsKeeper types.RewardsKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
 	stakingKeeper types.StakingKeeper,
@@ -74,6 +76,7 @@ func NewKeeper(
 		projectsKeeper:     projectsKeeper,
 		plansKeeper:        plansKeeper,
 		dualstakingKeeper:  dualstakingKeeper,
+		rewardsKeeper:      rewardsKeeper,
 		stakingKeeper:      stakingKeeper,
 
 		subsFS:      fs,

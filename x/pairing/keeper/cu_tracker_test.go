@@ -26,7 +26,7 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 	_, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
 
-	ts.TxSubscriptionBuy(client1Addr, client1Addr, "free", 1, false) // extend by a month so the sub won't expire
+	ts.TxSubscriptionBuy(client1Addr, client1Addr, "free", 1, false, false) // extend by a month so the sub won't expire
 
 	res, err := ts.QuerySubscriptionCurrent(client1Addr)
 	require.Nil(t, err)
@@ -115,7 +115,7 @@ func TestTrackedCuWithExpiredSubscription(t *testing.T) {
 	ts.AddPlan(ts.plan.Index, ts.plan)
 
 	clientAcct, clientAddr := ts.AddAccount(common.CONSUMER, 0, testBalance)
-	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 1, false)
+	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 1, false, false)
 	require.Nil(t, err)
 
 	err = ts.addProvider(1)
@@ -178,7 +178,7 @@ func TestTrackedCuWithQos(t *testing.T) {
 	provider1Acc, provider1 := ts.GetAccount(common.PROVIDER, 0)
 	provider2Acc, provider2 := ts.GetAccount(common.PROVIDER, 1)
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
+	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
 
 	badQoS := &types.QualityOfServiceReport{
 		Latency:      sdk.ZeroDec(),
@@ -381,7 +381,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
+	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
 
 	// stake the provider on an additional chain and apply pairing (advance epoch)
 	spec1 := ts.spec
@@ -657,7 +657,7 @@ func TestTrackedCuDeletion(t *testing.T) {
 	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	_, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false) // extend by a month so the sub won't expire
+	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
 
 	// send relay to track CU
 	relayPayment := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})

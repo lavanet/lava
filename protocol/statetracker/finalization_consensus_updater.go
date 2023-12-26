@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/lavanet/lava/protocol/lavaprotocol"
+	updaters "github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -16,10 +17,10 @@ type FinalizationConsensusUpdater struct {
 	lock                              sync.RWMutex
 	registeredFinalizationConsensuses []*lavaprotocol.FinalizationConsensus
 	nextBlockForUpdate                uint64
-	stateQuery                        *ConsumerStateQuery
+	stateQuery                        *updaters.ConsumerStateQuery
 }
 
-func NewFinalizationConsensusUpdater(stateQuery *ConsumerStateQuery) *FinalizationConsensusUpdater {
+func NewFinalizationConsensusUpdater(stateQuery *updaters.ConsumerStateQuery) *FinalizationConsensusUpdater {
 	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery}
 }
 

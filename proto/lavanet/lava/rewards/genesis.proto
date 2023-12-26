@@ -1,0 +1,18 @@
+syntax = "proto3";
+package lavanet.lava.rewards;
+
+import "gogoproto/gogo.proto";
+import "lavanet/lava/rewards/params.proto";
+import "lavanet/lava/rewards/base_pay.proto";
+import "lavanet/lava/timerstore/timer.proto";
+// this line is used by starport scaffolding # genesis/proto/import
+
+option go_package = "github.com/lavanet/lava/x/rewards/types";
+
+// GenesisState defines the rewards module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+  lavanet.lava.timerstore.GenesisState refillRewardsTS = 2 [(gogoproto.nullable) = false];
+  repeated BasePayGenesis base_pays = 3 [(gogoproto.nullable) = false];
+  // this line is used by starport scaffolding # genesis/proto/state
+}
