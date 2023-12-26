@@ -3,7 +3,6 @@ package rpcconsumer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -319,11 +318,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		returnedResult = iteratedResult
 	}
 
-	fmt.Printf("MIIIKKEEE")
-
 	if analytics != nil {
 		currentLatency := time.Since(relaySentTime)
-		fmt.Printf("MIIIKKEEE writing currentLatency.Milliseconds() %d\n", currentLatency.Milliseconds())
 		analytics.Latency = currentLatency.Milliseconds()
 		analytics.ComputeUnits = chainMessage.GetApi().ComputeUnits
 	}
