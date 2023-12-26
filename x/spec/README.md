@@ -72,8 +72,6 @@ type ApiCollection struct {
 
 CollectionData defines the api properties and acts as a unique key for the [api collection](#apicollection)
 
-TAKE THIS FROM PLANS
-
 ```
 type CollectionData struct {
 	ApiInterface string         // defines the connection interface (rest/json/grpc etc...)
@@ -82,6 +80,14 @@ type CollectionData struct {
 	AddOn        string         // 
 }
 ```
+
+The `ApiInterface` field defines the API interface on which the limitations are applied. The available API interfaces for a chain are defined in the chain's spec. Overall, the API interfaces can be: `jsonrpc`, `rest`, `tendermintrpc` and `grpc`.
+
+The `InternalPath` field is utilized for chains that have varying RPC API sets in different internal paths. Avalanche is a prime example of such a chain, consisting of three distinct subchains (or subnets) designed for different applications. For instance, Avalanche's C-Chain is dedicated to smart contracts, while Avalanche's X-Chain facilitates the sending and receiving of funds. For further information on how to define this field, please consult the Avalanche (AVAX) specification.
+
+The `Type` field lets the user define APIs that have different functionalities depending on their type. the valid types are: `GET` and `POST`. An example of such API is Cosmos' `/cosmos/tx/v1beta1/txs` API. If it's sent as a `GET` request, it fetches transactions by event and if it's sent as a `POST` request, it sends a transaction.
+
+The `AddOn` field lets you use additional optional APIs like debug, trace, 
 
 ### ParseDirective
 
@@ -151,7 +157,7 @@ lavad tx gov submit-legacy-proposal spec-add <spec_json_1>,<spec_json_2> --from 
 
 A valid `add_spec_json_1` JSON proposal format:
 
-```
+```json
 {
     "proposal": {
         "title": "Add Specs: Lava",

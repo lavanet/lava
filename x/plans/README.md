@@ -86,7 +86,7 @@ A chain requirement is defined as follows:
 
 ```
 struct ChainRequirement {
-	Collection  types.CollectionData
+	Collection  [types.CollectionData](https://github.com/lavanet/lava/tree/main/x/spec#CollectionData)
 	Extensions  []string             
 	Mixed       bool                 
 }
@@ -96,24 +96,9 @@ The `Extensions` field is intended to enable the use of certain APIs to obtain d
 
 The `Mixed` field is designed to enable a combination of regular and extension/addon supporting providers. For instance, if the `archive` extension is defined but the `Mixed` field is set to `false`, the consumer's project will only be paired with providers that support the specified extensions and addons. On the other hand, if the `Mixed` field is set to `true`, the consumer's project will also be paired with providers that don't fully support the extenstion/addons.
 
-A chain collection is defined as follows:
 
-```
-struct CollectionData {
-	ApiInterface  string
-	InternalPath  string
-	Type          string
-	AddOn         string
-}
-```
 
-The `ApiInterface` field defines the API interface on which the limitations are applied. The available API interfaces for a chain are defined in the chain's spec. Overall, the API interfaces can be: `jsonrpc`, `rest`, `tendermintrpc` and `grpc`.
 
-The `InternalPath` field is utilized for chains that have varying RPC API sets in different internal paths. Avalanche is a prime example of such a chain, consisting of three distinct subchains (or subnets) designed for different applications. For instance, Avalanche's C-Chain is dedicated to smart contracts, while Avalanche's X-Chain facilitates the sending and receiving of funds. For further information on how to define this field, please consult the Avalanche (AVAX) specification.
-
-The `Type` field lets the user define APIs that have different functionalities depending on their type. the valid types are: `GET` and `POST`. An example of such API is Cosmos' `/cosmos/tx/v1beta1/txs` API. If it's sent as a `GET` request, it fetches transactions by event and if it's sent as a `POST` request, it sends a transaction.
-
-The `AddOn` field lets you use additional optional APIs (debug, trace and more). Overall, the add-ons can be: `debug`, `trace` and `convex`.
 
 #### Geolocation
 
@@ -186,7 +171,7 @@ lavad tx gov vote <latest_proposal_id> yes --from alice <gas-flags>
 
 A valid `plans-add` JSON proposal format:
 
-```
+```json
 {
     "proposal": {
         "title": "Add temporary to-delete plan proposal",
