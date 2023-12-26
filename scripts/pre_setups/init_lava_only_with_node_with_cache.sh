@@ -17,7 +17,7 @@ echo "[Test Setup] setting up a new lava node"
 screen -d -m -S node bash -c "./scripts/start_env_dev.sh"
 screen -ls
 echo "[Test Setup] waiting blocks to start progressing"
-sleep 3
+sleep 5
 wait_for_lava_node_to_start
 
 GASPRICE="0.000000001ulava"

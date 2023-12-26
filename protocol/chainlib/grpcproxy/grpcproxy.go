@@ -23,13 +23,11 @@ func NewGRPCProxy(cb ProxyCallBack) (*grpc.Server, *http.Server, error) {
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
 		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type,x-grpc-web")
-		utils.LavaFormatInfo("test", utils.LogAttr("path", req.URL.Path))
-		if req.URL.Path == "/health" {
+		if req.URL.Path == "/" {
 			resp.WriteHeader(200)
 			_, _ = resp.Write(make([]byte, 0))
 			return
 		}
-
 		wrappedServer.ServeHTTP(resp, req)
 	}
 
