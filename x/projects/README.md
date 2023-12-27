@@ -27,8 +27,8 @@ Note that the plans module is closely connected to the subscription and projects
 
 Once a consumer purchases a subscription, they can create projects under it. Each project has a unique name (index) within this subscription. A project is defined as follows:
 
-```
-struct Project {
+```go
+type Project struct {
 	Index               string        // project unique index
 	Subscription        string        // project associated subscription
 	Enabled             bool          // project enabled/disabled
@@ -52,8 +52,8 @@ For more details regarding the `Policy` struct and its limitations, see [here](h
 
 A project has a list of accounts (project keys) that can use the project in different ways. There are two kinds of keys: admin key and developer key. A project key is defined as follows:
 
-```
-struct ProjectKey {
+```go
+type ProjectKey struct {
 	Key    string  // user lava address
 	Kinds  uint32  // key kind
 }
@@ -81,8 +81,8 @@ Badges are a method to grant compute units (CU) from projects to other users. Gi
 
 A badge is defined as follows:
 
-```
-struct Badge {
+```go
+type Badge struct {
 	CuAllocation  uint64  // badge CU limit
 	Epoch         uint64  // badge epoch
 	Address       string  // badge user address
