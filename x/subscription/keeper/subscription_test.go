@@ -257,13 +257,9 @@ func TestRenewSubscription(t *testing.T) {
 	require.NoError(t, err)
 
 	// try extending the subscription (we could extend with 1 more month,
-	// but since the subscription's plan changed, it should create a future subscription instead
+	// but since the subscription's plan changed, it should fail)
 	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
-	require.NoError(t, err)
-	sub = getSubscriptionAndFailTestIfNotFound(t, ts, sub.Consumer)
-	require.NotNil(t, sub.FutureSubscription)
-	require.Equal(t, uint64(12), sub.DurationLeft)
-	require.Equal(t, uint64(9), sub.DurationBought)
+	require.Error(t, err)
 
 	// get the subscription's plan and make sure it uses the old plan
 	plan, found = ts.FindPlan(sub.PlanIndex, sub.PlanBlock)
@@ -1246,7 +1242,6 @@ func TestSubBuySamePlanBlockUpdated(t *testing.T) {
 	// Edit the subscription's plan (increase the price)
 	plan.PlanPolicy.EpochCuLimit += 100
 	plan.Price.Amount = plan.Price.Amount.AddRaw(10)
-	planBlock := ts.BlockHeight()
 
 	// Propose new plan
 	err = keepertest.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan}, false)
@@ -1257,18 +1252,7 @@ func TestSubBuySamePlanBlockUpdated(t *testing.T) {
 
 	// Buy the plan again
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, plan.Index, 1, false, false)
-	require.Nil(t, err)
-	// Make sure that the consumer paid for it
-	consumerBalance -= plan.Price.Amount.Int64()
-	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
-
-	// Make sure that the new plan is now a FutureSubscription
-	sub, found := ts.getSubscription(consumerAddr)
-	require.True(t, found)
-	require.NotNil(t, sub.FutureSubscription)
-	require.Equal(t, plan.Index, sub.FutureSubscription.PlanIndex)
-	require.Equal(t, planBlock, sub.FutureSubscription.PlanBlock)
-	require.Equal(t, consumerAddr, sub.FutureSubscription.Creator)
+	require.Error(t, err)
 }
 
 // TestPlanRemovedWhenSubscriptionExpires checks that if a subscription is expired
