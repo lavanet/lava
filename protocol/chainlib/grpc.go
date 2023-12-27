@@ -317,7 +317,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		return relayReply.Data, convertRelayMetaDataToMDMetaData(metadataToReply), nil
 	}
 
-	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback)
+	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback, apil.endpoint.HealthCheckPath)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
@@ -330,7 +330,11 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 	var serveExecutor func() error
 	if apil.endpoint.TLSEnabled {
 		utils.LavaFormatInfo("Running with self signed TLS certificate")
-		httpServer.TLSConfig = lavasession.GetSelfSignedConfig()
+		var certificateErr error
+		httpServer.TLSConfig, certificateErr = lavasession.GetSelfSignedConfig()
+		if certificateErr != nil {
+			utils.LavaFormatFatal("failed getting a self signed certificate", certificateErr)
+		}
 		serveExecutor = func() error { return httpServer.ServeTLS(lis, "", "") }
 	} else {
 		utils.LavaFormatInfo("Running with disabled TLS configuration")
