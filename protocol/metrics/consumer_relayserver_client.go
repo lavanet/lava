@@ -52,6 +52,10 @@ func NewConsumerRelayserverClient(endPointAddress string) *ConsumerRelayserverCl
 }
 
 func (cuc *ConsumerRelayserverClient) processQueue() {
+	if cuc == nil {
+		return
+	}
+
 	for range cuc.ticker.C {
 		cuc.lock.Lock()
 		if !cuc.isSendQueueRunning && len(cuc.addQueue) > 0 {
@@ -100,6 +104,10 @@ func (cuc *ConsumerRelayserverClient) SetRelayMetrics(relayMetric *RelayMetrics)
 }
 
 func (cuc *ConsumerRelayserverClient) sendRequests(sendQueue []UpdateMetricsRequest) {
+	if cuc == nil {
+		return
+	}
+
 	utils.LavaFormatDebug("CUC: Starting sendRequests")
 
 	if len(sendQueue) == 0 {
@@ -108,7 +116,7 @@ func (cuc *ConsumerRelayserverClient) sendRequests(sendQueue []UpdateMetricsRequ
 		return
 	}
 
-	aggregatedRequests := aggregateRequests(sendQueue)
+	aggregatedRequests := cuc.aggregateRequests(sendQueue)
 
 	if len(aggregatedRequests) == 0 {
 		utils.LavaFormatDebug("CUC: No requests after aggregate")
@@ -150,7 +158,11 @@ func (cuc *ConsumerRelayserverClient) sendRequests(sendQueue []UpdateMetricsRequ
 	utils.LavaFormatDebug(fmt.Sprintf("CUC: Successfully sent requests - CCC iter:%d.", cuc.sendID))
 }
 
-func aggregateRequests(reqs []UpdateMetricsRequest) []UpdateMetricsRequest {
+func (cuc *ConsumerRelayserverClient) aggregateRequests(reqs []UpdateMetricsRequest) []UpdateMetricsRequest {
+	if cuc == nil {
+		return nil
+	}
+
 	// Create a map to hold the aggregated data
 	aggregated := make(map[string]*UpdateMetricsRequest)
 
