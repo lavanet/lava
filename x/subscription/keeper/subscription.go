@@ -85,7 +85,7 @@ func (k Keeper) CreateSubscription(
 				return err
 			}
 		} else if plan.Block != sub.PlanBlock {
-			return k.CreateFutureSubscription(ctx, creator, consumer, planIndex, duration)
+			return utils.LavaFormatWarning("requested plan block has changed, can't extend. Please use the --advance-purchase with the same plan index.", nil)
 		}
 
 		// The total duration may not exceed MAX_SUBSCRIPTION_DURATION, but allow an
