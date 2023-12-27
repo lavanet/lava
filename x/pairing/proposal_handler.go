@@ -70,7 +70,7 @@ func handleUnstakeProposal(ctx sdk.Context, k keeper.Keeper, p *types.UnstakePro
 	details["providers_not_staked_from_before"] = strings.Join(providersNotStaked, ";")
 	details["providers_failed_unstaking"] = strings.Join(providersFailedUnstaking, ";")
 
-	utils.LogLavaEvent(ctx, k.Logger(ctx), "unstake_gov_proposal", details, "Unstake gov proposal performed")
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeProposalEventName, details, "Unstake gov proposal performed")
 
 	return nil
 }

@@ -10,6 +10,7 @@ const (
 	ProviderReportedEventName   = "provider_reported"
 	LatestBlocksReportEventName = "provider_latest_block_report"
 	RejectedCuEventName         = "rejected_cu"
+	UnstakeProposalEventName    = "unstake_gov_proposal"
 )
 
 // unstake description strings

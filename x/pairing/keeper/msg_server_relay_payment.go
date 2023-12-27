@@ -237,7 +237,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if err != nil {
 			reportedProviders := ""
 			for _, p := range relay.UnresponsiveProviders {
-				reportedProviders += p.String()
+				reportedProviders += p.String() + ", "
 			}
 			utils.LavaFormatError("failed to update complainers CU for providers", err,
 				utils.Attribute{Key: "reported_providers", Value: reportedProviders},
