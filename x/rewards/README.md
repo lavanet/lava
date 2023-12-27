@@ -179,3 +179,12 @@ The rewards module does not support any transactions.
 ## Proposals
 
 The rewards module does not support any proposals.
+
+## Events
+
+The rewards module has the following events:
+
+| Event      | When it happens       |
+| ---------- | --------------- |
+| `distribution_pools_refill`     | a successful distribution rewards pools refill   |
+| `provider_bonus_rewards`     | a successful distribution of provider bonus rewards   |
