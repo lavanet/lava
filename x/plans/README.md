@@ -29,8 +29,8 @@ This document focuses on the plans' technical aspects and does not include curre
 
 A plan consists of limitations that are associated with a subscription. A consumer can only use Lava when they purchase a subscription that is subject to the limitations set by the plan. A plan is defined as follows:
 
-```
-struct Plan {
+```go
+type Plan struct {
     index            string  // plan unique index
     block            uint64  // the epoch that this plan was created
     price            Coin    // plan price (in ulava)
@@ -52,8 +52,8 @@ A policy consists of a set of limitations that apply to a plan, a subscription, 
 
 A policy is defined as follows:
 
-```
-struct Policy {
+```go
+type Policy struct {
 	ChainPolicies          []ChainPolicy            // list of policies per chain
 	GeolocationProfile     int32                    // allowed geolocations
 	TotalCuLimit           uint64                   // CU usage limit per month
@@ -74,8 +74,8 @@ A chain policy consists limitations that can be imposed on specific chains (like
 
 A chain policy is defined as follows:
 
-```
-struct ChainPolicy {
+```go
+type ChainPolicy struct {
 	ChainId       string              // chain's unique index        
 	Apis          []string            // allowed APIs
 	Requirements  []ChainRequirement 
@@ -84,8 +84,8 @@ struct ChainPolicy {
 
 A chain requirement is defined as follows:
 
-```
-struct ChainRequirement {
+```go
+type ChainRequirement struct {
 	Collection  types.CollectionData
 	Extensions  []string             
 	Mixed       bool                 
@@ -98,8 +98,8 @@ The `Mixed` field is designed to enable a combination of regular and extension/a
 
 A chain collection is defined as follows:
 
-```
-struct CollectionData {
+```go
+type CollectionData struct {
 	ApiInterface  string
 	InternalPath  string
 	Type          string
@@ -113,7 +113,7 @@ The `InternalPath` field is utilized for chains that have varying RPC API sets i
 
 The `Type` field lets the user define APIs that have different functionalities depending on their type. the valid types are: `GET` and `POST`. An example of such API is Cosmos' `/cosmos/tx/v1beta1/txs` API. If it's sent as a `GET` request, it fetches transactions by event and if it's sent as a `POST` request, it sends a transaction.
 
-The `AddOn` field lets you use additional optional APIs (debug, trace and more). Overall, the add-ons can be: `debug`, `trace` and `convex`.
+The `AddOn` field lets you use additional optional APIs, which can be: `debug`, `trace` and `convex`.
 
 #### Geolocation
 
