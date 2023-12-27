@@ -415,9 +415,6 @@ func (k Keeper) resetSubscriptionDetailsAndAppendEntry(ctx sdk.Context, sub *typ
 
 	err := k.subsFS.AppendEntry(ctx, sub.Consumer, block, sub)
 	if err != nil {
-		// Remove new timer if failed
-		k.subsTS.DelTimerByBlockTime(ctx, expiry, []byte(sub.Consumer))
-
 		// normally would panic! but ok to ignore - the subscription remains
 		// as is with same remaining duration (but not renewed CU)
 		return utils.LavaFormatError("critical: failed to recharge subscription", err,
