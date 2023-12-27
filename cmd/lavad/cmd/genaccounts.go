@@ -28,16 +28,6 @@ const (
 	flagPeriodicNumber = "periodic-Number"
 )
 
-type VestingData struct {
-	StartTime int64         `json:"start_time"`
-	Periods   []InputPeriod `json:"periods"`
-}
-
-type InputPeriod struct {
-	Coins  string `json:"coins"`
-	Length int64  `json:"length_seconds"`
-}
-
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
 func AddGenesisAccountCmd(defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
