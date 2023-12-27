@@ -130,7 +130,6 @@ func (cuc *ConsumerRelayserverClient) sendRequests(sendQueue []UpdateMetricsRequ
 	}
 
 	jsonData, err := json.Marshal(aggregatedRequests)
-
 	if err != nil {
 		utils.LavaFormatDebug("CUC: Error marshalling sendQueue to JSON")
 		return

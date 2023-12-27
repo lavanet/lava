@@ -37,18 +37,18 @@ type RPCConsumerLogs struct {
 	ConsumerRelayserverClient *ConsumerRelayserverClient
 }
 
-func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, ConsumerRelayserverClient *ConsumerRelayserverClient) (*RPCConsumerLogs, error) {
+func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumerRelayserverClient *ConsumerRelayserverClient) (*RPCConsumerLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file")
-		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: ConsumerRelayserverClient}, nil // newRelicApplication is nil safe to use
+		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: consumerRelayserverClient}, nil // newRelicApplication is nil safe to use
 	}
 
 	newRelicAppName := os.Getenv("NEW_RELIC_APP_NAME")
 	newRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
 	if newRelicAppName == "" || newRelicLicenseKey == "" {
 		utils.LavaFormatInfo("New relic missing environment variables")
-		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: ConsumerRelayserverClient}, nil
+		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: consumerRelayserverClient}, nil
 	}
 
 	newRelicApplication, err := newrelic.NewApplication(
@@ -72,7 +72,7 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, Consumer
 		newrelic.ConfigFromEnvironment(),
 	)
 
-	rpcConsumerLogs := &RPCConsumerLogs{newRelicApplication: newRelicApplication, StoreMetricData: false, consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: ConsumerRelayserverClient}
+	rpcConsumerLogs := &RPCConsumerLogs{newRelicApplication: newRelicApplication, StoreMetricData: false, consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: consumerRelayserverClient}
 	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
 	if isMetricEnabled {
 		rpcConsumerLogs.StoreMetricData = true
