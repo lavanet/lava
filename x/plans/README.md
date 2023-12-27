@@ -22,6 +22,7 @@ This document focuses on the plans' technical aspects and does not include curre
 * [Queries](#queries)
 * [Transactions](#transactions)
 * [Proposals](#proposals)
+* [Events](#events)
 
 ## Concepts
 
@@ -248,4 +249,13 @@ A valid `plans-del` JSON proposal format:
     "deposit": "10000000ulava"
 }
 ```
+
+## Events
+
+The plans module has the following events:
+
+| Event      | When it happens       |
+| ---------- | --------------- |
+| `add_new_plan_to_storage`     | a successful addition of a plan   |
+| `del_plan_from_storage`     | a successful deletion of a plan  |
 

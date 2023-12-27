@@ -20,6 +20,7 @@ Note that the plans module is closely connected to the subscription and projects
   * [Project Policy YAML](#project-policy-yaml)
   * [Project Keys YAML](#project-keys-yaml)
 * [Proposals](#proposals)
+* [Events](#events)
 
 ## Concepts
 
@@ -205,3 +206,14 @@ All fields are mandatory.
 ## Proposals
 
 The projects module does not support any proposals.
+
+## Events
+
+The projects module has the following events:
+
+| Event      | When it happens       |
+| ---------- | --------------- |
+| `add_key_to_project_event`     | a successful addition of a project key   |
+| `del_key_from_project_event`     | a successful deletion of a project key  |
+| `set_admin_policy_event`     | a successful set of project's admin policy  |
+| `set_subscription_policy_event`     | a successful set of project's subscription policy  |
