@@ -1226,13 +1226,11 @@ func TestSubBuySamePlanBlockUpdated(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
 
-	consumerAcc, consumerAddr := ts.Account("sub1")
-	consumerBalance := ts.GetBalance(consumerAcc.Addr)
+	_, consumerAddr := ts.Account("sub1")
 	plan := ts.Plan("free")
 
 	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, plan.Index, 1, false, false)
 	require.Nil(t, err)
-	consumerBalance -= plan.Price.Amount.Int64()
 	_, found := ts.getSubscription(consumerAddr)
 	require.True(t, found)
 
