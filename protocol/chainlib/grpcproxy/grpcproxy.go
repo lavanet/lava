@@ -23,7 +23,7 @@ func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string) (*grpc.Server, *http
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
 		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type,x-grpc-web")
-		if req.URL.Path == "/"+healthCheckPath && req.Method == http.MethodGet {
+		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
 			resp.WriteHeader(200)
 			_, _ = resp.Write(make([]byte, 0))
 			return

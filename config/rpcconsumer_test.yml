@@ -9,4 +9,5 @@ endpoints:
       api-interface: grpc
       network-address: 127.0.0.1:3362
       tls-enabled: true
+      health-check-path: "/"
 metrics-listen-address: ":7779"
