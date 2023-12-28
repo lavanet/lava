@@ -960,7 +960,7 @@ func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
 // so caller can control when to cross the desired time).
 func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 	for next := from; months > 0; months -= 1 {
-		next = utils.NextMonth(next)
+		next = next.AddDate(0, 1, 0)
 		delta := next.Sub(ts.BlockTime())
 		if months == 1 {
 			delta -= 5 * time.Second
