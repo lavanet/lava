@@ -4,14 +4,15 @@
 
 This document specifies the spec module of Lava Protocol.
 
-The spec module is responsible for managing Lava's chains specifications. a spec is a struct difining all the api's of a specific chain and its bahaviours. The specs determines the chain properties like block time, finalization distance, imports and more. Adding a spec is done with a proposal on chain with the gov module. The first step of providers and subscriptions to work in lava is having a specification for the wanted chain.
+A specification, also known as a spec, defines the APIs that a provider commits to providing to consumers. An example of a spec is the Ethereum JSON-RPC spec, which defines the properties of the chain, all supported API calls and their compute units, also known as CUs.
+Lava has multiple specs, and participants can add and modify specs using governance proposals. When adding a new blockchain, the first step to support a new chain in lava is to create a spec for it.
 
-This document is focuses on the spec' technical aspects. For more information on chain support in lava see pairing README.
+This document focuses on the specs' technical aspects and does not include current chain support in Lava. For more information on those, please visit Lava's official website.
 
 ## Contents
 * [Concepts](#concepts)
   * [Spec](#spec)
-  * [ApiCollections](#apicollections)
+  * [ApiCollections](#apicollection)
   * [CollectionData](#collectiondata)
   * [ParseDirective](#parsedirective)
   * [Verification](#verification)
@@ -20,40 +21,43 @@ This document is focuses on the spec' technical aspects. For more information on
 * [Queries](#queries)
 * [Transactions](#transactions)
 * [Proposals](#proposals)
+* [Events](#events)
 
 ## Concepts
 
 ### Spec
 
-A chain spec consists of general properties of the chain and a list of interface it supports. To make specs simple to create and maintain specs can import api's from another, for example, X testnet spec can Import from X mainnet spec and thus not need to redifine all of the interfaces.
+A chain spec consists of general properties of the chain and a list of interfaces it supports. To simplify the creation and maintenance of specs, they can import APIs from another spec. For example, the X testnet spec can import from the X mainnet spec, eliminating the need to redefine all of the interfaces.
 
 ```
 type Spec struct {
-	Index                         string                // chain index (index key for the chain)                             
+	Index                         string                // chain unique index                           
 	Name                          string                // description string of the spec
-	Enabled                       bool                  // spec enabled/disable (base specs are usually disabled, like cosmos base specs)
+	Enabled                       bool                  // spec enabled/disable 
 	AverageBlockTime              int64                 // average block time of the chain in msec
 	MinStakeProvider              Coin                  // min stake for a provider to be active in the chain
-	ProvidersTypes                Spec_ProvidersTypes   // determines if the spec is for lava or others 
+	ProvidersTypes                Spec_ProvidersTypes   // determines if the spec is for lava or chains 
 	Imports                       []string              // list of chains to import ApiCollections from
-	ApiCollections                []*ApiCollection      // list of ApiCollections that defines all the interfaces and api's of the chain
+	ApiCollections                []*ApiCollection      // list of ApiCollections that defines all the interfaces and APIs of the chain
 	Contributor                   []string              // list of contributers (public lava address {lava@...})
 	ContributorPercentage         *Dec                  // the percentage of coins the contributers will get from each reward a provider get
 	Shares                        uint64                // factor for bonus rewards at the end of the month (see rewards module)
     AllowedBlockLagForQosSync     int64                 // defines the accepted blocks a provider can be behind the chain without QOS degradation
 	BlockLastUpdated              uint64                // the last block this spec was updated on chain
-    ReliabilityThreshold          uint32                // this determines the amount of data reliability for the chain
+    ReliabilityThreshold          uint32                // this determines the probability of data reliability checks by the consumer
 	DataReliabilityEnabled        bool                  // enables/disables data reliability for the chain
 	BlockDistanceForFinalizedData uint32                              
 	BlocksInFinalizationProof     uint32                              
 }
 ```
-Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`).
-Note, the `Dec` type is from Cosmos-SDK math LegacyDec.
+`Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`).
+`Dec` type is from Cosmos-SDK math (`cosmossdk.io/math`).
+
+A `Contributor` is a member of the Lava community who can earn token commissions by maintaining specs on Lava.
 
 ### ApiCollection
 
-ApiCollection is a struct that defines an interface, for example rest, json etc.., and all of its api's and properties
+ApiCollection is a struct that defines an interface, such as REST, JSON, etc., along with all of its APIs and properties.
 
 ```
 type ApiCollection struct {
@@ -140,7 +144,7 @@ type ParseDirective struct {
 }
 ```
 
-FunctionTag can be one of the following :
+`FunctionTag` can be one of the following :
 ```
 const (
 	FUNCTION_TAG_GET_BLOCKNUM           FUNCTION_TAG = 1 // get latest block number
@@ -153,33 +157,36 @@ const (
 
 ### Verification
 
-Verification is a struct that defines how to verify a specific property of the api collection, for example: verify the chain id of the node.
+The Verification struct defines how to verify a specific property of the API collection. For example, it can be used to verify the chain ID of the node.
 
+```
 type Verification struct {
 	Name           string                               // verification name
-	ParseDirective *ParseDirective                      // [ParseDirective](#parsedirective) to get the the value to verify from the node
+	ParseDirective *ParseDirective                      // ParseDirective to get the the value to verify from the node
 	Values         []*ParseValue                        // expected value we want from the result
 	Severity       Verification_VerificationSeverity    // instructions for what to do if a verification fails
 }
+```
 
 ### Import
 
-Specs can import from other specs, this allows easy creation and maintanance of specs. the specs imports the api collection of the base specs.
-A good example for this is cosmos base specs. all cosmos chains support querie/tx of the bank module and are defines in a cosmos spec (which is disabled), when creating a cosmos base spec we can import the cosmos spec and we get all the api's of the bank module. this makes it so specs need to define only the api's that are unique to the new chain.
+Specs can import from other specs, which allows for easy creation and maintenance of specs. Specs import the api collections of the base specs.
 
-rules:
-* an import cycle of specs is prohibited
-* specs can override/disable/add api's from the imported api collection
-* specs imports the verificaions, they can also be overridden and sometimes it is a must (for example chain-id value must be overwritten)
+A good example of this is the cosmos base specs. All cosmos chains support queries/transactions of the bank module, and these are defined in a cosmos spec (which is disabled since it is a base spec). When creating a cosmos based spec, we can import the cosmos spec and obtain all the APIs of the bank module. This means that specs only need to define the APIs that are unique to the new chain.
+
+Rules:
+* Import cycles of specs are prohibited.
+* Specs can override/disable/add APIs from the imported API collection.
+* Specs also import the verifications, which can be overridden when necessary (for example, the chain-id value must be overwritten).
 
 
 ## Parameters
 
-The plans module does not contain parameters.
+The Spec module does not contain parameters.
 
 ## Queries
 
-The plans module supports the following queries:
+The Spec module supports the following queries:
 
 | Query             | Arguments         | What it does                                  |
 | ----------        | ---------------   | ----------------------------------------------|
@@ -191,11 +198,11 @@ The plans module supports the following queries:
 
 ## Transactions
 
-The plans module does not support any transactions.
+The Spec module does not support any transactions.
 
 ## Proposals
 
-The plans module provides a proposal to add/overwrite a spec to the chain
+The Spec module provides a proposal to add/overwrite a spec to the chain
 
 ```
 lavad tx gov submit-legacy-proposal spec-add <spec_json_1>,<spec_json_2> --from alice <gas-flags>
@@ -279,3 +286,13 @@ A valid `add_spec_json_1` JSON proposal format:
     "deposit": "10000000ulava"
 }
 ```
+
+### Events
+
+
+The plans module has the following events:
+| Event             | When it happens       |
+| ----------        | --------------- |
+| `spec_add`        | a successful addition of a spec  |
+| `spec_modify`     | a successful modification of an existing spec   |
+| `spec_refresh`    | a spec was redreshed since it had a imported spec modified|
