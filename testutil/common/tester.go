@@ -56,9 +56,15 @@ func NewTester(t *testing.T) *Tester {
 
 	// AdvanceBlock() and AdvanceEpoch() always use the current time for the
 	// first block (and ignores the time delta arg if given); So call it here
-	// to generate a first timestamp and avoid any subsequent call with detla
+	// to generate a first timestamp and avoid any subsequent call with delta
 	// argument call having the delta ignored.
 	ts.AdvanceEpoch()
+
+	// On the 28th above day of the month, some tests fail because NextMonth is always truncating the day
+	// back to the 28th, so some timers will not trigger after executing ts.AdvanceMonths(1)
+	if ts.Ctx.BlockTime().Day() >= 26 {
+		ts.AdvanceBlock(5 * 24 * time.Hour)
+	}
 
 	return ts
 }
@@ -954,7 +960,7 @@ func (ts *Tester) AdvanceEpochUntilStale(delta ...time.Duration) *Tester {
 // so caller can control when to cross the desired time).
 func (ts *Tester) AdvanceMonthsFrom(from time.Time, months int) *Tester {
 	for next := from; months > 0; months -= 1 {
-		next = utils.NextMonth(next)
+		next = next.AddDate(0, 1, 0)
 		delta := next.Sub(ts.BlockTime())
 		if months == 1 {
 			delta -= 5 * time.Second
