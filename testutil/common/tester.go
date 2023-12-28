@@ -489,10 +489,12 @@ func (ts *Tester) TxSubscriptionDelProject(creator, projectID string) error {
 }
 
 // TxSubscriptionAutoRenewal: implement 'tx subscription auto-renewal'
-func (ts *Tester) TxSubscriptionAutoRenewal(creator string, enable bool) error {
+func (ts *Tester) TxSubscriptionAutoRenewal(creator, consumer, planIndex string, enable bool) error {
 	msg := &subscriptiontypes.MsgAutoRenewal{
-		Creator: creator,
-		Enable:  enable,
+		Creator:  creator,
+		Consumer: consumer,
+		Enable:   enable,
+		Index:    planIndex,
 	}
 	_, err := ts.Servers.SubscriptionServer.AutoRenewal(ts.GoCtx, msg)
 	return err

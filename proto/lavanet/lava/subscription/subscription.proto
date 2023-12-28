@@ -18,8 +18,9 @@ message Subscription {
   reserved 12;
   string cluster = 13;         // cluster key
   uint64 duration_total = 14;  // continous subscription usage
-  bool auto_renewal = 15; // automatic renewal when the subscription expires
+  reserved 15; // automatic renewal when the subscription expires
   FutureSubscription future_subscription = 16; // future subscription made with buy --advance-purchase
+  string auto_renewal_next_plan = 17; // the next plan to subscribe to. If none is set, then auto renewal is disabled
 }
 
 message FutureSubscription {

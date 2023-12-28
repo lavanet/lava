@@ -47,6 +47,8 @@ message MsgDelProjectResponse {
 message MsgAutoRenewal {
   string creator = 1;
   bool enable = 2;
+  string consumer = 3;
+  string index = 4;
 }
 
 message MsgAutoRenewalResponse {
