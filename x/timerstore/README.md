@@ -4,8 +4,7 @@
 
 This document specifies the `timerstore` module of Lava Protocol.
 
-This module is not a standard module that the user can interact with, except for a few queries for debugging purposes.
-The module is used as a powerful utility for other modules.
+This module, primarily a utility for other modules, is not a standard module with which users can interact, except for a few queries intended for debugging purposes. The module is used as a powerful utility for other modules.
 
 The timerstore allows other modules to create timers, that triggers a callback functions.  
 A timer defined in this module can be of two types: BlockHeight or BlockTime.  
@@ -27,7 +26,7 @@ The callback function can be triggered either at BeginBlock or EndBlock.
 
 ### TimerStore
 
-The `TimerStore` object is the main entity of this module, and hold all of it's logic.
+The `TimerStore` object is the main entity of this module, and holds all of its logic.
 The `timerstore` module's keeper is pretty straight forward:
 
 ```go
@@ -42,7 +41,7 @@ Whenever a module creates a new timer, it will be stored in `timerStoresBegin` o
 
 ### BeginBlock & EndBlock
 
-A module can decide wether to trigger a certain timer at the start of the block, or at the end of it.  
+A module can decide whether to trigger a certain timer at the start of the block or at the end of it.  
 The function `NewTimerStoreBeginBlock` will create a new `TimerStore` that will trigger at the `BeginBlock` when the time is right, and the function `NewTimerStoreEndBlock` will create a new `TimerStore` that will trigger at the `EndBlock` when the time is right.
 
 ### BlockHeight & BlockTime
@@ -50,18 +49,18 @@ The function `NewTimerStoreBeginBlock` will create a new `TimerStore` that will 
 After calling the function `NewTimerStoreBeginBlock` or `NewTimerStoreEndBlock` the calling procedure can use the returned `TimerStore` object to set the callback of the timer. The callback has to be of the signature `func(ctx sdk.Context, key, data []byte)`, more on that in the next section.
 
 To set the callback, the procedure needs to call `WithCallbackByBlockHeight` or `WithCallbackByBlockTime`.
-The `WithCallbackByBlockHeight` function will add the callback to the `TimerStore` object, under the `BlockHeight` kind, and the `WithCallbackByBlockHeight` function will add the callback to the `TimerStore` object, under the `BlockTime` kind.
+The `WithCallbackByBlockHeight` function will add the callback to the `TimerStore` object, under the `BlockHeight` kind, and the `WithCallbackByBlockTime` function will add the callback to the `TimerStore` object, under the `BlockTime` kind.
 
 The `BlockHeight` callbacks, can be triggered at a given block, and the `BlockTime` callback can be triggered at the first block that it's time is past the given time.
 
 ### Trigger
 
 As stated in the previous section, timers can be one of two kinds: `BlockHeight` or `BlockTime`.  
-After a callback is created in the `TimerStore`, a procedure can create a new timer for it, depending on the kind.
+Once a callback is created in the TimerStore, a procedure can then create a new timer corresponding to its kind.
 
 For `BlockHeight` callbacks, the function `AddTimerByBlockHeight(ctx sdk.Context, block uint64, key, data []byte)` will create a timer that will trigger at `block`, with the given `key` and `data`.
 
-For `BlockTimer` callbacks, the function `AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, key, data []byte)` will create a timer that will trigger at the first block, which has a time that passed the given `timestamp`, with the given `key` and `data`.
+For `BlockTime` callbacks, the function `AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, key, data []byte)` will create a timer that will trigger at the first block, which has a time that passed the given `timestamp`, with the given `key` and `data`.
 
 Once the timer is triggered, it is deleted. So for a recurring timer, a new timer is need to be created every time it's triggered.
 
