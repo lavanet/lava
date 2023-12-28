@@ -5,9 +5,9 @@
 This document specifies the subscription module of Lava Protocol.
 
 The subscription module is responsible for managing Lava's consumer subscription.  
-When a consumer wants to use Lava, they need to purchase a subscription.  
-The subscription is monthly - meaning - it starts in the next block after it was bought, and ends 1 month later.  
-If the user has bought more than 1 month, the subscription will reset at the end of each month until it expires.  
+To use Lava, consumers must purchase a subscription.  
+The subscription operates on a monthly basis, starting from the next block after purchase and ending one month later.  
+If a user purchases a subscription for more than one month, it will reset at the end of each month until its expiration.  
 When a subscription is reset, the monthly left CUs is set to the plan's monthly CU.
 
 A subscription can be renewed, manually or automatically.  
@@ -39,7 +39,7 @@ To fully understand this module, it is highly recommended to read Plans and Proj
 ### Subscription
 
 In order for a consumer to purchase a subscription, they first must choose a plan to use.  
-Once a plan has been chosen, to perform the purchase, they can use the transaction command:
+After choosing a plan, a consumer can perform the purchase using the transaction command:
 
 ```bash
 lavad tx subscription buy [plan-index] [optional: consumer] [optional: duration(months)] [flags]
@@ -76,7 +76,7 @@ struct FutureSubscription {
 ```
 
 When a consumer buys a subscription, an admin project is automatically generated for them.  
-When the creator and the consumer are not equal - meaning - someone is buying a subscription for somebody else, the tokens will be taken out of the creator's account.
+When the creator and consumer are different individuals, indicating that someone is purchasing a subscription for another user, the tokens will be taken out of the creator's account.
 
 Subscriptions are saved in a fixation store (see [FixationStore](https://github.com/lavanet/lava/blob/main/x/fixationstore/README.md) module for reference).
 
@@ -97,7 +97,7 @@ Here's a high-level flow of the function:
 2. **Check Subscription Duration:**
 
    - If the subscription’s remaining duration (`DurationLeft`) is zero:
-     - This is a bug! Log this and extend by 1 month to for smoother operation and investigation.
+     - If this occurs, it's considered a bug. Log the issue and extend the subscription by one month for smoother operation and investigation.
    - If there is still time left (`DurationLeft` > 0):
      - reduce it by one to reflect the passage of a month.
      - Increase the total duration (`DurationTotal`) by one.
@@ -116,10 +116,11 @@ Here's a high-level flow of the function:
 
 ### Subscription Upgrade
 
-A subscription can be upgraded to a more expensive plan. That also means, that if a consumer buys a plan, and then decides to downgrade their plan, the way to do it is either buy more months in the cheaper subscription, so the amount that the consumer will pay will be larger than the one
-using the command the same command as shown above, with the only caveat - the `plan-index` must be different than the currently active subscription's plan, and, it must be with a higher price.
+A subscription can be upgraded to a more expensive plan.
 
-The tokens will be taken out of the creator account immediately, and the new plan will take effect in the next epoch.  
+That also means, that if a consumer buys a plan, and then decides to downgrade their plan, the way to do it is either buy more months in the cheaper subscription, so the amount that the consumer will pay will be larger than the one using the same command as shown above, with the only caveat - the `plan-index` must be different than the currently active subscription's plan, and, it must be with a higher price.
+
+Tokens are deducted from the creator's account immediately, and the new plan becomes effective in the next epoch.  
 The old subscription will still be saved in the fixation store, for buffering purposes (the amount of blocks that the subscription will be saved for, is determined in the `BlocksToSave` function, under the [EpochStorage](https://github.com/lavanet/lava/blob/main/x/epochstorage/README.md) module).
 
 More ways to upgrade are by making an [Advance Purchase](#advance-purchase) or enabling [Auto Renewal](#auto-renewal).
@@ -163,7 +164,7 @@ Here, users can decide to renew their subscription to any plan index, wether it'
 The tokens will be taken from the user's account only when at the end of each month, prior to renewing the subscription, and for one month only.  
 If the user does not have sufficient funds for the renewal, the subscription will expire.
 
-I a user has a future subscription configured, and the auto renewal is set as well, then the auto renewal will take effect only when the future subscription will expire.
+If a user has a future subscription configured and auto-renewal is also set, then auto-renewal will take effect only after the future subscription expires.
 
 ## Parameters
 
@@ -187,12 +188,12 @@ All the transactions below require setting the `--from` flag and gas related fla
 
 The subscription module supports the following transactions:
 
-| Transaction     | Arguments                                                                               | What it does                                  |
-| --------------- | --------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `add-project`   | project-name (string)                                                                   | Add a new project to a subscription           |
-| `auto-renewal ` | [true, false] (bool), plan-index (string, optional), consumer (optional)                | Enable/Disable auto-renewal to a subscription |
-| `buy`           | plan-index (string), consumer (string, optional), duration (in months) (int , optional) | Buy a service plan                            |
-| `del-project`   | project-name (string)                                                                   | Delete a project from a subscription          |
+| Transaction    | Arguments                                                                               | What it does                                  |
+| -------------- | --------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `add-project`  | project-name (string)                                                                   | Add a new project to a subscription           |
+| `auto-renewal` | [true, false] (bool), plan-index (string, optional), consumer (optional)                | Enable/Disable auto-renewal to a subscription |
+| `buy`          | plan-index (string), consumer (string, optional), duration (in months) (int , optional) | Buy a service plan                            |
+| `del-project`  | project-name (string)                                                                   | Delete a project from a subscription          |
 
 Note that the `buy` transaction also support advance purchase and immediate upgrade. Refer to the help section of the commands for more details.
 
