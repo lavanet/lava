@@ -196,6 +196,7 @@ func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (pa
 		utils.LavaFormatDebug("transaction results", utils.Attribute{Key: "jsonParsedResult", Value: jsonParsedResult})
 	}
 	resultData, err := common.ParseTransactionResult(jsonParsedResult)
+	utils.LavaFormatDebug("Sent Transaction", utils.LogAttr("Hash", string(resultData.Txhash)))
 	if err != nil {
 		return common.TxResultData{}, err
 	}
@@ -218,6 +219,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 			result, err := clientCtx.Client.Tx(ctx, resultData.Txhash, false)
 			cancel()
 			if err == nil {
+				utils.LavaFormatDebug("Tx Found successfully on chain!", utils.LogAttr("Hash", string(resultData.Txhash)))
 				txResultChan <- result
 				return
 			}
