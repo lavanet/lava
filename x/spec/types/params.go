@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	KeyMaxCU            = []byte("MaxCU")
-	DefaultMaxCU uint64 = 10000
+	KeyMaxCU                         = []byte("MaxCU")
+	KeyBlackListExpeditedMsgs        = []byte("BlacklistedExpeditedMsgs")
+	DefaultMaxCU              uint64 = 10000
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)
@@ -20,25 +21,30 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(maxCU uint64) Params {
-	return Params{MaxCU: maxCU}
+func NewParams(maxCU uint64, blacklistedExpeditedMsgs []string) Params {
+	return Params{MaxCU: maxCU, BlacklistedExpeditedMsgs: blacklistedExpeditedMsgs}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultMaxCU)
+	return NewParams(DefaultMaxCU, []string{})
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyMaxCU, &p.MaxCU, validateMaxCU),
+		paramtypes.NewParamSetPair(KeyBlackListExpeditedMsgs, &p.BlacklistedExpeditedMsgs, validateBlacklistedExpeditedMsgs),
 	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
 	if err := validateMaxCU(p.MaxCU); err != nil {
+		return err
+	}
+
+	if err := validateBlacklistedExpeditedMsgs(p.BlacklistedExpeditedMsgs); err != nil {
 		return err
 	}
 
@@ -59,6 +65,24 @@ func validateMaxCU(v interface{}) error {
 
 	// TODO implement validation
 	_ = maxCU
+
+	return nil
+}
+
+func validateBlacklistedExpeditedMsgs(v interface{}) error {
+	blacklistedExpeditedMsgs, ok := v.([]string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// check for duplicates
+	blacklistedExpeditedMsgsMap := make(map[string]struct{})
+	for _, msg := range blacklistedExpeditedMsgs {
+		if _, ok := blacklistedExpeditedMsgsMap[msg]; ok {
+			return fmt.Errorf("duplicate message in BlacklistedExpeditedMessages: %s", msg)
+		}
+		blacklistedExpeditedMsgsMap[msg] = struct{}{}
+	}
 
 	return nil
 }
