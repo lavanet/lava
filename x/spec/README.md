@@ -33,6 +33,8 @@ This document focuses on the specs' technical aspects and does not include curre
 ### Spec
 
 A chain spec consists of general properties of the chain and a list of interfaces it supports. To simplify the creation and maintenance of specs, they can import APIs from another spec. For example, the X testnet spec can import from the X mainnet spec, eliminating the need to redefine all of the interfaces.
+For more instructions on how to build a spec visit: https://github.com/lavanet/lava/blob/main/cookbook/README.md
+
 
 ```go
 type Spec struct {
@@ -170,7 +172,7 @@ This struct defines how to extract the block number from the api request.
 type BlockParser struct {
 	ParserArg    []string    // describes where is the block number in the request
 	ParserFunc   PARSER_FUNC // how to parse the request
-	DefaultValue string      // the expected defualt value
+	DefaultValue string      // the expected default value
 	Encoding     string      // number encoding (base64|Hex)
 }
 ```
