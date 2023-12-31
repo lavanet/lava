@@ -85,31 +85,18 @@ Those tokens are later on distributed among the providers that served that consu
 
 One of the primary processes within this module involves the function `advanceMonth`, which is invoked upon the expiration of a timer set by the subscription. This function holds significance as it manages the logic that occurs at the conclusion of each month of a subscription.
 
-Here's a high-level flow of the function:
+The advanceMonth function plays a crucial role in the subscription lifecycle, performing several important tasks:
 
-1. **Update the CU Tracker Timer:**
+1. **CU Tracker Timer Update**: It updates the CU tracker timer, ensuring accurate tracking of Compute Units (CUs) for the subscription.
 
-   - Add a CU tracker timer for the subscription. (More information about the CU tracker can be found in the [pairing module](https://github.com/lavanet/lava/blob/main/x/pairing/README.md))
+2. **Subscription Duration Management**: The function checks the subscription's remaining duration. If there is time left, it deducts one month from the remaining duration and updates the total duration count, reflecting the passage of time. The details of the subscription, including CU allocations, are reset for the upcoming month.  
+   In cases where the subscription has reached its end (no more remaining months), different scenarios are addressed:
 
-2. **Check Subscription Duration:**
+   - Activation of a future subscription: If a future subscription is queued, it becomes active, renewing the service.
+   - Auto-renewal: If auto-renewal is enabled, an attempt is made to renew the subscription for another month. If this fails, the expired subscription is removed.
+   - No future subscription or auto-renewal: The expired subscription is removed from the system.
 
-   - If the subscription’s remaining duration (`DurationLeft`) is zero:
-     - If this occurs, it's considered a bug. Log the issue and extend the subscription by one month for smoother operation and investigation.
-   - If there is still time left (`DurationLeft` > 0):
-     - reduce it by one to reflect the passage of a month.
-     - Increase the total duration (`DurationTotal`) by one.
-     - Reset and update the subscription details.
-   - If no time is left (`DurationLeft` = 0):
-     - Subscription is expired. Refer to the next step.
-
-3. **Handle Special Cases for Subscriptions:**
-
-   - If a future subscription is set:
-     - Activate the future subscription by updating current subscription details with those of the future subscription and restart the subscription.
-   - Else, if auto-renewal is enabled:
-     - Attempt to renew the subscription for another month.
-     - If renewal fails, remove the expired subscription.
-   - If there is no future subscription or auto-renewal, remove the expired subscription.
+3. **Special Cases Handling**: The function also handles special cases, such as the transition to a future subscription or the implementation of auto-renewal, ensuring continuous service or appropriate termination of the subscription.
 
 ### Subscription Upgrade
 
@@ -117,7 +104,7 @@ A subscription can be upgraded to a more expensive plan.
 
 That also means, that if a consumer buys a plan, and then decides to downgrade their plan, the way to do it is either buy more months in the cheaper subscription, so the amount that the consumer will pay will be larger than the one using the same command as shown above, with the only caveat - the `plan-index` must be different than the currently active subscription's plan, and, it must be with a higher price.
 
-Tokens are deducted from the creator's account immediately, and the new plan becomes effective in the next epoch.  
+Tokens are deducted from the creator's account immediately, and the new plan becomes effective in the next epoch.
 
 More ways to upgrade are by making an [Advance Purchase](#advance-purchase) or enabling [Auto Renewal](#auto-renewal).
 
