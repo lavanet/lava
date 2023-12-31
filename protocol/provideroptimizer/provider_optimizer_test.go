@@ -234,6 +234,7 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 	pertrubationPercentage := 0.0
 	syncBlock := uint64(requestBlock)
 	chosenIndex := rand.Intn(providersCount)
+
 	for i := range providersGen.providersAddresses {
 		time.Sleep(4 * time.Millisecond)
 		// give all providers a worse availability score
