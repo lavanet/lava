@@ -92,7 +92,7 @@ Here's a high-level flow of the function:
 
 1. **Update the CU Tracker Timer:**
 
-   - Add a CU tracker timer for the subscription.
+   - Add a CU tracker timer for the subscription. (More information about the CU tracker can be found in the [pairing module](https://github.com/lavanet/lava/blob/main/x/pairing/README.md))
 
 2. **Check Subscription Duration:**
 
