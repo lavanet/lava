@@ -45,5 +45,4 @@ func TestQosReport(t *testing.T) {
 	require.True(t, qos2Res.GT(qos4Res))
 
 	require.True(t, qos4Res.LT(qos3Res))
-
 }
