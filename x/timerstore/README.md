@@ -14,10 +14,15 @@ The callback function can be triggered either at BeginBlock or EndBlock.
 ## Contents
 
 - [Concepts](#concepts)
-  - [TimerStore](#timerstore)
-  - [BeginBlock & EndBlock](#beginblock--endblock)
-  - [BlockHeight & BlockTime](#blockheight--blocktime)
-  - [Trigger](#trigger)
+  - [Creating the TimerStore](#creating-the-timerstore)
+    - [TimerStore Object](#timerstore-object)
+    - [Initialization Methods](#initialization-methods)
+    - [Setting Callbacks](#setting-callbacks)
+  - [Using the TimerStore](#using-the-timerstore)
+    - [Overview of Timer Usage](#overview-of-timer-usage)
+    - [Timer Types](#timer-types)
+    - [Adding Timers to TimerStore](#adding-timers-to-timerstore)
+    - [Timer Lifecycle](#timer-lifecycle)
 - [Parameters](#parameters)
 - [Queries](#queries)
 - [Transactions](#transactions)
@@ -25,10 +30,11 @@ The callback function can be triggered either at BeginBlock or EndBlock.
 
 ## Concepts
 
-### TimerStore
+### Creating the TimerStore
 
-The `TimerStore` object is the main entity of this module, and holds all of its logic.
-The `timerstore` module's keeper is pretty straight forward:
+#### TimerStore Object
+
+The core of this module is the `TimerStore` object, encapsulating all essential logic:
 
 ```go
 type Keeper struct {
@@ -38,45 +44,58 @@ type Keeper struct {
 }
 ```
 
-Whenever a module creates a new timer, it will be stored in `timerStoresBegin` or in `timerStoresEnd`, depending on the function that was used to create the timer.
+This structure reflects the dual nature of timer triggers: at the beginning or end of a block.
 
-### BeginBlock & EndBlock
+#### Initialization Methods
 
-A module can decide whether to trigger a certain timer at the start of the block or at the end of it.  
-The function `NewTimerStoreBeginBlock` will create a new `TimerStore` that will trigger at the `BeginBlock` when the time is right, and the function `NewTimerStoreEndBlock` will create a new `TimerStore` that will trigger at the `EndBlock` when the time is right.
+To initialize a `TimerStore`, use `NewTimerStoreBeginBlock` or `NewTimerStoreEndBlock`. These methods set up the store to trigger timers at either the start or end of a block, respectively.
 
-### BlockHeight & BlockTime
+#### Setting Callbacks
 
-After calling the function `NewTimerStoreBeginBlock` or `NewTimerStoreEndBlock` the calling procedure can use the returned `TimerStore` object to set the callback of the timer. The callback has to be of the signature `func(ctx sdk.Context, key, data []byte)`, more on that in the next section.
+Callbacks are set using `WithCallbackByBlockHeight` for block-height-based timers or `WithCallbackByBlockTime` for time-based timers. These methods link the specified callback function to the timer, ensuring it's executed at the right moment.
 
-To configure the callback for a timer, one must invoke either `WithCallbackByBlockHeight` or `WithCallbackByBlockTime`, depending on the timer type, like so:
+**Note:** The following code snippet demonstrates a common pattern used in the initialization of a timer in the codebase. This approach typically involves creating a `TimerStore` instance and immediately configuring its callback function, streamlining the setup process:
 
 ```go
-// For a BlockHeight timer
-timerStore.WithCallbackByBlockHeight(func(ctx sdk.Context, key, data []byte) {
-	// callback logic for BlockHeight timer
-})
+callbackFunction := func(ctx sdk.Context, key, data []byte) {
+	// callback logic here
+}
 
-// For a BlockTime timer
-timerStore.WithCallbackByBlockTime(func(ctx sdk.Context, key, data []byte) {
-	// callback logic for BlockTime timer
-})
+timerStore := timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, timerPrefix).
+	WithCallbackByBlockTime(callbackFunction)
 ```
 
-The `WithCallbackByBlockHeight` function will add the callback to the `TimerStore` object, under the `BlockHeight` kind, and the `WithCallbackByBlockTime` function will add the callback to the `TimerStore` object, under the `BlockTime` kind.
+### Using the TimerStore
 
-The `BlockHeight` callbacks, can be triggered at a given block, and the `BlockTime` callback can be triggered at the first block that it's time is past the given time.
+#### Overview of Timer Usage
 
-### Trigger
+After establishing the `TimerStore`, it's used to create and manage individual timers. This section delves into the operational aspect of the `TimerStore`.
 
-As stated in the previous section, timers can be one of two kinds: `BlockHeight` or `BlockTime`.  
-Once a callback is created in the TimerStore, a procedure can then create a new timer corresponding to its kind.
+#### Timer Types
 
-For `BlockHeight` callbacks, the function `AddTimerByBlockHeight(ctx sdk.Context, block uint64, key, data []byte)` will create a timer that will trigger at `block`, with the given `key` and `data`.
+There are two types of timers:
 
-For `BlockTime` callbacks, the function `AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, key, data []byte)` will create a timer that will trigger at the first block, which has a time that passed the given `timestamp`, with the given `key` and `data`.
+- `BlockHeight` timers trigger based on the count of blocks.
+- `BlockTime` timers operate based on elapsed time in seconds.
 
-Once the timer is triggered, it is deleted. So for a recurring timer, a new timer is need to be created every time it's triggered.
+Each type serves different use cases, offering flexibility in scheduling tasks.
+
+#### Adding Timers to TimerStore
+
+Timers are added to the `TimerStore` via `AddTimerByBlockHeight` and `AddTimerByBlockTime`. These functions create timers that will trigger either at a specified block height or after a set time:
+
+```go
+// Add a BlockHeight timer
+AddTimerByBlockHeight(ctx sdk.Context, block uint64, key, data []byte)
+
+// Add a BlockTime timer
+AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, key, data []byte)
+
+```
+
+#### Timer Lifecycle
+
+Once set, a timer remains active until triggered, after which it's automatically deleted. For recurring events, it's necessary to create a new timer each time.
 
 ## Parameters
 
