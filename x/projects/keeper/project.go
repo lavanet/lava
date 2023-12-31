@@ -327,7 +327,6 @@ func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *p
 			)
 		}
 	}
-
 	return nil
 }
 

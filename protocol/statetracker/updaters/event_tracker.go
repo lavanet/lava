@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
@@ -141,8 +143,13 @@ func (et *EventTracker) getLatestSpecModifyEvents(latestBlock int64) (updated bo
 	if et.latestUpdatedBlock != latestBlock {
 		return false, utils.LavaFormatWarning("event results are different than expected", nil, utils.Attribute{Key: "requested latestBlock", Value: latestBlock}, utils.Attribute{Key: "current latestBlock", Value: et.latestUpdatedBlock})
 	}
+	eventsListToListenTo := []string{
+		utils.EventPrefix + spectypes.SpecModifyEventName,
+		utils.EventPrefix + spectypes.SpecRefreshEventName,
+	}
 	for _, event := range et.blockResults.EndBlockEvents {
-		if event.Type == utils.EventPrefix+spectypes.SpecModifyEventName {
+		if slices.Contains(eventsListToListenTo, event.Type) {
+			utils.LavaFormatInfo("Spec update event identified", utils.LogAttr("Event", event.Type))
 			return true, nil
 		}
 	}

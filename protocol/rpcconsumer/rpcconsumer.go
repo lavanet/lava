@@ -159,6 +159,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
+	policyUpdaters := make(map[string]*updaters.PolicyUpdater) // per chainId we have one policy updater
 
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
@@ -170,12 +171,24 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				return err
 			}
 			chainID := rpcEndpoint.ChainID
+			// create policyUpdaters per chain
+			if policyUpdater, ok := policyUpdaters[rpcEndpoint.ChainID]; ok {
+				err := policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
+				if err != nil {
+					errCh <- err
+					return utils.LavaFormatError("failed adding policy setter", err)
+				}
+			} else {
+				policyUpdaters[rpcEndpoint.ChainID] = updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint)
+			}
+			// register for spec updates
 			err = rpcc.consumerStateTracker.RegisterForSpecUpdates(ctx, chainParser, *rpcEndpoint)
 			if err != nil {
 				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
 				return err
 			}
+
 			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 			var optimizer *provideroptimizer.ProviderOptimizer
 			var consumerConsistency *ConsumerConsistency
@@ -261,6 +274,11 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 
 	for err := range errCh {
 		return err
+	}
+
+	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
+	for _, policyUpdater := range policyUpdaters {
+		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater)
 	}
 
 	utils.LavaFormatInfo("RPCConsumer done setting up all endpoints, ready for requests")
