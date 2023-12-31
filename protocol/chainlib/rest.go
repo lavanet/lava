@@ -331,6 +331,10 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 		query := "?" + string(fiberCtx.Request().URI().QueryString())
 		path := "/" + fiberCtx.Params("*")
+		if path == apil.endpoint.HealthCheckPath {
+			fiberCtx.Status(http.StatusOK)
+			return fiberCtx.SendString("Health status OK")
+		}
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 

@@ -8,6 +8,7 @@ import (
 
 const (
 	MAX_SUBSCRIPTION_DURATION = 12 // max duration of subscription in months
+	AUTO_RENEWAL_PLAN_NONE    = "none"
 )
 
 // ValidateSubscription validates a subscription object fields
@@ -37,4 +38,8 @@ func (sub Subscription) ValidateSubscription() error {
 	}
 
 	return nil
+}
+
+func (sub Subscription) IsAutoRenewalOn() bool {
+	return sub.AutoRenewalNextPlan != AUTO_RENEWAL_PLAN_NONE
 }

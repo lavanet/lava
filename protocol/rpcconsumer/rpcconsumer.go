@@ -278,6 +278,9 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 	}
 	for _, endpoint := range endpoints {
 		endpoint.Geolocation = geolocation
+		if endpoint.HealthCheckPath == "" {
+			endpoint.HealthCheckPath = common.DEFAULT_HEALTH_PATH
+		}
 	}
 	return
 }

@@ -872,7 +872,7 @@ func TestPairingUniformDistribution(t *testing.T) {
 	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
 
 	// make the subscription auto-renew so it won't expire after many (pairing) epochs
-	err := ts.TxSubscriptionAutoRenewal(clientAddr, true)
+	err := ts.TxSubscriptionAutoRenewal(clientAddr, clientAddr, ts.plan.Index, true)
 	require.NoError(t, err)
 
 	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
@@ -899,7 +899,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// make the subscription auto-renew so it won't expire after many (pairing) epochs
-	err = ts.TxSubscriptionAutoRenewal(clientAddr, true)
+	err = ts.TxSubscriptionAutoRenewal(clientAddr, clientAddr, ts.plan.Index, true)
 	require.Nil(t, err)
 
 	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
