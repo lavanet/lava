@@ -472,6 +472,10 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 	precision := WANTED_PRECISION
 	latencyScore := turnFloatToDec(providerData.Latency.Num/providerData.Latency.Denom, precision)
 	syncScore := turnFloatToDec(providerData.Sync.Num/providerData.Sync.Denom, precision)
+	// if our sync score is un initialized due to lack of providers
+	if syncScore.IsZero() {
+		syncScore = sdk.OneDec()
+	}
 	availabilityScore := turnFloatToDec(providerData.Availability.Num/providerData.Availability.Denom, precision)
 	ret := &pairingtypes.QualityOfServiceReport{
 		Latency:      latencyScore,
