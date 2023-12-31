@@ -227,7 +227,7 @@ Here is the workflow for Lava's payment mechanism:
 
 #### CU Tracking
 
-The goal of CU tracking is to keep records of serviced CUs by the providers to a specific subscription, in order to determine the amount of payment they should receive at the month expiry of said subscription. When a relay payment transaction occurs, the number of CUs associated with each relay is counted and saved under the provider who initiated the transaction. At the end of each month, the CU tracker is reset for all providers.
+The goal of CU tracking is to keep records of serviced CUs by the providers to a specific subscription, in order to determine the amount of payment they should receive at the end of the month of said subscription. When a relay payment transaction occurs, the number of CUs associated with each relay is counted and saved under the provider who initiated the transaction. At the end of each month, the CU tracker is reset for all providers.
 
 #### Providers Payment
 
