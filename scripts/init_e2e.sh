@@ -58,17 +58,17 @@ echo ---- Subscription plan upgrade ----
 wait_next_block
 # test we have the plan active.
 current_plan=$(lavad q subscription current $(lavad keys show user1 -a)) # store current plan in a different variable to print in case of an error
-echo "current plan: $current_plan"
+echo "current plan before upgrade: $current_plan"
 plan_index=$(lavad q subscription current $(lavad keys show user1 -a) | yq .sub.plan_index)
 if [ "$plan_index" != "EmergencyModePlan" ]; then "echo subscription ${user1addr}: wrong plan index $plan_index .sub.plan_index doesn't contain EmergencyModePlan"; exit 1; fi
 # buy the upgraded subscription
 lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-# wait for the new subscription to take effect
+# wait for the new subscription to take effect (1 epoch + 1 block as changes happen to subscription module after epochstorage module on the begin block events)
 sleep_until_next_epoch
-
+wait_next_block
 # validate the new subscription is the default plan and not emergency mode plan.
 current_plan=$(lavad q subscription current $(lavad keys show user1 -a)) # store current plan in a different variable to print in case of an error
-echo "current plan: $current_plan"
+echo "current plan after upgrade: $current_plan"
 plan_index=$(lavad q subscription current $(lavad keys show user1 -a) | yq .sub.plan_index)
 if [ "$plan_index" != "DefaultPlan" ]; then "echo subscription ${user1addr}: wrong plan index $plan_index .sub.plan_index doesn't contain DefaultPlan"; exit 1; fi
 
