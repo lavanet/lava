@@ -7,8 +7,10 @@ This document specifies the subscription module of Lava Protocol.
 The subscription module is responsible for managing Lava's consumer subscription.  
 To use Lava, consumers must purchase a subscription.  
 The subscription operates on a monthly basis, starting from the next block after purchase and ending one month later.  
-If a user purchases a subscription for more than one month, it will reset at the end of each month until its expiration.  
-When a subscription is reset, the monthly left CUs is set to the plan's monthly CU.
+If a user purchases a subscription for more than one month, it will reset at the end of each month until its expiration, with the monthly remaining Compute Units (CUs) being reset to the plan's monthly CU allocation.
+
+Subscriptions are subject to limitations set by the current policy, including a cap on monthly Compute Units (CUs).  
+These CUs reset with each new subscription month, ensuring users get a fresh allocation based on their plan.
 
 A subscription can be renewed, manually or automatically.  
 Additionally, a subscription plan can be bought in advance for months ahead.
