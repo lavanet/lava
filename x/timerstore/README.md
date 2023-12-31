@@ -4,9 +4,9 @@
 
 This document specifies the `timerstore` module of Lava Protocol.
 
-This module, primarily a utility for other modules, is not a standard module with which users can interact, except for a few queries intended for debugging purposes. The module is used as a powerful utility for other modules.
+This module primarily serves as a utility for other modules in the Lava Protocol. It's not designed for direct user interaction, except for a limited set of queries intended for debugging. As such, it functions as an essential support utility within the protocol's ecosystem.
 
-The timerstore allows other modules to create timers, that triggers a callback functions.  
+The `timerstore` allows other modules to create timers, that triggers a callback functions.  
 A timer defined in this module can be of two types: BlockHeight or BlockTime.  
 The callback function can be triggered either at BeginBlock or EndBlock.
 
