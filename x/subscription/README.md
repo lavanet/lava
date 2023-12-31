@@ -39,7 +39,7 @@ To fully understand this module, it is highly recommended to read Plans and Proj
 ### Subscription
 
 In order for a consumer to purchase a subscription, they first must choose a plan to use.  
-After choosing a plan, a consumer can perform the purchase using the transaction command:
+After choosing a plan, a consumer can perform the purchase using the buy transaction command:
 
 ```bash
 lavad tx subscription buy [plan-index] [optional: consumer] [optional: duration(months)] [flags]
