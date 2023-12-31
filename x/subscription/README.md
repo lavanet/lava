@@ -154,7 +154,7 @@ Users can decide on the duration of this future subscription, and they'll pay th
 If the plan changes during that period, users who bought this plan before it changed using the `--advance-purchase` flag, they won't be affected by that change.
 
 If a user tries to replace the future subscription with another, the new plan's price must be higher, considering the amount of days bought.
-Meaning, if user originally bough X days of a plan with price A, and now wants to advance purchase Y days of a different plan with price B, than the following must be suffice:
+Meaning, if user originally bought X days of a plan with price A, and now wants to advance purchase Y days of a different plan with price B, than the following must be suffice:
 
 $$
 Y * B > X * A
