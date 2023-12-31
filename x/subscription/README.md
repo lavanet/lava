@@ -28,7 +28,6 @@ To fully understand this module, it is highly recommended to read Plans and Proj
   - [Subscription Upgrade](#subscription-upgrade)
   - [Subscription Renewal](#subscription-renewal)
   - [Advance Purchase](#advance-purchase)
-  - [Auto Renewal](#auto-renewal)
 - [Parameters](#parameters)
 - [Queries](#queries)
 - [Transactions](#transactions)
@@ -39,7 +38,7 @@ To fully understand this module, it is highly recommended to read Plans and Proj
 ### Subscription
 
 In order for a consumer to purchase a subscription, they first must choose a plan to use.  
-After choosing a plan, a consumer can perform the purchase using the buy transaction command:
+After choosing a plan, a consumer can perform the purchase using the `buy` transaction command:
 
 ```bash
 lavad tx subscription buy [plan-index] [optional: consumer] [optional: duration(months)] [flags]
@@ -127,11 +126,22 @@ More ways to upgrade are by making an [Advance Purchase](#advance-purchase) or e
 ### Subscription Renewal
 
 Users have the option to renew their subscription either manually or automatically. To renew manually, users can utilize the same command as demonstrated above. They simply need to adjust the 'plan-index' to match the plan of their currently active subscription. Additionally, they can set the duration, allowing the new duration to be added to the remaining duration of the active subscription.
-To renew automatically, please refer to [Auto Renewal](#auto-renewal).
+
+To renew automatically, users can use the subscription `auto-renewal` transaction command:
+
+```bash
+lavad tx subscription auto-renewal [true/false] [optional: plan-index] [optional: consumer] [flags]
+```
+
+With auto renewal, users have the flexibility to renew their subscription to any plan, regardless of whether it's cheaper or more expensive than the current active plan. The necessary tokens for renewal are deducted from the user's account at the end of each month, covering the renewal for just one month at a time. If sufficient funds are not available, the subscription will expire.
+
+To disable auto-renewal, users can simply set the `auto-renewal` command to `false`. This will stop the subscription from renewing automatically at the end of its current cycle.
+
+Furthermore, if a user has configured a future subscription and also set auto renewal, the auto renewal will only take effect after the future subscription expires.
 
 ### Advance Purchase
 
-Users can purchase several months of subscription in advance, using the subscription buy transaction command like so:
+Users can purchase several months of subscription in advance, using the subscription `buy` transaction command like so:
 
 ```bash
 lavad tx subscription buy --advance-purchase [plan-index] [optional: consumer] [optional: duration(months)] [flags]
@@ -149,21 +159,6 @@ Meaning, if user originally bough X days of a plan with price A, and now wants t
 $$
 Y * B > X * A
 $$
-
-### Auto Renewal
-
-Users can decide to if they want the subscription to auto-renew itself every month, using the subscription buy transaction command:
-
-```bash
-lavad tx subscription auto-renewal [true/false] [optional: plan-index] [optional: consumer] [flags]
-```
-
-Here, users can decide to renew their subscription to any plan index, wether it's cheaper or more expensive than the current active subscription's plan.
-
-The tokens will be taken from the user's account only when at the end of each month, prior to renewing the subscription, and for one month only.  
-If the user does not have sufficient funds for the renewal, the subscription will expire.
-
-If a user has a future subscription configured and auto-renewal is also set, then auto-renewal will take effect only after the future subscription expires.
 
 ## Parameters
 
