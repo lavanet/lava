@@ -37,9 +37,14 @@ type ConcurrentBlockStore struct {
 	Block uint64
 }
 
+type cacheInf interface {
+	Get(key interface{}) (interface{}, bool)
+	Set(key, value interface{}, cost int64) bool
+}
+
 type ProviderOptimizer struct {
 	strategy                        Strategy
-	providersStorage                *ristretto.Cache
+	providersStorage                cacheInf
 	providerRelayStats              *ristretto.Cache // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
 	baseWorldLatency                time.Duration
@@ -467,6 +472,10 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 	precision := WANTED_PRECISION
 	latencyScore := turnFloatToDec(providerData.Latency.Num/providerData.Latency.Denom, precision)
 	syncScore := turnFloatToDec(providerData.Sync.Num/providerData.Sync.Denom, precision)
+	// if our sync score is un initialized due to lack of providers
+	if syncScore.IsZero() {
+		syncScore = sdk.OneDec()
+	}
 	availabilityScore := turnFloatToDec(providerData.Availability.Num/providerData.Availability.Denom, precision)
 	ret := &pairingtypes.QualityOfServiceReport{
 		Latency:      latencyScore,
