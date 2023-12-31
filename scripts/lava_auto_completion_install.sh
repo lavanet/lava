@@ -40,7 +40,7 @@ case $terminal_type in
 			bashrc_file="$HOME/.bash_profile"
 		fi
 
-		if ! grep -q "source $file" $bashrc_file; then
+		if ! grep -q "source \$file" $bashrc_file; then
 			echo >> $bashrc_file
 			echo "if [ -d $comp_dir ]; then" >> $bashrc_file
 			echo "	for file in $comp_dir/*; do"  >> $bashrc_file
@@ -66,7 +66,7 @@ case $terminal_type in
 			bashrc_file="$HOME/.bash_profile"
 		fi
 
-		if ! grep -q "source $file" $bashrc_file; then
+		if ! grep -q "source \$file" $bashrc_file; then
 			echo >> $bashrc_file
 			echo "if [ -d $comp_dir ]; then" >> $bashrc_file
 			echo "	for file in $comp_dir/*; do"  >> $bashrc_file

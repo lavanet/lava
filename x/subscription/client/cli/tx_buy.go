@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	EnableAutoRenewalFlag = "enable-auto-renewal"
-	AdvancedPurchaseFlag  = "advance-purchase"
+	BuyEnableAutoRenewalFlag = "enable-auto-renewal"
+	AdvancedPurchaseFlag     = "advance-purchase"
 )
 
 func CmdBuy() *cobra.Command {
@@ -27,7 +27,8 @@ If the plan index is different than the consumer's current plan, it will upgrade
 		Example: `required flags: --from <creator-address>, optional flags: --enable-auto-renewal
 		lavad tx subscription buy [plan-index] --from <creator_address>
 		lavad tx subscription buy [plan-index] --from <creator_address> <consumer_address> 12
-		lavad tx subscription buy [plan-index] --from <creator_address> <consumer_address> 12 --advanced-purchase`,
+		lavad tx subscription buy [plan-index] --from <creator_address> <consumer_address> 12 --enable-auto-renewal
+		lavad tx subscription buy [plan-index] --from <creator_address> <consumer_address> 12 --advance-purchase`,
 		Args: cobra.RangeArgs(1, 3),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -49,9 +50,9 @@ If the plan index is different than the consumer's current plan, it will upgrade
 			}
 
 			// check if the command includes --enable-auto-renewal
-			enableAutoRenewalFlag := cmd.Flags().Lookup(EnableAutoRenewalFlag)
+			enableAutoRenewalFlag := cmd.Flags().Lookup(BuyEnableAutoRenewalFlag)
 			if enableAutoRenewalFlag == nil {
-				return fmt.Errorf("%s flag wasn't found", EnableAutoRenewalFlag)
+				return fmt.Errorf("%s flag wasn't found", BuyEnableAutoRenewalFlag)
 			}
 			autoRenewal := enableAutoRenewalFlag.Changed
 
@@ -78,7 +79,7 @@ If the plan index is different than the consumer's current plan, it will upgrade
 	}
 
 	flags.AddTxFlagsToCmd(cmd)
-	cmd.Flags().Bool(EnableAutoRenewalFlag, false, "enables auto-renewal upon expiration")
+	cmd.Flags().Bool(BuyEnableAutoRenewalFlag, false, "enables auto-renewal upon expiration")
 	cmd.Flags().Bool(AdvancedPurchaseFlag, false, "make an advanced purchase that will be activated once the current subscription ends")
 
 	return cmd

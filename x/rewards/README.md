@@ -11,14 +11,17 @@ Please note that this module replaces Cosmos SDK's mint module, which is typical
 ## Contents
 
 * [Concepts](#concepts)
-    * [The Treasury](#the-treasury)
-    * [Validators Rewards Pool](#validators-rewards-pool)
-    * [Providers Rewards Pool](#providers-rewards-pool)
+  * [The Treasury](#the-treasury)
+  * [Validators Rewards Pool](#validators-rewards-pool)
+  * [Providers Rewards Pool](#providers-rewards-pool)
 * [Parameters](#parameters)
-    * [MinBondedTarget](#minbondedtarget)
-    * [MaxBondedTarget](#maxbondedtarget)
-    * [LowFactor](#lowfactor)
-    * [LeftOverBurnRate](#leftoverburnrate)
+  * [MinBondedTarget](#minbondedtarget)
+  * [MaxBondedTarget](#maxbondedtarget)
+  * [LowFactor](#lowfactor)
+  * [LeftOverBurnRate](#leftoverburnrate)
+* [Queries](#queries)
+* [Transactions](#transactions)
+* [Proposals](#proposals)
 
 ## Concepts
 
@@ -65,11 +68,11 @@ Besides these rewards, the provider also get monthly bonus rewards from a pre-al
 The total monthly bonus rewards ("total spec payout") are calculated per spec by the following formula:
 
 ```math
-\text{Total spec payout}=\\\min\{RewardsMaxBoost\cdot\text{Total Base Payouts}, \\ \text{Spec Payout Cap}, \\ \max\{0,1.5(\text{Spec Payout Cap})-0.5(\text{Total Base Payouts})\}\}
+\text{Total spec payout}=\\\min\{MaxRewardsBoost\cdot\text{Total Base Payouts}, \\ \text{Spec Payout Cap}, \\ \max\{0,1.5(\text{Spec Payout Cap})-0.5(\text{Total Base Payouts})\}\}
 ```
 
 Where:
-* $`\text{RewardsMaxBoost}`$ - A module's parameter (see [below](#maxrewardsboost)).
+* $`\text{MaxRewardsBoost}`$ - A module's parameter (see [below](#maxrewardsboost)).
 * $`\text{Total Base Payouts}`$ - The sum of all base payouts the providers for this spec collected = $`\sum_{provider_1.._n} (\text{{provider base rewards}}_i)`$
 * $`\text{Spec Payout Cap}`$ - The max value for this spec bonus rewards = $`\frac{specStake\cdot specShares}{\sum_i{specStake \cdot specShares}_i}`$.
 * SpecStake = Total effective stake of providers in this spec.
@@ -81,10 +84,7 @@ The total spec payout is distributed between providers proportional to the rewar
 Provider Bonus Rewards = Total Spec Payout \cdot \frac{\sum_{\text{payment} \; i} (\text{{provider base rewards}}_{i,j} \times \text{{adjustment}}_{i,j})}{\sum_{\text{provider}\;j'}\sum_{\text{payment} \; i}  (\text{{provider base rewards}}_{i,j'}  )}
 ```
 
-Where:
-* Adjustment - TBD
-
-Note that some of the providers rewards are sent to the community pool (according to the `CommunityTax` parameter, determined by the distribution module) and to the validators block rewards (according to the `ValidatorsSubscriptionParticipation` parameter, see [below](#validatorssubscriptionparticipation)).
+Note that some of the providers rewards are sent to the community pool (according to the `CommunityTax` parameter, determined by the distribution module) and to the validators block rewards (according to the `ValidatorsSubscriptionParticipation` parameter, see [below](#validatorssubscriptionparticipation)). For more details about the `adjustment`, see [below](#adjustment).
 
 The participation fees are calculated according to the following formulas:
 
@@ -95,6 +95,21 @@ The participation fees are calculated according to the following formulas:
 ```math
 \text{Community Participation Fee} = ValidatorsSubscriptionParticipation + CommunityTax\\ - \text{Validators Participation Fee}
 ```
+
+#### Adjustment
+
+Adjustment is a security mechanism that prevents collusion and abuse of rewards boost. It calculates the distribution of usage across multiple providers for each consumer. The more scattered a consumer's usage is across providers, the higher the bonus rewards they can receive. The adjustment value is always smaller or equal to one and can reduce the bonus rewards by up to $\frac{1}{MaxRewardsBoost}$.
+
+The adjustment is calculated per epoch using a weighted average based on usage. It considers the consumer's CU (compute units) used with a specific provider relative to the total CU the consumer used. The formula is as follows:
+
+```math
+\text{epochAdjustment}_\text{consumet i, provider j}=\\\min\{1,\;\;\;minAdjustment\cdot(\frac{\sum_{\text{provider }k}{CU_\text{i,k}}}{CU _\text{i,j}})\}
+```
+
+```math
+\text{monthlyAdjustment}_{i,k} = \frac{\sum_{\text{epoch}\; t }\left(CU_\text{i}(t)\cdot \text{epochAdjustment}_{i,k}(t)\right)}{\sum_{\text{epoch}\; t}CU_{i}(t)}
+```
+
 ## Parameters
 
 The rewards module contains the following parameters:
@@ -141,8 +156,35 @@ To calculate the `BondedTargetFactor` see the following formula (note that the s
 
 ### MaxRewardsBoost
 
-TBD
+MaxRewardsBoost is a multiplier that determines the maximum bonus for provider rewards from subscriptions.
 
 ### ValidatorsSubscriptionParticipation
 
 ValidatorsSubscriptionParticipation is used to calculate the providers rewards participation fees.
+
+## Queries
+
+The rewards module supports the following queries:
+
+| Query      | Arguments       | What it does                                  |
+| ---------- | --------------- | ----------------------------------------------|
+| `block-reward`     | none  | show the block reward for validators                  |
+| `pools`     | none            | show the info of the distribution pools  |
+| `params`   | none            | shows the module's parameters                 |
+
+## Transactions
+
+The rewards module does not support any transactions.
+
+## Proposals
+
+The rewards module does not support any proposals.
+
+## Events
+
+The rewards module has the following events:
+
+| Event      | When it happens       |
+| ---------- | --------------- |
+| `distribution_pools_refill`     | a successful distribution rewards pools refill   |
+| `provider_bonus_rewards`     | a successful distribution of provider bonus rewards   |
