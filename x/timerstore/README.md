@@ -65,6 +65,11 @@ timerStore := timerStoreKeeper.NewTimerStoreBeginBlock(storeKey, timerPrefix).
 	WithCallbackByBlockTime(callbackFunction)
 ```
 
+**Note on Timer Keys and Data:**
+
+- **Subkey as Timer Identifier:** The `key` argument in the callback function refers to the timer's subkey. It's important to note that this subkey does not need to be unique across all timers. The `timerstore` module internally manages a unique primary key for each timer, ensuring distinct identification.
+- **Data Attachment:** The `data` argument allows for attaching relevant information to the timer. This data is then accessible when the callback function is triggered, enabling context-specific actions based on the timer's purpose.
+
 ### Using the TimerStore
 
 #### Overview of Timer Usage
@@ -92,6 +97,8 @@ AddTimerByBlockHeight(ctx sdk.Context, block uint64, key, data []byte)
 AddTimerByBlockTime(ctx sdk.Context, timestamp uint64, key, data []byte)
 
 ```
+
+When using `AddTimerByBlockHeight` and `AddTimerByBlockTime`, it's important to understand the `key` argument is the timer's subkey, which doesn't need to be unique. The unique primary key of each timer is internally managed by the timerstore. The `data` argument is for attaching additional information to the timer, available when the callback is triggered.
 
 #### Timer Lifecycle
 
