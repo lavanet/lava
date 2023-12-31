@@ -374,8 +374,9 @@ func TestRefillPoolsTimerStore(t *testing.T) {
 		require.Equal(t, expectedMonthsLeft, monthsLeft)
 
 		ts.AdvanceMonths(1)
-		month = ts.GetNextMonth(ts.BlockTime()) - ts.BlockTime().UTC().Unix()
 		ts.AdvanceBlock()
-		testkeeper.EndBlock(ts.Ctx, ts.Keepers)
+		// testkeeper.EndBlock(ts.Ctx, ts.Keepers)
+		defaultBlockTime := ts.Keepers.Downtime.GetParams(ts.Ctx).DowntimeDuration.Seconds()
+		month = ts.GetNextMonth(ts.BlockTime()) - ts.BlockTime().UTC().Unix() - int64(defaultBlockTime)
 	}
 }
