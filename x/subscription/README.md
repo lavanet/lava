@@ -121,7 +121,6 @@ A subscription can be upgraded to a more expensive plan.
 That also means, that if a consumer buys a plan, and then decides to downgrade their plan, the way to do it is either buy more months in the cheaper subscription, so the amount that the consumer will pay will be larger than the one using the same command as shown above, with the only caveat - the `plan-index` must be different than the currently active subscription's plan, and, it must be with a higher price.
 
 Tokens are deducted from the creator's account immediately, and the new plan becomes effective in the next epoch.  
-The old subscription will still be saved in the fixation store, for buffering purposes (the amount of blocks that the subscription will be saved for, is determined in the `BlocksToSave` function, under the [EpochStorage](https://github.com/lavanet/lava/blob/main/x/epochstorage/README.md) module).
 
 More ways to upgrade are by making an [Advance Purchase](#advance-purchase) or enabling [Auto Renewal](#auto-renewal).
 
