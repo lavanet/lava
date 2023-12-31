@@ -103,13 +103,7 @@ The advanceMonth function plays a crucial role in the subscription lifecycle, pe
 ### Subscription Upgrade
 
 A subscription can be upgraded to a more expensive plan.
-
-While direct downgrading of a subscription plan is not officially supported, consumers seeking a lower-tier plan can still achieve a similar effect.  
-This can be done by purchasing additional months under a less expensive plan. It's important to note that the new plan's `plan-index` must differ from the currently active one, and the total payment for the extended period under the cheaper plan should exceed the amount of the original, higher-priced plan.  
-This workaround allows consumers to effectively 'downgrade' their subscription within the system's constraints.
-
 Tokens are deducted from the creator's account immediately, and the new plan becomes effective in the next epoch.
-
 More ways to upgrade are by making an [Advance Purchase](#advance-purchase) or enabling [Auto Renewal](#auto-renewal).
 
 ### Subscription Renewal
