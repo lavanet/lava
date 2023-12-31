@@ -23,8 +23,8 @@ type providerOptimizerSyncCache struct {
 }
 
 func (posc *providerOptimizerSyncCache) Get(key interface{}) (interface{}, bool) {
-	posc.lock.Lock()
-	defer posc.lock.Unlock()
+	posc.lock.RLock()
+	defer posc.lock.RUnlock()
 	ret, ok := posc.value[key]
 	return ret, ok
 }
