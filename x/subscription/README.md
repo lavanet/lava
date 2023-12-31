@@ -182,12 +182,12 @@ All the transactions below require setting the `--from` flag and gas related fla
 
 The subscription module supports the following transactions:
 
-| Transaction    | Arguments                                                                               | What it does                                  |
-| -------------- | --------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `add-project`  | project-name (string)                                                                   | Add a new project to a subscription           |
-| `auto-renewal` | [true, false] (bool), plan-index (string, optional), consumer (optional)                | Enable/Disable auto-renewal to a subscription |
-| `buy`          | plan-index (string), consumer (string, optional), duration (in months) (int , optional) | Buy a service plan                            |
-| `del-project`  | project-name (string)                                                                   | Delete a project from a subscription          |
+| Transaction    | Arguments                                                                               | What it does                                  | Effective in                                                                                                |
+| -------------- | --------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `add-project`  | project-name (string)                                                                   | Add a new project to a subscription           | next block                                                                                                  |
+| `auto-renewal` | [true, false] (bool), plan-index (string, optional), consumer (optional)                | Enable/Disable auto-renewal to a subscription | next block |
+| `buy`          | plan-index (string), consumer (string, optional), duration (in months) (int , optional) | Buy a service plan                            | _new subscription_ - next block; <br>_upgrade subscription_ - next epoch;<br>_advance purchase_ - next block;                                                                                                  |
+| `del-project`  | project-name (string)                                                                   | Delete a project from a subscription          | next epoch                                                                                                  |
 
 Note that the `buy` transaction also support advance purchase and immediate upgrade. Refer to the help section of the commands for more details.
 
