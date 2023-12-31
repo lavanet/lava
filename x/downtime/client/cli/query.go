@@ -48,9 +48,9 @@ func CmdQueryParams() *cobra.Command {
 
 func CmdQueryDowntime() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "downtime [epoch_start_block]",
+		Use:   "downtime [block]",
 		Short: "Query downtime",
-		Long:  "Query downtime between blocks, if only start is provided then will query for downtime at the given block, if end is provided then it will query the full range",
+		Long:  "Query downtime between blocks, if only start is provided then will query for downtime at the given epoch (the epoch of the block)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			start, err := strconv.ParseUint(args[0], 10, 64)

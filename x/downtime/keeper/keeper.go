@@ -18,6 +18,7 @@ type EpochStorageKeeper interface {
 	IsEpochStart(ctx sdk.Context) bool
 	GetEpochStart(ctx sdk.Context) (epochStartBlock uint64)
 	GetDeletedEpochs(ctx sdk.Context) []uint64
+	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart uint64, blockInEpoch uint64, err error)
 }
 
 func NewKeeper(cdc codec.BinaryCodec, sk storetypes.StoreKey, ps paramtypes.Subspace, esk EpochStorageKeeper) Keeper {
