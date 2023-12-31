@@ -62,14 +62,22 @@ lavad tx subscription buy "EmergencyModePlan" -y --from user5 --gas-adjustment "
 # Test plan upgrade
 echo ---- Subscription plan upgrade ----
 wait_next_block
-lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-plan_index=$(lavad q subscription current $(lavad keys show user1 -a) | yq .sub.plan_index)
-if [ "$plan_index" != "EmergencyModePlan" ]; then "echo subscription ${user1addr}: wrong plan index $plane_index instead of EmergencyModePlan"; exit 1; fi
+# test we have the plan active.
+current_plan=$(lavad q subscription current $(lavad keys show user1 -a)) # store current plan in a different variable to print in case of an error
+plan_index=$(echo $current_plan | yq .sub.plan_index)
+if [ "$plan_index" != "EmergencyModePlan" ]; then "echo subscription ${user1addr}: wrong plan index $current_plan .sub.plan_index doesn't contain EmergencyModePlan"; exit 1; fi
+# buy the upgraded subscription
 
 sleep_until_next_epoch
+# wait an epoch to buy a new subscription. (buying twice in the same epoch is not allowed)
+lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+# wait for the new subscription to take effect
+sleep_until_next_epoch
 
-plan_index=$(lavad q subscription current $(lavad keys show user1 -a) | yq .sub.plan_index)
-if [ "$plan_index" != "DefaultPlan" ]; then "echo subscription ${user1addr}: wrong plan index $plane_index instead of DefaultPlan"; exit 1; fi
+# validate the new subscription is the default plan and not emergency mode plan.
+current_plan=$(lavad q subscription current $(lavad keys show user1 -a)) # store current plan in a different variable to print in case of an error
+plan_index=$(echo $current_plan | yq .sub.plan_index)
+if [ "$plan_index" != "DefaultPlan" ]; then "echo subscription ${user1addr}: wrong plan index $current_plan .sub.plan_index doesn't contain DefaultPlan"; exit 1; fi
 
 user3addr=$(lavad keys show user3 -a)
 
