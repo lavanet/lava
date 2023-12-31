@@ -17,7 +17,7 @@ sleep 6 # need to sleep because plan policies need the specs when setting chain 
 # Plans proposal
 echo ---- Plans proposal ----
 wait_next_block
-lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/test_plans/default.json,./cookbook/plans/test_plans/emergency-mode.json,./cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/test_plans/default.json,./cookbook/plans/test_plans/emergency-mode.json,./cookbook/plans/test_plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep 6
@@ -25,7 +25,7 @@ sleep 6
 # Plan removal (of one)
 echo ---- Plans removal ----
 wait_next_block
-lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
@@ -61,9 +61,6 @@ echo "current plan: $current_plan"
 plan_index=$(echo $current_plan | yq .sub.plan_index)
 if [ "$plan_index" != "EmergencyModePlan" ]; then "echo subscription ${user1addr}: wrong plan index $plan_index .sub.plan_index doesn't contain EmergencyModePlan"; exit 1; fi
 # buy the upgraded subscription
-
-sleep_until_next_epoch
-# wait an epoch to buy a new subscription. (buying twice in the same epoch is not allowed)
 lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 # wait for the new subscription to take effect
 sleep_until_next_epoch
