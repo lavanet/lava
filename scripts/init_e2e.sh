@@ -25,7 +25,7 @@ sleep 6
 # Plan removal (of one)
 echo ---- Plans removal ----
 wait_next_block
-lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/temporary-del.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
@@ -57,8 +57,9 @@ echo ---- Subscription plan upgrade ----
 wait_next_block
 # test we have the plan active.
 current_plan=$(lavad q subscription current $(lavad keys show user1 -a)) # store current plan in a different variable to print in case of an error
+echo "current plan: $current_plan"
 plan_index=$(echo $current_plan | yq .sub.plan_index)
-if [ "$plan_index" != "EmergencyModePlan" ]; then "echo subscription ${user1addr}: wrong plan index $current_plan .sub.plan_index doesn't contain EmergencyModePlan"; exit 1; fi
+if [ "$plan_index" != "EmergencyModePlan" ]; then "echo subscription ${user1addr}: wrong plan index $plan_index .sub.plan_index doesn't contain EmergencyModePlan"; exit 1; fi
 # buy the upgraded subscription
 
 sleep_until_next_epoch
@@ -69,6 +70,7 @@ sleep_until_next_epoch
 
 # validate the new subscription is the default plan and not emergency mode plan.
 current_plan=$(lavad q subscription current $(lavad keys show user1 -a)) # store current plan in a different variable to print in case of an error
+echo "current plan: $current_plan"
 plan_index=$(echo $current_plan | yq .sub.plan_index)
 if [ "$plan_index" != "DefaultPlan" ]; then "echo subscription ${user1addr}: wrong plan index $current_plan .sub.plan_index doesn't contain DefaultPlan"; exit 1; fi
 
@@ -94,4 +96,20 @@ sleep_until_next_epoch
 count=$(lavad q subscription list-projects ${user3addr} | grep "lava@" | wc -l)
 if [ "$count" -ne 2 ]; then "echo subscription ${user3addr}: wrong project count $count instead of 2"; exit 1; fi
 
+
+# validate deleted plan is removed. 
+# Fetch the plans list
+plans_list=$(lavad q plan list | yq .plans_info)
+
+# Check if "to_delete_plan" exists
+if echo "$plans_list" | grep -q '"index": "to_delete_plan"'; then
+    echo "Index 'to_delete_plan' exists."
+    exit 1 # fail test.
+else
+    echo "Index 'to_delete_plan' was removed successfully validation passed."
+fi
+
+
+
 # the end
+
