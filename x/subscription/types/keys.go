@@ -43,3 +43,7 @@ func DecodeCuTrackerKey(key string) (sub string, provider string, chainID string
 	decodedKey := strings.Split(key, " ")
 	return decodedKey[0], decodedKey[1], decodedKey[2]
 }
+
+func KeyPrefix(p string) []byte {
+	return []byte(p)
+}

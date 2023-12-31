@@ -451,6 +451,10 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 	})
 
+	app.Get(apil.endpoint.HealthCheckPath, func(fiberCtx *fiber.Ctx) error {
+		fiberCtx.Status(http.StatusOK)
+		return fiberCtx.SendString("Health status OK")
+	})
 	// Go
 	ListenWithRetry(app, apil.endpoint.NetworkAddress)
 }

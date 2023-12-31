@@ -48,9 +48,8 @@ func TestGetPairingForSubscription(t *testing.T) {
 	_, err = ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
 	require.NotNil(t, err)
 
-	verify, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, providerAddr, ts.BlockHeight())
+	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, providerAddr, ts.BlockHeight())
 	require.NotNil(t, err)
-	require.False(t, verify.Valid)
 }
 
 func TestRelayPaymentSubscription(t *testing.T) {
@@ -233,12 +232,12 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 				MaxProvidersToPair: 2,
 			}
 
-			_, err = ts.TxProjectSetPolicy(projectID, client1Addr, *adminPolicy)
+			_, err = ts.TxProjectSetPolicy(projectID, client1Addr, adminPolicy)
 			require.Nil(t, err)
 
 			ts.AdvanceEpoch()
 
-			_, err = ts.TxProjectSetSubscriptionPolicy(projectID, client1Addr, *subscriptionPolicy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(projectID, client1Addr, subscriptionPolicy)
 			require.Nil(t, err)
 
 			ts.AdvanceEpoch()
@@ -293,7 +292,7 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 				MaxProvidersToPair: tt.providersToPairSubPolicy,
 			}
 
-			_, err = ts.TxProjectSetPolicy(proj.Index, client1Addr, *adminPolicy)
+			_, err = ts.TxProjectSetPolicy(proj.Index, client1Addr, adminPolicy)
 			if !tt.adminPolicyValid {
 				require.NotNil(t, err)
 				return
@@ -303,7 +302,7 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 
 			ts.AdvanceEpoch()
 
-			_, err = ts.TxProjectSetSubscriptionPolicy(proj.Index, client1Addr, *subscriptionPolicy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(proj.Index, client1Addr, subscriptionPolicy)
 			if !tt.subscriptionPolicyValid {
 				require.NotNil(t, err)
 				return
@@ -395,12 +394,12 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				MaxProvidersToPair: ts.plan.PlanPolicy.MaxProvidersToPair,
 			}
 
-			_, err = ts.TxProjectSetPolicy(proj.Index, client1Addr, *adminPolicy)
+			_, err = ts.TxProjectSetPolicy(proj.Index, client1Addr, adminPolicy)
 			require.Nil(t, err)
 
 			ts.AdvanceEpoch()
 
-			_, err = ts.TxProjectSetSubscriptionPolicy(proj.Index, client1Addr, *subscriptionPolicy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(proj.Index, client1Addr, subscriptionPolicy)
 			require.Nil(t, err)
 
 			ts.AdvanceEpoch()
@@ -445,7 +444,7 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
 	// add 10 months to the subscription
-	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, ts.plan.Index, 10, false)
+	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, ts.plan.Index, 10, false, false)
 	require.Nil(t, err)
 
 	totalCuLimit := ts.plan.PlanPolicy.TotalCuLimit
@@ -530,7 +529,7 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	adminPolicy := ts.plan.PlanPolicy
 	adminPolicy.EpochCuLimit = oldEpochCuLimit - 30
 
-	_, err = ts.TxProjectSetPolicy(proj.Project.Index, dev1Addr, adminPolicy)
+	_, err = ts.TxProjectSetPolicy(proj.Project.Index, dev1Addr, &adminPolicy)
 	require.Nil(t, err)
 
 	// advance epoch to set the new policy

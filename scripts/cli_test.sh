@@ -70,11 +70,11 @@ trace lavad q spec show-chain-info ETH1 >/dev/null
 trace lavad q spec show-spec ETH1 >/dev/null
  
 echo "Proposing plans"
-(trace lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/default.json,./cookbook/plans/temporary-add.json $txoptions) >/dev/null 
+(trace lavad tx gov submit-legacy-proposal plans-add ./cookbook/plans/test_plans/default.json,./cookbook/plans/test_plans/temporary-add.json $txoptions) >/dev/null 
 wait_count_blocks 1 >/dev/null
 (lavad tx gov vote $(latest_vote) yes $txoptions) >/dev/null 
 wait_count_blocks 3 >/dev/null
-(trace lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/temporary-del.json $txoptions)>/dev/null 
+(trace lavad tx gov submit-legacy-proposal plans-del ./cookbook/plans/test_plans/temporary-del.json $txoptions)>/dev/null 
 wait_count_blocks 1 >/dev/null
 (lavad tx gov vote $(latest_vote) yes $txoptions) >/dev/null 
 wait_count_blocks 2 >/dev/null
@@ -178,6 +178,10 @@ trace lavad q fixationstore all-indices subscription subs-fs >/dev/null
 trace lavad q fixationstore store-keys >/dev/null
 trace lavad q fixationstore versions subscription subs-fs $(lavad keys show alice -a) >/dev/null
 trace lavad q fixationstore versions entry subs-fs $(lavad keys show alice -a) 100 >/dev/null
+
+echo "Testing rewards q commands"
+trace lavad q rewards pools >/dev/null
+trace lavad q rewards block-reward >/dev/null
 
 echo "Testing events command"
 trace lavad test events 30 10 --event lava_relay_payment --from alice --timeout 1s >/dev/null

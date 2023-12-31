@@ -32,4 +32,12 @@ message Params {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false
   ];
+
+  uint64 max_reward_boost = 5; 
+
+  string validators_subscription_participation = 6 [
+    (gogoproto.moretags) = "yaml:\"validators_subscription_participation\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
 }

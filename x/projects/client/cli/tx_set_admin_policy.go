@@ -16,6 +16,8 @@ import (
 
 var _ = strconv.Itoa(0)
 
+const DeletePolicyFlagName = "delete-policy"
+
 func CmdSetPolicy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-policy project-index [policy-file-path]",
@@ -23,37 +25,48 @@ func CmdSetPolicy() *cobra.Command {
 		Long:  `The set-policy command allows a project admin to set a new policy to its project. The policy file is a YAML file (see cookbook/projects/example_policy.yml for reference). The new policy will be applied from the next epoch. To define a geolocation in the policy file, use the available geolocations: ` + planstypes.PrintGeolocations(),
 		Example: `required flags: --from <creator-address>
 		lavad tx project set-policy [project-index] [policy-file-path] --from <creator_address>
-		lavad tx project set-policy [policy-file-path] --from <creator_address> (use this for the default admin policy)`,
+		lavad tx project set-policy admin [policy-file-path] --from <creator_address> (use this for the default admin policy)
+		lavad tx project set-policy [project-index] --delete-policy --from <creator_address>`,
 		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
-			var projectId string
-			var adminPolicyFilePath string
-			if len(args) == 2 {
-				projectId = args[0]
-				adminPolicyFilePath = args[1]
-			} else {
-				adminPolicyFilePath = args[0]
+
+			projectId := args[0]
+			if projectId == "admin" {
 				projectId = clientCtx.GetFromAddress().String() + "-admin"
 			}
 
-			policy, err := planstypes.ParsePolicyFromYamlPath(adminPolicyFilePath)
-			if err != nil {
-				return err
+			// check if the command includes --delete-policy
+			deletePolicyFlag := cmd.Flags().Lookup(DeletePolicyFlagName)
+			if deletePolicyFlag == nil {
+				return fmt.Errorf("%s flag wasn't found", DeletePolicyFlagName)
 			}
+			deletePolicy := deletePolicyFlag.Changed
 
-			err = verifyChainPoliciesAreCorrectlySet(clientCtx, policy)
-			if err != nil {
-				return err
+			var policy *planstypes.Policy
+			if !deletePolicy {
+				if len(args) < 2 {
+					return fmt.Errorf("not enough arguments")
+				}
+				adminPolicyFilePath := args[1]
+				policy, err = planstypes.ParsePolicyFromYamlPath(adminPolicyFilePath)
+				if err != nil {
+					return err
+				}
+
+				err = verifyChainPoliciesAreCorrectlySet(clientCtx, policy)
+				if err != nil {
+					return err
+				}
 			}
 
 			msg := types.NewMsgSetPolicy(
 				clientCtx.GetFromAddress().String(),
 				projectId,
-				*policy,
+				policy,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
@@ -64,6 +77,7 @@ func CmdSetPolicy() *cobra.Command {
 
 	flags.AddTxFlagsToCmd(cmd)
 	cmd.MarkFlagRequired(flags.FlagFrom)
+	cmd.Flags().Bool(DeletePolicyFlagName, false, "deletes the policy")
 
 	return cmd
 }

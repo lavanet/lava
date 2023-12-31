@@ -198,7 +198,7 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 	return nil
 }
 
-// unregsiterKey removes a key from a project. For developer keys it also updates
+// unregisterKey removes a key from a project. For developer keys it also updates
 // the developer key registry (that maps them to projects). The epoch argument is
 // expected to be the next epoch start (takes effect upon next epoch).
 func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *types.Project, epoch uint64) error {
@@ -249,17 +249,17 @@ func (k Keeper) unregisterKey(ctx sdk.Context, key types.ProjectKey, project *ty
 }
 
 // Snapshot all projects of a given subscription
-func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string) {
+func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr string, block uint64) {
 	projects := k.projectsFS.GetAllEntryIndicesWithPrefix(ctx, subscriptionAddr)
 	for _, projectID := range projects {
-		k.snapshotProject(ctx, projectID)
+		k.snapshotProject(ctx, projectID, block)
 	}
 }
 
 // snapshot project, create a snapshot of a project and reset the cu
-func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) {
+func (k Keeper) snapshotProject(ctx sdk.Context, projectID string, block uint64) {
 	var project types.Project
-	if found := k.projectsFS.FindEntry(ctx, projectID, uint64(ctx.BlockHeight()), &project); !found {
+	if found := k.projectsFS.FindEntry(ctx, projectID, block, &project); !found {
 		utils.LavaFormatError("critical: snapshot of project failed (find)", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "project", Value: projectID},
 			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
@@ -270,7 +270,7 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string) {
 	project.UsedCu = 0
 	project.Snapshot += 1
 
-	err := k.projectsFS.AppendEntry(ctx, project.Index, uint64(ctx.BlockHeight()), &project)
+	err := k.projectsFS.AppendEntry(ctx, project.Index, block, &project)
 	if err != nil {
 		utils.LavaFormatError("critical: snapshot of project failed (append)", err,
 			utils.Attribute{Key: "project", Value: projectID},

@@ -276,7 +276,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if len(relayResults) == 0 {
 		rpccs.appendHeadersToRelayResult(ctx, errorRelayResult, retries)
 		// suggest the user to add the timeout flag
-		if uint64(timeouts) == retries {
+		if uint64(timeouts) == retries && retries > 0 {
 			utils.LavaFormatDebug("all relays timeout", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors.relayErrors})
 			return errorRelayResult, utils.LavaFormatError("Failed all relay retries due to timeout consider adding 'lava-relay-timeout' header to extend the allowed timeout duration", nil, utils.Attribute{Key: "GUID", Value: ctx})
 		}

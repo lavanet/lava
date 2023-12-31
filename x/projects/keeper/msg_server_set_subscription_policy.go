@@ -12,13 +12,14 @@ func (k msgServer) SetSubscriptionPolicy(goCtx context.Context, msg *types.MsgSe
 
 	policy := msg.GetPolicy()
 
-	err := policy.ValidateBasicPolicy(false)
-	if err != nil {
-		return nil, err
+	if policy != nil {
+		err := policy.ValidateBasicPolicy(false)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	err = k.SetProjectPolicy(ctx, msg.GetProjects(), &policy, msg.GetCreator(), types.SET_SUBSCRIPTION_POLICY)
-
+	err := k.SetProjectPolicy(ctx, msg.GetProjects(), policy, msg.GetCreator(), types.SET_SUBSCRIPTION_POLICY)
 	if err != nil {
 		return nil, err
 	}

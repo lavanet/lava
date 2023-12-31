@@ -12,13 +12,14 @@ func (k msgServer) SetPolicy(goCtx context.Context, msg *types.MsgSetPolicy) (*t
 
 	policy := msg.GetPolicy()
 
-	err := policy.ValidateBasicPolicy(false)
-	if err != nil {
-		return nil, err
+	if policy != nil {
+		err := policy.ValidateBasicPolicy(false)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	err = k.SetProjectPolicy(ctx, []string{msg.GetProject()}, &policy, msg.GetCreator(), types.SET_ADMIN_POLICY)
-
+	err := k.SetProjectPolicy(ctx, []string{msg.GetProject()}, policy, msg.GetCreator(), types.SET_ADMIN_POLICY)
 	if err != nil {
 		return nil, err
 	}

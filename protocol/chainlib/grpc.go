@@ -317,7 +317,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		return relayReply.Data, convertRelayMetaDataToMDMetaData(metadataToReply), nil
 	}
 
-	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback)
+	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback, apil.endpoint.HealthCheckPath)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
@@ -327,7 +327,21 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 
 	utils.LavaFormatInfo("Server listening", utils.Attribute{Key: "Address", Value: lis.Addr()})
 
-	if err := httpServer.Serve(lis); !errors.Is(err, http.ErrServerClosed) {
+	var serveExecutor func() error
+	if apil.endpoint.TLSEnabled {
+		utils.LavaFormatInfo("Running with self signed TLS certificate")
+		var certificateErr error
+		httpServer.TLSConfig, certificateErr = lavasession.GetSelfSignedConfig()
+		if certificateErr != nil {
+			utils.LavaFormatFatal("failed getting a self signed certificate", certificateErr)
+		}
+		serveExecutor = func() error { return httpServer.ServeTLS(lis, "", "") }
+	} else {
+		utils.LavaFormatInfo("Running with disabled TLS configuration")
+		serveExecutor = func() error { return httpServer.Serve(lis) }
+	}
+
+	if err := serveExecutor(); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
 	}
 }

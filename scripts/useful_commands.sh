@@ -1,9 +1,9 @@
 # Function to show ticker (full cycle)
 display_ticker() {
-  animation='/ - \ |'
-  for c in $loading_animation; do
-    sleep 0.2
-    /bin/echo -e -n "$c" "\r"
+  spinner="-\\|/-\\|/"
+  for i in $(seq 0 ${#spinner}); do
+      echo -ne "\r${spinner:i:1}"
+      sleep 0.1
   done
 }
 
@@ -11,7 +11,6 @@ display_ticker() {
 sleep_until_next_epoch() {
   epoch_start=$(lavad query epochstorage show-epoch-details | grep "startBlock: ")
   echo "Waiting for the next epoch for the changes to be active"
-  loading_animation='/ - \ |'
   while true; do
     epoch_now=$(lavad query epochstorage show-epoch-details | grep "startBlock: ")
     display_ticker
@@ -117,4 +116,22 @@ create_health_config() {
     echo "Comment #REPLACED not found in the file."
     exit 1
   fi
+}
+
+
+# Function to extract latest_block_height from lavad status | jq
+get_block_height() {
+    lavad status 2>/dev/null | jq -r '.SyncInfo.latest_block_height'
+}
+
+wait_for_lava_node_to_start() {
+    # Monitor changes in block height
+    while true; do
+        current_height=$(get_block_height)
+        if [[ "$current_height" =~ ^[0-9]+$ && "$current_height" -gt 5 ]]; then
+            echo "Block height is now $current_height which is larger than 5"
+            break
+        fi
+        sleep 1  # Check every second
+    done
 }

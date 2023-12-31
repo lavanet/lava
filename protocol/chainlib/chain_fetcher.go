@@ -104,7 +104,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		return utils.LavaFormatError("[-] verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 
-	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
+	reply, _, _, proxyUrl, chainId, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
 	if err != nil {
 		return utils.LavaFormatWarning("[-] verify failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
@@ -113,10 +113,12 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	if err != nil {
 		return err
 	}
+
 	parsedResult, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)
 	if err != nil {
 		return utils.LavaFormatWarning("[-] verify failed to parse result", err, []utils.Attribute{
-			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "chainId", Value: chainId},
+			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.GetApiName()},
 			{Key: "Response", Value: string(reply.Data)},
 		}...)
@@ -125,7 +127,8 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		parsedResultAsNumber, err := strconv.ParseUint(parsedResult, 0, 64)
 		if err != nil {
 			return utils.LavaFormatWarning("[-] verify failed to parse result as number", err, []utils.Attribute{
-				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+				{Key: "chainId", Value: chainId},
+				{Key: "nodeUrl", Value: proxyUrl.Url},
 				{Key: "Method", Value: parsing.GetApiName()},
 				{Key: "Response", Value: string(reply.Data)},
 				{Key: "parsedResult", Value: parsedResult},
@@ -133,7 +136,8 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		}
 		if parsedResultAsNumber > latestBlock {
 			return utils.LavaFormatWarning("[-] verify failed parsed result is greater than latestBlock", err, []utils.Attribute{
-				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+				{Key: "chainId", Value: chainId},
+				{Key: "nodeUrl", Value: proxyUrl.Url},
 				{Key: "Method", Value: parsing.GetApiName()},
 				{Key: "latestBlock", Value: latestBlock},
 				{Key: "parsedResult", Value: parsedResultAsNumber},
@@ -141,7 +145,8 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		}
 		if latestBlock-parsedResultAsNumber < verification.LatestDistance {
 			return utils.LavaFormatWarning("[-] verify failed expected block distance is not sufficient", err, []utils.Attribute{
-				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+				{Key: "chainId", Value: chainId},
+				{Key: "nodeUrl", Value: proxyUrl.Url},
 				{Key: "Method", Value: parsing.GetApiName()},
 				{Key: "latestBlock", Value: latestBlock},
 				{Key: "parsedResult", Value: parsedResultAsNumber},
@@ -153,14 +158,21 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	if verification.Value != "*" && verification.Value != "" {
 		if parsedResult != verification.Value {
 			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err, []utils.Attribute{
+				{Key: "chainId", Value: chainId},
+				{Key: "nodeUrl", Value: proxyUrl.Url},
 				{Key: "parsedResult", Value: parsedResult},
 				{Key: "verification.Value", Value: verification.Value},
-				{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
 				{Key: "Method", Value: parsing.GetApiName()},
 			}...)
 		}
 	}
-	utils.LavaFormatInfo("[+] verified successfully", utils.Attribute{Key: "endpoint", Value: cf.endpoint.String()}, utils.Attribute{Key: "verification", Value: verification.Name}, utils.Attribute{Key: "value", Value: parsedResult}, utils.Attribute{Key: "verificationKey", Value: verification.VerificationKey})
+	utils.LavaFormatInfo("[+] verified successfully",
+		utils.Attribute{Key: "chainId", Value: chainId},
+		utils.Attribute{Key: "nodeUrl", Value: proxyUrl.Url},
+		utils.Attribute{Key: "verification", Value: verification.Name},
+		utils.Attribute{Key: "value", Value: parser.CapStringLen(parsedResult)},
+		utils.Attribute{Key: "verificationKey", Value: verification.VerificationKey},
+	)
 	return nil
 }
 
@@ -187,14 +199,15 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(tagName+" failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
-	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
+	reply, _, _, proxyUrl, chainId, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}, {Key: "error", Value: err}}...)
 	}
 	parserInput, err := FormatResponseForParsing(reply, chainMessage)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" Failed formatResponseForParsing", []utils.Attribute{
-			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "chainId", Value: chainId},
+			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
 			{Key: "error", Value: err},
@@ -203,7 +216,8 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	blockNum, err := parser.ParseBlockFromReply(parserInput, parsing.ResultParsing)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" Failed to parse Response", []utils.Attribute{
-			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "chainId", Value: chainId},
+			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
 			{Key: "error", Value: err},
@@ -243,7 +257,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 		return "", utils.LavaFormatError(tagName+" failed CraftChainMessage on function template", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 	start := time.Now()
-	reply, _, _, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
+	reply, _, _, proxyUrl, chainId, err := cf.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 	if err != nil {
 		timeTaken := time.Since(start)
 		return "", utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "sendTime", Value: timeTaken}, {Key: "error", Value: err}, {Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
@@ -252,7 +266,8 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	if err != nil {
 		return "", utils.LavaFormatDebug(tagName+" Failed formatResponseForParsing", []utils.Attribute{
 			{Key: "error", Value: err},
-			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "chainId", Value: chainId},
+			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
 		}...)
@@ -262,7 +277,8 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	if err != nil {
 		return "", utils.LavaFormatDebug(tagName+" Failed ParseMessageResponse", []utils.Attribute{
 			{Key: "error", Value: err},
-			{Key: "nodeUrl", Value: cf.endpoint.UrlsString()},
+			{Key: "chainId", Value: chainId},
+			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
 			{Key: "Response", Value: string(reply.Data)},
 		}...)

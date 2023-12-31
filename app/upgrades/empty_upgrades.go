@@ -175,9 +175,15 @@ var Upgrade_0_31_1 = Upgrade{
 
 var Upgrade_0_32_0 = Upgrade{
 	UpgradeName:          "v0.32.0",
-	CreateUpgradeHandler: defaultUpgradeHandler,
+	CreateUpgradeHandler: v0_32_0_UpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
 		Added:   []string{rewardstypes.StoreKey},
 		Deleted: []string{minttypes.StoreKey},
 	},
+}
+
+var Upgrade_0_32_3 = Upgrade{
+	UpgradeName:          "v0.32.3",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
 }

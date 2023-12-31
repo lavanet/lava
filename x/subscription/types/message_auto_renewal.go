@@ -1,6 +1,8 @@
 package types
 
 import (
+	"strings"
+
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -10,10 +12,12 @@ const TypeMsgAutoRenewal = "add_project"
 
 var _ sdk.Msg = &MsgAutoRenewal{}
 
-func NewMsgAutoRenewal(creator string, enable bool) *MsgAutoRenewal {
+func NewMsgAutoRenewal(creator, consumer, planIndex string, enable bool) *MsgAutoRenewal {
 	return &MsgAutoRenewal{
-		Creator: creator,
-		Enable:  enable,
+		Consumer: consumer,
+		Creator:  creator,
+		Enable:   enable,
+		Index:    planIndex,
 	}
 }
 
@@ -42,6 +46,15 @@ func (msg *MsgAutoRenewal) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
+	}
+
+	_, err = sdk.AccAddressFromBech32(msg.Consumer)
+	if err != nil {
+		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid consumer address (%s)", err)
+	}
+
+	if !msg.Enable && strings.TrimSpace(msg.Index) != "" {
+		return sdkerrors.Wrapf(ErrInvalidParameter, "can't use plan index when `--disable` flag is passed")
 	}
 
 	return nil

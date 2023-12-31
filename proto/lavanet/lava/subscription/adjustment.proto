@@ -1,0 +1,11 @@
+syntax = "proto3";
+package lavanet.lava.subscription;
+
+option go_package = "github.com/lavanet/lava/x/subscription/types";
+
+message Adjustment {
+  string index = 1; 
+  uint64 adjustedUsage = 2;
+  uint64 totalUsage = 3;
+}
+
