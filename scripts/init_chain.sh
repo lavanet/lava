@@ -27,8 +27,8 @@ if [ "$1" == "debug" ]; then
     data=$(cat "$path$genesis" \
         | jq '.app_state.gov.params.min_deposit[0].denom = "ulava"' \
         | jq '.app_state.gov.params.min_deposit[0].amount = "100"' \
-        | jq '.app_state.gov.params.voting_period = "3s"' \
-        | jq '.app_state.gov.params.expedited_voting_period = "1s"' \
+        | jq '.app_state.gov.params.voting_period = "4s"' \
+        | jq '.app_state.gov.params.expedited_voting_period = "3s"' \
         | jq '.app_state.gov.params.expedited_min_deposit[0].denom = "ulava"' \
         | jq '.app_state.gov.params.expedited_min_deposit[0].amount = "200"' \
         | jq '.app_state.gov.params.expedited_threshold = "0.67"' \
@@ -43,8 +43,8 @@ else
     data=$(cat "$path$genesis" \
         | jq '.app_state.gov.params.min_deposit[0].denom = "ulava"' \
         | jq '.app_state.gov.params.min_deposit[0].amount = "100"' \
-        | jq '.app_state.gov.params.voting_period = "3s"' \
-        | jq '.app_state.gov.params.expedited_voting_period = "1s"' \
+        | jq '.app_state.gov.params.voting_period = "4s"' \
+        | jq '.app_state.gov.params.expedited_voting_period = "3s"' \
         | jq '.app_state.gov.params.expedited_min_deposit[0].denom = "ulava"' \
         | jq '.app_state.gov.params.expedited_min_deposit[0].amount = "200"' \
         | jq '.app_state.gov.params.expedited_threshold = "0.67"' \
@@ -52,8 +52,8 @@ else
         | jq '.app_state.mint.params.mint_denom = "ulava"' \
         | jq '.app_state.staking.params.bond_denom = "ulava"' \
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
-        | jq '.app_state.downtime.params.downtime_duration = "10s"' \
-        | jq '.app_state.downtime.params.epoch_duration = "20s"' \
+        | jq '.app_state.downtime.params.downtime_duration = "6s"' \
+        | jq '.app_state.downtime.params.epoch_duration = "10s"' \
     )
 fi
 
