@@ -37,9 +37,14 @@ type ConcurrentBlockStore struct {
 	Block uint64
 }
 
+type cacheInf interface {
+	Get(key interface{}) (interface{}, bool)
+	Set(key, value interface{}, cost int64) bool
+}
+
 type ProviderOptimizer struct {
 	strategy                        Strategy
-	providersStorage                *ristretto.Cache
+	providersStorage                cacheInf
 	providerRelayStats              *ristretto.Cache // used to decide on the half time of the decay
 	averageBlockTime                time.Duration
 	baseWorldLatency                time.Duration

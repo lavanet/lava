@@ -2,6 +2,7 @@ package provideroptimizer
 
 import (
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -15,6 +16,25 @@ const (
 	TEST_AVERAGE_BLOCK_TIME = 10 * time.Second
 	TEST_BASE_WORLD_LATENCY = 150 * time.Millisecond
 )
+
+type providerOptimizerSyncCache struct {
+	value map[interface{}]interface{}
+	lock  sync.RWMutex
+}
+
+func (posc *providerOptimizerSyncCache) Get(key interface{}) (interface{}, bool) {
+	posc.lock.Lock()
+	defer posc.lock.Unlock()
+	ret, ok := posc.value[key]
+	return ret, ok
+}
+
+func (posc *providerOptimizerSyncCache) Set(key, value interface{}, cost int64) bool {
+	posc.lock.Lock()
+	defer posc.lock.Unlock()
+	posc.value[key] = value
+	return true
+}
 
 func setupProviderOptimizer(maxProvidersCount int) *ProviderOptimizer {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
@@ -242,12 +262,12 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 	requestCU := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(requestBlock)
+	providerOptimizer.providersStorage = &providerOptimizerSyncCache{value: map[interface{}]interface{}{}}
 	// in this test we are repeatedly adding better results, and latency score should improve
 	for i := 0; i < 10; i++ {
 		providerData, _ := providerOptimizer.getProviderData(providerAddress)
 		currentLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
 		providerOptimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true)
-		time.Sleep(4 * time.Millisecond)
 		providerData, found := providerOptimizer.getProviderData(providerAddress)
 		require.True(t, found)
 		newLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
@@ -258,7 +278,6 @@ func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 		providerData, _ := providerOptimizer.getProviderData(providerAddress)
 		currentLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
 		providerOptimizer.AppendRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, false, requestCU, syncBlock)
-		time.Sleep(4 * time.Millisecond)
 		providerData, found := providerOptimizer.getProviderData(providerAddress)
 		require.True(t, found)
 		newLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
