@@ -90,6 +90,7 @@ One of the primary processes within this module involves the function `advanceMo
 The advanceMonth function plays a crucial role in the subscription lifecycle, performing several important tasks:
 
 1. **CU Tracker Timer Update**: It updates the CU tracker timer, ensuring accurate tracking of Compute Units (CUs) for the subscription.
+   For more information on the CU tracker, please refer to the [Pairing module](https://github.com/lavanet/lava/blob/main/x/pairing/README.md).
 
 2. **Subscription Duration Management**: The function checks the subscription's remaining duration. If there is time left, it deducts one month from the remaining duration and updates the total duration count, reflecting the passage of time. The details of the subscription, including CU allocations, are reset for the upcoming month.  
    In cases where the subscription has reached its end (no more remaining months), different scenarios are addressed:
