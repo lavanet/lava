@@ -15,8 +15,7 @@ const (
 )
 
 type PolicySetter interface {
-	SetPolicy(policyInformation map[string]struct{}) error
-	BuildMapFromPolicyQuery(policy *plantypes.Policy, chainId string, apiInterface string) (map[string]struct{}, error)
+	SetPolicy(policy *plantypes.Policy, chainId string, apiInterface string) error
 }
 
 type PolicyFetcher interface {
@@ -59,12 +58,8 @@ func (pu *PolicyUpdater) UpdaterKey() string {
 	return CallbackKeyForPolicyUpdate + pu.chainId
 }
 
-func (pu *PolicyUpdater) BuildPolicyMapAndSetPolicy(policyUpdatable PolicySetter, policy *plantypes.Policy, apiInterface string) error {
-	policyMap, err := policyUpdatable.BuildMapFromPolicyQuery(policy, pu.chainId, apiInterface)
-	if err != nil {
-		return utils.LavaFormatError("panic level error, failed building policy map from query result", err, utils.LogAttr("policy_result", policy))
-	}
-	err = policyUpdatable.SetPolicy(policyMap)
+func (pu *PolicyUpdater) setPolicy(policyUpdatable PolicySetter, policy *plantypes.Policy, apiInterface string) error {
+	err := policyUpdatable.SetPolicy(policy, pu.chainId, apiInterface)
 	if err != nil {
 		return utils.LavaFormatError("panic level error, failed setting policy on policy updatable", err, utils.LogAttr("chainId", pu.chainId), utils.LogAttr("api_interface", apiInterface))
 	}
@@ -84,7 +79,7 @@ func (pu *PolicyUpdater) UpdateEpoch(epoch uint64) {
 		return
 	}
 	for apiInterface, policyUpdatable := range pu.policyUpdatables {
-		err = pu.BuildPolicyMapAndSetPolicy(policyUpdatable, policy, apiInterface)
+		err = pu.setPolicy(policyUpdatable, policy, apiInterface)
 		if err != nil {
 			utils.LavaFormatError("Failed Updating policy", err, utils.LogAttr("apiInterface", apiInterface), utils.LogAttr("chainId", pu.chainId))
 		}

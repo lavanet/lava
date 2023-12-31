@@ -173,7 +173,11 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			chainID := rpcEndpoint.ChainID
 			// create policyUpdaters per chain
 			if policyUpdater, ok := policyUpdaters[rpcEndpoint.ChainID]; ok {
-				policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
+				err := policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
+				if err != nil {
+					errCh <- err
+					return utils.LavaFormatError("failed adding policy setter", err)
+				}
 			} else {
 				policyUpdaters[rpcEndpoint.ChainID] = updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint)
 			}

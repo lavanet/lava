@@ -11,6 +11,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -206,7 +207,7 @@ func TestExtensions(t *testing.T) {
 	spec, err := keepertest.GetASpec(specname, "../../", nil, nil)
 	require.NoError(t, err)
 
-	chainParser.SetPolicy(configuredExtensions)
+	chainParser.SetPolicy(&plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{plantypes.ChainPolicy{ChainId: specname, Requirements: []plantypes.ChainRequirement{plantypes.ChainRequirement{Collection: spectypes.CollectionData{ApiInterface: "jsonrpc"}, Extensions: []string{"archive"}}}}}}, specname, "jsonrpc")
 	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	require.True(t, ok)
 	cuCost := uint64(0)

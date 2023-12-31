@@ -124,7 +124,11 @@ func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy *plantypes.Policy, ch
 }
 
 // policy information contains all configured services (extensions and addons) allowed to be used by the consumer
-func (bcp *BaseChainParser) SetPolicy(policyInformation map[string]struct{}) error {
+func (bcp *BaseChainParser) SetPolicy(policy *plantypes.Policy, chainId string, apiInterface string) error {
+	policyInformation, err := bcp.BuildMapFromPolicyQuery(policy, chainId, apiInterface)
+	if err != nil {
+		return err
+	}
 	bcp.rwLock.Lock()
 	defer bcp.rwLock.Unlock()
 	// reset the current one in case we configured it previously
