@@ -159,8 +159,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
-	policyUpdaters := make(map[string]*updaters.PolicyUpdater) // per chainId we have one policy updater
 
+	policyUpdaters := syncMapPolicyUpdaters{}
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
@@ -172,14 +172,14 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			}
 			chainID := rpcEndpoint.ChainID
 			// create policyUpdaters per chain
-			if policyUpdater, ok := policyUpdaters[rpcEndpoint.ChainID]; ok {
+			if policyUpdater, ok := policyUpdaters.Load(rpcEndpoint.ChainID); ok {
 				err := policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
 				if err != nil {
 					errCh <- err
 					return utils.LavaFormatError("failed adding policy setter", err)
 				}
 			} else {
-				policyUpdaters[rpcEndpoint.ChainID] = updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint)
+				policyUpdaters.Store(rpcEndpoint.ChainID, updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint))
 			}
 			// register for spec updates
 			err = rpcc.consumerStateTracker.RegisterForSpecUpdates(ctx, chainParser, *rpcEndpoint)
@@ -277,7 +277,12 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 
 	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
-	for _, policyUpdater := range policyUpdaters {
+	for chain := range chainMutexes {
+		policyUpdater, ok := policyUpdaters.Load(chain)
+		if !ok {
+			utils.LavaFormatError("could not load policy Updater for chain", nil, utils.LogAttr("chain", chain))
+			continue
+		}
 		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater)
 	}
 
