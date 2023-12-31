@@ -1,45 +1,30 @@
 {
     "proposal": {
-        "title": "Add temporary to-delete plan proposal",
-        "description": "A proposal of a temporary to-delete plan",
-        "plans": [
-            {
-                "index": "to_delete_plan",
-                "description": "This plan has no restrictions",
-                "type": "rpc",
-                "price": {
-                    "denom": "ulava",
-                    "amount": "100000"
-                },
-                "annual_discount_percentage": 20,
-                "allow_overuse": true,
-                "overuse_rate": 2,
-                "plan_policy": {
-                    "chain_policies": [
-                        {
-                            "chain_id": "LAV1",
-                            "apis": [
-                            ]
-                        },
-                        {
-                            "chain_id": "ETH1",
-                            "apis": [
-                                "eth_blockNumber",
-                                "eth_accounts"
-                            ]
-                        }
-                    ],
-                    "geolocation_profile": "AU",
-                    "total_cu_limit": 1000000,
-                    "epoch_cu_limit": 100000,
-                    "max_providers_to_pair": 3,
-                    "selected_providers_mode": "MIXED",
-                    "selected_providers": [
-                        "lava@1wvn4slrf2r7cm92fnqdhvl3x470944uev92squ"
-                    ]
-                }
-            }
-        ]
+      "title": "to_delete_plan",
+      "description": "to_delete_plan",
+      "plans": [
+        {
+          "index": "to_delete_plan",
+          "description": "to_delete_plan",
+          "type": "rpc",
+          "price": {
+            "denom": "ulava",
+            "amount": "10000"
+          },
+          "annual_discount_percentage": 20,
+          "allow_overuse": false,
+          "overuse_rate": 0,
+          "plan_policy": {
+            "chain_policies": [],
+            "geolocation_profile": "GL",
+            "total_cu_limit": 100000,
+            "epoch_cu_limit": 50,
+            "max_providers_to_pair": 5,
+            "selected_providers_mode": "ALLOWED",
+            "selected_providers": []
+          }
+        }
+      ]
     },
     "deposit": "10000000ulava"
-}
+  }

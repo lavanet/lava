@@ -52,8 +52,8 @@ else
         | jq '.app_state.mint.params.mint_denom = "ulava"' \
         | jq '.app_state.staking.params.bond_denom = "ulava"' \
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
-        | jq '.app_state.downtime.params.downtime_duration = "10s"' \
-        | jq '.app_state.downtime.params.epoch_duration = "20s"' \
+        | jq '.app_state.downtime.params.downtime_duration = "6s"' \
+        | jq '.app_state.downtime.params.epoch_duration = "10s"' \
     )
 fi
 
