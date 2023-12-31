@@ -49,7 +49,20 @@ The function `NewTimerStoreBeginBlock` will create a new `TimerStore` that will 
 
 After calling the function `NewTimerStoreBeginBlock` or `NewTimerStoreEndBlock` the calling procedure can use the returned `TimerStore` object to set the callback of the timer. The callback has to be of the signature `func(ctx sdk.Context, key, data []byte)`, more on that in the next section.
 
-To set the callback, the procedure needs to call `WithCallbackByBlockHeight` or `WithCallbackByBlockTime`.
+To configure the callback for a timer, one must invoke either `WithCallbackByBlockHeight` or `WithCallbackByBlockTime`, depending on the timer type, like so:
+
+```go
+// For a BlockHeight timer
+timerStore.WithCallbackByBlockHeight(func(ctx sdk.Context, key, data []byte) {
+	// callback logic for BlockHeight timer
+})
+
+// For a BlockTime timer
+timerStore.WithCallbackByBlockTime(func(ctx sdk.Context, key, data []byte) {
+	// callback logic for BlockTime timer
+})
+```
+
 The `WithCallbackByBlockHeight` function will add the callback to the `TimerStore` object, under the `BlockHeight` kind, and the `WithCallbackByBlockTime` function will add the callback to the `TimerStore` object, under the `BlockTime` kind.
 
 The `BlockHeight` callbacks, can be triggered at a given block, and the `BlockTime` callback can be triggered at the first block that it's time is past the given time.
