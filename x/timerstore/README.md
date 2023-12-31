@@ -116,7 +116,7 @@ The `timerstore` module supports the following queries:
 | ------------ | ----------------------------------- | ------------------------------------------------ |
 | `all-timers` | store-key (string), prefix (string) | Shows all timers of a specific timer store       |
 | `next`       | store-key (string), prefix (string) | Shows the next timeout of a specific timer store |
-| `store-keys` | none                                | Shows all timer store keys                       |
+| `store-keys` | none                                | Shows all timer store keys and prefixes                       |
 
 ## Transactions
 

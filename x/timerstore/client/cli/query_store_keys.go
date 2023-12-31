@@ -14,7 +14,7 @@ var _ = strconv.Itoa(0)
 func CmdStoreKeys() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "store-keys",
-		Short: "Query all timer store keys",
+		Short: "Query all timer store keys and prefixes",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
