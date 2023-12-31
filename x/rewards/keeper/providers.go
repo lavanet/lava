@@ -27,6 +27,7 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 
 // Distribute bonus rewards to providers across all chains based on performance
 func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
+	details := map[string]string{}
 	total := k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)
 	totalRewarded := sdk.ZeroInt()
 	// specs emissions from the total reward pool base on stake
@@ -60,9 +61,13 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 			if err != nil {
 				utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 			}
+
+			details[providerAddr.String()+" "+spec.ChainID] = reward.String()
 		}
 	}
 	k.removeAllBasePay(ctx)
+
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed successfully")
 }
 
 // specTotalPayout calculates the total bonus for a specific spec
