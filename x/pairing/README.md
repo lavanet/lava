@@ -88,7 +88,7 @@ A provider can unstake and retrieve their coins. When a provider unstakes, they 
 
 #### Freeze
 
-Freeze Mode enables the Provider to temporarily suspend their node's operation during maintenance to avoid bad Quality of Service (QoS). Freeze/Unfreeze is applied on the next Epoch. The Provider can initiate multiple Freeze actions, but only one Freeze-per-chain can be take effect at a time.
+Freeze Mode enables the Provider to temporarily suspend their node's operation during maintenance to avoid bad Quality of Service (QoS). Freeze/Unfreeze is applied on the next Epoch. The Provider can initiate multiple Freeze actions with one command.
 
 ### Pairing
 
@@ -223,11 +223,11 @@ Here is the workflow for Lava's payment mechanism:
 
 1. The provider sends a relay payment transaction, which is signed by the consumer.
 2. The reported CU (compute units) from the relay payment transaction is tracked.
-3. On a monthly basis, all the providers' tracked CU are reviewed, and payments are sent for their accumulated services.
+3. Upon a subscription's month expiry, all the providers' tracked CU are reviewed, and payments are sent for their accumulated services.
 
 #### CU Tracking
 
-The goal of CU tracking is to keep records of serviced CUs by the providers, in order to determine the amount of payment they should receive at the end of the month. When a relay payment transaction occurs, the number of CUs associated with each relay is counted and saved under the provider who initiated the transaction. At the end of each month, the CU tracker is reset for all providers.
+The goal of CU tracking is to keep records of serviced CUs by the providers to a specific subscription, in order to determine the amount of payment they should receive at the month expiry of said subscription. When a relay payment transaction occurs, the number of CUs associated with each relay is counted and saved under the provider who initiated the transaction. At the end of each month, the CU tracker is reset for all providers.
 
 #### Providers Payment
 
