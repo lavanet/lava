@@ -15,7 +15,7 @@ Additionally, a subscription plan can be bought in advance for months ahead.
 
 There are 2 other concepts that the subscription is connected to:
 
-- [Plans](https://github.com/lavanet/lava/blob/main/x/pairing/README.md)
+- [Plans](https://github.com/lavanet/lava/blob/main/x/plans/README.md)
 - [Projects](https://github.com/lavanet/lava/blob/main/x/projects/README.md)
 
 To fully understand this module, it is highly recommended to read Plans and Projects READMEs as well.
