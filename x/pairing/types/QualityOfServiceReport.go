@@ -15,3 +15,12 @@ func (qos *QualityOfServiceReport) ComputeQoS() (sdk.Dec, error) {
 
 	return qos.Availability.Mul(qos.Sync).Mul(qos.Latency).ApproxRoot(3)
 }
+
+func (qos *QualityOfServiceReport) ComputeQoSExcellence() (sdk.Dec, error) {
+	if qos.Availability.LT(sdk.ZeroDec()) ||
+		qos.Latency.LT(sdk.ZeroDec()) ||
+		qos.Sync.LT(sdk.ZeroDec()) {
+		return sdk.ZeroDec(), fmt.Errorf("QoS excellence scores is below 0")
+	}
+	return qos.Availability.Quo(qos.Sync).Quo(qos.Latency).ApproxRoot(3)
+}
