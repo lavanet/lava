@@ -63,11 +63,10 @@ plan_index=$(lavad q subscription current $(lavad keys show user1 -a) | yq .sub.
 if [ "$plan_index" != "EmergencyModePlan" ]; then "echo subscription ${user1addr}: wrong plan index $plan_index .sub.plan_index doesn't contain EmergencyModePlan"; exit 1; fi
 # buy the upgraded subscription
 lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
 # wait for the new subscription to take effect (1 epoch + 1 block as changes happen to subscription module after epochstorage module on the begin block events)
+wait_next_block # wait block is here in case 1 block before epoch change we commit but the effect happens only on the epoch change meaning we didn't really wait an epoch for the changes to take effect.
 sleep_until_next_epoch
-wait_next_block
-wait_next_block
-wait_next_block
 # validate the new subscription is the default plan and not emergency mode plan.
 current_plan=$(lavad q subscription current $(lavad keys show user1 -a)) # store current plan in a different variable to print in case of an error
 echo "current plan after upgrade: $current_plan"
