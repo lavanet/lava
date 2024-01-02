@@ -85,6 +85,14 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int, delegations []types.Delegation) (providerReward math.Int, delegatorsReward math.Int) {
 	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry, delegations)
 
+	// Sanity check - effectiveStake > 0
+	if effectiveStake.IsZero() {
+		utils.LavaFormatWarning("critical: Attempt to divide by zero", nil,
+			utils.LogAttr("effectiveStake", effectiveStake),
+			utils.LogAttr("effectiveDelegations", effectiveDelegations),
+		)
+		return math.NewInt(0), math.NewInt(0)
+	}
 	providerReward = totalReward.Mul(stakeEntry.Stake.Amount).Quo(effectiveStake)
 	rawDelegatorsReward := totalReward.Mul(effectiveDelegations).Quo(effectiveStake)
 	providerCommission := rawDelegatorsReward.MulRaw(int64(stakeEntry.DelegateCommission)).QuoRaw(100)
@@ -110,6 +118,14 @@ func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.St
 // CalcDelegatorReward calculates a single delegator reward according to its delegation
 // delegatorReward = delegatorsReward * (delegatorStake / totalDelegations) = (delegatorsReward * delegatorStake) / totalDelegations
 func (k Keeper) CalcDelegatorReward(delegatorsReward math.Int, totalDelegations math.Int, delegation types.Delegation) math.Int {
+	// Sanity check - totalDelegations > 0
+	if totalDelegations.IsZero() {
+		utils.LavaFormatWarning("critical: Attempt to divide by zero", nil,
+			utils.LogAttr("totalDelegations", totalDelegations),
+			utils.LogAttr("delegatorsReward", delegatorsReward),
+		)
+		return math.NewInt(0)
+	}
 	return delegatorsReward.Mul(delegation.Amount.Amount).Quo(totalDelegations)
 }
 
@@ -177,6 +193,11 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	contributorAddresses, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
 	if contributorPart.GT(math.LegacyZeroDec()) {
 		contributorsNum := int64(len(contributorAddresses))
+		// Sanity check - contributorsNum > 0
+		if contributorsNum == 0 {
+			return math.ZeroInt(), math.ZeroInt(), utils.LavaFormatWarning("critical: Attempt to divide by zero", nil,
+				utils.LogAttr("len(contributorAddresses)", contributorsNum))
+		}
 		contributorReward := totalReward.MulRaw(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt64()).QuoRaw(spectypes.ContributorPrecision)
 		// make sure to round it down for the integers division
 		contributorReward = contributorReward.QuoRaw(contributorsNum).MulRaw(contributorsNum)
