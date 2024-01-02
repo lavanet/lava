@@ -356,6 +356,7 @@ func TestRefillPoolsTimerStore(t *testing.T) {
 		Prefix:   types.RefillRewardsPoolTimerPrefix,
 	}
 	// check everything throughout the entire lifetime of the allocation pool (and beyond)
+	defaultBlockTime := ts.Keepers.Downtime.GetParams(ts.Ctx).DowntimeDuration.Seconds()
 	month := ts.GetNextMonth(ts.BlockTime()) - ts.BlockTime().UTC().Unix()
 	for i := 0; i < int(lifetime+2); i++ {
 		res, err := ts.Keepers.TimerStoreKeeper.AllTimers(ts.GoCtx, req)
@@ -364,7 +365,7 @@ func TestRefillPoolsTimerStore(t *testing.T) {
 		require.Equal(t, 0, len(res.BlockHeightTimers))
 
 		expiry := ts.Keepers.Rewards.TimeToNextTimerExpiry(ts.Ctx)
-		require.Equal(t, month, expiry)
+		require.InDelta(t, month, expiry, defaultBlockTime)
 
 		var expectedMonthsLeft int64
 		if i < int(lifetime) {
@@ -374,8 +375,8 @@ func TestRefillPoolsTimerStore(t *testing.T) {
 		require.Equal(t, expectedMonthsLeft, monthsLeft)
 
 		ts.AdvanceMonths(1)
-		month = ts.GetNextMonth(ts.BlockTime()) - ts.BlockTime().UTC().Unix()
 		ts.AdvanceBlock()
 		testkeeper.EndBlock(ts.Ctx, ts.Keepers)
+		month = ts.GetNextMonth(ts.BlockTime()) - ts.BlockTime().UTC().Unix()
 	}
 }

@@ -15,18 +15,49 @@ func TestMsgAutoRenewal_ValidateBasic(t *testing.T) {
 		err  error
 	}{
 		{
-			name: "invalid address",
+			name: "creator invalid address",
 			msg: MsgAutoRenewal{
-				Creator: "invalid_address",
-				Enable:  false,
+				Creator:  "invalid_address",
+				Consumer: sample.AccAddress(),
+				Enable:   false,
 			},
 			err: legacyerrors.ErrInvalidAddress,
-		}, {
+		},
+		{
+			name: "consumer invalid address",
+			msg: MsgAutoRenewal{
+				Creator:  sample.AccAddress(),
+				Consumer: "invalid_address",
+				Enable:   false,
+			},
+			err: legacyerrors.ErrInvalidAddress,
+		},
+		{
 			name: "valid address",
 			msg: MsgAutoRenewal{
-				Creator: sample.AccAddress(),
-				Enable:  false,
+				Creator:  sample.AccAddress(),
+				Consumer: sample.AccAddress(),
+				Enable:   false,
 			},
+		},
+		{
+			name: "valid plan",
+			msg: MsgAutoRenewal{
+				Creator:  sample.AccAddress(),
+				Consumer: sample.AccAddress(),
+				Enable:   true,
+				Index:    "free",
+			},
+		},
+		{
+			name: "plan not empty on disable",
+			msg: MsgAutoRenewal{
+				Creator:  sample.AccAddress(),
+				Consumer: sample.AccAddress(),
+				Enable:   false,
+				Index:    "free",
+			},
+			err: ErrInvalidParameter,
 		},
 	}
 	for _, tt := range tests {

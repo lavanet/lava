@@ -98,10 +98,12 @@ type SessionWithProvider struct {
 type SessionWithProviderMap map[string]*SessionWithProvider
 
 type RPCEndpoint struct {
-	NetworkAddress string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // HOST:PORT
-	ChainID        string `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                      // spec chain identifier
-	ApiInterface   string `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
-	Geolocation    uint64 `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
+	NetworkAddress  string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // HOST:PORT
+	ChainID         string `yaml:"chain-id,omitempty" json:"chain-id,omitempty" mapstructure:"chain-id"`                      // spec chain identifier
+	ApiInterface    string `yaml:"api-interface,omitempty" json:"api-interface,omitempty" mapstructure:"api-interface"`
+	TLSEnabled      bool   `yaml:"tls-enabled,omitempty" json:"tls-enabled,omitempty" mapstructure:"tls-enabled"`
+	HealthCheckPath string `yaml:"health-check-path,omitempty" json:"health-check-path,omitempty" mapstructure:"health-check-path"` // health check status code 200 path, default is "/"
+	Geolocation     uint64 `yaml:"geolocation,omitempty" json:"geolocation,omitempty" mapstructure:"geolocation"`
 }
 
 func (endpoint *RPCEndpoint) String() (retStr string) {
@@ -465,7 +467,7 @@ func (cs *SingleConsumerSession) CalculateExpectedLatency(timeoutGivenToRelay ti
 // cs should be locked here to use this method, returns the computed qos or zero if last qos is nil or failed to compute.
 func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
 	if cs.QoSInfo.LastExcellenceQoSReport != nil {
-		qosComputed, errComputing := cs.QoSInfo.LastExcellenceQoSReport.ComputeQoS()
+		qosComputed, errComputing := cs.QoSInfo.LastExcellenceQoSReport.ComputeQoSExcellence()
 		if errComputing == nil { // if we failed to compute the qos will be 0 so this provider wont be picked to return the error in case we get it
 			return qosComputed
 		}

@@ -131,7 +131,7 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &restMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
-	return nodeMsg, nil
+	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
 func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
@@ -331,6 +331,10 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 
 		query := "?" + string(fiberCtx.Request().URI().QueryString())
 		path := "/" + fiberCtx.Params("*")
+		if path == apil.endpoint.HealthCheckPath {
+			fiberCtx.Status(http.StatusOK)
+			return fiberCtx.SendString("Health status OK")
+		}
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 

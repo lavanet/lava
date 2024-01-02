@@ -14,6 +14,7 @@ type Pool string
 // The allocation pools will get depleted after RewardsAllocationPoolsLifetime.
 const (
 	ValidatorsRewardsAllocationPoolName Pool  = "validators_rewards_allocation_pool"
+	ProvidersRewardsAllocationPool      Pool  = "providers_rewards_allocation_pool"
 	RewardsAllocationPoolsLifetime      int64 = 48 // 4 years (in months)
 )
 
@@ -23,11 +24,9 @@ const (
 // monthly quota of tokens from the allocation pools
 const (
 	ValidatorsRewardsDistributionPoolName Pool = "validators_rewards_distribution_pool"
-)
-
-const (
-	ProvidersRewardsAllocationPool  Pool = "providers_rewards_allocation_pool"
-	ProviderRewardsDistributionPool Pool = "providers_rewards_distribution_pool"
+	ProviderRewardsDistributionPool       Pool = "providers_rewards_distribution_pool"
+	DistributionPoolRefillEventName            = "distribution_pools_refill"
+	ProvidersBonusRewardsEventName             = "provider_bonus_rewards"
 )
 
 // BlocksToTimerExpirySlackFactor is used to calculate the number of blocks until the

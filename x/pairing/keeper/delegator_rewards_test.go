@@ -349,13 +349,23 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 	_, delegator2 := ts.GetAccount(common.CONSUMER, 2) // delegates to no one
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	sub, err := ts.QuerySubscriptionCurrent(client)
+	require.NoError(t, err)
+	currentDurationLeft := sub.Sub.DurationLeft
+	require.NotZero(t, currentDurationLeft)
+
+	monthsToBuy := 2
+	ts.TxSubscriptionBuy(client, client, ts.plan.Index, monthsToBuy, false, false) // extend by a month so the sub won't expire
+
+	sub, err = ts.QuerySubscriptionCurrent(client)
+	require.NoError(t, err)
+	require.Equal(t, currentDurationLeft+uint64(monthsToBuy), sub.Sub.DurationLeft)
 
 	spec1 := common.CreateMockSpec()
 	spec1.Index = "mock1"
 	spec1.Name = "mock1"
 	ts.AddSpec(spec1.Index, spec1)
-	err := ts.StakeProvider(provider1, spec1, testStake)
+	err = ts.StakeProvider(provider1, spec1, testStake)
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()

@@ -16,20 +16,25 @@ import (
 
 type ProxyCallBack = func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error)
 
-func NewGRPCProxy(cb ProxyCallBack) (*grpc.Server, *http.Server, error) {
+func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string) (*grpc.Server, *http.Server, error) {
 	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(RawBytesCodec{}))
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
 		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type,x-grpc-web")
-
+		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
+			resp.WriteHeader(200)
+			_, _ = resp.Write(make([]byte, 0))
+			return
+		}
 		wrappedServer.ServeHTTP(resp, req)
 	}
 
 	httpServer := &http.Server{
 		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
 	}
+
 	return s, httpServer, nil
 }
 

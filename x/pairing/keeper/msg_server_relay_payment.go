@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -235,7 +236,18 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// update provider payment storage with complainer's CU
 		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, relay.CuSum, servicersToPair, project.Index)
 		if err != nil {
-			utils.LogLavaEvent(ctx, logger, types.UnresponsiveProviderUnstakeFailedEventName, map[string]string{"err:": err.Error()}, "Error Unresponsive Providers could not unstake")
+			var reportedProviders []string
+			for _, p := range relay.UnresponsiveProviders {
+				reportedProviders = append(reportedProviders, p.String())
+			}
+			reportedProvidersStr := strings.Join(reportedProviders, ",")
+			utils.LavaFormatError("failed to update complainers CU for providers", err,
+				utils.Attribute{Key: "reported_providers", Value: reportedProvidersStr},
+				utils.Attribute{Key: "epoch", Value: strconv.FormatUint(epochStart, 10)},
+				utils.Attribute{Key: "chain_id", Value: relay.SpecId},
+				utils.Attribute{Key: "cu", Value: strconv.FormatUint(relay.CuSum, 10)},
+				utils.Attribute{Key: "project_index", Value: project.Index},
+			)
 		}
 		rejectedCu -= relay.CuSum
 		rejected_relays_num--

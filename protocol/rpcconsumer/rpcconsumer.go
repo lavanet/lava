@@ -162,6 +162,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 
+	policyUpdaters := syncMapPolicyUpdaters{}
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
@@ -172,12 +173,24 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				return err
 			}
 			chainID := rpcEndpoint.ChainID
+			// create policyUpdaters per chain
+			if policyUpdater, ok := policyUpdaters.Load(rpcEndpoint.ChainID); ok {
+				err := policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
+				if err != nil {
+					errCh <- err
+					return utils.LavaFormatError("failed adding policy setter", err)
+				}
+			} else {
+				policyUpdaters.Store(rpcEndpoint.ChainID, updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint))
+			}
+			// register for spec updates
 			err = rpcc.consumerStateTracker.RegisterForSpecUpdates(ctx, chainParser, *rpcEndpoint)
 			if err != nil {
 				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
 				return err
 			}
+
 			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 			var optimizer *provideroptimizer.ProviderOptimizer
 			var consumerConsistency *ConsumerConsistency
@@ -265,6 +278,16 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		return err
 	}
 
+	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
+	for chain := range chainMutexes {
+		policyUpdater, ok := policyUpdaters.Load(chain)
+		if !ok {
+			utils.LavaFormatError("could not load policy Updater for chain", nil, utils.LogAttr("chain", chain))
+			continue
+		}
+		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater)
+	}
+
 	utils.LavaFormatInfo("RPCConsumer done setting up all endpoints, ready for requests")
 
 	signalChan := make(chan os.Signal, 1)
@@ -280,6 +303,9 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 	}
 	for _, endpoint := range endpoints {
 		endpoint.Geolocation = geolocation
+		if endpoint.HealthCheckPath == "" {
+			endpoint.HealthCheckPath = common.DEFAULT_HEALTH_PATH
+		}
 	}
 	return
 }

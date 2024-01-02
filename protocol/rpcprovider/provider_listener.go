@@ -74,7 +74,7 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 
 	var serveExecutor func() error
 	if networkAddress.DisableTLS {
-		utils.LavaFormatWarning("Running with disabled TLS configuration", nil)
+		utils.LavaFormatInfo("Running with disabled TLS configuration")
 		serveExecutor = func() error { return pl.httpServer.Serve(lis) }
 	} else {
 		pl.httpServer.TLSConfig = lavasession.GetTlsConfig(networkAddress)
