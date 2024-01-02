@@ -57,14 +57,16 @@ func (cri chainRouterImpl) ExtensionsSupported(extensions []string) bool {
 	return ok
 }
 
-func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) {
 	// add the parsed addon from the apiCollection
 	addon := chainMessage.GetApiCollection().CollectionData.AddOn
 	selectedChainProxy, err := cri.getChainProxySupporting(addon, extensions)
 	if err != nil {
-		return nil, "", nil, err
+		return nil, "", nil, common.NodeUrl{}, "", err
 	}
-	return selectedChainProxy.SendNodeMsg(ctx, ch, chainMessage)
+	relayReply, subscriptionID, relayReplyServer, err = selectedChainProxy.SendNodeMsg(ctx, ch, chainMessage)
+	proxyUrl, chainId = selectedChainProxy.GetChainProxyInformation()
+	return relayReply, subscriptionID, relayReplyServer, proxyUrl, chainId, err
 }
 
 // batch nodeUrls with the same addons together in a copy

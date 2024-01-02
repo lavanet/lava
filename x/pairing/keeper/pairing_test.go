@@ -29,9 +29,9 @@ func TestPairingUniqueness(t *testing.T) {
 	_, sub1Addr := ts.Account("sub1")
 	_, sub2Addr := ts.Account("sub2")
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false, false)
 	require.Nil(t, err)
-	_, err = ts.TxSubscriptionBuy(sub2Addr, sub2Addr, ts.plan.Index, 1, false)
+	_, err = ts.TxSubscriptionBuy(sub2Addr, sub2Addr, ts.plan.Index, 1, false, false)
 	require.Nil(t, err)
 
 	for i := 1; i <= 1000; i++ {
@@ -97,7 +97,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 
 	_, sub1Addr := ts.Account("sub1")
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false, false)
 	require.Nil(t, err)
 
 	for i := 1; i <= 10; i++ {
@@ -140,7 +140,7 @@ func TestGetPairing(t *testing.T) {
 	require.Nil(t, err)
 
 	// BLOCK_TIME = 30sec (testutil/keeper/keepers_init.go)
-	constBlockTime := testkeeper.BLOCK_TIME
+	constBlockTime := ts.Keepers.Downtime.GetParams(ts.Ctx).DowntimeDuration
 	epochBlocks := ts.EpochBlocks()
 
 	// test: different epoch, valid tells if the payment request should work
@@ -247,7 +247,7 @@ func TestPairingStatic(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false, false)
 	require.Nil(t, err)
 
 	for i := 0; i < int(ts.plan.PlanPolicy.MaxProvidersToPair)*2; i++ {
@@ -519,7 +519,7 @@ func TestAddonPairing(t *testing.T) {
 
 			_, sub1Addr := ts.AddAccount("sub", 0, 10000)
 
-			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
 			require.Nil(t, err)
 
 			// get the admin project and set its policies
@@ -532,7 +532,7 @@ func TestAddonPairing(t *testing.T) {
 			if tt.projChainPolicy != nil {
 				projPolicy := defaultPolicy()
 				projPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.projChainPolicy}
-				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, projPolicy)
+				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, &projPolicy)
 				require.Nil(t, err)
 			}
 
@@ -542,7 +542,7 @@ func TestAddonPairing(t *testing.T) {
 			if tt.subscChainPolicy != nil {
 				subscPolicy := defaultPolicy()
 				subscPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.subscChainPolicy}
-				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, subscPolicy)
+				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, &subscPolicy)
 				require.Nil(t, err)
 			}
 
@@ -710,7 +710,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 
 			ts.AdvanceEpoch()
 
-			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
 			require.Nil(t, err)
 
 			// get the admin project and set its policies
@@ -724,7 +724,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			policy.SelectedProvidersMode = tt.projMode
 			policy.SelectedProviders = providersSet.projProviders
 
-			_, err = ts.TxProjectSetPolicy(project.Index, sub1Addr, *policy)
+			_, err = ts.TxProjectSetPolicy(project.Index, sub1Addr, policy)
 			require.Nil(t, err)
 
 			// skip epoch for the policy change to take effect
@@ -733,7 +733,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			policy.SelectedProvidersMode = tt.subMode
 			policy.SelectedProviders = providersSet.subProviders
 
-			_, err = ts.TxProjectSetSubscriptionPolicy(project.Index, sub1Addr, *policy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(project.Index, sub1Addr, policy)
 			require.Nil(t, err)
 
 			// skip epoch for the policy change to take effect
@@ -871,8 +871,8 @@ func TestPairingUniformDistribution(t *testing.T) {
 	ts.setupForPayments(providersCount, 1, providersToPair)
 	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
 
-	// extend the subscription to accommodate many (pairing) epochs
-	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 5, false)
+	// make the subscription auto-renew so it won't expire after many (pairing) epochs
+	err := ts.TxSubscriptionAutoRenewal(clientAddr, clientAddr, ts.plan.Index, true)
 	require.NoError(t, err)
 
 	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
@@ -898,8 +898,8 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	// extend the subscription to accommodate many (pairing) epochs
-	_, err = ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 10, false)
+	// make the subscription auto-renew so it won't expire after many (pairing) epochs
+	err = ts.TxSubscriptionAutoRenewal(clientAddr, clientAddr, ts.plan.Index, true)
 	require.Nil(t, err)
 
 	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
@@ -1007,9 +1007,9 @@ func TestGeolocationPairingScores(t *testing.T) {
 	basicAcct, basicAddr := ts.GetAccount(common.CONSUMER, 1)
 	premiumAcct, premiumAddr := ts.GetAccount(common.CONSUMER, 2)
 
-	ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1, false)
-	ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1, false)
-	ts.TxSubscriptionBuy(premiumAddr, premiumAddr, premiumPlan.Index, 1, false)
+	ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1, false, false)
+	ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1, false, false)
+	ts.TxSubscriptionBuy(premiumAddr, premiumAddr, premiumPlan.Index, 1, false, false)
 
 	for geoName, geo := range planstypes.Geolocation_value {
 		if geoName != "GL" && geoName != "GLS" {
@@ -1051,7 +1051,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 			if tt.changePolicy {
 				newPolicy = tt.planPolicy
 				newPolicy.GeolocationProfile = tt.newGeo
-				_, err = ts.TxProjectSetPolicy(projIndex, tt.dev.Addr.String(), newPolicy)
+				_, err = ts.TxProjectSetPolicy(projIndex, tt.dev.Addr.String(), &newPolicy)
 				require.Nil(t, err)
 				policies = append(policies, &newPolicy)
 			}
@@ -1199,7 +1199,7 @@ func TestDuplicateProviders(t *testing.T) {
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
-	ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1, false)
+	ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1, false, false)
 
 	for geoName, geo := range planstypes.Geolocation_value {
 		if geoName != "GL" && geoName != "GLS" {
@@ -1247,7 +1247,7 @@ func TestNoRequiredGeo(t *testing.T) {
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
-	ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1, false)
+	ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1, false, false)
 
 	// add 5 more providers that are not in US-E (the only allowed providers in the free plan)
 	err = ts.addProviderGeolocation(5, planstypes.Geolocation_value["AS"])
@@ -1929,7 +1929,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 
 			_, sub1Addr := ts.AddAccount("sub", 0, 10000)
 
-			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
 			require.Nil(t, err)
 
 			// get the admin project and set its policies
@@ -1942,7 +1942,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			if tt.projChainPolicy != nil {
 				projPolicy := defaultPolicy()
 				projPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.projChainPolicy}
-				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, projPolicy)
+				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, &projPolicy)
 				require.Nil(t, err)
 			}
 
@@ -1952,7 +1952,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			if tt.subscChainPolicy != nil {
 				subscPolicy := defaultPolicy()
 				subscPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.subscChainPolicy}
-				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, subscPolicy)
+				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, &subscPolicy)
 				require.Nil(t, err)
 			}
 
@@ -2094,7 +2094,7 @@ func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 
 		_, sub1Addr := ts.AddAccount("sub", 0, 10000)
 
-		_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
+		_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
 		require.Nil(t, err)
 
 		// get the admin project and set its policies
@@ -2222,7 +2222,7 @@ func TestPairingPerformance(t *testing.T) {
 
 	_, sub1Addr := ts.Account("sub1")
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false)
+	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false, false)
 	require.Nil(t, err)
 
 	for i := 1; i <= 1000; i++ {

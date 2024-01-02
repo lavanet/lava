@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"
+	updaters "github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -15,7 +16,7 @@ import (
 const (
 	BlocksToSaveLavaChainTracker   = 1 // we only need the latest block
 	TendermintConsensusParamsQuery = "consensus_params"
-	BlockResultRetry               = 20
+	debug                          = false
 )
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
@@ -24,7 +25,8 @@ type StateTracker struct {
 	chainTracker         *chaintracker.ChainTracker
 	registrationLock     sync.RWMutex
 	newLavaBlockUpdaters map[string]Updater
-	EventTracker         *EventTracker
+	EventTracker         *updaters.EventTracker
+	AverageBlockTime     time.Duration
 }
 
 type Updater interface {
@@ -42,9 +44,9 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, utils.LavaFormatError("Chain ID mismatch", nil, utils.Attribute{Key: "--chain-id", Value: txFactory.ChainID()}, utils.Attribute{Key: "Node chainID", Value: status.NodeInfo.Network})
 	}
 
-	eventTracker := &EventTracker{clientCtx: clientCtx}
-	for i := 0; i < BlockResultRetry; i++ {
-		err = eventTracker.updateBlockResults(0)
+	eventTracker := &updaters.EventTracker{ClientCtx: clientCtx}
+	for i := 0; i < updaters.BlockResultRetry; i++ {
+		err = eventTracker.UpdateBlockResults(0)
 		if err == nil {
 			break
 		}
@@ -54,15 +56,19 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, utils.LavaFormatError("failed getting blockResults after retries", err)
 	}
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
-	specResponse, err := specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-		ChainID: "LAV1",
-	})
-	for i := 0; i < BlockResultRetry && err != nil; i++ {
+	var specResponse *spectypes.QueryGetSpecResponse
+	for i := 0; i < updaters.BlockResultRetry; i++ {
 		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
 			ChainID: "LAV1",
 		})
+		if err == nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
-
+	if err != nil {
+		utils.LavaFormatFatal("failed querying lava spec for state tracker", err)
+	}
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
 		NewLatestCallback: cst.newLavaBlock,
@@ -71,8 +77,22 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		AverageBlockTime:  time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
 		ServerBlockMemory: 25 + BlocksToSaveLavaChainTracker,
 	}
+	cst.AverageBlockTime = chainTrackerConfig.AverageBlockTime
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
+	cst.chainTracker.RegisterForBlockTimeUpdates(cst) // registering for block time updates.
 	return cst, err
+}
+
+func (st *StateTracker) UpdateBlockTime(blockTime time.Duration) {
+	st.registrationLock.Lock()
+	defer st.registrationLock.Unlock()
+	st.AverageBlockTime = blockTime
+}
+
+func (st *StateTracker) GetAverageBlockTime() time.Duration {
+	st.registrationLock.RLock()
+	defer st.registrationLock.RUnlock()
+	return st.AverageBlockTime
 }
 
 func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
@@ -80,7 +100,7 @@ func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
 	st.registrationLock.RLock()
 	defer st.registrationLock.RUnlock()
 	// first update event tracker
-	err := st.EventTracker.updateBlockResults(latestBlock)
+	err := st.EventTracker.UpdateBlockResults(latestBlock)
 	if err != nil {
 		utils.LavaFormatWarning("calling update without updated events tracker", err)
 	}
@@ -102,6 +122,6 @@ func (st *StateTracker) RegisterForUpdates(ctx context.Context, updater Updater)
 }
 
 // For lavavisor access
-func (st *StateTracker) GetEventTracker() *EventTracker {
+func (st *StateTracker) GetEventTracker() *updaters.EventTracker {
 	return st.EventTracker
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -26,6 +27,8 @@ const (
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
 	RELAY_TIMEOUT_HEADER_NAME             = "lava-relay-timeout"
 	EXTENSION_OVERRIDE_HEADER_NAME        = "lava-extension"
+	// send http request to /lava/health to see if the process is up - (ret code 200)
+	DEFAULT_HEALTH_PATH = "/lava/health"
 )
 
 type NodeUrl struct {
@@ -173,10 +176,16 @@ type ConflictHandlerInterface interface {
 	StoreConflictReported()
 }
 
+type ProviderInfo struct {
+	ProviderAddress              string
+	ProviderQoSExcellenceSummery sdk.Dec // the number represents the average qos for this provider session
+	ProviderStake                sdk.Coin
+}
+
 type RelayResult struct {
 	Request         *pairingtypes.RelayRequest
 	Reply           *pairingtypes.RelayReply
-	ProviderAddress string
+	ProviderInfo    ProviderInfo
 	ReplyServer     *pairingtypes.Relayer_RelaySubscribeClient
 	Finalized       bool
 	ConflictHandler ConflictHandlerInterface
@@ -208,7 +217,7 @@ func (rr *RelayResult) GetProvider() string {
 	if rr == nil {
 		return ""
 	}
-	return rr.ProviderAddress
+	return rr.ProviderInfo.ProviderAddress
 }
 
 func GetIpFromGrpcContext(ctx context.Context) string {

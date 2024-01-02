@@ -11,7 +11,7 @@ const TypeMsgSetPolicy = "set_admin_policy"
 
 var _ sdk.Msg = &MsgSetPolicy{}
 
-func NewMsgSetPolicy(creator, project string, policy planstypes.Policy) *MsgSetPolicy {
+func NewMsgSetPolicy(creator, project string, policy *planstypes.Policy) *MsgSetPolicy {
 	return &MsgSetPolicy{
 		Creator: creator,
 		Project: project,

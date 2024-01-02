@@ -11,6 +11,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -176,7 +177,7 @@ func TestAddonAndVerifications(t *testing.T) {
 		collectionType := verification.ConnectionType
 		chainMessage, err := CraftChainMessage(parsing, collectionType, chainParser, nil, nil)
 		require.NoError(t, err)
-		reply, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
+		reply, _, _, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
 		require.NoError(t, err)
 		_, err = FormatResponseForParsing(reply, chainMessage)
 		require.NoError(t, err)
@@ -206,7 +207,7 @@ func TestExtensions(t *testing.T) {
 	spec, err := keepertest.GetASpec(specname, "../../", nil, nil)
 	require.NoError(t, err)
 
-	chainParser.SetConfiguredExtensions(configuredExtensions)
+	chainParser.SetPolicy(&plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainId: specname, Requirements: []plantypes.ChainRequirement{{Collection: spectypes.CollectionData{ApiInterface: "jsonrpc"}, Extensions: []string{"archive"}}}}}}, specname, "jsonrpc")
 	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	require.True(t, ok)
 	cuCost := uint64(0)
@@ -287,7 +288,7 @@ func TestJsonRpcBatchCall(t *testing.T) {
 	require.NoError(t, err)
 	requestedBlock, _ := chainMessage.RequestedBlock()
 	require.Equal(t, spectypes.LATEST_BLOCK, requestedBlock)
-	relayReply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
+	relayReply, _, _, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
@@ -328,7 +329,7 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 	require.NoError(t, err)
 	requestedBlock, _ := chainMessage.RequestedBlock()
 	require.Equal(t, spectypes.LATEST_BLOCK, requestedBlock)
-	relayReply, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
+	relayReply, _, _, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)

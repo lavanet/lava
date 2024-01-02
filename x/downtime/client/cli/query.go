@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/lavanet/lava/x/downtime/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	"github.com/spf13/cobra"
@@ -11,7 +13,11 @@ import (
 
 func NewQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: types.ModuleName + "query commands",
+		Use:                        types.ModuleName,
+		Short:                      fmt.Sprintf("Querying commands for the %s module", types.ModuleName),
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
 	}
 
 	cmd.AddCommand(CmdQueryDowntime(), CmdQueryParams())
@@ -19,7 +25,7 @@ func NewQueryCmd() *cobra.Command {
 }
 
 func CmdQueryParams() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "params",
 		Short: "Query downtime module params",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -35,13 +41,16 @@ func CmdQueryParams() *cobra.Command {
 			return clientCtx.PrintProto(resp)
 		},
 	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
 }
 
 func CmdQueryDowntime() *cobra.Command {
-	return &cobra.Command{
-		Use:   "downtime [epoch_start_block]",
+	cmd := &cobra.Command{
+		Use:   "downtime [block]",
 		Short: "Query downtime",
-		Long:  "Query downtime between blocks, if only start is provided then will query for downtime at the given block, if end is provided then it will query the full range",
+		Long:  "Query downtime at the given epoch (the epoch of the block)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			start, err := strconv.ParseUint(args[0], 10, 64)
@@ -62,4 +71,7 @@ func CmdQueryDowntime() *cobra.Command {
 			return clientCtx.PrintProto(resp)
 		},
 	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
 }

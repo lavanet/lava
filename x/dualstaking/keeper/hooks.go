@@ -46,6 +46,10 @@ func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAd
 // create new delegation period record
 // add description
 func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+	if DisableDualstakingHook {
+		return nil
+	}
+
 	diff, err := h.k.VerifyDelegatorBalance(ctx, delAddr)
 	if err != nil {
 		return err
@@ -138,6 +142,10 @@ func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ 
 }
 
 func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+	if DisableDualstakingHook {
+		return nil
+	}
+
 	delegation, found := h.k.stakingKeeper.GetDelegation(ctx, delAddr, valAddr)
 	if !found {
 		return fmt.Errorf("could not find delegation for dualstaking hook")
@@ -146,7 +154,7 @@ func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, 
 	if err != nil {
 		return nil
 	}
-	amount := validator.TokensFromSharesRoundUp(delegation.Shares).TruncateInt()
+	amount := validator.TokensFromSharesRoundUp(delegation.Shares).Ceil().TruncateInt()
 	err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), amount))
 	if err != nil {
 		return utils.LavaFormatError("delegation removed hook failed", err,

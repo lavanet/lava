@@ -17,10 +17,13 @@ PROVIDER1_LISTENER="127.0.0.1:2221"
 PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
 
-
+echo; echo "#### Starting cache server for provider ####"
 screen -d -m -S cache-provider bash -c "source ~/.bashrc; lavap cache 127.0.0.1:7777 --metrics_address 127.0.0.1:5747 --log_level debug 2>&1 | tee $LOGS_DIR/CACHE_PROVIDER.log"
+
+echo; echo "#### Starting cache server for consumer ####"
 screen -d -m -S cache-consumer bash -c "source ~/.bashrc; lavap cache 127.0.0.1:7778 --metrics_address 127.0.0.1:5748 --log_level debug 2>&1 | tee $LOGS_DIR/CACHE_CONSUMER.log"
 
+echo; echo "#### Starting provider 1 ####"
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER1_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
@@ -62,9 +65,12 @@ $PROVIDER1_LISTENER AXELAR grpc '$AXELAR_GRPC' \
 $PROVIDER1_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
 $PROVIDER1_LISTENER FVM jsonrpc '$FVM_JRPC' \
 $PROVIDER1_LISTENER NEAR jsonrpc '$NEAR_JRPC' \
+$PROVIDER1_LISTENER AGR rest '$AGORIC_REST' \
+$PROVIDER1_LISTENER AGR grpc '$AGORIC_GRPC' \
 $EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation "$GEOLOCATION" --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 # $PROVIDER1_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
+echo; echo "#### Starting provider 2 ####"
 screen -d -m -S provider2 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER2_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER2_LISTENER LAV1 rest '$LAVA_REST' \
@@ -73,6 +79,7 @@ $PROVIDER2_LISTENER LAV1 grpc '$LAVA_GRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation "$GEOLOCATION" --log_level debug --from servicer2 --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
 # $PROVIDER2_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
+echo; echo "#### Starting provider 3 ####"
 screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER3_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER3_LISTENER LAV1 rest '$LAVA_REST' \
@@ -81,6 +88,7 @@ $PROVIDER3_LISTENER LAV1 grpc '$LAVA_GRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation "$GEOLOCATION" --log_level debug --from servicer3 --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 # $PROVIDER3_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
+echo; echo "#### Starting consumer ####"
 # Setup Portal
 screen -d -m -S portals bash -c "source ~/.bashrc; lavap rpcconsumer consumer_examples/full_consumer_example.yml\
 $EXTRA_PORTAL_FLAGS --cache-be "127.0.0.1:7778" --geolocation "$GEOLOCATION" --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --strategy distributed 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25

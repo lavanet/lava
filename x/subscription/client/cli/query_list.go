@@ -14,7 +14,7 @@ var _ = strconv.Itoa(0)
 func CmdList() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "Query all current subscriptions to service packages",
+		Short: "Query all current subscriptions",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)

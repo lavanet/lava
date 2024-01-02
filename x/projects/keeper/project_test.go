@@ -200,7 +200,7 @@ func TestProjectsServerAPI(t *testing.T) {
 	err := ts.TxProposalAddPlans(plan)
 	require.Nil(t, err)
 
-	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
+	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
 	require.Nil(t, err)
 
 	projectData := types.ProjectData{
@@ -536,7 +536,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 			}
 
 			if testAdminPolicy {
-				_, err := ts.TxProjectSetPolicy(tt.projectID, tt.creator, newPolicy)
+				_, err := ts.TxProjectSetPolicy(tt.projectID, tt.creator, &newPolicy)
 				if tt.setAdminPolicySuccess {
 					require.Nil(t, err)
 					ts.AdvanceEpoch()
@@ -547,7 +547,7 @@ func setPolicyTest(t *testing.T, testAdminPolicy bool) {
 					require.NotNil(t, err)
 				}
 			} else {
-				_, err := ts.TxProjectSetSubscriptionPolicy(tt.projectID, tt.creator, newPolicy)
+				_, err := ts.TxProjectSetSubscriptionPolicy(tt.projectID, tt.creator, &newPolicy)
 				if tt.setSubscriptionPolicySuccess {
 					require.Nil(t, err)
 					ts.AdvanceEpoch()
@@ -598,7 +598,7 @@ func TestChargeComputeUnits(t *testing.T) {
 	ts.AdvanceEpoch()
 	block3 := ts.BlockHeight()
 
-	ts.Keepers.Projects.SnapshotSubscriptionProjects(ts.Ctx, sub1Addr)
+	ts.Keepers.Projects.SnapshotSubscriptionProjects(ts.Ctx, sub1Addr, block3)
 
 	// try to charge CUs: should update oldest and second-oldest entries, but not the latest
 	// (because the latter is in a new snapshot)
@@ -1050,7 +1050,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 				require.NotNil(t, err)
 			}
 
-			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false)
+			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
 			require.Nil(t, err)
 
 			res, err := ts.QuerySubscriptionListProjects(sub1Addr)
@@ -1063,7 +1063,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			policy.SelectedProvidersMode = tt.projMode
 			policy.SelectedProviders = providersSet.projProviders
 
-			_, err = ts.TxProjectSetPolicy(admProject.Index, sub1Addr, policy)
+			_, err = ts.TxProjectSetPolicy(admProject.Index, sub1Addr, &policy)
 			if tt.projPolicyValid {
 				require.Nil(t, err)
 			} else {
@@ -1073,7 +1073,7 @@ func TestSetPolicySelectedProviders(t *testing.T) {
 			policy.SelectedProvidersMode = tt.subMode
 			policy.SelectedProviders = providersSet.subProviders
 
-			_, err = ts.TxProjectSetSubscriptionPolicy(admProject.Index, sub1Addr, policy)
+			_, err = ts.TxProjectSetSubscriptionPolicy(admProject.Index, sub1Addr, &policy)
 			if tt.subPolicyValid {
 				require.Nil(t, err)
 			} else {
@@ -1139,9 +1139,9 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	basicUser := common.CreateNewAccount(_ctx, *keepers, 10000)
 	premiumUser := common.CreateNewAccount(_ctx, *keepers, 10000)
 
-	common.BuySubscription(t, _ctx, *keepers, *servers, freeUser, freePlan.Index)
-	common.BuySubscription(t, _ctx, *keepers, *servers, basicUser, basicPlan.Index)
-	common.BuySubscription(t, _ctx, *keepers, *servers, premiumUser, premiumPlan.Index)
+	common.BuySubscription(_ctx, *keepers, *servers, freeUser, freePlan.Index)
+	common.BuySubscription(_ctx, *keepers, *servers, basicUser, basicPlan.Index)
+	common.BuySubscription(_ctx, *keepers, *servers, premiumUser, premiumPlan.Index)
 
 	templates := []struct {
 		name           string
@@ -1182,7 +1182,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 			_, err = servers.ProjectServer.SetPolicy(_ctx, &types.MsgSetPolicy{
 				Creator: tt.dev.Addr.String(),
 				Project: projIndex,
-				Policy: planstypes.Policy{
+				Policy: &planstypes.Policy{
 					GeolocationProfile: tt.setGeo,
 					TotalCuLimit:       10,
 					EpochCuLimit:       2,
@@ -1224,7 +1224,7 @@ func TestPendingProject(t *testing.T) {
 
 	_, sub := ts.Account("sub1")
 
-	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1, false)
+	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1, false, false)
 	require.Nil(t, err)
 
 	res, err := ts.QuerySubscriptionListProjects(sub)
@@ -1232,7 +1232,7 @@ func TestPendingProject(t *testing.T) {
 	projectID := res.Projects[0]
 
 	adminPolicy := ts.Plan("free").PlanPolicy
-	_, err = ts.TxProjectSetPolicy(projectID, sub, adminPolicy)
+	_, err = ts.TxProjectSetPolicy(projectID, sub, &adminPolicy)
 	require.Nil(t, err)
 
 	// we didn't advance an epoch yet so querying for the project should have a pending project

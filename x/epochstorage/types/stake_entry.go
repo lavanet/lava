@@ -21,7 +21,7 @@ func (se StakeEntry) EffectiveStake() math.Int {
 // Frozen provider block const
 const FROZEN_BLOCK = regmath.MaxInt64
 
-func (stakeEntry *StakeEntry)Freeze() {
+func (stakeEntry *StakeEntry) Freeze() {
 	stakeEntry.StakeAppliedBlock = FROZEN_BLOCK
 }
 
@@ -29,6 +29,6 @@ func (stakeEntry *StakeEntry) UnFreeze(currentBlock uint64) {
 	stakeEntry.StakeAppliedBlock = currentBlock
 }
 
-func (stakeEntry *StakeEntry)IsFrozen() bool {
+func (stakeEntry *StakeEntry) IsFrozen() bool {
 	return stakeEntry.StakeAppliedBlock == FROZEN_BLOCK
 }

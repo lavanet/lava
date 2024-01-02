@@ -137,7 +137,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
-			return nil, utils.LavaFormatError("getSupportedApi jsonrpc failed", err, utils.Attribute{Key: "method", Value: msg.Method})
+			return nil, utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("reason", err), utils.Attribute{Key: "method", Value: msg.Method})
 		}
 
 		apiCollectionForMessage, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
@@ -222,7 +222,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	}
 
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
-	return nodeMsg, nil
+	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
 func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
@@ -474,6 +474,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 		startTime := time.Now()
 		query := "?" + string(fiberCtx.Request().URI().QueryString())
 		path := fiberCtx.Params("*")
+		if "/"+path == apil.endpoint.HealthCheckPath {
+			fiberCtx.Status(http.StatusOK)
+			return fiberCtx.SendString("Health status OK")
+		}
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		ctx, cancel := context.WithCancel(context.Background())
 		guid := utils.GenerateUniqueIdentifier()

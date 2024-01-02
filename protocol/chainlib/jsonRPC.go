@@ -106,7 +106,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
-			return nil, utils.LavaFormatError("getSupportedApi jsonrpc failed", err, utils.Attribute{Key: "method", Value: msg.Method})
+			return nil, utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("reason", err), utils.Attribute{Key: "method", Value: msg.Method})
 		}
 
 		apiCollectionForMessage, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
@@ -184,7 +184,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		}
 	}
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
-	return nodeMsg, nil
+	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
 func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
@@ -451,6 +451,10 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 	})
 
+	app.Get(apil.endpoint.HealthCheckPath, func(fiberCtx *fiber.Ctx) error {
+		fiberCtx.Status(http.StatusOK)
+		return fiberCtx.SendString("Health status OK")
+	})
 	// Go
 	ListenWithRetry(app, apil.endpoint.NetworkAddress)
 }

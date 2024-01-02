@@ -66,6 +66,11 @@ type BaseChainProxy struct {
 	ChainID          string
 }
 
+// returns the node url and chain id for that proxy.
+func (bcp *BaseChainProxy) GetChainProxyInformation() (common.NodeUrl, string) {
+	return bcp.NodeUrl, bcp.ChainID
+}
+
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
 	// Read the dappID from the headers
 	dappID = c.Get("dapp-id")

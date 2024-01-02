@@ -36,7 +36,7 @@ func TestEffectivePolicy(t *testing.T) {
 		MaxProvidersToPair: 3,
 		GeolocationProfile: 1,
 	}
-	_, err = ts.TxProjectSetPolicy(project.ProjectID, clientAddr, adminPolicy)
+	_, err = ts.TxProjectSetPolicy(project.ProjectID, clientAddr, &adminPolicy)
 	require.Nil(t, err)
 
 	subPolicy := planstypes.Policy{
@@ -45,7 +45,7 @@ func TestEffectivePolicy(t *testing.T) {
 		MaxProvidersToPair: 2,
 		GeolocationProfile: planstypes.Geolocation_value["GL"],
 	}
-	_, err = ts.TxProjectSetSubscriptionPolicy(project.ProjectID, clientAddr, subPolicy)
+	_, err = ts.TxProjectSetSubscriptionPolicy(project.ProjectID, clientAddr, &subPolicy)
 	require.Nil(t, err)
 
 	// the effective policy function calcaulates the effective chain policy within it
@@ -70,7 +70,7 @@ func TestEffectivePolicy(t *testing.T) {
 	require.Nil(t, res.PendingPolicy) // there should be no pending policy
 
 	// set a new policy without applying it (no advanceEpoch)
-	_, err = ts.TxProjectSetPolicy(project.ProjectID, clientAddr, planstypes.Policy{
+	_, err = ts.TxProjectSetPolicy(project.ProjectID, clientAddr, &planstypes.Policy{
 		TotalCuLimit:       80000,
 		EpochCuLimit:       5000,
 		MaxProvidersToPair: 3,

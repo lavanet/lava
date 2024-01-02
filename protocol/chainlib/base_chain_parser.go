@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -21,7 +22,7 @@ type BaseChainParser struct {
 	apiCollections  map[CollectionKey]*spectypes.ApiCollection
 	headers         map[ApiKey]*spectypes.Header
 	verifications   map[VerificationKey][]VerificationContainer
-	allowedAddons   map[string]struct{}
+	allowedAddons   map[string]bool
 	extensionParser extensionslib.ExtensionParser
 	active          bool
 }
@@ -78,23 +79,68 @@ func (bcp *BaseChainParser) isExtension(extension string) bool {
 	return bcp.extensionParser.AllowedExtension(extension)
 }
 
-func (bcp *BaseChainParser) SetConfiguredExtensions(extensions map[string]struct{}) error {
-	bcp.rwLock.Lock()
-	defer bcp.rwLock.Unlock()
-	for extension := range extensions {
-		if !bcp.isExtension(extension) {
-			return utils.LavaFormatError("configured extensions contain an extension that is not allowed in the spec", nil, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "configured extensions", Value: extensions}, utils.Attribute{Key: "allowed extensions", Value: bcp.extensionParser.AllowedExtensions})
+// use while bcp locked.
+func (bcp *BaseChainParser) validateAddons(nodeMessage *baseChainMessageContainer) error {
+	var addon string
+	if addon = GetAddon(nodeMessage); addon != "" { // check we have an addon
+		if allowed := bcp.allowedAddons[addon]; !allowed { // check addon is allowed
+			return utils.LavaFormatError("consumer policy does not allow addon", nil,
+				utils.LogAttr("addon", addon),
+			)
 		}
 	}
+	// no addons to validate or validation completed successfully
+	return nil
+}
+
+func (bcp *BaseChainParser) Validate(nodeMessage *baseChainMessageContainer) error {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	err := bcp.validateAddons(nodeMessage)
+	// add more validations in the future here.
+	return err
+}
+
+func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy *plantypes.Policy, chainId string, apiInterface string) (map[string]struct{}, error) {
+	addons, err := policy.GetSupportedAddons(chainId)
+	if err != nil {
+		return nil, err
+	}
+	extensions, err := policy.GetSupportedExtensions(chainId)
+	if err != nil {
+		return nil, err
+	}
+	services := make(map[string]struct{})
+	for _, addon := range addons {
+		services[addon] = struct{}{}
+	}
+	for _, consumerExtension := range extensions {
+		// store only relevant apiInterface extensions
+		if consumerExtension.ApiInterface == apiInterface {
+			services[consumerExtension.Extension] = struct{}{}
+		}
+	}
+	return services, nil
+}
+
+// policy information contains all configured services (extensions and addons) allowed to be used by the consumer
+func (bcp *BaseChainParser) SetPolicy(policy *plantypes.Policy, chainId string, apiInterface string) error {
+	policyInformation, err := bcp.BuildMapFromPolicyQuery(policy, chainId, apiInterface)
+	if err != nil {
+		return err
+	}
+	bcp.rwLock.Lock()
+	defer bcp.rwLock.Unlock()
 	// reset the current one in case we configured it previously
 	configuredExtensions := make(map[extensionslib.ExtensionKey]*spectypes.Extension)
 	for collectionKey, apiCollection := range bcp.apiCollections {
+		// manage extensions
 		for _, extension := range apiCollection.Extensions {
 			if extension.Name == "" {
 				// skip empty extensions
 				continue
 			}
-			if _, ok := extensions[extension.Name]; ok {
+			if _, ok := policyInformation[extension.Name]; ok {
 				extensionKey := extensionslib.ExtensionKey{
 					Extension:      extension.Name,
 					ConnectionType: collectionKey.ConnectionType,
@@ -106,6 +152,12 @@ func (bcp *BaseChainParser) SetConfiguredExtensions(extensions map[string]struct
 		}
 	}
 	bcp.extensionParser.SetConfiguredExtensions(configuredExtensions)
+	// manage allowed addons
+	for addon := range bcp.allowedAddons {
+		if _, ok := policyInformation[addon]; ok {
+			bcp.allowedAddons[addon] = true
+		}
+	}
 	return nil
 }
 
@@ -170,13 +222,13 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[specty
 	bcp.headers = headers
 	bcp.apiCollections = apiCollections
 	bcp.verifications = verifications
-	allowedAddons := map[string]struct{}{}
+	allowedAddons := map[string]bool{}
 	allowedExtensions := map[string]struct{}{}
 	for _, apoCollection := range apiCollections {
 		for _, extension := range apoCollection.Extensions {
 			allowedExtensions[extension.Name] = struct{}{}
 		}
-		allowedAddons[apoCollection.CollectionData.AddOn] = struct{}{}
+		allowedAddons[apoCollection.CollectionData.AddOn] = false
 	}
 	bcp.allowedAddons = allowedAddons
 	bcp.extensionParser = extensionslib.ExtensionParser{AllowedExtensions: allowedExtensions}
@@ -218,12 +270,12 @@ func (apip *BaseChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatError("api not supported", nil, utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, utils.LavaFormatInfo("api not supported", utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
 	}
 
 	// Return an error if api is disabled
 	if !apiCont.api.Enabled {
-		return nil, utils.LavaFormatError("api is disabled", nil, utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, utils.LavaFormatInfo("api is disabled", utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
 	}
 
 	return &apiCont, nil
@@ -376,6 +428,7 @@ func matchSpecApiByName(name, connectionType string, serverApis map[ApiKey]ApiCo
 		utils.LavaFormatWarning("API was found on a different connection type", nil,
 			utils.Attribute{Key: "connection_type_found", Value: foundNameOnDifferentConnectionType},
 			utils.Attribute{Key: "connection_type_requested", Value: connectionType},
+			utils.LogAttr("requested_api", name),
 		)
 	}
 	return nil, false
