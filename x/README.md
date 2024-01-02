@@ -135,3 +135,21 @@ a utility module to provide a ref-counted differential storage. entries are stor
 #### timerstore
 
 a utility module to provide block time based callbacks to be triggered on begin block. this allows periodic checks, timers for subscription expiry, monthly payouts and more.
+
+#### downtime
+
+a utility module that provides information of block average time and detects if there was a blockchain downtime.
+
+### governance
+
+#### spec
+
+the spec module defines the mechanism for the governance to control api specifications, store them verify them, and providers the inheritance functionality for them. all changes in spec are through the gov router.
+
+#### plans
+
+the plans module defines a mechanism for governance to control what subscriptions can be purchased and what is the policy for them. governance can add plans to be purchased by consumers at a specified token price with a specified set of options. it is also possible to modify an existing plan that has already been purchased.
+
+#### protocol
+
+a module to store the target and minimum versions for the protocol modules. it is changeable via a governance params proposal.
