@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strconv"
 
 	"cosmossdk.io/math"
@@ -174,7 +175,14 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		// TODO: deal with the reward's remainder (uint division...)
 		providerAdjustment, ok := adjustmentFactorForProvider[provider]
 		if !ok {
-			providerAdjustment = sdk.OneDec().QuoInt64(int64(k.rewardsKeeper.MaxRewardBoost(ctx)))
+			maxRewardBoost := k.rewardsKeeper.MaxRewardBoost(ctx)
+			if maxRewardBoost == 0 {
+				utils.LavaFormatWarning("maxRewardBoost is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+					utils.LogAttr("maxRewardBoost", maxRewardBoost),
+				)
+				return
+			}
+			providerAdjustment = sdk.OneDec().QuoInt64(int64(maxRewardBoost))
 		}
 
 		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)

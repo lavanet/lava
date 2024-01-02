@@ -158,6 +158,13 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 			winnersAddr = "None"
 		}
 
+		if totalVotes.IsZero() {
+			utils.LavaFormatWarning("totalVotes is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+				utils.LogAttr("totalVotes", totalVotes),
+				utils.LogAttr("winnerVotersStake", winnerVotersStake),
+			)
+			return
+		}
 		eventData = append(eventData, utils.Attribute{Key: "winner", Value: winnersAddr})
 		eventData = append(eventData, utils.Attribute{Key: "winnerVotes%", Value: sdk.NewDecFromInt(winnerVotersStake).QuoInt(totalVotes)})
 
@@ -234,6 +241,15 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 		for _, vote := range conflictVote.Votes {
 			if vote.Result == winner {
 				// calculate the reward for the voter relative part (rewardpool*stake/stakesum)
+
+				if winnerVotersStake.IsZero() {
+					utils.LavaFormatWarning("winnerVotersStake is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+						utils.LogAttr("winnerVotersStake", winnerVotersStake),
+						utils.LogAttr("votersStake[vote.Address]", votersStake[vote.Address]),
+					)
+					return
+				}
+
 				rewardVoter := rewardAllWinningVoters.MulInt(votersStake[vote.Address]).QuoInt(winnerVotersStake)
 				rewardCount = rewardCount.Add(rewardVoter.TruncateInt())
 				if rewardCount.GT(rewardPool.Amount) {

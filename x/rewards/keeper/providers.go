@@ -196,7 +196,14 @@ func (k Keeper) CalculateContributionPercentages(ctx sdk.Context, reward math.In
 
 	// validators_participation = validators_participation_param / (1-community_tax)
 	validatorsParticipationParam := k.GetParams(ctx).ValidatorsSubscriptionParticipation
-	validatorsParticipation = validatorsParticipationParam.Quo((sdk.OneDec().Sub(communityTax)))
+	dividedBy := sdk.OneDec().Sub(communityTax)
+	if dividedBy.IsZero() {
+		return sdk.ZeroDec(), sdk.ZeroDec(), utils.LavaFormatWarning("sdk.OneDec().Sub(communityTax) is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+			utils.LogAttr("communityTax", communityTax),
+		)
+	}
+
+	validatorsParticipation = validatorsParticipationParam.Quo(dividedBy)
 	if validatorsParticipation.GT(sdk.OneDec()) {
 		return sdk.ZeroDec(), sdk.ZeroDec(), utils.LavaFormatError("validators participation bigger than 100%", fmt.Errorf("validators participation calc failed"),
 			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},

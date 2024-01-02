@@ -9,6 +9,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
 	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
@@ -120,6 +121,13 @@ func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 		// equivalent to: (maxBonded - bonded) / (maxBonded - minBonded)
 		// 					  + lowFactor * (bonded - minBonded) / (maxBonded - minBonded)
 		min_max_diff := maxBonded.Sub(minBonded)
+		if !min_max_diff.IsPositive() {
+			utils.LavaFormatWarning("min_max_diff is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+				utils.LogAttr("min_max_diff", min_max_diff),
+				utils.LogAttr("bonded", bonded),
+			)
+			return cosmosMath.LegacyOneDec()
+		}
 		e1 := maxBonded.Sub(bonded).Quo(min_max_diff)
 		e2 := bonded.Sub(minBonded).Quo(min_max_diff)
 		return e1.Add(e2.Mul(lowFactor))
