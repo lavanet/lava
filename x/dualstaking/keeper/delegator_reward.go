@@ -192,13 +192,8 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	claimableRewards = totalReward
 	// make sure this is post boost when rewards pool is introduced
 	contributorAddresses, contributorPart := k.specKeeper.GetContributorReward(ctx, chainID)
-	if contributorPart.GT(math.LegacyZeroDec()) {
-		contributorsNum := int64(len(contributorAddresses))
-		// Sanity check - contributorsNum > 0
-		if contributorsNum == 0 {
-			return math.ZeroInt(), math.ZeroInt(), utils.LavaFormatWarning("contributor addresses slice is empty", fmt.Errorf("critical: Attempt to divide by zero"),
-				utils.LogAttr("len(contributorAddresses)", contributorsNum))
-		}
+	contributorsNum := int64(len(contributorAddresses))
+	if contributorsNum != 0 && contributorPart.GT(math.LegacyZeroDec()) {
 		contributorReward := totalReward.MulRaw(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt64()).QuoRaw(spectypes.ContributorPrecision)
 		// make sure to round it down for the integers division
 		contributorReward = contributorReward.QuoRaw(contributorsNum).MulRaw(contributorsNum)
