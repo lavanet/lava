@@ -13,6 +13,7 @@ It explains how the mechanisms work together to create the modular data access l
   * [Consumer](#consumer)
   * [Provider](#provider)
   * [Contributor](#contributor)
+  * [Delegator](#delegator)
 * [Concepts](#concepts)
   * [Fixed Supply](#fixed-supply)
   * [Epochs](#epochs)
@@ -63,6 +64,10 @@ Providers in the Lava network are individuals aiming to offer APIs in exchange f
 ### Contributor
 
 Contributors within the Lava network are appointed by governance to engage in subscription rewards tied to a specified specification, regulated by governance-controlled allocations. This role is tailored to incentivize activities such as specification maintenance/creation or rewarding successful endeavors that enhance consumption within the network.
+
+### Delegator
+
+Delegators serve as essential contributors to the Lava network, playing a crucial part in maintaining its integrity and functionality. Their primary function revolves around token delegation, where they stake tokens to support network security and operational efficiency. By delegating tokens to validators and providers, delegators actively engage in securing the network and ensuring service provision within the ecosystem. This delegation enables them to participate in reward distribution. Delegators receive rewards proportional to their delegation efforts, earning validator rewards when delegating to validators and sharing in provider rewards when staking providers. Additionally, their tokens generate entries in the Dual Staking module, ensuring synchronization between validator and provider staking pools. Delegators can claim their accumulated rewards from their participation in token delegation through dedicated transactions in the Dual Staking module, further incentivizing their active engagement within the network. Overall, delegators' involvement contributes significantly to the stability, security, and sustainability of the Lava network while being rewarded for their participation.
 
 ## Concepts
 
