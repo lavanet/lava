@@ -44,6 +44,7 @@ lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user
 wait_next_block
 lavad tx pairing stake-provider "EVMOS" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
+# lavad tx project set-policy $(lavad keys show user1 -a)-admin ./cookbook/projects/policy_all_chains_with_addon.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep_until_next_epoch
 
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
@@ -59,3 +60,8 @@ $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id la
 
 echo "--- setting up screens done ---"
 screen -ls
+
+# sleep 30
+# lavad tx project set-policy $(lavad keys show user1 -a)-admin ./cookbook/projects/policy_all_chains_with_extension.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+# sleep 30
+# lavad tx project set-policy $(lavad keys show user1 -a)-admin ./cookbook/projects/policy_all_chains_with_addon.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE

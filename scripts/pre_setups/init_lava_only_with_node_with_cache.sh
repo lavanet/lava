@@ -61,3 +61,4 @@ $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --cache-be 127.0.0.1:20100
 
 echo "--- setting up screens done ---"
 screen -ls
+

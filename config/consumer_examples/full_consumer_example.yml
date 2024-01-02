@@ -128,4 +128,10 @@ endpoints:
     - chain-id: NEAR
       api-interface: jsonrpc
       network-address: 127.0.0.1:3385
+    - chain-id: AGR
+      api-interface: rest
+      network-address: 127.0.0.1:3386
+    - chain-id: AGR
+      api-interface: grpc
+      network-address: 127.0.0.1:3387
 metrics-listen-address: ":7779"

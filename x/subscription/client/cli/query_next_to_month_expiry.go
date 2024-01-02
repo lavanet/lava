@@ -14,7 +14,7 @@ var _ = strconv.Itoa(0)
 func CmdNextToMonthExpiry() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "next-to-month-expiry",
-		Short: "Query for the subscription with the closest month expiry",
+		Short: "Query the subscriptions with the closest month expiry",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)

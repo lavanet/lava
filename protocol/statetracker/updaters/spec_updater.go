@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -35,7 +36,7 @@ type SpecUpdater struct {
 	chainId          string
 	specGetter       SpecGetter
 	blockLastUpdated uint64
-	specUpdatables   map[string]*SpecUpdatable
+	specUpdatables   map[string]*SpecUpdatable // key is api interface
 	specVerifiers    map[string]*SpecVerifier
 	spec             *spectypes.Spec
 }
@@ -118,6 +119,10 @@ func (su *SpecUpdater) RegisterSpecVerifier(ctx context.Context, specVerifier *S
 	return nil
 }
 
+func (su *SpecUpdater) setBlockLastUpdatedAtomically(block uint64) {
+	atomic.StoreUint64(&su.blockLastUpdated, block)
+}
+
 func (su *SpecUpdater) Update(latestBlock int64) {
 	su.lock.RLock()
 	defer su.lock.RUnlock()
@@ -129,7 +134,7 @@ func (su *SpecUpdater) Update(latestBlock int64) {
 			return
 		}
 		if spec.BlockLastUpdated > su.blockLastUpdated {
-			su.blockLastUpdated = spec.BlockLastUpdated
+			su.setBlockLastUpdatedAtomically(spec.BlockLastUpdated)
 		}
 		for _, specUpdatable := range su.specUpdatables {
 			utils.LavaFormatDebug("SpecUpdater: updating spec for chainId",
