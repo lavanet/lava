@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -27,6 +29,11 @@ lavad tx subscription auto-renewal false <subscription_consumer> --from <subscri
 			if err := cobra.MinimumNArgs(1)(cmd, args); err != nil {
 				return err
 			}
+
+			if args[0] != "true" && args[0] != "false" {
+				return fmt.Errorf("the first argument must be 'true' or 'false'")
+			}
+
 			maxArgCount := 2          // true/false & consumer
 			if cast.ToBool(args[0]) { // If enabled, expect the plan-index as well
 				maxArgCount = 3
