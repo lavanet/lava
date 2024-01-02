@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
@@ -326,11 +325,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
 	}
 
 	// Setup HTTP Server
-	app := fiber.New(fiber.Config{})
+	app := createAndSetupBaseAppListener()
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
-
-	app.Use(favicon.New())
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client

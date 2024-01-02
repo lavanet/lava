@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/utils"
 	"golang.org/x/net/http2"
@@ -23,8 +24,18 @@ func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string) (*grpc.Server, *http
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
 		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type,x-grpc-web")
+		resp.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+
+		if req.Method == http.MethodOptions {
+			// Cache preflight request for 24 hours (in seconds)
+			resp.Header().Set("Access-Control-Max-Age", "86400")
+			resp.WriteHeader(fiber.StatusNoContent)
+			_, _ = resp.Write(make([]byte, 0))
+			return
+		}
+
 		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
-			resp.WriteHeader(200)
+			resp.WriteHeader(fiber.StatusOK)
 			_, _ = resp.Write(make([]byte, 0))
 			return
 		}

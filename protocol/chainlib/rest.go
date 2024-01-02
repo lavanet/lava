@@ -23,7 +23,6 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/metrics"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -255,9 +254,7 @@ func (apil *RestChainListener) Serve(ctx context.Context) {
 	}
 
 	// Setup HTTP Server
-	app := fiber.New(fiber.Config{})
-
-	app.Use(favicon.New())
+	app := createAndSetupBaseAppListener()
 
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
