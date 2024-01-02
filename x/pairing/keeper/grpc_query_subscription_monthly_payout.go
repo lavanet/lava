@@ -50,7 +50,7 @@ func (k Keeper) SubscriptionMonthlyPayout(goCtx context.Context, req *types.Quer
 		totalCuTracked := subObj.MonthCuTotal - subObj.MonthCuLeft
 		// Sanity check - totalCuTracked > 0
 		if totalCuTracked <= 0 {
-			return nil, utils.LavaFormatWarning("critical: Attempt to divide by zero or negative number", nil,
+			return nil, utils.LavaFormatWarning("totalCuTracked is zero or negative", fmt.Errorf("critical: Attempt to divide by zero or negative number"),
 				utils.LogAttr("subObj.MonthCuTotal", subObj.MonthCuTotal),
 				utils.LogAttr("subObj.MonthCuLeft", subObj.MonthCuLeft),
 				utils.LogAttr("totalCuTracked", totalCuTracked),

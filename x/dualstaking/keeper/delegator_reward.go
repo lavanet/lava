@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"strconv"
 
 	"cosmossdk.io/math"
@@ -87,7 +88,7 @@ func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward
 
 	// Sanity check - effectiveStake > 0
 	if effectiveStake.IsZero() {
-		utils.LavaFormatWarning("critical: Attempt to divide by zero", nil,
+		utils.LavaFormatWarning("effectiveStake is zero", fmt.Errorf("critical: Attempt to divide by zero"),
 			utils.LogAttr("effectiveStake", effectiveStake),
 			utils.LogAttr("effectiveDelegations", effectiveDelegations),
 		)
@@ -120,7 +121,7 @@ func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.St
 func (k Keeper) CalcDelegatorReward(delegatorsReward math.Int, totalDelegations math.Int, delegation types.Delegation) math.Int {
 	// Sanity check - totalDelegations > 0
 	if totalDelegations.IsZero() {
-		utils.LavaFormatWarning("critical: Attempt to divide by zero", nil,
+		utils.LavaFormatWarning("totalDelegations is zero", fmt.Errorf("critical: Attempt to divide by zero"),
 			utils.LogAttr("totalDelegations", totalDelegations),
 			utils.LogAttr("delegatorsReward", delegatorsReward),
 		)
@@ -195,7 +196,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 		contributorsNum := int64(len(contributorAddresses))
 		// Sanity check - contributorsNum > 0
 		if contributorsNum == 0 {
-			return math.ZeroInt(), math.ZeroInt(), utils.LavaFormatWarning("critical: Attempt to divide by zero", nil,
+			return math.ZeroInt(), math.ZeroInt(), utils.LavaFormatWarning("contributor addresses slice is empty", fmt.Errorf("critical: Attempt to divide by zero"),
 				utils.LogAttr("len(contributorAddresses)", contributorsNum))
 		}
 		contributorReward := totalReward.MulRaw(contributorPart.MulInt64(spectypes.ContributorPrecision).RoundInt64()).QuoRaw(spectypes.ContributorPrecision)
