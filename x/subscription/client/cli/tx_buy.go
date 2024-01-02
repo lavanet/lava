@@ -19,11 +19,12 @@ const (
 func CmdBuy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "buy [plan-index] [optional: consumer] [optional: duration(months)]",
-		Short: "buy a service plan",
+		Short: "Buy a service plan",
 		Long: `The buy command allows a user to buy or upgrade a subscription to a service plan for another user, effective next epoch. 
 The consumer is the beneficiary user (default: the creator). 
 The duration is stated in number of months (default: 1).
-If the plan index is different than the consumer's current plan, it will upgrade to that plan index.`,
+If the plan index is different than the consumer's current plan, it will upgrade to that plan index.
+If the plan index is the same as the consumer's current plan, it will extend the current subscription by [duration].`,
 		Example: `required flags: --from <creator-address>, optional flags: --enable-auto-renewal
 		lavad tx subscription buy [plan-index] --from <creator_address>
 		lavad tx subscription buy [plan-index] --from <creator_address> <consumer_address> 12

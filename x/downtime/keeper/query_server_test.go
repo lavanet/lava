@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"encoding/binary"
 	"testing"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/x/downtime/keeper"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
+	"github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,10 +20,24 @@ func TestQueryServer_QueryDowntime(t *testing.T) {
 
 	// set some downtimes
 	downtime := &v1.Downtime{
-		Block:    1,
+		Block:    0,
 		Duration: 50 * time.Minute,
 	}
 
+	app.EpochstorageKeeper.SetEpochDetails(ctx, types.EpochDetails{
+		StartBlock:    uint64(ctx.BlockHeight()),
+		EarliestStart: uint64(ctx.BlockHeight()),
+		DeletedEpochs: []uint64{},
+	})
+	app.EpochstorageKeeper.SetParams(ctx, types.DefaultParams())
+
+	raw := make([]byte, 8)
+	binary.LittleEndian.PutUint64(raw, 20)
+	app.EpochstorageKeeper.SetFixatedParams(ctx, types.FixatedParams{
+		Index:         string(types.KeyEpochBlocks) + "0",
+		Parameter:     raw,
+		FixationBlock: uint64(ctx.BlockHeight()),
+	})
 	dk.SetDowntime(ctx, downtime.Block, downtime.Duration)
 
 	t.Run("ok", func(t *testing.T) {

@@ -19,7 +19,12 @@ func (q queryServer) QueryParams(ctx context.Context, request *v1.QueryParamsReq
 }
 
 func (q queryServer) QueryDowntime(ctx context.Context, request *v1.QueryDowntimeRequest) (*v1.QueryDowntimeResponse, error) {
-	dt, _ := q.k.GetDowntime(sdk.UnwrapSDKContext(ctx), request.EpochStartBlock)
+	_ctx := sdk.UnwrapSDKContext(ctx)
+	epochStart, _, err := q.k.epochStorageKeeper.GetEpochStartForBlock(_ctx, request.EpochStartBlock)
+	if err != nil {
+		return nil, err
+	}
+	dt, _ := q.k.GetDowntime(sdk.UnwrapSDKContext(ctx), epochStart)
 	return &v1.QueryDowntimeResponse{CumulativeDowntimeDuration: dt}, nil
 }
 
