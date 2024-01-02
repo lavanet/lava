@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	BailStakeDiv = 5 // 20%
-	MajorityDiv  = 2 // 50%
+	BailStakeDiv = 5 // 20% - Can't be 0!
+	MajorityDiv  = 2 // 50% - Can't be 0!
 )
 
 var SlashStakePercent = sdk.NewDecWithPrec(5, 2) // 0.05
