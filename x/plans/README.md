@@ -97,6 +97,8 @@ The `Extensions` field is intended to enable the use of certain APIs to obtain d
 
 The `Mixed` field is designed to enable a combination of regular and extension/addon supporting providers. For instance, if the `archive` extension is defined but the `Mixed` field is set to `false`, the consumer's project will only be paired with providers that support the specified extensions and addons. On the other hand, if the `Mixed` field is set to `true`, the consumer's project will also be paired with providers that don't fully support the extenstion/addons.
 
+For more details on `CollectionData` object, see the spec module's [README](../spec/README.md).
+
 #### Geolocation
 
 Geolocation profile allows consumers to get paired with providers that support these geolocations, ultimately optimizing latency and improving the quality of service for end-users. The geolocations are defined as a bitmap so the `int32` field in the policy can represent multiple geolocations.

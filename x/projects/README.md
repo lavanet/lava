@@ -70,7 +70,7 @@ enum Kinds {
 }
 ```
 
-The admin key lets the admin edit the project's admin policy, enable/disable the project and add/delete other project keys. A single user can be admin in multiple projects. The subscription owner is automatically considered an admin in all of the project created under it.
+The admin key lets the admin edit the project's admin policy, enable/disable the project and add/delete other project keys. A single user can be admin in multiple projects. The subscription owner is automatically considered an admin in all of the projects created under it.
 
 The developer key lets a user to use the project, i.e., make RPC calls and use the project's CU. A single user (consumer) can only be a developer in one project. The project's developer can be viewed as a dapp developer that wants to use Lava to get RPC data for their dapp. To allow end users use their project to get RPC data, the dapp developer will need to use badges. For more details on badges, see [below](#badges).
 
@@ -78,7 +78,7 @@ Note that the admin cannot use the project's CU like a developer, they can only 
 
 ### Badges
 
-Badges are a method to grant compute units (CU) from projects to other users. Given a subscription with projects, a developer key (in a project) can be used to generate a badge key, to be signed by an external badge-server. The badge is ephemeral, limited in time and in CU capacity; It can be used to get pairing with providers, and for requests from providers - which will be charged to the respective project after verification.
+Badges are a method to grant compute units (CU) from projects to other users. Given a subscription with projects, a developer key (in a project) can be used to generate a badge key, to be signed by an external badge-server. The badge is ephemeral, limited in time and in CU capacity; End users, who are not the original developers of the project, can use the badge to pair with providers on behalf of the developer key. The requests made by end users using the badge will be charged to the corresponding project after verification.
 
 A badge is defined as follows:
 
@@ -93,7 +93,7 @@ type Badge struct {
 }
 ```
 
-The badge's `Epoch` field is the epoch in which the badge is valid. When the epoch changes, the badge becomes invalid. The badge's `VirtualEpoch` is used in emergency mode (see `Downtime` module's README for more details).
+The badge's `Epoch` field is the epoch in which the badge is valid in. When the epoch changes, the badge becomes invalid. The badge's `VirtualEpoch` is used in emergency mode (see `Downtime` module's README for more details).
 
 When a badge user sends a relay request to the provider, the first request must be accompanied by the signed message (proof of grant, i.e., a valid `ProjectSig` which should be the developer key's signature). Subsequent relays from the same badge don't have to add a valid `ProjectSig`.
 
@@ -185,7 +185,7 @@ Policy:
     - chain_id: "*" # allows all other chains without specifying
 ```
 
-All fields are not mandatory. An unfilled field will be replaced with a default value or be ignored.
+All fields are optional. An unfilled field will be replaced with a default value or be ignored.
 
 ### Project Keys YAML
 

@@ -340,7 +340,7 @@ func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *p
 	if setPolicyEnum == types.SET_ADMIN_POLICY {
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.SetAdminPolicyEventName, details, "set admin policy successfully")
 	} else if setPolicyEnum == types.SET_SUBSCRIPTION_POLICY {
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.SetSubscriptionPolicyEventName, details, "set admin policy successfully")
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.SetSubscriptionPolicyEventName, details, "set subscription policy successfully")
 	}
 	return nil
 }
