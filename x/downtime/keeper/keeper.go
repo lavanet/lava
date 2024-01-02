@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"math"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	gogowellknown "github.com/gogo/protobuf/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/downtime/types"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 )
@@ -194,6 +196,13 @@ func (k Keeper) GetDowntimeFactor(ctx sdk.Context, epoch uint64) uint64 {
 		return 1
 	}
 	epochDuration := k.GetParams(ctx).EpochDuration
+	if epochDuration == 0 {
+		utils.LavaFormatWarning("epochDuration is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+			utils.LogAttr("epochDuration", epochDuration),
+			utils.LogAttr("duration", duration),
+		)
+		return 1
+	}
 	return uint64(duration/epochDuration) + 1
 }
 
