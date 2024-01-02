@@ -291,6 +291,7 @@ func createAndSetupBaseAppListener() *fiber.App {
 		c.Set("Access-Control-Allow-Origin", "*")
 		// set up all allowed methods.
 		c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+		// allow headers
 		c.Set("Access-Control-Allow-Headers", "*")
 
 		// Handle preflight requests directly
