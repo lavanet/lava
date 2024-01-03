@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
@@ -1357,6 +1359,54 @@ func TestSubscriptionUpgrade(t *testing.T) {
 	// Test that the project is now updated
 	project = getProjectAndFailTestIfNotFound(t, ts, consumer, ts.BlockHeight())
 	require.Equal(t, uint64(0), project.UsedCu)
+}
+
+func TestSubscriptionUpgradeTwiceInSameEpoch(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+
+	_, consumer := ts.Account("sub1")
+
+	planIndexPrefix := "tier"
+
+	for i := 0; i < 3; i++ {
+		plan := common.CreateMockPlan()
+		plan.Index = fmt.Sprintf("%s%d", planIndexPrefix, i+1)
+		plan.Price = sdk.NewCoin(commontypes.TokenDenom, math.NewInt(int64(100+i*100)))
+		plan.Block = ts.BlockHeight()
+		ts.AddPlan(plan.Index, plan)
+	}
+
+	ts.T.Run("multiple plan upgrade attempts in the same epoch", func(t *testing.T) {
+		// Start with tier1 plan
+		_, err := ts.TxSubscriptionBuy(consumer, consumer, "tier1", 1, false, false)
+		require.NoError(t, err)
+
+		ts.AdvanceBlock()
+
+		// Buy tier2 plan
+		_, err = ts.TxSubscriptionBuy(consumer, consumer, "tier2", 1, false, false)
+		require.NoError(t, err)
+
+		ts.AdvanceBlock()
+
+		// Buy tier3 plan
+		_, err = ts.TxSubscriptionBuy(consumer, consumer, "tier3", 1, false, false)
+		require.Error(t, err)
+
+		ts.AdvanceBlock()
+
+		// Buy tier1 plan again
+		_, err = ts.TxSubscriptionBuy(consumer, consumer, "tier1", 1, false, false)
+		require.Error(t, err)
+
+		ts.AdvanceEpoch().AdvanceBlock()
+
+		sub, err := ts.QuerySubscriptionCurrent(consumer)
+		require.NoError(t, err)
+		require.NotNil(t, sub.Sub)
+		require.Equal(t, "tier2", sub.Sub.PlanIndex)
+	})
 }
 
 func TestSubscriptionDowngradeFails(t *testing.T) {
