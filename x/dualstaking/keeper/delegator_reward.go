@@ -87,7 +87,7 @@ func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward
 
 	// Sanity check - effectiveStake != 0
 	if effectiveStake.IsZero() {
-		return math.NewInt(0), math.NewInt(0)
+		return math.ZeroInt(), math.ZeroInt()
 	}
 	providerReward = totalReward.Mul(stakeEntry.Stake.Amount).Quo(effectiveStake)
 	rawDelegatorsReward := totalReward.Mul(effectiveDelegations).Quo(effectiveStake)
@@ -116,7 +116,7 @@ func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.St
 func (k Keeper) CalcDelegatorReward(delegatorsReward math.Int, totalDelegations math.Int, delegation types.Delegation) math.Int {
 	// Sanity check - totalDelegations != 0
 	if totalDelegations.IsZero() {
-		return math.NewInt(0)
+		return math.ZeroInt()
 	}
 	return delegatorsReward.Mul(delegation.Amount.Amount).Quo(totalDelegations)
 }
