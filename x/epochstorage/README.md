@@ -5,8 +5,8 @@
 This document specifies the epochstorage module of Lava Protocol.
 
 Lava blocks are divided into bulk of blocks called epochs. epoch length is defines as a parameter of the module.
-The module keeps track of the epochs in memory, epochs that needs to be deleted and anchering data to each epoch, mainly providers stakes.
-note that the module will make sure that any changes will take effect only in the next epoch.
+The module keeps track of the epochs in memory, epochs that need to be deleted and anchoring data to each epoch, mainly providers stakes.
+Note that the module will make sure that any changes will be applied only in the next epoch.
 
 ## Contents
 * [Concepts](#concepts)
@@ -50,7 +50,7 @@ AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
 By doing this, the module will be able to track [param change proposals](../spec/proposal_handler.go) and save any changes to the relevant param as a fixated param in the store. The fixated param is responsible for keeping track of param changes, saving different versions if they are registered, and deleting old versions when they are no longer needed (as determined by the EpochsToSave parameter).
 fixated param is in charge of tracking param changes, save their different versions if they are registered and delete old versions when they are not needed anymore (determined by EpochsToSave parameter).
 
-a fixation parameter is saved on store as:
+A fixation parameter is saved on store as:
 
 ```go
 
@@ -61,7 +61,7 @@ type FixatedParams struct {
 }
 ```
 
-this is done in the [begin block of the module](keeper/fixated_params.go)
+This is done in the [BeginBlock method of the module](keeper/fixated_params.go)
 
 
 ### StakeStorage
@@ -76,14 +76,14 @@ type StakeStorage struct {
 }
 ```
 
-the index of the stakestorage is constructed from the epoch and chainID, for example: "100 ETH1"
+The index of the stakestorage is constructed from the epoch and chainID, for example: "100 ETH1"
 
-when a provider stakes himself to a chain (using the pairing module) he will be in the providers list of the next epoch. the stake storage of the next epoch (e.g. current stakestorage) is where all the changes are registered.
+When a provider stakes itself to a chain (using the pairing module) it will be in the providers list of the next epoch. the stake storage of the next epoch (e.g. current stakestorage) is where all the changes are registered.
 
-when a new epoch starts, the module will create a copy of the current stake and save it as a specific epoch stake storage. this is done in the begin block of the module.
+When a new epoch starts, the module will create a copy of the current stake and save it as a specific epoch stake storage. this is done in the BeginBlock method of the module.
 
-also, when a new epoch starts the epoch storage will delete any outdated stakestorage (determined by the param EpochsToSave).
-note that if a stakestorage does not exist (either if it was deleted or it is in the future) pairing, verify pairing and relay payments will fail for the requested epoch (look at pairing readme).
+Also, when a new epoch starts the epoch storage will delete any outdated stakestorage (determined by the param EpochsToSave).
+Note that if a stakestorage does not exist (either if it was deleted or it is in the future), verify pairing and relay payments will fail for the requested epoch (look at pairing readme).
 
 ### StakeEntry
 
@@ -105,9 +105,9 @@ type StakeEntry struct {
 ```
 
 Geolocation are bit flags that indicate all the geolocations that the provider supports, this is the sum of all endpoints geolocations.
-for more about [geolocation](../../proto/lavanet/lava/plans/plan.proto)
+for more about [geolocation](../../proto/lavanet/lava/plans/plan.proto).
 
-for more information about delegation, go to dualstaking README.md
+For more information about delegation, go to dualstaking [README.md](../dualstaking/README.md).
 
 ### EndPoint
 
@@ -123,7 +123,7 @@ type Endpoint struct {
 }
 ```
 
-for more info on `Addons` and `Extensions` look at the spec module README.md
+for more info on `Addons` and `Extensions` look at the spec module [README.md](../spec/README.md).
 
 ## Parameters
 
@@ -133,9 +133,10 @@ The epochstorage parameters:
 | -------------------------------------- | ----------------------- | -----------------|
 | EpochBlocks                            | uint64                  | 30               |
 | EpochsToSave                           | uint64                  | 20               |
-| LatestParamChange                      | uint64                  | NA               |
+| LatestParamChange                      | uint64                  | N/A               |
 
-`EpochBlocks` determines the amount of blocks for each epoch
+
+`EpochBlocks` determines the amount of blocks for each epoch.
 `EpochsToSave` determines how many epochs are saved on the chain at a given moment
 `LatestParamChange` saves the last time a fixated param has changed
 
