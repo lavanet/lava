@@ -110,6 +110,10 @@ func (p Params) Validate() error {
 		return fmt.Errorf("invalid LeftoverBurnRate. Error: %s", err.Error())
 	}
 
+	if p.MaxRewardBoost == 0 {
+		return fmt.Errorf("MaxRewardBoost cannot be 0")
+	}
+
 	if err := validateDec(p.ValidatorsSubscriptionParticipation); err != nil {
 		return fmt.Errorf("invalid ValidatorsSubscriptionParticipation. Error: %s", err.Error())
 	}
