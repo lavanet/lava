@@ -101,7 +101,8 @@ func TestReDelegateToValidator(t *testing.T) {
 func TestReDelegateToProvider(t *testing.T) {
 	ts := newTester(t)
 	ts.addValidators(1)
-	ts.addProviders(1)
+	err := ts.addProviders(1)
+	require.Nil(t, err)
 	ts.addClients(1)
 
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
@@ -109,7 +110,7 @@ func TestReDelegateToProvider(t *testing.T) {
 	ts.TxCreateValidator(validator, amount)
 
 	provider, _ := ts.GetAccount(common.PROVIDER, 0)
-	err := ts.StakeProvider(provider.Addr.String(), ts.spec, amount.Int64())
+	err = ts.StakeProvider(provider.Addr.String(), ts.spec, amount.Int64())
 	require.Nil(t, err)
 
 	ts.AdvanceEpoch()
@@ -166,7 +167,8 @@ func TestReDelegateToProvider(t *testing.T) {
 func TestUnbondUniformProviders(t *testing.T) {
 	ts := newTester(t)
 	ts.addValidators(1)
-	ts.addProviders(5)
+	err := ts.addProviders(5)
+	require.Nil(t, err)
 	ts.addClients(1)
 
 	// create validator and providers
@@ -184,7 +186,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 
 	// delegate to validator (automatically delegates to empty provider)
 	delegatorAcc, delegator := ts.GetAccount(common.CONSUMER, 0)
-	_, err := ts.TxDelegateValidator(delegatorAcc, validator, sdk.NewInt(210))
+	_, err = ts.TxDelegateValidator(delegatorAcc, validator, sdk.NewInt(210))
 	require.Nil(t, err)
 
 	// redelegate from empty provider to all providers with fixed amounts
@@ -278,7 +280,8 @@ func TestValidatorSlash(t *testing.T) {
 func TestValidatorAndProvidersSlash(t *testing.T) {
 	ts := newTester(t)
 	ts.addValidators(1)
-	ts.addProviders(5)
+	err := ts.addProviders(5)
+	require.Nil(t, err)
 	_, _ = ts.AddAccount(common.CONSUMER, 0, testBalance*1000000000)
 
 	power := int64(1)
@@ -303,7 +306,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 
 	// delegate to validator (automatically delegates to empty provider)
 	delegatorAcc, delegator := ts.GetAccount(common.CONSUMER, 0)
-	_, err := ts.TxDelegateValidator(delegatorAcc, valAcc, consensusPowerTokens.MulRaw(250))
+	_, err = ts.TxDelegateValidator(delegatorAcc, valAcc, consensusPowerTokens.MulRaw(250))
 	require.Nil(t, err)
 	delegatorValDelegations := ts.Keepers.StakingKeeper.GetAllDelegatorDelegations(ts.Ctx, delegatorAcc.Addr)
 	require.Equal(t, 1, len(delegatorValDelegations))

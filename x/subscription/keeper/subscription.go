@@ -242,7 +242,13 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, sub *types.Subscription
 	sub.PlanBlock = newPlan.Block
 	sub.MonthCuTotal = newPlan.PlanPolicy.TotalCuLimit
 
-	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, true)
+	err = k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, true)
+	if err != nil {
+		return utils.LavaFormatError("upgrade subscription failed, reset subscription failed", err,
+			utils.Attribute{Key: "consumer", Value: sub.Consumer},
+			utils.Attribute{Key: "block", Value: strconv.FormatUint(nextEpoch, 10)},
+		)
+	}
 
 	details := map[string]string{
 		"consumer": sub.Consumer,
@@ -265,7 +271,10 @@ func (k Keeper) renewSubscription(ctx sdk.Context, sub *types.Subscription) erro
 	sub.DurationBought += 1
 	sub.DurationLeft = 1
 
-	k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, sub.Block, false)
+	err = k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, sub.Block, false)
+	if err != nil {
+		return err
+	}
 
 	// Charge creator for 1 extra month
 	price := plan.GetPrice()
@@ -298,7 +307,14 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 
 	if sub.DurationLeft > 0 {
 		sub.DurationTotal += 1
-		k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, false)
+		err := k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, false)
+		if err != nil {
+			utils.LavaFormatError("failed subscription reset in advance month", err,
+				utils.Attribute{Key: "consumer", Value: sub.Consumer},
+				utils.Attribute{Key: "block", Value: strconv.FormatUint(block, 10)},
+			)
+			return
+		}
 	} else {
 		if sub.FutureSubscription != nil {
 			// Consumer made advance purchase. Now we activate it.
@@ -323,7 +339,14 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			sub.FutureSubscription = nil
 			sub.MonthCuTotal = plan.PlanPolicy.TotalCuLimit
 
-			k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, false)
+			err := k.resetSubscriptionDetailsAndAppendEntry(ctx, &sub, block, false)
+			if err != nil {
+				utils.LavaFormatError("failed subscription reset in advance month", err,
+					utils.Attribute{Key: "consumer", Value: sub.Consumer},
+					utils.Attribute{Key: "block", Value: strconv.FormatUint(block, 10)},
+				)
+				return
+			}
 		} else if sub.IsAutoRenewalOn() {
 			// apply the DurationLeft decrease to 0 and buy an extra month
 			k.subsFS.ModifyEntry(ctx, sub.Consumer, sub.Block, &sub)
@@ -553,7 +576,14 @@ func (k Keeper) RemoveExpiredSubscription(ctx sdk.Context, consumer string, bloc
 	k.delAllProjectsFromSubscription(ctx, consumer)
 
 	// delete subscription effective now (don't wait for end of epoch)
-	k.subsFS.DelEntry(ctx, consumer, block)
+	err := k.subsFS.DelEntry(ctx, consumer, block)
+	if err != nil {
+		utils.LavaFormatError("deleting expired subscription failed", err,
+			utils.Attribute{Key: "consumer", Value: consumer},
+			utils.Attribute{Key: "block", Value: strconv.FormatUint(block, 10)},
+		)
+		return
+	}
 
 	// decrease plan ref count
 	k.plansKeeper.PutPlan(ctx, planIndex, planBlock)

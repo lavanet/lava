@@ -259,7 +259,8 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 	client1Acct, client := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	require.Nil(t, err)
 
 	epochBlocks := ts.EpochBlocks()
 	epochsToSave := ts.EpochsToSave()
@@ -270,7 +271,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 	smallerEpochsToSave := epochsToSave / 2
 	paramKey := string(epochstoragetypes.KeyEpochsToSave)
 	paramVal := "\"" + strconv.FormatUint(smallerEpochsToSave, 10) + "\""
-	err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
+	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
 	require.Nil(t, err)
 
 	// Advance an epoch so the change applies, and another one

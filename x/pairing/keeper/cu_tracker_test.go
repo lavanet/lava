@@ -26,7 +26,8 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 	_, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
 
-	ts.TxSubscriptionBuy(client1Addr, client1Addr, "free", 1, false, false) // extend by a month so the sub won't expire
+	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, "free", 1, false, false) // extend by a month so the sub won't expire
+	require.Nil(t, err)
 
 	res, err := ts.QuerySubscriptionCurrent(client1Addr)
 	require.Nil(t, err)
@@ -178,7 +179,8 @@ func TestTrackedCuWithQos(t *testing.T) {
 	provider1Acc, provider1 := ts.GetAccount(common.PROVIDER, 0)
 	provider2Acc, provider2 := ts.GetAccount(common.PROVIDER, 1)
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	require.Nil(t, err)
 
 	badQoS := &types.QualityOfServiceReport{
 		Latency:      sdk.ZeroDec(),
@@ -199,7 +201,7 @@ func TestTrackedCuWithQos(t *testing.T) {
 	// change the QoS weight parameter to 0.5
 	paramKey := string(types.KeyQoSWeight)
 	paramVal := initQosStr
-	err := ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
+	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
 	require.Nil(t, err)
 
 	planPrice := ts.plan.Price.Amount.Int64()
@@ -381,7 +383,8 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	require.Nil(t, err)
 
 	// stake the provider on an additional chain and apply pairing (advance epoch)
 	spec1 := ts.spec
@@ -389,7 +392,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	spec1.Index = spec1Name
 	spec1.Name = spec1Name
 	ts.AddSpec(spec1Name, spec1)
-	err := ts.StakeProvider(provider, spec1, testStake)
+	err = ts.StakeProvider(provider, spec1, testStake)
 	require.Nil(t, err)
 	ts.AdvanceEpoch()
 
@@ -657,7 +660,8 @@ func TestTrackedCuDeletion(t *testing.T) {
 	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	_, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	require.Nil(t, err)
 
 	// send relay to track CU
 	relayPayment := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})

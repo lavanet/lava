@@ -13,9 +13,9 @@ type Pool string
 // pools so there will be funds to distribute rewards for validators/providers.
 // The allocation pools will get depleted after RewardsAllocationPoolsLifetime.
 const (
-	ValidatorsRewardsAllocationPoolName Pool  = "validators_rewards_allocation_pool"
-	ProvidersRewardsAllocationPool      Pool  = "providers_rewards_allocation_pool"
-	RewardsAllocationPoolsLifetime      int64 = 48 // 4 years (in months)
+	ValidatorsRewardsAllocationPoolName Pool   = "validators_rewards_allocation_pool"
+	ProvidersRewardsAllocationPool      Pool   = "providers_rewards_allocation_pool"
+	RewardsAllocationPoolsLifetime      uint64 = 48 // 4 years (in months)
 )
 
 // Distribution pools constants:

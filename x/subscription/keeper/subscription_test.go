@@ -365,7 +365,8 @@ func TestMonthlyRechargeCU(t *testing.T) {
 
 			// force fixation entry (by adding project key)
 			projKey := []projectstypes.ProjectKey{projectstypes.ProjectAdminKey(adm1Addr)}
-			ts.Keepers.Projects.AddKeysToProject(ts.Ctx, projectstypes.ADMIN_PROJECT_NAME, tt.developer, projKey)
+			err = ts.Keepers.Projects.AddKeysToProject(ts.Ctx, projectstypes.ADMIN_PROJECT_NAME, tt.developer, projKey)
+			require.Nil(t, err)
 
 			// fast-forward one month
 			ts.AdvanceMonths(1).AdvanceEpoch()
@@ -459,9 +460,10 @@ func TestSubscriptionExpire(t *testing.T) {
 	plan := ts.Plan("free")
 
 	coins := common.NewCoins(ts.TokenDenom(), 10000)
-	ts.Keepers.BankKeeper.SetBalance(ts.Ctx, sub1Acct.Addr, coins)
+	err := ts.Keepers.BankKeeper.SetBalance(ts.Ctx, sub1Acct.Addr, coins)
+	require.Nil(t, err)
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
+	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
 	require.NoError(t, err)
 
 	block := ts.BlockHeight()
