@@ -159,49 +159,49 @@ When utilizing the services, consumers leverage the protocol's data reliability 
 
 ### utility
 
-#### epochstorage
+#### [epochstorage](epochstorage/README.md)
 
 This utility module offers a snapshot of storage at the commencement of each epoch while maintaining and managing older snapshots. These snapshots are preserved and made available on-chain, facilitating operations such as claiming rewards and executing pairings.
 
-#### fixationstore
+#### [fixationstore](fixationstore/README.md)
 
 This utility module introduces a ref-counted differential storage mechanism. Entries remain stored as long as a reference is held, generating a new entry only upon modification. When retrieving information at a specified height, it fetches the entry with an equal or smaller height if available. It offers a more storage-efficient approach to managing epoch data and is intended to supersede the epochstorage module in the future.
 
-#### timerstore
+#### [timerstore](timerstore/README.md)
 
 The timerstore module functions as a utility that facilitates block time - based callbacks triggered at the beginning of a block. This functionality enables various processes such as periodic checks, timers for subscription expiry, monthly payouts, and other time-sensitive operations.
 
-#### downtime
+#### [downtime](downtime/README.md)
 
 The downtime utility module serves to offer insights into the block average time and detects occurrences of blockchain downtime.
 
 ### governance
 
-#### spec
+#### [spec](spec/README.md)
 
 The spec module is the framework that enables governance to manage API specifications, encompassing their storage, verification, and inheritance functionalities. All modifications within the spec module are executed through the gov router.
 
-#### plans
+#### [plans](plans/README.md)
 
 The plans module establishes a framework for governance to regulate available subscription options and their associated policies. Governance has the authority to introduce plans for consumers to purchase at predefined token prices with specific configurations. Additionally, it allows for the modification of existing plans that have already been acquired.
 
-#### protocol
+#### [protocol](protocol/README.md)
 
 This module is responsible for storing the target and minimum versions for the protocol modules. Any alterations to these versions are possible through a governance parameters proposal.
 
 ### consumers & providers
 
-#### subscription
+#### [subscription](subscription/README.md)
 
 This module enables consumers to purchase and engage with their subscriptions. It generates a subscription object for each consumer, managed with monthly timers. Subscriptions retain references for purchased plans, releasing them upon deletion. Upon creation, a default project is initialized, and additional projects can be added via this interface, stored, and managed within the projects module.
 
 The subscription module is also responsible for compensating providers based on accumulated CUs once a subscription expires (or a month change is triggered). Accumulated CUs per provider per chain are stored and utilized when the expiry timer is triggered.
 
-#### projects
+#### [projects](projects/README.md)
 
 This module manages projects intended for developers' usage. It serves as a tool to handle internal usage within user accounts, allowing different allocations of CUs and policy specifications. Each project can define developer and admin keys, along with its specific policy. Subscriptions hold a higher hierarchy and can define policies for their associated projects.
 
-#### pairing module
+#### [pairing](pairing/README.md)
 
 This core module serves multiple roles:
 
@@ -211,7 +211,7 @@ This core module serves multiple roles:
 
 ### tokenomics
 
-#### dualstaking
+#### [dualstaking](dualstaking/README.md)
 
 This module handles and stores dual staking entries. It hooks into the cosmos-sdk staking module delegation changes to adapt provider entries, ensuring they are identical (up to shares rounding).
 
@@ -219,7 +219,7 @@ Every validator delegation creates an entry in dual staking under a provider and
 
 Delegator rewards from subscriptions are also stored in the module, available to be claimed by delegators through a transaction.
 
-#### rewards
+#### [rewards](rewards/README.md)
 
 This module manages preallocated pools for distributing incentives, emitted periodically through callbacks. Validator rewards are released block by block from the allocated rewards for the month, decreasing when an excessive amount of stake is bonded, and the surplus is burned as the month passes.
 
