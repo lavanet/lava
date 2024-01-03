@@ -19,4 +19,5 @@ message QueryAccountInfoResponse {
 	lavanet.lava.projects.Project project = 6 [(gogoproto.nullable) = true];
 	repeated cosmos.staking.v1beta1.DelegationResponse delegations_validators = 7 [(gogoproto.nullable) = false];
 	repeated lavanet.lava.dualstaking.Delegation delegations_providers = 8 [(gogoproto.nullable) = false];
+	uint64 total_delegations = 9;
 }
