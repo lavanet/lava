@@ -41,7 +41,7 @@ type EpochDetails struct {
 
 ### FixatedParams
 
-Some params on the chain can affect the pairing list results, since pairing list needs to be the same throughout the epoch, the chain saves the needed params per epoch. this is done with fixated params. each module with a param that affects the pairing list needs to register the param as a fixated param using the following method of the keeper:
+Some parameters on the chain can affect the results of the pairing list. Since the pairing list needs to remain the same throughout the epoch, the chain saves the necessary parameters for each epoch. This is achieved through fixated parameters. Each module with a parameter that affects the pairing list should register the parameter as a fixated parameter using the following method of the keeper:
 
 ```go
 AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any) 
