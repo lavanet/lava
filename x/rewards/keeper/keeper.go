@@ -120,6 +120,7 @@ func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
 		// equivalent to: (maxBonded - bonded) / (maxBonded - minBonded)
 		// 					  + lowFactor * (bonded - minBonded) / (maxBonded - minBonded)
 		min_max_diff := maxBonded.Sub(minBonded)
+
 		e1 := maxBonded.Sub(bonded).Quo(min_max_diff)
 		e2 := bonded.Sub(minBonded).Quo(min_max_diff)
 		return e1.Add(e2.Mul(lowFactor))
