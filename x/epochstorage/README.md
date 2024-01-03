@@ -25,7 +25,7 @@ note that the module will make sure that any changes will take effect only in th
 
 ### Epoch
 
-Epoch is defined as a batch of blocks, for each epoch all the data that affects pairing stays the same. for example: all the providers and their data are the same for all the blocks of the epochs and can be changed only in the next epoch.
+An epoch is defined as a batch of blocks. Within each epoch, the data that influences pairing remains constant. For instance, the providers and their data remain unchanged across all blocks within the epoch. Data can only be modified in the subsequent epoch.
 
 #### EpochDetails
 
