@@ -3,6 +3,8 @@ package ante
 import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/types"
+	types3 "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/gogoproto/proto"
@@ -15,6 +17,8 @@ import (
 )
 
 func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
+	account := types3.NewModuleAddressOrBech32Address("cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9")
+
 	tests := []struct {
 		name       string
 		theMsg     func() types.Msg
@@ -57,6 +61,56 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 				require.NoError(t, err)
 
 				return proposal
+			},
+			shouldFail: true,
+		},
+		{
+			name: "a new msg exec proposal with an expedited message with a whitelisted message should not fail",
+			theMsg: func() types.Msg {
+				proposal, err := v1.NewMsgSubmitProposal(
+					[]types.Msg{
+						&banktypes.MsgSend{},
+					},
+					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
+					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
+					"metadata",
+					"title",
+					"summary",
+					true,
+				)
+				require.NoError(t, err)
+
+				authMsg := authz.NewMsgExec(
+					account,
+					[]types.Msg{proposal},
+				)
+
+				return &authMsg
+			},
+			shouldFail: false,
+		},
+		{
+			name: "a new msg exec proposal with an expedited message with a non-whitelisted message should fail",
+			theMsg: func() types.Msg {
+				proposal, err := v1.NewMsgSubmitProposal(
+					[]types.Msg{
+						&subsciptiontypes.MsgAutoRenewal{},
+					},
+					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
+					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
+					"metadata",
+					"title",
+					"summary",
+					true,
+				)
+				require.NoError(t, err)
+
+				authMsg := authz.NewMsgExec(
+					account,
+					[]types.Msg{proposal},
+				)
+
+				return &authMsg
 			},
 			shouldFail: true,
 		},
