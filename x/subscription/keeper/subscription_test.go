@@ -2249,30 +2249,32 @@ func TestSubscriptionUpgradeAffectsTimer(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify timer for free plan expiration
-	verifyTimerStore := func() {
+	verifyTimerStore := func(name string) {
 		subTimers := ts.Keepers.Subscription.ExportSubscriptionsTimers(ts.Ctx).TimeEntries
-		require.NoError(t, err)
-		require.NotNil(t, subTimers)
-		require.Len(t, subTimers, 1)
-		require.Equal(t, consumerAddr, subTimers[0].Key)
-		require.Equal(t, uint64(utils.NextMonth(ts.BlockTime()).UTC().Unix()), subTimers[0].Value)
+		require.NoError(t, err, name)
+		require.NotNil(t, subTimers, name)
+		require.Len(t, subTimers, 1, name)
+		require.Equal(t, consumerAddr, subTimers[0].Key, name)
+		require.Equal(t, uint64(utils.NextMonth(ts.BlockTime()).UTC().Unix()), subTimers[0].Value, name)
 	}
 
-	verifyTimerStore()
+	t.Run("subscription upgrade affects the timers", func(t *testing.T) {
+		verifyTimerStore("initial - before sub is active")
 
-	ts.AdvanceBlock()
+		ts.AdvanceBlock()
 
-	// Buy premium plan
-	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, 1, false, false)
-	require.NoError(t, err)
+		// Buy premium plan
+		_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, 1, false, false)
+		require.NoError(t, err)
 
-	verifyTimerStore()
+		verifyTimerStore("after buying premium plan")
 
-	ts.AdvanceBlock()
+		ts.AdvanceEpoch()
 
-	// Buy premium-plus plan
-	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlusPlan.Index, 1, false, false)
-	require.NoError(t, err)
+		// Buy premium-plus plan
+		_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlusPlan.Index, 1, false, false)
+		require.NoError(t, err)
 
-	verifyTimerStore()
+		verifyTimerStore("after buying premium-plus")
+	})
 }
