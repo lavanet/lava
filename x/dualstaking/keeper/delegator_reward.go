@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"fmt"
 	"strconv"
 
 	"cosmossdk.io/math"
@@ -86,12 +85,8 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 func (k Keeper) CalcRewards(stakeEntry epochstoragetypes.StakeEntry, totalReward math.Int, delegations []types.Delegation) (providerReward math.Int, delegatorsReward math.Int) {
 	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry, delegations)
 
-	// Sanity check - effectiveStake > 0
+	// Sanity check - effectiveStake != 0
 	if effectiveStake.IsZero() {
-		utils.LavaFormatWarning("effectiveStake is zero", fmt.Errorf("critical: Attempt to divide by zero"),
-			utils.LogAttr("effectiveStake", effectiveStake),
-			utils.LogAttr("effectiveDelegations", effectiveDelegations),
-		)
 		return math.NewInt(0), math.NewInt(0)
 	}
 	providerReward = totalReward.Mul(stakeEntry.Stake.Amount).Quo(effectiveStake)
@@ -119,12 +114,8 @@ func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.St
 // CalcDelegatorReward calculates a single delegator reward according to its delegation
 // delegatorReward = delegatorsReward * (delegatorStake / totalDelegations) = (delegatorsReward * delegatorStake) / totalDelegations
 func (k Keeper) CalcDelegatorReward(delegatorsReward math.Int, totalDelegations math.Int, delegation types.Delegation) math.Int {
-	// Sanity check - totalDelegations > 0
+	// Sanity check - totalDelegations != 0
 	if totalDelegations.IsZero() {
-		utils.LavaFormatWarning("totalDelegations is zero", fmt.Errorf("critical: Attempt to divide by zero"),
-			utils.LogAttr("totalDelegations", totalDelegations),
-			utils.LogAttr("delegatorsReward", delegatorsReward),
-		)
 		return math.NewInt(0)
 	}
 	return delegatorsReward.Mul(delegation.Amount.Amount).Quo(totalDelegations)
