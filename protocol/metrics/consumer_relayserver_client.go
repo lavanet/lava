@@ -3,6 +3,7 @@ package metrics
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -43,52 +44,63 @@ func NewConsumerRelayServerClient(endPointAddress string) *ConsumerRelayServerCl
 		ticker:          time.NewTicker(30 * time.Second),
 		sendQueue:       make([]UpdateMetricsRequest, 0),
 		addQueue:        make([]UpdateMetricsRequest, 0),
-		lock:            sync.RWMutex{},
 	}
 
-	utils.LavaFormatDebug("CUC: Starting processQueue goroutine")
-	go cuc.processQueue()
+	go cuc.relayDataSendQueueStart()
 
 	return cuc
 }
 
-func (cuc *ConsumerRelayServerClient) processQueue() {
+func (cuc *ConsumerRelayServerClient) relayDataSendQueueStart() {
 	if cuc == nil {
+		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from relayDataSendQueueStart", nil)
 		return
 	}
 
+	utils.LavaFormatDebug("CUC: Starting relayDataSendQueueStart loop")
+
 	for range cuc.ticker.C {
-		cuc.lock.Lock()
-		if !cuc.isSendQueueRunning && len(cuc.addQueue) > 0 {
-			cuc.sendQueue, cuc.addQueue = cuc.addQueue, make([]UpdateMetricsRequest, 0)
-			cuc.isSendQueueRunning = true
-			cuc.sendID++
-			utils.LavaFormatDebug(fmt.Sprintf("CUC: Swapped queues (sendQueue length: %d) and set isSendQueueRunning to true - CCC iter:%d.", len(cuc.sendQueue), cuc.sendID))
-			cuc.lock.Unlock()
+		cuc.relayDataSendQueueTick()
+	}
+}
 
-			cuc.lock.RLock()
-			sendQueueLength := len(cuc.sendQueue)
-			sendID := cuc.sendID
-			sendQueue := cuc.sendQueue
-			cuc.lock.RUnlock()
+func (cuc *ConsumerRelayServerClient) relayDataSendQueueTick() {
+	if cuc == nil {
+		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from relayDataSendQueueTick", nil)
+		return
+	}
 
-			utils.LavaFormatDebug(fmt.Sprintf("CUC: Sending requests (sendQueue length: %d) - async start - CCC iter:%d.", sendQueueLength, sendID))
-			cuc.sendRequests(sendQueue)
+	cuc.lock.Lock()
+	defer cuc.lock.Unlock()
+
+	if !cuc.isSendQueueRunning && len(cuc.addQueue) > 0 {
+		cuc.sendQueue, cuc.addQueue = cuc.addQueue, make([]UpdateMetricsRequest, 0)
+		cuc.isSendQueueRunning = true
+		cuc.sendID++
+		utils.LavaFormatDebug(fmt.Sprintf("CUC: Swapped queues (sendQueue length: %d) and set isSendQueueRunning to true - CCC iter:%d.", len(cuc.sendQueue), cuc.sendID))
+
+		sendQueue := cuc.sendQueue
+		sendID := cuc.sendID
+		cucEndpointAddress := cuc.endPointAddress
+
+		go func() {
+			utils.LavaFormatDebug(fmt.Sprintf("CUC: Sending requests (sendQueue length: %d) - async start - CCC iter:%d.", len(sendQueue), sendID))
+			cuc.sendRelayData(sendQueue, sendID, cucEndpointAddress)
 			utils.LavaFormatDebug(fmt.Sprintf("CUC: Sending requests - async end - CCC iter:%d.", sendID))
 
 			cuc.lock.Lock()
 			cuc.isSendQueueRunning = false
 			utils.LavaFormatDebug(fmt.Sprintf("CUC: Finished sending requests and set isSendQueueRunning to false - CCC iter:%d.", cuc.sendID))
 			cuc.lock.Unlock()
-		} else {
-			utils.LavaFormatDebug(fmt.Sprintf("CUC: Skipped this iteration - CCC iter:%d.", cuc.sendID))
-			cuc.lock.Unlock()
-		}
+		}()
+	} else {
+		utils.LavaFormatDebug(fmt.Sprintf("CUC: Skipped this iteration - CCC iter:%d.", cuc.sendID))
 	}
 }
 
 func (cuc *ConsumerRelayServerClient) SetRelayMetrics(relayMetric *RelayMetrics) error {
 	if cuc == nil {
+		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from SetRelayMetrics", nil)
 		return nil
 	}
 
@@ -110,26 +122,22 @@ func (cuc *ConsumerRelayServerClient) SetRelayMetrics(relayMetric *RelayMetrics)
 	return nil
 }
 
-func (cuc *ConsumerRelayServerClient) sendRequests(sendQueue []UpdateMetricsRequest) {
+func (cuc *ConsumerRelayServerClient) agregateAndSendRelayData(sendQueue []UpdateMetricsRequest, sendID int, cucEndpointAddress string) (*http.Response, error) {
 	if cuc == nil {
-		return
+		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from agregateAndSendRelayData", nil)
+		return nil, errors.New("CUC is nil")
 	}
-
-	utils.LavaFormatDebug("CUC: Starting sendRequests")
 
 	if len(sendQueue) == 0 {
 		utils.LavaFormatDebug("CUC: sendQueue is nil or empty")
-		utils.LavaFormatDebug("CUC: sendQueue", utils.Attribute{Key: "Value", Value: sendQueue}, utils.Attribute{Key: "Length", Value: len(sendQueue)})
-		return
+		return nil, errors.New("sendQueue is nil or empty")
 	}
 
-	aggregatedRequests := cuc.aggregateRequests(sendQueue)
+	aggregatedRequests := cuc.aggregateRelayData(sendQueue)
 
 	if len(aggregatedRequests) == 0 {
 		utils.LavaFormatDebug("CUC: No requests after aggregate")
-		utils.LavaFormatDebug("CUC: sendQueue", utils.Attribute{Key: "Value", Value: sendQueue}, utils.Attribute{Key: "Length", Value: len(sendQueue)})
-		utils.LavaFormatDebug("CUC: aggregatedRequests", utils.Attribute{Key: "Value", Value: aggregatedRequests}, utils.Attribute{Key: "Length", Value: len(aggregatedRequests)})
-		return
+		return nil, errors.New("No requests after aggregate")
 	}
 
 	client := &http.Client{
@@ -139,12 +147,8 @@ func (cuc *ConsumerRelayServerClient) sendRequests(sendQueue []UpdateMetricsRequ
 	jsonData, err := json.Marshal(aggregatedRequests)
 	if err != nil {
 		utils.LavaFormatDebug("CUC: Error marshalling sendQueue to JSON")
-		return
+		return nil, err
 	}
-
-	cuc.lock.RLock()
-	var cucEndpointAddress string = cuc.endPointAddress
-	cuc.lock.RUnlock()
 
 	var resp *http.Response
 	for i := 0; i < 3; i++ {
@@ -153,34 +157,53 @@ func (cuc *ConsumerRelayServerClient) sendRequests(sendQueue []UpdateMetricsRequ
 		if err != nil {
 			utils.LavaFormatDebug(fmt.Sprintf("CUC: Failed to post request - Attempt: %d, Error: %s", i+1, err.Error()))
 			time.Sleep(2 * time.Second)
-		} else if resp.StatusCode != http.StatusOK {
-			bodyBytes, err := io.ReadAll(resp.Body)
-			if err != nil {
-				utils.LavaFormatDebug(fmt.Sprintf("CUC: Error reading response body: %s", err.Error()))
-			} else {
-				bodyString := string(bodyBytes)
-				utils.LavaFormatDebug(fmt.Sprintf("CUC: Received non-200 status code - Attempt: %d, Status code: %d, Response: %s", i+1, resp.StatusCode, bodyString))
-			}
 		} else {
-			break
+			return resp, nil
 		}
 	}
 
-	if err != nil {
-		utils.LavaFormatDebug("CUC: Failed to send requests after 3 attempts")
+	return nil, errors.New("CUC: Failed to send requests after 3 attempts")
+}
+
+func (cuc *ConsumerRelayServerClient) handleSendRelayResponse(resp *http.Response, sendID int) {
+	if cuc == nil {
+		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from handleSendRelayResponse", nil)
 		return
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			utils.LavaFormatDebug(fmt.Sprintf("CUC: Error reading response body: %s", err.Error()))
+		} else {
+			bodyString := string(bodyBytes)
+			utils.LavaFormatDebug(fmt.Sprintf("CUC: Received non-200 status code - Status code: %d, Response: %s", resp.StatusCode, bodyString))
+		}
 	}
 
 	defer resp.Body.Close()
 
-	cuc.lock.RLock()
-	utils.LavaFormatDebug(fmt.Sprintf("CUC: Successfully sent requests - CCC iter:%d.", cuc.sendID))
-	cuc.lock.RUnlock()
-
+	utils.LavaFormatDebug(fmt.Sprintf("CUC: Sending requests - async end - CCC iter:%d.", sendID))
 }
 
-func (cuc *ConsumerRelayServerClient) aggregateRequests(reqs []UpdateMetricsRequest) []UpdateMetricsRequest {
+func (cuc *ConsumerRelayServerClient) sendRelayData(sendQueue []UpdateMetricsRequest, sendID int, cucEndpointAddress string) {
 	if cuc == nil {
+		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from sendRelayData", nil)
+		return
+	}
+
+	resp, err := cuc.agregateAndSendRelayData(sendQueue, sendID, cucEndpointAddress)
+	if err != nil {
+		utils.LavaFormatDebug(fmt.Sprintf("CUC: %s", err.Error()))
+		return
+	}
+
+	cuc.handleSendRelayResponse(resp, sendID)
+}
+
+func (cuc *ConsumerRelayServerClient) aggregateRelayData(reqs []UpdateMetricsRequest) []UpdateMetricsRequest {
+	if cuc == nil {
+		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from aggregateRelayData", nil)
 		return nil
 	}
 
