@@ -26,7 +26,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // Params defines the parameters for the module.
 type Params struct {
 	MaxCU                    uint64   `protobuf:"varint,2,opt,name=maxCU,proto3" json:"maxCU,omitempty" yaml:"max_compute_units"`
-	BlacklistedExpeditedMsgs []string `protobuf:"bytes,3,rep,name=blacklisted_expedited_msgs,json=blacklistedExpeditedMsgs,proto3" json:"blacklisted_expedited_msgs,omitempty" yaml:"blacklisted_expedited_msgs"`
+	WhitelistedExpeditedMsgs []string `protobuf:"bytes,3,rep,name=whitelisted_expedited_msgs,json=whitelistedExpeditedMsgs,proto3" json:"whitelisted_expedited_msgs,omitempty" yaml:"whitelisted_expedited_msgs"`
 }
 
 func (m *Params) Reset()      { *m = Params{} }
@@ -68,9 +68,9 @@ func (m *Params) GetMaxCU() uint64 {
 	return 0
 }
 
-func (m *Params) GetBlacklistedExpeditedMsgs() []string {
+func (m *Params) GetWhitelistedExpeditedMsgs() []string {
 	if m != nil {
-		return m.BlacklistedExpeditedMsgs
+		return m.WhitelistedExpeditedMsgs
 	}
 	return nil
 }
@@ -90,7 +90,7 @@ var fileDescriptor_ad2f67d2fb6b4afa = []byte{
 	0x19, 0xb9, 0xd8, 0x02, 0xc0, 0x3a, 0x85, 0x8c, 0xb8, 0x58, 0x73, 0x13, 0x2b, 0x9c, 0x43, 0x25,
 	0x98, 0x14, 0x18, 0x35, 0x58, 0x9c, 0x64, 0x3e, 0xdd, 0x93, 0x97, 0xa8, 0x4c, 0xcc, 0xcd, 0xb1,
 	0x52, 0xca, 0x4d, 0xac, 0x88, 0x4f, 0xce, 0xcf, 0x2d, 0x28, 0x2d, 0x49, 0x8d, 0x2f, 0xcd, 0xcb,
-	0x2c, 0x29, 0x56, 0x0a, 0x82, 0x28, 0x15, 0x4a, 0xe6, 0x92, 0x4a, 0xca, 0x49, 0x4c, 0xce, 0xce,
+	0x2c, 0x29, 0x56, 0x0a, 0x82, 0x28, 0x15, 0x4a, 0xe6, 0x92, 0x2a, 0xcf, 0xc8, 0x2c, 0x49, 0xcd,
 	0xc9, 0x2c, 0x2e, 0x49, 0x4d, 0x89, 0x4f, 0xad, 0x28, 0x48, 0x4d, 0xc9, 0x04, 0xb1, 0x72, 0x8b,
 	0xd3, 0x8b, 0x25, 0x98, 0x15, 0x98, 0x35, 0x38, 0x9d, 0x54, 0x3f, 0xdd, 0x93, 0x57, 0x84, 0x18,
 	0x84, 0x5b, 0xad, 0x52, 0x90, 0x04, 0x92, 0xa4, 0x2b, 0x4c, 0xce, 0xb7, 0x38, 0xbd, 0xd8, 0x8a,
@@ -98,7 +98,7 @@ var fileDescriptor_ad2f67d2fb6b4afa = []byte{
 	0x18, 0x2f, 0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f,
 	0xe5, 0x18, 0x6e, 0x3c, 0x96, 0x63, 0x88, 0x52, 0x49, 0xcf, 0x2c, 0xc9, 0x28, 0x4d, 0xd2, 0x4b,
 	0xce, 0xcf, 0xd5, 0x47, 0x09, 0x9d, 0x0a, 0x48, 0xf8, 0x94, 0x54, 0x16, 0xa4, 0x16, 0x27, 0xb1,
-	0x81, 0xbd, 0x6d, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0xe4, 0x98, 0x23, 0xee, 0x41, 0x01, 0x00,
+	0x81, 0xbd, 0x6d, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0x2b, 0x6a, 0xfc, 0x86, 0x41, 0x01, 0x00,
 	0x00,
 }
 
@@ -122,11 +122,11 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.BlacklistedExpeditedMsgs) > 0 {
-		for iNdEx := len(m.BlacklistedExpeditedMsgs) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.BlacklistedExpeditedMsgs[iNdEx])
-			copy(dAtA[i:], m.BlacklistedExpeditedMsgs[iNdEx])
-			i = encodeVarintParams(dAtA, i, uint64(len(m.BlacklistedExpeditedMsgs[iNdEx])))
+	if len(m.WhitelistedExpeditedMsgs) > 0 {
+		for iNdEx := len(m.WhitelistedExpeditedMsgs) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.WhitelistedExpeditedMsgs[iNdEx])
+			copy(dAtA[i:], m.WhitelistedExpeditedMsgs[iNdEx])
+			i = encodeVarintParams(dAtA, i, uint64(len(m.WhitelistedExpeditedMsgs[iNdEx])))
 			i--
 			dAtA[i] = 0x1a
 		}
@@ -159,8 +159,8 @@ func (m *Params) Size() (n int) {
 	if m.MaxCU != 0 {
 		n += 1 + sovParams(uint64(m.MaxCU))
 	}
-	if len(m.BlacklistedExpeditedMsgs) > 0 {
-		for _, s := range m.BlacklistedExpeditedMsgs {
+	if len(m.WhitelistedExpeditedMsgs) > 0 {
+		for _, s := range m.WhitelistedExpeditedMsgs {
 			l = len(s)
 			n += 1 + l + sovParams(uint64(l))
 		}
@@ -224,7 +224,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			}
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BlacklistedExpeditedMsgs", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field WhitelistedExpeditedMsgs", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -252,7 +252,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.BlacklistedExpeditedMsgs = append(m.BlacklistedExpeditedMsgs, string(dAtA[iNdEx:postIndex]))
+			m.WhitelistedExpeditedMsgs = append(m.WhitelistedExpeditedMsgs, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

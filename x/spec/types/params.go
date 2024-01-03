@@ -9,7 +9,7 @@ import (
 
 var (
 	KeyMaxCU                         = []byte("MaxCU")
-	KeyBlackListExpeditedMsgs        = []byte("BlacklistedExpeditedMsgs")
+	KeyWhiteListExpeditedMsgs        = []byte("WhitelistedExpeditedMsgs")
 	DefaultMaxCU              uint64 = 10000
 )
 
@@ -22,7 +22,7 @@ func ParamKeyTable() paramtypes.KeyTable {
 
 // NewParams creates a new Params instance
 func NewParams(maxCU uint64, blacklistedExpeditedMsgs []string) Params {
-	return Params{MaxCU: maxCU, BlacklistedExpeditedMsgs: blacklistedExpeditedMsgs}
+	return Params{MaxCU: maxCU, WhitelistedExpeditedMsgs: blacklistedExpeditedMsgs}
 }
 
 // DefaultParams returns a default set of parameters
@@ -34,7 +34,7 @@ func DefaultParams() Params {
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyMaxCU, &p.MaxCU, validateMaxCU),
-		paramtypes.NewParamSetPair(KeyBlackListExpeditedMsgs, &p.BlacklistedExpeditedMsgs, validateBlacklistedExpeditedMsgs),
+		paramtypes.NewParamSetPair(KeyWhiteListExpeditedMsgs, &p.WhitelistedExpeditedMsgs, validateWhitelistedExpeditedMsgs),
 	}
 }
 
@@ -44,7 +44,7 @@ func (p Params) Validate() error {
 		return err
 	}
 
-	if err := validateBlacklistedExpeditedMsgs(p.BlacklistedExpeditedMsgs); err != nil {
+	if err := validateWhitelistedExpeditedMsgs(p.WhitelistedExpeditedMsgs); err != nil {
 		return err
 	}
 
@@ -69,19 +69,19 @@ func validateMaxCU(v interface{}) error {
 	return nil
 }
 
-func validateBlacklistedExpeditedMsgs(v interface{}) error {
-	blacklistedExpeditedMsgs, ok := v.([]string)
+func validateWhitelistedExpeditedMsgs(v interface{}) error {
+	whitelistedExpeditedMsgs, ok := v.([]string)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
 
 	// check for duplicates
-	blacklistedExpeditedMsgsMap := make(map[string]struct{})
-	for _, msg := range blacklistedExpeditedMsgs {
-		if _, ok := blacklistedExpeditedMsgsMap[msg]; ok {
-			return fmt.Errorf("duplicate message in BlacklistedExpeditedMessages: %s", msg)
+	whitelistedExpeditedMsgsMap := make(map[string]struct{})
+	for _, msg := range whitelistedExpeditedMsgs {
+		if _, ok := whitelistedExpeditedMsgsMap[msg]; ok {
+			return fmt.Errorf("duplicate message in WhitelistedExpeditedMessages: %s", msg)
 		}
-		blacklistedExpeditedMsgsMap[msg] = struct{}{}
+		whitelistedExpeditedMsgsMap[msg] = struct{}{}
 	}
 
 	return nil

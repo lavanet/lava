@@ -24,7 +24,7 @@ func (e ExpeditedProposalFilterAnteDecorator) AnteHandle(
 ) (newCtx types.Context, err error) {
 	msgs := tx.GetMsgs()
 
-	blacklist := e.k.BlacklistedExpeditedMsgs(ctx)
+	whitelist := e.k.WhitelistedExpeditedMsgs(ctx)
 
 	for _, msg := range msgs {
 		switch m := msg.(type) {
@@ -36,7 +36,7 @@ func (e ExpeditedProposalFilterAnteDecorator) AnteHandle(
 				}
 
 				for _, expeditedMsg := range expeditedMsgs {
-					if blacklistContainsMsg(blacklist, expeditedMsg) {
+					if !whitelistContainsMsg(whitelist, expeditedMsg) {
 						return ctx, fmt.Errorf("expedited proposal contains blacklisted message %s", proto.MessageName(expeditedMsg))
 					}
 				}
@@ -47,7 +47,7 @@ func (e ExpeditedProposalFilterAnteDecorator) AnteHandle(
 	return next(ctx, tx, simulate)
 }
 
-func blacklistContainsMsg(blacklist []string, msg types.Msg) bool {
+func whitelistContainsMsg(blacklist []string, msg types.Msg) bool {
 	msgName := proto.MessageName(msg)
 	for _, blacklistedMsg := range blacklist {
 		if blacklistedMsg == msgName {

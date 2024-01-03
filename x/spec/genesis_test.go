@@ -14,7 +14,7 @@ import (
 
 func TestGenesis(t *testing.T) {
 	params := types.DefaultParams()
-	params.BlacklistedExpeditedMsgs = []string{proto.MessageName(&types2.MsgUpdateParams{})}
+	params.WhitelistedExpeditedMsgs = []string{proto.MessageName(&types2.MsgUpdateParams{})}
 
 	genesisState := types.GenesisState{
 		Params: params,

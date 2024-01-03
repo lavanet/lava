@@ -9,7 +9,7 @@ import (
 	"github.com/lavanet/lava/app"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	types2 "github.com/lavanet/lava/x/spec/types"
-	types3 "github.com/lavanet/lava/x/subscription/types"
+	subsciptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -21,7 +21,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 		shouldFail bool
 	}{
 		{
-			name: "should fail if any of the messages are in the blacklist, expedited",
+			name: "should not fail if the message is in the whitelist, expedited",
 			theMsg: func() types.Msg {
 				proposal, err := v1.NewMsgSubmitProposal(
 					[]types.Msg{
@@ -38,14 +38,14 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 
 				return proposal
 			},
-			shouldFail: true,
+			shouldFail: false,
 		},
 		{
-			name: "should not fail if none of the messages are in the blacklist, expedited",
+			name: "should fail if none of the messages are in the whitelist, expedited",
 			theMsg: func() types.Msg {
 				proposal, err := v1.NewMsgSubmitProposal(
 					[]types.Msg{
-						&types3.MsgAutoRenewal{},
+						&subsciptiontypes.MsgAutoRenewal{},
 					},
 					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
@@ -58,7 +58,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 
 				return proposal
 			},
-			shouldFail: false,
+			shouldFail: true,
 		},
 	}
 
@@ -68,7 +68,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			k, ctx := testkeeper.SpecKeeper(t)
 			params := types2.DefaultParams()
-			params.BlacklistedExpeditedMsgs = []string{
+			params.WhitelistedExpeditedMsgs = []string{
 				proto.MessageName(&banktypes.MsgSend{}),
 			} // we whitelist MsgSend proposal
 

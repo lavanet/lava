@@ -9,7 +9,7 @@ import (
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.MaxCU(ctx),
-		k.BlacklistedExpeditedMsgs(ctx),
+		k.WhitelistedExpeditedMsgs(ctx),
 	)
 }
 
@@ -24,8 +24,8 @@ func (k Keeper) MaxCU(ctx sdk.Context) (res uint64) {
 	return
 }
 
-// BlacklistedExpeditedMsgs returns the BlacklistedExpeditedMsgs param
-func (k Keeper) BlacklistedExpeditedMsgs(ctx sdk.Context) (res []string) {
-	k.paramstore.Get(ctx, types.KeyBlackListExpeditedMsgs, &res)
+// WhitelistedExpeditedMsgs returns the WhitelistedExpeditedMsgs param
+func (k Keeper) WhitelistedExpeditedMsgs(ctx sdk.Context) (res []string) {
+	k.paramstore.Get(ctx, types.KeyWhiteListExpeditedMsgs, &res)
 	return
 }
