@@ -1007,8 +1007,11 @@ func TestGeolocationPairingScores(t *testing.T) {
 	basicAcct, basicAddr := ts.GetAccount(common.CONSUMER, 1)
 	premiumAcct, premiumAddr := ts.GetAccount(common.CONSUMER, 2)
 
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+
 	_, err = ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, err = ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1, false, false)
 	require.Nil(t, err)
 	_, err = ts.TxSubscriptionBuy(premiumAddr, premiumAddr, premiumPlan.Index, 1, false, false)
@@ -1201,7 +1204,9 @@ func TestDuplicateProviders(t *testing.T) {
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{basicPlan}, false)
 	require.Nil(t, err)
 
+	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
+
 	_, err = ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1, false, false)
 	require.Nil(t, err)
 
@@ -1250,6 +1255,7 @@ func TestNoRequiredGeo(t *testing.T) {
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{freePlan}, false)
 	require.Nil(t, err)
 
+	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
 	_, err = ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1, false, false)
 	require.Nil(t, err)
