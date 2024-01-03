@@ -32,6 +32,11 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	totalRewarded := sdk.ZeroInt()
 	// specs emissions from the total reward pool base on stake
 	specs := k.specEmissionParts(ctx)
+
+	defer func() {
+		k.removeAllBasePay(ctx)
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed successfully")
+	}()
 	for _, spec := range specs {
 		// all providers basepays and the total basepay of the spec
 		basepays, totalbasepay := k.specProvidersBasePay(ctx, spec.ChainID)
@@ -50,6 +55,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 				utils.LavaFormatError("provider rewards are larger than the distribution pool balance", nil,
 					utils.LogAttr("distribution_pool_balance", total.String()),
 					utils.LogAttr("provider_reward", totalRewarded.String()))
+				details["error"] = "provider rewards are larger than the distribution pool balance"
 				return
 			}
 			// now give the reward the provider contributor and delegators
@@ -65,9 +71,6 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 			details[providerAddr.String()+" "+spec.ChainID] = reward.String()
 		}
 	}
-	k.removeAllBasePay(ctx)
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed successfully")
 }
 
 // specTotalPayout calculates the total bonus for a specific spec
