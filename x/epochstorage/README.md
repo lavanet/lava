@@ -47,7 +47,7 @@ Some parameters on the chain can affect the results of the pairing list. Since t
 AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any) 
 ```
 
-by doing so the module will know to track [param change proposals](../spec/proposal_handler.go) and save any changes of the relevant param as a fixated param on the store.
+By doing this, the module will be able to track [param change proposals](../spec/proposal_handler.go) and save any changes to the relevant param as a fixated param in the store. The fixated param is responsible for keeping track of param changes, saving different versions if they are registered, and deleting old versions when they are no longer needed (as determined by the EpochsToSave parameter).
 fixated param is in charge of tracking param changes, save their different versions if they are registered and delete old versions when they are not needed anymore (determined by EpochsToSave parameter).
 
 a fixation parameter is saved on store as:
