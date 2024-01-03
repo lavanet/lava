@@ -135,10 +135,11 @@ The epochstorage parameters:
 | EpochsToSave                           | uint64                  | 20               |
 | LatestParamChange                      | uint64                  | N/A               |
 
-
 `EpochBlocks` determines the amount of blocks for each epoch.
-`EpochsToSave` determines how many epochs are saved on the chain at a given moment
-`LatestParamChange` saves the last time a fixated param has changed
+
+`EpochsToSave` determines how many epochs are saved on the chain at a given moment.
+
+`LatestParamChange` saves the last time a fixated param has changed.
 
 ## Queries
 
