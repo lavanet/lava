@@ -34,21 +34,21 @@ type RPCConsumerLogs struct {
 	excludeMetricsReferrers   string
 	excludedUserAgent         []string
 	consumerMetricsManager    *ConsumerMetricsManager
-	ConsumerRelayserverClient *ConsumerRelayserverClient
+	consumerRelayServerClient *ConsumerRelayServerClient
 }
 
-func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumerRelayserverClient *ConsumerRelayserverClient) (*RPCConsumerLogs, error) {
+func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumerRelayServerClient *ConsumerRelayServerClient) (*RPCConsumerLogs, error) {
 	err := godotenv.Load()
 	if err != nil {
 		utils.LavaFormatInfo("New relic missing environment file")
-		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: consumerRelayserverClient}, nil // newRelicApplication is nil safe to use
+		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, consumerRelayServerClient: consumerRelayServerClient}, nil // newRelicApplication is nil safe to use
 	}
 
 	newRelicAppName := os.Getenv("NEW_RELIC_APP_NAME")
 	newRelicLicenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
 	if newRelicAppName == "" || newRelicLicenseKey == "" {
 		utils.LavaFormatInfo("New relic missing environment variables")
-		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: consumerRelayserverClient}, nil
+		return &RPCConsumerLogs{consumerMetricsManager: consumerMetricsManager, consumerRelayServerClient: consumerRelayServerClient}, nil
 	}
 
 	newRelicApplication, err := newrelic.NewApplication(
@@ -72,7 +72,7 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumer
 		newrelic.ConfigFromEnvironment(),
 	)
 
-	rpcConsumerLogs := &RPCConsumerLogs{newRelicApplication: newRelicApplication, StoreMetricData: false, consumerMetricsManager: consumerMetricsManager, ConsumerRelayserverClient: consumerRelayserverClient}
+	rpcConsumerLogs := &RPCConsumerLogs{newRelicApplication: newRelicApplication, StoreMetricData: false, consumerMetricsManager: consumerMetricsManager, consumerRelayServerClient: consumerRelayServerClient}
 	isMetricEnabled, _ := strconv.ParseBool(os.Getenv("IS_METRICS_ENABLED"))
 	if isMetricEnabled {
 		rpcConsumerLogs.StoreMetricData = true
@@ -155,7 +155,7 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.ConsumerRelayserverClient.SetRelayMetrics(data)
+	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
 	refererHeaderValue := strings.Join(headers[RefererHeaderKey], ", ")
 	userAgentHeaderValue := strings.Join(headers[UserAgentHeaderKey], ", ")
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -166,7 +166,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, he
 
 func (rpccl *RPCConsumerLogs) AddMetricForWebSocket(data *RelayMetrics, err error, c *websocket.Conn) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.ConsumerRelayserverClient.SetRelayMetrics(data)
+	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
 	refererHeaderValue, _ := c.Locals(RefererHeaderKey).(string)
 	userAgentHeaderValue, _ := c.Locals(UserAgentHeaderKey).(string)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {
@@ -185,7 +185,7 @@ func (rpccl *RPCConsumerLogs) AddMetricForGrpc(data *RelayMetrics, err error, me
 		return headerValue
 	}
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
-	rpccl.ConsumerRelayserverClient.SetRelayMetrics(data)
+	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
 	refererHeaderValue := getMetadataHeaderOrDefault(RefererHeaderKey)
 	userAgentHeaderValue := getMetadataHeaderOrDefault(UserAgentHeaderKey)
 	if rpccl.StoreMetricData && rpccl.shouldCountMetrics(refererHeaderValue, userAgentHeaderValue) {

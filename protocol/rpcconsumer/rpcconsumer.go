@@ -97,12 +97,12 @@ type RPCConsumer struct {
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy, metricsListenAddress string, maxConcurrentProviders uint, usageServerAddr string) (err error) {
+func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy, metricsListenAddress string, maxConcurrentProviders uint, relayServerAddr string) (err error) {
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(metricsListenAddress)  // start up prometheus metrics
-	consumerUsageserveManager := metrics.NewConsumerRelayserverClient(usageServerAddr) // start up prometheus metrics
+	consumerUsageserveManager := metrics.NewConsumerRelayServerClient(relayServerAddr) // start up prometheus metrics
 
 	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageserveManager)
 	if err != nil {
@@ -467,9 +467,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				utils.LavaFormatInfo("Working with selection strategy: " + strategyFlag.String())
 			}
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
-			usageServerAddr := viper.GetString(metrics.RelayServerFlagName)
+			relayServerAddr := viper.GetString(metrics.RelayServerFlagName)
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
-			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, prometheusListenAddr, maxConcurrentProviders, usageServerAddr)
+			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, prometheusListenAddr, maxConcurrentProviders, relayServerAddr)
 			return err
 		},
 	}
