@@ -2,11 +2,15 @@ package ante
 
 import (
 	"fmt"
+	types2 "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/lavanet/lava/x/spec/keeper"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"strings"
 )
 
 type ExpeditedProposalFilterAnteDecorator struct {
@@ -46,7 +50,7 @@ func validateWhitelistedMsgs(whitelist []string, msgs []types.Msg) error {
 
 				for _, expeditedMsg := range expeditedMsgs {
 					if !whitelistContainsMsg(whitelist, expeditedMsg) {
-						return fmt.Errorf("expedited proposal contains blacklisted message %s", proto.MessageName(expeditedMsg))
+						return fmt.Errorf("expedited proposal contains non whitelisted message %s", proto.MessageName(expeditedMsg))
 					}
 				}
 			}
@@ -67,11 +71,44 @@ func validateWhitelistedMsgs(whitelist []string, msgs []types.Msg) error {
 
 func whitelistContainsMsg(whitelist []string, msg types.Msg) bool {
 	msgName := proto.MessageName(msg)
-	for _, blacklistedMsg := range whitelist {
-		if blacklistedMsg == msgName {
+
+	switch m := msg.(type) {
+	case *v1beta1.MsgSubmitProposal:
+		msgName = getCanonicalProtoNameFromAny(m.Content)
+		url := m.Content.GetTypeUrl()
+		name := protoreflect.FullName(url)
+		if i := strings.LastIndexByte(url, '/'); i >= 0 {
+			name = name[i+len("/"):]
+		}
+		if !name.IsValid() {
+			name = ""
+		}
+
+		msgName = string(name)
+	}
+
+	return whitelistContainsMsgName(whitelist, msgName)
+}
+
+func whitelistContainsMsgName(whitelist []string, msgName string) bool {
+	for _, whitelistedMsg := range whitelist {
+		if whitelistedMsg == msgName {
 			return true
 		}
 	}
 
 	return false
+}
+
+func getCanonicalProtoNameFromAny(any *types2.Any) string {
+	url := any.GetTypeUrl()
+	name := protoreflect.FullName(url)
+	if i := strings.LastIndexByte(url, '/'); i >= 0 {
+		name = name[i+len("/"):]
+	}
+	if !name.IsValid() {
+		name = ""
+	}
+
+	return string(name)
 }

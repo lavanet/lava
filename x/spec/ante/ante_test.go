@@ -3,13 +3,15 @@ package ante
 import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/types"
-	types3 "github.com/cosmos/cosmos-sdk/x/auth/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/lavanet/lava/app"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	types2 "github.com/lavanet/lava/x/spec/types"
 	subsciptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -17,7 +19,9 @@ import (
 )
 
 func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
-	account := types3.NewModuleAddressOrBech32Address("cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9")
+	account := authtypes.NewModuleAddressOrBech32Address("cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9")
+	whitelistedContent := plantypes.PlansDelProposal{}
+	//nonWhitelistedContent := plantypes.PlansAddProposal{}
 
 	tests := []struct {
 		name       string
@@ -114,6 +118,33 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			},
 			shouldFail: true,
 		},
+		{
+			name: "a v1 proposal that contains a legacy proposal with whitelisted content should not fail, expedited",
+			theMsg: func() types.Msg {
+				submitProposal, err := v1beta1.NewMsgSubmitProposal(
+					&whitelistedContent,
+					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
+					account,
+				)
+				require.NoError(t, err)
+
+				proposal, err := v1.NewMsgSubmitProposal(
+					[]types.Msg{
+						submitProposal,
+					},
+					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
+					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
+					"metadata",
+					"title",
+					"summary",
+					true,
+				)
+				require.NoError(t, err)
+
+				return proposal
+			},
+			shouldFail: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -124,6 +155,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			params := types2.DefaultParams()
 			params.WhitelistedExpeditedMsgs = []string{
 				proto.MessageName(&banktypes.MsgSend{}),
+				proto.MessageName(&whitelistedContent),
 			} // we whitelist MsgSend proposal
 
 			k.SetParams(ctx, params)
@@ -144,7 +176,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			})
 			if tt.shouldFail {
 				require.Error(t, err)
-				require.ErrorContainsf(t, err, "proposal contains blacklisted message", "expected error to contain %s", "proposal contains blacklisted messages")
+				require.ErrorContainsf(t, err, "expedited proposal contains non whitelisted message", "expected error to contain %s", "expedited proposal contains non whitelisted message")
 			} else {
 				require.NoError(t, err)
 			}
