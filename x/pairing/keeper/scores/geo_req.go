@@ -6,7 +6,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/plans/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
@@ -62,7 +61,7 @@ func (gr GeoReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
 		utils.LavaFormatError("length of policyGeoEnums is zero", fmt.Errorf("critical: Attempt to divide by zero"),
 			utils.LogAttr("policyGeoProfile", policy.GeolocationProfile),
 		)
-		return GeoReq{Geo: int32(types.Geolocation_USC)}
+		return GeoReq{Geo: int32(planstypes.Geolocation_USC)}
 	}
 
 	return GeoReq{Geo: int32(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
