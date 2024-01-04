@@ -135,7 +135,7 @@ func (cuc *ConsumerRelayServerClient) agregateAndSendRelayData(sendQueue []Updat
 
 	if len(aggregatedRequests) == 0 {
 		utils.LavaFormatDebug("CUC: No requests after aggregate")
-		return nil, errors.New("No requests after aggregate")
+		return nil, errors.New("no requests after aggregate")
 	}
 
 	client := &http.Client{

@@ -477,9 +477,10 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				MetricsListenAddress: viper.GetString(metrics.MetricsListenFlagName),
 				RelayServerAddress:   viper.GetString(metrics.RelayServerFlagName),
 			}
+
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 
-      consumerPropagatedFlags := common.ConsumerCmdFlags{
+			consumerPropagatedFlags := common.ConsumerCmdFlags{
 				HeadersFlag:      viper.GetString(common.CorsHeadersFlag),
 				OriginFlag:       viper.GetString(common.CorsOriginFlag),
 				MethodsFlag:      viper.GetString(common.CorsMethodsFlag),
