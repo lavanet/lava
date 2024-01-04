@@ -560,7 +560,7 @@ func (ts *Tester) TxPairingStakeProvider(
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
 		Moniker:            moniker,
-		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
+		DelegateLimit:      amount,
 		DelegateCommission: 100,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
