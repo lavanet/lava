@@ -320,10 +320,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		}
 		if gotNewBlock {
 			if cs.newLatestCallback != nil {
-				// for i := prev_latest + 1; i <= newLatestBlock; i++ {
-				// on catch up of several blocks we don't want to miss any callbacks
 				cs.newLatestCallback(prev_latest, newLatestBlock, latestHash) // TODO: this is calling the latest hash only repeatedly, this is not precise, currently not used anywhere except for prints
-				// }
 			}
 			blocksUpdated := uint64(newLatestBlock - prev_latest)
 			// update our timer resolution
