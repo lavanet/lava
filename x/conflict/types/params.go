@@ -113,7 +113,9 @@ func validateVoteStartSpan(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
-
+	if voteStartSpan == 0 {
+		return fmt.Errorf("invalid parameter voteStartSpan - can't be 0")
+	}
 	// TODO implement validation
 	_ = voteStartSpan
 
@@ -125,7 +127,9 @@ func validateVotePeriod(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
-
+	if votePeriod == 0 {
+		return fmt.Errorf("invalid parameter votePeriod - can't be 0")
+	}
 	// TODO implement validation
 	_ = votePeriod
 
