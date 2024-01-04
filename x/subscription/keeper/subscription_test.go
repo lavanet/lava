@@ -367,7 +367,7 @@ func TestMonthlyRechargeCU(t *testing.T) {
 
 			// force fixation entry (by adding project key)
 			projKey := []projectstypes.ProjectKey{projectstypes.ProjectAdminKey(adm1Addr)}
-			err = ts.Keepers.Projects.AddKeysToProject(ts.Ctx, projectstypes.ADMIN_PROJECT_NAME, tt.developer, projKey)
+			err = ts.Keepers.Projects.AddKeysToProject(ts.Ctx, proj.Index, tt.subscription, projKey)
 			require.NoError(t, err)
 
 			// fast-forward one month
