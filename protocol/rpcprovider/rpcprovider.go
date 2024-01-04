@@ -291,8 +291,10 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
 	var chainTracker *chaintracker.ChainTracker
 	// chainTracker accepts a callback to be called on new blocks, we use this to call metrics update on a new block
-	recordMetricsOnNewBlock := func(block int64, hash string) {
-		rpcp.providerMetricsManager.SetLatestBlock(chainID, uint64(block))
+	recordMetricsOnNewBlock := func(blockFrom int64, blockTo int64, hash string) {
+		for block := blockFrom + 1; block <= blockTo; block++ {
+			rpcp.providerMetricsManager.SetLatestBlock(chainID, uint64(block))
+		}
 	}
 
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here

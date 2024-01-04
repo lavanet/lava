@@ -20,6 +20,13 @@ func (mu *MetricsUpdater) UpdaterKey() string {
 	return CallbackKeyForMetricUpdate
 }
 
+func (mu *MetricsUpdater) Reset(latestBlock int64) {
+	if mu.consumerMetricsManager == nil {
+		return
+	}
+	mu.consumerMetricsManager.SetBlock(latestBlock)
+}
+
 func (mu *MetricsUpdater) Update(latestBlock int64) {
 	if mu.consumerMetricsManager == nil {
 		return

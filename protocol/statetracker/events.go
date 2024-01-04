@@ -51,25 +51,36 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	if latestHeight < blocks {
 		return utils.LavaFormatError("requested blocks is bigger than latest block height", nil, utils.Attribute{Key: "requested", Value: blocks}, utils.Attribute{Key: "latestHeight", Value: latestHeight})
 	}
-
-	readEventsFromBlock := func(block int64, hash string) {
-		brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
-		if err != nil {
-			utils.LavaFormatFatal("invalid blockResults provider", err)
-		}
-		blockResults, err := brp.BlockResults(ctx, &block)
-		if err != nil {
-			utils.LavaFormatError("invalid blockResults status", err)
-			return
-		}
-		for _, event := range blockResults.BeginBlockEvents {
-			checkEventForShow(eventName, event, hasAttributeName, value, block, showAttributeName)
-		}
-		transactionResults := blockResults.TxsResults
-		for _, tx := range transactionResults {
-			events := tx.Events
-			for _, event := range events {
+	ticker := time.NewTicker(5 * time.Second)
+	readEventsFromBlock := func(blockFrom int64, blockTo int64, hash string) {
+		for block := blockFrom; block < blockTo; block++ {
+			brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
+			if err != nil {
+				utils.LavaFormatFatal("invalid blockResults provider", err)
+			}
+			blockResults, err := brp.BlockResults(ctx, &block)
+			if err != nil {
+				utils.LavaFormatError("invalid blockResults status", err)
+				return
+			}
+			for _, event := range blockResults.BeginBlockEvents {
 				checkEventForShow(eventName, event, hasAttributeName, value, block, showAttributeName)
+			}
+			transactionResults := blockResults.TxsResults
+			for _, tx := range transactionResults {
+				events := tx.Events
+				for _, event := range events {
+					checkEventForShow(eventName, event, hasAttributeName, value, block, showAttributeName)
+				}
+			}
+			select {
+			case <-signalChan:
+				return
+			case <-ticker.C:
+				if !disableInteractive {
+					fmt.Printf("Current Block: %d\r", block)
+				}
+			default:
 			}
 		}
 	}
@@ -78,21 +89,8 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 		if fromBlock <= 0 {
 			fromBlock = latestHeight - blocks
 		}
-		ticker := time.NewTicker(5 * time.Second)
 		utils.LavaFormatInfo("Reading Events", utils.Attribute{Key: "from", Value: fromBlock}, utils.Attribute{Key: "to", Value: fromBlock + blocks})
-		for block := fromBlock; block < fromBlock+blocks; block++ {
-			readEventsFromBlock(block, "")
-			// if the user aborted stop
-			select {
-			case <-signalChan:
-				return nil
-			case <-ticker.C:
-				if !disableInteractive {
-					fmt.Printf("Current Block: %d\r", block)
-				}
-			default:
-			}
-		}
+		readEventsFromBlock(fromBlock, fromBlock+blocks, "")
 	}
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	latestBlock, err := lavaChainFetcher.FetchLatestBlockNum(ctx)
