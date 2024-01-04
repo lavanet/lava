@@ -14,10 +14,10 @@ import (
 )
 
 type ExpeditedProposalFilterAnteDecorator struct {
-	k *keeper.Keeper
+	k keeper.Keeper
 }
 
-func NewExpeditedProposalFilterAnteDecorator(k *keeper.Keeper) sdk.AnteDecorator {
+func NewExpeditedProposalFilterAnteDecorator(k keeper.Keeper) sdk.AnteDecorator {
 	return ExpeditedProposalFilterAnteDecorator{k: k}
 }
 
