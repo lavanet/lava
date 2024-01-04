@@ -91,9 +91,7 @@ Dual staking module uses [staking hooks](keeper/hooks.go) to achieve its functio
 
 ### RedelegateFlag
 
-In case of validator redelegation we want to make sure the dual staking module dont take action.
-This is with [antehandler](ante/ante_handler.go), whenever a redelegation msg is running, RedelegateFlag is marked true and the hooks will ignore the delegation changes.
-Note: The RedelegateFlag is an on memory flag (not on state).
+To prevent the dual staking module from taking action in the case of validator redelegation, we utilize the [antehandler](ante/ante_handler.go). When a redelegation message is being processed, the RedelegateFlag is set to true, and the hooks will disregard any delegation changes. It is important to note that the RedelegateFlag is stored in memory and not in the chain’s state.
 
 ## Parameters
 
