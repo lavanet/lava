@@ -39,7 +39,8 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 		Endpoints:          endpoints,
 		Moniker:            "prov",
 		DelegateLimit:      stakeCoin,
-		DelegateCommission: 100, Validator: sdk.ValAddress(validator.Addr).String()},
+		DelegateCommission: 100, Validator: sdk.ValAddress(validator.Addr).String(),
+	},
 	)
 	require.Nil(t, err)
 }
