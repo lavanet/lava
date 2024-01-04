@@ -116,10 +116,10 @@ The Dualstaking module supports the following transactions:
 
 | Transaction      | Arguments       | What it does                                  |
 | ---------- | --------------- | ----------------------------------------------|
-| `delegate`     | validator-addr provider-addr chain-id amount| delegate to validator and provider the given amount|
-| `redelegate`     | src-provider addr src-chain-id dst-provider-addr dst-chain-id  | redelegate provider delegation from source provider to destination provider|
-| `unbond`     | validator-addr provider-addr chain-id amount  | undong from validator and provider the given amount                  |
-| `claim-rewards`     | optional: provider-addr | claim the rewards from a given provider or all rewards |
+| `delegate`     | validator-addr(string) provider-addr (string) chain-id (string) amount (coin)| delegate to validator and provider the given amount|
+| `redelegate`     | src-provider-addr (string) src-chain-id (string) dst-provider-addr (string) dst-chain-id (string) amount (coin)| redelegate provider delegation from source provider to destination provider|
+| `unbond`     | validator-addr (string) provider-addr (string) chain-id (string) amount (coin) | undong from validator and provider the given amount                  |
+| `claim-rewards`     | optional: provider-addr (string)| claim the rewards from a given provider or all rewards |
 
 
 ## Proposals
