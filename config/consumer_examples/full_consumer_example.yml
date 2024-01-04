@@ -134,4 +134,7 @@ endpoints:
     - chain-id: AGR
       api-interface: grpc
       network-address: 127.0.0.1:3387
+    - chain-id: KOIIT
+      api-interface: jsonrpc
+      network-address: 127.0.0.1:3388
 metrics-listen-address: ":7779"

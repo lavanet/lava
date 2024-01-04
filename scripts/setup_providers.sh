@@ -67,6 +67,7 @@ $PROVIDER1_LISTENER FVM jsonrpc '$FVM_JRPC' \
 $PROVIDER1_LISTENER NEAR jsonrpc '$NEAR_JRPC' \
 $PROVIDER1_LISTENER AGR rest '$AGORIC_REST' \
 $PROVIDER1_LISTENER AGR grpc '$AGORIC_GRPC' \
+$PROVIDER1_LISTENER KOIIT jsonrpc '$KOIITRPC' \
 $EXTRA_PROVIDER_FLAGS --metrics-listen-address ":7780" --geolocation "$GEOLOCATION" --log_level debug --from servicer1 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 # $PROVIDER1_LISTENER MANTLE jsonrpc '$MANTLE_JRPC' \
 
