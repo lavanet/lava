@@ -99,7 +99,7 @@ type RelaySender interface {
 }
 
 type ChainListener interface {
-	Serve(ctx context.Context)
+	Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags)
 }
 
 type ChainRouter interface {

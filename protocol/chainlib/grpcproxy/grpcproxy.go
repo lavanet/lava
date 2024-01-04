@@ -4,7 +4,9 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -16,15 +18,24 @@ import (
 
 type ProxyCallBack = func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error)
 
-func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string) (*grpc.Server, *http.Server, error) {
+func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.ConsumerCmdFlags) (*grpc.Server, *http.Server, error) {
 	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(RawBytesCodec{}))
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
-		resp.Header().Set("Access-Control-Allow-Origin", "*")
-		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type,x-grpc-web")
+		resp.Header().Set("Access-Control-Allow-Origin", cmdFlags.OriginFlag)
+
+		if req.Method == http.MethodOptions {
+			resp.Header().Set("Access-Control-Allow-Methods", cmdFlags.MethodsFlag)
+			resp.Header().Set("Access-Control-Allow-Headers", cmdFlags.HeadersFlag)
+			resp.Header().Set("Access-Control-Max-Age", cmdFlags.CDNCacheDuration)
+			resp.WriteHeader(fiber.StatusNoContent)
+			_, _ = resp.Write(make([]byte, 0))
+			return
+		}
+
 		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
-			resp.WriteHeader(200)
+			resp.WriteHeader(fiber.StatusOK)
 			_, _ = resp.Write(make([]byte, 0))
 			return
 		}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/favicon"
 	common "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
@@ -279,4 +280,29 @@ func GetRelayTimeout(chainMessage ChainMessage, chainParser ChainParser, timeout
 	}
 	// Set relay timout, increase it every time we fail a relay on timeout
 	return extraRelayTimeout + time.Duration(timeouts+1)*relayTimeAddition + common.AverageWorldLatency
+}
+
+// setup a common preflight and cors configuration allowing wild cards and preflight caching.
+func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags) *fiber.App {
+	app := fiber.New(fiber.Config{})
+	app.Use(favicon.New())
+	app.Use(func(c *fiber.Ctx) error {
+		// we set up wild card by default.
+		c.Set("Access-Control-Allow-Origin", cmdFlags.OriginFlag)
+		// Handle preflight requests directly
+		if c.Method() == "OPTIONS" {
+			// set up all allowed methods.
+			c.Set("Access-Control-Allow-Methods", cmdFlags.MethodsFlag)
+			// allow headers
+			c.Set("Access-Control-Allow-Headers", cmdFlags.HeadersFlag)
+			// Cache preflight request for 24 hours (in seconds)
+			c.Set("Access-Control-Max-Age", cmdFlags.CDNCacheDuration)
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		if c.Method() == "DELETE" {
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+		return c.Next()
+	})
+	return app
 }

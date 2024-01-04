@@ -39,7 +39,7 @@ func handlePlansAddProposal(ctx sdk.Context, k keeper.Keeper, p *types.PlansAddP
 		}
 
 		details := map[string]string{"planDetails": planElem.String()}
-		utils.LogLavaEvent(ctx, logger, "add_new_plan_to_storage", details, "Gov Proposal Accepted Plans")
+		utils.LogLavaEvent(ctx, logger, types.PlanAddEventName, details, "Gov Proposal Accepted Plans")
 	}
 	return nil
 }
@@ -56,7 +56,7 @@ func handlePlansDelProposal(ctx sdk.Context, k keeper.Keeper, p *types.PlansDelP
 		}
 
 		details := map[string]string{"index": index}
-		utils.LogLavaEvent(ctx, logger, "del_plan_from_storage", details, "Gov Proposal Accepted Plans")
+		utils.LogLavaEvent(ctx, logger, types.PlanDelEventName, details, "Gov Proposal Accepted Plans")
 	}
 	return nil
 }
