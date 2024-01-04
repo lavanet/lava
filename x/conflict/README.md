@@ -50,7 +50,7 @@ type MsgConflictVoteCommit struct {
 
 ### Reveal Period
 
-Once the commit period ends, the conflict enters reveal state. Here providers need to submit their full response and nonce. this is than validated and compared to the original providers responses. The result of the vote (Provider A, Provider B, None) is than saved on state, waiting for the end of the conflict.
+Once the commit period ends, the conflict enters the reveal state. At this point, providers are required to submit their full response and nonce. These responses are then validated and compared to the original providers' responses. The result of the vote (Provider A, Provider B, None) is then saved in the state, awaiting the end of the conflict.
 
 ```go
 type MsgConflictVoteReveal struct {
