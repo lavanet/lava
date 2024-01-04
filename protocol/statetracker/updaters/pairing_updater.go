@@ -69,6 +69,7 @@ func (pu *PairingUpdater) RegisterPairingUpdatable(ctx context.Context, pairingU
 func (pu *PairingUpdater) UpdaterKey() string {
 	return CallbackKeyForPairingUpdate
 }
+
 func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	pu.lock.RLock()
 	defer pu.lock.RUnlock()
