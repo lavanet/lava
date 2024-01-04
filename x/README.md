@@ -4,7 +4,7 @@
 
 This document specifies the Top Architecture of the Lava Blockchain.
 
-It explains how the mechanisms work together to create the modular data access layer that is lava
+It explains how the mechanisms work together to create the modular data access layer that is Lava.
 
 ## Contents
 
@@ -20,6 +20,7 @@ It explains how the mechanisms work together to create the modular data access l
   * [Dual Staking](#dual-staking)
   * [Adding Specifications](#adding-specifications)
   * [Plans & Policies](#plans--policies)
+  * [Subscriptions & Projects](#subscriptions--projects)
   * [Pairing](#pairing)
   * [Lava Protocol P2P](#lava-protocol-p2p)
     * [Sessions](#sessions)
@@ -29,6 +30,7 @@ It explains how the mechanisms work together to create the modular data access l
   * [Reports](#reports)
   * [Boosts](#boosts)
   * [Conflicts](#conflicts)
+  * [Constant Availability](#constant-availability)
 * [Modules](#modules)
   * [Utility](#utility)
     * [Epoch Storage](#epochstorage)
@@ -55,7 +57,7 @@ Validators play a pivotal role in the Lava Blockchain, akin to the classic cosmo
 
 ### Consumer
 
-Consumers within the Lava ecosystem are individuals seeking to utilize APIs. They gain access through valid periodic subscriptions acquired either by themselves or by other users using tokens. Active subscriptions empower consumers with a curated list of available providers offering APIs and enable them to allocate rewards. Subscription owners hold the authority to delegate usage within their subscription, facilitating developers' access via designated projects.
+Consumers within the Lava ecosystem access APIs by purchasing subscriptions. Additionally, users associated with these consumers can gain API access by utilizing badges created by the consumers. Active subscriptions provide a curated list of available providers offering APIs and allow consumers to allocate rewards. Subscription owners have the authority to delegate usage within their subscription, enabling developers' access via designated projects. Providers offer APIs in exchange for rewards facilitated by these subscriptions.
 
 ### Provider
 
@@ -91,17 +93,23 @@ When staking a provider, it's mandatory to simultaneously select a validator for
 
 ### Adding Specifications
 
-In Lava, governance has the authority to vote on the addition of a new API specification through a spec add proposal. A specification, represented by a detailed configuration JSON, defines a service comprehensively.
+In Lava, governance has the authority to vote on the addition of a new API specification through a spec-add proposal. A specification, represented by a detailed configuration JSON, defines a service comprehensively.
 
 Specifications encompass parameters like permitted APIs, their associated costs, parsing methodologies, freshness maintenance, and fraud detection protocols. To minimize redundancy, specifications can inherit from other specifications, reducing the necessity for repetition.
 
 Once a specification is successfully added, providers can offer services aligned with that specification by staking tokens to it.
+
+Specifications can delineate contributors and their involvement in reward distribution, as previously noted
 
 ### Plans & Policies
 
 When consumers opt for a subscription, they encounter a range of governance-defined options, known as plans. Each plan encompasses preconfigured settings mandated by governance, specifying the volume of consumption a subscription receives over a given period (typically a month). These plans encompass various restrictions such as provider count, geolocations, advanced features like addons, and more. The guidelines within plans that govern consumer-provider interactions are referred to as policies.
 
 There exist three tiers of policies, where the strictest policy takes precedence. While a subscription cannot surpass the constraints outlined by the plan, it can lower certain limits, such as the provider count, within the given policy framework.
+
+### Subscriptions & Projects
+
+Subscriptions in Lava are like passes that consumers buy to access different APIs. They let users reward providers and manage their access. Projects, on the other hand, are spaces within subscriptions where developers can organize and control resources. They help developers manage how they use computing power. Together, subscriptions and projects give users control and provide a flexible system for developers to work efficiently in the Lava ecosystem
 
 ### Pairing
 
@@ -113,7 +121,7 @@ The pairing mechanism is not computed on-chain until rewards are claimed. Consum
 
 ### Lava Protocol P2P
 
-lava defines a protocol between consumers and providers.
+Lava defines a protocol between consumers and providers.
 
 #### Communication
 
@@ -131,15 +139,17 @@ To prevent providers from excessively claiming using multiple proofs from the sa
 
 #### Badges
 
-To facilitate frontend usage, which poses a risk to private keys, Lava introduces a feature called badges. These are dynamically generated private keys that receive clearance or a "badge" to operate on behalf of the subscription/developer within a specific epoch, limited to a predetermined amount of compute units (CU). These badges, along with dynamically generated signatures, are sent to providers to enable them to service the badge and subsequently claim rewards for its usage on the blockchain.
+Badges are a protective measure addressing the risk to private keys during frontend usage within Lava. These dynamically generated private keys, termed 'badges,' are authorized to operate on behalf of the subscription/developer within specific epochs, with usage limited to predetermined compute units (CU). Transmitted to providers alongside dynamically generated signatures, these badges grant authorization for service provision and subsequent reward claims on the blockchain.
 
 ### Claiming Rewards
 
-Given that providers submit claim transactions for work performed off-chain, Lava allows for delayed claiming of rewards, harmonizing with the session aggregation process described earlier. Lava implements a moving time window for claiming rewards, retaining data for pairing and claimed rewards within this temporal memory window. This approach enables providers to claim rewards deliberately without the urgency of claiming right at the epoch's end. Moreover, it accommodates situations where consumers might be unsynchronized or providers encounter network issues, transaction congestion, or downtime.
+Given that providers submit claim transactions for off-chain work, Lava allows delayed claiming of rewards, aligning with the earlier described session aggregation process. The system employs a moving time window for reward claims, preserving pairing data and claimed rewards within this temporal memory. This strategy enables deliberate reward claiming without the pressure of doing so precisely at the epoch's end. It also accommodates scenarios where consumers may lack synchronization or providers face network issues, transaction congestion, or downtime.
 
-Providers locally store the latest relay request, containing a cryptographic signature from the consumer developer or subscription key, as proof. When an epoch concludes, after a delay, these rewards aggregate into a transaction termed 'relay_payment,' automatically triggered by the provider service. This transaction passes verifications and accumulates compute units (CU) on behalf of the provider.
+Providers retain the latest relay request locally, containing a cryptographic signature from the consumer, developer, or subscription key as evidence. At the conclusion of an epoch, after a delay, these accrued rewards aggregate into a transaction named 'relay_payment,' automatically initiated by the provider service. This transaction undergoes verifications and accumulates compute units (CU) on the provider's behalf.
 
-Upon a subscription's termination, all provided CU (capped as per the plan policy, both total and per epoch) are factored into dividing rewards among providers. Each provider receives their portion from the subscription's cost after deducting validators' and contributors' participation. Subsequently, these rewards are divided post-commission with delegators. Consequently, provider rewards are distributed monthly per subscription, contingent upon its purchase date. Rewards for providers and their delegators can be claimed through a dualstaking transaction.
+Upon termination of a subscription, all provided CUs (conforming to the plan policy, both total and per epoch) contribute to dividing rewards among providers. Each provider receives their portion from the subscription's cost after deductions for validators' and contributors' participation. Subsequently, these rewards are divided post-commission with delegators. Provider rewards are thus distributed monthly per subscription, contingent upon its purchase date. Providers and their delegators can claim rewards through a dualstaking transaction.
+
+It's crucial to clarify that provider rewards undergo a deliberate accumulation process on-chain as compute units throughout the month. These rewards are disbursed upon the conclusion of the subscription period, ensuring a systematic and intentional distribution mechanism that depends on the total usage within the subscription. This deliberate approach ensures that rewards accurately reflect the cumulative usage and allows for a fair distribution among providers based on their contributions throughout the subscription period
 
 ### Reports
 
@@ -153,11 +163,15 @@ During the blockchain's bootstrap phase, it anticipates that the demand may not 
 
 ### Conflicts
 
-When utilizing the services, consumers leverage the protocol's data reliability feature to cross-verify deterministic responses for identical queries from multiple providers. In cases of discrepancies, cryptographically signed by both providers, consumers can initiate a conflict transaction to report the fraudulent provider. This action triggers an on-chain resolution process involving a commit-and-reveal vote by all selected providers within the spec (known as the jury mechanism). Providers selected for this process are obligated to participate; failure to do so results in potential penalties. Following the necessary votes, the provider found at fault will face repercussions, potentially leading to their temporary restriction. As part of our ongoing testing and refinement process, we aim to enhance this mechanism, particularly for specs with substantial stake backing for majority trust.
+When consumers engage with the services, they rely on the protocol's data reliability feature, ensuring cross-verification of deterministic responses across multiple providers for identical queries. These queries, deliberately unpredictable to providers, are randomly selected by consumers. Users have the option to increase the number of checks performed, enhancing their security measures. In instances of conflicting responses, which are cryptographically signed by both providers, consumers can initiate a conflict transaction to report the potentially fraudulent provider. This action triggers an on-chain resolution process, known as the jury mechanism, involving a commit-and-reveal vote by all selected providers within the specification. Selected providers are obligated to participate; failure to do so may result in potential penalties. After the requisite votes, the identified provider at fault faces repercussions, potentially leading to penalties. As part of our continuous testing and refinement efforts, we aim to bolster this mechanism, particularly for specifications supported by substantial stake backing to ensure majority trust.
+
+### Constant Availability
+
+Lava's blockchain incorporates a distinctive feature to maintain operations during critical consensus failures. When consumers and providers detect downtime separately, they utilize an off-chain communication method based on 'virtual epochs.' These epochs enable both parties to mutually agree upon increased usage without resetting their connections, allowing providers to later claim these additional services as rewards when the blockchain returns to normal operation. The process of claiming rewards after the chain resumes is automated for providers and is automatically acknowledged and approved by the consensus mechanism, surpassing the usual limits set within a single epoch.
 
 ## Modules
 
-### utility
+### Utility
 
 #### [epochstorage](epochstorage/README.md)
 
@@ -175,7 +189,7 @@ The timerstore module functions as a utility that facilitates block time - based
 
 The downtime utility module serves to offer insights into the block average time and detects occurrences of blockchain downtime.
 
-### governance
+### Governance
 
 #### [spec](spec/README.md)
 
@@ -189,7 +203,7 @@ The plans module establishes a framework for governance to regulate available su
 
 This module is responsible for storing the target and minimum versions for the protocol modules. Any alterations to these versions are possible through a governance parameters proposal.
 
-### consumers & providers
+### Consumers & Providers
 
 #### [subscription](subscription/README.md)
 
@@ -209,7 +223,7 @@ This core module serves multiple roles:
 * Manages the pairing function between consumers and providers based on policies and available providers.
 * Manages (Quality of Service) QoS reports and payment requests from providers, storing them to prevent double spending and forwarding accumulated CUs to the subscription module.
 
-### tokenomics
+### Tokenomics
 
 #### [dualstaking](dualstaking/README.md)
 
