@@ -318,14 +318,14 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 }
 
 // Serve http server for TendermintRpcChainListener
-func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
+func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags) {
 	// Guard that the TendermintChainParser instance exists
 	if apil == nil {
 		return
 	}
 
 	// Setup HTTP Server
-	app := createAndSetupBaseAppListener()
+	app := createAndSetupBaseAppListener(cmdFlags)
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
 

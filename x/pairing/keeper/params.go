@@ -1,7 +1,10 @@
 package keeper
 
 import (
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -36,9 +39,24 @@ func (k Keeper) FraudSlashingAmount(ctx sdk.Context) (res uint64) {
 	return
 }
 
-func (k Keeper) EpochBlocksOverlap(ctx sdk.Context) (res uint64) {
+func (k Keeper) EpochBlocksOverlap(ctx sdk.Context) uint64 {
+	var res uint64
 	k.paramstore.Get(ctx, types.KeyEpochBlocksOverlap, &res)
-	return
+
+	epochBlocks, err := k.epochStorageKeeper.EpochBlocks(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		utils.LavaFormatError("could not get epochBlocks", err,
+			utils.Attribute{Key: "block", Value: strconv.FormatInt(ctx.BlockHeight(), 10)},
+		)
+
+		return res
+	}
+
+	if epochBlocks < res {
+		res = epochBlocks
+	}
+
+	return res
 }
 
 func (k Keeper) UnpayLimit(ctx sdk.Context) (res sdk.Dec) {

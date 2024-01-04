@@ -68,6 +68,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	consumerAddress sdk.AccAddress,
 	consumerConsistency *ConsumerConsistency,
+	cmdFlags common.ConsumerCmdFlags,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
@@ -86,7 +87,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	if err != nil {
 		return err
 	}
-	go chainListener.Serve(ctx)
+	go chainListener.Serve(ctx, cmdFlags)
 	// we trigger a latest block call to get some more information on our providers
 	go rpccs.sendInitialRelays(MaxRelayRetries)
 	return nil

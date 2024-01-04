@@ -247,14 +247,14 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 }
 
 // Serve http server for RestChainListener
-func (apil *RestChainListener) Serve(ctx context.Context) {
+func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags) {
 	// Guard that the RestChainListener instance exists
 	if apil == nil {
 		return
 	}
 
 	// Setup HTTP Server
-	app := createAndSetupBaseAppListener()
+	app := createAndSetupBaseAppListener(cmdFlags)
 
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface

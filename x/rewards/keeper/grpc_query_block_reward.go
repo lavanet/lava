@@ -2,8 +2,10 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,6 +24,12 @@ func (k Keeper) BlockReward(goCtx context.Context, req *types.QueryBlockRewardRe
 
 	// get validator block pool balance
 	blockPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
+	if blocksToNextTimerExpiry == 0 {
+		return nil, utils.LavaFormatWarning("blocksToNextTimerExpiry is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+			utils.LogAttr("blocksToNextTimerExpiry", blocksToNextTimerExpiry),
+			utils.LogAttr("blockPoolBalance", blockPoolBalance),
+		)
+	}
 
 	// validators bonus rewards = (blockPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
 	validatorsRewards := bondedTargetFactor.MulInt(blockPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
