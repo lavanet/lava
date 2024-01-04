@@ -36,7 +36,7 @@ if [ "$1" == "debug" ]; then
         | jq '.app_state.staking.params.bond_denom = "ulava"' \
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
         | jq '.app_state.epochstorage.params.epochsToSave = "5"' \
-        | jq '.app_state.epochstorage.params.epochBlocks = "6"' \
+        | jq '.app_state.epochstorage.params.epochBlocks = "4"' \
     )
 else
     # Edit genesis file without the additional line
@@ -53,7 +53,7 @@ else
         | jq '.app_state.staking.params.bond_denom = "ulava"' \
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
         | jq '.app_state.downtime.params.downtime_duration = "6s"' \
-        | jq '.app_state.downtime.params.epoch_duration = "10s"' \
+        | jq '.app_state.downtime.params.epoch_duration = "8s"' \
     )
 fi
 
