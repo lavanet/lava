@@ -9,9 +9,9 @@ The purpose of the conflict module is to ensure data reliability from providers 
 
 ## Contents
 * [Concepts](#concepts)
-    * [Finalization Conflict](#finalization-conflict)
-    * [Self Provider Conflict](#self-provider-conflict)
     * [Response Conflict](#response-conflict)
+	* [Finalization Conflict](#finalization-conflict)
+    * [Self Provider Conflict](#self-provider-conflict)
     * [Commit Period](#commit-period)
     * [Reveal Period](#reveal-period)
     * [Conflict Resolve](#Conflict-Resolve)
@@ -22,6 +22,11 @@ The purpose of the conflict module is to ensure data reliability from providers 
 
 ## Concepts
 
+### Response Conflict
+A response conflict occurs when a consumer receives mismatched responses from different providers. In such cases, the consumer is eligible to send a conflict detection message (this is done randomly, determined by the spec reliability threshold field), which includes the relay request and responses from the two providers. This conflict detection message is then validated to ensure that the responses are different, the signatures match the providers and consumer, and that the API is deterministic. If the message is valid, a conflict is opened.
+
+A group of validators is selected as a jury to determine the fraudulent and honest providers. Through an event, the chain announces the conflict voting period and the participating providers. During the voting period, providers need to submit their hashed response + salt to the original relay request. This is done to prevent other providers from cheating or copying their vote. Once the voting period ends, the conflict moves to the reveal state. In this state, providers need to reveal their response + salt, which is then verified and compared to the original responses. After the reveal period ends, the votes are counted, and the provider with the fewest votes, and the jury that voted for him, are penalized by having a fraction of their staked tokens taken and distributed among all the other participants.
+
 ### Finalization Conflict
 N/A
 
@@ -29,16 +34,10 @@ N/A
 ### Self Provider Conflict
 N/A
 
-
-### Response Conflict
-A response conflict occurs when a consumer receives mismatched responses from different providers. In such cases, the consumer is eligible to send a conflict detection message, which includes the relay request and responses from the two providers. This conflict detection message is then validated to ensure that the responses are different, the signatures match the providers and consumer, and that the API is deterministic. If the message is valid, a conflict is opened.
-
-A group of validators is selected as a jury to determine the fraudulent and honest providers. Through an event, the chain announces the conflict voting period and the participating providers. During the voting period, providers need to submit their hashed response + salt to the original relay request. This is done to prevent other providers from cheating or copying their vote. Once the voting period ends, the conflict moves to the reveal state. In this state, providers need to reveal their response + salt, which is then verified and compared to the original responses. After the reveal period ends, the votes are counted, and the provider with the fewest votes is penalized by having a fraction of their staked tokens taken and distributed among all the participants.
-
 ### Commit Period
 
 This is the voting period of the conflict, providers that are selected as jury are required to submit their hashed vote.
-The hash consisnt of nonce + response hash + provider address
+The hash consisnt of nonce + response hash + provider address.
 
 ```go
 type MsgConflictVoteCommit struct {
@@ -85,15 +84,17 @@ The conflict module contains the following parameters:
 | VotePeriod                       | uint64          | 2                |
 | Rewards                        | rewards                  | N/A                |
 
-`MajorityPercent` majority needed to conclude who is the winner of the conclict
-`VoteStartSpan` is the amount of epochs in the past that a consumer can send conflict detection message for
-`VotePeriod` is the amount of epochs for each voting state (commit/reveal)
-`Rewards` defines how the reward pool tokens will be distributed between all participants
+`MajorityPercent`  determines the majority needed to conclude who is the winner of the conflict.
+
+`VoteStartSpan` is the amount of epochs in the past that a consumer can send conflict detection message for.
+
+`VotePeriod`  is the number of epochs in the past that a consumer can send a conflict detection message for.
+`Rewards` defines how the reward pool tokens will be distributed between all the participants.
 
 ```go
 type Rewards struct {
-	WinnerRewardPercent github_com_cosmos_cosmos_sdk_types.Dec // the winnig provider of the conflict portion
-	ClientRewardPercent github_com_cosmos_cosmos_sdk_types.Dec // the reporter of the conflict portion
+	WinnerRewardPercent github_com_cosmos_cosmos_sdk_types.Dec // the conflict's winner portion (provider)
+	ClientRewardPercent github_com_cosmos_cosmos_sdk_types.Dec // the conflict's reporter portion
 	VotersRewardPercent github_com_cosmos_cosmos_sdk_types.Dec // the jury portion
 }
 ```
@@ -104,25 +105,25 @@ The Conflict module supports the following queries:
 | Query             | Arguments         | What it does                                  |
 | ----------        | ---------------   | ----------------------------------------------|
 | `params`          | none              | show the params of the module                 |
-| `consumer-conflicts` | consumer (string)              | shows all conflicts reported and active by the consumer         |
+| `consumer-conflicts` | consumer (string)              | shows all the reported and active conflicts by a consumer        |
 | `list-conflict-vote` | none           | shows all active conflicts                |
 | `show-conflict-vote`       | voteID (string)           | shows a specific active conflict                             |
 
 ## Transactions
 
-The Conflict module transactions are not ment to be sent by the CLI and are used by the consumer and providers.
-for more information look [here](../../proto/lavanet/lava/conflict/tx.proto)
+The Conflict module transactions are not meant to be used by the CLI and are used by the consumers and providers.
+for more information look [here](../../proto/lavanet/lava/conflict/tx.proto).
 
 ### Events
 
-The plans module has the following events:
+The conflict module has the following events:
+
 | Event             | When it happens       |
 | ----------        | --------------- |
-| `response_conflict_detection`        | a new conflict has opened (this event includes all of the jury providers) and is entering the commit stage  |
+| `response_conflict_detection`        | A new conflict has been opened, which involves all of the jury providers. It is now entering the commit stage  |
 | `conflict_vote_reveal_started`        | conflict has transitioned to reveal state  |
 | `conflict_vote_got_commit`        | provider commited his vote  |
 | `conflict_vote_got_reveal`        | provider revealed his vote  |
 | `conflict_unstake_fraud_voter`        | provider was unstaked due to conflict  |
 | `conflict_detection_vote_resolved`        | conflict was succesfully resolved  |
 | `conflict_detection_vote_unresolved`        | conflict was not resolved (did not reach majority)  |
-| `spec_add`        | a successful addition of a spec  |
