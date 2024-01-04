@@ -7,7 +7,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-func ValidateCoins(ctx sdk.Context, denom string, coins sdk.Coin) error {
+func ValidateCoins(ctx sdk.Context, denom string, coins sdk.Coin, allowZero bool) error {
 	if coins.Denom != denom {
 		return LavaFormatWarning(fmt.Sprintf("denomination is not %s", denom),
 			sdkerrors.ErrInvalidCoins,
@@ -15,7 +15,7 @@ func ValidateCoins(ctx sdk.Context, denom string, coins sdk.Coin) error {
 		)
 	}
 
-	if coins.IsZero() {
+	if !allowZero && coins.IsZero() {
 		return LavaFormatWarning("invalid coin amount: got 0",
 			sdkerrors.ErrInvalidCoins, LogAttr("amount", coins))
 	}

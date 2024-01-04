@@ -16,11 +16,11 @@ func (k msgServer) StakeProvider(goCtx context.Context, msg *types.MsgStakeProvi
 		return &types.MsgStakeProviderResponse{}, sdkerrors.Wrapf(types.InvalidCreatorAddressError, "Invalid creator address (%s)", err.Error())
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), msg.DelegateLimit); err != nil {
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), msg.DelegateLimit, true); err != nil {
 		return &types.MsgStakeProviderResponse{}, err
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), msg.Amount); err != nil {
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), msg.Amount, false); err != nil {
 		return &types.MsgStakeProviderResponse{}, err
 	}
 

@@ -272,7 +272,7 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 		}
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount); err != nil {
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
 		return utils.LavaFormatWarning("failed to delegate: coin validation failed", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: provider},
@@ -322,7 +322,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		}
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount); err != nil {
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
 		return utils.LavaFormatWarning("failed to redelegate: coin validation failed", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: to},
@@ -376,7 +376,7 @@ func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		}
 	}
 
-	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount); err != nil {
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
 		return utils.LavaFormatWarning("failed to unbond: coin validation failed", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: provider},

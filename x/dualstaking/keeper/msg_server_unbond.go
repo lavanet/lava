@@ -47,7 +47,7 @@ func (k Keeper) UnbondFull(ctx sdk.Context, delegator string, validator string, 
 		return err
 	}
 
-	err = utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount)
+	err = utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false)
 	if err != nil {
 		return err
 	}
