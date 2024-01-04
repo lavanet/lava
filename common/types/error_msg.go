@@ -1,5 +1,3 @@
 package types
 
-var (
-	ErrInvalidDenomMsg = "invalid denominator"
-)
+var ErrInvalidDenomMsg = "invalid denominator"
