@@ -16,7 +16,6 @@ import (
 type ConsumerRelayServerClient struct {
 	endPointAddress    string
 	addQueue           []UpdateMetricsRequest
-	sendQueue          []UpdateMetricsRequest
 	ticker             *time.Ticker
 	lock               sync.RWMutex
 	sendID             int
@@ -42,7 +41,6 @@ func NewConsumerRelayServerClient(endPointAddress string) *ConsumerRelayServerCl
 	cuc := &ConsumerRelayServerClient{
 		endPointAddress: endPointAddress,
 		ticker:          time.NewTicker(30 * time.Second),
-		sendQueue:       make([]UpdateMetricsRequest, 0),
 		addQueue:        make([]UpdateMetricsRequest, 0),
 	}
 
@@ -74,12 +72,12 @@ func (cuc *ConsumerRelayServerClient) relayDataSendQueueTick() {
 	defer cuc.lock.Unlock()
 
 	if !cuc.isSendQueueRunning && len(cuc.addQueue) > 0 {
-		cuc.sendQueue, cuc.addQueue = cuc.addQueue, make([]UpdateMetricsRequest, 0)
+		sendQueue := cuc.addQueue
+		cuc.addQueue = make([]UpdateMetricsRequest, 0)
 		cuc.isSendQueueRunning = true
 		cuc.sendID++
-		utils.LavaFormatDebug(fmt.Sprintf("CUC: Swapped queues (sendQueue length: %d) and set isSendQueueRunning to true - CCC iter:%d.", len(cuc.sendQueue), cuc.sendID))
+		utils.LavaFormatDebug(fmt.Sprintf("CUC: Swapped queues (sendQueue length: %d) and set isSendQueueRunning to true - CCC iter:%d.", len(sendQueue), cuc.sendID))
 
-		sendQueue := cuc.sendQueue
 		sendID := cuc.sendID
 		cucEndpointAddress := cuc.endPointAddress
 
