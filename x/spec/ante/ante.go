@@ -2,105 +2,118 @@ package ante
 
 import (
 	"fmt"
-	types2 "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/types"
+	"strings"
+
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/lavanet/lava/x/spec/keeper"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"strings"
 )
 
 type ExpeditedProposalFilterAnteDecorator struct {
 	k *keeper.Keeper
 }
 
-func NewExpeditedProposalFilterAnteDecorator(k *keeper.Keeper) types.AnteDecorator {
+func NewExpeditedProposalFilterAnteDecorator(k *keeper.Keeper) sdk.AnteDecorator {
 	return ExpeditedProposalFilterAnteDecorator{k: k}
 }
 
 func (e ExpeditedProposalFilterAnteDecorator) AnteHandle(
-	ctx types.Context,
-	tx types.Tx,
+	ctx sdk.Context,
+	tx sdk.Tx,
 	simulate bool,
-	next types.AnteHandler,
-) (newCtx types.Context, err error) {
+	next sdk.AnteHandler,
+) (newCtx sdk.Context, err error) {
 	msgs := tx.GetMsgs()
 
-	whitelist := e.k.WhitelistedExpeditedMsgs(ctx)
-
-	if err := validateWhitelistedMsgs(whitelist, msgs); err != nil {
-		return ctx, err
+	for i, msg := range msgs {
+		err = e.blockDisallowedExpeditedProposals(ctx, msg)
+		if err != nil {
+			return ctx, fmt.Errorf("message at index %d contained disallowed proposal: %w", i, err)
+		}
 	}
 
 	return next(ctx, tx, simulate)
 }
 
-func validateWhitelistedMsgs(whitelist []string, msgs []types.Msg) error {
-	for _, msg := range msgs {
-		switch m := msg.(type) {
-		case *v1.MsgSubmitProposal:
-			if m.GetExpedited() {
-				expeditedMsgs, err := m.GetMsgs()
-				if err != nil {
-					return err
-				}
-
-				for _, expeditedMsg := range expeditedMsgs {
-					if !whitelistContainsMsg(whitelist, expeditedMsg) {
-						return fmt.Errorf("expedited proposal contains non whitelisted message %s", proto.MessageName(expeditedMsg))
-					}
-				}
+func (e ExpeditedProposalFilterAnteDecorator) blockDisallowedExpeditedProposals(ctx sdk.Context, msg sdk.Msg) error {
+	switch m := msg.(type) {
+	case *v1.MsgSubmitProposal:
+		// if it's not expedited we simply exit.
+		if !m.Expedited {
+			return nil
+		}
+		// if it's expedited we validate the list of proposal
+		// messages.
+		propMsgs, err := m.GetMsgs()
+		if err != nil {
+			return err
+		}
+		// ensure all proposal exec messages are allowed
+		for i, propMsg := range propMsgs {
+			err = e.ensureInWhitelist(ctx, propMsg)
+			if err != nil {
+				return fmt.Errorf("proposal exec message at index %d is not allowed to be expedited: %w", i, err)
 			}
-		case *authz.MsgExec:
-			msgs, err := m.GetMessages()
+		}
+		// all went fine
+		return nil
+
+	// unwrap authz.MsgExec messages to ensure people do not use authz
+	// to bypass the filter.
+	case *authz.MsgExec:
+		authzMsgs, err := m.GetMessages()
+		if err != nil {
+			return err
+		}
+		for _, authzMsg := range authzMsgs {
+			err = e.blockDisallowedExpeditedProposals(ctx, authzMsg)
 			if err != nil {
 				return err
 			}
-
-			if err := validateWhitelistedMsgs(whitelist, msgs); err != nil {
-				return err
-			}
 		}
+		return nil
+	default:
+		return nil
 	}
-
-	return nil
 }
 
-func whitelistContainsMsg(whitelist []string, msg types.Msg) bool {
-	msgName := proto.MessageName(msg)
+func (e ExpeditedProposalFilterAnteDecorator) ensureInWhitelist(ctx sdk.Context, msg proto.Message) error {
+	whitelist := e.getWhitelist(ctx)
 
 	switch m := msg.(type) {
-	case *v1beta1.MsgSubmitProposal:
-		msgName = getCanonicalProtoNameFromAny(m.Content)
-		url := m.Content.GetTypeUrl()
-		name := protoreflect.FullName(url)
-		if i := strings.LastIndexByte(url, '/'); i >= 0 {
-			name = name[i+len("/"):]
+	// if the proposal is the one which executes a legacy content, then
+	// we check that the content type is in the whitelist.
+	case *v1.MsgExecLegacyContent:
+		contentName := getCanonicalProtoNameFromAny(m.Content)
+		_, allowed := whitelist[contentName]
+		if !allowed {
+			return fmt.Errorf("expedited proposal, attempted to execute legacy content %s which is disallowed", contentName)
 		}
-		if !name.IsValid() {
-			name = ""
+		return nil
+	default:
+		msgName := proto.MessageName(m)
+		_, allowed := whitelist[msgName]
+		if !allowed {
+			return fmt.Errorf("expedited proposal, attempted to execute proposal message %s which is disallowed", msgName)
 		}
-
-		msgName = string(name)
+		return nil
 	}
-
-	return whitelistContainsMsgName(whitelist, msgName)
 }
 
-func whitelistContainsMsgName(whitelist []string, msgName string) bool {
-	for _, whitelistedMsg := range whitelist {
-		if whitelistedMsg == msgName {
-			return true
-		}
+func (e ExpeditedProposalFilterAnteDecorator) getWhitelist(ctx sdk.Context) map[string]struct{} {
+	whitelist := e.k.WhitelistedExpeditedMsgs(ctx)
+	whitelistSet := make(map[string]struct{}, len(whitelist))
+	for _, w := range whitelist {
+		whitelistSet[w] = struct{}{}
 	}
-
-	return false
+	return whitelistSet
 }
 
-func getCanonicalProtoNameFromAny(any *types2.Any) string {
+func getCanonicalProtoNameFromAny(any *codectypes.Any) string {
 	url := any.GetTypeUrl()
 	name := protoreflect.FullName(url)
 	if i := strings.LastIndexByte(url, '/'); i >= 0 {

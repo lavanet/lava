@@ -1,41 +1,43 @@
 package ante
 
 import (
+	"testing"
+
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/types"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/lavanet/lava/app"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	plantypes "github.com/lavanet/lava/x/plans/types"
-	types2 "github.com/lavanet/lava/x/spec/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	subsciptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 	account := authtypes.NewModuleAddressOrBech32Address("cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9")
+	govAuthority := authtypes.NewModuleAddress(govtypes.ModuleName)
 	whitelistedContent := plantypes.PlansDelProposal{}
-	//nonWhitelistedContent := plantypes.PlansAddProposal{}
 
 	tests := []struct {
 		name       string
-		theMsg     func() types.Msg
+		theMsg     func() sdk.Msg
 		shouldFail bool
 	}{
 		{
 			name: "should not fail if the message is in the whitelist, expedited",
-			theMsg: func() types.Msg {
+			theMsg: func() sdk.Msg {
 				proposal, err := v1.NewMsgSubmitProposal(
-					[]types.Msg{
+					[]sdk.Msg{
 						&banktypes.MsgSend{},
 					},
-					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",
@@ -50,12 +52,12 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 		},
 		{
 			name: "should fail if none of the messages are in the whitelist, expedited",
-			theMsg: func() types.Msg {
+			theMsg: func() sdk.Msg {
 				proposal, err := v1.NewMsgSubmitProposal(
-					[]types.Msg{
+					[]sdk.Msg{
 						&subsciptiontypes.MsgAutoRenewal{},
 					},
-					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",
@@ -70,12 +72,12 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 		},
 		{
 			name: "a new msg exec proposal with an expedited message with a whitelisted message should not fail",
-			theMsg: func() types.Msg {
+			theMsg: func() sdk.Msg {
 				proposal, err := v1.NewMsgSubmitProposal(
-					[]types.Msg{
+					[]sdk.Msg{
 						&banktypes.MsgSend{},
 					},
-					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",
@@ -86,7 +88,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 
 				authMsg := authz.NewMsgExec(
 					account,
-					[]types.Msg{proposal},
+					[]sdk.Msg{proposal},
 				)
 
 				return &authMsg
@@ -95,12 +97,12 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 		},
 		{
 			name: "a new msg exec proposal with an expedited message with a non-whitelisted message should fail",
-			theMsg: func() types.Msg {
+			theMsg: func() sdk.Msg {
 				proposal, err := v1.NewMsgSubmitProposal(
-					[]types.Msg{
+					[]sdk.Msg{
 						&subsciptiontypes.MsgAutoRenewal{},
 					},
-					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",
@@ -111,7 +113,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 
 				authMsg := authz.NewMsgExec(
 					account,
-					[]types.Msg{proposal},
+					[]sdk.Msg{proposal},
 				)
 
 				return &authMsg
@@ -120,19 +122,19 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 		},
 		{
 			name: "a v1 proposal that contains a legacy proposal with whitelisted content should not fail, expedited",
-			theMsg: func() types.Msg {
-				submitProposal, err := v1beta1.NewMsgSubmitProposal(
-					&whitelistedContent,
-					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
-					account,
-				)
+			theMsg: func() sdk.Msg {
+				anyContent, err := codectypes.NewAnyWithValue(&whitelistedContent)
 				require.NoError(t, err)
+				submitProposal := v1.NewMsgExecLegacyContent(
+					anyContent,
+					govAuthority.String(),
+				)
 
 				proposal, err := v1.NewMsgSubmitProposal(
-					[]types.Msg{
+					[]sdk.Msg{
 						submitProposal,
 					},
-					types.NewCoins(types.NewCoin("lava", types.NewInt(100))),
+					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
 					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
 					"metadata",
 					"title",
@@ -152,7 +154,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			k, ctx := testkeeper.SpecKeeper(t)
-			params := types2.DefaultParams()
+			params := spectypes.DefaultParams()
 			params.WhitelistedExpeditedMsgs = []string{
 				proto.MessageName(&banktypes.MsgSend{}),
 				proto.MessageName(&whitelistedContent),
@@ -171,12 +173,12 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			tx := txBuilder.GetTx()
 			anteHandler := NewExpeditedProposalFilterAnteDecorator(k)
 
-			_, err = anteHandler.AnteHandle(ctx, tx, false, func(ctx types.Context, tx types.Tx, simulate bool) (newCtx types.Context, err error) {
+			_, err = anteHandler.AnteHandle(ctx, tx, false, func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
 				return ctx, nil
 			})
 			if tt.shouldFail {
 				require.Error(t, err)
-				require.ErrorContainsf(t, err, "expedited proposal contains non whitelisted message", "expected error to contain %s", "expedited proposal contains non whitelisted message")
+				require.ErrorContains(t, err, "not allowed to be expedited")
 			} else {
 				require.NoError(t, err)
 			}
