@@ -147,6 +147,33 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			},
 			shouldFail: false,
 		},
+		{
+			name: "a v1 proposal that contains a legacy proposal with not whitelisted content should fail, expedited",
+			theMsg: func() sdk.Msg {
+				anyContent, err := codectypes.NewAnyWithValue(&plantypes.PlansAddProposal{})
+				require.NoError(t, err)
+				submitProposal := v1.NewMsgExecLegacyContent(
+					anyContent,
+					govAuthority.String(),
+				)
+
+				proposal, err := v1.NewMsgSubmitProposal(
+					[]sdk.Msg{
+						submitProposal,
+					},
+					sdk.NewCoins(sdk.NewCoin("lava", sdk.NewInt(100))),
+					"cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9",
+					"metadata",
+					"title",
+					"summary",
+					true,
+				)
+				require.NoError(t, err)
+
+				return proposal
+			},
+			shouldFail: true,
+		},
 	}
 
 	for _, tt := range tests {
