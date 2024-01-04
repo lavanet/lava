@@ -168,7 +168,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 	ts := newTester(t)
 	ts.addValidators(1)
 	err := ts.addProviders(5)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.addClients(1)
 
 	// create validator and providers
