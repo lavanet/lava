@@ -4,13 +4,11 @@ import (
 	"context"
 	"strconv"
 
-	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	"github.com/spf13/cobra"
 )
@@ -52,10 +50,6 @@ func CmdDelegate() *cobra.Command {
 				argChainID,
 				argAmount,
 			)
-
-			if msg.Amount.Denom != commontypes.TokenDenom {
-				return sdkerrors.Wrapf(types.ErrWrongDenom, "Coin denomanator is not ulava")
-			}
 
 			if err := msg.ValidateBasic(); err != nil {
 				return err

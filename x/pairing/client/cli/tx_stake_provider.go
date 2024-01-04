@@ -205,8 +205,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 						commission,
 					)
 
-					if msg.DelegateLimit.Denom != commontypes.TokenDenom ||
-						msg.Amount.Denom != commontypes.TokenDenom {
+					if msg.DelegateLimit.Denom != commontypes.TokenDenom {
 						return nil, sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
 					}
 

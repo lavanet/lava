@@ -193,8 +193,7 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.DelegateCommission,
 			)
 
-			if msg.DelegateLimit.Denom != commontypes.TokenDenom ||
-				msg.Amount.Denom != commontypes.TokenDenom {
+			if msg.DelegateLimit.Denom != commontypes.TokenDenom {
 				return sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
 			}
 
