@@ -100,11 +100,6 @@ func CmdStakeProvider() *cobra.Command {
 				commission,
 			)
 
-			if msg.DelegateLimit.Denom != commontypes.TokenDenom ||
-				msg.Amount.Denom != commontypes.TokenDenom {
-				return sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
-			}
-
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

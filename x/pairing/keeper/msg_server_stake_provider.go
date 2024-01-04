@@ -11,9 +11,16 @@ import (
 func (k msgServer) StakeProvider(goCtx context.Context, msg *types.MsgStakeProvider) (*types.MsgStakeProviderResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
+		return &types.MsgStakeProviderResponse{}, sdkerrors.Wrapf(types.InvalidCreatorAddressError, "Invalid creator address (%s)", err.Error())
+	}
+
 	if msg.DelegateLimit.Denom != k.stakingKeeper.BondDenom(ctx) {
-		_, err := sdk.AccAddressFromBech32(msg.Creator)
-		return &types.MsgStakeProviderResponse{}, sdkerrors.Wrapf(types.DelegateLimitError, "Invalid coin (%s)", err.Error())
+		return &types.MsgStakeProviderResponse{}, sdkerrors.Wrapf(types.DelegateLimitError, "Invalid coin denominator (%s) for DelegationLimit", msg.DelegateLimit.Denom)
+	}
+
+	if msg.Amount.Denom != k.stakingKeeper.BondDenom(ctx) {
+		return &types.MsgStakeProviderResponse{}, sdkerrors.Wrapf(types.AmountCoinError, "Invalid coin denominator (%s) for Amount", msg.DelegateLimit.Denom)
 	}
 
 	if err := msg.ValidateBasic(); err != nil {
