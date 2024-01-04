@@ -5,7 +5,8 @@
 This document specifies the dualstaking module of Lava Protocol.
 
 In the lava blockchain there are two kinds of staking users, the first ones are validators, legacy to cosmos, the second ones are providers.
-Providers in lava give services to consumers, they compete for giving services with other providers by staking tokens.
+In Lava, providers offer services to consumers and compete with other providers by staking tokens.
+
 Since a lot of tokens are expected to be staked by providers lava give providers the power to add security to the chain with dualstaking.
 
 This document focuses on the dualstaking technical aspects. For more information on those, please visit Lava's official website.
