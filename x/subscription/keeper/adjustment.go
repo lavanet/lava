@@ -106,6 +106,23 @@ func (k Keeper) AppendAdjustment(ctx sdk.Context, consumer string, provider stri
 		// totalConsumerUsage < uint64(maxRewardsBoost)*usageWithThisProvider
 		adjustment.TotalUsage += totalConsumerUsage
 		// epoch adjustment is (1/maxRewardsBoost * totalConsumerUsage/usageWithThisProvider) * totalConsumerUsage
+
+		if maxRewardsBoost == 0 {
+			utils.LavaFormatWarning("maxRewardsBoost is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+				utils.LogAttr("maxRewardsBoost", maxRewardsBoost),
+				utils.LogAttr("totalConsumerUsage", totalConsumerUsage),
+			)
+			return
+		}
+
+		if usageWithThisProvider == 0 {
+			utils.LavaFormatWarning("usageWithThisProvider is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+				utils.LogAttr("usageWithThisProvider", usageWithThisProvider),
+				utils.LogAttr("totalConsumerUsage", totalConsumerUsage),
+			)
+			return
+		}
+
 		adjustment.AdjustedUsage += (totalConsumerUsage / maxRewardsBoost) * (totalConsumerUsage / usageWithThisProvider)
 	}
 

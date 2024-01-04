@@ -98,8 +98,8 @@ func (p Params) Validate() error {
 		return fmt.Errorf("invalid MaxBondedTarget. Error: %s", err.Error())
 	}
 
-	if p.MinBondedTarget.GT(p.MaxBondedTarget) {
-		return fmt.Errorf("min_bonded_target cannot be greater than max_bonded_target")
+	if p.MinBondedTarget.GTE(p.MaxBondedTarget) {
+		return fmt.Errorf("min_bonded_target cannot be greater or equal to max_bonded_target")
 	}
 
 	if err := validateDec(p.LowFactor); err != nil {
@@ -108,6 +108,10 @@ func (p Params) Validate() error {
 
 	if err := validateDec(p.LeftoverBurnRate); err != nil {
 		return fmt.Errorf("invalid LeftoverBurnRate. Error: %s", err.Error())
+	}
+
+	if p.MaxRewardBoost == 0 {
+		return fmt.Errorf("MaxRewardBoost cannot be 0")
 	}
 
 	if err := validateDec(p.ValidatorsSubscriptionParticipation); err != nil {

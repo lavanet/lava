@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
@@ -319,18 +318,16 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 }
 
 // Serve http server for TendermintRpcChainListener
-func (apil *TendermintRpcChainListener) Serve(ctx context.Context) {
+func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags) {
 	// Guard that the TendermintChainParser instance exists
 	if apil == nil {
 		return
 	}
 
 	// Setup HTTP Server
-	app := fiber.New(fiber.Config{})
+	app := createAndSetupBaseAppListener(cmdFlags)
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
-
-	app.Use(favicon.New())
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client

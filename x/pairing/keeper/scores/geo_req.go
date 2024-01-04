@@ -57,13 +57,14 @@ func (gr GeoReq) Equal(other ScoreReq) bool {
 func (gr GeoReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
 	policyGeoEnums := planstypes.GetGeolocationsFromUint(policy.GeolocationProfile)
 
-	return GeoReq{Geo: int32(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
-}
+	if len(policyGeoEnums) == 0 {
+		utils.LavaFormatError("length of policyGeoEnums is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+			utils.LogAttr("policyGeoProfile", policy.GeolocationProfile),
+		)
+		return GeoReq{Geo: int32(planstypes.Geolocation_USC)}
+	}
 
-// a single geolocation and the latency to it (in millieseconds)
-type GeoLatency struct {
-	geo     planstypes.Geolocation
-	latency uint64
+	return GeoReq{Geo: int32(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
 }
 
 // CalcGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -264,6 +265,12 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string, block uint64)
 			utils.Attribute{Key: "project", Value: projectID},
 			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
 		)
+
+		details := map[string]string{
+			"projectID": projectID,
+			"block":     strconv.FormatInt(int64(block), 10),
+		}
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProjectResetFailEventName, details, "reset projects failed: unable to find project")
 		return
 	}
 
@@ -276,6 +283,12 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string, block uint64)
 			utils.Attribute{Key: "project", Value: projectID},
 			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
 		)
+
+		details := map[string]string{
+			"projectID": projectID,
+			"block":     strconv.FormatInt(int64(block), 10),
+		}
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProjectResetFailEventName, details, "reset projects failed: unable to append project")
 		return
 	}
 }

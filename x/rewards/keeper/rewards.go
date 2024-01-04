@@ -22,6 +22,14 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	// get validator distribution pool balance
 	distributionPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
 
+	if blocksToNextTimerExpiry == 0 {
+		utils.LavaFormatWarning("blocksToNextTimerExpiry is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+			utils.LogAttr("blocksToNextTimerExpiry", blocksToNextTimerExpiry),
+			utils.LogAttr("distributionPoolBalance", distributionPoolBalance),
+		)
+		return
+	}
+
 	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
 	validatorsRewards := bondedTargetFactor.MulInt(distributionPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
 	if !validatorsRewards.IsZero() {

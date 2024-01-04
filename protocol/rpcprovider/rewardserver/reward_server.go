@@ -11,6 +11,7 @@ import (
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
@@ -30,6 +31,7 @@ const (
 	RewardsSnapshotTimeoutSecFlagName   = "proofs-snapshot-timeout-sec"
 	DefaultRewardsSnapshotTimeoutSec    = 30
 	MaxPaymentRequestsRetiresForSession = 3
+	RewardServerMaxRelayRetires         = 3
 )
 
 type PaymentRequest struct {
@@ -166,8 +168,38 @@ func (rws *RewardServer) runRewardServerEpochUpdate(epoch uint64) {
 	rws.identifyMissingPayments(ctx)
 }
 
+func (rws *RewardServer) getEpochSizeWithRetry(ctx context.Context) (epochSize uint64, err error) {
+	for i := 0; i < RewardServerMaxRelayRetires; i++ {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, common.CommunicateWithLocalLavaNodeTimeout)
+		epochSize, err = rws.rewardsTxSender.GetEpochSize(ctxWithTimeout)
+		cancel()
+		if err == nil {
+			break
+		}
+		utils.LavaFormatDebug("failed getting epoch size, retrying...", utils.LogAttr("retry_#", i+1))
+		time.Sleep(50 * time.Duration(i+1) * time.Millisecond)
+	}
+
+	return epochSize, err
+}
+
+func (rws *RewardServer) getEarliestBlockInMemoryWithRetry(ctx context.Context) (earliestBlock uint64, err error) {
+	for i := 0; i < RewardServerMaxRelayRetires; i++ {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, common.CommunicateWithLocalLavaNodeTimeout)
+		earliestBlock, err = rws.rewardsTxSender.EarliestBlockInMemory(ctxWithTimeout)
+		cancel()
+		if err == nil {
+			break
+		}
+		utils.LavaFormatDebug("failed getting earliest block in memory, retrying...", utils.LogAttr("retry_#", i+1))
+		time.Sleep(50 * time.Duration(i+1) * time.Millisecond)
+	}
+
+	return earliestBlock, err
+}
+
 func (rws *RewardServer) AddRewardDelayForUnifiedRewardDistribution(ctx context.Context, epochStart uint64) {
-	epochSize, err := rws.rewardsTxSender.GetEpochSize(ctx)
+	epochSize, err := rws.getEpochSizeWithRetry(ctx)
 	if err != nil {
 		utils.LavaFormatError("Failed fetching epoch size in reward server delay, skipping delay", err)
 		return
@@ -185,7 +217,7 @@ func (rws *RewardServer) AddRewardDelayForUnifiedRewardDistribution(ctx context.
 }
 
 func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) error {
-	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(context.Background())
+	earliestSavedEpoch, err := rws.getEarliestBlockInMemoryWithRetry(ctx)
 	if err != nil {
 		return utils.LavaFormatError("sendRewardsClaim failed to get earliest block in memory", err)
 	}
@@ -248,7 +280,7 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 }
 
 func (rws *RewardServer) identifyMissingPayments(ctx context.Context) (missingPayments bool, err error) {
-	lastBlockInMemory, err := rws.rewardsTxSender.EarliestBlockInMemory(ctx)
+	lastBlockInMemory, err := rws.getEarliestBlockInMemoryWithRetry(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -499,7 +531,7 @@ func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDB() {
 func (rws *RewardServer) restoreRewardsFromDB(specId string) (err error) {
 	// Pay Attention! This function should be called inside the RewardServer lock
 
-	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(context.Background())
+	earliestSavedEpoch, err := rws.getEarliestBlockInMemoryWithRetry(context.Background())
 	if err != nil {
 		return utils.LavaFormatError("restoreRewardsFromDB failed to get earliest block in memory", err)
 	}
