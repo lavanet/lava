@@ -63,7 +63,11 @@ type MsgConflictVoteReveal struct {
 
 ### Conflict Resolve
 
-Once the reveal period ends votes are than counted to determine the results of the conflict. Votes are weighted by providers stake. 
+Once the reveal period ends, votes are counted to determine the results of the conflict. The votes are weighted based on the providers' stake. Providers on the jury who did not vote will be punished with jail and slashing, and the slashed amount will be added to the conflict reward pool.
+
+To resolve the conflict, a majority of votes must be in favor of Provider A, Provider B, or None of them. If a majority is not reached, the conflict reward pool is given to the consumer who reported the conflict.
+
+Once a majority is reached, providers who voted for the wrong side of the conflict will be slashed and frozen, and the slashed amount will be added to the conflict reward pool. The reward pool is then distributed between the consumer and the providers who voted for the correct provider.
 Providers in the jury that did not vote are punished by jail and slashing, their slashed amount will be added to the conflict reward pool.
 For the conflict resolution there needs to be a majority met of votes for Provider A, Provider B or None of them. 
 If a majority was not met, conflict reward pool is given to the consumer that reported the conflict.
