@@ -267,9 +267,7 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 func (rpcp *RPCProvider) getAllAddonsAndExtensionsFromNodeUrlSlice(nodeUrls []common.NodeUrl) []string {
 	allNodeUrlAddonsAndExtensions := []string{}
 	for _, nodeUrl := range nodeUrls {
-		for _, addons := range nodeUrl.Addons {
-			allNodeUrlAddonsAndExtensions = append(allNodeUrlAddonsAndExtensions, addons)
-		}
+		allNodeUrlAddonsAndExtensions = append(allNodeUrlAddonsAndExtensions, nodeUrl.Addons...)
 	}
 	utils.LavaFormatDebug("Adding supported addons and extensions to chain parser", utils.LogAttr("info", allNodeUrlAddonsAndExtensions))
 	return allNodeUrlAddonsAndExtensions
