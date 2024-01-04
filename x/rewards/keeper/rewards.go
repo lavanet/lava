@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"strconv"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -20,6 +21,14 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 
 	// get validator distribution pool balance
 	distributionPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
+
+	if blocksToNextTimerExpiry == 0 {
+		utils.LavaFormatWarning("blocksToNextTimerExpiry is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+			utils.LogAttr("blocksToNextTimerExpiry", blocksToNextTimerExpiry),
+			utils.LogAttr("distributionPoolBalance", distributionPoolBalance),
+		)
+		return
+	}
 
 	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
 	validatorsRewards := bondedTargetFactor.MulInt(distributionPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
@@ -59,7 +68,8 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 		monthsLeft = binary.BigEndian.Uint64(data)
 	}
 
-	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName, k.GetParams(ctx).LeftoverBurnRate)
+	burnRate := k.GetParams(ctx).LeftoverBurnRate
+	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName, burnRate)
 	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, sdk.OneDec())
 
 	if monthsLeft > 0 {
@@ -71,8 +81,22 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	binary.BigEndian.PutUint64(monthsLeftBytes, monthsLeft)
 
 	// open a new timer for next month
-	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC().Unix()
-	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth), []byte(types.RefillRewardsPoolTimerName), monthsLeftBytes)
+	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC()
+	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth.Unix()), []byte(types.RefillRewardsPoolTimerName), monthsLeftBytes)
+
+	valDistPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName).Int64()
+	providerDistPoolBalance := k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool).Int64()
+	nextRefillBlock := k.BlocksToNextTimerExpiry(ctx) + ctx.BlockHeight()
+	details := map[string]string{
+		"allocation_pool_remaining_lifetime":   strconv.FormatUint(monthsLeft, 10),
+		"validators_distribution_pool_balance": strconv.FormatInt(valDistPoolBalance, 10),
+		"providers_distribution_pool_balance":  strconv.FormatInt(providerDistPoolBalance, 10),
+		"leftover_burn_rate":                   burnRate.String(),
+		"next_refill_time":                     nextMonth.String(),
+		"next_refill_block":                    strconv.FormatInt(nextRefillBlock, 10),
+	}
+
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.DistributionPoolRefillEventName, details, "distribution rewards pools refilled successfully")
 }
 
 func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate sdkmath.LegacyDec) {

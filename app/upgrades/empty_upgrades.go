@@ -181,3 +181,9 @@ var Upgrade_0_32_0 = Upgrade{
 		Deleted: []string{minttypes.StoreKey},
 	},
 }
+
+var Upgrade_0_32_3 = Upgrade{
+	UpgradeName:          "v0.32.3",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades:        store.StoreUpgrades{},
+}

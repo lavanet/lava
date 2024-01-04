@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -59,7 +60,7 @@ type ChainParser interface {
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 	GetVerifications(supported []string) ([]VerificationContainer, error)
 	SeparateAddonsExtensions(supported []string) (addons, extensions []string, err error)
-	SetConfiguredExtensions(extensions map[string]struct{}) error
+	SetPolicy(policy *plantypes.Policy, chainId string, apiInterface string) error
 	Active() bool
 	Activate()
 	UpdateBlockTime(newBlockTime time.Duration)
@@ -98,7 +99,7 @@ type RelaySender interface {
 }
 
 type ChainListener interface {
-	Serve(ctx context.Context)
+	Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags)
 }
 
 type ChainRouter interface {

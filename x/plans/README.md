@@ -8,7 +8,7 @@ The plans module is responsible for managing Lava's subscription plans and handl
 
 Note that the plans module is closely connected to the subscription and projects modules. To fully understand how subscriptions, plans, and projects work together, please also refer to their respective READMEs.
 
-This document is focuses on the plans' technical aspects and does not include current subscription plans and prices. For more information on those, please visit Lava's official website.
+This document focuses on the plans' technical aspects and does not include current subscription plans and prices. For more information on those, please visit Lava's official website.
 
 ## Contents
 
@@ -22,6 +22,7 @@ This document is focuses on the plans' technical aspects and does not include cu
 * [Queries](#queries)
 * [Transactions](#transactions)
 * [Proposals](#proposals)
+* [Events](#events)
 
 ## Concepts
 
@@ -29,8 +30,8 @@ This document is focuses on the plans' technical aspects and does not include cu
 
 A plan consists of limitations that are associated with a subscription. A consumer can only use Lava when they purchase a subscription that is subject to the limitations set by the plan. A plan is defined as follows:
 
-```
-struct Plan {
+```go
+type Plan struct {
     index            string  // plan unique index
     block            uint64  // the epoch that this plan was created
     price            Coin    // plan price (in ulava)
@@ -52,8 +53,8 @@ A policy consists of a set of limitations that apply to a plan, a subscription, 
 
 A policy is defined as follows:
 
-```
-struct Policy {
+```go
+type Policy struct {
 	ChainPolicies          []ChainPolicy            // list of policies per chain
 	GeolocationProfile     int32                    // allowed geolocations
 	TotalCuLimit           uint64                   // CU usage limit per month
@@ -74,8 +75,8 @@ A chain policy consists limitations that can be imposed on specific chains (like
 
 A chain policy is defined as follows:
 
-```
-struct ChainPolicy {
+```go
+type ChainPolicy struct {
 	ChainId       string              // chain's unique index        
 	Apis          []string            // allowed APIs
 	Requirements  []ChainRequirement 
@@ -84,8 +85,8 @@ struct ChainPolicy {
 
 A chain requirement is defined as follows:
 
-```
-struct ChainRequirement {
+```go
+type ChainRequirement struct {
 	Collection  types.CollectionData
 	Extensions  []string             
 	Mixed       bool                 
@@ -96,24 +97,7 @@ The `Extensions` field is intended to enable the use of certain APIs to obtain d
 
 The `Mixed` field is designed to enable a combination of regular and extension/addon supporting providers. For instance, if the `archive` extension is defined but the `Mixed` field is set to `false`, the consumer's project will only be paired with providers that support the specified extensions and addons. On the other hand, if the `Mixed` field is set to `true`, the consumer's project will also be paired with providers that don't fully support the extenstion/addons.
 
-A chain collection is defined as follows:
-
-```
-struct CollectionData {
-	ApiInterface  string
-	InternalPath  string
-	Type          string
-	AddOn         string
-}
-```
-
-The `ApiInterface` field defines the API interface on which the limitations are applied. The available API interfaces for a chain are defined in the chain's spec. Overall, the API interfaces can be: `jsonrpc`, `rest`, `tendermintrpc` and `grpc`.
-
-The `InternalPath` field is utilized for chains that have varying RPC API sets in different internal paths. Avalanche is a prime example of such a chain, consisting of three distinct subchains (or subnets) designed for different applications. For instance, Avalanche's C-Chain is dedicated to smart contracts, while Avalanche's X-Chain facilitates the sending and receiving of funds. For further information on how to define this field, please consult the Avalanche (AVAX) specification.
-
-The `Type` field lets the user define APIs that have different functionalities depending on their type. the valid types are: `GET` and `POST`. An example of such API is Cosmos' `/cosmos/tx/v1beta1/txs` API. If it's sent as a `GET` request, it fetches transactions by event and if it's sent as a `POST` request, it sends a transaction.
-
-The `AddOn` field lets you use additional optional APIs like debug, trace, 
+For more details on `CollectionData` object, see the spec module's [README](../spec/README.md).
 
 #### Geolocation
 
@@ -135,7 +119,7 @@ enum Geolocation {
 }
 ```
 
-The "GLS" geolocation means that the policy is global and not configurable.
+The `GLS` geolocation means that the policy is global and not configurable.
 
 #### Selected Providers
 
@@ -186,7 +170,7 @@ lavad tx gov vote <latest_proposal_id> yes --from alice <gas-flags>
 
 A valid `plans-add` JSON proposal format:
 
-```
+```json
 {
     "proposal": {
         "title": "Add temporary to-delete plan proposal",
@@ -236,7 +220,7 @@ A valid `plans-add` JSON proposal format:
 
 A valid `plans-del` JSON proposal format:
 
-```
+```json
 {
     "proposal": {
         "title": "Delete temporary (to-delete) plan proposal",
@@ -248,4 +232,13 @@ A valid `plans-del` JSON proposal format:
     "deposit": "10000000ulava"
 }
 ```
+
+## Events
+
+The plans module has the following events:
+
+| Event      | When it happens       |
+| ---------- | --------------- |
+| `add_new_plan_to_storage`     | a successful addition of a plan   |
+| `del_plan_from_storage`     | a successful deletion of a plan  |
 

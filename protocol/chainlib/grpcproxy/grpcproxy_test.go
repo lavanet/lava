@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/protocol/chainlib/grpcproxy/testproto"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/metadata"
 )
@@ -20,7 +21,7 @@ func TestGRPCProxy(t *testing.T) {
 		responseHeaders := make(metadata.MD)
 		responseHeaders["test-headers"] = append(responseHeaders["test-headers"], "55")
 		return respBytes, responseHeaders, nil
-	}, "")
+	}, "", common.ConsumerCmdFlags{HeadersFlag: "*", OriginFlag: "*", MethodsFlag: "GET,POST,OPTIONS", CDNCacheDuration: "86400"})
 	require.NoError(t, err)
 
 	client := testproto.NewTestClient(testproto.InMemoryClientConn(t, proxyGRPCSrv))

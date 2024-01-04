@@ -23,7 +23,6 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/metrics"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -131,7 +130,7 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &restMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
-	return nodeMsg, nil
+	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
 func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
@@ -248,16 +247,14 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 }
 
 // Serve http server for RestChainListener
-func (apil *RestChainListener) Serve(ctx context.Context) {
+func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags) {
 	// Guard that the RestChainListener instance exists
 	if apil == nil {
 		return
 	}
 
 	// Setup HTTP Server
-	app := fiber.New(fiber.Config{})
-
-	app.Use(favicon.New())
+	app := createAndSetupBaseAppListener(cmdFlags)
 
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface

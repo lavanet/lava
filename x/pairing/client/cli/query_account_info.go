@@ -125,6 +125,12 @@ func CmdAccountInfo() *cobra.Command {
 				info.DelegationsProviders = providers.Delegations
 			}
 
+			var totalDelegations uint64
+			for _, p := range providers.Delegations {
+				totalDelegations += p.Amount.Amount.Uint64()
+			}
+			info.TotalDelegations = totalDelegations
+
 			validators, err := stakingQuerier.DelegatorDelegations(ctx, &stakingtypes.QueryDelegatorDelegationsRequest{DelegatorAddr: address})
 			if err == nil {
 				info.DelegationsValidators = validators.DelegationResponses

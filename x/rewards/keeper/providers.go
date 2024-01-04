@@ -27,6 +27,7 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 
 // Distribute bonus rewards to providers across all chains based on performance
 func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
+	details := map[string]string{}
 	total := k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)
 	totalRewarded := sdk.ZeroInt()
 	// specs emissions from the total reward pool base on stake
@@ -60,9 +61,13 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 			if err != nil {
 				utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 			}
+
+			details[providerAddr.String()+" "+spec.ChainID] = reward.String()
 		}
 	}
 	k.removeAllBasePay(ctx)
+
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed successfully")
 }
 
 // specTotalPayout calculates the total bonus for a specific spec
@@ -153,7 +158,11 @@ func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward m
 	validatorsParticipationReward := validatorsParticipation.MulInt(reward).TruncateInt()
 	if !validatorsParticipationReward.IsZero() {
 		coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsParticipationReward))
-		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, k.feeCollectorName, coins)
+		pool := types.ValidatorsRewardsDistributionPoolName
+		if k.isEndOfMonth(ctx) {
+			pool = types.ValidatorsRewardsAllocationPoolName
+		}
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, string(pool), coins)
 		if err != nil {
 			return reward, utils.LavaFormatError("sending validators participation failed", err,
 				utils.Attribute{Key: "validators_participation_reward", Value: coins.String()},
@@ -191,7 +200,7 @@ func (k Keeper) CalculateContributionPercentages(ctx sdk.Context, reward math.In
 
 	// validators_participation = validators_participation_param / (1-community_tax)
 	validatorsParticipationParam := k.GetParams(ctx).ValidatorsSubscriptionParticipation
-	validatorsParticipation = validatorsParticipationParam.Quo((sdk.OneDec().Sub(communityTax)))
+	validatorsParticipation = validatorsParticipationParam.Quo(sdk.OneDec().Sub(communityTax))
 	if validatorsParticipation.GT(sdk.OneDec()) {
 		return sdk.ZeroDec(), sdk.ZeroDec(), utils.LavaFormatError("validators participation bigger than 100%", fmt.Errorf("validators participation calc failed"),
 			utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
@@ -233,4 +242,9 @@ func (k Keeper) FundCommunityPoolFromModule(ctx sdk.Context, amount math.Int, se
 	k.distributionKeeper.SetFeePool(ctx, feePool)
 
 	return nil
+}
+
+// isEndOfMonth checks that we're close to next timer expiry by at least 10 blocks
+func (k Keeper) isEndOfMonth(ctx sdk.Context) bool {
+	return ctx.BlockHeight()+10 > k.BlocksToNextTimerExpiry(ctx)
 }

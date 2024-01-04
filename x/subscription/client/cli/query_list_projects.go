@@ -14,7 +14,7 @@ var _ = strconv.Itoa(0)
 func CmdListProjects() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list-projects [subscription]",
-		Short: "Query to show all the subscription&#39;s projects",
+		Short: "Query all the subscription's projects",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			reqSubscription := args[0]

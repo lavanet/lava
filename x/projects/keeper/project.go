@@ -278,6 +278,7 @@ func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *p
 		)
 	}
 
+	projectIDsStr := ""
 	for _, projectID := range projectIDs {
 		projectNextEpoch, _, err := k.getProjectForBlock(ctx, projectID, nextEpoch)
 		if err != nil {
@@ -326,8 +327,21 @@ func (k Keeper) SetProjectPolicy(ctx sdk.Context, projectIDs []string, policy *p
 				utils.Attribute{Key: "block", Value: ctxBlock},
 			)
 		}
+
+		projectIDsStr += projectID + ", "
 	}
 
+	details := map[string]string{
+		"creator":     key,
+		"project_ids": projectIDsStr,
+		"policy":      policy.String(),
+	}
+
+	if setPolicyEnum == types.SET_ADMIN_POLICY {
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.SetAdminPolicyEventName, details, "set admin policy successfully")
+	} else if setPolicyEnum == types.SET_SUBSCRIPTION_POLICY {
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.SetSubscriptionPolicyEventName, details, "set subscription policy successfully")
+	}
 	return nil
 }
 

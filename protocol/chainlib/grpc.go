@@ -185,7 +185,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &grpcMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
-	return nodeMsg, nil
+	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
 func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
@@ -273,7 +273,7 @@ func NewGrpcChainListener(
 }
 
 // Serve http server for GrpcChainListener
-func (apil *GrpcChainListener) Serve(ctx context.Context) {
+func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags) {
 	// Guard that the GrpcChainListener instance exists
 	if apil == nil {
 		return
@@ -317,7 +317,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context) {
 		return relayReply.Data, convertRelayMetaDataToMDMetaData(metadataToReply), nil
 	}
 
-	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback, apil.endpoint.HealthCheckPath)
+	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback, apil.endpoint.HealthCheckPath, cmdFlags)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
