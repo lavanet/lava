@@ -153,8 +153,8 @@ func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, 
 	validator, err := h.k.stakingKeeper.GetDelegatorValidator(ctx, delAddr, valAddr)
 	if err != nil {
 		return utils.LavaFormatWarning("delegation removed hook failed", err,
-			utils.Attribute{Key: "validator_address", Value: valAddr.String()},
-			utils.Attribute{Key: "delegator_address", Value: delAddr.String()},
+			utils.LogAttr("validator_address", valAddr.String()),
+			utils.LogAttr("delegator_address", delAddr.String()),
 		)
 	}
 	amount := validator.TokensFromSharesRoundUp(delegation.Shares).Ceil().TruncateInt()

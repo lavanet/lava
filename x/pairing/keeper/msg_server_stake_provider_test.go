@@ -70,7 +70,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	// modify moniker
 	moniker = "anotherExampleMoniker"
 	err = ts.StakeProviderExtra(providerAddr, ts.spec, testStake, nil, 0, moniker)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	// Get the stake entry and check the provider is staked

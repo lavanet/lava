@@ -42,7 +42,7 @@ func (ts *tester) setupForDelegation(delegatorCount, stakedCount, unstakedCount,
 	ts.addClients(delegatorCount)
 
 	err := ts.addProviders(stakedCount)
-	require.Nil(ts.T, err)
+	require.NoError(ts.T, err)
 	for i := 0; i < stakedCount; i++ {
 		_, addr := ts.GetAccount(common.PROVIDER, i)
 		err := ts.StakeProvider(addr, ts.spec, testStake)
@@ -50,9 +50,9 @@ func (ts *tester) setupForDelegation(delegatorCount, stakedCount, unstakedCount,
 	}
 
 	err = ts.addProviders(unstakedCount)
-	require.Nil(ts.T, err)
+	require.NoError(ts.T, err)
 	err = ts.addProviders(unstakingCount)
-	require.Nil(ts.T, err)
+	require.NoError(ts.T, err)
 
 	for i := 0; i < unstakingCount; i++ {
 		_, addr := ts.GetAccount(common.PROVIDER, stakedCount+unstakedCount+i)

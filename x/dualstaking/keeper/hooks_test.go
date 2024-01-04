@@ -102,7 +102,7 @@ func TestReDelegateToProvider(t *testing.T) {
 	ts := newTester(t)
 	ts.addValidators(1)
 	err := ts.addProviders(1)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.addClients(1)
 
 	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
@@ -281,7 +281,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	ts := newTester(t)
 	ts.addValidators(1)
 	err := ts.addProviders(5)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, _ = ts.AddAccount(common.CONSUMER, 0, testBalance*1000000000)
 
 	power := int64(1)

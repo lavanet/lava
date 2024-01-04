@@ -747,7 +747,7 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, "free", 1, false, false) // extend by a month so the sub won't expire
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	badgeAcct, _ := ts.AddAccount("badge", 0, testBalance)
 

@@ -27,7 +27,7 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 	_, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
 
 	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, "free", 1, false, false) // extend by a month so the sub won't expire
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	res, err := ts.QuerySubscriptionCurrent(client1Addr)
 	require.Nil(t, err)
@@ -180,7 +180,7 @@ func TestTrackedCuWithQos(t *testing.T) {
 	provider2Acc, provider2 := ts.GetAccount(common.PROVIDER, 1)
 
 	_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	badQoS := &types.QualityOfServiceReport{
 		Latency:      sdk.ZeroDec(),
@@ -384,7 +384,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
 	_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// stake the provider on an additional chain and apply pairing (advance epoch)
 	spec1 := ts.spec
@@ -661,7 +661,7 @@ func TestTrackedCuDeletion(t *testing.T) {
 	_, provider := ts.GetAccount(common.PROVIDER, 0)
 
 	_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// send relay to track CU
 	relayPayment := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
