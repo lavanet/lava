@@ -18,6 +18,9 @@ func (k Keeper) SetEpochDetails(ctx sdk.Context, epochDetails types.EpochDetails
 
 // GetEpochDetails returns epochDetails
 func (k Keeper) GetEpochDetails(ctx sdk.Context) (val types.EpochDetails, found bool) {
+	if k.storeKey == nil {
+		return val, false
+	}
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochDetailsKey))
 
 	b := store.Get([]byte{0})

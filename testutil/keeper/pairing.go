@@ -12,7 +12,9 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
+	epochstoragemodule "github.com/lavanet/lava/x/epochstorage"
 	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	"github.com/lavanet/lava/x/pairing/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -28,6 +30,10 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	stateStore := store.NewCommitMultiStore(db)
 	stateStore.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 	stateStore.MountStoreWithDB(memStoreKey, storetypes.StoreTypeMemory, nil)
+	epochStoreKey := sdk.NewKVStoreKey(epochstoragetypes.StoreKey)
+	epochMemStoreKey := storetypes.NewMemoryStoreKey(epochstoragetypes.MemStoreKey)
+	stateStore.MountStoreWithDB(epochStoreKey, storetypes.StoreTypeIAVL, db)
+	stateStore.MountStoreWithDB(epochMemStoreKey, storetypes.StoreTypeMemory, nil)
 	require.NoError(t, stateStore.LoadLatestVersion())
 
 	registry := codectypes.NewInterfaceRegistry()
@@ -48,7 +54,7 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 	)
 
 	tsKeeper := timerstorekeeper.NewKeeper(cdc)
-	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, nil, nil, paramsSubspaceEpochstorage, nil, nil, nil, nil)
+	epochstorageKeeper := epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, paramsSubspaceEpochstorage, nil, nil, nil, nil)
 	k := keeper.NewKeeper(
 		cdc,
 		storeKey,
@@ -72,6 +78,6 @@ func PairingKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 
 	// Initialize params
 	k.SetParams(ctx, types.DefaultParams())
-
+	epochstoragemodule.InitGenesis(ctx, *epochstorageKeeper, *epochstoragetypes.DefaultGenesis())
 	return k, ctx
 }

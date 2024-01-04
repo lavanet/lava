@@ -25,6 +25,9 @@ func (k Keeper) GetFixatedParams(
 	ctx sdk.Context,
 	index string,
 ) (val types.FixatedParams, found bool) {
+	if k.storeKey == nil {
+		return val, false
+	}
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.FixatedParamsKeyPrefix))
 
 	b := store.Get(types.FixatedParamsKey(
