@@ -5,6 +5,7 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -15,12 +16,12 @@ func (k msgServer) StakeProvider(goCtx context.Context, msg *types.MsgStakeProvi
 		return &types.MsgStakeProviderResponse{}, sdkerrors.Wrapf(types.InvalidCreatorAddressError, "Invalid creator address (%s)", err.Error())
 	}
 
-	if msg.DelegateLimit.Denom != k.stakingKeeper.BondDenom(ctx) {
-		return &types.MsgStakeProviderResponse{}, sdkerrors.Wrapf(types.DelegateLimitError, "Invalid coin denominator (%s) for DelegationLimit", msg.DelegateLimit.Denom)
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), msg.DelegateLimit); err != nil {
+		return &types.MsgStakeProviderResponse{}, err
 	}
 
-	if msg.Amount.Denom != k.stakingKeeper.BondDenom(ctx) {
-		return &types.MsgStakeProviderResponse{}, sdkerrors.Wrapf(types.AmountCoinError, "Invalid coin denominator (%s) for Amount", msg.DelegateLimit.Denom)
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), msg.Amount); err != nil {
+		return &types.MsgStakeProviderResponse{}, err
 	}
 
 	if err := msg.ValidateBasic(); err != nil {

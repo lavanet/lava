@@ -3,9 +3,7 @@ package keeper
 import (
 	"context"
 
-	sdkerror "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
@@ -13,11 +11,8 @@ import (
 func (k msgServer) Redelegate(goCtx context.Context, msg *types.MsgRedelegate) (*types.MsgRedelegateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	if msg.Amount.Denom != bondDenom {
-		return &types.MsgRedelegateResponse{}, sdkerror.Wrapf(
-			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", msg.Amount.Denom, bondDenom,
-		)
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), msg.Amount); err != nil {
+		return &types.MsgRedelegateResponse{}, err
 	}
 
 	err := k.Keeper.Redelegate(
