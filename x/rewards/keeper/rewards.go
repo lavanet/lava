@@ -57,7 +57,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	if len(data) == 0 {
 		monthsLeft = types.RewardsAllocationPoolsLifetime
 	} else {
-		monthsLeft = binary.BigEndian.Uint64(data) // TODO: should we check data or trust binary package?
+		monthsLeft = binary.BigEndian.Uint64(data)
 	}
 
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
@@ -159,5 +159,5 @@ func (k Keeper) AllocationPoolMonthsLeft(ctx sdk.Context) int64 {
 		return math.MaxInt64
 	}
 
-	return int64(binary.BigEndian.Uint64(data[0])) // TODO: should we check data or trust binary package?
+	return int64(binary.BigEndian.Uint64(data[0]))
 }
