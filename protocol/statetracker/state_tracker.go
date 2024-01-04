@@ -101,7 +101,7 @@ func (st *StateTracker) newLavaBlock(blockFrom int64, blockTo int64, hash string
 	st.registrationLock.RLock()
 	defer st.registrationLock.RUnlock()
 
-	if blockTo-blockFrom > 100 { // TODO: change 100 to actual amount.
+	if time.Duration(blockTo-blockFrom)*st.AverageBlockTime > time.Hour { // if we are 1H behind
 		// in case we have a huge gap we launch a reset on the state of all the updaters. as the state is no longer valid.
 		// this can be caused by a huge catch up on blocks after a halt or a sync state on the node. sometimes pruning the blocks the protocol requires.
 		// therefore we need to reset the state and fetch all information from the chain
