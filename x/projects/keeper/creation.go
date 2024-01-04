@@ -288,7 +288,7 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string, block uint64)
 			"projectID": projectID,
 			"block":     strconv.FormatInt(int64(block), 10),
 		}
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProjectResetFailEventName, details, "reset projects failed: unable to find project")
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProjectResetFailEventName, details, "reset projects failed: unable to append project")
 		return
 	}
 }
