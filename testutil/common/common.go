@@ -29,19 +29,7 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 	for _, collection := range spec.ApiCollections {
 		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{collection.CollectionData.ApiInterface}, Geolocation: 1})
 	}
-
-	stakeCoin := sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.NewInt(stake))
-	_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{
-		Creator:            acc.Addr.String(),
-		ChainID:            spec.Index,
-		Amount:             stakeCoin,
-		Geolocation:        1,
-		Endpoints:          endpoints,
-		Moniker:            "prov",
-		DelegateLimit:      stakeCoin,
-		DelegateCommission: 100, Validator: sdk.ValAddress(validator.Addr).String(),
-	},
-	)
+	_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Index, Amount: sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: "prov", DelegateLimit: sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.ZeroInt()), DelegateCommission: 100, Validator: sdk.ValAddress(validator.Addr).String()})
 	require.Nil(t, err)
 }
 
