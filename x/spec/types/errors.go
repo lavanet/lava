@@ -4,6 +4,7 @@ package types
 
 import (
 	sdkerrors "cosmossdk.io/errors"
+	commontypes "github.com/lavanet/lava/common/types"
 )
 
 // x/spec module sentinel errors
@@ -20,5 +21,5 @@ var (
 	ErrSpecNotFound      = sdkerrors.Register(ModuleName, 7, "spec not found")
 	ErrDuplicateSpecName = sdkerrors.Register(ModuleName, 8, "spec name is not unique")
 	ErrChainNameNotFound = sdkerrors.Register(ModuleName, 9, "chain name not found")
-	ErrInvalidDenom      = sdkerrors.Register(ModuleName, 10, "invalid denomanator")
+	ErrInvalidDenom      = sdkerrors.Register(ModuleName, 10, commontypes.ErrInvalidDenomMsg)
 )
