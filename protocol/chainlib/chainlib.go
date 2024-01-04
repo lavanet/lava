@@ -65,6 +65,7 @@ type ChainParser interface {
 	Activate()
 	UpdateBlockTime(newBlockTime time.Duration)
 	GetUniqueName() string
+	SetPolicyFromAddonAndExtensionSlice(policyInformation []string)
 	ExtensionsParser() *extensionslib.ExtensionParser
 }
 

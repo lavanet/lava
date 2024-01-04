@@ -123,14 +123,10 @@ func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy *plantypes.Policy, ch
 	return services, nil
 }
 
-// policy information contains all configured services (extensions and addons) allowed to be used by the consumer
-func (bcp *BaseChainParser) SetPolicy(policy *plantypes.Policy, chainId string, apiInterface string) error {
-	policyInformation, err := bcp.BuildMapFromPolicyQuery(policy, chainId, apiInterface)
-	if err != nil {
-		return err
-	}
+func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation map[string]struct{}) {
 	bcp.rwLock.Lock()
 	defer bcp.rwLock.Unlock()
+	utils.LavaFormatDebug("info on policyInformation", utils.LogAttr("policyInformation", policyInformation))
 	// reset the current one in case we configured it previously
 	configuredExtensions := make(map[extensionslib.ExtensionKey]*spectypes.Extension)
 	for collectionKey, apiCollection := range bcp.apiCollections {
@@ -154,10 +150,30 @@ func (bcp *BaseChainParser) SetPolicy(policy *plantypes.Policy, chainId string, 
 	bcp.extensionParser.SetConfiguredExtensions(configuredExtensions)
 	// manage allowed addons
 	for addon := range bcp.allowedAddons {
+		utils.LavaFormatDebug("info on addons", utils.LogAttr("addon", addon))
 		if _, ok := policyInformation[addon]; ok {
+			utils.LavaFormatDebug("found addon", utils.LogAttr("addon", addon))
 			bcp.allowedAddons[addon] = true
 		}
 	}
+}
+
+// used on provider side to set its allowed addons and extensions to the base chain parser as it doesn't have a consumer policy
+func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionSlice(policyInformation []string) {
+	policyInfoMap := make(map[string]struct{}, len(policyInformation))
+	for _, info := range policyInformation {
+		policyInfoMap[info] = struct{}{}
+	}
+	bcp.SetPolicyFromAddonAndExtensionMap(policyInfoMap)
+}
+
+// policy information contains all configured services (extensions and addons) allowed to be used by the consumer
+func (bcp *BaseChainParser) SetPolicy(policy *plantypes.Policy, chainId string, apiInterface string) error {
+	policyInformation, err := bcp.BuildMapFromPolicyQuery(policy, chainId, apiInterface)
+	if err != nil {
+		return err
+	}
+	bcp.SetPolicyFromAddonAndExtensionMap(policyInformation)
 	return nil
 }
 
