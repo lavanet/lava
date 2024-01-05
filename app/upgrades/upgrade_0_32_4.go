@@ -20,7 +20,6 @@ func v0_32_4_UpgradeHandler(
 			// proto.MessageName(&upgradetypes.MsgCancelUpgrade{}),
 			// TODO: Here we setup the whitelisted messages we want to allow via expedited proposals
 		}
-
 		lk.SpecKeeper.SetParams(ctx, params)
 
 		return m.RunMigrations(ctx, c, vm)
