@@ -31,7 +31,6 @@ type SpecKeeper interface {
 }
 
 type TimerStoreKeeper interface {
-	NewTimerStoreBeginBlock(storeKey storetypes.StoreKey, prefix string) *timerstoretypes.TimerStore
 	NewTimerStoreEndBlock(storeKey storetypes.StoreKey, prefix string) *timerstoretypes.TimerStore
 }
 
