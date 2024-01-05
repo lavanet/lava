@@ -14,7 +14,9 @@ func v0_32_4_UpgradeHandler(
 	lk *keepers.LavaKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-		// Add whitelisted expedited msgs
+		// reset whitelist to empty
+		lk.SpecKeeper.WhitelistReset(ctx)
+
 		params := lk.SpecKeeper.GetParams(ctx)
 		params.WhitelistedExpeditedMsgs = []string{
 			// proto.MessageName(&upgradetypes.MsgCancelUpgrade{}),

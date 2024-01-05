@@ -29,3 +29,9 @@ func (k Keeper) WhitelistedExpeditedMsgs(ctx sdk.Context) (res []string) {
 	k.paramstore.Get(ctx, types.KeyWhiteListExpeditedMsgs, &res)
 	return
 }
+
+func (k Keeper) WhitelistReset(ctx sdk.Context) {
+	k.paramstore.Set(ctx, types.KeyWhiteListExpeditedMsgs, []string{})
+
+	return
+}
