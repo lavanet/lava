@@ -6,6 +6,7 @@
 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
+
 if [[ "${@: -1}" == "--install" ]]; then
     end=$(( $# - 1 ))  # Exclude --install from processing
     # If --install flag is found, perform the installation
@@ -14,6 +15,15 @@ if [[ "${@: -1}" == "--install" ]]; then
 else
     end=$#
 fi
+
+dry=false
+if [[ "${@: -1}" == "--dry" ]]; then
+    end=$(( $# - 1 ))  # Exclude --dry from processing
+    dry=true
+else
+    end=$#
+fi
+
 interfaces=()
 urls=()
 # Loop through the arguments
@@ -27,64 +37,72 @@ do
     urls+=("${!i}")
 done
 
-
 LOGS_DIR=${__dir}/../testutil/debugging/logs
 mkdir -p $LOGS_DIR
 rm $LOGS_DIR/*.log
 rm $LOGS_DIR/*.yml
 
-index_list=$(jq -r '.proposal.specs[].index' "$1")
+proposal_indexes=$(jq -r '.proposal.specs[].index' "$1")
+index_list=()
 
+while IFS= read -r line; do
+    index_list+=("$line")
+done <<< "$proposal_indexes"
+
+echo "processing indexes: ${index_list[@]}"
 killall screen
 screen -wipe
 
-echo "[Test Setup] installing all binaries"
-make install-all 
+## Handle Node ##
 
-echo "[Test Setup] setting up a new lava node"
-screen -d -m -S node bash -c "${__dir}/start_env_dev.sh"
-screen -ls
-echo "[Test Setup] sleeping 5 seconds for node to finish setup (if its not enough increase timeout)"
-sleep 5
-wait_for_lava_node_to_start
+if [ "$dry" = false ]; then
+    echo "[Test Setup] installing all binaries"
+    make install-all 
 
-GASPRICE="0.000000001ulava"
-# add all existing specs so inheritance works
-lavad tx gov submit-legacy-proposal spec-add ${__dir}/../cookbook/specs/spec_add_ibc.json,${__dir}/../cookbook/specs/spec_add_cosmoswasm.json,${__dir}/../cookbook/specs/spec_add_cosmossdk.json,${__dir}/../cookbook/specs/spec_add_cosmossdk_45.json,${__dir}/../cookbook/specs/spec_add_cosmossdk_full.json,${__dir}/../cookbook/specs/spec_add_ethereum.json,${__dir}/../cookbook/specs/spec_add_cosmoshub.json,${__dir}/../cookbook/specs/spec_add_lava.json,${__dir}/../cookbook/specs/spec_add_osmosis.json,${__dir}/../cookbook/specs/spec_add_fantom.json,${__dir}/../cookbook/specs/spec_add_celo.json,${__dir}/../cookbook/specs/spec_add_optimism.json,${__dir}/../cookbook/specs/spec_add_arbitrum.json,${__dir}/../cookbook/specs/spec_add_starknet.json,${__dir}/../cookbook/specs/spec_add_aptos.json,${__dir}/../cookbook/specs/spec_add_juno.json,${__dir}/../cookbook/specs/spec_add_polygon.json,${__dir}/../cookbook/specs/spec_add_evmos.json,${__dir}/../cookbook/specs/spec_add_base.json,${__dir}/../cookbook/specs/spec_add_canto.json,${__dir}/../cookbook/specs/spec_add_sui.json,${__dir}/../cookbook/specs/spec_add_solana.json,${__dir}/../cookbook/specs/spec_add_bsc.json,${__dir}/../cookbook/specs/spec_add_axelar.json,${__dir}/../cookbook/specs/spec_add_avalanche.json,${__dir}/../cookbook/specs/spec_add_fvm.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
-wait_next_block
-wait_next_block
-lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-sleep 4
+    echo "[Test Setup] setting up a new lava node"
+    screen -d -m -S node bash -c "${__dir}/start_env_dev.sh"
+    screen -ls
+    echo "[Test Setup] sleeping 5 seconds for node to finish setup (if its not enough increase timeout)"
+    sleep 5
+    wait_for_lava_node_to_start
 
-# Plans proposal
-lavad tx gov submit-legacy-proposal plans-add ${__dir}/../cookbook/plans/test_plans/default.json,${__dir}/../cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-wait_next_block
-wait_next_block
-lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-wait_next_block
-wait_next_block
-lavad tx gov submit-legacy-proposal spec-add "$1" --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
-wait_next_block
-wait_next_block
-lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-sleep 4
-
-PROVIDERSTAKE="500000000000ulava"
-
-# do not change this port without modifying the input_yaml
-PROVIDER1_LISTENER="127.0.0.1:2220"
-
-lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-
-for index in $index_list
-do
-    echo "Processing index: $index"
-    lavad tx pairing stake-provider "$index" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 -y --from servicer1 --provider-moniker "provider-$index" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+    GASPRICE="0.000000001ulava"
+    # add all existing specs so inheritance works
+    lavad tx gov submit-legacy-proposal spec-add ${__dir}/../cookbook/specs/spec_add_ibc.json,${__dir}/../cookbook/specs/spec_add_cosmoswasm.json,${__dir}/../cookbook/specs/spec_add_cosmossdk.json,${__dir}/../cookbook/specs/spec_add_cosmossdk_45.json,${__dir}/../cookbook/specs/spec_add_cosmossdk_full.json,${__dir}/../cookbook/specs/spec_add_ethereum.json,${__dir}/../cookbook/specs/spec_add_cosmoshub.json,${__dir}/../cookbook/specs/spec_add_lava.json,${__dir}/../cookbook/specs/spec_add_osmosis.json,${__dir}/../cookbook/specs/spec_add_fantom.json,${__dir}/../cookbook/specs/spec_add_celo.json,${__dir}/../cookbook/specs/spec_add_optimism.json,${__dir}/../cookbook/specs/spec_add_arbitrum.json,${__dir}/../cookbook/specs/spec_add_starknet.json,${__dir}/../cookbook/specs/spec_add_aptos.json,${__dir}/../cookbook/specs/spec_add_juno.json,${__dir}/../cookbook/specs/spec_add_polygon.json,${__dir}/../cookbook/specs/spec_add_evmos.json,${__dir}/../cookbook/specs/spec_add_base.json,${__dir}/../cookbook/specs/spec_add_canto.json,${__dir}/../cookbook/specs/spec_add_sui.json,${__dir}/../cookbook/specs/spec_add_solana.json,${__dir}/../cookbook/specs/spec_add_bsc.json,${__dir}/../cookbook/specs/spec_add_axelar.json,${__dir}/../cookbook/specs/spec_add_avalanche.json,${__dir}/../cookbook/specs/spec_add_fvm.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
     wait_next_block
-done
+    wait_next_block
+    lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+    sleep 4
 
-sleep_until_next_epoch
+    # Plans proposal
+    lavad tx gov submit-legacy-proposal plans-add ${__dir}/../cookbook/plans/test_plans/default.json,${__dir}/../cookbook/plans/test_plans/temporary-add.json -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+    wait_next_block
+    wait_next_block
+    lavad tx gov vote 2 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+    wait_next_block
+    wait_next_block
+    lavad tx gov submit-legacy-proposal spec-add "$1" --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
+    wait_next_block
+    wait_next_block
+    lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+    sleep 4
 
+    PROVIDERSTAKE="500000000000ulava"
+
+    # do not change this port without modifying the input_yaml
+    PROVIDER1_LISTENER="127.0.0.1:2220"
+
+    lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+    echo "[+] processing the next indexes:${index_list[@]}"
+    for index in ${index_list[@]}
+    do
+        echo "Processing index: $index"
+        lavad tx pairing stake-provider "$index" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 -y --from servicer1 --provider-moniker "provider-$index" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+        wait_next_block
+    done
+
+    sleep_until_next_epoch
+fi
 valid_interfaces=("rest" "jsonrpc" "grpc" "tendermintrpc")
 
 for interface in "$interfaces"
@@ -101,6 +119,8 @@ if [ ${#interfaces[@]} -ne ${#urls[@]} ]; then
     exit 1 
 fi
 
+## Handle Provider ##
+
 input_yaml="${__dir}/../config/provider_examples/test_spec_template.yml"
 output_yaml="${LOGS_DIR}/provider.yml"
 
@@ -114,12 +134,12 @@ copy_content() {
     local end_line="$2"
     local index="$3"
     local url="$4"
-    
     awk -v s="$start_line" -v e="$end_line" -v idx="$index" -v url="$url" 'NR >= s && NR <= e {sub("RELACE_THIS_URL", url, $0);sub("INDEX_RELACE_THIS", idx, $0);print}' "$input_yaml" >> "$output_yaml"
 }
 
 head -n 1 "$input_yaml" >> "$output_yaml"
 # Copy blocks to provider.yaml based on line numbers and args
+handled_indices=()
 for ((j = 0; j < ${#index_list[@]}; j++))
 do
     for ((i = 0; i < ${#line_numbers[@]}; i++))
@@ -127,7 +147,7 @@ do
         start_line=${line_numbers[$i]}
         interface=$(awk -v ln="$start_line" 'NR == ln {print $3}' "$input_yaml" | tr -d '"')
         for interface_idx in "${!interfaces[@]}"; do
-            if [[ "${interfaces[$interface_idx]}" == "$interface" ]]; then
+            if [[ "${interfaces[$interface_idx]}" == "$interface" ]] && ! [[ " ${handled_indices[@]} " =~ " $interface_idx " ]]; then
                 if ((i == ${#line_numbers[@]} - 1)); then
                     # If it's the last interface, copy till the end of the file
                     copy_content "$start_line" "$(wc -l < "$input_yaml")" "${index_list[$j]}" "${urls[$interface_idx]}"
@@ -136,6 +156,7 @@ do
                     ((end_line--)) # Decrement end line to avoid copying the next interface block
                     copy_content "$start_line" "$end_line" "${index_list[$j]}" "${urls[$interface_idx]}"
                 fi
+                handled_indices+=("$interface_idx")
                 break  # Stop loop when found
             fi
         done
@@ -145,10 +166,12 @@ echo "[+]generated provider config: $output_yaml"
 cat $output_yaml
 
 echo "[Test Setup] starting provider"
+if [ "$dry" = false ]; then
+    screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider testutil/debugging/logs/provider.yml $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER1.log"
+fi
+## Handle Consumer ##
 
-screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider testutil/debugging/logs/provider.yml $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER1.log"
-
-start_port=3000
+port=3000
 template="\
     - chain-id: CHAIN_ID_REPLACE
       api-interface: API_INTERFACE_REPLACE
@@ -165,7 +188,7 @@ do
         interface=$(awk -v ln="$start_line" 'NR == ln {print $3}' "$input_yaml" | tr -d '"')
         for interface_idx in "${!interfaces[@]}"; do
             if [[ "${interfaces[$interface_idx]}" == "$interface" ]]; then
-                port=$((start_port + i+j))
+                port=$((port + 1))
                 replaced=$(echo "$template" | sed -e "s/CHAIN_ID_REPLACE/${index_list[$j]}/" -e "s/API_INTERFACE_REPLACE/${interface}/" -e "s/PORT_REPLACE/${port}/")
                 echo "$replaced" >> $output_consumer_yaml
                 if [ "$interface" != "grpc" ]; then
@@ -174,6 +197,7 @@ do
                     url_test="127.0.0.1:$port"
                 fi
                 test_consumer_command_args+=" $url_test ${index_list[$j]} $interface"
+                break
             fi
         done
     done
@@ -181,9 +205,10 @@ done
 
 echo "[+]generated consumer config: $output_consumer_yaml"
 cat $output_consumer_yaml
+if [ "$dry" = false ]; then
+    screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer testutil/debugging/logs/consumer.yml $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/PORTAL.log"
 
-screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer testutil/debugging/logs/consumer.yml $EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log"
-
-echo "[+] letting providers start and running health check then running command with flags: $test_consumer_command_args"
-sleep 10
-lavap test rpcconsumer$test_consumer_command_args --chain-id=lava
+    echo "[+] letting providers start and running health check then running command with flags: $test_consumer_command_args"
+    sleep 10
+    lavap test rpcconsumer$test_consumer_command_args --chain-id=lava
+fi
