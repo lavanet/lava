@@ -51,7 +51,6 @@ func NewConsumerRelayServerClient(endPointAddress string) *ConsumerRelayServerCl
 
 func (cuc *ConsumerRelayServerClient) relayDataSendQueueStart() {
 	if cuc == nil {
-		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from relayDataSendQueueStart", nil)
 		return
 	}
 
@@ -64,7 +63,6 @@ func (cuc *ConsumerRelayServerClient) relayDataSendQueueStart() {
 
 func (cuc *ConsumerRelayServerClient) relayDataSendQueueTick() {
 	if cuc == nil {
-		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from relayDataSendQueueTick", nil)
 		return
 	}
 
@@ -98,7 +96,6 @@ func (cuc *ConsumerRelayServerClient) relayDataSendQueueTick() {
 
 func (cuc *ConsumerRelayServerClient) SetRelayMetrics(relayMetric *RelayMetrics) error {
 	if cuc == nil {
-		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from SetRelayMetrics", nil)
 		return nil
 	}
 
@@ -122,7 +119,6 @@ func (cuc *ConsumerRelayServerClient) SetRelayMetrics(relayMetric *RelayMetrics)
 
 func (cuc *ConsumerRelayServerClient) agregateAndSendRelayData(sendQueue []UpdateMetricsRequest, sendID int, cucEndpointAddress string) (*http.Response, error) {
 	if cuc == nil {
-		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from agregateAndSendRelayData", nil)
 		return nil, errors.New("CUC is nil")
 	}
 
@@ -165,7 +161,6 @@ func (cuc *ConsumerRelayServerClient) agregateAndSendRelayData(sendQueue []Updat
 
 func (cuc *ConsumerRelayServerClient) handleSendRelayResponse(resp *http.Response, sendID int) {
 	if cuc == nil {
-		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from handleSendRelayResponse", nil)
 		return
 	}
 
@@ -186,7 +181,6 @@ func (cuc *ConsumerRelayServerClient) handleSendRelayResponse(resp *http.Respons
 
 func (cuc *ConsumerRelayServerClient) sendRelayData(sendQueue []UpdateMetricsRequest, sendID int, cucEndpointAddress string) {
 	if cuc == nil {
-		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from sendRelayData", nil)
 		return
 	}
 
@@ -199,9 +193,12 @@ func (cuc *ConsumerRelayServerClient) sendRelayData(sendQueue []UpdateMetricsReq
 	cuc.handleSendRelayResponse(resp, sendID)
 }
 
+func generateRequestArregatedCacheKey(req UpdateMetricsRequest) string {
+	return req.RecordDate + req.Hash + req.Chain + req.ApiType
+}
+
 func (cuc *ConsumerRelayServerClient) aggregateRelayData(reqs []UpdateMetricsRequest) []UpdateMetricsRequest {
 	if cuc == nil {
-		utils.LavaFormatWarning("CUC: Warning - CUC is nil. called from aggregateRelayData", nil)
 		return nil
 	}
 
@@ -210,7 +207,7 @@ func (cuc *ConsumerRelayServerClient) aggregateRelayData(reqs []UpdateMetricsReq
 
 	for _, req := range reqs {
 		// Use the combination of RecordDate, Hash, Chain, and ApiType as the key
-		key := req.RecordDate + req.Hash + req.Chain + req.ApiType
+		key := generateRequestArregatedCacheKey(req)
 
 		// If the key doesn't exist in the map, add it
 		if _, exists := aggregated[key]; !exists {
