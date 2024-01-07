@@ -24,7 +24,8 @@ jobs:
         if: always()
         run: tail -n 1000 testutil/e2e/protocolLogs/00_StartLava.log
       
-      - name: get all warnings and errors from lavad
+      - name: Print all warnings and errors from lavad
+        continue-on-error: true
         if: always()
         run: cat testutil/e2e/protocolLogs/00_StartLava.log | grep 'WRN |ERR '
 
