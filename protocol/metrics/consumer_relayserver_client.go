@@ -80,11 +80,16 @@ func (cuc *ConsumerRelayserverClient) processQueue() {
 	}
 }
 
-func (cuc *ConsumerRelayserverClient) SetRelayMetrics(relayMetric *RelayMetrics) error {
-	if cuc == nil {
-		return nil
-	}
+func (cuc *ConsumerRelayserverClient) appendQueue(request UpdateMetricsRequest) {
+	cuc.lock.Lock()
+	defer cuc.lock.Unlock()
+	cuc.addQueue = append(cuc.addQueue, request)
+}
 
+func (cuc *ConsumerRelayserverClient) SetRelayMetrics(relayMetric *RelayMetrics) {
+	if cuc == nil {
+		return
+	}
 	request := UpdateMetricsRequest{
 		RecordDate:      relayMetric.Timestamp.Format("20060102"),
 		Hash:            relayMetric.ProjectHash,
@@ -95,12 +100,7 @@ func (cuc *ConsumerRelayserverClient) SetRelayMetrics(relayMetric *RelayMetrics)
 		LatencyToAdd:    uint64(relayMetric.Latency),
 		LatencyAvgCount: 1,
 	}
-
-	cuc.lock.Lock()
-	cuc.addQueue = append(cuc.addQueue, request)
-	cuc.lock.Unlock()
-
-	return nil
+	cuc.appendQueue(request)
 }
 
 func (cuc *ConsumerRelayserverClient) sendRequests(sendQueue []UpdateMetricsRequest) {
@@ -148,7 +148,7 @@ func (cuc *ConsumerRelayserverClient) sendRequests(sendQueue []UpdateMetricsRequ
 	}
 
 	if err != nil {
-		utils.LavaFormatDebug("CUC: Failed to send requests after 3 attempts")
+		utils.LavaFormatError("CUC: Failed to send requests after 3 attempts", err)
 		return
 	}
 
