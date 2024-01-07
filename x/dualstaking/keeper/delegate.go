@@ -306,6 +306,14 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 // without the funds being subject to unstakeHoldBlocks witholding period.
 // (effective on next epoch)
 func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, toChainID string, amount sdk.Coin) error {
+	chainIDs := k.specKeeper.GetAllChainIDs(ctx)
+	if !slices.Contains(chainIDs, fromChainID) || !slices.Contains(chainIDs, toChainID) {
+		return utils.LavaFormatWarning("specified chain IDs are invalid", fmt.Errorf("chain ID not found"),
+			utils.LogAttr("from_chain_id", fromChainID),
+			utils.LogAttr("to_chain_id", toChainID),
+		)
+	}
+
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
 	if _, err := sdk.AccAddressFromBech32(delegator); err != nil {
