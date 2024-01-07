@@ -4,7 +4,6 @@ go 1.20
 
 require (
 	github.com/99designs/keyring v1.2.1 // indirect
-	github.com/btcsuite/btcd v0.22.2
 	github.com/cometbft/cometbft v0.37.4
 	github.com/cometbft/cometbft-db v0.8.0
 	github.com/confio/ics23/go v0.9.0 // indirect
