@@ -70,7 +70,7 @@ func TestCacheSetGet(t *testing.T) {
 			}
 
 			_, err := cacheServer.SetRelay(ctx, &messageSet)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			// perform a delay
 			time.Sleep(tt.delay)
@@ -84,7 +84,7 @@ func TestCacheSetGet(t *testing.T) {
 			}
 			_, err = cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
 			}
@@ -286,7 +286,7 @@ func TestCacheSetGetLatest(t *testing.T) {
 			}
 			_ = utils.LavaFormatDebug("next test", utils.Attribute{Key: "name", Value: tt.name})
 			_, err := cacheServer.SetRelay(ctx, &messageSet)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			// perform a delay
 			if tt.delay > 2*time.Millisecond {
 				_ = utils.LavaFormatDebug("Big Delay", utils.Attribute{Key: "delay", Value: fmt.Sprintf("%+v", tt.delay)})
@@ -305,7 +305,7 @@ func TestCacheSetGetLatest(t *testing.T) {
 
 			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				if tt.latestIsCorrect {
 					require.Equal(t, cacheReply.GetReply().LatestBlock, tt.latestBlockForSetRelay)
 				} else {
@@ -364,7 +364,7 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 			}
 
 			_, err := cacheServer.SetRelay(ctx, &messageSet)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			// perform a delay
 			time.Sleep(tt.delay)
 			// now to get it
@@ -380,7 +380,7 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 
 			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				if tt.latestIsCorrect {
 					require.Equal(t, cacheReply.GetReply().LatestBlock, tt.latestBlockForSetRelay)
 				} else {
@@ -462,7 +462,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			}
 
 			_, err := cacheServer.SetRelay(ctx, &messageSet)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			// perform a delay
 			time.Sleep(tt.delay)
@@ -480,7 +480,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			}
 			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				result := gjson.GetBytes(cacheReply.GetReply().Data, format.IDFieldName)
 				extractedID := result.Raw
 				require.Equal(t, strconv.FormatInt(changedID, 10), extractedID)

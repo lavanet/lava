@@ -45,7 +45,7 @@ func TestRewardsModuleSetup(t *testing.T) {
 
 	// on init, the allocation pool lifetime should decrease by one
 	res, err := ts.QueryRewardsPools()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, lifetime-1, res.AllocationPoolMonthsLeft)
 
 	// in the end of the setup, there is an advancement of one block, so validator
@@ -83,7 +83,7 @@ func TestBurnRateParam(t *testing.T) {
 	// advance a month to trigger monthly pool refill callback
 	// to see why these 3 are called, see general note 2
 	resp, err := ts.QueryRewardsPools()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceBlock(time.Duration(resp.TimeToRefill) * time.Second)
 	testkeeper.EndBlock(ts.Ctx, ts.Keepers)
 
@@ -96,14 +96,14 @@ func TestBurnRateParam(t *testing.T) {
 	// change the burn rate param to be zero
 	paramKey := string(types.KeyLeftoverBurnRate)
 	zeroBurnRate, err := sdk.ZeroDec().MarshalJSON()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	paramVal := string(zeroBurnRate)
 	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// advance a month to trigger monthly pool refill callback
 	resp, err = ts.QueryRewardsPools()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceBlock(time.Duration(resp.TimeToRefill) * time.Second)
 	prevDistPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName).Int64()
 	testkeeper.EndBlock(ts.Ctx, ts.Keepers)
@@ -210,7 +210,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 
 	// verify that the current reward amount is as expected by checking the bondedTargetFactor alone
 	res, err := ts.QueryRewardsBlockReward()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	blockReward := res.Reward.Amount
 	distPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
 	blocksToNextExpiry := ts.Keepers.Rewards.BlocksToNextTimerExpiry(ts.Ctx)
@@ -224,7 +224,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 
 	// get new reference reward
 	res, err = ts.QueryRewardsBlockReward()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	blockReward = res.Reward.Amount
 
 	// transfer half of the total distribution pool balance to the allocation pool
@@ -235,12 +235,12 @@ func TestValidatorBlockRewards(t *testing.T) {
 		string(types.ValidatorsRewardsAllocationPoolName),
 		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), distPoolBalance.QuoRaw(2))),
 	)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// since we only halved the distribution pool balance, the reward should be half of the reference block reward
 	expectedBlockReward := blockReward.QuoRaw(2)
 	res, err = ts.QueryRewardsBlockReward()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	blockReward = res.Reward.Amount
 	require.True(t, blockReward.Equal(expectedBlockReward))
 
@@ -251,7 +251,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 		string(types.ValidatorsRewardsDistributionPoolName),
 		sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), distPoolBalance.QuoRaw(2))),
 	)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// finally, check that the blocksToNextExpiry affects the block reward as expected
 	// first, get the reference blockToExpiry and advance a block
@@ -260,7 +260,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 
 	// query for the current reward and isolate the blocksToExpiry. Compare it to the ref value
 	res, err = ts.QueryRewardsBlockReward()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	blockReward = res.Reward.Amount
 	bondedTargetFactor = ts.Keepers.Rewards.BondedTargetFactor(ts.Ctx).TruncateInt()
 	distPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
@@ -360,7 +360,7 @@ func TestRefillPoolsTimerStore(t *testing.T) {
 	month := ts.GetNextMonth(ts.BlockTime()) - ts.BlockTime().UTC().Unix()
 	for i := 0; i < int(lifetime+2); i++ {
 		res, err := ts.Keepers.TimerStoreKeeper.AllTimers(ts.GoCtx, req)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, 1, len(res.BlockTimeTimers))
 		require.Equal(t, 0, len(res.BlockHeightTimers))
 

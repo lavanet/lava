@@ -74,7 +74,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 		// Get pairing for the client to pick a valid provider
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[clientIndex].Addr.String())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		providerIndex := rand.Intn(len(pairing.Providers))
 		providerAddress := pairing.Providers[providerIndex].Address
 		// NOTE: the following loop contains a random factor in it. We make sure that we pick
@@ -105,7 +105,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		relaySession.UnresponsiveProviders = unresponsiveDataList[clientIndex%unresponsiveCount]
 		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
-		require.Nil(t, err)
+		require.NoError(t, err)
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: providerAddress,
 			Relays:  slices.Slice(relaySession),
@@ -172,7 +172,7 @@ func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData
 		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
-		require.Nil(t, err)
+		require.NoError(t, err)
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: provider0_addr.String(),
 			Relays:  slices.Slice(relaySession),
@@ -230,7 +230,7 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 	relaySession.UnresponsiveProviders = unresponsiveProvidersData
 	sig, err := sigs.Sign(clients[0].SK, *relaySession)
 	relaySession.Sig = sig
-	require.Nil(t, err)
+	require.NoError(t, err)
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider0_addr.String(),
 		Relays:  slices.Slice(relaySession),
@@ -256,7 +256,7 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData
 		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: provider0_addr.String(),
@@ -290,7 +290,7 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		ts := newTester(t)
 		ts.setupForPayments(providersCount, clientsCount, providersCount) // set providers-to-pair
 		err := ts.addProviderGeolocation(2, 2)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		plan := ts.plan
 		plan.PlanPolicy.MaxProvidersToPair = play.providersToPair
 		ts.ModifyPlan(ts.plan.Index, plan)
@@ -323,7 +323,7 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 			relaySession.UnresponsiveProviders = unresponsiveProvidersData
 			sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 			relaySession.Sig = sig
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: provider0_addr.String(),

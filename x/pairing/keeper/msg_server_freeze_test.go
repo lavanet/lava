@@ -19,7 +19,7 @@ func TestFreeze(t *testing.T) {
 
 	// get pairing list
 	res, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList := res.Providers
 	require.Equal(t, providersCount, len(pairingList))
 
@@ -27,20 +27,20 @@ func TestFreeze(t *testing.T) {
 
 	// test that unfreeze does nothing
 	_, err = ts.TxPairingUnfreezeProvider(providerToFreeze.Address, ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount, len(pairingList))
 
 	// freeze the first provider
 	_, err = ts.TxPairingFreezeProvider(providerToFreeze.Address, ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// check that the provider is still shown in the pairing list
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount, len(pairingList))
 	require.Equal(t, providerToFreeze.Address, pairingList[0].Address)
@@ -49,7 +49,7 @@ func TestFreeze(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount-1, len(pairingList))
 	for _, provider := range pairingList {
@@ -58,10 +58,10 @@ func TestFreeze(t *testing.T) {
 
 	// unfreeze the provider and verify it remain not in the pairing list
 	_, err = ts.TxPairingUnfreezeProvider(providerToFreeze.Address, ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount-1, len(pairingList))
 	for _, provider := range pairingList {
@@ -72,7 +72,7 @@ func TestFreeze(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount, len(pairingList))
 	foundUnfrozenProvider := false
@@ -93,23 +93,23 @@ func TestProvidersQuery(t *testing.T) {
 
 	// get providers
 	res, err := ts.QueryPairingProviders(ts.spec.Index, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// freeze the first provider
 	providerToFreeze := res.StakeEntry[0]
 	_, err = ts.TxPairingFreezeProvider(providerToFreeze.Address, ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// get providers without frozen providers and verify that providerToFreeze is not shown
 	res, err = ts.QueryPairingProviders(ts.spec.Index, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	for _, provider := range res.StakeEntry {
 		require.NotEqual(t, providerToFreeze.Address, provider.Address)
 	}
 
 	// get providers with frozen providers and verify that providerToFreeze is shown
 	res, err = ts.QueryPairingProviders(ts.spec.Index, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	foundFrozenProvider := false
 	for _, provider := range res.StakeEntry {
 		if providerToFreeze.Address == provider.Address {
@@ -129,18 +129,18 @@ func TestUnstakeFrozen(t *testing.T) {
 
 	// get pairing list
 	res, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList := res.Providers
 	require.Equal(t, providersCount, len(pairingList))
 
 	// freeze the first provider
 	providerToFreeze := pairingList[0]
 	_, err = ts.TxPairingFreezeProvider(providerToFreeze.Address, ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// check that the provider is still shown in the pairing list
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount, len(pairingList))
 	require.Equal(t, providerToFreeze.Address, pairingList[0].Address)
@@ -149,7 +149,7 @@ func TestUnstakeFrozen(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount-1, len(pairingList))
 	for _, provider := range pairingList {
@@ -157,14 +157,14 @@ func TestUnstakeFrozen(t *testing.T) {
 	}
 
 	_, err = ts.TxPairingUnstakeProvider(providerToFreeze.Address, ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// unfreeze the provider and verify it remains not in the pairing list
 	_, err = ts.TxPairingUnfreezeProvider(providerToFreeze.Address, ts.spec.Index)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount-1, len(pairingList))
 	for _, provider := range pairingList {
@@ -175,7 +175,7 @@ func TestUnstakeFrozen(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount-1, len(pairingList))
 	foundUnfrozenProvider := false
@@ -200,18 +200,18 @@ func TestPaymentFrozen(t *testing.T) {
 
 	// get pairing list
 	res, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList := res.Providers
 	require.Equal(t, providersCount, len(pairingList))
 
 	// freeze the first provider
 	providerToFreeze := pairingList[0]
 	_, err = ts.TxPairingFreezeProvider(providerToFreeze.Address, ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// check that the provider is still shown in the pairing list
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount, len(pairingList))
 	require.Equal(t, providerToFreeze.Address, pairingList[0].Address)
@@ -220,7 +220,7 @@ func TestPaymentFrozen(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairingList = res.Providers
 	require.Equal(t, providersCount-1, len(pairingList))
 	for _, provider := range pairingList {
@@ -232,8 +232,8 @@ func TestPaymentFrozen(t *testing.T) {
 
 	sig, err := sigs.Sign(clientAcct.SK, *relaySession)
 	relaySession.Sig = sig
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = ts.TxPairingRelayPayment(providerToFreeze.Address, relaySession)
-	require.Nil(t, err)
+	require.NoError(t, err)
 }

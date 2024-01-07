@@ -17,7 +17,7 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
 	paramVal := "\"" + strconv.FormatUint(20, 10) + "\""
 	err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch to apply EpochBlocks change, one block before EpochBlocks changes.
 	ts.AdvanceEpoch() // blockHeight = 20
@@ -26,14 +26,14 @@ func TestStakeGovEpochBlocksDecrease(t *testing.T) {
 	paramKey = string(epochstoragetypes.KeyEpochBlocks)
 	paramVal = "\"" + strconv.FormatUint(10, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance to blockHeight = 39, one block before the EpochBlocks change apply
 	ts.AdvanceBlocks(19)
 
 	// stake a provider
 	err = ts.addProvider(1)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance to the next block so the EpochBlocks change apply
 	ts.AdvanceBlock() // blockHeight = 40
@@ -75,7 +75,7 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
 	paramVal := "\"" + strconv.FormatUint(20, 10) + "\""
 	err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch to apply EpochBlocks change
 	ts.AdvanceEpoch() // blockHeight = 20
@@ -84,13 +84,13 @@ func TestStakeGovEpochBlocksIncrease(t *testing.T) {
 	paramKey = string(epochstoragetypes.KeyEpochBlocks)
 	paramVal = "\"" + strconv.FormatUint(50, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance to blockHeight = 39, one block before the EpochBlocks change apply
 	ts.AdvanceBlocks(19)
 	// stake a provider
 	err = ts.addProvider(1)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance to the next block so the EpochBlocks change apply
 	ts.AdvanceBlock() // blockHeight = 40
@@ -136,12 +136,12 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
 	paramVal := "\"" + strconv.FormatUint(20, 10) + "\""
 	err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	paramKey = string(epochstoragetypes.KeyUnstakeHoldBlocks)
 	paramVal = "\"" + strconv.FormatUint(210, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch to apply the changes
 	ts.AdvanceEpoch() // blockHeight = 20
@@ -150,7 +150,7 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	paramKey = string(epochstoragetypes.KeyUnstakeHoldBlocks)
 	paramVal = "\"" + strconv.FormatUint(60, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance to blockHeight = 39, one block before the UnstakeHoldBlocks change apply
 	ts.AdvanceBlocks(19)
@@ -158,7 +158,7 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 	// Unstake the provider:
 	// should get the funds on block #260 (39+210 = 249 -> next epoch start in 260)
 	_, err = ts.TxPairingUnstakeProvider(providerAcct.Addr.String(), ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance a block to complete the epoch and apply UnstakeHoldBlocks change to 60
 	// if the unstaking refers to 60 (wrongly, since they unstaked before the change applied),
@@ -185,12 +185,12 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
 	paramVal := "\"" + strconv.FormatUint(20, 10) + "\""
 	err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	paramKey = string(epochstoragetypes.KeyUnstakeHoldBlocks)
 	paramVal = "\"" + strconv.FormatUint(210, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch to apply the changes.
 	ts.AdvanceEpoch() // blockHeight = 20
@@ -199,7 +199,7 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	paramKey = string(epochstoragetypes.KeyUnstakeHoldBlocks)
 	paramVal = "\"" + strconv.FormatUint(280, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance to blockHeight = 39, one block before the UnstakeHoldBlocks change apply
 	ts.AdvanceBlocks(19)
@@ -207,7 +207,7 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 	// Unstake the provider:
 	// should get the funds back on block #260 (39+210 = 249 -> next epoch start in 260)
 	_, err = ts.TxPairingUnstakeProvider(providerAcct.Addr.String(), ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance a block to complete the epoch and apply UnstakeHoldBlocks change to 280
 	// if the unstaking refers to 280 (wrongly, since they unstaked before the change applied),

@@ -36,7 +36,7 @@ func (t *TimeServer) GiveServerTime(args *Args, reply *int64) error {
 
 func createGRPCServer(t *testing.T) *grpc.Server {
 	lis, err := net.Listen("tcp", listenerAddress)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	s := grpc.NewServer()
 	go s.Serve(lis) // serve in a different thread
 	return s
@@ -56,7 +56,7 @@ func (is *implementedLavanetLavaSpec) ShowChainInfo(ctx context.Context, req *pb
 
 func createGRPCServerWithRegisteredProto(t *testing.T) *grpc.Server {
 	lis, err := net.Listen("tcp", listenerAddress)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	s := grpc.NewServer()
 	lavanetlavaspec := &implementedLavanetLavaSpec{}
 	pb_pkg.RegisterQueryServer(s, lavanetlavaspec)
@@ -89,7 +89,7 @@ func TestConnector(t *testing.T) {
 	defer listener.Close()
 	ctx := context.Background()
 	conn, err := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	for { // wait for the routine to finish connecting
 		if len(conn.freeClients) == numberOfClients {
 			break
@@ -100,7 +100,7 @@ func TestConnector(t *testing.T) {
 	rpcList := make([]*rpcclient.Client, increasedClients)
 	for i := 0; i < increasedClients; i++ {
 		rpc, err := conn.GetRpc(ctx, true)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		rpcList[i] = rpc
 	}
 	require.Equal(t, conn.usedClients, int64(increasedClients)) // checking we have used clients
@@ -116,7 +116,7 @@ func TestConnectorGrpc(t *testing.T) {
 	defer server.Stop()
 	ctx := context.Background()
 	conn, err := NewGRPCConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddress})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	for { // wait for the routine to finish connecting
 		if len(conn.freeClients) == numberOfClients {
 			break
@@ -127,7 +127,7 @@ func TestConnectorGrpc(t *testing.T) {
 	rpcList := make([]*grpc.ClientConn, increasedClients)
 	for i := 0; i < increasedClients; i++ {
 		rpc, err := conn.GetRpc(ctx, true)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		rpcList[i] = rpc
 	}
 	require.Equal(t, increasedClients, int(conn.usedClients)) // checking we have used clients
@@ -143,7 +143,7 @@ func TestConnectorGrpcAndInvoke(t *testing.T) {
 	defer server.Stop()
 	ctx := context.Background()
 	conn, err := NewGRPCConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddress})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	for { // wait for the routine to finish connecting
 		if len(conn.freeClients) == numberOfClients {
 			break
@@ -154,12 +154,12 @@ func TestConnectorGrpcAndInvoke(t *testing.T) {
 	rpcList := make([]*grpc.ClientConn, increasedClients)
 	for i := 0; i < increasedClients; i++ {
 		rpc, err := conn.GetRpc(ctx, true)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		rpcList[i] = rpc
 		response := &pb_pkg.QueryShowChainInfoResponse{}
 		err = grpc.Invoke(ctx, "lavanet.lava.spec.Query/ShowChainInfo", &pb_pkg.QueryShowChainInfoRequest{}, response, rpc)
 		require.Equal(t, "Test", response.ChainID)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 	require.Equal(t, increasedClients, int(conn.usedClients)) // checking we have used clients
 	for i := 0; i < increasedClients; i++ {

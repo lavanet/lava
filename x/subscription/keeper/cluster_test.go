@@ -40,14 +40,14 @@ func TestGetCluster(t *testing.T) {
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := ts.TxSubscriptionBuy(tt.sub, tt.sub, tt.plan, 12, false, false)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			prevCluster := ""
 			for i := 0; i < 3; i++ {
 				// get current subscription
 				subRes, err := ts.QuerySubscriptionCurrent(tt.sub)
 				sub := subRes.Sub
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				// create a cluster to get the expected cluster key
 				c := types.GetClusterKey(*sub)

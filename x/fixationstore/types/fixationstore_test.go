@@ -91,9 +91,9 @@ func runPlaybook(t *testing.T, ctx sdk.Context, fs []*FixationStore, playbook []
 			}
 			err := fs[play.store].AppendEntry(ctx, index, block, &coins[play.coin])
 			if !play.fail {
-				require.Nil(t, err, what+fmt.Sprintf(" %v", err))
+				require.NoError(t, err, what+fmt.Sprintf(" %v", err))
 			} else {
-				require.NotNil(t, err, what)
+				require.Error(t, err, what)
 			}
 		case "modify":
 			fs[play.store].ModifyEntry(ctx, index, block, &coins[play.coin])
@@ -124,9 +124,9 @@ func runPlaybook(t *testing.T, ctx sdk.Context, fs []*FixationStore, playbook []
 		case "del":
 			err := fs[play.store].DelEntry(ctx, index, block)
 			if !play.fail {
-				require.Nil(t, err, what+fmt.Sprintf(" %v", err))
+				require.NoError(t, err, what+fmt.Sprintf(" %v", err))
 			} else {
-				require.NotNil(t, err, what)
+				require.Error(t, err, what)
 			}
 		case "put":
 			fs[play.store].PutEntry(ctx, index, block)
