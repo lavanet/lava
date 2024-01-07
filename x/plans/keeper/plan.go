@@ -98,8 +98,8 @@ func (k Keeper) GetAllPlanIndices(ctx sdk.Context) (val []string) {
 }
 
 func (k Keeper) ValidatePlanFields(ctx sdk.Context, planToAdd *types.Plan) error {
-	if planToAdd.Price.Denom != k.stakingKeeper.BondDenom(ctx) {
-		return fmt.Errorf("wrong denom type: %s", planToAdd.Price.Denom)
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), planToAdd.Price, false); err != nil {
+		return utils.LavaFormatError("plan price is invalid", err)
 	}
 
 	for _, chainPolicy := range planToAdd.PlanPolicy.ChainPolicies {

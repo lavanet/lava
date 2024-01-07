@@ -63,7 +63,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	// get the months left for the allocation pools
 	var monthsLeft uint64
 	if len(data) == 0 {
-		monthsLeft = uint64(types.RewardsAllocationPoolsLifetime)
+		monthsLeft = types.RewardsAllocationPoolsLifetime
 	} else {
 		monthsLeft = binary.BigEndian.Uint64(data)
 	}

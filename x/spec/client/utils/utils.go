@@ -7,8 +7,10 @@ import (
 	"os"
 	"strings"
 
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/spec/types"
 )
@@ -55,9 +57,18 @@ func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret 
 			if err != nil {
 				return proposal, err
 			}
+
+			if retDeposit.Denom != commontypes.TokenDenom {
+				return proposal, sdkerrors.Wrapf(types.ErrInvalidDenom, "Coin denomanator is not ulava")
+			}
+
 			proposalDeposit, err := sdk.ParseCoinNormalized(proposal.Deposit)
 			if err != nil {
 				return proposal, err
+			}
+
+			if retDeposit.Denom != commontypes.TokenDenom {
+				return proposal, sdkerrors.Wrapf(types.ErrInvalidDenom, "Coin denomanator is not ulava")
 			}
 			ret.Deposit = retDeposit.Add(proposalDeposit).String()
 		} else {

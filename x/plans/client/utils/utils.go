@@ -3,8 +3,10 @@ package utils
 import (
 	"strings"
 
+	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils/decoder"
 	"github.com/lavanet/lava/x/plans/types"
 	"github.com/mitchellh/mapstructure"
@@ -70,10 +72,18 @@ func ParsePlansAddProposalJSON(proposalFile string) (ret PlansAddProposalJSON, e
 			if err != nil {
 				return PlansAddProposalJSON{}, err
 			}
+
+			if proposalDeposit.Denom != commontypes.TokenDenom {
+				return PlansAddProposalJSON{}, sdkerrors.Wrapf(types.ErrInvalidDenom, "Coin denomanator is not ulava")
+			}
+
 			if ret.Deposit != "" {
 				retDeposit, err := sdk.ParseCoinNormalized(ret.Deposit)
 				if err != nil {
 					return PlansAddProposalJSON{}, err
+				}
+				if retDeposit.Denom != commontypes.TokenDenom {
+					return PlansAddProposalJSON{}, sdkerrors.Wrapf(types.ErrInvalidDenom, "Coin denomanator is not ulava")
 				}
 				ret.Deposit = retDeposit.Add(proposalDeposit).String()
 			} else {
@@ -113,10 +123,20 @@ func ParsePlansDelProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret
 			if err != nil {
 				return proposal, err
 			}
+
+			if retDeposit.Denom != commontypes.TokenDenom {
+				return proposal, sdkerrors.Wrapf(types.ErrInvalidDenom, "Coin denomanator is not ulava")
+			}
+
 			proposalDeposit, err := sdk.ParseCoinNormalized(proposal.Deposit)
 			if err != nil {
 				return proposal, err
 			}
+
+			if proposalDeposit.Denom != commontypes.TokenDenom {
+				return proposal, sdkerrors.Wrapf(types.ErrInvalidDenom, "Coin denomanator is not ulava")
+			}
+
 			ret.Deposit = retDeposit.Add(proposalDeposit).String()
 		} else {
 			ret = proposal

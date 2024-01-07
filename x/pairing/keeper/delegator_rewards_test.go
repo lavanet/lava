@@ -72,7 +72,8 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			_, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 			_, delegator2 := ts.GetAccount(common.CONSUMER, 2)
 
-			ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+			_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+			require.NoError(t, err)
 
 			ts.AdvanceEpoch() // to apply pairing
 
@@ -89,7 +90,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			if amount1.IsZero() {
 				amount1.Amount = sdk.OneInt()
 			}
-			_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, amount1)
+			_, err = ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, amount1)
 			require.Nil(t, err)
 
 			amount2 := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(tt.d2Amount*delegationAmount/100))
@@ -203,12 +204,13 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 
 	ts.AdvanceEpoch() // to apply pairing
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	require.NoError(t, err)
 
 	delegationAmount1 := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(uint64(testStake)/2))
 	delegationAmount2 := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(uint64(testStake)))
 
-	_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
+	_, err = ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
 	require.Nil(t, err)
 	_, err = ts.TxDualstakingDelegate(delegator2, provider, ts.spec.Index, delegationAmount2)
 	require.Nil(t, err)
@@ -251,12 +253,13 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
 	delegator1Acc, delegator1 := ts.GetAccount(common.CONSUMER, 1)
 
-	ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	_, err := ts.TxSubscriptionBuy(client, client, "free", 1, false, false) // extend by a month so the sub won't expire
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch() // to apply pairing
 
 	delegationAmount1 := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
-	_, err := ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
+	_, err = ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
 	require.Nil(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -355,7 +358,8 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	require.NotZero(t, currentDurationLeft)
 
 	monthsToBuy := 2
-	ts.TxSubscriptionBuy(client, client, ts.plan.Index, monthsToBuy, false, false) // extend by a month so the sub won't expire
+	_, err = ts.TxSubscriptionBuy(client, client, ts.plan.Index, monthsToBuy, false, false) // extend by a month so the sub won't expire
+	require.NoError(t, err)
 
 	sub, err = ts.QuerySubscriptionCurrent(client)
 	require.NoError(t, err)
