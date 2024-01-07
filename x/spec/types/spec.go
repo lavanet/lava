@@ -13,7 +13,7 @@ import (
 
 const (
 	minCU                        = 1
-	ContributorPrecision         = 100000
+	ContributorPrecision         = 100000 // Can't be 0!
 	maxContributorsPercentageStr = "0.8"
 )
 

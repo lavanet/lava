@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/common"
@@ -289,16 +288,14 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 }
 
 // Serve http server for JsonRPCChainListener
-func (apil *JsonRPCChainListener) Serve(ctx context.Context) {
+func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags) {
 	// Guard that the JsonRPCChainListener instance exists
 	if apil == nil {
 		return
 	}
 	test_mode := common.IsTestMode(ctx)
 	// Setup HTTP Server
-	app := fiber.New(fiber.Config{})
-
-	app.Use(favicon.New())
+	app := createAndSetupBaseAppListener(cmdFlags)
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client

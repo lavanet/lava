@@ -78,7 +78,7 @@ func (k Keeper) CreateSubscription(
 	} else {
 		// Allow renewal with the same plan ("same" means both plan index);
 		// If the plan index is different - upgrade if the price is higher
-		// If the plan index is the same but the plan block is different - treat as advanced purchase
+		// If the plan index is the same but the plan block is different - advice using the "--advance-purchase" flag
 		if plan.Index != sub.PlanIndex {
 			err := k.upgradeSubscriptionPlan(ctx, &sub, &plan)
 			if err != nil {
@@ -196,11 +196,28 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, sub *types.Subscription, newPlan *planstypes.Plan) error {
 	block := uint64(ctx.BlockHeight())
 
-	currentPlan, err := k.GetPlanFromSubscription(ctx, sub.Consumer, block)
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
+	if err != nil {
+		return utils.LavaFormatError("Trying to upgrade subscription, but got an error while trying to get next epoch", err,
+			utils.LogAttr("consumer", sub.Consumer))
+	}
+
+	if sub.Block == nextEpoch {
+		// The subscription block is the next epoch, meaning, the user already tried to upgrade the subscription in this epoch
+		return utils.LavaFormatWarning("can't upgrade the same subscription more than once in the same epoch", fmt.Errorf("subscription block is equal to next epoch"),
+			utils.LogAttr("consumer", sub.Consumer),
+			utils.LogAttr("block", block),
+			utils.LogAttr("nextEpoch", nextEpoch),
+		)
+	}
+
+	// We want to get the most up-to-date subscription (including next-epoch upgrade)
+	currentPlan, err := k.GetPlanFromSubscription(ctx, sub.Consumer, nextEpoch)
 	if err != nil {
 		return utils.LavaFormatError("failed to find plan for current subscription", err,
 			utils.LogAttr("consumer", sub.Consumer),
 			utils.LogAttr("block", block),
+			utils.LogAttr("nextEpoch", nextEpoch),
 		)
 	}
 
@@ -210,6 +227,7 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, sub *types.Subscription
 			utils.LogAttr("currentPlan", currentPlan),
 			utils.LogAttr("newPlan", newPlan),
 			utils.LogAttr("block", block),
+			utils.LogAttr("nextEpoch", nextEpoch),
 		)
 	}
 
@@ -228,12 +246,6 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, sub *types.Subscription
 	// The "old" subscription's duration is now expired
 	// If called from CreateSubscription, the duration will reset to the duration bought
 	sub.DurationLeft = 0
-
-	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
-	if err != nil {
-		return utils.LavaFormatError("Trying to upgrade subscription, but got an error while trying to get next epoch", err,
-			utils.LogAttr("consumer", sub.Consumer))
-	}
 
 	// Remove one refcount for previous plan
 	k.plansKeeper.PutPlan(ctx, sub.PlanIndex, sub.PlanBlock)
