@@ -27,6 +27,7 @@ require (
 require (
 	cosmossdk.io/errors v1.0.0
 	cosmossdk.io/math v1.2.0
+	github.com/btcsuite/btcd v0.22.1
 	github.com/cosmos/cosmos-proto v1.0.0-beta.2
 	github.com/cosmos/gogoproto v1.4.10
 	github.com/dgraph-io/badger/v4 v4.1.0
