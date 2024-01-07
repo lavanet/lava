@@ -92,21 +92,29 @@ type ConsumerStateTrackerInf interface {
 	GetLatestVirtualEpoch() uint64
 }
 
+type AnalyticsServerAddressess struct {
+	MetricsListenAddress string
+	RelayServerAddress   string
+}
 type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy, metricsListenAddress string, maxConcurrentProviders uint, cmdFlags common.ConsumerCmdFlags) (err error) {
+func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy, maxConcurrentProviders uint, analyticsServerAddressess AnalyticsServerAddressess, cmdFlags common.ConsumerCmdFlags) (err error) {
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
-	consumerMetricsManager := metrics.NewConsumerMetricsManager(metricsListenAddress) // start up prometheus metrics
-	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager)
+
+	consumerMetricsManager := metrics.NewConsumerMetricsManager(analyticsServerAddressess.MetricsListenAddress)     // start up prometheus metrics
+	consumerUsageserveManager := metrics.NewConsumerRelayServerClient(analyticsServerAddressess.RelayServerAddress) // start up relay server reporting
+
+	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageserveManager)
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
 	}
 	consumerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
+
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher, consumerMetricsManager)
@@ -464,7 +472,12 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			if strategyFlag.Strategy != provideroptimizer.STRATEGY_BALANCED {
 				utils.LavaFormatInfo("Working with selection strategy: " + strategyFlag.String())
 			}
-			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
+
+			analyticsServerAddressess := AnalyticsServerAddressess{
+				MetricsListenAddress: viper.GetString(metrics.MetricsListenFlagName),
+				RelayServerAddress:   viper.GetString(metrics.RelayServerFlagName),
+			}
+
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
@@ -474,7 +487,8 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				CDNCacheDuration: viper.GetString(common.CDNCacheDurationFlag),
 			}
 
-			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, prometheusListenAddr, maxConcurrentProviders, consumerPropagatedFlags)
+			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags)
+
 			return err
 		},
 	}
@@ -492,6 +506,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
+	cmdRPCConsumer.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
 	cmdRPCConsumer.Flags().BoolVar(&DebugRelaysFlag, DebugRelaysFlagName, false, "adding debug information to relays")
 	// CORS related flags
 	cmdRPCConsumer.Flags().String(common.CorsHeadersFlag, "", "Set up CORS allowed headers, * for all, default simple cors specification headers")
