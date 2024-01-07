@@ -1,9 +1,10 @@
 package spec_test
 
 import (
+	"testing"
+
 	types2 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/gogoproto/proto"
-	"testing"
 
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"

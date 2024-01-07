@@ -1,4 +1,4 @@
-package ante
+package ante_test
 
 import (
 	"testing"
@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/app"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	plantypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/x/spec/ante"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subsciptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -198,7 +199,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			require.NoError(t, err)
 
 			tx := txBuilder.GetTx()
-			anteHandler := NewExpeditedProposalFilterAnteDecorator(k)
+			anteHandler := ante.NewExpeditedProposalFilterAnteDecorator(*k)
 
 			_, err = anteHandler.AnteHandle(ctx, tx, false, func(ctx sdk.Context, tx sdk.Tx, simulate bool) (newCtx sdk.Context, err error) {
 				return ctx, nil
