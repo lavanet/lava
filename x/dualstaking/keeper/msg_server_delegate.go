@@ -21,7 +21,7 @@ func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 // DelegateFull uses staking module for to delegate with hooks
 func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error {
 	chainIDs := k.specKeeper.GetAllChainIDs(ctx)
-	if !slices.Contains(chainIDs, chainID) {
+	if !slices.Contains(chainIDs, chainID) && chainID != types.EMPTY_PROVIDER_CHAINID {
 		return utils.LavaFormatWarning("invalid chain ID", fmt.Errorf("chain ID not found"),
 			utils.LogAttr("chain_id", chainID))
 	}
