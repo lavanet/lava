@@ -257,8 +257,9 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 		}
 
 		ipPort := split[0]
-		if net.ParseIP(ipPort) == nil {
-			return nil, 0, fmt.Errorf("invalid IP addr in endpoint format: %s", endpointStr)
+		_, _, err = net.SplitHostPort(ipPort)
+		if err != nil {
+			return nil, 0, err
 		}
 
 		geoloc, err := planstypes.ParseGeoEnum(split[1])
