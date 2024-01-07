@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -22,6 +23,12 @@ func (k msgServer) Buy(goCtx context.Context, msg *types.MsgBuy) (*types.MsgBuyR
 	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
 		return nil, utils.LavaFormatError("Invalid creator address", err,
 			utils.LogAttr("creator", msg.Creator),
+		)
+	}
+
+	if msg.Duration == 0 {
+		return nil, utils.LavaFormatError("Invalid duration", fmt.Errorf("duration must be greater than 0"),
+			utils.LogAttr("duration", msg.Duration),
 		)
 	}
 
