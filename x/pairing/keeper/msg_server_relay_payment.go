@@ -76,7 +76,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 			continue
 		}
-		if relay.Epoch > ctx.BlockHeight() {
+		if relay.Epoch > ctx.BlockHeight() || relay.Epoch < 0 {
 			utils.LavaFormatWarning("invalid block in relay msg", fmt.Errorf("relay request for a block in the future"),
 				utils.Attribute{Key: "blockheight", Value: ctx.BlockHeight()},
 				utils.Attribute{Key: "relayBlock", Value: relay.Epoch},

@@ -1007,9 +1007,15 @@ func TestGeolocationPairingScores(t *testing.T) {
 	basicAcct, basicAddr := ts.GetAccount(common.CONSUMER, 1)
 	premiumAcct, premiumAddr := ts.GetAccount(common.CONSUMER, 2)
 
-	ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1, false, false)
-	ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1, false, false)
-	ts.TxSubscriptionBuy(premiumAddr, premiumAddr, premiumPlan.Index, 1, false, false)
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+
+	_, err = ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	_, err = ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1, false, false)
+	require.NoError(t, err)
+	_, err = ts.TxSubscriptionBuy(premiumAddr, premiumAddr, premiumPlan.Index, 1, false, false)
+	require.NoError(t, err)
 
 	for geoName, geo := range planstypes.Geolocation_value {
 		if geoName != "GL" && geoName != "GLS" {
@@ -1198,8 +1204,11 @@ func TestDuplicateProviders(t *testing.T) {
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{basicPlan}, false)
 	require.Nil(t, err)
 
+	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
-	ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1, false, false)
+
+	_, err = ts.TxSubscriptionBuy(basicAddr, basicAddr, basicPlan.Index, 1, false, false)
+	require.NoError(t, err)
 
 	for geoName, geo := range planstypes.Geolocation_value {
 		if geoName != "GL" && geoName != "GLS" {
@@ -1246,8 +1255,10 @@ func TestNoRequiredGeo(t *testing.T) {
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{freePlan}, false)
 	require.Nil(t, err)
 
+	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
-	ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1, false, false)
+	_, err = ts.TxSubscriptionBuy(freeAddr, freeAddr, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
 
 	// add 5 more providers that are not in US-E (the only allowed providers in the free plan)
 	err = ts.addProviderGeolocation(5, planstypes.Geolocation_value["AS"])

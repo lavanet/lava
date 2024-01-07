@@ -15,9 +15,9 @@ type GeoReq struct {
 }
 
 const (
-	geoReqName    = "geo-req"
-	maxGeoLatency = 10000 // highest geo cost < 300
-	minGeoLatency = 1
+	geoReqName           = "geo-req"
+	maxGeoLatency uint64 = 10000 // highest geo cost < 300
+	minGeoLatency        = 1
 )
 
 func (gr GeoReq) Init(policy planstypes.Policy) bool {
@@ -76,7 +76,7 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 
 func CalcGeoLatency(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (planstypes.Geolocation, uint64) {
 	minGeo := planstypes.Geolocation(-1)
-	minLatency := uint64(maxGeoLatency)
+	minLatency := maxGeoLatency
 	for _, pGeo := range providerGeos {
 		if pGeo == reqGeo {
 			minGeo = pGeo

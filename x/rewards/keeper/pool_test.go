@@ -41,7 +41,7 @@ import (
 // the validator got rewards
 func TestRewardsModuleSetup(t *testing.T) {
 	ts := newTester(t, false)
-	lifetime := types.RewardsAllocationPoolsLifetime
+	lifetime := int64(types.RewardsAllocationPoolsLifetime)
 
 	// on init, the allocation pool lifetime should decrease by one
 	res, err := ts.QueryRewardsPools()
@@ -77,7 +77,7 @@ func TestRewardsModuleSetup(t *testing.T) {
 // BurnRate = 0 -> on monthly refill, burn none of the previous funds in the distribution pool
 func TestBurnRateParam(t *testing.T) {
 	ts := newTester(t, true)
-	lifetime := types.RewardsAllocationPoolsLifetime
+	lifetime := int64(types.RewardsAllocationPoolsLifetime)
 	allocPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsAllocationPoolName).Int64()
 
 	// advance a month to trigger monthly pool refill callback
@@ -120,7 +120,7 @@ func TestBurnRateParam(t *testing.T) {
 func TestAllocationPoolMonthlyQuota(t *testing.T) {
 	// after init, the allocation pool transfers funds to the distribution pool (no need to wait a month)
 	ts := newTester(t, false)
-	lifetime := types.RewardsAllocationPoolsLifetime
+	lifetime := int64(types.RewardsAllocationPoolsLifetime)
 
 	// calc expectedMonthlyQuota. Check that it was subtracted from the allocation pool and added
 	// to the distribution pool (its balance should be the monthly quota minus the fee collector's balance)
@@ -349,7 +349,7 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 // 2. The timer's data contains the months left before the allocation pool's funds are depleted
 func TestRefillPoolsTimerStore(t *testing.T) {
 	ts := newTester(t, false)
-	lifetime := types.RewardsAllocationPoolsLifetime
+	lifetime := int64(types.RewardsAllocationPoolsLifetime)
 
 	req := &timerstoretypes.QueryAllTimersRequest{
 		StoreKey: types.StoreKey,
