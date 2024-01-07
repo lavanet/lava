@@ -276,7 +276,6 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 		return utils.LavaFormatWarning("failed to delegate: coin validation failed", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "amount", Value: amount.String()},
 			utils.Attribute{Key: "chainID", Value: chainID},
 		)
 	}
@@ -326,7 +325,6 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		return utils.LavaFormatWarning("failed to redelegate: coin validation failed", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: to},
-			utils.Attribute{Key: "amount", Value: amount.String()},
 		)
 	}
 
@@ -380,7 +378,6 @@ func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		return utils.LavaFormatWarning("failed to unbond: coin validation failed", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "amount", Value: amount.String()},
 		)
 	}
 
