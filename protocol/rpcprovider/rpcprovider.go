@@ -62,6 +62,7 @@ type ProviderPolicy struct {
 func (pp *ProviderPolicy) GetSupportedAddons(specID string) (addons []string, err error) {
 	return pp.addons, nil
 }
+
 func (pp *ProviderPolicy) GetSupportedExtensions(specID string) (extensions []epochstorage.EndpointService, err error) {
 	return pp.extensions, nil
 }
