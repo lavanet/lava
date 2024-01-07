@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	chainlib "github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	plantypes "github.com/lavanet/lava/x/plans/types"
@@ -15,7 +16,7 @@ const (
 )
 
 type PolicySetter interface {
-	SetPolicy(policy *plantypes.Policy, chainId string, apiInterface string) error
+	SetPolicy(policy chainlib.PolicyInf, chainId string, apiInterface string) error
 }
 
 type PolicyFetcher interface {

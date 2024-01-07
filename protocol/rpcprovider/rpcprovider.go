@@ -32,6 +32,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
+	epochstorage "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cobra"
@@ -51,6 +52,19 @@ var (
 	Yaml_config_properties     = []string{"network-address.address", "chain-id", "api-interface", "node-urls.url"}
 	DefaultRPCProviderFileName = "rpcprovider.yml"
 )
+
+// used to call SetPolicy in base chain parser so we are allowed to run verifications on the addons and extensions
+type ProviderPolicy struct {
+	addons     []string
+	extensions []epochstorage.EndpointService
+}
+
+func (pp *ProviderPolicy) GetSupportedAddons(specID string) (addons []string, err error) {
+	return pp.addons, nil
+}
+func (pp *ProviderPolicy) GetSupportedExtensions(specID string) (extensions []epochstorage.EndpointService, err error) {
+	return pp.extensions, nil
+}
 
 type ProviderStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
@@ -264,13 +278,14 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	return disabledEndpointsList
 }
 
-func (rpcp *RPCProvider) getAllAddonsAndExtensionsFromNodeUrlSlice(nodeUrls []common.NodeUrl) []string {
+func (rpcp *RPCProvider) getAllAddonsAndExtensionsFromNodeUrlSlice(nodeUrls []common.NodeUrl) *ProviderPolicy {
 	allNodeUrlAddonsAndExtensions := []string{}
+	policy := &ProviderPolicy{}
 	for _, nodeUrl := range nodeUrls {
-		allNodeUrlAddonsAndExtensions = append(allNodeUrlAddonsAndExtensions, nodeUrl.Addons...)
+		policy.addons = append(policy.addons, nodeUrl.Addons...) // addons are added without validation while extensions are. so we add to the addons all.
 	}
 	utils.LavaFormatDebug("Adding supported addons and extensions to chain parser", utils.LogAttr("info", allNodeUrlAddonsAndExtensions))
-	return allNodeUrlAddonsAndExtensions
+	return policy
 }
 
 func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) error {
@@ -293,7 +308,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 
 	// after registering for spec updates our chain parser contains the spec and we can add our addons and extensions to allow our provider to function properly
-	chainParser.SetPolicyFromAddonAndExtensionSlice(rpcp.getAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls))
+	chainParser.SetPolicy(rpcp.getAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls), rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
 
 	chainRouter, err := chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)
 	if err != nil {

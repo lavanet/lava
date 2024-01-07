@@ -9,10 +9,15 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/utils"
+	epochstorage "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
+
+type PolicyInf interface {
+	GetSupportedAddons(specID string) (addons []string, err error)
+	GetSupportedExtensions(specID string) (extensions []epochstorage.EndpointService, err error)
+}
 
 type BaseChainParser struct {
 	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
@@ -101,7 +106,7 @@ func (bcp *BaseChainParser) Validate(nodeMessage *baseChainMessageContainer) err
 	return err
 }
 
-func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy *plantypes.Policy, chainId string, apiInterface string) (map[string]struct{}, error) {
+func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy PolicyInf, chainId string, apiInterface string) (map[string]struct{}, error) {
 	addons, err := policy.GetSupportedAddons(chainId)
 	if err != nil {
 		return nil, err
@@ -158,17 +163,8 @@ func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation 
 	}
 }
 
-// used on provider side to set its allowed addons and extensions to the base chain parser as it doesn't have a consumer policy
-func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionSlice(policyInformation []string) {
-	policyInfoMap := make(map[string]struct{}, len(policyInformation))
-	for _, info := range policyInformation {
-		policyInfoMap[info] = struct{}{}
-	}
-	bcp.SetPolicyFromAddonAndExtensionMap(policyInfoMap)
-}
-
 // policy information contains all configured services (extensions and addons) allowed to be used by the consumer
-func (bcp *BaseChainParser) SetPolicy(policy *plantypes.Policy, chainId string, apiInterface string) error {
+func (bcp *BaseChainParser) SetPolicy(policy PolicyInf, chainId string, apiInterface string) error {
 	policyInformation, err := bcp.BuildMapFromPolicyQuery(policy, chainId, apiInterface)
 	if err != nil {
 		return err
