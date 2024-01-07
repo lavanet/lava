@@ -11,7 +11,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)
@@ -70,8 +69,4 @@ type StakingKeeper interface {
 
 type FixationStoreKeeper interface {
 	NewFixationStore(storeKey storetypes.StoreKey, prefix string) *fixationstoretypes.FixationStore
-}
-
-type TimerStoreKeeper interface {
-	NewTimerStoreBeginBlock(storeKey storetypes.StoreKey, prefix string) *timerstoretypes.TimerStore
 }
