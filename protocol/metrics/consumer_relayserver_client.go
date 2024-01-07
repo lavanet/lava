@@ -168,13 +168,11 @@ func (cuc *ConsumerRelayServerClient) sendRelayData(sendQueue []UpdateMetricsReq
 	if cuc == nil {
 		return
 	}
-
 	resp, err := cuc.aggregateAndSendRelayData(sendQueue, sendID, cucEndpointAddress)
 	if err != nil {
 		utils.LavaFormatWarning("[CUC] failed sendRelay data", err)
 		return
 	}
-
 	cuc.handleSendRelayResponse(resp, sendID)
 }
 
