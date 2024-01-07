@@ -90,12 +90,6 @@ func CmdStakeProvider() *cobra.Command {
 				validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
 			}
 
-			q := spectypes.NewQueryClient(clientCtx)
-			_, err = q.Spec(context.Background(), &spectypes.QueryGetSpecRequest{ChainID: argChainID})
-			if err != nil {
-				return err
-			}
-
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				validator,
