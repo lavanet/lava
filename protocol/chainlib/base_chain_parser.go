@@ -9,10 +9,15 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/utils"
+	epochstorage "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
+
+type PolicyInf interface {
+	GetSupportedAddons(specID string) (addons []string, err error)
+	GetSupportedExtensions(specID string) (extensions []epochstorage.EndpointService, err error)
+}
 
 type BaseChainParser struct {
 	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
@@ -101,7 +106,7 @@ func (bcp *BaseChainParser) Validate(nodeMessage *baseChainMessageContainer) err
 	return err
 }
 
-func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy *plantypes.Policy, chainId string, apiInterface string) (map[string]struct{}, error) {
+func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy PolicyInf, chainId string, apiInterface string) (map[string]struct{}, error) {
 	addons, err := policy.GetSupportedAddons(chainId)
 	if err != nil {
 		return nil, err
@@ -123,14 +128,10 @@ func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy *plantypes.Policy, ch
 	return services, nil
 }
 
-// policy information contains all configured services (extensions and addons) allowed to be used by the consumer
-func (bcp *BaseChainParser) SetPolicy(policy *plantypes.Policy, chainId string, apiInterface string) error {
-	policyInformation, err := bcp.BuildMapFromPolicyQuery(policy, chainId, apiInterface)
-	if err != nil {
-		return err
-	}
+func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation map[string]struct{}) {
 	bcp.rwLock.Lock()
 	defer bcp.rwLock.Unlock()
+	utils.LavaFormatDebug("info on policyInformation", utils.LogAttr("policyInformation", policyInformation))
 	// reset the current one in case we configured it previously
 	configuredExtensions := make(map[extensionslib.ExtensionKey]*spectypes.Extension)
 	for collectionKey, apiCollection := range bcp.apiCollections {
@@ -154,10 +155,21 @@ func (bcp *BaseChainParser) SetPolicy(policy *plantypes.Policy, chainId string, 
 	bcp.extensionParser.SetConfiguredExtensions(configuredExtensions)
 	// manage allowed addons
 	for addon := range bcp.allowedAddons {
+		utils.LavaFormatDebug("info on addons", utils.LogAttr("addon", addon))
 		if _, ok := policyInformation[addon]; ok {
+			utils.LavaFormatDebug("found addon", utils.LogAttr("addon", addon))
 			bcp.allowedAddons[addon] = true
 		}
 	}
+}
+
+// policy information contains all configured services (extensions and addons) allowed to be used by the consumer
+func (bcp *BaseChainParser) SetPolicy(policy PolicyInf, chainId string, apiInterface string) error {
+	policyInformation, err := bcp.BuildMapFromPolicyQuery(policy, chainId, apiInterface)
+	if err != nil {
+		return err
+	}
+	bcp.SetPolicyFromAddonAndExtensionMap(policyInformation)
 	return nil
 }
 

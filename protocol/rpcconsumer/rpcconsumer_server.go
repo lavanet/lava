@@ -343,8 +343,14 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, chainlib.GetAddon(chainMessage), chainMessage.GetExtensions(), chainlib.GetStateful(chainMessage), virtualEpoch)
+	addon := chainlib.GetAddon(chainMessage)
+	extensions := chainMessage.GetExtensions()
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
+		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
+			// if we have no providers for a specific addon or extension, return an indicative error
+			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions))
+		}
 		return &common.RelayResult{ProviderInfo: common.ProviderInfo{ProviderAddress: ""}}, err
 	}
 
