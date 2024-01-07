@@ -48,10 +48,9 @@ func (k Keeper) GetAllBasePay(ctx sdk.Context) (list []types.BasePayGenesis) {
 // SetAllBasePay sets all BasePay
 func (k Keeper) SetAllBasePay(ctx sdk.Context, list []types.BasePayGenesis) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
-	for _, bp := range list {
-		basePay := bp.BasePay // create a local copy to avoid implicit memory aliasing
+	for _, basePay := range list {
 		b := k.cdc.MustMarshal(&basePay)
-		store.Set([]byte(bp.Index), b)
+		store.Set([]byte(basePay.Index), b)
 	}
 }
 

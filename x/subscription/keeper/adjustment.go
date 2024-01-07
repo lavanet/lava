@@ -166,8 +166,7 @@ func (k Keeper) GetAdjustmentFactorProvider(ctx sdk.Context, adjustments []types
 	}
 	providers := []string{}
 	providerUsage := map[string]usage{}
-	for _, adj := range adjustments {
-		adjustment := adj // create a local copy to avoid implicit memory aliasing
+	for _, adjustment := range adjustments {
 		provider, err := k.GetProviderFromAdjustment(&adjustment)
 		if err != nil {
 			utils.LavaFormatError("could not get provider from adjustment", err)
