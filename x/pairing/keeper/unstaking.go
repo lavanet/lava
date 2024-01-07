@@ -21,6 +21,13 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 			utils.Attribute{Key: "spec", Value: chainID},
 		)
 	}
+
+	if _, err := sdk.ValAddressFromBech32(validator); err != nil {
+		return utils.LavaFormatWarning("invalid address", err,
+			utils.Attribute{Key: "validator", Value: validator},
+		)
+	}
+
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid address", err,

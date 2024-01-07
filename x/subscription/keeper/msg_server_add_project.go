@@ -13,6 +13,12 @@ import (
 func (k msgServer) AddProject(goCtx context.Context, msg *types.MsgAddProject) (*types.MsgAddProjectResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
+		return nil, utils.LavaFormatError("Invalid creator address", err,
+			utils.LogAttr("creator", msg.Creator),
+		)
+	}
+
 	for _, projectKey := range msg.GetProjectData().ProjectKeys {
 		_, err := sdk.AccAddressFromBech32(projectKey.GetKey())
 		if err != nil {

@@ -12,6 +12,12 @@ import (
 func (k msgServer) AddKeys(goCtx context.Context, msg *types.MsgAddKeys) (*types.MsgAddKeysResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
+		return nil, utils.LavaFormatWarning("invalid address", err,
+			utils.LogAttr("creator", msg.Creator),
+		)
+	}
+
 	for _, projectKey := range msg.GetProjectKeys() {
 		if !projectKey.IsTypeValid() {
 			return nil, utils.LavaFormatWarning(

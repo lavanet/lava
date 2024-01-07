@@ -13,6 +13,18 @@ import (
 func (k msgServer) AutoRenewal(goCtx context.Context, msg *types.MsgAutoRenewal) (*types.MsgAutoRenewalResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if _, err := sdk.AccAddressFromBech32(msg.Consumer); err != nil {
+		return nil, utils.LavaFormatError("Invalid consumer address", err,
+			utils.LogAttr("consumer", msg.Consumer),
+		)
+	}
+
+	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
+		return nil, utils.LavaFormatError("Invalid creator address", err,
+			utils.LogAttr("creator", msg.Creator),
+		)
+	}
+
 	// Find consumer's subscription
 	sub, found := k.GetSubscription(ctx, msg.Consumer)
 	if !found {

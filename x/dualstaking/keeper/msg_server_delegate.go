@@ -38,6 +38,10 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
+	if _, err = sdk.AccAddressFromBech32(provider); err != nil {
+		return err
+	}
+
 	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
 		return err
 	}

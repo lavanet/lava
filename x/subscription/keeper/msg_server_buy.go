@@ -13,6 +13,18 @@ func (k msgServer) Buy(goCtx context.Context, msg *types.MsgBuy) (*types.MsgBuyR
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	var err error
 
+	if _, err := sdk.AccAddressFromBech32(msg.Consumer); err != nil {
+		return nil, utils.LavaFormatError("Invalid consumer address", err,
+			utils.LogAttr("consumer", msg.Consumer),
+		)
+	}
+
+	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
+		return nil, utils.LavaFormatError("Invalid creator address", err,
+			utils.LogAttr("creator", msg.Creator),
+		)
+	}
+
 	if msg.AdvancePurchase {
 		err = k.Keeper.CreateFutureSubscription(ctx, msg.Creator, msg.Consumer, msg.Index, msg.Duration)
 		if err == nil {
