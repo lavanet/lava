@@ -41,6 +41,7 @@ func CmdRedelegate() *cobra.Command {
 				argToChainID,
 				argAmount,
 			)
+
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

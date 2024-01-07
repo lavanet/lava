@@ -31,17 +31,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// validateCoins validates that the input amount is valid and non-negative
-func validateCoins(amount sdk.Coin) error {
-	if !amount.IsValid() {
-		return utils.LavaFormatWarning("invalid coins to delegate",
-			sdkerrors.ErrInvalidCoins,
-			utils.Attribute{Key: "amount", Value: amount},
-		)
-	}
-	return nil
-}
-
 // increaseDelegation increases the delegation of a delegator to a provider for a
 // given chain. It updates the fixation stores for both delegations and delegators,
 // and updates the (epochstorage) stake-entry.
@@ -283,10 +272,12 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 		}
 	}
 
-	if err := validateCoins(amount); err != nil {
-		return err
-	} else if amount.IsZero() {
-		return nil
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+		return utils.LavaFormatWarning("failed to delegate: coin validation failed", err,
+			utils.Attribute{Key: "delegator", Value: delegator},
+			utils.Attribute{Key: "provider", Value: provider},
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
 	}
 
 	err = k.increaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch)
@@ -330,10 +321,11 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		}
 	}
 
-	if err := validateCoins(amount); err != nil {
-		return err
-	} else if amount.IsZero() {
-		return nil
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+		return utils.LavaFormatWarning("failed to redelegate: coin validation failed", err,
+			utils.Attribute{Key: "delegator", Value: delegator},
+			utils.Attribute{Key: "provider", Value: to},
+		)
 	}
 
 	err := k.increaseDelegation(ctx, delegator, to, toChainID, amount, nextEpoch)
@@ -382,10 +374,11 @@ func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		}
 	}
 
-	if err := validateCoins(amount); err != nil {
-		return err
-	} else if amount.IsZero() {
-		return nil
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+		return utils.LavaFormatWarning("failed to unbond: coin validation failed", err,
+			utils.Attribute{Key: "delegator", Value: delegator},
+			utils.Attribute{Key: "provider", Value: provider},
+		)
 	}
 
 	err := k.decreaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch)

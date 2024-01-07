@@ -3,9 +3,7 @@ package keeper
 import (
 	"context"
 
-	sdkerror "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
@@ -33,18 +31,8 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	if amount.Denom != bondDenom {
-		return sdkerror.Wrapf(
-			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", amount.Denom, bondDenom,
-		)
-	}
-
-	if err := validateCoins(amount); err != nil {
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
 		return err
-	} else if amount.IsZero() {
-		return sdkerror.Wrapf(
-			sdkerrors.ErrInvalidRequest, "invalid coin amount: got 0")
 	}
 
 	_, err = k.stakingKeeper.Delegate(ctx, delegatorAddress, amount.Amount, stakingtypes.Unbonded, validatorType, true)

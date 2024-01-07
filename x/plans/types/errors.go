@@ -4,6 +4,7 @@ package types
 
 import (
 	sdkerrors "cosmossdk.io/errors"
+	commontypes "github.com/lavanet/lava/common/types"
 )
 
 // x/plan module sentinel errors
@@ -24,4 +25,5 @@ var (
 	ErrPolicyBasicValidation                = sdkerrors.Register(ModuleName, 14, "invalid policy")
 	ErrPolicyInvalidSelectedProvidersConfig = sdkerrors.Register(ModuleName, 15, "plan's selected providers config is invalid")
 	ErrPolicyGeolocation                    = sdkerrors.Register(ModuleName, 16, "plan's geolocation is invalid")
+	ErrInvalidDenom                         = sdkerrors.Register(ModuleName, 17, commontypes.ErrInvalidDenomMsg)
 )
