@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 )
 
@@ -36,6 +38,14 @@ func CmdFreeze() *cobra.Command {
 			reason, err := cmd.Flags().GetString(types.ReasonFlagName)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read freeze reason flag", err)
+			}
+
+			q := spectypes.NewQueryClient(clientCtx)
+			for _, c := range argChainIds {
+				_, err := q.Spec(context.Background(), &spectypes.QueryGetSpecRequest{ChainID: c})
+				if err != nil {
+					return err
+				}
 			}
 
 			msg := types.NewMsgFreeze(

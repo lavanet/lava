@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -16,6 +17,7 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 )
 
@@ -86,6 +88,12 @@ func CmdStakeProvider() *cobra.Command {
 				validator = args[4]
 			} else {
 				validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
+			}
+
+			q := spectypes.NewQueryClient(clientCtx)
+			_, err = q.Spec(context.Background(), &spectypes.QueryGetSpecRequest{ChainID: argChainID})
+			if err != nil {
+				return err
 			}
 
 			msg := types.NewMsgStakeProvider(
@@ -192,6 +200,12 @@ func CmdBulkStakeProvider() *cobra.Command {
 						continue
 					}
 
+					q := spectypes.NewQueryClient(clientCtx)
+					_, err := q.Spec(context.Background(), &spectypes.QueryGetSpecRequest{ChainID: chainID})
+					if err != nil {
+						return nil, err
+					}
+
 					msg := types.NewMsgStakeProvider(
 						clientCtx.GetFromAddress().String(),
 						validator,
@@ -248,6 +262,11 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 			return nil, 0, fmt.Errorf("invalid endpoint format: %s", endpointStr)
 		}
 
+		ipPort := split[0]
+		if net.ParseIP(ipPort) == nil {
+			return nil, 0, fmt.Errorf("invalid IP addr in endpoint format: %s", endpointStr)
+		}
+
 		geoloc, err := planstypes.ParseGeoEnum(split[1])
 		if err != nil {
 			return nil, 0, fmt.Errorf("invalid endpoint format: %w, format: %s", err, strings.Join(split, ";"))
@@ -258,7 +277,7 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 			for _, geo := range planstypes.GetAllGeolocations() {
 				geoInt := int32(geo)
 				endpoint := epochstoragetypes.Endpoint{
-					IPPORT:      split[0],
+					IPPORT:      ipPort,
 					Geolocation: geoInt,
 				}
 				if len(split) > 2 {
@@ -273,7 +292,7 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 				return nil, 0, fmt.Errorf("endpoint must include exactly one geolocation code: %s", split[1])
 			}
 			endpoint := epochstoragetypes.Endpoint{
-				IPPORT:      split[0],
+				IPPORT:      ipPort,
 				Geolocation: geoloc,
 			}
 			if len(split) > 2 {

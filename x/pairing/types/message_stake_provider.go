@@ -64,5 +64,14 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 		return sdkerrors.Wrapf(DelegateLimitError, "Invalid coin (%s)", err.Error())
 	}
 
+	_, err = sdk.ValAddressFromBech32(msg.Validator)
+	if err != nil {
+		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid validator address (%s)", err)
+	}
+
+	if !msg.Amount.IsValid() {
+		return legacyerrors.ErrInvalidCoins
+	}
+
 	return nil
 }
