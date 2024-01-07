@@ -59,6 +59,7 @@ type ConsumerRewards struct {
 
 func (csrw *ConsumerRewards) PrepareRewardsForClaim() (retProofs []*pairingtypes.RelaySession, errRet error) {
 	for _, proof := range csrw.proofs {
+		utils.LavaFormatDebug("Adding reward id for claim", utils.LogAttr("Id", proof.SessionId))
 		retProofs = append(retProofs, proof)
 	}
 	return
@@ -224,8 +225,10 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 
 	failedRewardRequestsToRetry := rws.gatherFailedRequestPaymentsToRetry(earliestSavedEpoch)
 	if len(failedRewardRequestsToRetry) > 0 {
+		utils.LavaFormatDebug("Found failed reward claims, retrying", utils.LogAttr("number_of_rewards", len((failedRewardRequestsToRetry))))
 		specs := map[string]struct{}{}
 		for _, relay := range failedRewardRequestsToRetry {
+			utils.LavaFormatDebug("[sendRewardsClaim] retrying failed id", utils.LogAttr("id", relay.SessionId))
 			specs[relay.SpecId] = struct{}{}
 		}
 
@@ -442,13 +445,13 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 			utils.LavaFormatWarning("tried removing payment that wasn't expected", nil, utils.Attribute{Key: "payment", Value: payment})
 		}
 
-		utils.LavaFormatDebug("deleting claimed rewards", utils.Attribute{Key: "payment uid", Value: payment.UniqueIdentifier})
+		utils.LavaFormatDebug("Reward Server detected successful payment request, deleting claimed rewards", utils.Attribute{Key: "payment-uid", Value: payment.UniqueIdentifier})
 
 		err = rws.rewardDB.DeleteClaimedRewards(payment.PaymentEpoch, payment.Client.String(), payment.UniqueIdentifier, payment.ConsumerRewardsKey)
 		if err != nil {
 			utils.LavaFormatWarning("failed deleting claimed rewards", err)
 		} else {
-			utils.LavaFormatDebug("deleted claimed rewards successfully")
+			utils.LavaFormatDebug("deleted claimed rewards successfully", utils.Attribute{Key: "payment-uid", Value: payment.UniqueIdentifier})
 		}
 	}
 }
@@ -604,7 +607,6 @@ func (rws *RewardServer) gatherFailedRequestPaymentsToRetry(earliestSavedEpoch u
 			sessionsToDelete = append(sessionsToDelete, key)
 			continue
 		}
-
 		rewardsForClaim = append(rewardsForClaim, val.relaySession)
 	}
 
