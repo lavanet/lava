@@ -38,7 +38,9 @@ func AddGenesisAccountCmd(defaultNodeHome string) *cobra.Command {
 the account address or key name and a list of initial coins. If a key name is given,
 the address will be looked up in the local Keybase. The list of initial tokens must
 contain valid denominations. Accounts may optionally be supplied with vesting parameters.
+periodic genesis account (total vesting amount = --vesting-amount + --periodic-first):
 lavad add-genesis-account bela 30000000ulava  --vesting-start-time 1704707673 --vesting-amount 1000ulava --periodic-number 10  --periodic-length 1 --periodic-first 200ulava
+
 `,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -116,7 +118,7 @@ lavad add-genesis-account bela 30000000ulava  --vesting-start-time 1704707673 --
 				return err
 			}
 
-			periodicFirstStr, err := cmd.Flags().GetString(flagVestingAmt)
+			periodicFirstStr, err := cmd.Flags().GetString(flagPeriodicFirst)
 			if err != nil {
 				return err
 			}
