@@ -27,7 +27,6 @@ import (
 	lavaslices "github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 	"golang.org/x/exp/slices"
 )
 
@@ -391,27 +390,6 @@ func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 	}
 
 	return nil
-}
-
-func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
-	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
-	if !found {
-		utils.LavaFormatError("critical: failed to get spec for chainID",
-			fmt.Errorf("unknown chainID"),
-			utils.Attribute{Key: "chainID", Value: chainID},
-		)
-	}
-
-	// note: if spec was not found, the default choice is Spec_dynamic == 0
-
-	block := uint64(ctx.BlockHeight())
-	if providerType == spectypes.Spec_static {
-		return k.epochstorageKeeper.UnstakeHoldBlocksStatic(ctx, block)
-	} else {
-		return k.epochstorageKeeper.UnstakeHoldBlocks(ctx, block)
-	}
-
-	// NOT REACHED
 }
 
 // GetDelegatorProviders gets all the providers the delegator is delegated to
