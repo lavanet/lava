@@ -292,15 +292,21 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	}
 	// used to identify if the newLatest callback was called
 	callbackCalledNewLatest := false
-	newBlockCallback := func(arg int64, arg2 int64, hash string) {
-		utils.LavaFormatDebug("new latest callback called")
+	callbackCalledTimes := 0
+	newBlockCallback := func(blockFrom int64, blockTo int64, hash string) {
 		callbackCalledNewLatest = true
+		for block := blockFrom + 1; block <= blockTo; block++ {
+			callbackCalledTimes++
+
+		}
 	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback}
 	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
+	totalAdvancement := 0
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
+			totalAdvancement += int(tt.advancement)
 			utils.LavaFormatInfo(startedTestStr + tt.name)
 			callbackCalledFork = false
 			callbackCalledNewLatest = false
@@ -335,6 +341,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 			} else {
 				require.False(t, callbackCalledFork)
 			}
+			require.Equal(t, totalAdvancement, callbackCalledTimes)
 			if tt.advancement > 0 {
 				require.True(t, callbackCalledNewLatest)
 			} else {
