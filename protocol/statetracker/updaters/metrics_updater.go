@@ -21,10 +21,7 @@ func (mu *MetricsUpdater) UpdaterKey() string {
 }
 
 func (mu *MetricsUpdater) Reset(latestBlock int64) {
-	if mu.consumerMetricsManager == nil {
-		return
-	}
-	mu.consumerMetricsManager.SetBlock(latestBlock)
+	mu.Update(latestBlock) // no new functionality on reset
 }
 
 func (mu *MetricsUpdater) Update(latestBlock int64) {

@@ -127,7 +127,7 @@ func (su *SpecUpdater) setBlockLastUpdatedAtomically(block uint64) {
 
 // only call when locked
 func (su *SpecUpdater) updateInner(latestBlock int64) {
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	spec, err := su.specGetter.GetSpec(timeoutCtx, su.chainId)
 	if err != nil {
@@ -154,15 +154,15 @@ func (su *SpecUpdater) updateInner(latestBlock int64) {
 
 func (su *SpecUpdater) Reset(latestBlock int64) {
 	utils.LavaFormatDebug("Reset state called on Spec Updater", utils.LogAttr("block", latestBlock))
-	su.lock.RLock()
-	defer su.lock.RUnlock()
+	su.lock.Lock()
+	defer su.lock.Unlock()
 	su.shouldUpdate = true
 	su.updateInner(latestBlock)
 }
 
 func (su *SpecUpdater) Update(latestBlock int64) {
-	su.lock.RLock()
-	defer su.lock.RUnlock()
+	su.lock.Lock()
+	defer su.lock.Unlock()
 	if su.shouldUpdate {
 		su.updateInner(latestBlock)
 	} else {

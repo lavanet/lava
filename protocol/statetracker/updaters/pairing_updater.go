@@ -80,7 +80,7 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	}
 	nextBlockForUpdateList := []uint64{}
 	for chainID, consumerSessionManagerList := range pu.consumerSessionManagersMap {
-		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, latestBlock)
 		cancel()
 		if err != nil {
@@ -101,7 +101,7 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	}
 
 	// get latest epoch from cache
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	_, epoch, _, err := pu.stateQuery.GetPairing(timeoutCtx, "", latestBlock)
 	if err != nil {

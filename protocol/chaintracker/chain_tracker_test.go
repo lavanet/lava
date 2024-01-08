@@ -297,7 +297,6 @@ func TestChainTrackerCallbacks(t *testing.T) {
 		callbackCalledNewLatest = true
 		for block := blockFrom + 1; block <= blockTo; block++ {
 			callbackCalledTimes++
-
 		}
 	}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback}
