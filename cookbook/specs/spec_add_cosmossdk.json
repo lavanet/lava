@@ -2062,41 +2062,6 @@
                                         "expected_value": "on"
                                     }
                                 ]
-                            },
-                            {
-                                "name": "pruning",
-                                "parse_directive": {
-                                    "function_tag": "VERIFICATION",
-                                    "function_template": "/cosmos/base/tendermint/v1beta1/blocks/1",
-                                    "result_parsing": {
-                                        "parser_arg": [
-                                            "0",
-                                            "block",
-                                            "header",
-                                            "height"
-                                        ],
-                                        "parser_func": "PARSE_CANONICAL"
-                                    },
-                                    "api_name": "/cosmos/base/tendermint/v1beta1/blocks/{height}"
-                                },
-                                "values": [
-                                    {
-                                        "latest_distance": 50000
-                                    },
-                                    {
-                                        "extension": "archive",
-                                        "expected_value": "1"
-                                    }
-                                ]
-                            }
-                        ],
-                        "extensions": [
-                            {
-                                "name": "archive",
-                                "cu_multiplier": 5,
-                                "rule": {
-                                    "block":50000
-                                }
                             }
                         ]
                     },
@@ -3747,41 +3712,6 @@
                                         "expected_value": "on"
                                     }
                                 ]
-                            },
-                            {
-                                "name": "pruning",
-                                "parse_directive": {
-                                    "function_tag": "VERIFICATION",
-                                    "function_template": "{\"height\":\"1\"}",
-                                    "result_parsing": {
-                                        "parser_arg": [
-                                            "0",
-                                            "block",
-                                            "header",
-                                            "height"
-                                        ],
-                                        "parser_func": "PARSE_CANONICAL"
-                                    },
-                                    "api_name": "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight"
-                                },
-                                "values": [
-                                    {
-                                        "latest_distance": 50000
-                                    },
-                                    {
-                                        "extension": "archive",
-                                        "expected_value": "1"
-                                    }
-                                ]
-                            }
-                        ],
-                        "extensions": [
-                            {
-                                "name": "archive",
-                                "cu_multiplier": 5,
-                                "rule": {
-                                    "block":50000
-                                }
                             }
                         ]
                     },
@@ -4392,27 +4322,18 @@
                                 "name": "pruning",
                                 "parse_directive": {
                                     "function_tag": "VERIFICATION",
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"block\",\"params\":[\"1\"]}",
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0",
-                                            "block",
-                                            "header",
-                                            "height"
+                                            "sync_info",
+                                            "earliest_block_height"
                                         ],
-                                        "parser_func": "PARSE_CANONICAL"
+                                        "parser_func": "PARSE_CANONICAL",
+                                        "encoding": "base64"
                                     },
                                     "api_name": "block"
-                                },
-                                "values": [
-                                    {
-                                        "latest_distance": 50000
-                                    },
-                                    {
-                                        "extension": "archive",
-                                        "expected_value": "1"
-                                    }
-                                ]
+                                }
                             },
                             {
                                 "name": "tx-indexing",
