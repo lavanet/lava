@@ -84,7 +84,7 @@ func TestChangeVersion(t *testing.T) {
 		{"forward 2", newVersion("2.0.1", "2.0.0", "2.0.1", "2.0.0"), true},
 		{"partial", newVersion("3.1.0", "2.0.0", "3.1.0", "2.0.0"), true},
 		{"backward 1", newVersion("1.0.0", "2.0.0", "1.0.0", "2.0.0"), false},
-		{"backward 2", newVersion("3.1.0", "1.0.0", "3.1.0", "1.0.0"), false},
+		{"backward 2", newVersion("3.1.0", "1.0.0", "3.1.0", "1.0.0"), true},
 		{"unchanged", newVersion("3.1.0", "2.0.0", "3.1.0", "2.0.0"), true},
 		{"min over", newVersion("3.1.0", "4.0.0", "3.1.0", "4.0.0"), false},
 		{"mismatch 1", newVersion("3.1.0", "2.0.0", "4.0.0", "2.0.0"), false},

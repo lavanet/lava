@@ -281,7 +281,6 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Projects.SetParams(ctx, projectstypes.DefaultParams())
 	protocolParams := protocoltypes.DefaultParams()
 	protocolParams.Version = protocoltypes.Version{ProviderTarget: "0.0.1", ProviderMin: "0.0.0", ConsumerTarget: "0.0.1", ConsumerMin: "0.0.0"}
-	protocoltypes.UpdateLatestParams(protocolParams)
 	ks.Protocol.SetParams(ctx, protocolParams)
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 	ks.Downtime.SetParams(ctx, downtimev1.DefaultParams())
