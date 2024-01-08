@@ -170,7 +170,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 						periods = append(periods, period)
 					}
 
-					genAccount = authvesting.NewPeriodicVestingAccount(baseAccount, vestingAmt, vestingStart, periods)
+					genAccount = authvesting.NewPeriodicVestingAccount(baseAccount, vestingAmt.Add(periodicFirst...), vestingStart, periods)
 				case vestingStart != 0 && vestingEnd != 0:
 					genAccount = authvesting.NewContinuousVestingAccountRaw(baseVestingAccount, vestingStart)
 
