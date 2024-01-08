@@ -30,7 +30,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		)
 	}
 
-	if !commontypes.ValidateString(msg.GetDescriptionString(), commontypes.DESCRIPTION_RESTRICTIONS, nil) {
+	if !commontypes.ValidateString(msg.GetDescriptionString(), commontypes.DESCRIPTION_RESTRICTIONS, nil) &&
+		len(msg.GetDescriptionString()) != 0 {
 		return nil, utils.LavaFormatWarning("RelayPayment_invalid_description", fmt.Errorf("invalid string"),
 			utils.LogAttr("reason", msg.GetDescriptionString()),
 		)
@@ -82,14 +83,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				utils.Attribute{Key: "provider", Value: relay.Provider},
 				utils.Attribute{Key: "creator", Value: msg.Creator},
 			)
-		}
-
-		_, found := k.specKeeper.GetSpec(ctx, relay.SpecId)
-		if !found {
-			utils.LavaFormatWarning("relay request for the invalid spec ID", fmt.Errorf("relay_payment_spec_id_not_found"),
-				utils.Attribute{Key: "relay.SpecID", Value: relay.SpecId},
-			)
-			continue
 		}
 
 		var newBadgeTimerExpiry uint64 // if the badge is new and need to setup a timer, this will be a non-zero value

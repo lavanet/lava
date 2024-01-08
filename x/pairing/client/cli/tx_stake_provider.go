@@ -17,7 +17,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 )
 
@@ -188,12 +187,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 				for _, chainID := range chainIDs {
 					if chainID == "" {
 						continue
-					}
-
-					q := spectypes.NewQueryClient(clientCtx)
-					_, err := q.Spec(context.Background(), &spectypes.QueryGetSpecRequest{ChainID: chainID})
-					if err != nil {
-						return nil, err
 					}
 
 					msg := types.NewMsgStakeProvider(
