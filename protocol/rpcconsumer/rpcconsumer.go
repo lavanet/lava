@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -44,6 +45,8 @@ const (
 var (
 	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface"}
 	DebugRelaysFlag        = false
+	RelaysHealthEnable     = true
+	RelaysHealthInterval   = 5 * time.Minute
 )
 
 type strategyValue struct {
@@ -481,10 +484,12 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
-				HeadersFlag:      viper.GetString(common.CorsHeadersFlag),
-				OriginFlag:       viper.GetString(common.CorsOriginFlag),
-				MethodsFlag:      viper.GetString(common.CorsMethodsFlag),
-				CDNCacheDuration: viper.GetString(common.CDNCacheDurationFlag),
+				HeadersFlag:             viper.GetString(common.CorsHeadersFlag),
+				OriginFlag:              viper.GetString(common.CorsOriginFlag),
+				MethodsFlag:             viper.GetString(common.CorsMethodsFlag),
+				CDNCacheDuration:        viper.GetString(common.CDNCacheDurationFlag),
+				RelaysHealthEnableFlag:  viper.GetBool(common.RelaysHealthEnableFlag),
+				RelayHealthIntervalFlag: viper.GetString(common.RelayHealthIntervalFlag),
 			}
 
 			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags)
@@ -513,6 +518,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(common.CorsOriginFlag, "*", "Set up CORS allowed origin, enabled * by default")
 	cmdRPCConsumer.Flags().String(common.CorsMethodsFlag, "GET,POST,PUT,DELETE,OPTIONS", "set up Allowed OPTIONS methods, defaults to: \"GET,POST,PUT,DELETE,OPTIONS\"")
 	cmdRPCConsumer.Flags().String(common.CDNCacheDurationFlag, "86400", "set up preflight options response cache duration, default 86400 (24h in seconds)")
+	// Relays health check related flags
+	cmdRPCConsumer.Flags().BoolVar(&RelaysHealthEnable, common.RelaysHealthEnableFlag, RelaysHealthEnable, "enables relays health check")
+	cmdRPCConsumer.Flags().DurationVar(&RelaysHealthInterval, common.RelayHealthIntervalFlag, RelaysHealthInterval, "interval between relay health checks")
 
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	common.AddRollingLogConfig(cmdRPCConsumer)

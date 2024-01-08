@@ -300,17 +300,21 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 }
 
 type TendermintRpcChainListener struct {
-	endpoint    *lavasession.RPCEndpoint
-	relaySender RelaySender
-	logger      *metrics.RPCConsumerLogs
+	endpoint       *lavasession.RPCEndpoint
+	relaySender    RelaySender
+	healthReporter HealthReporter
+	logger         *metrics.RPCConsumerLogs
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
-func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *TendermintRpcChainListener) {
+func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
+	relaySender RelaySender, healthReporter HealthReporter,
+	rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *TendermintRpcChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &TendermintRpcChainListener{
 		listenEndpoint,
 		relaySender,
+		healthReporter,
 		rpcConsumerLogs,
 	}
 
@@ -472,8 +476,13 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		query := "?" + string(fiberCtx.Request().URI().QueryString())
 		path := fiberCtx.Params("*")
 		if "/"+path == apil.endpoint.HealthCheckPath {
-			fiberCtx.Status(http.StatusOK)
-			return fiberCtx.SendString("Health status OK")
+			if apil.healthReporter.IsHealthy() {
+				fiberCtx.Status(http.StatusOK)
+				return fiberCtx.SendString("Health status OK")
+			} else {
+				fiberCtx.Status(http.StatusServiceUnavailable)
+				return fiberCtx.SendString("Health status Failure")
+			}
 		}
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		ctx, cancel := context.WithCancel(context.Background())

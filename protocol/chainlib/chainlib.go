@@ -33,12 +33,13 @@ func NewChainListener(
 	ctx context.Context,
 	listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender,
+	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
 ) (ChainListener, error) {
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
+		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceTendermintRPC:
 		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceRest:
@@ -82,6 +83,10 @@ type ChainMessageForSend interface {
 	GetApi() *spectypes.Api
 	GetRPCMessage() rpcInterfaceMessages.GenericMessage
 	GetApiCollection() *spectypes.ApiCollection
+}
+
+type HealthReporter interface {
+	IsHealthy() bool
 }
 
 type RelaySender interface {

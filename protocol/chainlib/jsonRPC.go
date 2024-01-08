@@ -270,17 +270,21 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 }
 
 type JsonRPCChainListener struct {
-	endpoint    *lavasession.RPCEndpoint
-	relaySender RelaySender
-	logger      *metrics.RPCConsumerLogs
+	endpoint       *lavasession.RPCEndpoint
+	relaySender    RelaySender
+	healthReporter HealthReporter
+	logger         *metrics.RPCConsumerLogs
 }
 
 // NewJrpcChainListener creates a new instance of JsonRPCChainListener
-func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *JsonRPCChainListener) {
+func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
+	relaySender RelaySender, healthReporter HealthReporter,
+	rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *JsonRPCChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &JsonRPCChainListener{
 		listenEndpoint,
 		relaySender,
+		healthReporter,
 		rpcConsumerLogs,
 	}
 
@@ -449,8 +453,13 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	})
 
 	app.Get(apil.endpoint.HealthCheckPath, func(fiberCtx *fiber.Ctx) error {
-		fiberCtx.Status(http.StatusOK)
-		return fiberCtx.SendString("Health status OK")
+		if apil.healthReporter.IsHealthy() {
+			fiberCtx.Status(http.StatusOK)
+			return fiberCtx.SendString("Health status OK")
+		} else {
+			fiberCtx.Status(http.StatusServiceUnavailable)
+			return fiberCtx.SendString("Health status Failure")
+		}
 	})
 	// Go
 	ListenWithRetry(app, apil.endpoint.NetworkAddress)
