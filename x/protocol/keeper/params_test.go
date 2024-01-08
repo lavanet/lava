@@ -94,17 +94,17 @@ func TestChangeVersion(t *testing.T) {
 			ts.advanceEpoch()
 
 			val, err := json.Marshal(tt.version)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			k, v := string(types.KeyVersion), string(val)
 			err = testkeeper.SimulateParamChange(
 				ts.ctx, ts.keepers.ParamsKeeper, types.ModuleName, k, v)
 			if !tt.good {
-				require.NotNil(t, err)
+				require.Error(t, err)
 				return
 			}
 
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			p := keeper.GetParams(ts.ctx)
 			require.Equal(t, p.Version, tt.version)

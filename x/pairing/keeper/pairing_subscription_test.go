@@ -28,28 +28,28 @@ func TestGetPairingForSubscription(t *testing.T) {
 		ProjectKeys: slices.Slice(projectstypes.ProjectDeveloperKey(dev1Addr)),
 	}
 	err := ts.TxSubscriptionAddProject(client1Addr, projectData)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	providerAddr := pairing.Providers[0].Address
 
 	verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, providerAddr, ts.BlockHeight())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, verify.Valid)
 
 	err = ts.TxSubscriptionDelProject(client1Addr, "project")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
 	_, err = ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, providerAddr, ts.BlockHeight())
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestRelayPaymentSubscription(t *testing.T) {
@@ -61,18 +61,18 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	providerAddr := pairing.Providers[0].Address
 
 	verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, client1Addr, providerAddr, ts.BlockHeight())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, verify.Valid)
 
 	proj, err := ts.QueryProjectDeveloper(client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	sub, err := ts.QuerySubscriptionCurrent(proj.Project.Subscription)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sub.Sub)
 
 	policies := slices.Slice(
@@ -97,7 +97,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 			relaySession := ts.newRelaySession(providerAddr, uint64(i), tt.cu, ts.BlockHeight(), 0)
 			relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
 			_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-			require.Nil(t, err,
+			require.NoError(t, err,
 				"results incorrect for usage of %d err == nil: %t", tt.cu, err == nil)
 		})
 	}
@@ -125,23 +125,23 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 		Policy: &ts.plan.PlanPolicy,
 	}
 	err := ts.TxSubscriptionAddProject(client1Addr, projectData)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
 	// verify both projects exist
 	projA, err := ts.QueryProjectDeveloper(client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	projB, err := ts.QueryProjectDeveloper(dev1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// verify that both consumers are paired
 	for _, consumer := range consumers {
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, consumer)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		providerAddr := pairing.Providers[0].Address
 		verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, consumer, providerAddr, ts.BlockHeight())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.True(t, verify.Valid)
 	}
 
@@ -156,9 +156,9 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	for ; uint64(i) < totalCuLimit/epochCuLimit; i++ {
 		relaySession := ts.newRelaySession(providerAddr, uint64(i), epochCuLimit, ts.BlockHeight(), 0)
 		relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		ts.AdvanceEpoch()
 	}
@@ -166,26 +166,26 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	// last iteration should finish the plan and subscription quota
 	relaySession := ts.newRelaySession(providerAddr, uint64(i+1), epochCuLimit, ts.BlockHeight(), uint64(i+1))
 	relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	// verify that project A wasted all of the subscription's CU
 	sub, err := ts.QuerySubscriptionCurrent(projA.Project.Subscription)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sub.Sub)
 	require.Equal(t, uint64(0), sub.Sub.MonthCuLeft)
 	projA, err = ts.QueryProjectDeveloper(client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, sub.Sub.MonthCuTotal, projA.Project.UsedCu)
 	require.Equal(t, uint64(0), projB.Project.UsedCu)
 
 	// try to use CU on projB. Should fail because A wasted it all
 	relaySession.SessionId += 1
 	relaySession.Sig, err = sigs.Sign(dev1Acct.SK, *relaySession)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestStrictestPolicyGeolocation(t *testing.T) {
@@ -202,7 +202,7 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
 	proj, err := ts.QueryProjectDeveloper(client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	projectID := proj.Project.Index
 
 	ts.AdvanceEpoch()
@@ -233,12 +233,12 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 			}
 
 			_, err = ts.TxProjectSetPolicy(projectID, client1Addr, adminPolicy)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ts.AdvanceEpoch()
 
 			_, err = ts.TxProjectSetSubscriptionPolicy(projectID, client1Addr, subscriptionPolicy)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ts.AdvanceEpoch()
 
@@ -246,9 +246,9 @@ func TestStrictestPolicyGeolocation(t *testing.T) {
 			// with 1 and output non-zero result, will output a provider for pairing
 			res, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
 			if tt.validPairing {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			} else {
-				require.NotNil(t, err)
+				require.Error(t, err)
 				return
 			}
 			require.Equal(t, tt.expectedProviderPaired, len(res.Providers))
@@ -263,7 +263,7 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 
 	res, err := ts.QueryProjectDeveloper(client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	proj := res.Project
 	ts.AdvanceEpoch()
@@ -294,26 +294,26 @@ func TestStrictestPolicyProvidersToPair(t *testing.T) {
 
 			_, err = ts.TxProjectSetPolicy(proj.Index, client1Addr, adminPolicy)
 			if !tt.adminPolicyValid {
-				require.NotNil(t, err)
+				require.Error(t, err)
 				return
 			}
 			// else
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ts.AdvanceEpoch()
 
 			_, err = ts.TxProjectSetSubscriptionPolicy(proj.Index, client1Addr, subscriptionPolicy)
 			if !tt.subscriptionPolicyValid {
-				require.NotNil(t, err)
+				require.Error(t, err)
 				return
 			}
 			// else
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ts.AdvanceEpoch()
 
 			res, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Equal(t, tt.effectiveProvidersToPair, len(res.Providers))
 		})
 	}
@@ -327,7 +327,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 	_, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	res, err := ts.QueryProjectDeveloper(client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	proj := res.Project
 
 	ts.AdvanceEpoch()
@@ -364,19 +364,19 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 				}
 
 				err = ts.TxSubscriptionAddProject(proj.Subscription, projectData)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				ts.AdvanceEpoch()
 
 				sub, err := ts.QuerySubscriptionCurrent(proj.Subscription)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.NotNil(t, sub.Sub)
 
 				relaySession := ts.newRelaySession(providerAddr, 100, sub.Sub.MonthCuLeft, ts.BlockHeight(), 0)
 				relaySession.Sig, err = sigs.Sign(waste1Acct.SK, *relaySession)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				ts.AdvanceEpoch()
 			}
@@ -395,12 +395,12 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 			}
 
 			_, err = ts.TxProjectSetPolicy(proj.Index, client1Addr, adminPolicy)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ts.AdvanceEpoch()
 
 			_, err = ts.TxProjectSetSubscriptionPolicy(proj.Index, client1Addr, subscriptionPolicy)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ts.AdvanceEpoch()
 
@@ -413,7 +413,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 					cuSum := epochCuLimit
 
 					res, err := ts.QueryProjectDeveloper(client1Addr)
-					require.Nil(t, err)
+					require.NoError(t, err)
 					proj := res.Project
 
 					if totalCuLimit-proj.UsedCu <= cuSum {
@@ -422,16 +422,16 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 
 					relaySession := ts.newRelaySession(providerAddr, uint64(i), cuSum, ts.BlockHeight(), 0)
 					relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
-					require.Nil(t, err)
+					require.NoError(t, err)
 					_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-					require.Nil(t, err)
+					require.NoError(t, err)
 
 					ts.AdvanceEpoch()
 				}
 			}
 
 			verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, client1Addr, providerAddr, ts.BlockHeight())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Equal(t, tt.effectiveCuPerEpochLimit, verify.CuPerEpoch)
 		})
 	}
@@ -445,27 +445,27 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 
 	// add 10 months to the subscription
 	_, err := ts.TxSubscriptionBuy(client1Addr, client1Addr, ts.plan.Index, 10, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	totalCuLimit := ts.plan.PlanPolicy.TotalCuLimit
 	epochCuLimit := ts.plan.PlanPolicy.EpochCuLimit
 
 	for i := 0; i < int(totalCuLimit/epochCuLimit); i++ {
 		res, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		providerAddr := res.Providers[0].Address
 
 		relaySession := ts.newRelaySession(providerAddr, uint64(i), epochCuLimit, ts.BlockHeight(), 0)
 		relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		ts.AdvanceEpoch()
 	}
 
 	res, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	firstPairing := res.Providers
 
 	// advance an epoch block by block, while spending more than allowed: pairing must not change
@@ -473,15 +473,15 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 		ts.AdvanceBlock()
 
 		res, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		providerAddr := res.Providers[0].Address
 
 		relaySession := ts.newRelaySession(providerAddr, uint64(i), epochCuLimit, ts.BlockHeight(), 0)
 		relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-		require.NotNil(t, err)
+		require.Error(t, err)
 
 		require.Equal(t, firstPairing, res.Providers)
 	}
@@ -501,7 +501,7 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	// edit the plan in subscription purchased (allow less CU per epoch)
 	ts.plan.PlanPolicy.EpochCuLimit -= 50
 	err := ts.TxProposalAddPlans(ts.plan)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
@@ -518,25 +518,25 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	}
 
 	err = ts.TxSubscriptionAddProject(client1Addr, projectData)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
 	proj, err := ts.QueryProjectDeveloper(dev1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// new policy to the second project: stricter than the old plan, weaker than the new plan
 	adminPolicy := ts.plan.PlanPolicy
 	adminPolicy.EpochCuLimit = oldEpochCuLimit - 30
 
 	_, err = ts.TxProjectSetPolicy(proj.Project.Index, dev1Addr, &adminPolicy)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// advance epoch to set the new policy
 	ts.AdvanceEpoch()
 
 	verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, providerAddr, ts.BlockHeight())
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// in terms of strictness: newPlan < adminPolicy < oldPlan, but newPlan should not apply
 	// to the second project (since it's under a subscription that uses the old plan)

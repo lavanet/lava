@@ -91,7 +91,7 @@ func TestPerformCORSCheckFail(t *testing.T) {
 	}
 
 	err := PerformCORSCheck(endpoint)
-	require.NotNil(t, err, "Expected CORS check to fail but it passed")
+	require.Error(t, err, "Expected CORS check to fail but it passed")
 	require.True(t, strings.Contains(err.Error(), "CORS check failed"), "Expected CORS related error message", err)
 }
 
@@ -101,7 +101,7 @@ func TestPerformCORSCheckFailXGrpcWeb(t *testing.T) {
 	}
 
 	err := PerformCORSCheck(endpoint)
-	require.NotNil(t, err, "Expected CORS check to fail but it passed")
+	require.Error(t, err, "Expected CORS check to fail but it passed")
 	require.True(t, strings.Contains(err.Error(), "x-grpc-web"), "Expected error to relate to x-grpc-web")
 }
 
@@ -111,7 +111,7 @@ func TestPerformCORSCheckFailLavaSdkRelayTimeout(t *testing.T) {
 	}
 
 	err := PerformCORSCheck(endpoint)
-	require.NotNil(t, err, "Expected CORS check to fail but it passed")
+	require.Error(t, err, "Expected CORS check to fail but it passed")
 	require.True(t, strings.Contains(err.Error(), "lava-sdk-relay-timeout"), "Expected error to relate to lava-sdk-relay-timeout")
 }
 
@@ -121,7 +121,7 @@ func TestPerformCORSCheckSuccess(t *testing.T) {
 	}
 
 	err := PerformCORSCheck(endpoint)
-	require.Nil(t, err, "Expected CORS check to pass but it failed")
+	require.NoError(t, err, "Expected CORS check to pass but it failed")
 }
 
 func CreateSelfSignedCertificate(certPath, keyPath string, validFor time.Duration) error {

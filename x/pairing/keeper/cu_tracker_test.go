@@ -30,7 +30,7 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := ts.QuerySubscriptionCurrent(client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	sub := res.Sub
 
 	// define flags for advancing time/blocks (BTS_1=BlocksToSave-EpochBlocks)
@@ -81,7 +81,7 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 			if tt.advance != BTS {
 				relaySession := ts.newRelaySession(provider1Addr, sessionId, relayCuSum, relayBlock, 0)
 				sig, err := sigs.Sign(client1Acct.SK, *relaySession)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				relaySession.Sig = sig
 
 				relayPaymentMessage := types.MsgRelayPayment{
@@ -117,10 +117,10 @@ func TestTrackedCuWithExpiredSubscription(t *testing.T) {
 
 	clientAcct, clientAddr := ts.AddAccount(common.CONSUMER, 0, testBalance)
 	_, err := ts.TxSubscriptionBuy(clientAddr, clientAddr, ts.plan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = ts.addProvider(1)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
@@ -131,7 +131,7 @@ func TestTrackedCuWithExpiredSubscription(t *testing.T) {
 
 	// sanity check: verify the subscription cannot be found
 	res, err := ts.QuerySubscriptionCurrent(clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Nil(t, res.Sub)
 }
 
@@ -155,7 +155,7 @@ func TestTrackedCuWithDelegations(t *testing.T) {
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
 
 	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	// payAndVerifyBalance advances a month and checks for balances (if it works, the test is ok)
@@ -164,7 +164,7 @@ func TestTrackedCuWithDelegations(t *testing.T) {
 
 	// sanity check - delegator reward should be 34% of the reward (which is the plan price)
 	res, err := ts.QueryDualstakingDelegatorRewards(delegator, provider, ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, ts.plan.Price.Amount.Int64()*34/100, res.Rewards[0].Amount.Amount.Int64())
 }
 
@@ -202,7 +202,7 @@ func TestTrackedCuWithQos(t *testing.T) {
 	paramKey := string(types.KeyQoSWeight)
 	paramVal := initQosStr
 	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	planPrice := ts.plan.Price.Amount.Int64()
 
@@ -233,10 +233,10 @@ func TestTrackedCuWithQos(t *testing.T) {
 			}
 
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession1)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			relaySession1.Sig = sig
 			sig, err = sigs.Sign(client1Acct.SK, *relaySession2)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			relaySession2.Sig = sig
 
 			relayPaymentMessage := types.MsgRelayPayment{
@@ -296,17 +296,17 @@ func TestTrackedCuMultipleChains(t *testing.T) {
 	spec1.Name = spec1Name
 	ts.AddSpec(spec1Name, spec1)
 	err := ts.StakeProvider(provider2, spec1, testStake)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	// send two relay of relayCuSum on "spec"
 	relaySession := ts.newRelaySession(provider1, 0, relayCuSum, ts.BlockHeight(), 0)
 	relaySession1 := ts.newRelaySession(provider1, 1, relayCuSum, ts.BlockHeight(), 0)
 	sig, err := sigs.Sign(clientAcc.SK, *relaySession)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	relaySession.Sig = sig
 	sig, err = sigs.Sign(clientAcc.SK, *relaySession1)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	relaySession1.Sig = sig
 
 	relayPaymentMessage := types.MsgRelayPayment{
@@ -319,7 +319,7 @@ func TestTrackedCuMultipleChains(t *testing.T) {
 	relaySession2 := ts.newRelaySession(provider2, 0, 2*relayCuSum, ts.BlockHeight(), 0)
 	relaySession2.SpecId = spec1Name
 	sig, err = sigs.Sign(clientAcc.SK, *relaySession2)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	relaySession2.Sig = sig
 
 	relayPaymentMessage2 := types.MsgRelayPayment{
@@ -352,7 +352,7 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 	newPlan := ts.plan
 	newPlan.Price.Amount = ts.plan.Price.Amount.MulRaw(2)
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{newPlan}, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	relayPayment := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
@@ -393,7 +393,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	spec1.Name = spec1Name
 	ts.AddSpec(spec1Name, spec1)
 	err = ts.StakeProvider(provider, spec1, testStake)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	// change the provider's delegation limit and commission
@@ -407,7 +407,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
 	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 	ts.AdvanceMonths(1).AdvanceEpoch() // advance first month of delegation so it'll apply
 
@@ -416,10 +416,10 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	relaySession2 := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
 	relaySession2.SpecId = spec1Name
 	sig, err := sigs.Sign(clientAcc.SK, *relaySession)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	relaySession.Sig = sig
 	sig, err = sigs.Sign(clientAcc.SK, *relaySession2)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	relaySession2.Sig = sig
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider,
@@ -435,7 +435,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 50},
 	}
 	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, expectedTotalPayout, res.Total)
 	details := []types.SubscriptionPayout{}
 	for _, p := range res.Details {
@@ -445,7 +445,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 
 	// check the expected subscrription payout
 	subRes, err := ts.QueryPairingSubscriptionMonthlyPayout(client)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, uint64(100), subRes.Total) // total reward = plan price
 	expectedSubPayouts := []types.ChainIDPayout{
 		{
@@ -483,7 +483,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 
 	// verify that the monthly payout query return 0 after the payment was transferred to the provider
 	res, err = ts.QueryPairingProviderMonthlyPayout(provider)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, uint64(0), res.Total)
 	require.Nil(t, res.Details)
 }
@@ -506,7 +506,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	spec1.ContributorPercentage = &percentage
 	ts.AddSpec(spec1Name, spec1)
 	err := ts.StakeProvider(provider, spec1, testStake)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	// change the provider's delegation limit and commission
@@ -520,7 +520,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
 	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	delegationTime := ts.BlockTime()
 	ts.AdvanceEpoch()
 
@@ -530,17 +530,17 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	// change the delegations' timestamp to be a month forward
 	fakeTimestamp := ts.BlockTime().AddDate(0, -2, 0)
 	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.spec.Index, ts.BlockHeight(), ts.GetNextMonth(fakeTimestamp))
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// send two relay payments in spec and spec1
 	relaySession := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
 	relaySession2 := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
 	relaySession2.SpecId = spec1Name
 	sig, err := sigs.Sign(clientAcc.SK, *relaySession)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	relaySession.Sig = sig
 	sig, err = sigs.Sign(clientAcc.SK, *relaySession2)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	relaySession2.Sig = sig
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider,
@@ -557,7 +557,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 26}, // 50 - 26 for contributors (each contributor gets 12)
 	}
 	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, expectedTotalPayout, res.Total)
 	details := []types.SubscriptionPayout{}
 	for _, p := range res.Details {
@@ -567,7 +567,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 
 	// check the expected subscrription payout
 	subRes, err := ts.QueryPairingSubscriptionMonthlyPayout(client)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, uint64(100), subRes.Total) // total reward = plan price
 	expectedSubPayouts := []types.ChainIDPayout{
 		{
@@ -595,7 +595,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	// (also restore delegation original timestamp)
 	oldBalance := ts.GetBalance(providerAcct.Addr)
 	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.spec.Index, ts.BlockHeight(), ts.GetNextMonth(delegationTime))
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
@@ -614,7 +614,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 
 	// verify that the monthly payout query return 0 after the payment was transferred to the provider
 	res, err = ts.QueryPairingProviderMonthlyPayout(provider)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, uint64(0), res.Total)
 	require.Nil(t, res.Details)
 }
@@ -634,7 +634,7 @@ func TestFrozenProviderGetReward(t *testing.T) {
 	balanceBeforePay := ts.GetBalance(providerAcc.Addr)
 
 	err := ts.Keepers.Pairing.FreezeProvider(ts.Ctx, provider, []string{ts.spec.Index}, "unresponsiveness")
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)

@@ -105,7 +105,7 @@ func TestDetection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			msg, _, reply, err := common.CreateMsgDetectionTest(ts.GoCtx, tt.Creator, tt.Provider0, tt.Provider1, ts.spec)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			msg.Creator = tt.Creator.Addr.String()
 
@@ -123,23 +123,23 @@ func TestDetection(t *testing.T) {
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider = tt.Provider1.Addr.String()
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
 			sig, err := sigs.Sign(ts.consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
 			reply.Data = append(reply.Data, tt.ReplyData...)
 			relayExchange := types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply)
 			sig, err = sigs.Sign(tt.Provider1.SK, relayExchange)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			reply.Sig = sig
 			relayFinalization := types.NewRelayFinalization(types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply), ts.consumer.Addr)
 			sigBlocks, err := sigs.Sign(tt.Provider1.SK, relayFinalization)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			reply.SigBlocks = sigBlocks
 			msg.ResponseConflict.ConflictRelayData1.Reply = conflictconstruct.ConstructReplyMetadata(reply, msg.ResponseConflict.ConflictRelayData1.Request)
 			// send detection msg
 			_, err = ts.txConflictDetection(msg)
 			if tt.Valid {
 				events := ts.Ctx.EventManager().Events()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, events[len(events)-1].Type, utils.EventPrefix+conflicttypes.ConflictVoteDetectionEventName)
 			}
 		})
@@ -160,14 +160,14 @@ func TestFrozenProviderDetection(t *testing.T) {
 		ChainIds: []string{ts.spec.Index},
 		Reason:   "test",
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply the freeze
 
 	// send a conflict detection TX
 	msg, _, _, err := common.CreateMsgDetectionTest(ts.GoCtx, ts.consumer, ts.providers[0], ts.providers[1], ts.spec)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, err = ts.txConflictDetection(msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// check voters list
 	conflictVotes := ts.Keepers.Conflict.GetAllConflictVote(ts.Ctx)

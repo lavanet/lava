@@ -19,13 +19,13 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 
 	// check pairing in the same epoch
 	_, _, err := ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, epoch)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, client1Addr, pairing.Providers[0].Address, epoch)
-	require.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestCreateProjectAddKey(t *testing.T) {
@@ -39,11 +39,11 @@ func TestCreateProjectAddKey(t *testing.T) {
 	// takes effect retroactively in the current epoch
 
 	res1, err := ts.QuerySubscriptionListProjects(client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	projects := res1.Projects
 
 	err = ts.TxProjectAddKeys(projects[0], client1Addr, projectTypes.ProjectDeveloperKey(dev1Addr))
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceBlock()
 
@@ -56,20 +56,20 @@ func TestCreateProjectAddKey(t *testing.T) {
 
 	// should fail, the key is in use
 	err = ts.TxSubscriptionAddProject(client1Addr, projectData)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	epoch := ts.EpochStart()
 
 	// check pairing in the same epoch (key added retroactively to this epoch)
 	_, _, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, epoch)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	res2, err := ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairing := res2.Providers
 
 	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, pairing[0].Address, ts.EpochStart())
-	require.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestAddKeyCreateProject(t *testing.T) {
@@ -83,7 +83,7 @@ func TestAddKeyCreateProject(t *testing.T) {
 	devkey := projectTypes.ProjectDeveloperKey(dev1Addr)
 
 	res1, err := ts.QuerySubscriptionListProjects(client1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	projects := res1.Projects
 
 	projectData := projectTypes.ProjectData{
@@ -95,23 +95,23 @@ func TestAddKeyCreateProject(t *testing.T) {
 
 	// should work, the key should take effect now
 	err = ts.TxSubscriptionAddProject(client1Addr, projectData)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// should fail, takes effect in the next epoch
 	err = ts.TxProjectAddKeys(projects[0], client1Addr, devkey)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	epoch := ts.EpochStart()
 
 	ts.AdvanceEpoch()
 
 	_, _, err = ts.Keepers.Pairing.VerifyPairingData(ts.Ctx, ts.spec.Index, epoch)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	res2, err := ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairing := res2.Providers
 
 	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, pairing[0].Address, ts.BlockHeight())
-	require.Nil(t, err)
+	require.NoError(t, err)
 }

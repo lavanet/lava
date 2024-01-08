@@ -45,7 +45,7 @@ func TestConsumerConflicts(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			res, err := keeper.ConsumerConflicts(wctx, &types.QueryConsumerConflictsRequest{Consumer: tc.client})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.ElementsMatch(t, res.Conflicts, tc.expectedConflicts)
 		})
 	}

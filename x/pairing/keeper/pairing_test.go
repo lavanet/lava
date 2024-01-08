@@ -30,23 +30,23 @@ func TestPairingUniqueness(t *testing.T) {
 	_, sub2Addr := ts.Account("sub2")
 
 	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, err = ts.TxSubscriptionBuy(sub2Addr, sub2Addr, ts.plan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	for i := 1; i <= 1000; i++ {
 		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
 		err := ts.StakeProvider(addr, ts.spec, stake)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	ts.AdvanceEpoch()
 
 	// test that 2 different clients get different pairings
 	pairing1, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	pairing2, err := ts.QueryPairingGetPairing(ts.spec.Index, sub2Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	mapFunc := func(p epochstoragetypes.StakeEntry) string { return p.Address }
 
@@ -60,7 +60,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 	// test that in different epoch we get different pairings for consumer1
 	pairing11, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	providerAddrs11 := slices.Map(pairing11.Providers, mapFunc)
 
@@ -73,16 +73,16 @@ func TestPairingUniqueness(t *testing.T) {
 		ts.AdvanceBlock()
 
 		pairing111, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		for i := range pairing11.Providers {
 			providerAddr := pairing11.Providers[i].Address
 			require.Equal(t, providerAddr, pairing111.Providers[i].Address)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			epoch, _, err := ts.Keepers.Epochstorage.GetEpochStartForBlock(ts.Ctx, ts.BlockHeight())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, sub1Addr, providerAddr, epoch)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.True(t, verify.Valid)
 		}
 	}
@@ -98,26 +98,26 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	_, sub1Addr := ts.Account("sub1")
 
 	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	for i := 1; i <= 10; i++ {
 		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
 		err := ts.StakeProvider(addr, ts.spec, stake)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	ts.AdvanceEpoch()
 
 	// test that 2 different clients get different pairings
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	block := ts.BlockHeight()
 	testAllProviders := func() {
 		for _, provider := range pairing.Providers {
 			providerAddr := provider.Address
 			verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, sub1Addr, providerAddr, block)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.True(t, verify.Valid)
 		}
 	}
@@ -137,7 +137,7 @@ func TestGetPairing(t *testing.T) {
 	// same epoch of staking the providers.
 	ts.addClient(1)
 	err := ts.addProvider(1)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// BLOCK_TIME = 30sec (testutil/keeper/keepers_init.go)
 	constBlockTime := ts.Keepers.Downtime.GetParams(ts.Ctx).DowntimeDuration
@@ -177,9 +177,9 @@ func TestGetPairing(t *testing.T) {
 			// get pairing for client (for epoch zero expect to fail)
 			pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
 			if !tt.validPairingExists {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				// verify the expected provider
 				require.Equal(t, providerAddr, pairing.Providers[0].Address)
@@ -194,7 +194,7 @@ func TestGetPairing(t *testing.T) {
 				// if prevEpoch == 0 -> averageBlockTime = 0
 				// else calculate the time (like the actual get-pairing function)
 				epochPrev, err := ts.Keepers.Epochstorage.GetPreviousEpochStartForBlock(ts.Ctx, epochThis)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				var averageBlockTime uint64
 				if epochPrev != 0 {
@@ -208,7 +208,7 @@ func TestGetPairing(t *testing.T) {
 
 				overlapBlocks := ts.Keepers.Pairing.EpochBlocksOverlap(ts.Ctx)
 				nextEpochStart, err := ts.Keepers.Epochstorage.GetNextEpoch(ts.Ctx, epochThis)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				// calculate the block in which the next pairing will happen (+overlap)
 				nextPairingBlock := nextEpochStart + overlapBlocks
@@ -248,12 +248,12 @@ func TestPairingStatic(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	for i := 0; i < int(ts.plan.PlanPolicy.MaxProvidersToPair)*2; i++ {
 		_, addr := ts.AddAccount(common.PROVIDER, i, testBalance)
 		err := ts.StakeProvider(addr, ts.spec, testStake+int64(i))
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	// we expect to get all the providers in static spec
@@ -261,7 +261,7 @@ func TestPairingStatic(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	for i, provider := range pairing.Providers {
 		require.Equal(t, provider.Stake.Amount.Int64(), testStake+int64(i))
@@ -515,16 +515,16 @@ func TestAddonPairing(t *testing.T) {
 			}
 
 			err := ts.TxProposalAddPlans(plan)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			_, sub1Addr := ts.AddAccount("sub", 0, 10000)
 
 			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			// get the admin project and set its policies
 			subProjects, err := ts.QuerySubscriptionListProjects(sub1Addr)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Equal(t, 1, len(subProjects.Projects))
 
 			projectID := subProjects.Projects[0]
@@ -533,7 +533,7 @@ func TestAddonPairing(t *testing.T) {
 				projPolicy := defaultPolicy()
 				projPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.projChainPolicy}
 				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, &projPolicy)
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			// apply policy change
@@ -543,7 +543,7 @@ func TestAddonPairing(t *testing.T) {
 				subscPolicy := defaultPolicy()
 				subscPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.subscChainPolicy}
 				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, &subscPolicy)
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			// apply policy change
@@ -572,7 +572,7 @@ func TestAddonPairing(t *testing.T) {
 
 			pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 			if tt.expectedProviders > 0 {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, tt.expectedProviders, len(pairing.Providers), "received providers %#v", pairing)
 			} else {
 				require.Error(t, err)
@@ -600,7 +600,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	ts := newTester(t)
 
 	err := ts.addProvider(200)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	policy := &planstypes.Policy{
 		GeolocationProfile: math.MaxInt32,
@@ -615,10 +615,10 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	maxProvidersToPair, err := ts.Keepers.Pairing.CalculateEffectiveProvidersToPairFromPolicies(
 		[]*planstypes.Policy{&ts.plan.PlanPolicy, policy},
 	)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = ts.addProvider(200)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	_, p1 := ts.GetAccount(common.PROVIDER, 0)
 	_, p2 := ts.GetAccount(common.PROVIDER, 1)
@@ -706,26 +706,26 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			plan.PlanPolicy.SelectedProviders = providersSet.planProviders
 
 			err := ts.TxProposalAddPlans(plan)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ts.AdvanceEpoch()
 
 			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			// get the admin project and set its policies
 			res, err := ts.QuerySubscriptionListProjects(sub1Addr)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Equal(t, 1, len(res.Projects))
 
 			project, err := ts.GetProjectForBlock(res.Projects[0], ts.BlockHeight())
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			policy.SelectedProvidersMode = tt.projMode
 			policy.SelectedProviders = providersSet.projProviders
 
 			_, err = ts.TxProjectSetPolicy(project.Index, sub1Addr, policy)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			// skip epoch for the policy change to take effect
 			ts.AdvanceEpoch()
@@ -734,7 +734,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			policy.SelectedProviders = providersSet.subProviders
 
 			_, err = ts.TxProjectSetSubscriptionPolicy(project.Index, sub1Addr, policy)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			// skip epoch for the policy change to take effect
 			ts.AdvanceEpoch()
@@ -742,7 +742,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			ts.AdvanceEpoch()
 
 			pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			providerAddresses1 := []string{}
 			for _, provider := range pairing.Providers {
@@ -752,17 +752,17 @@ func TestSelectedProvidersPairing(t *testing.T) {
 			if tt.name == "EXCLUSIVE mode provider unstakes after first pairing" {
 				// unstake p1 and remove from expected providers
 				_, err = ts.TxPairingUnstakeProvider(p1, ts.spec.Index)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:]
 			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
 				err := ts.StakeProvider(p1, ts.spec, testBalance/2)
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			ts.AdvanceEpoch()
 
 			pairing, err = ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			providerAddresses2 := []string{}
 			for _, provider := range pairing.Providers {
@@ -900,7 +900,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	// make the subscription auto-renew so it won't expire after many (pairing) epochs
 	err = ts.TxSubscriptionAutoRenewal(clientAddr, clientAddr, ts.plan.Index, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
 	ts.verifyPairingDistribution("uniform distribution", clientAddr, providersToPair, weightFunc)
@@ -1001,7 +1001,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 
 	plans := []planstypes.Plan{freePlan, basicPlan, premiumPlan}
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	freeAcct, freeAddr := ts.GetAccount(common.CONSUMER, 0)
 	basicAcct, basicAddr := ts.GetAccount(common.CONSUMER, 1)
@@ -1020,7 +1020,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 	for geoName, geo := range planstypes.Geolocation_value {
 		if geoName != "GL" && geoName != "GLS" {
 			err = ts.addProviderGeolocation(5, geo)
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 
@@ -1048,7 +1048,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
 			devResponse, err := ts.QueryProjectDeveloper(tt.dev.Addr.String())
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			projIndex := devResponse.Project.Index
 			policies := []*planstypes.Policy{&tt.planPolicy}
@@ -1058,19 +1058,19 @@ func TestGeolocationPairingScores(t *testing.T) {
 				newPolicy = tt.planPolicy
 				newPolicy.GeolocationProfile = tt.newGeo
 				_, err = ts.TxProjectSetPolicy(projIndex, tt.dev.Addr.String(), &newPolicy)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				policies = append(policies, &newPolicy)
 			}
 
 			ts.AdvanceEpoch() // apply the new policy
 
 			providersRes, err := ts.QueryPairingProviders(ts.spec.Name, false)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			stakeEntries := providersRes.StakeEntry
 			providerScores := []*pairingscores.PairingScore{}
 
 			subRes, err := ts.QuerySubscriptionCurrent(tt.dev.Addr.String())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			cluster := subRes.Sub.Cluster
 
 			for i := range stakeEntries {
@@ -1081,7 +1081,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 			}
 
 			effectiveGeo, err := ts.Keepers.Pairing.CalculateEffectiveGeolocationFromPolicies(policies)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			slots := pairingscores.CalcSlots(&planstypes.Policy{
 				GeolocationProfile: effectiveGeo,
@@ -1096,7 +1096,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 			// calc scores and verify the scores are as expected
 			for _, slot := range slots {
 				err = pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), slot)
-				require.Nil(t, err)
+				require.NoError(t, err)
 
 				ok := verifyGeoScoreForTesting(providerScores, slot, geoSeen)
 				require.True(t, ok)
@@ -1202,7 +1202,7 @@ func TestDuplicateProviders(t *testing.T) {
 	_, basicAddr := ts.GetAccount(common.CONSUMER, 0)
 
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{basicPlan}, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
@@ -1213,7 +1213,7 @@ func TestDuplicateProviders(t *testing.T) {
 	for geoName, geo := range planstypes.Geolocation_value {
 		if geoName != "GL" && geoName != "GLS" {
 			err := ts.addProviderGeolocation(5, geo)
-			require.Nil(t, err)
+			require.NoError(t, err)
 		}
 	}
 
@@ -1221,7 +1221,7 @@ func TestDuplicateProviders(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		pairingRes, err := ts.QueryPairingGetPairing(ts.spec.Index, basicAddr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		providerSeen := map[string]struct{}{}
 		for _, provider := range pairingRes.Providers {
 			_, found := providerSeen[provider.Address]
@@ -1253,7 +1253,7 @@ func TestNoRequiredGeo(t *testing.T) {
 	_, freeAddr := ts.GetAccount(common.CONSUMER, 0)
 
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{freePlan}, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
@@ -1262,12 +1262,12 @@ func TestNoRequiredGeo(t *testing.T) {
 
 	// add 5 more providers that are not in US-E (the only allowed providers in the free plan)
 	err = ts.addProviderGeolocation(5, planstypes.Geolocation_value["AS"])
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
 	pairingRes, err := ts.QueryPairingGetPairing(ts.spec.Index, freeAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, freePlanPolicy.MaxProvidersToPair, uint64(len(pairingRes.Providers)))
 	for _, provider := range pairingRes.Providers {
 		require.NotEqual(t, freePlanPolicy.GeolocationProfile, provider.Geolocation)
@@ -1936,16 +1936,16 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			}
 
 			err := ts.TxProposalAddPlans(plan)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			_, sub1Addr := ts.AddAccount("sub", 0, 10000)
 
 			_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			// get the admin project and set its policies
 			subProjects, err := ts.QuerySubscriptionListProjects(sub1Addr)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Equal(t, 1, len(subProjects.Projects))
 
 			projectID := subProjects.Projects[0]
@@ -1954,7 +1954,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 				projPolicy := defaultPolicy()
 				projPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.projChainPolicy}
 				_, err = ts.TxProjectSetPolicy(projectID, sub1Addr, &projPolicy)
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			// apply policy change
@@ -1964,7 +1964,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 				subscPolicy := defaultPolicy()
 				subscPolicy.ChainPolicies = []planstypes.ChainPolicy{*tt.subscChainPolicy}
 				_, err = ts.TxProjectSetSubscriptionPolicy(projectID, sub1Addr, &subscPolicy)
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			// apply policy change
@@ -1998,7 +1998,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 
 			pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 			if tt.expectedProviders > 0 {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, tt.expectedProviders, len(pairing.Providers), "received providers %#v", pairing)
 				if len(tt.expectedStrictestPolicies) > 0 {
 					services := map[string]int{}
@@ -2101,16 +2101,16 @@ func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 		expectedProviders := plan.PlanPolicy.MaxProvidersToPair
 
 		err := ts.TxProposalAddPlans(plan)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		_, sub1Addr := ts.AddAccount("sub", 0, 10000)
 
 		_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// get the admin project and set its policies
 		subProjects, err := ts.QuerySubscriptionListProjects(sub1Addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, 1, len(subProjects.Projects))
 
 		projectID := subProjects.Projects[0]
@@ -2147,7 +2147,7 @@ func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 		}
 
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, expectedProviders, uint64(len(pairing.Providers)), "received providers %#v", pairing)
 
 		servicesCount := map[string]int{}
@@ -2188,18 +2188,18 @@ func TestPairingConsistency(t *testing.T) {
 	ts.AddPlan("free", ts.plan)
 	ts.addClient(1)
 	err := ts.addProviderGeolocation(10, 3)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
 	consumers := ts.Accounts(common.CONSUMER)
 
 	res, err := ts.QueryPairingGetPairing(ts.spec.Index, consumers[0].Addr.String())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	prevPairing := res.Providers
 	for i := 0; i < iterations; i++ {
 		res, err := ts.QueryPairingGetPairing(ts.spec.Index, consumers[0].Addr.String())
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		var prevPairingAddrs []string
 		var currentPairingAddrs []string
@@ -2234,19 +2234,19 @@ func TestPairingPerformance(t *testing.T) {
 	_, sub1Addr := ts.Account("sub1")
 
 	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, ts.plan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	for i := 1; i <= 1000; i++ {
 		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
 		err := ts.StakeProvider(addr, ts.spec, stake)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	ts.AdvanceEpoch()
 
 	before := time.Now()
 	_, err = ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	duration := time.Since(before)
 	require.Less(t, duration.Nanoseconds(), time.Second.Nanoseconds())

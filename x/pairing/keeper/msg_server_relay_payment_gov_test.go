@@ -46,7 +46,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	paramKey := string(pairingtypes.KeyQoSWeight)
 	paramVal := initQosStr
 	err := ts.TxProposalChangeParam(pairingtypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch (only then the parameter change will be applied) and get current epoch
 	ts.AdvanceEpoch()
@@ -61,7 +61,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	paramKey = string(pairingtypes.KeyQoSWeight)
 	paramVal = newQosStr
 	err = ts.TxProposalChangeParam(pairingtypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch (for the parameter change to take effect)
 	ts.AdvanceEpoch()
@@ -71,7 +71,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	relaySessionGood := ts.newRelaySession(goodProviderAddr, 0, 100, epochQosWeightSeventyPercent, 0)
 	relaySessionGood.QosReport = goodQoS
 	sigGood, err := sigs.Sign(client1Acct.SK, *relaySessionGood)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	relaySessionGood.Sig = sigGood
 	ts.relayPaymentWithoutPay(pairingtypes.MsgRelayPayment{
 		Creator: goodProviderAddr,
@@ -86,7 +86,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 
 		sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 		relaySession.Sig = sig
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		relays = append(relays, relaySession)
 	}
@@ -104,7 +104,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	_, err = ts.TxDualstakingClaimRewards(providerAcct.Addr.String(), providerAcct.Addr.String())
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	newBalance := ts.GetBalance(providerAcct.Addr)
 
@@ -133,7 +133,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
 	paramVal := "\"" + strconv.FormatUint(smallerEpochBlocks, 10) + "\""
 	err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch so the change applies, and another one
 	ts.AdvanceEpochs(2)
@@ -164,7 +164,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			// Sign and send the payment requests
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 			relaySession.Sig = sig
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
@@ -199,7 +199,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
 	paramVal := "\"" + strconv.FormatUint(biggerEpochBlocks, 10) + "\""
 	err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch so the change applies, and another one
 	ts.AdvanceEpochs(2)
@@ -237,7 +237,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			// Sign and send the payment requests
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 			relaySession.Sig = sig
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
@@ -272,7 +272,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 	paramKey := string(epochstoragetypes.KeyEpochsToSave)
 	paramVal := "\"" + strconv.FormatUint(smallerEpochsToSave, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch so the change applies, and another one
 	ts.AdvanceEpochs(2)
@@ -315,7 +315,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 			// Sign and send the payment requests
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 			relaySession.Sig = sig
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
@@ -342,11 +342,11 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
 	paramVal := "\"" + strconv.FormatUint(20, 10) + "\""
 	err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	paramKey = string(epochstoragetypes.KeyEpochsToSave)
 	paramVal = "\"" + strconv.FormatUint(10, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch to apply EpochBlocks change.
 	ts.AdvanceEpoch()
@@ -356,7 +356,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 	paramKey = string(epochstoragetypes.KeyEpochsToSave)
 	paramVal = "\"" + strconv.FormatUint(20, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch so the change applies
 	ts.AdvanceEpoch() // blockHeight = 40
@@ -385,7 +385,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			// Sign and send the payment requests
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 			relaySession.Sig = sig
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
@@ -409,11 +409,11 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
 	paramVal := "\"" + strconv.FormatUint(20, 10) + "\""
 	err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	paramKey = string(epochstoragetypes.KeyEpochsToSave)
 	paramVal = "\"" + strconv.FormatUint(10, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch to apply EpochBlocks change.
 	ts.AdvanceEpoch() // blockHeight = 20
@@ -456,7 +456,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			paramKey := string(epochstoragetypes.KeyEpochBlocks)
 			paramVal := "\"" + strconv.FormatUint(epochTests[ti].epochBlocksNewValues, 10) + "\""
 			err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			ts.AdvanceEpochs(epochTests[ti].epochNum)
 			ts.AdvanceBlocks(epochTests[ti].blockNum)
@@ -467,7 +467,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			// Sign and send the payment requests
 			sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 			relaySession.Sig = sig
-			require.Nil(t, err)
+			require.NoError(t, err)
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
 				Relays:  slices.Slice(relaySession),
@@ -491,15 +491,15 @@ func TestStakePaymentUnstake(t *testing.T) {
 	paramKey := string(epochstoragetypes.KeyEpochBlocks)
 	paramVal := "\"" + strconv.FormatUint(20, 10) + "\""
 	err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	paramKey = string(epochstoragetypes.KeyEpochsToSave)
 	paramVal = "\"" + strconv.FormatUint(10, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	paramKey = string(epochstoragetypes.KeyUnstakeHoldBlocks)
 	paramVal = "\"" + strconv.FormatUint(210, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance an epoch to apply EpochBlocks change
 	ts.AdvanceEpoch() // blockHeight = 20
@@ -509,7 +509,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 
 	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 	relaySession.Sig = sig
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	payment := pairingtypes.MsgRelayPayment{
 		Creator: providerAddr,
@@ -522,7 +522,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	_, err = ts.TxPairingUnstakeProvider(providerAddr, ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// advance enough epochs to make the provider get its money back:
 	// this will panic if there's something wrong in the unstake process
@@ -564,7 +564,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		paramKey := string(epochstoragetypes.KeyEpochBlocks)
 		paramVal := "\"" + strconv.FormatUint(newEpochBlocks, 10) + "\""
 		err := ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// Advance an epoch to apply EpochBlocks change
 		ts.AdvanceEpoch()
@@ -573,7 +573,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 		relaySession := ts.newRelaySession(providerAddr, 1, 10000, ts.EpochStart(), 0)
 		sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 		relaySession.Sig = sig
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		payment := pairingtypes.MsgRelayPayment{
 			Creator: providerAddr,

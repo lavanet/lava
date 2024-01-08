@@ -45,11 +45,11 @@ func TestSignAndExtractResponse(t *testing.T) {
 	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 0, 55, "tendermintrpc", metadataValue, "test", nil)
 	require.Equal(t, relayRequestData.Metadata, metadataValue)
 	relay, err := ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, unresponsiveProviderStub())
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// check signature
 	extractedConsumerAddress, err := sigs.ExtractSignerAddress(relay.RelaySession)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, extractedConsumerAddress, consumer_address)
 	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 	finalizedBlockHashes := map[int64]interface{}{123: "AAA"}
@@ -94,11 +94,11 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	relayRequestData := NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 0, spectypes.LATEST_BLOCK, "tendermintrpc", metadataValue, "test", nil)
 	require.Equal(t, relayRequestData.Metadata, metadataValue)
 	relay, err := ConstructRelayRequest(ctx, consumer_sk, "lava", testSpecId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, unresponsiveProviderStub())
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// provider checks
 	extractedConsumerAddress, err := sigs.ExtractSignerAddress(relay.RelaySession)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, extractedConsumerAddress, consumer_address)
 	require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 	latestBlock := int64(123)
