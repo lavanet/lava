@@ -25,7 +25,8 @@ const (
 	flagVestingAmt     = "vesting-amount"
 	flagModuleAccount  = "module-account"
 	flagPeriodicLength = "periodic-length"
-	flagPeriodicNumber = "periodic-Number"
+	flagPeriodicNumber = "periodic-number"
+	flagPeriodicFirst  = "periodic-first"
 )
 
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
@@ -114,6 +115,16 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				return err
 			}
 
+			periodicFirstStr, err := cmd.Flags().GetString(flagVestingAmt)
+			if err != nil {
+				return err
+			}
+
+			periodicFirst, err := sdk.ParseCoinsNormalized(periodicFirstStr)
+			if err != nil {
+				return fmt.Errorf("failed to parse periodicFirst amount: %w", err)
+			}
+
 			// create concrete account type based on input parameters
 			var genAccount authtypes.GenesisAccount
 
@@ -146,11 +157,14 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 						return errors.New("periodic account must have vesting start flag")
 					}
 
+					if err := periodicFirst.Validate(); err != nil {
+						return errors.New("periodic account must have vesting first emission none negative " + err.Error())
+					}
 					if !vestingAmt.QuoInt(sdk.NewInt(periodicNumber)).MulInt(sdk.NewInt(periodicNumber)).IsEqual(vestingAmt) {
 						return errors.New("periodic vesting amount must be divisble by the periodicNumber")
 					}
 
-					var periods []authvesting.Period
+					periods := []authvesting.Period{{Length: 0, Amount: periodicFirst}}
 					for i := int64(0); i < periodicNumber; i++ {
 						period := authvesting.Period{Length: periodicLength, Amount: vestingAmt.QuoInt(sdk.NewInt(periodicNumber))}
 						periods = append(periods, period)
@@ -238,6 +252,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 	cmd.Flags().Bool(flagModuleAccount, false, "create a module account")
 	cmd.Flags().Int64(flagPeriodicLength, 0, "length of the each period")
 	cmd.Flags().Int64(flagPeriodicNumber, 0, "number of periods")
+	cmd.Flags().String(flagPeriodicFirst, "", "the amount to be paid in the first emission")
 
 	flags.AddQueryFlagsToCmd(cmd)
 
