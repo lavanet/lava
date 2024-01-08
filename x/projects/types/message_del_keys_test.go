@@ -17,13 +17,24 @@ func TestMsgDelKeys_ValidateBasic(t *testing.T) {
 		{
 			name: "invalid address",
 			msg: MsgDelKeys{
-				Creator: "invalid_address",
+				Creator:     "invalid_address",
+				ProjectKeys: []ProjectKey{ProjectAdminKey(sample.AccAddress())},
 			},
 			err: legacyerrors.ErrInvalidAddress,
-		}, {
+		},
+		{
+			name: "invalid address in project keys",
+			msg: MsgDelKeys{
+				Creator:     sample.AccAddress(),
+				ProjectKeys: []ProjectKey{ProjectAdminKey("invalid_address")},
+			},
+			err: legacyerrors.ErrInvalidAddress,
+		},
+		{
 			name: "valid address",
 			msg: MsgDelKeys{
-				Creator: sample.AccAddress(),
+				Creator:     sample.AccAddress(),
+				ProjectKeys: []ProjectKey{ProjectAdminKey(sample.AccAddress())},
 			},
 		},
 	}

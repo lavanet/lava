@@ -19,19 +19,6 @@ func (k Keeper) UnbondFull(ctx sdk.Context, delegator string, validator string, 
 	// 2.calls staking module to unbond from the validator
 	// 3.calls the hooks to than unbond from the empty provider
 
-	err := k.Redelegate(
-		ctx,
-		delegator,
-		provider,
-		types.EMPTY_PROVIDER,
-		chainID,
-		types.EMPTY_PROVIDER_CHAINID,
-		amount,
-	)
-	if err != nil {
-		return err
-	}
-
 	addr, err := sdk.ValAddressFromBech32(validator)
 	if err != nil {
 		return err
@@ -52,6 +39,18 @@ func (k Keeper) UnbondFull(ctx sdk.Context, delegator string, validator string, 
 		return err
 	}
 
+	err = k.Redelegate(
+		ctx,
+		delegator,
+		provider,
+		types.EMPTY_PROVIDER,
+		chainID,
+		types.EMPTY_PROVIDER_CHAINID,
+		amount,
+	)
+	if err != nil {
+		return err
+	}
 	_, err = k.stakingKeeper.Undelegate(ctx, delegatorAddress, addr, shares)
 	if err != nil {
 		return err

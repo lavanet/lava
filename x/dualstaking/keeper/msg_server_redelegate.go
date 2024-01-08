@@ -15,6 +15,10 @@ func (k msgServer) Redelegate(goCtx context.Context, msg *types.MsgRedelegate) (
 		return &types.MsgRedelegateResponse{}, err
 	}
 
+	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
+		return &types.MsgRedelegateResponse{}, err
+	}
+
 	err := k.Keeper.Redelegate(
 		ctx,
 		msg.Creator,

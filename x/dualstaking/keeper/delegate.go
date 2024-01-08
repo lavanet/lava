@@ -296,6 +296,16 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 // without the funds being subject to unstakeHoldBlocks witholding period.
 // (effective on next epoch)
 func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, toChainID string, amount sdk.Coin) error {
+	_, foundFrom := k.specKeeper.GetSpec(ctx, fromChainID)
+	_, foundTo := k.specKeeper.GetSpec(ctx, toChainID)
+	if (!foundFrom && fromChainID != types.EMPTY_PROVIDER_CHAINID) ||
+		(!foundTo && toChainID != types.EMPTY_PROVIDER_CHAINID) {
+		return utils.LavaFormatWarning("cannot redelegate with invalid chain IDs", fmt.Errorf("chain ID not found"),
+			utils.LogAttr("from_chain_id", fromChainID),
+			utils.LogAttr("to_chain_id", toChainID),
+		)
+	}
+
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
 	if _, err := sdk.AccAddressFromBech32(delegator); err != nil {
@@ -357,6 +367,12 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 // provider will be updated accordingly (or terminate) from the next epoch.
 // (effective on next epoch)
 func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
+	_, found := k.specKeeper.GetSpec(ctx, chainID)
+	if chainID != types.EMPTY_PROVIDER_CHAINID && !found {
+		return utils.LavaFormatWarning("cannot unbond with invalid chain ID", fmt.Errorf("chain ID not found"),
+			utils.LogAttr("chain_id", chainID))
+	}
+
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
 	if _, err := sdk.AccAddressFromBech32(delegator); err != nil {

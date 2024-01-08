@@ -9,6 +9,7 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -20,6 +21,22 @@ type BadgeData struct {
 }
 
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
+	if len(msg.LatestBlockReports) > len(msg.Relays) {
+		return nil, utils.LavaFormatError("RelayPayment_invalid_latest_block_reports", fmt.Errorf("invalid latest block reports"),
+			utils.LogAttr("latestBlockReports", msg.LatestBlockReports),
+			utils.LogAttr("len(latestBlockReports)", len(msg.LatestBlockReports)),
+			utils.LogAttr("relays", msg.Relays),
+			utils.LogAttr("len(relays)", len(msg.Relays)),
+		)
+	}
+
+	if !commontypes.ValidateString(msg.GetDescriptionString(), commontypes.DESCRIPTION_RESTRICTIONS, nil) &&
+		len(msg.GetDescriptionString()) != 0 {
+		return nil, utils.LavaFormatWarning("RelayPayment_invalid_description", fmt.Errorf("invalid string"),
+			utils.LogAttr("reason", msg.GetDescriptionString()),
+		)
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Logger(ctx)
 	lavaChainID := ctx.BlockHeader().ChainID

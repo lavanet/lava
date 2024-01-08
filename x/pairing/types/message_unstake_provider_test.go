@@ -17,13 +17,24 @@ func TestMsgUnstakeProvider_ValidateBasic(t *testing.T) {
 		{
 			name: "invalid address",
 			msg: MsgUnstakeProvider{
-				Creator: "invalid_address",
+				Creator:   "invalid_address",
+				Validator: sample.ValAddress(),
 			},
 			err: legacyerrors.ErrInvalidAddress,
-		}, {
+		},
+		{
+			name: "invalid validator address",
+			msg: MsgUnstakeProvider{
+				Creator:   sample.AccAddress(),
+				Validator: "invalid_address",
+			},
+			err: legacyerrors.ErrInvalidAddress,
+		},
+		{
 			name: "valid address",
 			msg: MsgUnstakeProvider{
-				Creator: sample.AccAddress(),
+				Creator:   sample.AccAddress(),
+				Validator: sample.ValAddress(),
 			},
 		},
 	}
