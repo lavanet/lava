@@ -2,6 +2,7 @@ package updaters
 
 import (
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/utils"
 	"golang.org/x/net/context"
@@ -74,10 +75,12 @@ func (eu *EpochUpdater) UpdaterKey() string {
 	return CallbackKeyForEpochUpdate
 }
 
-func (eu *EpochUpdater) Update(latestBlock int64) {
+// our epoch updater always fetches the latest epoch start params.
+func (eu *EpochUpdater) updateInner(latestBlock int64) {
 	eu.lock.Lock()
 	defer eu.lock.Unlock()
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
 	currentEpoch, err := eu.stateQuery.CurrentEpochStart(ctx)
 	if err != nil {
 		return // failed to get the current epoch
@@ -99,4 +102,13 @@ func (eu *EpochUpdater) Update(latestBlock int64) {
 		// iterate over all the delayed updates and execute their updatable. if delay is 0 it will execute immediately
 		epochUpdatable.UpdateOnBlock(currentEpoch, latestBlock)
 	}
+}
+
+func (eu *EpochUpdater) Reset(latestBlock int64) {
+	utils.LavaFormatDebug("Reset triggered for Epoch Updater", utils.LogAttr("block", latestBlock))
+	eu.updateInner(latestBlock)
+}
+
+func (eu *EpochUpdater) Update(latestBlock int64) {
+	eu.updateInner(latestBlock)
 }

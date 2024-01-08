@@ -31,6 +31,7 @@ type StateTracker struct {
 
 type Updater interface {
 	Update(int64)
+	Reset(int64)
 	UpdaterKey() string
 }
 
@@ -95,18 +96,37 @@ func (st *StateTracker) GetAverageBlockTime() time.Duration {
 	return st.AverageBlockTime
 }
 
-func (st *StateTracker) newLavaBlock(latestBlock int64, hash string) {
+func (st *StateTracker) newLavaBlock(blockFrom int64, blockTo int64, hash string) {
 	// go over the registered updaters and trigger update
 	st.registrationLock.RLock()
 	defer st.registrationLock.RUnlock()
-	// first update event tracker
-	err := st.EventTracker.UpdateBlockResults(latestBlock)
-	if err != nil {
-		utils.LavaFormatWarning("calling update without updated events tracker", err)
+	// if we had a huge gap
+	if time.Duration(blockTo-blockFrom)*st.AverageBlockTime > time.Hour { // if we are 1H behind
+		// in case we have a huge gap we launch a reset on the state of all the updaters. as the state is no longer valid.
+		// this can be caused by a huge catch up on blocks after a halt or a sync state on the node. sometimes pruning the blocks the protocol requires.
+		// therefore we need to reset the state and fetch all information from the chain
+		// first update the event tracker to latest block.
+		err := st.EventTracker.UpdateBlockResults(blockTo)
+		if err != nil {
+			utils.LavaFormatError("failing to fetch latest result after gap", err, utils.LogAttr("blockFrom", blockFrom), utils.LogAttr("blockTo", blockTo))
+		}
+		// reset will try to reset the updaters. if it fails it will retry every update until it succeeds.
+		for _, updater := range st.newLavaBlockUpdaters {
+			updater.Reset(blockTo)
+		}
+		return // return after state has been reset.
 	}
-	// after events were updated we can trigger updaters
-	for _, updater := range st.newLavaBlockUpdaters {
-		updater.Update(latestBlock)
+
+	for block := blockFrom + 1; block <= blockTo; block++ {
+		// first update event tracker
+		err := st.EventTracker.UpdateBlockResults(block)
+		if err != nil {
+			utils.LavaFormatWarning("calling update without updated events tracker", err)
+		}
+		// after events were updated we can trigger updaters
+		for _, updater := range st.newLavaBlockUpdaters {
+			updater.Update(block)
+		}
 	}
 }
 

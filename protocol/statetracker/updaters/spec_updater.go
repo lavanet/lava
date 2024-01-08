@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -39,6 +40,7 @@ type SpecUpdater struct {
 	specUpdatables   map[string]*SpecUpdatable // key is api interface
 	specVerifiers    map[string]*SpecVerifier
 	spec             *spectypes.Spec
+	shouldUpdate     bool
 }
 
 func NewSpecUpdater(chainId string, specGetter SpecGetter, eventTracker *EventTracker) *SpecUpdater {
@@ -123,30 +125,51 @@ func (su *SpecUpdater) setBlockLastUpdatedAtomically(block uint64) {
 	atomic.StoreUint64(&su.blockLastUpdated, block)
 }
 
+// only call when locked
+func (su *SpecUpdater) updateInner(latestBlock int64) {
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	spec, err := su.specGetter.GetSpec(timeoutCtx, su.chainId)
+	if err != nil {
+		utils.LavaFormatError("could not get spec when updated, did not update specs, will retry next block", err)
+		return
+	}
+	if spec.BlockLastUpdated > su.blockLastUpdated {
+		su.setBlockLastUpdatedAtomically(spec.BlockLastUpdated)
+	}
+	for _, specUpdatable := range su.specUpdatables {
+		utils.LavaFormatDebug("SpecUpdater: updating spec for chainId",
+			utils.LogAttr("chainId", su.chainId),
+			utils.LogAttr("specUpdatable", (*specUpdatable).GetUniqueName()))
+		(*specUpdatable).SetSpec(*spec)
+	}
+	for _, specVerifier := range su.specVerifiers {
+		utils.LavaFormatDebug("SpecUpdater: updating spec for chainId",
+			utils.LogAttr("chainId", su.chainId),
+			utils.LogAttr("specVerifier", (*specVerifier).GetUniqueName()))
+		(*specVerifier).VerifySpec(*spec)
+	}
+	su.shouldUpdate = false // update was successful
+}
+
+func (su *SpecUpdater) Reset(latestBlock int64) {
+	utils.LavaFormatDebug("Reset state called on Spec Updater", utils.LogAttr("block", latestBlock))
+	su.lock.Lock()
+	defer su.lock.Unlock()
+	su.shouldUpdate = true
+	su.updateInner(latestBlock)
+}
+
 func (su *SpecUpdater) Update(latestBlock int64) {
-	su.lock.RLock()
-	defer su.lock.RUnlock()
-	specUpdated, err := su.eventTracker.getLatestSpecModifyEvents(latestBlock)
-	if specUpdated || err != nil {
-		spec, err := su.specGetter.GetSpec(context.Background(), su.chainId)
-		if err != nil {
-			utils.LavaFormatError("could not get spec when updated, did not update specs and needed to", err)
-			return
-		}
-		if spec.BlockLastUpdated > su.blockLastUpdated {
-			su.setBlockLastUpdatedAtomically(spec.BlockLastUpdated)
-		}
-		for _, specUpdatable := range su.specUpdatables {
-			utils.LavaFormatDebug("SpecUpdater: updating spec for chainId",
-				utils.LogAttr("chainId", su.chainId),
-				utils.LogAttr("specUpdatable", (*specUpdatable).GetUniqueName()))
-			(*specUpdatable).SetSpec(*spec)
-		}
-		for _, specVerifier := range su.specVerifiers {
-			utils.LavaFormatDebug("SpecUpdater: updating spec for chainId",
-				utils.LogAttr("chainId", su.chainId),
-				utils.LogAttr("specVerifier", (*specVerifier).GetUniqueName()))
-			(*specVerifier).VerifySpec(*spec)
+	su.lock.Lock()
+	defer su.lock.Unlock()
+	if su.shouldUpdate {
+		su.updateInner(latestBlock)
+	} else {
+		specUpdated, err := su.eventTracker.getLatestSpecModifyEvents(latestBlock)
+		if specUpdated || err != nil {
+			su.shouldUpdate = true
+			su.updateInner(latestBlock)
 		}
 	}
 }

@@ -36,7 +36,7 @@ func (pu *PaymentUpdater) UpdaterKey() string {
 	return CallbackKeyForPaymentUpdate
 }
 
-func (pu *PaymentUpdater) Update(latestBlock int64) {
+func (pu *PaymentUpdater) updateInner() {
 	pu.lock.RLock()
 	defer pu.lock.RUnlock()
 	payments, err := pu.eventTracker.getLatestPaymentEvents()
@@ -49,4 +49,14 @@ func (pu *PaymentUpdater) Update(latestBlock int64) {
 			(*updatable).PaymentHandler(payment)
 		}
 	}
+}
+
+func (pu *PaymentUpdater) Reset(latestBlock int64) {
+	// in case we need a reset we don't have much to do as we might have lost some data due to pruning. we can just continue parsing our transactions
+	// TODO: we can fetch the latest transactions for our account and see if we have some missing data but for that we need to keep track all transactions per provider account
+	pu.updateInner()
+}
+
+func (pu *PaymentUpdater) Update(latestBlock int64) {
+	pu.updateInner()
 }
