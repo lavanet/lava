@@ -83,7 +83,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.consumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
 	if RelaysHealthEnable {
-		rpccs.relaysMonitor = metrics.NewRelaysMonitor(RelaysHealthInterval, listenEndpoint.ChainID, listenEndpoint.ApiInterface, func() error {
+		rpccs.relaysMonitor = metrics.NewRelaysMonitor(RelaysHealthInterval, listenEndpoint.ChainID, listenEndpoint.ApiInterface, func() (bool, error) {
 			return rpccs.sendInitialRelays(3)
 		})
 		rpccs.relaysMonitor.Start(ctx)
@@ -100,7 +100,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 }
 
 // sending a few latest blocks relays to providers in order to have some data on the providers when relays start arriving
-func (rpccs *RPCConsumerServer) sendInitialRelays(count int) error {
+func (rpccs *RPCConsumerServer) sendInitialRelays(count int) (success bool, err error) {
 	// only start after everythign is initialized
 	reinitializedChan := make(chan bool)
 	// check consumer session manager
@@ -117,19 +117,19 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) error {
 	case <-reinitializedChan:
 		break
 	case <-time.After(30 * time.Second):
-		return utils.LavaFormatError("failed initial relays, csm was not initialised after timeout", nil, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}}...)
+		return false, utils.LavaFormatError("failed initial relays, csm was not initialised after timeout", nil, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}}...)
 	}
 
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 	parsing, collectionData, ok := rpccs.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	if !ok {
-		return utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}}...)
+		return false, utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}}...)
 	}
 	path := parsing.ApiName
 	data := []byte(parsing.FunctionTemplate)
 	chainMessage, err := rpccs.chainParser.ParseMsg(path, data, collectionData.Type, nil, 0)
 	if err != nil {
-		return utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err)
+		return false, utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err)
 	}
 	reqBlock, _ := chainMessage.RequestedBlock()
 	seenBlock := int64(0)
@@ -153,11 +153,13 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) error {
 			if RelaysHealthEnable {
 				rpccs.relaysMonitor.LogRelay(ctx)
 			}
+			success = true
+			break
 		}
 		time.Sleep(2 * time.Millisecond)
 	}
 
-	return nil
+	return success, err
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {

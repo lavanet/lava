@@ -10,7 +10,7 @@ type RelaysMonitor struct {
 	chainID      string
 	apiInterface string
 
-	relaySender func() error
+	relaySender func() (bool, error)
 	ticker      *time.Ticker
 	interval    time.Duration
 	lock        sync.RWMutex
@@ -18,7 +18,7 @@ type RelaysMonitor struct {
 	isHealthy bool
 }
 
-func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string, relaySender func() error) *RelaysMonitor {
+func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string, relaySender func() (bool, error)) *RelaysMonitor {
 	return &RelaysMonitor{
 		chainID:      chainID,
 		apiInterface: apiInterface,
@@ -38,8 +38,8 @@ func (sem *RelaysMonitor) startInner(ctx context.Context) {
 	for {
 		select {
 		case <-sem.ticker.C:
-			err := sem.relaySender()
-			sem.isHealthy = err != nil
+			success, _ := sem.relaySender()
+			sem.isHealthy = success
 		case <-ctx.Done():
 			sem.ticker.Stop()
 			return
