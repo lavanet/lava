@@ -29,6 +29,10 @@ jobs:
         if: always()
         run: cat testutil/e2e/protocolLogs/00_StartLava.log | grep 'WRN |ERR '
 
+      - name: tail -n 1000 lavad Emergency mode Logs
+        if: always()
+        run: tail -n 1000 testutil/e2e/protocolLogs/10_StartLavaInEmergencyMode.log
+
       - name: Stake Lava All Logs
         if: always()
         run: cat testutil/e2e/protocolLogs/01_stakeLava.log
