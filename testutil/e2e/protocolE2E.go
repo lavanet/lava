@@ -46,6 +46,7 @@ const (
 	protocolLogsFolder     = "./testutil/e2e/protocolLogs/"
 	configFolder           = "./testutil/e2e/e2eProviderConfigs"
 	EmergencyModeStartLine = "+++++++++++ EMERGENCY MODE START ++++++++++"
+	EmergencyModeEndLine   = "+++++++++++ EMERGENCY MODE END ++++++++++"
 )
 
 var (
@@ -814,6 +815,9 @@ func (lt *lavaTest) saveLogs() {
 			if strings.Contains(line, EmergencyModeStartLine) {
 				reachedEmergencyModeLine = true
 			}
+			if strings.Contains(line, EmergencyModeEndLine) {
+				reachedEmergencyModeLine = false
+			}
 			if strings.Contains(line, " ERR ") || strings.Contains(line, "[Error]" /* sdk errors*/) {
 				isAllowedError := false
 				for errorSubstring := range allowedErrors {
@@ -985,9 +989,20 @@ func (lt *lavaTest) sleepUntilNextEpoch() {
 	utils.LavaFormatInfo("sleepUntilNextEpoch" + " OK")
 }
 
-func (lt *lavaTest) markLogsStart() {
+func (lt *lavaTest) markEmergencyModeLogsStart() {
 	for log, buffer := range lt.logs {
 		_, err := buffer.WriteString(EmergencyModeStartLine + "\n")
+		utils.LavaFormatInfo("Adding EmergencyMode Start Line to", utils.LogAttr("log_name", log))
+		if err != nil {
+			utils.LavaFormatError("Failed Writing to buffer", err, utils.LogAttr("key", log))
+		}
+	}
+}
+
+func (lt *lavaTest) markEmergencyModeLogsEnd() {
+	for log, buffer := range lt.logs {
+		utils.LavaFormatInfo("Adding EmergencyMode End Line to", utils.LogAttr("log_name", log))
+		_, err := buffer.WriteString(EmergencyModeEndLine + "\n")
 		if err != nil {
 			utils.LavaFormatError("Failed Writing to buffer", err, utils.LogAttr("key", log))
 		}
@@ -999,7 +1014,7 @@ func (lt *lavaTest) stopLava() {
 	// as from this line forward connection errors to the node can happen
 	// and it makes sense as we are shutting down the node to activate emergency mode
 	// but we don't want to fail the test
-	lt.markLogsStart()
+	lt.markEmergencyModeLogsStart()
 
 	cmd := exec.Command("killall", "lavad")
 	err := cmd.Run()
@@ -1322,6 +1337,7 @@ func runProtocolE2E(timeout time.Duration) {
 	lt.checkQoS()
 
 	// wait 3 epochs {pairing.params} (recommendedEpochNumToCollectPayment + 1) allow rpcproviders claim rewards before node will be restarted(after restarting node
+	// TODO: we can do it smarter by fetching from the chain the parameter and wait as much epochs
 	utils.LavaFormatInfo("Sleeping 3 Epochs to make sure all rewards were claimed")
 	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()
@@ -1376,6 +1392,10 @@ func runProtocolE2E(timeout time.Duration) {
 	})
 
 	utils.LavaFormatInfo("REST RELAY TESTS OK")
+	// Mark EmergencyMode Ended in logs
+	lt.markEmergencyModeLogsEnd()
+
+	// End Test
 
 	lt.finishTestSuccessfully()
 }
