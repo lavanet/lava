@@ -41,9 +41,9 @@ func NewChainListener(
 	case spectypes.APIInterfaceJsonRPC:
 		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
+		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceRest:
-		return NewRestChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
+		return NewRestChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceGrpc:
 		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs, chainParser), nil
 	}
