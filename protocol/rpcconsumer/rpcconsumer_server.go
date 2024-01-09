@@ -151,7 +151,7 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) (success bool, err 
 			utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderInfo.ProviderAddress}}...)
 
 			if RelaysHealthEnable {
-				rpccs.relaysMonitor.LogRelay(ctx)
+				rpccs.relaysMonitor.LogRelay()
 			}
 			success = true
 			break
@@ -313,7 +313,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, retries)
 
 	if RelaysHealthEnable {
-		rpccs.relaysMonitor.LogRelay(ctx)
+		rpccs.relaysMonitor.LogRelay()
 	}
 
 	return returnedResult, nil

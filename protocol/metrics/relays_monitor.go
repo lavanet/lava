@@ -47,7 +47,7 @@ func (sem *RelaysMonitor) startInner(ctx context.Context) {
 	}
 }
 
-func (sem *RelaysMonitor) LogRelay(ctx context.Context) {
+func (sem *RelaysMonitor) LogRelay() {
 	sem.lock.Lock()
 	sem.isHealthy = true
 	sem.ticker.Reset(sem.interval)
