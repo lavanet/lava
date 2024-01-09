@@ -1,8 +1,16 @@
 package extensionslib
 
 import (
+	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
+
+// struct used for message parsing to determine if extension override is required or not
+type ExtensionInfo struct {
+	ExtensionOverride    []string
+	LatestBlock          uint64
+	AdditionalExtensions []string
+}
 
 type ExtensionsChainMessage interface {
 	SetExtension(*spectypes.Extension)
@@ -52,12 +60,18 @@ func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage
 	if len(ep.configuredExtensions) == 0 {
 		return
 	}
+	utils.LavaFormatDebug("Extension parsing",
+		utils.LogAttr("addon", addon),
+	)
 
 	for extensionKey, extension := range ep.configuredExtensions {
 		if extensionKey.Addon != addon {
 			// this extension is not relevant for this api
 			continue
 		}
+		utils.LavaFormatDebug("Extension parsing didnt continue.",
+			utils.LogAttr("extensionKey", extensionKey),
+		)
 		extensionParserRule := NewExtensionParserRule(extension)
 		if extensionParserRule.isPassingRule(extensionsChainMessage, latestBlock) {
 			extensionsChainMessage.SetExtension(extension)

@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -42,8 +43,9 @@ import (
 )
 
 const (
-	protocolLogsFolder = "./testutil/e2e/protocolLogs/"
-	configFolder       = "./testutil/e2e/e2eProviderConfigs"
+	protocolLogsFolder     = "./testutil/e2e/protocolLogs/"
+	configFolder           = "./testutil/e2e/e2eProviderConfigs"
+	EmergencyModeStartLine = "+++++++++++ EMERGENCY MODE START ++++++++++"
 )
 
 var (
@@ -405,8 +407,13 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 	errors := []string{}
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
-		errors = append(errors, "error client dial")
+		return err
 	}
+	rawClient, err := rpc.DialContext(ctx, rpcURL)
+	if err != nil {
+		return err
+	}
+
 	for start := time.Now(); time.Since(start) < testDuration; {
 		// eth_blockNumber
 		latestBlockNumberUint, err := client.BlockNumber(ctx)
@@ -493,6 +500,20 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 		_, err = client.CallContract(ctx, callMsg, previousBlock)
 		if err != nil && !strings.Contains(err.Error(), "rpc error") {
 			errors = append(errors, "error JSONRPC_eth_call")
+		}
+
+		// debug and extensions test:
+		blockZero := big.NewInt(0)
+		_, err = client.BlockByNumber(ctx, blockZero)
+		if err != nil {
+			errors = append(errors, "error eth_getBlockByNumber")
+			continue
+		}
+		var result interface{}
+		err = rawClient.CallContext(ctx, &result, "debug_getRawHeader", "latest")
+		if err != nil {
+			errors = append(errors, "error eth_getBlockByNumber")
+			continue
 		}
 	}
 
@@ -773,6 +794,7 @@ func (lt *lavaTest) saveLogs() {
 	errorFiles := []string{}
 	errorPrint := make(map[string]string)
 	for fileName, logBuffer := range lt.logs {
+		reachedEmergencyModeLine := false
 		file, err := os.Create(lt.logPath + fileName + ".log")
 		if err != nil {
 			panic(err)
@@ -789,12 +811,24 @@ func (lt *lavaTest) saveLogs() {
 			if fileName == "00_StartLava" { // TODO remove this and solve the errors
 				break
 			}
+			if strings.Contains(line, EmergencyModeStartLine) {
+				reachedEmergencyModeLine = true
+			}
 			if strings.Contains(line, " ERR ") || strings.Contains(line, "[Error]" /* sdk errors*/) {
 				isAllowedError := false
 				for errorSubstring := range allowedErrors {
 					if strings.Contains(line, errorSubstring) {
 						isAllowedError = true
 						break
+					}
+				}
+				// parse emergency possible errors as well.
+				if reachedEmergencyModeLine {
+					for errorSubstring := range allowedErrorsDuringEmergencyMode {
+						if strings.Contains(line, errorSubstring) {
+							isAllowedError = true
+							break
+						}
 					}
 				}
 				// When test did not finish properly save all logs. If test finished properly save only non allowed errors.
@@ -951,7 +985,22 @@ func (lt *lavaTest) sleepUntilNextEpoch() {
 	utils.LavaFormatInfo("sleepUntilNextEpoch" + " OK")
 }
 
+func (lt *lavaTest) markLogsStart() {
+	for log, buffer := range lt.logs {
+		_, err := buffer.WriteString(EmergencyModeStartLine + "\n")
+		if err != nil {
+			utils.LavaFormatError("Failed Writing to buffer", err, utils.LogAttr("key", log))
+		}
+	}
+}
+
 func (lt *lavaTest) stopLava() {
+	// we mark the start of the emergency mode
+	// as from this line forward connection errors to the node can happen
+	// and it makes sense as we are shutting down the node to activate emergency mode
+	// but we don't want to fail the test
+	lt.markLogsStart()
+
 	cmd := exec.Command("killall", "lavad")
 	err := cmd.Run()
 	if err != nil {

@@ -133,7 +133,7 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		}
 	}
 	if len(requiredMap) > len(supportedMap) {
-		return nil, utils.LavaFormatError("not all requirements supported in chainRouter, missing extensions or addons in definitions", nil, utils.Attribute{Key: "required", Value: requiredMap}, utils.Attribute{Key: "supported", Value: supportedMap})
+		return nil, utils.LavaFormatError("not all requirements supported in chainRouter, missing configuration, extensions / addons / default (regular config) in definitions, please validate your config file", nil, utils.Attribute{Key: "required", Value: requiredMap}, utils.Attribute{Key: "given", Value: supportedMap})
 	}
 
 	cri := chainRouterImpl{

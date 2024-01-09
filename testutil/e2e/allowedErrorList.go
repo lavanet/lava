@@ -10,3 +10,7 @@ var allowedErrors = map[string]string{
 	"Provider Side Failed Sending Message, Reason: Unavailable":      "This error is allowed because it is caused by the lavad restart to turn on emergency mode",
 	"Maximum cu exceeded PrepareSessionForUsage":                     "This error is allowed because it is caused by switching between providers, continuous failure would be caught by the e2e so we can allowed this error.",
 }
+
+var allowedErrorsDuringEmergencyMode = map[string]string{
+	"connection refused": "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
+}

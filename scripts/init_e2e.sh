@@ -31,7 +31,7 @@ wait_next_block
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 STAKE="500000000000ulava"
-lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2221,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2221,1,archive,debug" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2222,1" 1 -y --from servicer2 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2223,1" 1 -y --from servicer3 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2224,1" 1 -y --from servicer4 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -71,6 +71,10 @@ if [ "$plan_index" != "DefaultPlan" ]; then "echo subscription ${user1addr}: wro
 
 user3addr=$(lavad keys show user3 -a)
 
+# add debug addons and archive 
+wait_next_block
+lavad tx project set-policy $(lavad keys show user1 -a)-admin ./testutil/e2e/e2eProviderConfigs/consumer_policy.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+
 wait_next_block
 lavad tx subscription add-project "myproject1" -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
@@ -90,7 +94,6 @@ sleep_until_next_epoch
 
 count=$(lavad q subscription list-projects ${user3addr} | grep "lava@" | wc -l)
 if [ "$count" -ne 2 ]; then "echo subscription ${user3addr}: wrong project count $count instead of 2"; exit 1; fi
-
 
 # validate deleted plan is removed. 
 # Fetch the plans list

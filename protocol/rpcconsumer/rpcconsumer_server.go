@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -123,7 +124,7 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
 	}
 	path := parsing.ApiName
 	data := []byte(parsing.FunctionTemplate)
-	chainMessage, err := rpccs.chainParser.ParseMsg(path, data, collectionData.Type, nil, 0)
+	chainMessage, err := rpccs.chainParser.ParseMsg(path, data, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	if err != nil {
 		utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err)
 		return
@@ -181,7 +182,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// remove lava directive headers
 	metadata, directiveHeaders := rpccs.LavaDirectiveHeaders(metadata)
 	relaySentTime := time.Now()
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getLatestBlock())
+	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock(), AdditionalExtensions: rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders)})
 	if err != nil {
 		return nil, err
 	}
@@ -746,6 +747,21 @@ func (rpccs *RPCConsumerServer) GetInitialUnwantedProviders(directiveHeaders map
 	return unwantedProviders
 }
 
+func (rpccs *RPCConsumerServer) getExtensionsFromDirectiveHeaders(directiveHeaders map[string]string) []string {
+	extensionsStr, ok := directiveHeaders[common.EXTENSION_OVERRIDE_HEADER_NAME]
+	if ok {
+		extensions := strings.Split(extensionsStr, ",")
+		_, extensions, _ = rpccs.chainParser.SeparateAddonsExtensions(extensions)
+		if len(extensions) == 1 && extensions[0] == "none" {
+			// none eliminates existing extensions
+			return []string{}
+		} else if len(extensions) > 0 {
+			return extensions
+		}
+	}
+	return nil // returning nil means we dont have any additional extensions
+}
+
 func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage chainlib.ChainMessage, directiveHeaders map[string]string) {
 	timeoutStr, ok := directiveHeaders[common.RELAY_TIMEOUT_HEADER_NAME]
 	if ok {
@@ -753,17 +769,6 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 		if err == nil {
 			// set an override timeout
 			chainMessage.TimeoutOverride(timeout)
-		}
-	}
-	extensionsStr, ok := directiveHeaders[common.EXTENSION_OVERRIDE_HEADER_NAME]
-	if ok {
-		extensions := strings.Split(extensionsStr, ",")
-		_, extensions, _ = rpccs.chainParser.SeparateAddonsExtensions(extensions)
-		if len(extensions) == 1 && extensions[0] == "none" {
-			// none eliminates existing extensions
-			chainMessage.OverrideExtensions([]string{}, rpccs.chainParser.ExtensionsParser())
-		} else if len(extensions) > 0 {
-			chainMessage.OverrideExtensions(extensions, rpccs.chainParser.ExtensionsParser())
 		}
 	}
 }

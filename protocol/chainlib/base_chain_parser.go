@@ -155,9 +155,7 @@ func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation 
 	bcp.extensionParser.SetConfiguredExtensions(configuredExtensions)
 	// manage allowed addons
 	for addon := range bcp.allowedAddons {
-		utils.LavaFormatDebug("info on addons", utils.LogAttr("addon", addon))
 		if _, ok := policyInformation[addon]; ok {
-			utils.LavaFormatDebug("found addon", utils.LogAttr("addon", addon))
 			bcp.allowedAddons[addon] = true
 		}
 	}
@@ -257,7 +255,21 @@ func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing
 	return val.Parsing, &val.ApiCollection.CollectionData, ok
 }
 
-func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *baseChainMessageContainer, latestBlock uint64) {
+func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *baseChainMessageContainer, extensionInfo extensionslib.ExtensionInfo) {
+	if extensionInfo.ExtensionOverride == nil {
+		// consumer side extension parsing. to set the extension based on the latest block and the request
+		bcp.extensionParsingInner(addon, parsedMessageArg, extensionInfo.LatestBlock)
+	} else {
+		// this is used for provider parsing. as the provider needs to set the requested extension by the request.
+		parsedMessageArg.OverrideExtensions(extensionInfo.ExtensionOverride, &bcp.extensionParser)
+	}
+	// in case we want to force extensions we can add additional extensions. this is used on consumer side with flags.
+	if extensionInfo.AdditionalExtensions != nil {
+		parsedMessageArg.OverrideExtensions(extensionInfo.AdditionalExtensions, &bcp.extensionParser)
+	}
+}
+
+func (bcp *BaseChainParser) extensionParsingInner(addon string, parsedMessageArg *baseChainMessageContainer, latestBlock uint64) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
 	bcp.extensionParser.ExtensionParsing(addon, parsedMessageArg, latestBlock)

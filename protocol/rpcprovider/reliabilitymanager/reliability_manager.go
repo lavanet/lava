@@ -10,6 +10,7 @@ import (
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
@@ -104,7 +105,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		// we need to send a commit, first we need to use the chainProxy and get the response
 		// TODO: implement code that verified the requested block is finalized and if its not waits and tries again
 		ctx := context.Background()
-		chainMessage, err := rm.chainParser.ParseMsg(voteParams.ApiURL, voteParams.RequestData, voteParams.ConnectionType, nil, 0)
+		chainMessage, err := rm.chainParser.ParseMsg(voteParams.ApiURL, voteParams.RequestData, voteParams.ConnectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0}) // TODO: do we have the latest block?
 		if err != nil {
 			return utils.LavaFormatError("vote Request did not pass the api check on chain proxy", err,
 				utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "chainID", Value: voteParams.ChainID})

@@ -54,6 +54,8 @@ else
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
         | jq '.app_state.downtime.params.downtime_duration = "6s"' \
         | jq '.app_state.downtime.params.epoch_duration = "8s"' \
+         | jq '.app_state.epochstorage.params.epochsToSave = "5"' \
+        | jq '.app_state.epochstorage.params.epochBlocks = "10"' \
     )
 fi
 
