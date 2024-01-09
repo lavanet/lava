@@ -309,7 +309,8 @@ type TendermintRpcChainListener struct {
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
 func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
-	rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *TendermintRpcChainListener) {
+	rpcConsumerLogs *metrics.RPCConsumerLogs,
+) (chainListener *TendermintRpcChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &TendermintRpcChainListener{
 		listenEndpoint,

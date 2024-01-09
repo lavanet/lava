@@ -238,7 +238,8 @@ type RestChainListener struct {
 // NewRestChainListener creates a new instance of RestChainListener
 func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
-	rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *RestChainListener) {
+	rpcConsumerLogs *metrics.RPCConsumerLogs,
+) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
 		listenEndpoint,
