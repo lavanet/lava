@@ -23,7 +23,7 @@ func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string, rela
 		chainID:      chainID,
 		apiInterface: apiInterface,
 		relaySender:  relaySender,
-		ticker:       time.NewTicker(time.Second * 15),
+		ticker:       time.NewTicker(interval),
 		interval:     interval,
 		lock:         sync.RWMutex{},
 		isHealthy:    false,
@@ -50,7 +50,7 @@ func (sem *RelaysMonitor) startInner(ctx context.Context) {
 func (sem *RelaysMonitor) LogRelay(ctx context.Context) {
 	sem.lock.Lock()
 	sem.isHealthy = true
-	sem.ticker.Reset(time.Second * 15)
+	sem.ticker.Reset(sem.interval)
 	sem.lock.Unlock()
 }
 
