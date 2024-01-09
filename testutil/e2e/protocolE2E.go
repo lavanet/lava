@@ -1321,14 +1321,13 @@ func runProtocolE2E(timeout time.Duration) {
 
 	lt.checkQoS()
 
-	// emergency mode
-	utils.LavaFormatInfo("Sleeping Until New Epoch")
+	// wait 3 epochs {pairing.params} (recommendedEpochNumToCollectPayment + 1) allow rpcproviders claim rewards before node will be restarted(after restarting node
+	utils.LavaFormatInfo("Sleeping 3 Epochs to make sure all rewards were claimed")
+	lt.sleepUntilNextEpoch()
+	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()
 
-	// wait 3 seconds to allow rpcproviders claim rewards before node will be restarted(after restarting node
-	// we have ctx.BlockHeight == 0, until new block will be created)
-	time.Sleep(time.Second * 3)
-
+	// emergency mode
 	utils.LavaFormatInfo("Restarting lava to emergency mode")
 
 	lt.stopLava()
