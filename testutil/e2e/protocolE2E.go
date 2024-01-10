@@ -513,7 +513,7 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 		var result interface{}
 		err = rawClient.CallContext(ctx, &result, "debug_getRawHeader", "latest")
 		if err != nil {
-			errors = append(errors, "error eth_getBlockByNumber")
+			errors = append(errors, "error debug_getRawHeader")
 			continue
 		}
 	}
@@ -1339,6 +1339,7 @@ func runProtocolE2E(timeout time.Duration) {
 	// wait 3 epochs {pairing.params} (recommendedEpochNumToCollectPayment + 1) allow rpcproviders claim rewards before node will be restarted(after restarting node
 	// TODO: we can do it smarter by fetching from the chain the parameter and wait as much epochs
 	utils.LavaFormatInfo("Sleeping 3 Epochs to make sure all rewards were claimed")
+	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()

@@ -210,6 +210,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		}
 	}(relaySession) // lock in the session address
 	// parse the message to extract the cu and chainMessage for sending it
+	// providers do not parse extensions they rather let the user determine what extensions they want
 	extensionInfo := extensionslib.ExtensionInfo{LatestBlock: 0, ExtensionOverride: request.RelayData.Extensions}
 	if extensionInfo.ExtensionOverride == nil { // in case consumer did not set an extension, we skip the extension parsing and we are sending it to the regular url
 		extensionInfo.ExtensionOverride = []string{}

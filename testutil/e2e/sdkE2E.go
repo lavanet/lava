@@ -152,10 +152,8 @@ func runSDKE2E(timeout time.Duration) {
 	sdk.RunSDKTests(ctx, grpcConn, privateKey, publicKey, lt.logs["01_sdkTest"], "7070")
 
 	// Emergency mode tests
-	utils.LavaFormatInfo("Sleeping Until New Epoch")
-	lt.sleepUntilNextEpoch()
-
 	utils.LavaFormatInfo("Sleeping 3 Epochs to make sure all rewards were claimed")
+	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()
