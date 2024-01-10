@@ -25,7 +25,8 @@ const (
 	flagVestingAmt     = "vesting-amount"
 	flagModuleAccount  = "module-account"
 	flagPeriodicLength = "periodic-length"
-	flagPeriodicNumber = "periodic-Number"
+	flagPeriodicNumber = "periodic-number"
+	flagPeriodicFirst  = "periodic-first"
 )
 
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
@@ -37,6 +38,9 @@ func AddGenesisAccountCmd(defaultNodeHome string) *cobra.Command {
 the account address or key name and a list of initial coins. If a key name is given,
 the address will be looked up in the local Keybase. The list of initial tokens must
 contain valid denominations. Accounts may optionally be supplied with vesting parameters.
+periodic genesis account (total vesting amount = --vesting-amount + --periodic-first):
+lavad add-genesis-account bela 30000000ulava  --vesting-start-time 1704707673 --vesting-amount 1000ulava --periodic-number 10  --periodic-length 1 --periodic-first 200ulava
+
 `,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -114,6 +118,16 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				return err
 			}
 
+			periodicFirstStr, err := cmd.Flags().GetString(flagPeriodicFirst)
+			if err != nil {
+				return err
+			}
+
+			periodicFirst, err := sdk.ParseCoinsNormalized(periodicFirstStr)
+			if err != nil {
+				return fmt.Errorf("failed to parse periodicFirst amount: %w", err)
+			}
+
 			// create concrete account type based on input parameters
 			var genAccount authtypes.GenesisAccount
 
@@ -146,17 +160,20 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 						return errors.New("periodic account must have vesting start flag")
 					}
 
+					if err := periodicFirst.Validate(); err != nil {
+						return errors.New("periodic account must have vesting first emission none negative " + err.Error())
+					}
 					if !vestingAmt.QuoInt(sdk.NewInt(periodicNumber)).MulInt(sdk.NewInt(periodicNumber)).IsEqual(vestingAmt) {
 						return errors.New("periodic vesting amount must be divisble by the periodicNumber")
 					}
 
-					var periods []authvesting.Period
+					periods := []authvesting.Period{{Length: 0, Amount: periodicFirst}}
 					for i := int64(0); i < periodicNumber; i++ {
 						period := authvesting.Period{Length: periodicLength, Amount: vestingAmt.QuoInt(sdk.NewInt(periodicNumber))}
 						periods = append(periods, period)
 					}
 
-					genAccount = authvesting.NewPeriodicVestingAccount(baseAccount, vestingAmt, vestingStart, periods)
+					genAccount = authvesting.NewPeriodicVestingAccount(baseAccount, vestingAmt.Add(periodicFirst...), vestingStart, periods)
 				case vestingStart != 0 && vestingEnd != 0:
 					genAccount = authvesting.NewContinuousVestingAccountRaw(baseVestingAccount, vestingStart)
 
@@ -238,6 +255,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 	cmd.Flags().Bool(flagModuleAccount, false, "create a module account")
 	cmd.Flags().Int64(flagPeriodicLength, 0, "length of the each period")
 	cmd.Flags().Int64(flagPeriodicNumber, 0, "number of periods")
+	cmd.Flags().String(flagPeriodicFirst, "", "the amount to be paid in the first emission")
 
 	flags.AddQueryFlagsToCmd(cmd)
 

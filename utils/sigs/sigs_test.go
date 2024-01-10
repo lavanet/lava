@@ -32,10 +32,10 @@ func TestSignAndExtract(t *testing.T) {
 	sk, addr := GenerateFloatingKey()
 	mock := NewMockSignable("hello", 1)
 	sig, err := Sign(sk, mock)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	mock.sig = sig
 	extractedAddr, err := ExtractSignerAddress(mock)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, addr, extractedAddr)
 }
 
@@ -52,11 +52,11 @@ func TestHashRounds(t *testing.T) {
 	mock1.data = string(HashMsg(mock1.DataToSign()))
 
 	sig0, err := Sign(sk, mock0)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	sig1, err := Sign(sk, mock1)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	sig2, err := Sign(sk, mock2)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// check all sigs are the same
 	require.Equal(t, sig0, sig1)

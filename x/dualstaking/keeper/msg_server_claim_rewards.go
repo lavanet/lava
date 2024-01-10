@@ -11,7 +11,19 @@ import (
 func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimRewards) (*types.MsgClaimRewardsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	err := k.Keeper.ClaimRewards(
+	_, err := sdk.AccAddressFromBech32(msg.Creator)
+	if err != nil {
+		return &types.MsgClaimRewardsResponse{}, utils.LavaFormatError("invalid creator address", err)
+	}
+
+	if msg.Provider != "" && msg.Provider != types.EMPTY_PROVIDER {
+		_, err = sdk.AccAddressFromBech32(msg.Provider)
+		if err != nil {
+			return &types.MsgClaimRewardsResponse{}, utils.LavaFormatError("invalid provider address", err)
+		}
+	}
+
+	err = k.Keeper.ClaimRewards(
 		ctx,
 		msg.Creator,
 		msg.Provider,

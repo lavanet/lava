@@ -57,7 +57,7 @@ type ChainTracker struct {
 	blockQueueMu            sync.RWMutex
 	blocksQueue             []BlockStore                    // holds all past hashes up until latest block
 	forkCallback            func(int64)                     // a function to be called when a fork is detected
-	newLatestCallback       func(int64, string)             // a function to be called when a new block is detected
+	newLatestCallback       func(int64, int64, string)      // a function to be called when a new block is detected, from what block to what block including gaps
 	oldBlockCallback        func(latestBlockTime time.Time) // a function to be called when an old block is detected
 	consistencyCallback     func(oldBlock int64, block int64)
 	serverBlockMemory       uint64
@@ -320,10 +320,7 @@ func (cs *ChainTracker) fetchAllPreviousBlocksIfNecessary(ctx context.Context) (
 		}
 		if gotNewBlock {
 			if cs.newLatestCallback != nil {
-				for i := prev_latest + 1; i <= newLatestBlock; i++ {
-					// on catch up of several blocks we don't want to miss any callbacks
-					cs.newLatestCallback(i, latestHash) // TODO: this is calling the latest hash only repeatedly, this is not precise, currently not used anywhere except for prints
-				}
+				cs.newLatestCallback(prev_latest, newLatestBlock, latestHash) // TODO: this is calling the latest hash only repeatedly, this is not precise, currently not used anywhere except for prints
 			}
 			blocksUpdated := uint64(newLatestBlock - prev_latest)
 			// update our timer resolution

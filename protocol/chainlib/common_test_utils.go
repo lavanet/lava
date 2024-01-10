@@ -187,9 +187,9 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 		stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(1, 1)),
 		sdk.ZeroInt(),
 	)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, err = ts.Servers.StakingServer.CreateValidator(ts.Ctx, msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// setup consumer
 	ts.Consumer = testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance)
 

@@ -65,15 +65,15 @@ func TestHappyFlowE2EEmergency(t *testing.T) {
 			} else {
 				successfulRelays++
 
-				require.Nil(t, err)
-				require.Nil(t, err)
+				require.NoError(t, err)
+				require.NoError(t, err)
 				require.Equal(t, cs.Session.LatestRelayCu, sps.LatestRelayCu)
 
 				err = psm.OnSessionDone(sps, cs.Session.RelayNum-skippedRelays)
 				require.NoError(t, err)
 
 				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, maxCuForVirtualEpoch, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false)
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			require.Equal(t, sps.CuSum, successfulRelays*maxCuForVirtualEpoch)
@@ -93,7 +93,7 @@ func TestHappyFlowEmergencyInConsumer(t *testing.T) {
 	csm, psm, ctx := prepareSessionsWithFirstRelay(t, maxCuForVirtualEpoch)
 
 	css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch, nil, servicedBlockNumber, "", nil, common.NOSTATE, virtualEpoch) // get a session
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	for _, cs := range css {
 		require.NotNil(t, cs)
@@ -125,7 +125,7 @@ func TestHappyFlowEmergencyInConsumer(t *testing.T) {
 
 		// Consumer Side:
 		err = csm.OnSessionFailure(cs.Session, nil)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, cs.Session.CuSum, maxCuForVirtualEpoch)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
 		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall+1)
@@ -158,7 +158,7 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 	require.NoError(t, err)
 	// get single consumer session
 	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	for _, cs := range css {
 		require.NotNil(t, cs)
@@ -177,14 +177,14 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 		sps, err = psm.RegisterProviderSessionWithConsumer(ctx, consumerOneAddress, cs.Session.Parent.PairingEpoch, uint64(cs.Session.SessionId), cs.Session.RelayNum, cs.Session.Parent.MaxComputeUnits, pairedProviders, "projectIdTest", nil)
 		// validate session was added
 		require.NotEmpty(t, psm.sessionsWithAllConsumers)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, sps)
 
 		// prepare session for usage
 		err = sps.PrepareSessionForUsage(ctx, cuForFirstRequest, cs.Session.LatestRelayCu, 0, 0)
 
 		// validate session was prepared successfully
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, cs.Session.LatestRelayCu, sps.LatestRelayCu)
 		require.Equal(t, sps.CuSum, cs.Session.LatestRelayCu)
 		require.Equal(t, sps.SessionID, uint64(cs.Session.SessionId))
@@ -196,7 +196,7 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 
 		// Consumer Side:
 		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), 1, 1, false)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
 		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)

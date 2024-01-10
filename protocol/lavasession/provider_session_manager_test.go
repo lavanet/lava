@@ -60,14 +60,14 @@ func prepareSession(t *testing.T, ctx context.Context) (*ProviderSessionManager,
 
 	// validate session was added
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sps)
 
 	// prepare session for usage
 	err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0, 0)
 
 	// validate session was prepared successfully
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, relayCu, sps.LatestRelayCu)
 	require.Equal(t, sps.CuSum, relayCu)
 	require.Equal(t, sps.SessionID, sessionId)
@@ -94,14 +94,14 @@ func prepareSessionForVirtualEpochTests(t *testing.T, ctx context.Context) (*Pro
 
 	// validate session was added
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sps)
 
 	// prepare session for usage and use all available cu = (virtualEpoch+1)*maxCuForVirtualEpoch
 	err = sps.PrepareSessionForUsage(ctx, (virtualEpoch+1)*maxCuForVirtualEpoch, (virtualEpoch+1)*maxCuForVirtualEpoch, 0, virtualEpoch)
 
 	// validate session was prepared successfully
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, (virtualEpoch+1)*maxCuForVirtualEpoch, sps.LatestRelayCu)
 	require.Equal(t, sps.CuSum, (virtualEpoch+1)*maxCuForVirtualEpoch)
 	require.Equal(t, sps.SessionID, sessionId)
@@ -139,7 +139,7 @@ func prepareBadgeSession(t *testing.T, ctx context.Context, badgeSessionIndex in
 
 	// validate session was added
 	require.NotEmpty(t, psm.sessionsWithAllConsumers)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sps)
 	require.NotNil(t, sps.BadgeUserData)
 
@@ -151,7 +151,7 @@ func prepareBadgeSessionForUsage(t *testing.T, ctx context.Context, sps *SingleP
 	err := sps.PrepareSessionForUsage(ctx, relayCu, relayCu, 0, 0)
 
 	// validate session was prepared successfully
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, relayCu, sps.LatestRelayCu)
 	require.Equal(t, sps.CuSum, relayCu)
 	require.Equal(t, sps.SessionID, sessionId)
@@ -167,7 +167,7 @@ func prepareBadgeSessionForUsage(t *testing.T, ctx context.Context, sps *SingleP
 // 	sps, err := psm.GetDataReliabilitySession(consumerOneAddress, epoch1, dataReliabilitySessionId, relayNumber, pairedProviders)
 
 // 	// validate results
-// 	require.Nil(t, err)
+// 	require.NoError(t, err)
 // 	require.NotNil(t, sps)
 
 // 	// validate expected results
@@ -196,7 +196,7 @@ func TestHappyFlowPSM(t *testing.T) {
 	err := psm.OnSessionDone(sps, relayNumber)
 
 	// validate session done data
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, sps.LatestRelayCu, uint64(0))
 	require.Equal(t, sps.CuSum, relayCu)
 	require.Equal(t, sps.SessionID, sessionId)
@@ -210,15 +210,15 @@ func TestMissingCu(t *testing.T) {
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
 	// validate session done data
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
 	// (relayCu * number of requests {2}) !=
 	for i := 0; i < 10; i++ {
 		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
 		err = sps.PrepareSessionForUsage(ctx, relayCu, relayCu*uint64(i+1), 0.07, 0)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		err = psm.OnSessionDone(sps, relayNumber+uint64(i)+1)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 }
 
@@ -228,7 +228,7 @@ func TestMissingCuFailureOnThreshold(t *testing.T) {
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
 	// validate session done successfully
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
 	// (relayCu * number of requests {2}) !=
 	sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
@@ -242,20 +242,20 @@ func TestMissingMultipleMissingAttempts(t *testing.T) {
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
 	// validate session done data
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
 	// (relayCu * number of requests {2}) !=
 	sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
 	err = sps.PrepareSessionForUsage(ctx, 1, relayCu, 0.5, 0)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = psm.OnSessionDone(sps, relayNumber+1)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	for i := 0; i < 10; i++ {
 		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
 		err = sps.PrepareSessionForUsage(ctx, 1, relayCu*uint64(i+1), 0.5, 0)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		err = psm.OnSessionDone(sps, relayNumber+uint64(i)+2)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 }
 
@@ -268,7 +268,7 @@ func TestHappyFlowBadgePSM(t *testing.T) {
 	err := psm.OnSessionDone(sps, relayNumber)
 
 	// validate session done data
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, sps.LatestRelayCu, uint64(0))
 	require.Equal(t, sps.CuSum, relayCu)
 	require.Equal(t, sps.BadgeUserData.UsedComputeUnits, relayCu)
@@ -322,7 +322,7 @@ func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
 				// On session done successfully
 				err := psm.OnSessionDone(sps, relayNumber)
 				// Validate session done data
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, sps.LatestRelayCu, uint64(0))
 				require.Equal(t, sps.CuSum, relayCu)
 				require.Equal(t, sps.BadgeUserData.UsedComputeUnits, relayCu)
@@ -336,7 +336,7 @@ func TestHappyFlowBadgePSMMultipleRoutines(t *testing.T) {
 				// On session failure
 				err := psm.OnSessionFailure(sps, relayNumber)
 				// validate session failure data
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.Equal(t, sps.LatestRelayCu, uint64(0))
 				require.Equal(t, sps.CuSum, uint64(0))
 				require.Equal(t, sps.BadgeUserData.UsedComputeUnits, uint64(0))
@@ -369,7 +369,7 @@ func TestBadgePSMOnSessionFailure(t *testing.T) {
 	err := psm.OnSessionFailure(sps, relayNumber)
 
 	// validate session done data
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, sps.LatestRelayCu, uint64(0))
 	require.Equal(t, sps.CuSum, uint64(0))
 	require.Equal(t, sps.BadgeUserData.UsedComputeUnits, uint64(0))
@@ -397,7 +397,7 @@ func TestPSMEpochChange(t *testing.T) {
 	err := psm.OnSessionDone(sps, relayNumber)
 
 	// validate session done data
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, sps.LatestRelayCu, uint64(0))
 	require.Equal(t, sps.CuSum, relayCu)
 	require.Equal(t, sps.SessionID, sessionId)
@@ -428,7 +428,7 @@ func TestPSMOnSessionFailure(t *testing.T) {
 	err := psm.OnSessionFailure(sps, relayNumber)
 
 	// validate session done data
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, sps.LatestRelayCu, uint64(0))
 	require.Equal(t, sps.CuSum, uint64(0))
 	require.Equal(t, sps.SessionID, sessionId)
@@ -444,10 +444,10 @@ func TestPSMUpdateCu(t *testing.T) {
 	err := psm.OnSessionDone(sps, relayNumber)
 
 	// validate session done data
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = psm.UpdateSessionCU(consumerOneAddress, epoch1, sessionId, maxCu)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, sps.userSessionsParent.epochData.UsedComputeUnits, maxCu)
 }
 
@@ -458,15 +458,15 @@ func TestPSMUpdateCuMaxCuReached(t *testing.T) {
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Update the session CU to reach the limit of the cu allowed
 	err = psm.UpdateSessionCU(consumerOneAddress, epoch1, sessionId, maxCu)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, sps.userSessionsParent.epochData.UsedComputeUnits, maxCu)
 
 	// get another session, this time sps is not nil as the session ID is already registered
 	sps, err = psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber+1, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sps)
 
 	// prepare session with max cu overflow. expect an error
@@ -484,7 +484,7 @@ func TestHappyFlowPSMVirtualEpoch(t *testing.T) {
 	err := psm.OnSessionDone(sps, relayNumber)
 
 	// validate session done data
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, sps.LatestRelayCu, uint64(0))
 	require.Equal(t, sps.CuSum, (virtualEpoch+1)*maxCuForVirtualEpoch)
 	require.Equal(t, sps.SessionID, sessionId)
@@ -499,15 +499,15 @@ func TestPSMVirtualEpochUpdateCuMaxCuReached(t *testing.T) {
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Update the session CU to reach the limit of the cu allowed
 	err = psm.UpdateSessionCU(consumerOneAddress, epoch1, sessionId, (virtualEpoch+1)*maxCuForVirtualEpoch)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, sps.userSessionsParent.epochData.UsedComputeUnits, (virtualEpoch+1)*maxCuForVirtualEpoch)
 
 	// get another session, this time sps is not nil as the session ID is already registered
 	sps, err = psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber+1, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sps)
 
 	// prepare session with max cu overflow. expect an error
@@ -524,15 +524,15 @@ func TestVirtualEpochMissingCu(t *testing.T) {
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
 	// validate session done data
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// preparing a session again with the same relayRequestTotalCU will cause missing cu to trigger as we didn't provide enough cu
 
 	for i := 1; i <= 10; i++ {
 		sps.lock.Lock() // Lock session (usually should be locked by GetSession but in this test we set it manually)
 		err = sps.PrepareSessionForUsage(ctx, maxCuForVirtualEpoch, maxCuForVirtualEpoch*(virtualEpoch+uint64(i)+1), 0.07, virtualEpoch+uint64(i))
-		require.Nil(t, err)
+		require.NoError(t, err)
 		err = psm.OnSessionDone(sps, relayNumber+uint64(i))
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 }
 
@@ -543,10 +543,10 @@ func TestPSMCUMisMatch(t *testing.T) {
 
 	// on session done successfully
 	err := psm.OnSessionDone(sps, relayNumber)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// get another session
 	sps, err = psm.GetSession(ctx, consumerOneAddress, epoch1, sessionId, relayNumber+1, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sps)
 
 	// prepare session with wrong cu and expect mismatch, consumer wants to pay less than spec requires
@@ -605,7 +605,7 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeAll(t *testing.T) {
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription, consumerOneAddress, epoch1, relayNumber)
 
 	sps, err := psm.GetSession(context.Background(), consumerOneAddress, epoch1, sessionId, relayNumber+1, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, sps)
 
 	// create 2nd subscription
@@ -646,7 +646,7 @@ func TestPSMSubscribeHappyFlowProcessUnsubscribeUnsubscribeOneOutOfTwo(t *testin
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription, consumerOneAddress, epoch1, relayNumber)
 	// create 2nd subscription as we release the session we can just ask for it again with relayNumber + 1
 	sps, err := psm.GetSession(context.Background(), consumerOneAddress, epoch1, sessionId, relayNumber+1, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription2, consumerOneAddress, epoch1, relayNumber+1)
 
 	err = psm.ProcessUnsubscribe("unsubscribeOne", subscriptionID, consumerOneAddress, epoch1)
@@ -704,7 +704,7 @@ func TestPSMSubscribeHappyFlowSubscriptionEndedOneOutOfTwo(t *testing.T) {
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription, consumerOneAddress, epoch1, relayNumber)
 	// create 2nd subscription as we release the session we can just ask for it again with relayNumber + 1
 	sps, err := psm.GetSession(context.Background(), consumerOneAddress, epoch1, sessionId, relayNumber+1, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription2, consumerOneAddress, epoch1, relayNumber)
 
 	psm.SubscriptionEnded(consumerOneAddress, epoch1, subscriptionID)
@@ -735,7 +735,7 @@ func TestPSMSubscribeEpochChange(t *testing.T) {
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription, consumerOneAddress, epoch1, relayNumber)
 	// create 2nd subscription as we release the session we can just ask for it again with relayNumber + 1
 	sps, err := psm.GetSession(context.Background(), consumerOneAddress, epoch1, sessionId, relayNumber+1, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	psm.ReleaseSessionAndCreateSubscription(sps, subscription2, consumerOneAddress, epoch1, relayNumber+1)
 
 	psm.UpdateEpoch(epoch2)

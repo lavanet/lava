@@ -16,7 +16,7 @@ func TestEffectivePolicy(t *testing.T) {
 	_, clientAddr := ts.GetAccount(common.CONSUMER, 0)
 
 	project, err := ts.GetProjectDeveloperData(clientAddr, ts.BlockHeight())
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// the auto-created project from setupForPayments is subject to the mock plan policy
 	// the mock policy assumed in this test is (implemented by common.CreateMockPolicy()):
@@ -37,7 +37,7 @@ func TestEffectivePolicy(t *testing.T) {
 		GeolocationProfile: 1,
 	}
 	_, err = ts.TxProjectSetPolicy(project.ProjectID, clientAddr, &adminPolicy)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	subPolicy := planstypes.Policy{
 		TotalCuLimit:       100000,
@@ -46,7 +46,7 @@ func TestEffectivePolicy(t *testing.T) {
 		GeolocationProfile: planstypes.Geolocation_value["GL"],
 	}
 	_, err = ts.TxProjectSetSubscriptionPolicy(project.ProjectID, clientAddr, &subPolicy)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// the effective policy function calcaulates the effective chain policy within it
 	// if there is no chain policy in any of the policies, it makes one using this function
@@ -65,7 +65,7 @@ func TestEffectivePolicy(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	res, err := ts.QueryPairingEffectivePolicy(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, expectedEffectivePolicy.Equal(res.Policy))
 	require.Nil(t, res.PendingPolicy) // there should be no pending policy
 
@@ -76,9 +76,9 @@ func TestEffectivePolicy(t *testing.T) {
 		MaxProvidersToPair: 3,
 		GeolocationProfile: 1,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	res, err = ts.QueryPairingEffectivePolicy(ts.spec.Index, clientAddr)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, expectedEffectivePolicy.Equal(res.Policy)) // policy should still be the original one
 
 	// there should be a new pending policy

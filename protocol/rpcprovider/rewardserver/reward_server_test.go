@@ -121,7 +121,7 @@ func TestPayments(t *testing.T) {
 	eventAttrs := paymentEventsToEventAttributes(attributesList)
 	event := terderminttypes.Event{Type: utils.EventPrefix + pairingtypes.RelayPaymentEventName, Attributes: eventAttrs}
 	paymentRequests, err := BuildPaymentFromRelayPaymentEvent(event, 500)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, internalRelays, len(paymentRequests))
 }
 

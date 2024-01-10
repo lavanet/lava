@@ -5,6 +5,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/utils"
 	"golang.org/x/net/context"
 )
 
@@ -36,7 +37,7 @@ func (vu *VoteUpdater) UpdaterKey() string {
 	return CallbackKeyForVoteUpdate
 }
 
-func (vu *VoteUpdater) Update(latestBlock int64) {
+func (vu *VoteUpdater) updateInner(latestBlock int64) {
 	vu.lock.RLock()
 	defer vu.lock.RUnlock()
 	votes, err := vu.eventTracker.getLatestVoteEvents(latestBlock)
@@ -52,4 +53,13 @@ func (vu *VoteUpdater) Update(latestBlock int64) {
 		}
 		(*updatable).VoteHandler(vote, uint64(latestBlock))
 	}
+}
+
+func (vu *VoteUpdater) Reset(latestBlock int64) {
+	utils.LavaFormatDebug("Reset Triggered for Vote Updater", utils.LogAttr("block", latestBlock))
+	vu.updateInner(latestBlock)
+}
+
+func (vu *VoteUpdater) Update(latestBlock int64) {
+	vu.updateInner(latestBlock)
 }

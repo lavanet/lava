@@ -2,10 +2,12 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
@@ -22,6 +24,12 @@ func (k Keeper) FreezeProvider(ctx sdk.Context, provider string, chainIDs []stri
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
 		return utils.LavaFormatWarning("Freeze_get_provider_address", err, utils.Attribute{Key: "providerAddress", Value: provider})
+	}
+
+	if !commontypes.ValidateString(reason, commontypes.DESCRIPTION_RESTRICTIONS, nil) {
+		return utils.LavaFormatWarning("Freeze_invalid_reason", fmt.Errorf("invalid string"),
+			utils.LogAttr("reason", reason),
+		)
 	}
 
 	for _, chainId := range chainIDs {

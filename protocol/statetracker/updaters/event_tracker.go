@@ -48,6 +48,7 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 		}
 		latestBlock = res.SyncInfo.LatestBlockHeight
 	}
+
 	brp, err := TryIntoTendermintRPC(et.ClientCtx.Client)
 	if err != nil {
 		return utils.LavaFormatError("could not get block result provider", err)

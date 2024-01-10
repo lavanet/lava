@@ -109,7 +109,7 @@ func TestProviderConflicts(t *testing.T) {
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			res, err := keeper.ProviderConflicts(wctx, &types.QueryProviderConflictsRequest{Provider: tc.provider})
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.ElementsMatch(t, res.NotVoted, tc.expectedNotVoted)
 			require.ElementsMatch(t, res.Reported, tc.expectedReported)
 		})

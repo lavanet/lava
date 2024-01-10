@@ -19,7 +19,7 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	providerAcct, providerAddr := ts.AddAccount(common.PROVIDER, 0, balance)
 
 	err := ts.StakeProvider(providerAddr, ts.spec, balance/2)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
@@ -27,7 +27,7 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	unstakeHoldBlocksStatic := ts.Keepers.Epochstorage.UnstakeHoldBlocksStatic(ts.Ctx, ts.BlockHeight())
 
 	_, err = ts.TxPairingUnstakeProvider(providerAddr, ts.spec.Index)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceBlocks(unstakeHoldBlocks)
 

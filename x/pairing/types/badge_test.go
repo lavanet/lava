@@ -22,11 +22,11 @@ func TestExtractSignerAddressFromBadge(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			badge := CreateBadge(100, 0, addr, "lava", tt.predefinedSig)
 			sig, err := sigs.Sign(pkey, *badge)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			badge.ProjectSig = sig
 
 			extractedAddr, err := sigs.ExtractSignerAddress(*badge)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Equal(t, addr, extractedAddr)
 		})
 	}
