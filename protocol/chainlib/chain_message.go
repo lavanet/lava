@@ -96,6 +96,7 @@ func (pm *baseChainMessageContainer) OverrideExtensions(extensionNames []string,
 			extension := extensionParser.GetExtension(extensionKey)
 			if extension != nil {
 				pm.extensions = append(pm.extensions, extension)
+				pm.updateCUForApi(extension)
 			}
 		}
 	}
