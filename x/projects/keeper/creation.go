@@ -86,7 +86,8 @@ func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types
 
 	// project name per subscription is unique: check for duplicates
 	var emptyProject types.Project
-	if found := k.projectsFS.FindEntry(ctx, project.Index, epoch, &emptyProject); found {
+	_, isDeleted, _, found := k.projectsFS.FindEntryDetailed(ctx, project.Index, epoch, &emptyProject)
+	if found && !isDeleted {
 		return utils.LavaFormatWarning("create project failed",
 			fmt.Errorf("project name already exist for current subscription"),
 			utils.Attribute{Key: "subscription", Value: subAddr},
@@ -151,6 +152,45 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string) error 
 	return k.projectsFS.DelEntry(ctx, project.Index, nextEpoch)
 }
 
+// Forced deletion of projects of an expired subscription (happens immediately)
+func (k Keeper) PurgeProject(ctx sdk.Context, projectID string) error {
+	ctxBlock := uint64(ctx.BlockHeight())
+
+	var project types.Project
+	entryBlock, _, _, found := k.projectsFS.FindEntryDetailed(ctx, projectID, ctxBlock, &project)
+	if !found {
+		return utils.LavaFormatError("purge project failed",
+			fmt.Errorf("project not found"),
+			utils.Attribute{Key: "projectID", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctxBlock},
+		)
+	}
+
+	for _, projectKey := range project.ProjectKeys {
+		err := k.developerKeysFS.DelEntry(ctx, projectKey.Key, ctxBlock)
+		if err != nil {
+			return utils.LavaFormatError("purge project failed", err,
+				utils.Attribute{Key: "projectID", Value: projectID},
+				utils.Attribute{Key: "projectKey", Value: projectKey.Key},
+				utils.Attribute{Key: "block", Value: ctxBlock},
+			)
+		}
+		found := project.DeleteKey(projectKey)
+		if !found {
+			return utils.LavaFormatError("purge project failed", fmt.Errorf("could not find key to delete"),
+				utils.Attribute{Key: "projectID", Value: projectID},
+				utils.Attribute{Key: "projectKey", Value: projectKey.Key},
+				utils.Attribute{Key: "block", Value: ctxBlock},
+			)
+		}
+	}
+
+	// modify the project to remove the project keys
+	k.projectsFS.ModifyEntry(ctx, project.Index, entryBlock, &project)
+
+	return k.projectsFS.DelEntry(ctx, project.Index, ctxBlock)
+}
+
 // registerKey adds a key to a project. For developer keys it also updates the
 // developer key registry (that maps them to projects). The block argument is
 // expected to be current block height (takes effect immediately).
@@ -165,7 +205,7 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 
 	if key.IsType(types.ProjectKey_DEVELOPER) {
 		var devkeyData types.ProtoDeveloperData
-		found := k.developerKeysFS.FindEntry(ctx, key.Key, epoch, &devkeyData)
+		_, isDeleted, _, found := k.developerKeysFS.FindEntryDetailed(ctx, key.Key, epoch, &devkeyData)
 
 		// check that the developer key is valid, and that it does not already
 		// belong to a different project.
@@ -181,7 +221,7 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 
 		// by now, the key was either not found, or found and belongs to us already.
 		// if the former, then we surely need to add it.
-		if !found {
+		if !found || (found && isDeleted) {
 			devkeyData := types.ProtoDeveloperData{
 				ProjectID: project.GetIndex(),
 			}

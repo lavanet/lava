@@ -687,7 +687,7 @@ func (k Keeper) DelProjectFromSubscription(ctx sdk.Context, consumer, name strin
 func (k Keeper) delAllProjectsFromSubscription(ctx sdk.Context, consumer string) {
 	allProjectsIDs := k.projectsKeeper.GetAllProjectsForSubscription(ctx, consumer)
 	for _, projectID := range allProjectsIDs {
-		err := k.projectsKeeper.DeleteProject(ctx, consumer, projectID)
+		err := k.projectsKeeper.PurgeProject(ctx, projectID)
 		if err != nil {
 			// TODO: should panic (should never fail because these are exactly the
 			// subscription's current projects)
