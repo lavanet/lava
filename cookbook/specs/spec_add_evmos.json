@@ -1518,11 +1518,11 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 10000
+                                        "latest_distance": 21600
                                     },
                                     {
                                         "extension": "archive",
-                                        "latest_distance": 1000000
+                                        "expected_value": "58701"
                                     }
                                 ]
                             }
@@ -1532,7 +1532,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block":9990
+                                    "block":21300
                                 }
                             }
                         ]
