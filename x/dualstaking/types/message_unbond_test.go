@@ -11,6 +11,7 @@ import (
 
 func TestMsgUnbond_ValidateBasic(t *testing.T) {
 	oneCoin := sdk.NewCoin("utest", sdk.NewInt(1))
+	validator := sample.ValAddress()
 
 	tests := []struct {
 		name string
@@ -20,32 +21,54 @@ func TestMsgUnbond_ValidateBasic(t *testing.T) {
 		{
 			name: "invalid delegator address",
 			msg: MsgUnbond{
-				Creator:  "invalid_address",
-				Provider: sample.AccAddress(),
-				Amount:   oneCoin,
+				Creator:   "invalid_address",
+				Provider:  sample.AccAddress(),
+				Amount:    oneCoin,
+				Validator: validator,
+				ChainID:   EMPTY_PROVIDER_CHAINID,
 			},
 			err: legacyerrors.ErrInvalidAddress,
-		}, {
+		},
+		{
 			name: "invalid provider address",
 			msg: MsgUnbond{
-				Creator:  sample.AccAddress(),
-				Provider: "invalid_address",
-				Amount:   oneCoin,
+				Creator:   sample.AccAddress(),
+				Provider:  "invalid_address",
+				Amount:    oneCoin,
+				Validator: validator,
+				ChainID:   EMPTY_PROVIDER_CHAINID,
 			},
 			err: legacyerrors.ErrInvalidAddress,
-		}, {
+		},
+		{
+			name: "invalid validator",
+			msg: MsgUnbond{
+				Creator:   sample.AccAddress(),
+				Provider:  sample.AccAddress(),
+				Amount:    oneCoin,
+				Validator: "invalid_validator",
+				ChainID:   EMPTY_PROVIDER_CHAINID,
+			},
+			err: legacyerrors.ErrInvalidAddress,
+		},
+		{
 			name: "valid addresses and amount",
 			msg: MsgUnbond{
-				Creator:  sample.AccAddress(),
-				Provider: sample.AccAddress(),
-				Amount:   oneCoin,
+				Creator:   sample.AccAddress(),
+				Provider:  sample.AccAddress(),
+				Amount:    oneCoin,
+				Validator: validator,
+				ChainID:   EMPTY_PROVIDER_CHAINID,
 			},
-		}, {
+		},
+		{
 			name: "valid amount",
 			msg: MsgUnbond{
-				Creator:  sample.AccAddress(),
-				Provider: sample.AccAddress(),
-				Amount:   sdk.Coin{Denom: "utest", Amount: sdk.NewInt(-1)},
+				Creator:   sample.AccAddress(),
+				Provider:  sample.AccAddress(),
+				Amount:    sdk.Coin{Denom: "utest", Amount: sdk.NewInt(-1)},
+				Validator: validator,
+				ChainID:   EMPTY_PROVIDER_CHAINID,
 			},
 			err: legacyerrors.ErrInvalidCoins,
 		},

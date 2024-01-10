@@ -2,6 +2,7 @@ package updaters
 
 import (
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -69,7 +70,7 @@ func (pu *PairingUpdater) UpdaterKey() string {
 	return CallbackKeyForPairingUpdate
 }
 
-func (pu *PairingUpdater) Update(latestBlock int64) {
+func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	pu.lock.RLock()
 	defer pu.lock.RUnlock()
 	ctx := context.Background()
@@ -79,7 +80,9 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 	}
 	nextBlockForUpdateList := []uint64{}
 	for chainID, consumerSessionManagerList := range pu.consumerSessionManagersMap {
-		pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(ctx, chainID, latestBlock)
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, latestBlock)
+		cancel()
 		if err != nil {
 			utils.LavaFormatError("could not update pairing for chain, trying again next block", err, utils.Attribute{Key: "chain", Value: chainID})
 			nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
@@ -98,7 +101,9 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 	}
 
 	// get latest epoch from cache
-	_, epoch, _, err := pu.stateQuery.GetPairing(ctx, "", latestBlock)
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	_, epoch, _, err := pu.stateQuery.GetPairing(timeoutCtx, "", latestBlock)
 	if err != nil {
 		utils.LavaFormatError("could not update pairing for updatables, trying again next block", err)
 		nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
@@ -115,6 +120,15 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 		}
 	}
 	pu.nextBlockForUpdate = nextBlockForUpdateMin
+}
+
+func (pu *PairingUpdater) Reset(latestBlock int64) {
+	utils.LavaFormatDebug("Reset Triggered for PairingUpdater", utils.LogAttr("block", latestBlock))
+	pu.updateInner(latestBlock)
+}
+
+func (pu *PairingUpdater) Update(latestBlock int64) {
+	pu.updateInner(latestBlock)
 }
 
 func (pu *PairingUpdater) updateConsummerSessionManager(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, consumerSessionManager *lavasession.ConsumerSessionManager, epoch uint64) (err error) {

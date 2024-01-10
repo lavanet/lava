@@ -12,6 +12,12 @@ import (
 func (k msgServer) DelKeys(goCtx context.Context, msg *types.MsgDelKeys) (*types.MsgDelKeysResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
+		return nil, utils.LavaFormatError("Invalid creator address", err,
+			utils.LogAttr("creator", msg.Creator),
+		)
+	}
+
 	for _, projectKey := range msg.GetProjectKeys() {
 		if !projectKey.IsTypeValid() {
 			return nil, utils.LavaFormatWarning(

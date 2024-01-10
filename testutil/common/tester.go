@@ -583,8 +583,9 @@ func (ts *Tester) TxPairingUnstakeProvider(
 // TxPairingRelayPayment: implement 'tx pairing relay-payment'
 func (ts *Tester) TxPairingRelayPayment(addr string, rs ...*pairingtypes.RelaySession) (*pairingtypes.MsgRelayPaymentResponse, error) {
 	msg := &pairingtypes.MsgRelayPayment{
-		Creator: addr,
-		Relays:  rs,
+		Creator:           addr,
+		Relays:            rs,
+		DescriptionString: "test",
 	}
 	return ts.Servers.PairingServer.RelayPayment(ts.GoCtx, msg)
 }
@@ -594,6 +595,7 @@ func (ts *Tester) TxPairingFreezeProvider(addr, chainID string) (*pairingtypes.M
 	msg := &pairingtypes.MsgFreezeProvider{
 		Creator:  addr,
 		ChainIds: slices.Slice(chainID),
+		Reason:   "test",
 	}
 	return ts.Servers.PairingServer.FreezeProvider(ts.GoCtx, msg)
 }

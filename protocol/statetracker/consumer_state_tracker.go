@@ -80,9 +80,9 @@ func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, 
 }
 
 func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *lavaprotocol.FinalizationConsensus) {
-	finalizationConsensusUpdater := NewFinalizationConsensusUpdater(cst.stateQuery)
+	finalizationConsensusUpdater := updaters.NewFinalizationConsensusUpdater(cst.stateQuery)
 	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)
-	finalizationConsensusUpdater, ok := finalizationConsensusUpdaterRaw.(*FinalizationConsensusUpdater)
+	finalizationConsensusUpdater, ok := finalizationConsensusUpdaterRaw.(*updaters.FinalizationConsensusUpdater)
 	if !ok {
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", nil, utils.Attribute{Key: "updater", Value: finalizationConsensusUpdaterRaw})
 	}

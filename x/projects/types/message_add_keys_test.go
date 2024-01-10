@@ -17,13 +17,24 @@ func TestMsgAddKeys_ValidateBasic(t *testing.T) {
 		{
 			name: "invalid address",
 			msg: MsgAddKeys{
-				Creator: "invalid_address",
+				Creator:     "invalid_address",
+				ProjectKeys: []ProjectKey{ProjectAdminKey(sample.AccAddress())},
 			},
 			err: legacyerrors.ErrInvalidAddress,
-		}, {
+		},
+		{
+			name: "invalid address in project keys",
+			msg: MsgAddKeys{
+				Creator:     sample.AccAddress(),
+				ProjectKeys: []ProjectKey{ProjectAdminKey("invalid_address")},
+			},
+			err: legacyerrors.ErrInvalidAddress,
+		},
+		{
 			name: "valid address",
 			msg: MsgAddKeys{
-				Creator: sample.AccAddress(),
+				Creator:     sample.AccAddress(),
+				ProjectKeys: []ProjectKey{ProjectAdminKey(sample.AccAddress())},
 			},
 		},
 	}

@@ -15,6 +15,12 @@ func (k msgServer) ConflictVoteReveal(goCtx context.Context, msg *types.MsgConfl
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Keeper.Logger(ctx)
 
+	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
+		return nil, utils.LavaFormatWarning("invalid client address", err,
+			utils.Attribute{Key: "client", Value: msg.Creator},
+		)
+	}
+
 	conflictVote, found := k.GetConflictVote(ctx, msg.VoteID)
 	if !found {
 		return nil, utils.LavaFormatWarning("Simulation: invalid vote id", legacyerrors.ErrKeyNotFound,

@@ -45,5 +45,12 @@ func (msg *MsgDelKeys) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
+	for _, key := range msg.ProjectKeys {
+		_, err := sdk.AccAddressFromBech32(key.Key)
+		if err != nil {
+			return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid project key address (%s)", err)
+		}
+	}
+
 	return nil
 }
