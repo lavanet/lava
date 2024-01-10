@@ -37,6 +37,8 @@ if [ "$1" == "debug" ]; then
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
         | jq '.app_state.epochstorage.params.epochsToSave = "5"' \
         | jq '.app_state.epochstorage.params.epochBlocks = "4"' \
+        | jq '.app_state.distribution.params.community_tax = "0"' \
+        | jq '.app_state.rewards.params.validators_subscription_participation = "0"' \
     )
 else
     # Edit genesis file without the additional line
@@ -98,8 +100,12 @@ done
 
 # add validators_allocation_pool for validators block rewards
 # its total balance is 3% from the total tokens amount: 10^9 * 10^6 ulava
-lavad add-genesis-account validators_rewards_allocation_pool 30000000000000ulava --module-account 
-lavad add-genesis-account providers_rewards_allocation_pool 30000000000000ulava --module-account 
+lavad add-genesis-account validators_rewards_allocation_pool 30000000000000ulava --module-account
+if [ "$1" == "debug" ]; then
+    lavad add-genesis-account providers_rewards_allocation_pool 0ulava --module-account
+else
+    lavad add-genesis-account providers_rewards_allocation_pool 30000000000000ulava --module-account 
+fi
 lavad gentx alice 10000000000000ulava --chain-id lava
 lavad collect-gentxs
 lavad start --pruning=nothing
