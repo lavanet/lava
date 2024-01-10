@@ -197,15 +197,15 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/sdkLogs/01_sdkTest* --include="*errors*"
-  # test-payment-e2e:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: "0"
-  #     - uses: actions/setup-go@v3
-  #       with:
-  #         go-version: 1.20.5
+  test-payment-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: "0"
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.20.5
 
       ######################################################
       ### Run Lava Protocol Payment E2E Tests
