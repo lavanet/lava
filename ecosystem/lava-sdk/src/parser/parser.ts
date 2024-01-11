@@ -13,6 +13,7 @@ import {
   PARSER_FUNC,
 } from "../grpc_web_services/lavanet/lava/spec/api_collection_pb";
 import { encodeUtf8 } from "../util/common";
+import { getEnumKeyByValue } from "../util/enums";
 import {
   EncodingBase64,
   EncodingHex,
@@ -456,11 +457,8 @@ export class Parser {
     dataSource: number
   ): any[] | null | Error {
     let retval: any[] | Error = [];
-
     const parserFunc = blockParser.getParserFunc();
     switch (parserFunc) {
-      case PARSER_FUNC.EMPTY:
-        return null;
       case PARSER_FUNC.PARSE_BY_ARG:
         retval = this.parseByArg(
           rpcInput,
@@ -492,8 +490,11 @@ export class Parser {
       case PARSER_FUNC.DEFAULT:
         retval = this.parseDefault(blockParser.getParserArgList());
         break;
+      case PARSER_FUNC.EMPTY:
       default:
-        return new UnsupportedBlockParser(parserFunc);
+        return new UnsupportedBlockParser(
+          getEnumKeyByValue(PARSER_FUNC, parserFunc) ?? parserFunc.toString()
+        );
     }
 
     if (
