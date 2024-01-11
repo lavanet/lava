@@ -1486,7 +1486,20 @@
                             },
                             {
                                 "name": "pruning",
-                                "values": []
+                                "values": [
+                                    {
+                                        "latest_distance": 14400
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 14200
+                                }
                             }
                         ]
                     }

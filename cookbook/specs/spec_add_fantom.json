@@ -855,6 +855,23 @@
                                         "expected_value": "0xfa"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 57600
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 56800
+                                }
                             }
                         ]
                     }
