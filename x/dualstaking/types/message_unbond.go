@@ -58,5 +58,10 @@ func (msg *MsgUnbond) ValidateBasic() error {
 		return legacyerrors.ErrInvalidCoins
 	}
 
+	_, err = sdk.ValAddressFromBech32(msg.Validator)
+	if err != nil {
+		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid validator address (%s)", err)
+	}
+
 	return nil
 }

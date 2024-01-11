@@ -11,10 +11,11 @@ import (
 )
 
 const (
-	TimePerCU                      = uint64(100 * time.Millisecond)
-	MinimumTimePerRelayDelay       = time.Second
-	DataReliabilityTimeoutIncrease = 5 * time.Second
-	AverageWorldLatency            = 300 * time.Millisecond
+	TimePerCU                           = uint64(100 * time.Millisecond)
+	MinimumTimePerRelayDelay            = time.Second
+	DataReliabilityTimeoutIncrease      = 5 * time.Second
+	AverageWorldLatency                 = 300 * time.Millisecond
+	CommunicateWithLocalLavaNodeTimeout = (3 * time.Second) + AverageWorldLatency
 )
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {

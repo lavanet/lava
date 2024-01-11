@@ -397,7 +397,7 @@ func TestSpecWithImport(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			fullspec, err := ts.expandSpec(sp)
 			if tt.ok == true {
-				require.Nil(t, err, err)
+				require.NoError(t, err, err)
 				require.Len(t, fullspec.ApiCollections[0].Apis, len(tt.result))
 
 				for i := 0; i < len(tt.result); i++ {
@@ -415,7 +415,7 @@ func TestSpecWithImport(t *testing.T) {
 
 				ts.setSpec(sp)
 			} else {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			}
 		})
 	}
@@ -516,17 +516,17 @@ func TestSpecUpdateInherit(t *testing.T) {
 
 	// add a parent spec and a child spec
 	err := keepertest.SimulateSpecAddProposal(ts.Ctx, ts.Keepers.Spec, []types.Spec{parentSpec})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	err = keepertest.SimulateSpecAddProposal(ts.Ctx, ts.Keepers.Spec, []types.Spec{childSpec})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	block1 := ts.BlockHeight()
 
 	sp, found := ts.getSpec("child")
 	require.True(t, found)
 	sp, err = ts.expandSpec(sp)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, uint64(10), sp.ApiCollections[0].Apis[0].ComputeUnits)
 	require.Equal(t, block1, sp.BlockLastUpdated)
 
@@ -536,7 +536,7 @@ func TestSpecUpdateInherit(t *testing.T) {
 
 	parentSpec.ApiCollections[0].Apis[0].ComputeUnits = 20
 	err = keepertest.SimulateSpecAddProposal(ts.Ctx, ts.Keepers.Spec, []types.Spec{parentSpec})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	sp, found = ts.getSpec("parent")
 	require.True(t, found)
@@ -546,7 +546,7 @@ func TestSpecUpdateInherit(t *testing.T) {
 	sp, found = ts.getSpec("child")
 	require.True(t, found)
 	sp, err = ts.expandSpec(sp)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, uint64(20), sp.ApiCollections[0].Apis[0].ComputeUnits)
 	require.Equal(t, block1+1, sp.BlockLastUpdated)
 }
@@ -775,7 +775,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 				require.Equal(t, tt.resultApiCollections, collections)
 				require.Equal(t, tt.totalApis, totApis, fullspec)
 				require.NotNil(t, compareCollection)
-				require.Nil(t, err, err)
+				require.NoError(t, err, err)
 				enabledApis := 0
 				for _, api := range compareCollection.Apis {
 					if api.Enabled {
@@ -808,10 +808,10 @@ func TestCookbookSpecs(t *testing.T) {
 
 	getToTopMostPath := "../../.././cookbook/specs/"
 	// base specs needs to be proposed first
-	baseSpecs := []string{"spec_add_ibc.json", "spec_add_cosmoswasm.json", "spec_add_cosmossdk.json", "spec_add_cosmossdk_45.json", "spec_add_cosmossdk_full.json", "spec_add_ethereum.json"}
+	baseSpecs := []string{"spec_add_ibc.json", "spec_add_cosmoswasm.json", "spec_add_cosmossdk.json", "spec_add_cosmossdk_45.json", "spec_add_cosmossdk_full.json", "spec_add_ethereum.json", "spec_add_solana.json"}
 
 	Specs, err := getAllFilesInDirectory(getToTopMostPath)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// remove the base specs so there wont be a duplicate
 	Specs = removeSetFromSet(baseSpecs, Specs)
@@ -820,12 +820,12 @@ func TestCookbookSpecs(t *testing.T) {
 		proposal := utils.SpecAddProposalJSON{}
 
 		contents, err := os.ReadFile(getToTopMostPath + fileName)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		decoder := json.NewDecoder(bytes.NewReader(contents))
 		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
 		err = decoder.Decode(&proposal)
-		require.Nil(t, err, fileName)
+		require.NoError(t, err, fileName)
 
 		for _, sp := range proposal.Proposal.Specs {
 			ts.setSpec(sp)

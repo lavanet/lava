@@ -25,16 +25,16 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 
 	sig, err := sigs.Sign(clientAcct.SK, *relaySession)
 	relaySession.Sig = sig
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// shorten memory
 	paramKey := string(epochstoragetypes.KeyEpochsToSave)
 	paramVal := "\"" + strconv.FormatUint(epochsToSave/2, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
@@ -43,15 +43,15 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 
 	sig, err = sigs.Sign(clientAcct.SK, *relaySession)
 	relaySession.Sig = sig
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// check that both payments were deleted
 	ts.AdvanceEpochs(epochsToSave)
 
 	res, err := ts.QueryPairingListEpochPayments()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 0, len(res.EpochPayments))
 }

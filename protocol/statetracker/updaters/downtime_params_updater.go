@@ -28,6 +28,7 @@ type DowntimeParamsUpdater struct {
 	downtimeParamsStateQuery DowntimeParamsStateQuery
 	downtimeParams           *downtimev1.Params
 	downtimeParamsUpdatables []*DowntimeParamsUpdatable
+	shouldUpdate             bool
 }
 
 func NewDowntimeParamsUpdater(downtimeParamsStateQuery DowntimeParamsStateQuery, eventTracker *EventTracker) *DowntimeParamsUpdater {
@@ -60,28 +61,51 @@ func (dpu *DowntimeParamsUpdater) RegisterDowntimeParamsUpdatable(ctx context.Co
 	return nil
 }
 
+func (dpu *DowntimeParamsUpdater) fetchResourcesAndUpdateHandlers() error {
+	// fetch updated downtime params from consensus
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+	params, err := dpu.downtimeParamsStateQuery.GetDowntimeParams(timeoutCtx)
+	if err != nil {
+		return utils.LavaFormatError("Failed fetching latest Downtime params from chain", err)
+	}
+
+	for _, downtimeParamsUpdatable := range dpu.downtimeParamsUpdatables {
+		// iterate over all updaters and execute their updatable
+		(*downtimeParamsUpdatable).SetDowntimeParams(*params)
+	}
+	return nil
+}
+
+// call only when locked.
+func (dpu *DowntimeParamsUpdater) updateInner(latestBlock int64) {
+	err := dpu.fetchResourcesAndUpdateHandlers()
+	if err == nil {
+		utils.LavaFormatDebug("Updated Downtime params successfully")
+		dpu.shouldUpdate = false
+	} else {
+		utils.LavaFormatError("Failed updating downtime parameters", err, utils.LogAttr("block", latestBlock))
+	}
+}
+
+func (dpu *DowntimeParamsUpdater) Reset(latestBlock int64) {
+	dpu.lock.Lock()
+	defer dpu.lock.Unlock()
+	utils.LavaFormatDebug("Reset Triggered for Downtime Updater", utils.LogAttr("block", latestBlock))
+	dpu.shouldUpdate = true
+	dpu.updateInner(latestBlock)
+}
+
 func (dpu *DowntimeParamsUpdater) Update(latestBlock int64) {
 	dpu.lock.Lock()
 	defer dpu.lock.Unlock()
-	paramsUpdated, err := dpu.eventTracker.getLatestDowntimeParamsUpdateEvents(latestBlock)
-	if paramsUpdated || err != nil {
-		var params *downtimev1.Params
-		// fetch updated downtime params from consensus
-		for i := 0; i < BlockResultRetry; i++ {
-			params, err = dpu.downtimeParamsStateQuery.GetDowntimeParams(context.Background())
-			if err == nil {
-				break
-			}
-			time.Sleep(50 * time.Millisecond * time.Duration(i+1))
-		}
-
-		if params == nil {
-			return
-		}
-
-		for _, downtimeParamsUpdatable := range dpu.downtimeParamsUpdatables {
-			// iterate over all updaters and execute their updatable
-			(*downtimeParamsUpdatable).SetDowntimeParams(*params)
+	if dpu.shouldUpdate {
+		dpu.updateInner(latestBlock)
+	} else {
+		paramsUpdated, err := dpu.eventTracker.getLatestDowntimeParamsUpdateEvents(latestBlock)
+		if paramsUpdated || err != nil {
+			dpu.shouldUpdate = true // in case we fail to update now. remember to update next block update
+			dpu.updateInner(latestBlock)
 		}
 	}
 }

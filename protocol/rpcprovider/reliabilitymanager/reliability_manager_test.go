@@ -11,6 +11,7 @@ import (
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -74,11 +75,11 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		relayRequestData := lavaprotocol.NewRelayData(ctx, "GET", "stub_url", []byte("stub_data"), 0, spectypes.LATEST_BLOCK, "tendermintrpc", metadataValue, "", nil)
 		require.Equal(t, relayRequestData.Metadata, metadataValue)
 		relay, err := lavaprotocol.ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}})
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// provider checks
 		extractedConsumerAddress, err := sigs.ExtractSignerAddress(relay.RelaySession)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, extractedConsumerAddress, consumer_address)
 		require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 		latestBlock := int64(123)
@@ -108,11 +109,11 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		// now send this to another provider
 		relayRequestDataDR := lavaprotocol.NewRelayData(ctx, relay.RelayData.ConnectionType, relay.RelayData.ApiUrl, relay.RelayData.Data, 0, relay.RelayData.RequestBlock, relay.RelayData.ApiInterface, relay.RelayData.Metadata, "", nil)
 		relayDR, err := lavaprotocol.ConstructRelayRequest(ctx, consumer_sk, "lava", specId, relayRequestDataDR, providerDR_address.String(), singleConsumerSession2, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}})
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// provider checks
 		extractedConsumerAddress, err = sigs.ExtractSignerAddress(relayDR.RelaySession)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, extractedConsumerAddress, consumer_address)
 		require.True(t, bytes.Equal(relayDR.RelaySession.ContentHash, sigs.HashMsg(relayDR.RelayData.GetContentHashData())))
 		latestBlock = int64(123)
@@ -225,17 +226,17 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 			Name:  "banana",
 			Value: "55",
 		}
-		chainMessage, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, "GET", metadataValue, 0)
+		chainMessage, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, "GET", metadataValue, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
 		reqBlock, _ := chainMessage.RequestedBlock()
 		relayRequestData := lavaprotocol.NewRelayData(ts.Ctx, "GET", "/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, 0, reqBlock, spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders(), "", nil)
 
 		relay, err := lavaprotocol.ConstructRelayRequest(ts.Ctx, consumer_sk, "lava", specId, relayRequestData, provider_address.String(), singleConsumerSession, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}})
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// provider checks
 		extractedConsumerAddress, err := sigs.ExtractSignerAddress(relay.RelaySession)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, extractedConsumerAddress, consumer_address)
 		require.True(t, bytes.Equal(relay.RelaySession.ContentHash, sigs.HashMsg(relay.RelayData.GetContentHashData())))
 		latestBlock := int64(123)
@@ -269,11 +270,11 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		// now send this to another provider
 		relayRequestDataDR := lavaprotocol.NewRelayData(ts.Ctx, relay.RelayData.ConnectionType, relay.RelayData.ApiUrl, relay.RelayData.Data, 0, relay.RelayData.RequestBlock, relay.RelayData.ApiInterface, relay.RelayData.Metadata, "", nil)
 		relayDR, err := lavaprotocol.ConstructRelayRequest(ts.Ctx, consumer_sk, "lava", specId, relayRequestDataDR, providerDR_address.String(), singleConsumerSession2, epoch, []*pairingtypes.ReportedProvider{{Address: "stub"}})
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// provider checks
 		extractedConsumerAddress, err = sigs.ExtractSignerAddress(relayDR.RelaySession)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, extractedConsumerAddress, consumer_address)
 		require.True(t, bytes.Equal(relayDR.RelaySession.ContentHash, sigs.HashMsg(relayDR.RelayData.GetContentHashData())))
 		latestBlock = int64(123)
@@ -305,7 +306,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 
 		cb := func() error {
 			_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			return err
 		}
 		txm := &txSenderMock{cb: cb}
@@ -324,7 +325,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		votingProvider := ts.Providers[2]
 
 		voteParams, err := reliabilitymanager.BuildVoteParamsFromDetectionEvent(event)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, specId, voteParams.ChainID)
 
 		commitCalled := false

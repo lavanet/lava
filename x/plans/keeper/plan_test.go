@@ -28,7 +28,7 @@ func TestPlanEntryGet(t *testing.T) {
 	plan.Block = ts.BlockHeight()
 
 	err := ts.TxProposalAddPlans(plan)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	res, found := ts.FindPlan(plan.Index, ts.BlockHeight())
 	require.True(t, found)
@@ -86,12 +86,12 @@ func TestAddAndUpdateOtherEpoch(t *testing.T) {
 	// proposal with a plan
 	ts.AdvanceEpoch()
 	err := ts.TxProposalAddPlans(plans[0])
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// proposal with plan update
 	ts.AdvanceEpoch()
 	err = ts.TxProposalAddPlans(plans[1])
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	indices := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
 	require.Equal(t, 1, len(indices))
@@ -111,7 +111,7 @@ func TestUpdatePlanInSameEpoch(t *testing.T) {
 	// proposal with a plan
 	ts.AdvanceEpoch()
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	plan, found := ts.FindPlan(plans[0].Index, ts.BlockHeight())
 	require.True(t, found)
@@ -169,7 +169,7 @@ func TestAddInvalidPlan(t *testing.T) {
 			}
 
 			err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
-			require.NotNil(t, err)
+			require.Error(t, err)
 		})
 	}
 }
@@ -188,12 +188,12 @@ func TestAddRemove(t *testing.T) {
 	plans2 := ts.createTestPlans(TEST_PLANS_SAME_ID, true, len(plans1))
 
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans1, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
 	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans2, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// plans with same ID added in same block: only 1 (of each pair) prevailed
 	indices := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
@@ -211,7 +211,7 @@ func TestAddBadAndGoodPlans(t *testing.T) {
 	plans[2].PlanPolicy.TotalCuLimit = 0
 
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans, false)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	indices := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
 	require.Equal(t, 0, len(indices))
@@ -226,7 +226,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 
 	// add 1st plan and keep a reference
 	err := ts.TxProposalAddPlans(plans[0])
-	require.Nil(t, err)
+	require.NoError(t, err)
 	plans[0].Block = ts.BlockHeight()
 	res, found := ts.Keepers.Plans.GetPlan(ts.Ctx, plans[0].Index)
 	require.True(t, found)
@@ -236,7 +236,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 
 	// add 2nd plan and keep a reference
 	err = ts.TxProposalAddPlans(plans[1])
-	require.Nil(t, err)
+	require.NoError(t, err)
 	plans[1].Block = ts.BlockHeight()
 	res, found = ts.Keepers.Plans.GetPlan(ts.Ctx, plans[1].Index)
 	require.True(t, found)
@@ -248,7 +248,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 	plan := plans[1]
 	plan.OveruseRate += 20
 	err = ts.TxProposalAddPlans(plan)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	plan.Block = ts.BlockHeight()
 
 	// advance enough epochs to make removed entries become stale
@@ -290,7 +290,7 @@ func TestAddAndDelete(t *testing.T) {
 	index := plans[0].Index
 
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, plans[0:1], false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	indices := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
 	require.Equal(t, 1, len(indices))
 
@@ -298,7 +298,7 @@ func TestAddAndDelete(t *testing.T) {
 	block1 := ts.BlockHeight()
 
 	err = testkeeper.SimulatePlansDelProposal(ts.Ctx, ts.Keepers.Plans, []string{index})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// delete only takes effect next epoch, so for now still visible
 	block2 := ts.BlockHeight()
@@ -331,7 +331,7 @@ func TestAddAndDelete(t *testing.T) {
 
 	// fail attempt to delete the plan again
 	err = testkeeper.SimulatePlansDelProposal(ts.Ctx, ts.Keepers.Plans, []string{index})
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 // TestModifyPlan checks that plan modification acts as expected:
@@ -345,7 +345,7 @@ func TestModifyPlan(t *testing.T) {
 
 	// add a new plan
 	err := testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{plans[0]}, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	indices := ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
 	require.Equal(t, 1, len(indices))
 	originalPlan, found := ts.Keepers.Plans.GetPlan(ts.Ctx, plans[0].Index)
@@ -357,7 +357,7 @@ func TestModifyPlan(t *testing.T) {
 	// modify the plan (block should stay the same, change should happen)
 	originalPlan.AnnualDiscountPercentage = 42
 	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{originalPlan}, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	indices = ts.Keepers.Plans.GetAllPlanIndices(ts.Ctx)
 	require.Equal(t, 1, len(indices))
 	modifiedPlan, found := ts.Keepers.Plans.GetPlan(ts.Ctx, plans[0].Index)
@@ -368,10 +368,10 @@ func TestModifyPlan(t *testing.T) {
 	// modify the plan by increasing its price. proposal should fail
 	originalPlan.Price = originalPlan.Price.AddAmount(math.NewIntFromUint64(1))
 	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{originalPlan}, true)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	// modify the plan by decreasing its price. proposal should fail
 	originalPlan.Price = originalPlan.Price.SubAmount(math.NewIntFromUint64(2))
 	err = testkeeper.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []types.Plan{originalPlan}, true)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }

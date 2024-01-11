@@ -3,9 +3,7 @@ package keeper
 import (
 	"context"
 
-	sdkerror "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
@@ -20,19 +18,6 @@ func (k Keeper) UnbondFull(ctx sdk.Context, delegator string, validator string, 
 	// 1.redelegate from the provider to the empty provider
 	// 2.calls staking module to unbond from the validator
 	// 3.calls the hooks to than unbond from the empty provider
-
-	err := k.Redelegate(
-		ctx,
-		delegator,
-		provider,
-		types.EMPTY_PROVIDER,
-		chainID,
-		types.EMPTY_PROVIDER_CHAINID,
-		amount,
-	)
-	if err != nil {
-		return err
-	}
 
 	addr, err := sdk.ValAddressFromBech32(validator)
 	if err != nil {
@@ -49,13 +34,23 @@ func (k Keeper) UnbondFull(ctx sdk.Context, delegator string, validator string, 
 		return err
 	}
 
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	if amount.Denom != bondDenom {
-		return sdkerror.Wrapf(
-			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", amount.Denom, bondDenom,
-		)
+	err = utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false)
+	if err != nil {
+		return err
 	}
 
+	err = k.Redelegate(
+		ctx,
+		delegator,
+		provider,
+		types.EMPTY_PROVIDER,
+		chainID,
+		types.EMPTY_PROVIDER_CHAINID,
+		amount,
+	)
+	if err != nil {
+		return err
+	}
 	_, err = k.stakingKeeper.Undelegate(ctx, delegatorAddress, addr, shares)
 	if err != nil {
 		return err

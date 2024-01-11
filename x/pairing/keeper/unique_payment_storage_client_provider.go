@@ -3,7 +3,6 @@ package keeper
 import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/address"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -79,10 +78,6 @@ func (k Keeper) GetConsumerFromUniquePayment(uniquePaymentStorageClientProvider 
 	providerAdrLengh := charToAsciiNumber(rune(key[0]))
 	provider := key[1 : providerAdrLengh+1]
 	return provider
-}
-
-func maxAddressLengths() int {
-	return address.MaxAddrLen
 }
 
 func (k Keeper) EncodeUniquePaymentKey(ctx sdk.Context, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier, chainID string) string {

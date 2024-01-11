@@ -76,9 +76,9 @@ func TestCommit(t *testing.T) {
 
 			_, err := ts.txConflictVoteCommit(&msg)
 			if tt.valid {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			} else {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			}
 		})
 	}
@@ -98,9 +98,9 @@ func TestDoubleCommit(t *testing.T) {
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err := ts.txConflictVoteCommit(&msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, err = ts.txConflictVoteCommit(&msg)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestNotVotersProviders(t *testing.T) {
@@ -122,7 +122,7 @@ func TestNotVotersProviders(t *testing.T) {
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
 	_, err := ts.txConflictVoteCommit(&msg)
-	require.NotNil(t, err) // should reject the commit since we are not in the providers list
+	require.Error(t, err) // should reject the commit since we are not in the providers list
 
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
@@ -133,7 +133,7 @@ func TestNotVotersProviders(t *testing.T) {
 	msgReveal.Nonce = 0
 
 	_, err = ts.txConflictVoteReveal(&msgReveal)
-	require.NotNil(t, err) // should reject the reveal since we are not in the providers list
+	require.Error(t, err) // should reject the reveal since we are not in the providers list
 }
 
 func TestNewVoterOldVote(t *testing.T) {
@@ -144,7 +144,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	balance := int64(10000)
 	_, notVoterProvider := ts.AddAccount(common.PROVIDER, 10, balance)
 	err := ts.StakeProvider(notVoterProvider, ts.spec, balance/10)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
@@ -161,7 +161,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
 	_, err = ts.txConflictVoteCommit(&msg)
-	require.NotNil(t, err) // should reject the commit since we are not in the providers list
+	require.Error(t, err) // should reject the commit since we are not in the providers list
 
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
@@ -172,7 +172,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	msgReveal.Nonce = 0
 
 	_, err = ts.txConflictVoteReveal(&msgReveal)
-	require.NotNil(t, err) // should reject the reveal since we are not in the providers list
+	require.Error(t, err) // should reject the reveal since we are not in the providers list
 }
 
 func TestCommitAfterDeadline(t *testing.T) {
@@ -191,7 +191,7 @@ func TestCommitAfterDeadline(t *testing.T) {
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
 	_, err := ts.txConflictVoteCommit(&msg)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestReveal(t *testing.T) {
@@ -208,7 +208,7 @@ func TestReveal(t *testing.T) {
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err := ts.txConflictVoteCommit(&msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
@@ -237,9 +237,9 @@ func TestReveal(t *testing.T) {
 
 			_, err = ts.txConflictVoteReveal(&msg)
 			if tt.valid {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			} else {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			}
 		})
 	}
@@ -259,7 +259,7 @@ func TestPreRevealAndDoubleReveal(t *testing.T) {
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err := ts.txConflictVoteCommit(&msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
 	msgReveal.Creator = ts.providers[2].Addr.String()
@@ -268,14 +268,14 @@ func TestPreRevealAndDoubleReveal(t *testing.T) {
 	msgReveal.Nonce = nonce
 
 	_, err = ts.txConflictVoteReveal(&msgReveal) // test reveal before commit finished
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
 	_, err = ts.txConflictVoteReveal(&msgReveal) // first valid reveal
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, err = ts.txConflictVoteReveal(&msgReveal) // second reveal, invalid
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestRevealExpired(t *testing.T) {
@@ -292,7 +292,7 @@ func TestRevealExpired(t *testing.T) {
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err := ts.txConflictVoteCommit(&msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpochs(ts.VotePeriod()*2 + 1)
 
@@ -303,7 +303,7 @@ func TestRevealExpired(t *testing.T) {
 	msgReveal.Nonce = nonce
 
 	_, err = ts.txConflictVoteReveal(&msgReveal)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestFullMajorityVote(t *testing.T) {
@@ -321,7 +321,7 @@ func TestFullMajorityVote(t *testing.T) {
 		msg.Creator = ts.providers[i].Addr.String()
 		msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 		_, err := ts.txConflictVoteCommit(&msg)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		msgs[i] = msg
 	}
 
@@ -333,7 +333,7 @@ func TestFullMajorityVote(t *testing.T) {
 	msg.Creator = ts.providers[ProvidersCount-1].Addr.String()
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 	_, err := ts.txConflictVoteCommit(&msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
@@ -348,7 +348,7 @@ func TestFullMajorityVote(t *testing.T) {
 		relayExchange := pairingtypes.NewRelayExchange(*detection.ResponseConflict.ConflictRelayData0.Request, *relay0)
 		msgReveal.Hash = sigs.HashMsg(relayExchange.DataToSign())
 		_, err := ts.txConflictVoteReveal(&msgReveal)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	// last voter
@@ -356,7 +356,7 @@ func TestFullMajorityVote(t *testing.T) {
 	msgReveal.Hash = sigs.HashMsg(relayExchange.DataToSign())
 	msgReveal.Creator = ts.providers[ProvidersCount-1].Addr.String()
 	_, err = ts.txConflictVoteReveal(&msgReveal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpochs(ts.VotePeriod())
 
@@ -385,7 +385,7 @@ func TestFullStrongMajorityVote(t *testing.T) {
 		msg.Creator = ts.providers[i].Addr.String()
 		msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 		_, err := ts.txConflictVoteCommit(&msg)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
@@ -399,7 +399,7 @@ func TestFullStrongMajorityVote(t *testing.T) {
 	for i := 2; i < ProvidersCount; i++ {
 		msgReveal.Creator = ts.providers[i].Addr.String()
 		_, err := ts.txConflictVoteReveal(&msgReveal)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}
 
 	ts.AdvanceEpochs(ts.VotePeriod())
@@ -442,7 +442,7 @@ func TestNoDecisionVote(t *testing.T) {
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err := ts.txConflictVoteCommit(&msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// first vote for provider 1
 	relayExchange1 := pairingtypes.NewRelayExchange(*detection.ResponseConflict.ConflictRelayData1.Request, *relay1)
@@ -451,7 +451,7 @@ func TestNoDecisionVote(t *testing.T) {
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err = ts.txConflictVoteCommit(&msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// first vote for none
 	noneData := "FAKE"
@@ -460,7 +460,7 @@ func TestNoDecisionVote(t *testing.T) {
 	msg.Hash = conflicttypes.CommitVoteData(nonce, replyDataHash, msg.Creator)
 
 	_, err = ts.txConflictVoteCommit(&msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
@@ -473,20 +473,20 @@ func TestNoDecisionVote(t *testing.T) {
 	msgReveal.Creator = ts.providers[2].Addr.String()
 	msgReveal.Hash = sigs.HashMsg(relayExchange.DataToSign())
 	_, err = ts.txConflictVoteReveal(&msgReveal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// reveal vote provider 1
 	msgReveal.Creator = ts.providers[3].Addr.String()
 	relayExchange1 = pairingtypes.NewRelayExchange(*detection.ResponseConflict.ConflictRelayData1.Request, *relay1)
 	msgReveal.Hash = sigs.HashMsg(relayExchange1.DataToSign())
 	_, err = ts.txConflictVoteReveal(&msgReveal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// reveal vote none
 	msgReveal.Creator = ts.providers[4].Addr.String()
 	msgReveal.Hash = sigs.HashMsg([]byte(noneData))
 	_, err = ts.txConflictVoteReveal(&msgReveal)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	ts.AdvanceEpochs(ts.VotePeriod())
 

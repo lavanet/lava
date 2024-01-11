@@ -11,6 +11,7 @@ import (
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
@@ -30,6 +31,7 @@ const (
 	RewardsSnapshotTimeoutSecFlagName   = "proofs-snapshot-timeout-sec"
 	DefaultRewardsSnapshotTimeoutSec    = 30
 	MaxPaymentRequestsRetiresForSession = 3
+	RewardServerMaxRelayRetires         = 3
 )
 
 type PaymentRequest struct {
@@ -57,6 +59,7 @@ type ConsumerRewards struct {
 
 func (csrw *ConsumerRewards) PrepareRewardsForClaim() (retProofs []*pairingtypes.RelaySession, errRet error) {
 	for _, proof := range csrw.proofs {
+		utils.LavaFormatDebug("Adding reward id for claim", utils.LogAttr("Id", proof.SessionId))
 		retProofs = append(retProofs, proof)
 	}
 	return
@@ -166,8 +169,38 @@ func (rws *RewardServer) runRewardServerEpochUpdate(epoch uint64) {
 	rws.identifyMissingPayments(ctx)
 }
 
+func (rws *RewardServer) getEpochSizeWithRetry(ctx context.Context) (epochSize uint64, err error) {
+	for i := 0; i < RewardServerMaxRelayRetires; i++ {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, common.CommunicateWithLocalLavaNodeTimeout)
+		epochSize, err = rws.rewardsTxSender.GetEpochSize(ctxWithTimeout)
+		cancel()
+		if err == nil {
+			break
+		}
+		utils.LavaFormatDebug("failed getting epoch size, retrying...", utils.LogAttr("retry_#", i+1))
+		time.Sleep(50 * time.Duration(i+1) * time.Millisecond)
+	}
+
+	return epochSize, err
+}
+
+func (rws *RewardServer) getEarliestBlockInMemoryWithRetry(ctx context.Context) (earliestBlock uint64, err error) {
+	for i := 0; i < RewardServerMaxRelayRetires; i++ {
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, common.CommunicateWithLocalLavaNodeTimeout)
+		earliestBlock, err = rws.rewardsTxSender.EarliestBlockInMemory(ctxWithTimeout)
+		cancel()
+		if err == nil {
+			break
+		}
+		utils.LavaFormatDebug("failed getting earliest block in memory, retrying...", utils.LogAttr("retry_#", i+1))
+		time.Sleep(50 * time.Duration(i+1) * time.Millisecond)
+	}
+
+	return earliestBlock, err
+}
+
 func (rws *RewardServer) AddRewardDelayForUnifiedRewardDistribution(ctx context.Context, epochStart uint64) {
-	epochSize, err := rws.rewardsTxSender.GetEpochSize(ctx)
+	epochSize, err := rws.getEpochSizeWithRetry(ctx)
 	if err != nil {
 		utils.LavaFormatError("Failed fetching epoch size in reward server delay, skipping delay", err)
 		return
@@ -185,15 +218,17 @@ func (rws *RewardServer) AddRewardDelayForUnifiedRewardDistribution(ctx context.
 }
 
 func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) error {
-	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(context.Background())
+	earliestSavedEpoch, err := rws.getEarliestBlockInMemoryWithRetry(ctx)
 	if err != nil {
 		return utils.LavaFormatError("sendRewardsClaim failed to get earliest block in memory", err)
 	}
 
 	failedRewardRequestsToRetry := rws.gatherFailedRequestPaymentsToRetry(earliestSavedEpoch)
 	if len(failedRewardRequestsToRetry) > 0 {
+		utils.LavaFormatDebug("Found failed reward claims, retrying", utils.LogAttr("number_of_rewards", len((failedRewardRequestsToRetry))))
 		specs := map[string]struct{}{}
 		for _, relay := range failedRewardRequestsToRetry {
+			utils.LavaFormatDebug("[sendRewardsClaim] retrying failed id", utils.LogAttr("id", relay.SessionId))
 			specs[relay.SpecId] = struct{}{}
 		}
 
@@ -248,7 +283,7 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 }
 
 func (rws *RewardServer) identifyMissingPayments(ctx context.Context) (missingPayments bool, err error) {
-	lastBlockInMemory, err := rws.rewardsTxSender.EarliestBlockInMemory(ctx)
+	lastBlockInMemory, err := rws.getEarliestBlockInMemoryWithRetry(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -410,13 +445,13 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 			utils.LavaFormatWarning("tried removing payment that wasn't expected", nil, utils.Attribute{Key: "payment", Value: payment})
 		}
 
-		utils.LavaFormatDebug("deleting claimed rewards", utils.Attribute{Key: "payment uid", Value: payment.UniqueIdentifier})
+		utils.LavaFormatDebug("Reward Server detected successful payment request, deleting claimed rewards", utils.Attribute{Key: "payment-uid", Value: payment.UniqueIdentifier})
 
 		err = rws.rewardDB.DeleteClaimedRewards(payment.PaymentEpoch, payment.Client.String(), payment.UniqueIdentifier, payment.ConsumerRewardsKey)
 		if err != nil {
 			utils.LavaFormatWarning("failed deleting claimed rewards", err)
 		} else {
-			utils.LavaFormatDebug("deleted claimed rewards successfully")
+			utils.LavaFormatDebug("deleted claimed rewards successfully", utils.Attribute{Key: "payment-uid", Value: payment.UniqueIdentifier})
 		}
 	}
 }
@@ -499,7 +534,7 @@ func (rws *RewardServer) resetSnapshotTimerAndSaveRewardsSnapshotToDB() {
 func (rws *RewardServer) restoreRewardsFromDB(specId string) (err error) {
 	// Pay Attention! This function should be called inside the RewardServer lock
 
-	earliestSavedEpoch, err := rws.rewardsTxSender.EarliestBlockInMemory(context.Background())
+	earliestSavedEpoch, err := rws.getEarliestBlockInMemoryWithRetry(context.Background())
 	if err != nil {
 		return utils.LavaFormatError("restoreRewardsFromDB failed to get earliest block in memory", err)
 	}
@@ -572,7 +607,6 @@ func (rws *RewardServer) gatherFailedRequestPaymentsToRetry(earliestSavedEpoch u
 			sessionsToDelete = append(sessionsToDelete, key)
 			continue
 		}
-
 		rewardsForClaim = append(rewardsForClaim, val.relaySession)
 	}
 

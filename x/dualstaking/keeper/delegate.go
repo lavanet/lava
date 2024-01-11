@@ -27,20 +27,8 @@ import (
 	lavaslices "github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 	"golang.org/x/exp/slices"
 )
-
-// validateCoins validates that the input amount is valid and non-negative
-func validateCoins(amount sdk.Coin) error {
-	if !amount.IsValid() {
-		return utils.LavaFormatWarning("invalid coins to delegate",
-			sdkerrors.ErrInvalidCoins,
-			utils.Attribute{Key: "amount", Value: amount},
-		)
-	}
-	return nil
-}
 
 // increaseDelegation increases the delegation of a delegator to a provider for a
 // given chain. It updates the fixation stores for both delegations and delegators,
@@ -283,10 +271,12 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 		}
 	}
 
-	if err := validateCoins(amount); err != nil {
-		return err
-	} else if amount.IsZero() {
-		return nil
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+		return utils.LavaFormatWarning("failed to delegate: coin validation failed", err,
+			utils.Attribute{Key: "delegator", Value: delegator},
+			utils.Attribute{Key: "provider", Value: provider},
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
 	}
 
 	err = k.increaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch)
@@ -306,6 +296,16 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 // without the funds being subject to unstakeHoldBlocks witholding period.
 // (effective on next epoch)
 func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, toChainID string, amount sdk.Coin) error {
+	_, foundFrom := k.specKeeper.GetSpec(ctx, fromChainID)
+	_, foundTo := k.specKeeper.GetSpec(ctx, toChainID)
+	if (!foundFrom && fromChainID != types.EMPTY_PROVIDER_CHAINID) ||
+		(!foundTo && toChainID != types.EMPTY_PROVIDER_CHAINID) {
+		return utils.LavaFormatWarning("cannot redelegate with invalid chain IDs", fmt.Errorf("chain ID not found"),
+			utils.LogAttr("from_chain_id", fromChainID),
+			utils.LogAttr("to_chain_id", toChainID),
+		)
+	}
+
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
 	if _, err := sdk.AccAddressFromBech32(delegator); err != nil {
@@ -330,10 +330,11 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		}
 	}
 
-	if err := validateCoins(amount); err != nil {
-		return err
-	} else if amount.IsZero() {
-		return nil
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+		return utils.LavaFormatWarning("failed to redelegate: coin validation failed", err,
+			utils.Attribute{Key: "delegator", Value: delegator},
+			utils.Attribute{Key: "provider", Value: to},
+		)
 	}
 
 	err := k.increaseDelegation(ctx, delegator, to, toChainID, amount, nextEpoch)
@@ -366,6 +367,12 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 // provider will be updated accordingly (or terminate) from the next epoch.
 // (effective on next epoch)
 func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
+	_, found := k.specKeeper.GetSpec(ctx, chainID)
+	if chainID != types.EMPTY_PROVIDER_CHAINID && !found {
+		return utils.LavaFormatWarning("cannot unbond with invalid chain ID", fmt.Errorf("chain ID not found"),
+			utils.LogAttr("chain_id", chainID))
+	}
+
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
 	if _, err := sdk.AccAddressFromBech32(delegator); err != nil {
@@ -382,10 +389,11 @@ func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		}
 	}
 
-	if err := validateCoins(amount); err != nil {
-		return err
-	} else if amount.IsZero() {
-		return nil
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
+		return utils.LavaFormatWarning("failed to unbond: coin validation failed", err,
+			utils.Attribute{Key: "delegator", Value: delegator},
+			utils.Attribute{Key: "provider", Value: provider},
+		)
 	}
 
 	err := k.decreaseDelegation(ctx, delegator, provider, chainID, amount, nextEpoch)
@@ -398,27 +406,6 @@ func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 	}
 
 	return nil
-}
-
-func (k Keeper) getUnbondHoldBlocks(ctx sdk.Context, chainID string) uint64 {
-	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
-	if !found {
-		utils.LavaFormatError("critical: failed to get spec for chainID",
-			fmt.Errorf("unknown chainID"),
-			utils.Attribute{Key: "chainID", Value: chainID},
-		)
-	}
-
-	// note: if spec was not found, the default choice is Spec_dynamic == 0
-
-	block := uint64(ctx.BlockHeight())
-	if providerType == spectypes.Spec_static {
-		return k.epochstorageKeeper.UnstakeHoldBlocksStatic(ctx, block)
-	} else {
-		return k.epochstorageKeeper.UnstakeHoldBlocks(ctx, block)
-	}
-
-	// NOT REACHED
 }
 
 // GetDelegatorProviders gets all the providers the delegator is delegated to

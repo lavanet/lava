@@ -31,8 +31,6 @@ The pairing module is one of Lava's core modules and is closely connected to the
 * [Parameters](#parameters)
   * [QoSWeight](#qosweight)
   * [EpochBlocksOverlap](#epochblocksoverlap)
-  * [FraudSlashingAmount](#fraudslashingamount)
-  * [FraudStakeSlashingFactor](#fraudstakeslashingfactor)
   * [RecommendedEpochNumToCollectPayment](#recommendedepochnumtocollectpayment)
 * [Queries](#queries)
 * [Transactions](#transactions)
@@ -284,8 +282,6 @@ The pairing module contains the following parameters:
 | -------------------------------------- | ----------------------- | -----------------|
 | QoSWeight                        | math.LegacyDec          | 0.5              |
 | EpochBlocksOverlap                              | uint64          | 5              |
-| FraudSlashingAmount                       | uint64          | 0                |
-| FraudStakeSlashingFactor                        | math.LegacyDec                  | 0                |
 | RecommendedEpochNumToCollectPayment    | uint64          | 3             |
 
 ### QoSWeight
@@ -295,14 +291,6 @@ QoSWeight determines the weight of passable QoS score in the provider payment ca
 ### EpochBlocksOverlap
 
 EpochBlocksOverlap is the number of blocks a consumer waits before interacting with a provider from a new pairing list to let providers that are behind the latest block to catch up with the chain.
-
-### FraudSlashingAmount
-
-FraudSlashingAmount is for future features.
-
-### FraudStakeSlashingFactor
-
-FraudStakeSlashingFactor is for future features.
 
 ### RecommendedEpochNumToCollectPayment
 

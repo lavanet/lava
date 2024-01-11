@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
@@ -186,11 +188,11 @@ func TestCreateSubscription(t *testing.T) {
 
 				_, err := ts.TxSubscriptionBuy(sub.Creator, sub.Consumer, sub.PlanIndex, tt.duration, false, false)
 				if tt.success {
-					require.Nil(t, err, tt.name)
+					require.NoError(t, err, tt.name)
 					_, found := ts.getSubscription(sub.Consumer)
 					require.True(t, found, tt.name)
 				} else {
-					require.NotNil(t, err, tt.name)
+					require.Error(t, err, tt.name)
 				}
 			})
 		}
@@ -237,7 +239,7 @@ func TestRenewSubscription(t *testing.T) {
 
 	// with 3 months duration left, asking for 12 more should fail
 	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 12, false, false)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	// but 9 additional month (even 10, the extra month extension below)
 	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 9, false, false)
@@ -277,7 +279,7 @@ func TestRenewSubscription(t *testing.T) {
 	_, found = ts.getSubscription(sub1Addr)
 	require.True(t, found)
 	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 10, false, false)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestSubscriptionAdminProject(t *testing.T) {
@@ -365,7 +367,8 @@ func TestMonthlyRechargeCU(t *testing.T) {
 
 			// force fixation entry (by adding project key)
 			projKey := []projectstypes.ProjectKey{projectstypes.ProjectAdminKey(adm1Addr)}
-			ts.Keepers.Projects.AddKeysToProject(ts.Ctx, projectstypes.ADMIN_PROJECT_NAME, tt.developer, projKey)
+			err = ts.Keepers.Projects.AddKeysToProject(ts.Ctx, proj.Index, tt.subscription, projKey)
+			require.NoError(t, err)
 
 			// fast-forward one month
 			ts.AdvanceMonths(1).AdvanceEpoch()
@@ -459,9 +462,10 @@ func TestSubscriptionExpire(t *testing.T) {
 	plan := ts.Plan("free")
 
 	coins := common.NewCoins(ts.TokenDenom(), 10000)
-	ts.Keepers.BankKeeper.SetBalance(ts.Ctx, sub1Acct.Addr, coins)
+	err := ts.Keepers.BankKeeper.SetBalance(ts.Ctx, sub1Acct.Addr, coins)
+	require.NoError(t, err)
 
-	_, err := ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
+	_, err = ts.TxSubscriptionBuy(sub1Addr, sub1Addr, plan.Index, 1, false, false)
 	require.NoError(t, err)
 
 	block := ts.BlockHeight()
@@ -489,7 +493,7 @@ func TestSubscriptionExpire(t *testing.T) {
 	// subscription no longer charge-able for previous usage
 	_, err = ts.Keepers.Subscription.ChargeComputeUnitsToSubscription(
 		ts.Ctx, sub1Addr, block, 10)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestPrice(t *testing.T) {
@@ -578,7 +582,7 @@ func TestAddProjectToSubscription(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, tt.subscription, proj.Subscription)
 			} else {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			}
 		})
 	}
@@ -706,7 +710,7 @@ func TestDelProjectEndSubscription(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	_, err = ts.QuerySubscriptionListProjects(sub1Addr)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	// should not panic
 	ts.AdvanceBlocks(2 * ts.BlocksToSave())
@@ -993,7 +997,7 @@ func TestSubAutoRenewalDisable(t *testing.T) {
 
 	// Buy subscription with auto-renewal on
 	_, err = ts.TxSubscriptionBuy(creator2, consumer2, freePlan.Index, 1, true, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Check subscription has auto-renewal
 	sub, found = ts.getSubscription(consumer2)
 	require.True(t, found)
@@ -1001,7 +1005,7 @@ func TestSubAutoRenewalDisable(t *testing.T) {
 
 	// Disable auto-renewal
 	err = ts.TxSubscriptionAutoRenewal(creator2, consumer2, freePlan.Index, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Check subscription does not have auto-renewal
 	sub, found = ts.getSubscription(consumer2)
 	require.True(t, found)
@@ -1025,7 +1029,7 @@ func TestSubAutoRenewalDifferentPlanIndexOnSubBuy(t *testing.T) {
 
 	// Buy subscription with auto-renewal on
 	_, err := ts.TxSubscriptionBuy(creatorAddr, consumerAddr, freePlan.Index, 1, true, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Check subscription has auto-renewal
 	sub, found := ts.getSubscription(consumerAddr)
 	require.True(t, found)
@@ -1048,7 +1052,7 @@ func TestSubAutoRenewalDifferentPlanIndexOnSubBuy(t *testing.T) {
 
 	// Set auto-renewal to premium
 	err = ts.TxSubscriptionAutoRenewal(creatorAddr, consumerAddr, premiumPlan.Index, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Check subscription has auto-renewal
 	sub, found = ts.getSubscription(consumerAddr)
 	require.True(t, found)
@@ -1080,7 +1084,7 @@ func TestSubAutoRenewalDifferentPlanIndexOnSubBuyDifferentCreator(t *testing.T) 
 
 	// Buy subscription with auto-renewal on
 	_, err := ts.TxSubscriptionBuy(creatorAddr, consumerAddr, freePlan.Index, 1, true, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Check subscription has auto-renewal
 	sub, found := ts.getSubscription(consumerAddr)
 	require.True(t, found)
@@ -1103,7 +1107,7 @@ func TestSubAutoRenewalDifferentPlanIndexOnSubBuyDifferentCreator(t *testing.T) 
 
 	// Set auto-renewal to premium
 	err = ts.TxSubscriptionAutoRenewal(consumerAddr, consumerAddr, premiumPlan.Index, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Check subscription has auto-renewal
 	sub, found = ts.getSubscription(consumerAddr)
 	require.True(t, found)
@@ -1134,7 +1138,7 @@ func TestSubAutoRenewalDifferentPlanIndexOnAutoRenewTx(t *testing.T) {
 
 	// Buy subscription with auto-renewal off
 	_, err := ts.TxSubscriptionBuy(creatorAddr, consumerAddr, freePlan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Check subscription does not have auto-renewal
 	sub, found := ts.getSubscription(consumerAddr)
 	require.True(t, found)
@@ -1145,7 +1149,7 @@ func TestSubAutoRenewalDifferentPlanIndexOnAutoRenewTx(t *testing.T) {
 
 	// Enable auto-renewal for premium
 	err = ts.TxSubscriptionAutoRenewal(creatorAddr, consumerAddr, premiumPlan.Index, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Check subscription has auto-renewal
 	sub, found = ts.getSubscription(consumerAddr)
 	require.True(t, found)
@@ -1230,7 +1234,7 @@ func TestSubBuySamePlanBlockUpdated(t *testing.T) {
 	plan := ts.Plan("free")
 
 	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, plan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	_, found := ts.getSubscription(consumerAddr)
 	require.True(t, found)
 
@@ -1243,7 +1247,7 @@ func TestSubBuySamePlanBlockUpdated(t *testing.T) {
 
 	// Propose new plan
 	err = keepertest.SimulatePlansAddProposal(ts.Ctx, ts.Keepers.Plans, []planstypes.Plan{plan}, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Advance epoch so the new plan will be appended
 	ts.AdvanceEpoch()
@@ -1359,6 +1363,54 @@ func TestSubscriptionUpgrade(t *testing.T) {
 	require.Equal(t, uint64(0), project.UsedCu)
 }
 
+func TestSubscriptionUpgradeTwiceInSameEpoch(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+
+	_, consumer := ts.Account("sub1")
+
+	planIndexPrefix := "tier"
+
+	for i := 0; i < 3; i++ {
+		plan := common.CreateMockPlan()
+		plan.Index = fmt.Sprintf("%s%d", planIndexPrefix, i+1)
+		plan.Price = sdk.NewCoin(commontypes.TokenDenom, math.NewInt(int64(100+i*100)))
+		plan.Block = ts.BlockHeight()
+		ts.AddPlan(plan.Index, plan)
+	}
+
+	ts.T.Run("multiple plan upgrade attempts in the same epoch", func(t *testing.T) {
+		// Start with tier1 plan
+		_, err := ts.TxSubscriptionBuy(consumer, consumer, "tier1", 1, false, false)
+		require.NoError(t, err)
+
+		ts.AdvanceBlock()
+
+		// Buy tier2 plan
+		_, err = ts.TxSubscriptionBuy(consumer, consumer, "tier2", 1, false, false)
+		require.NoError(t, err)
+
+		ts.AdvanceBlock()
+
+		// Buy tier3 plan
+		_, err = ts.TxSubscriptionBuy(consumer, consumer, "tier3", 1, false, false)
+		require.Error(t, err)
+
+		ts.AdvanceBlock()
+
+		// Buy tier1 plan again
+		_, err = ts.TxSubscriptionBuy(consumer, consumer, "tier1", 1, false, false)
+		require.Error(t, err)
+
+		ts.AdvanceEpoch().AdvanceBlock()
+
+		sub, err := ts.QuerySubscriptionCurrent(consumer)
+		require.NoError(t, err)
+		require.NotNil(t, sub.Sub)
+		require.Equal(t, "tier2", sub.Sub.PlanIndex)
+	})
+}
+
 func TestSubscriptionDowngradeFails(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
@@ -1377,7 +1429,7 @@ func TestSubscriptionDowngradeFails(t *testing.T) {
 
 	// Buy premium plan
 	_, err = ts.TxSubscriptionBuy(consumer, consumer, freePlan.Index, 1, false, false)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	ts.AdvanceEpoch()
 
@@ -1519,7 +1571,7 @@ func TestSubscriptionAdvancePurchaseStartsOnExpirationOfCurrent(t *testing.T) {
 	// Buy free plan
 	freePlanDuration := int64(2)
 	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, int(freePlanDuration), false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 	consumerBalance -= freePlan.Price.Amount.MulRaw(freePlanDuration).Int64()
@@ -1528,7 +1580,7 @@ func TestSubscriptionAdvancePurchaseStartsOnExpirationOfCurrent(t *testing.T) {
 
 	newSubDuration := uint64(4)
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Verify that the consumer charged with the correct amount
 	consumerShouldPay := premiumPlan.Price.Amount.MulRaw(int64(newSubDuration))
@@ -1649,7 +1701,7 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_SameBlock(t *testing.T)
 
 	// Buy medium plan
 	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 
@@ -1659,7 +1711,7 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_SameBlock(t *testing.T)
 
 	// Buy future medium plan
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlan.Index, int(startingDuration), false, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 
@@ -1672,7 +1724,7 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_SameBlock(t *testing.T)
 		testName := fmt.Sprintf("%s -> Price: %d", testCase.name, testCase.price)
 		// Buy new plan
 		_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, testCase.plan.Index, int(testCase.duration), false, true)
-		require.Nil(t, err, testName)
+		require.NoError(t, err, testName)
 
 		priceDiff := testCase.price - prevPlanPrice
 		consumerBalance -= priceDiff
@@ -1895,7 +1947,7 @@ func TestSubscriptionAdvancePurchaseFailOnCheaperPlans_SameBlock(t *testing.T) {
 
 	// Buy medium plan
 	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 
@@ -1905,7 +1957,7 @@ func TestSubscriptionAdvancePurchaseFailOnCheaperPlans_SameBlock(t *testing.T) {
 
 	// Buy future medium plan
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlan.Index, int(startingDuration), false, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 
@@ -1918,7 +1970,7 @@ func TestSubscriptionAdvancePurchaseFailOnCheaperPlans_SameBlock(t *testing.T) {
 
 		// Buy new plan
 		_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, testCase.plan.Index, int(testCase.duration), false, true)
-		require.NotNil(t, err, testName)
+		require.Error(t, err, testName)
 
 		// Make sure the balance is not changed
 		require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr), testName)
@@ -1952,7 +2004,7 @@ func TestSubscriptionAdvancePurchaseFailOnCheaperPlans_NewBlock(t *testing.T) {
 
 	// Buy medium plan
 	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlan.Index, 1, false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 
@@ -1962,7 +2014,7 @@ func TestSubscriptionAdvancePurchaseFailOnCheaperPlans_NewBlock(t *testing.T) {
 
 	// Buy future medium plan
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlan.Index, int(startingDuration), false, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 
@@ -1981,7 +2033,7 @@ func TestSubscriptionAdvancePurchaseFailOnCheaperPlans_NewBlock(t *testing.T) {
 
 	// Buy new plan
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlanCheaper.Index, int(startingDuration+3), false, true)
-	require.NotNil(t, err, "Same plan && cheaper && more duration -> Price: "+
+	require.Error(t, err, "Same plan && cheaper && more duration -> Price: "+
 		mediumPlanCheaper.Price.Amount.MulRaw(startingDuration+3).String()) // 600
 
 	// Make sure the balance is not changed
@@ -1989,7 +2041,7 @@ func TestSubscriptionAdvancePurchaseFailOnCheaperPlans_NewBlock(t *testing.T) {
 
 	// Buy new plan
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlanCheaper.Index, int(startingDuration+2), false, true)
-	require.NotNil(t, err, "Same plan && cheaper && more duration -> Price: "+
+	require.Error(t, err, "Same plan && cheaper && more duration -> Price: "+
 		mediumPlanCheaper.Price.Amount.MulRaw(startingDuration+2).String()) // 500
 
 	// Make sure the balance is not changed
@@ -2006,7 +2058,7 @@ func TestSubscriptionAdvancePurchaseFailOnCheaperPlans_NewBlock(t *testing.T) {
 
 	// Buy new plan
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlanCheaper.Index, int(startingDuration-1), false, true)
-	require.NotNil(t, err, "Same plan && cheaper && more duration -> Price: "+
+	require.Error(t, err, "Same plan && cheaper && more duration -> Price: "+
 		mediumPlanCheaper.Price.Amount.MulRaw(startingDuration-1).String()) // 600
 
 	// Make sure the balance is not changed
@@ -2014,7 +2066,7 @@ func TestSubscriptionAdvancePurchaseFailOnCheaperPlans_NewBlock(t *testing.T) {
 
 	// Buy new plan
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, mediumPlanCheaper.Index, int(startingDuration-2), false, true)
-	require.NotNil(t, err, "Same plan && cheaper && more duration -> Price: "+
+	require.Error(t, err, "Same plan && cheaper && more duration -> Price: "+
 		mediumPlanCheaper.Price.Amount.MulRaw(startingDuration-2).String()) // 500
 
 	// Make sure the balance is not changed
@@ -2032,7 +2084,7 @@ func TestSubscriptionAdvancePurchaseFailOnNoSubscription(t *testing.T) {
 	// Advance purchase the subscription with no active subscription
 	newSubDuration := int64(4)
 	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	// Verify that the consumer is not charged
 	require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr))
@@ -2060,7 +2112,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	// Buy free plan
 	freePlanDuration := int64(2)
 	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, int(freePlanDuration), false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 	consumerBalance -= freePlan.Price.Amount.MulRaw(freePlanDuration).Int64()
@@ -2070,7 +2122,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 	// Creator1 buys a future subscription
 	newSubDuration := uint64(1)
 	_, err = ts.TxSubscriptionBuy(creator1Addr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Make sure that creator1 paid for the new subscription
 	creator1Balance -= premiumPlan.Price.Amount.MulRaw(int64(newSubDuration)).Int64()
@@ -2086,7 +2138,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 
 	// Creator2 buys a future subscription
 	_, err = ts.TxSubscriptionBuy(creator2Addr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Make sure that creator2 paid for the new subscription
 	creator2Balance -= premiumPlan.Price.Amount.MulRaw(int64(newSubDuration)).Int64()
@@ -2102,7 +2154,7 @@ func TestSubscriptionAdvancePurchaseNewCreator(t *testing.T) {
 
 	// Original consumer buys a future subscription
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Make sure that consumer paid for the new subscription
 	consumerBalance -= premiumPlan.Price.Amount.MulRaw(int64(newSubDuration)).Int64()
@@ -2138,7 +2190,7 @@ func TestSubscriptionAdvancePurchaseAnnuallyDiscount(t *testing.T) {
 	// Buy free plan
 	freePlanDuration := int64(12)
 	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, int(freePlanDuration), false, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Verify subscription found inside getSubscription
 	getSubscriptionAndFailTestIfNotFound(t, ts, consumerAddr)
 
@@ -2153,7 +2205,7 @@ func TestSubscriptionAdvancePurchaseAnnuallyDiscount(t *testing.T) {
 	// Consumer buys a future premium subscription
 	newSubDuration := uint64(12)
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, int(newSubDuration), false, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Make sure that consumer paid for the new subscription
 	discount = premiumPlan.GetAnnualDiscountPercentage()
@@ -2164,7 +2216,7 @@ func TestSubscriptionAdvancePurchaseAnnuallyDiscount(t *testing.T) {
 
 	// Consumer buys a future premiumPlus subscription
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlusPlan.Index, int(newSubDuration), false, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Make sure that consumer paid for the new subscription
 	discount = premiumPlusPlan.GetAnnualDiscountPercentage()
@@ -2199,30 +2251,32 @@ func TestSubscriptionUpgradeAffectsTimer(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify timer for free plan expiration
-	verifyTimerStore := func() {
+	verifyTimerStore := func(name string) {
 		subTimers := ts.Keepers.Subscription.ExportSubscriptionsTimers(ts.Ctx).TimeEntries
-		require.NoError(t, err)
-		require.NotNil(t, subTimers)
-		require.Len(t, subTimers, 1)
-		require.Equal(t, consumerAddr, subTimers[0].Key)
-		require.Equal(t, uint64(utils.NextMonth(ts.BlockTime()).UTC().Unix()), subTimers[0].Value)
+		require.NoError(t, err, name)
+		require.NotNil(t, subTimers, name)
+		require.Len(t, subTimers, 1, name)
+		require.Equal(t, consumerAddr, subTimers[0].Key, name)
+		require.Equal(t, uint64(utils.NextMonth(ts.BlockTime()).UTC().Unix()), subTimers[0].Value, name)
 	}
 
-	verifyTimerStore()
+	t.Run("subscription upgrade affects the timers", func(t *testing.T) {
+		verifyTimerStore("initial - before sub is active")
 
-	ts.AdvanceBlock()
+		ts.AdvanceBlock()
 
-	// Buy premium plan
-	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, 1, false, false)
-	require.NoError(t, err)
+		// Buy premium plan
+		_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlan.Index, 1, false, false)
+		require.NoError(t, err)
 
-	verifyTimerStore()
+		verifyTimerStore("after buying premium plan")
 
-	ts.AdvanceBlock()
+		ts.AdvanceEpoch()
 
-	// Buy premium-plus plan
-	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlusPlan.Index, 1, false, false)
-	require.NoError(t, err)
+		// Buy premium-plus plan
+		_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, premiumPlusPlan.Index, 1, false, false)
+		require.NoError(t, err)
 
-	verifyTimerStore()
+		verifyTimerStore("after buying premium-plus")
+	})
 }

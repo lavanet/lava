@@ -15,9 +15,9 @@ type GeoReq struct {
 }
 
 const (
-	geoReqName    = "geo-req"
-	maxGeoLatency = 10000 // highest geo cost < 300
-	minGeoLatency = 1
+	geoReqName           = "geo-req"
+	maxGeoLatency uint64 = 10000 // highest geo cost < 300
+	minGeoLatency        = 1
 )
 
 func (gr GeoReq) Init(policy planstypes.Policy) bool {
@@ -57,13 +57,14 @@ func (gr GeoReq) Equal(other ScoreReq) bool {
 func (gr GeoReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
 	policyGeoEnums := planstypes.GetGeolocationsFromUint(policy.GeolocationProfile)
 
-	return GeoReq{Geo: int32(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
-}
+	if len(policyGeoEnums) == 0 {
+		utils.LavaFormatError("length of policyGeoEnums is zero", fmt.Errorf("critical: Attempt to divide by zero"),
+			utils.LogAttr("policyGeoProfile", policy.GeolocationProfile),
+		)
+		return GeoReq{Geo: int32(planstypes.Geolocation_USC)}
+	}
 
-// a single geolocation and the latency to it (in millieseconds)
-type GeoLatency struct {
-	geo     planstypes.Geolocation
-	latency uint64
+	return GeoReq{Geo: int32(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
 }
 
 // CalcGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations
@@ -75,7 +76,7 @@ func CalcGeoCost(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geoloc
 
 func CalcGeoLatency(reqGeo planstypes.Geolocation, providerGeos []planstypes.Geolocation) (planstypes.Geolocation, uint64) {
 	minGeo := planstypes.Geolocation(-1)
-	minLatency := uint64(maxGeoLatency)
+	minLatency := maxGeoLatency
 	for _, pGeo := range providerGeos {
 		if pGeo == reqGeo {
 			minGeo = pGeo

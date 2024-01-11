@@ -3,6 +3,7 @@ package updaters
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
@@ -26,6 +27,7 @@ type VersionUpdater struct {
 	VersionStateQuery    VersionStateQuery
 	LastKnownVersion     *ProtocolVersionResponse
 	VersionValidationInf // embedding the interface, this tells: VersionUpdater has ValidateProtocolVersion method
+	shouldUpdate         bool
 }
 
 func NewVersionUpdater(versionStateQuery VersionStateQuery, eventTracker *EventTracker, version *protocoltypes.Version, versionValidator VersionValidationInf) *VersionUpdater {
@@ -45,25 +47,46 @@ func (vu *VersionUpdater) RegisterVersionUpdatable() {
 	}
 }
 
+// call when locked only
+func (vu *VersionUpdater) updateInner(latestBlock int64) {
+	// fetch updated version from consensus
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	defer cancel()
+	version, err := vu.VersionStateQuery.GetProtocolVersion(timeoutCtx)
+	if err != nil {
+		utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
+		return
+	}
+	utils.LavaFormatInfo("Protocol version has been fetched successfully!",
+		utils.Attribute{Key: "old_version", Value: vu.LastKnownVersion},
+		utils.Attribute{Key: "new_version", Value: version})
+	// if no error, set the last known version.
+	vu.LastKnownVersion = version
+	vu.shouldUpdate = false // updated successfully
+}
+
+func (vu *VersionUpdater) Reset(latestBlock int64) {
+	utils.LavaFormatDebug("Reset Triggered for Version Updater", utils.LogAttr("block", latestBlock))
+	vu.Lock.Lock()
+	defer vu.Lock.Unlock()
+	vu.shouldUpdate = true
+	vu.updateInner(latestBlock)
+}
+
 func (vu *VersionUpdater) Update(latestBlock int64) {
 	vu.Lock.Lock()
 	defer vu.Lock.Unlock()
-	versionUpdated, err := vu.eventTracker.getLatestVersionEvents(latestBlock)
-	if versionUpdated || err != nil {
-		// fetch updated version from consensus
-		version, err := vu.VersionStateQuery.GetProtocolVersion(context.Background())
-		if err != nil {
-			utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
-			return
+	if vu.shouldUpdate {
+		vu.updateInner(latestBlock)
+	} else {
+		versionUpdated, err := vu.eventTracker.getLatestVersionEvents(latestBlock)
+		if versionUpdated || err != nil {
+			vu.shouldUpdate = true
+			vu.updateInner(latestBlock)
 		}
-		utils.LavaFormatInfo("Protocol version has been fetched successfully!",
-			utils.Attribute{Key: "old_version", Value: vu.LastKnownVersion},
-			utils.Attribute{Key: "new_version", Value: version})
-		// if no error, set the last known version.
-		vu.LastKnownVersion = version
 	}
-	// monitor protocol version on each new block
-	err = vu.ValidateProtocolVersion(vu.LastKnownVersion)
+	// monitor protocol version on each new block even if it was not updated (used for logging purposes)
+	err := vu.ValidateProtocolVersion(vu.LastKnownVersion)
 	if err != nil {
 		utils.LavaFormatError("Validate Protocol Version Error", err)
 	}

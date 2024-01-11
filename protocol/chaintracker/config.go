@@ -12,8 +12,8 @@ const (
 )
 
 type ChainTrackerConfig struct {
-	ForkCallback             func(block int64)              // a function to be called when a fork is detected
-	NewLatestCallback        func(block int64, hash string) // a function to be called when a new block is detected
+	ForkCallback             func(block int64)                                 // a function to be called when a fork is detected
+	NewLatestCallback        func(blockFrom int64, blockTo int64, hash string) // a function to be called when a new block is detected
 	ConsistencyCallback      func(oldBlock int64, block int64)
 	OldBlockCallback         func(latestBlockTime time.Time)
 	ServerAddress            string // if not empty will open up a grpc server for that address

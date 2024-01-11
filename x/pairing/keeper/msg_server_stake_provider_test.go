@@ -57,7 +57,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 
 	moniker := "exampleMoniker"
 	err := ts.addProviderMoniker(1, moniker)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
@@ -69,7 +69,8 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 
 	// modify moniker
 	moniker = "anotherExampleMoniker"
-	ts.StakeProviderExtra(providerAddr, ts.spec, testStake, nil, 0, moniker)
+	err = ts.StakeProviderExtra(providerAddr, ts.spec, testStake, nil, 0, moniker)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	// Get the stake entry and check the provider is staked
@@ -237,16 +238,16 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoints, geo, err := cli.HandleEndpointsAndGeolocationArgs(tc.endpoints, tc.geolocation)
 			if tc.valid {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				// adjust endpoints to match the default API interfaces and addons generated with ts
 				for i := 0; i < len(endpoints); i++ {
 					endpoints[i].ApiInterfaces = []string{"stub"}
 					endpoints[i].Addons = []string{}
 				}
 				_, err = ts.TxPairingStakeProvider(provider, ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, "prov")
-				require.Nil(t, err)
+				require.NoError(t, err)
 			} else {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			}
 		})
 	}

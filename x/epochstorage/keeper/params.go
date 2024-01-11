@@ -107,12 +107,23 @@ func (k Keeper) BlocksToSave(ctx sdk.Context, block uint64) (res uint64, erro er
 
 func (k Keeper) BlockInEpoch(ctx sdk.Context, block uint64) (res uint64, err error) {
 	// get epochBlocks directly because we also need an epoch start on the current grid and when fixation was saved is an epoch start
-	fixtedParams, err := k.GetFixatedParamsForBlock(ctx, string(types.KeyEpochBlocks), block)
-	var blocksCycle uint64
-	utils.Deserialize(fixtedParams.Parameter, &blocksCycle)
-	epochStartInGrid := fixtedParams.FixationBlock // fixation block is always <= block
+	fixatedParams, err := k.GetFixatedParamsForBlock(ctx, string(types.KeyEpochBlocks), block)
+	if err != nil {
+		return 0, err
+	}
+
+	var epochBlocks uint64
+	utils.Deserialize(fixatedParams.Parameter, &epochBlocks)
+
+	if epochBlocks == 0 {
+		return 0, utils.LavaFormatError("blocksCycle is 0", fmt.Errorf("critical: Attempt to divide by zero"),
+			utils.LogAttr("fixatedParams", fixatedParams),
+		)
+	}
+
+	epochStartInGrid := fixatedParams.FixationBlock // fixation block is always <= block
 	blockRelativeToGrid := block - epochStartInGrid
-	return blockRelativeToGrid % blocksCycle, err
+	return blockRelativeToGrid % epochBlocks, err
 }
 
 func (k Keeper) LatestParamChange(ctx sdk.Context) (res uint64) {

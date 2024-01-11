@@ -223,9 +223,14 @@ func (k Keeper) ValidateSpec(ctx sdk.Context, spec types.Spec) (map[string]strin
 		return details, err
 	}
 
-	if spec.MinStakeProvider.Denom != k.stakingKeeper.BondDenom(ctx) {
-		details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
-		return details, fmt.Errorf("MinStakeProvider must have denom of ulava")
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), spec.MinStakeProvider, false); err != nil {
+		details := map[string]string{
+			"spec":    spec.Name,
+			"status":  strconv.FormatBool(spec.Enabled),
+			"chainID": spec.Index,
+		}
+
+		return details, utils.LavaFormatError("MinStakeProvider is invalid", err)
 	}
 
 	details, err := spec.ValidateSpec(k.MaxCU(ctx))

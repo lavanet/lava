@@ -2,10 +2,9 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
-	sdkerror "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
@@ -18,6 +17,12 @@ func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 
 // DelegateFull uses staking module for to delegate with hooks
 func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error {
+	_, found := k.specKeeper.GetSpec(ctx, chainID)
+	if !found && chainID != types.EMPTY_PROVIDER_CHAINID {
+		return utils.LavaFormatWarning("invalid chain ID", fmt.Errorf("chain ID not found"),
+			utils.LogAttr("chain_id", chainID))
+	}
+
 	valAddr, valErr := sdk.ValAddressFromBech32(validator)
 	if valErr != nil {
 		return valErr
@@ -33,18 +38,12 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
-	bondDenom := k.stakingKeeper.BondDenom(ctx)
-	if amount.Denom != bondDenom {
-		return sdkerror.Wrapf(
-			sdkerrors.ErrInvalidRequest, "invalid coin denomination: got %s, expected %s", amount.Denom, bondDenom,
-		)
+	if _, err = sdk.AccAddressFromBech32(provider); err != nil {
+		return err
 	}
 
-	if err := validateCoins(amount); err != nil {
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), amount, false); err != nil {
 		return err
-	} else if amount.IsZero() {
-		return sdkerror.Wrapf(
-			sdkerrors.ErrInvalidRequest, "invalid coin amount: got 0")
 	}
 
 	_, err = k.stakingKeeper.Delegate(ctx, delegatorAddress, amount.Amount, stakingtypes.Unbonded, validatorType, true)

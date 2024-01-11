@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -123,7 +124,7 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) {
 	}
 	path := parsing.ApiName
 	data := []byte(parsing.FunctionTemplate)
-	chainMessage, err := rpccs.chainParser.ParseMsg(path, data, collectionData.Type, nil, 0)
+	chainMessage, err := rpccs.chainParser.ParseMsg(path, data, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	if err != nil {
 		utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err)
 		return
@@ -181,7 +182,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// remove lava directive headers
 	metadata, directiveHeaders := rpccs.LavaDirectiveHeaders(metadata)
 	relaySentTime := time.Now()
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getLatestBlock())
+	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(rpccs.getLatestBlock(), directiveHeaders))
 	if err != nil {
 		return nil, err
 	}
@@ -343,8 +344,14 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, chainlib.GetAddon(chainMessage), chainMessage.GetExtensions(), chainlib.GetStateful(chainMessage), virtualEpoch)
+	addon := chainlib.GetAddon(chainMessage)
+	extensions := chainMessage.GetExtensions()
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
+		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
+			// if we have no providers for a specific addon or extension, return an indicative error
+			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions))
+		}
 		return &common.RelayResult{ProviderInfo: common.ProviderInfo{ProviderAddress: ""}}, err
 	}
 
@@ -701,9 +708,12 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	}
 	conflict := lavaprotocol.VerifyReliabilityResults(ctx, relayResult, relayResultDataReliability, chainMessage.GetApiCollection(), rpccs.chainParser)
 	if conflict != nil {
-		err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, nil, relayResultDataReliability.ConflictHandler)
-		if err != nil {
-			utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "conflict", Value: conflict})
+		// TODO: remove this check when we fix the missing extensions information on conflict detection transaction
+		if relayRequestData.Extensions == nil || len(relayRequestData.Extensions) == 0 {
+			err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, nil, relayResultDataReliability.ConflictHandler)
+			if err != nil {
+				utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "conflict", Value: conflict})
+			}
 		}
 	}
 	return nil
@@ -740,6 +750,21 @@ func (rpccs *RPCConsumerServer) GetInitialUnwantedProviders(directiveHeaders map
 	return unwantedProviders
 }
 
+func (rpccs *RPCConsumerServer) getExtensionsFromDirectiveHeaders(latestBlock uint64, directiveHeaders map[string]string) extensionslib.ExtensionInfo {
+	extensionsStr, ok := directiveHeaders[common.EXTENSION_OVERRIDE_HEADER_NAME]
+	if ok {
+		extensions := strings.Split(extensionsStr, ",")
+		_, extensions, _ = rpccs.chainParser.SeparateAddonsExtensions(extensions)
+		if len(extensions) == 1 && extensions[0] == "none" {
+			// none eliminates existing extensions
+			return extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock(), ExtensionOverride: []string{}}
+		} else if len(extensions) > 0 {
+			return extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock(), AdditionalExtensions: extensions}
+		}
+	}
+	return extensionslib.ExtensionInfo{LatestBlock: rpccs.getLatestBlock()}
+}
+
 func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage chainlib.ChainMessage, directiveHeaders map[string]string) {
 	timeoutStr, ok := directiveHeaders[common.RELAY_TIMEOUT_HEADER_NAME]
 	if ok {
@@ -747,17 +772,6 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 		if err == nil {
 			// set an override timeout
 			chainMessage.TimeoutOverride(timeout)
-		}
-	}
-	extensionsStr, ok := directiveHeaders[common.EXTENSION_OVERRIDE_HEADER_NAME]
-	if ok {
-		extensions := strings.Split(extensionsStr, ",")
-		_, extensions, _ = rpccs.chainParser.SeparateAddonsExtensions(extensions)
-		if len(extensions) == 1 && extensions[0] == "none" {
-			// none eliminates existing extensions
-			chainMessage.OverrideExtensions([]string{}, rpccs.chainParser.ExtensionsParser())
-		} else if len(extensions) > 0 {
-			chainMessage.OverrideExtensions(extensions, rpccs.chainParser.ExtensionsParser())
 		}
 	}
 }

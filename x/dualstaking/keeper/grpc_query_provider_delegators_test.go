@@ -24,14 +24,14 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 
 	// delegate and query
 	_, err := ts.TxDualstakingDelegate(delegator, provider, spec.Index, amount)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	delegation := types.NewDelegation(delegator, provider, spec.Index, ts.Ctx.BlockTime(), ts.TokenDenom())
 	delegation.Amount = amount
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	var delegationRes types.Delegation
 	for _, d := range res.Delegations {
@@ -44,14 +44,14 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 	// partially unbond and query
 	unbondAmount := amount.Sub(sdk.NewCoin(ts.TokenDenom(), sdk.OneInt()))
 	_, err = ts.TxDualstakingUnbond(delegator, provider, spec.Index, unbondAmount)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	bondedAmount := amount.Sub(unbondAmount)
 	delegation.Amount = bondedAmount
 
 	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	for _, d := range res.Delegations {
 		if d.Delegator == delegation.Delegator {
@@ -62,11 +62,11 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 
 	// unbond completely and query (should not get providers)
 	_, err = ts.TxDualstakingUnbond(delegator, provider, spec.Index, bondedAmount)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(res.Delegations))
 }
 
@@ -89,11 +89,11 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 
 	// delegate without advancing an epoch
 	_, err := ts.TxDualstakingDelegate(delegator1, provider, spec.Index, amount)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// query pending delegators
 	res, err := ts.QueryDualstakingProviderDelegators(provider, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	var delegationRes types.Delegation
 	for _, d := range res.Delegations {
@@ -105,14 +105,14 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 
 	// query current delegators
 	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(res.Delegations))
 
 	// advance epoch, delegator1 should show in both flag values
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryDualstakingProviderDelegators(provider, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	for _, d := range res.Delegations {
 		if d.Delegator == delegation1.Delegator {
@@ -122,7 +122,7 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	require.True(t, delegationRes.Equal(&delegation1))
 
 	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	for _, d := range res.Delegations {
 		if d.Delegator == delegation1.Delegator {
@@ -135,11 +135,11 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	delegation2 := types.NewDelegation(delegator2, provider, spec.Index, ts.Ctx.BlockTime(), ts.TokenDenom())
 	delegation2.Amount = amount
 	_, err = ts.TxDualstakingDelegate(delegator2, provider, spec.Index, amount)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// delegator2 should show when quering with showPending=true and not show when showPending=false
 	res, err = ts.QueryDualstakingProviderDelegators(provider, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 3, len(res.Delegations))
 	for _, d := range res.Delegations {
 		if d.Delegator == delegator1 {
@@ -150,7 +150,7 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	}
 
 	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	for _, d := range res.Delegations {
 		if d.Delegator == delegation1.Delegator {
@@ -177,7 +177,7 @@ func TestQueryProviderDelegatorsProviderMultipleDelegators(t *testing.T) {
 	spec := ts.Spec("mock")
 	spec1 := ts.Spec("mock1")
 	err := ts.StakeProvider(provider, spec1, testStake)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	amountUint64 := uint64(100)
 	amount := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(amountUint64))
@@ -191,7 +191,7 @@ func TestQueryProviderDelegatorsProviderMultipleDelegators(t *testing.T) {
 			chainID = spec1.Index
 		}
 		_, err := ts.TxDualstakingDelegate(delegators[i], provider, chainID, amount)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		delegation := types.NewDelegation(delegators[i], provider, chainID, ts.Ctx.BlockTime(), ts.TokenDenom())
 		delegation.Amount = amount
@@ -201,7 +201,7 @@ func TestQueryProviderDelegatorsProviderMultipleDelegators(t *testing.T) {
 	ts.AdvanceEpoch()
 	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
 	require.Equal(t, 4, len(res.Delegations))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	for _, d := range delegations {
 		for _, resD := range res.Delegations {
 			if d.Delegator == resD.Delegator {
@@ -231,7 +231,7 @@ func TestQueryProviderDelegatorsDelegatorMultipleProviders(t *testing.T) {
 	delegations := []types.Delegation{}
 	for i := 0; i < len(providers); i++ {
 		_, err := ts.TxDualstakingDelegate(delegator, providers[i], spec.Index, amount)
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		delegation := types.NewDelegation(delegator, providers[i], spec.Index, ts.Ctx.BlockTime(), ts.TokenDenom())
 		delegation.Amount = amount
@@ -242,7 +242,7 @@ func TestQueryProviderDelegatorsDelegatorMultipleProviders(t *testing.T) {
 
 	for i := 0; i < len(providers); i++ {
 		res, err := ts.QueryDualstakingProviderDelegators(providers[i], false)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Equal(t, 2, len(res.Delegations))
 		var delegationRes types.Delegation
 		for _, d := range res.Delegations {
@@ -270,9 +270,9 @@ func TestQueryProviderDelegatorsDelegatorUnstakedProvider(t *testing.T) {
 
 	// shouldn't be able to delegate to unstaked provider
 	_, err := ts.TxDualstakingDelegate(delegator, unstakedProvider, spec.Index, amount)
-	require.NotNil(t, err)
+	require.Error(t, err)
 
 	// shouldn't be able to delegate to unstaking provider (even though it didn't get its funds back, it's still considered unstaked)
 	_, err = ts.TxDualstakingDelegate(delegator, unstakingProvider, spec.Index, amount)
-	require.NotNil(t, err)
+	require.Error(t, err)
 }

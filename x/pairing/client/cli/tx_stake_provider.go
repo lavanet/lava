@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -99,10 +100,6 @@ func CmdStakeProvider() *cobra.Command {
 				delegationLimit,
 				commission,
 			)
-
-			if msg.DelegateLimit.Denom != commontypes.TokenDenom {
-				return sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
-			}
 
 			if err := msg.ValidateBasic(); err != nil {
 				return err
@@ -248,6 +245,12 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 			return nil, 0, fmt.Errorf("invalid endpoint format: %s", endpointStr)
 		}
 
+		ipPort := split[0]
+		_, _, err = net.SplitHostPort(ipPort)
+		if err != nil {
+			return nil, 0, err
+		}
+
 		geoloc, err := planstypes.ParseGeoEnum(split[1])
 		if err != nil {
 			return nil, 0, fmt.Errorf("invalid endpoint format: %w, format: %s", err, strings.Join(split, ";"))
@@ -258,7 +261,7 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 			for _, geo := range planstypes.GetAllGeolocations() {
 				geoInt := int32(geo)
 				endpoint := epochstoragetypes.Endpoint{
-					IPPORT:      split[0],
+					IPPORT:      ipPort,
 					Geolocation: geoInt,
 				}
 				if len(split) > 2 {
@@ -273,7 +276,7 @@ func HandleEndpointsAndGeolocationArgs(endpArg []string, geoArg string) (endp []
 				return nil, 0, fmt.Errorf("endpoint must include exactly one geolocation code: %s", split[1])
 			}
 			endpoint := epochstoragetypes.Endpoint{
-				IPPORT:      split[0],
+				IPPORT:      ipPort,
 				Geolocation: geoloc,
 			}
 			if len(split) > 2 {

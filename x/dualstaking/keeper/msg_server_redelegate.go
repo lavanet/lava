@@ -11,6 +11,14 @@ import (
 func (k msgServer) Redelegate(goCtx context.Context, msg *types.MsgRedelegate) (*types.MsgRedelegateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
+	if err := utils.ValidateCoins(ctx, k.stakingKeeper.BondDenom(ctx), msg.Amount, false); err != nil {
+		return &types.MsgRedelegateResponse{}, err
+	}
+
+	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
+		return &types.MsgRedelegateResponse{}, err
+	}
+
 	err := k.Keeper.Redelegate(
 		ctx,
 		msg.Creator,

@@ -48,13 +48,15 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 			if err != nil {
 				return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 			}
-			printOnNewLatestCallback := func(block int64, hash string) {
-				utils.LavaFormatInfo("Received a new Block",
-					utils.Attribute{Key: "block", Value: block},
-					utils.Attribute{Key: "hash", Value: hash},
-					utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
-					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
-				)
+			printOnNewLatestCallback := func(blockFrom int64, blockTo int64, hash string) {
+				for block := blockFrom + 1; block <= blockTo; block++ {
+					utils.LavaFormatInfo("Received a new Block",
+						utils.Attribute{Key: "block", Value: block},
+						utils.Attribute{Key: "hash", Value: hash},
+						utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
+						utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
+					)
+				}
 			}
 			consistencyErrorCallback := func(oldBlock, newBlock int64) {
 				utils.LavaFormatError("Consistency issue detected", nil,

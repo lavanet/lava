@@ -84,7 +84,7 @@ func TestChangeVersion(t *testing.T) {
 		{"forward 2", newVersion("2.0.1", "2.0.0", "2.0.1", "2.0.0"), true},
 		{"partial", newVersion("3.1.0", "2.0.0", "3.1.0", "2.0.0"), true},
 		{"backward 1", newVersion("1.0.0", "2.0.0", "1.0.0", "2.0.0"), false},
-		{"backward 2", newVersion("3.1.0", "1.0.0", "3.1.0", "1.0.0"), false},
+		{"backward 2", newVersion("3.1.0", "1.0.0", "3.1.0", "1.0.0"), true},
 		{"unchanged", newVersion("3.1.0", "2.0.0", "3.1.0", "2.0.0"), true},
 		{"min over", newVersion("3.1.0", "4.0.0", "3.1.0", "4.0.0"), false},
 		{"mismatch 1", newVersion("3.1.0", "2.0.0", "4.0.0", "2.0.0"), false},
@@ -94,17 +94,17 @@ func TestChangeVersion(t *testing.T) {
 			ts.advanceEpoch()
 
 			val, err := json.Marshal(tt.version)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			k, v := string(types.KeyVersion), string(val)
 			err = testkeeper.SimulateParamChange(
 				ts.ctx, ts.keepers.ParamsKeeper, types.ModuleName, k, v)
 			if !tt.good {
-				require.NotNil(t, err)
+				require.Error(t, err)
 				return
 			}
 
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			p := keeper.GetParams(ts.ctx)
 			require.Equal(t, p.Version, tt.version)

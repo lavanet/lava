@@ -62,7 +62,9 @@ func validateMaxCU(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
-
+	if maxCU == 0 {
+		return fmt.Errorf("invalid parameter maxCU - can't be 0")
+	}
 	// TODO implement validation
 	_ = maxCU
 

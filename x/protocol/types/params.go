@@ -12,8 +12,8 @@ import (
 var _ paramtypes.ParamSet = (*Params)(nil)
 
 const (
-	TARGET_VERSION = "0.32.6"
-	MIN_VERSION    = "0.30.1"
+	TARGET_VERSION = "0.33.2"
+	MIN_VERSION    = "0.32.1"
 )
 
 var (
@@ -31,27 +31,9 @@ const (
 	MAX_REVISION = 10000
 )
 
-// support for params (via cosmos-sdk's x/params) is limited: parameter change
-// proposals (a) handle one parameter at a time, and (b) do not allow access to
-// to a module's state during validation.
-//
 // This is problematic, since for version parameters we would like to validate that:
-// (1) a new version is not smaller than the existing (limit b); and
-// (2) the min version is not greater than the version (limit a,b); and
-// (3) the provider and consumer versions are in (for now) sync (limit a,b)
-//
-// We address (a) by packing all versions into a single struct. We hack around (b)
-// by using BeginBlock() callback to always update the latest params from the
-// store at the beginning of each block, so the latest values are always available
-// for the validation callbacks when a proposal arrives.
-
-// a copy of the latest params (from keeper store) to workaround limit (b) above
-var latestParams Params = DefaultParams()
-
-// UpdateLatestParams updates the local (in memory) copy of the params from the store
-func UpdateLatestParams(params Params) {
-	latestParams = params
-}
+// (1) the min version is not greater than the version (limit a,b); and
+// (2) the provider and consumer versions are in (for now) sync (limit a,b)
 
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
@@ -115,17 +97,7 @@ func versionToInteger(v string) (int, error) {
 
 // Validate validates the set of params
 func (p Params) Validate(genesis bool) error {
-	if genesis {
-		if err := validateVersionGenesis(p.Version); err != nil {
-			return err
-		}
-	} else {
-		if err := validateVersion(p.Version); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return validateVersion(p.Version)
 }
 
 // String implements the Stringer interface.
@@ -140,11 +112,6 @@ func validateVersion(v interface{}) error {
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
-
-	providerTarget, _ := versionToInteger(latestParams.Version.ProviderTarget)
-	providerMin, _ := versionToInteger(latestParams.Version.ProviderMin)
-	consumerTarget, _ := versionToInteger(latestParams.Version.ConsumerTarget)
-	consumerMin, _ := versionToInteger(latestParams.Version.ConsumerMin)
 
 	newProviderTarget, err := versionToInteger(version.ProviderTarget)
 	if err != nil {
@@ -161,24 +128,6 @@ func validateVersion(v interface{}) error {
 	newConsumerMin, err := versionToInteger(version.ConsumerMin)
 	if err != nil {
 		return fmt.Errorf("consumer min version: %w", err)
-	}
-
-	// versions may not decrease
-	if newProviderTarget < providerTarget {
-		return fmt.Errorf("provider target version smaller than latest: %d < %d",
-			newProviderTarget, providerTarget)
-	}
-	if newProviderMin < providerMin {
-		return fmt.Errorf("provider min version smaller than latest: %d < %d",
-			newProviderMin, providerMin)
-	}
-	if newConsumerTarget < consumerTarget {
-		return fmt.Errorf("consumer target version smaller than latest: %d < %d",
-			newConsumerTarget, consumerTarget)
-	}
-	if newConsumerMin < consumerMin {
-		return fmt.Errorf("consumer min version smaller than latest: %d < %d",
-			newConsumerMin, consumerMin)
 	}
 
 	// min version may not exceed target version
@@ -199,43 +148,6 @@ func validateVersion(v interface{}) error {
 	if newProviderMin != newConsumerMin {
 		return fmt.Errorf("provider and consumer min versions mismatch: %d != %d",
 			newProviderMin, newConsumerMin)
-	}
-
-	return nil
-}
-
-// validateVersion validates the Version param from genesis
-func validateVersionGenesis(v interface{}) error {
-	version, ok := v.(Version)
-	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", v)
-	}
-
-	newProviderTarget, err := versionToInteger(version.ProviderTarget)
-	if err != nil {
-		return fmt.Errorf("provider target version: %w", err)
-	}
-	newProviderMin, err := versionToInteger(version.ProviderMin)
-	if err != nil {
-		return fmt.Errorf("provider min version: %w", err)
-	}
-	newConsumerTarget, err := versionToInteger(version.ConsumerTarget)
-	if err != nil {
-		return fmt.Errorf("consumer target version: %w", err)
-	}
-	newConsumerMin, err := versionToInteger(version.ConsumerMin)
-	if err != nil {
-		return fmt.Errorf("consumer min version: %w", err)
-	}
-
-	// min version may not exceed target version
-	if newProviderMin > newProviderTarget {
-		return fmt.Errorf("provider min version exceeds target version: %d > %d",
-			newProviderMin, newProviderTarget)
-	}
-	if newConsumerMin > newConsumerTarget {
-		return fmt.Errorf("consumer min version exceeds target version: %d > %d",
-			newConsumerMin, newConsumerTarget)
 	}
 
 	return nil

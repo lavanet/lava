@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -66,7 +67,7 @@ func TestJSONChainParser_NilGuard(t *testing.T) {
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("", "")
-	apip.ParseMsg("", []byte{}, "", nil, 0)
+	apip.ParseMsg("", []byte{}, "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 }
 
 func TestJSONGetSupportedApi(t *testing.T) {
@@ -122,7 +123,7 @@ func TestJSONParseMessage(t *testing.T) {
 
 	marshalledData, _ := json.Marshal(data)
 
-	msg, err := apip.ParseMsg("API1", marshalledData, connectionType_test, nil, 0)
+	msg, err := apip.ParseMsg("API1", marshalledData, connectionType_test, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
@@ -231,13 +232,13 @@ func TestExtensions(t *testing.T) {
 	latestReq := []byte(fmt.Sprintf(latestTemplate, "latest"))
 	reqSpecific := []byte(fmt.Sprintf(parsingForCrafting.FunctionTemplate, 99))
 	// with latest block not set
-	chainMessage, err := chainParser.ParseMsg("", latestReq, collectionData.Type, nil, 0)
+	chainMessage, err := chainParser.ParseMsg("", latestReq, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
 	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
 	require.Empty(t, chainMessage.GetExtensions())
 	require.Equal(t, cuCost, chainMessage.GetApi().ComputeUnits)
 
-	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, 0)
+	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
 	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
 	require.Len(t, chainMessage.GetExtensions(), 1)
@@ -245,13 +246,13 @@ func TestExtensions(t *testing.T) {
 	require.Equal(t, cuCostExt, chainMessage.GetApi().ComputeUnits)
 
 	// with latest block set
-	chainMessage, err = chainParser.ParseMsg("", latestReq, collectionData.Type, nil, 100)
+	chainMessage, err = chainParser.ParseMsg("", latestReq, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 100})
 	require.NoError(t, err)
 	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
 	require.Empty(t, chainMessage.GetExtensions())
 	require.Equal(t, cuCost, chainMessage.GetApi().ComputeUnits)
 
-	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, 100)
+	chainMessage, err = chainParser.ParseMsg("", reqSpecific, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 100})
 	require.NoError(t, err)
 	require.Equal(t, parsingForCrafting.ApiName, chainMessage.GetApi().Name)
 	require.Len(t, chainMessage.GetExtensions(), 1)
@@ -284,7 +285,7 @@ func TestJsonRpcBatchCall(t *testing.T) {
 	require.NotNil(t, chainProxy)
 	require.NotNil(t, chainFetcher)
 
-	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), http.MethodPost, nil, 0)
+	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
 	requestedBlock, _ := chainMessage.RequestedBlock()
 	require.Equal(t, spectypes.LATEST_BLOCK, requestedBlock)
@@ -325,7 +326,7 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 	require.NotNil(t, chainProxy)
 	require.NotNil(t, chainFetcher)
 
-	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), http.MethodPost, nil, 0)
+	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
 	requestedBlock, _ := chainMessage.RequestedBlock()
 	require.Equal(t, spectypes.LATEST_BLOCK, requestedBlock)

@@ -47,7 +47,7 @@ func TestDecodeJsonPolicy(t *testing.T) {
 }`
 	var policy Policy
 	err := decoder.Decode(input, "policy", &policy, nil, nil, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, policy.Equal(expectedPolicy))
 }
 
@@ -113,7 +113,7 @@ func TestDecodeJsonPlan(t *testing.T) {
 	}
 
 	err := decoder.Decode(input, "plan", &plan, decoderHooks, nil, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, plan.Equal(expectedPlan))
 }
 
@@ -273,13 +273,13 @@ func TestDecodePlanAddProposal(t *testing.T) {
 	)
 
 	err = decoder.Decode(input, "proposal", &planPorposal, decoderHooks, &unset, &unused)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = planPorposal.HandleUnsetPlanProposalFields(unset)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, planPorposal.Equal(expectedPlanPorposal))
 
 	err = decoder.Decode(input, "deposit", &deposit, decoderHooks, nil, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, deposit == expectedDeposit)
 }
 
@@ -312,10 +312,10 @@ func TestPlanDelProposal(t *testing.T) {
 	)
 
 	err = decoder.Decode(input, "proposal", &planPorposal, nil, nil, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, planPorposal.Equal(expectedProposal))
 
 	err = decoder.Decode(input, "deposit", &deposit, nil, nil, nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, deposit == expectedDeposit)
 }
