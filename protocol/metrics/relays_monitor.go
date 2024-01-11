@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -15,7 +16,7 @@ type RelaysMonitor struct {
 	interval    time.Duration
 	lock        sync.RWMutex
 
-	isHealthy bool
+	isHealthy uint32
 }
 
 func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string, relaySender func() (bool, error)) *RelaysMonitor {
@@ -26,7 +27,7 @@ func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string, rela
 		ticker:       time.NewTicker(interval),
 		interval:     interval,
 		lock:         sync.RWMutex{},
-		isHealthy:    false,
+		isHealthy:    1,
 	}
 }
 
@@ -39,7 +40,7 @@ func (sem *RelaysMonitor) startInner(ctx context.Context) {
 		select {
 		case <-sem.ticker.C:
 			success, _ := sem.relaySender()
-			sem.isHealthy = success
+			sem.storeHealthStatus(success)
 		case <-ctx.Done():
 			sem.ticker.Stop()
 			return
@@ -49,13 +50,24 @@ func (sem *RelaysMonitor) startInner(ctx context.Context) {
 
 func (sem *RelaysMonitor) LogRelay() {
 	sem.lock.Lock()
-	sem.isHealthy = true
+	defer sem.lock.Unlock()
+
+	sem.storeHealthStatus(true)
 	sem.ticker.Reset(sem.interval)
-	sem.lock.Unlock()
 }
 
 func (sem *RelaysMonitor) IsHealthy() bool {
-	sem.lock.RLock()
-	defer sem.lock.RUnlock()
-	return sem.isHealthy
+	return sem.loadHealthStatus()
+}
+
+func (sem *RelaysMonitor) storeHealthStatus(healthy bool) {
+	value := uint32(0)
+	if healthy {
+		value = 1
+	}
+	atomic.StoreUint32(&sem.isHealthy, value)
+}
+
+func (sem *RelaysMonitor) loadHealthStatus() bool {
+	return atomic.LoadUint32(&sem.isHealthy) == 1
 }
