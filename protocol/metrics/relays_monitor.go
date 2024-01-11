@@ -32,6 +32,15 @@ func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string, rela
 }
 
 func (sem *RelaysMonitor) Start(ctx context.Context) {
+	// We run the relaySender right away, because we call this function from the RPCConsumerServer on it's initialization.
+	// This means that the relaySender will be called right away, and we don't have to wait for the ticker to fire.
+	// There is a difference between the first call to relaySender and the subsequent calls.
+	// To see the difference, please refer to the call to NewRelaysMonitor in RPCConsumerServer.
+
+	go func() {
+		success, _ := sem.relaySender()
+		sem.storeHealthStatus(success)
+	}()
 	go sem.startInner(ctx)
 }
 

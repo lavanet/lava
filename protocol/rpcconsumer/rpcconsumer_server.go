@@ -82,28 +82,40 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.consumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
+	initialRelays := true
 	if RelaysHealthEnable {
 		rpccs.relaysMonitor = metrics.NewRelaysMonitor(RelaysHealthInterval, listenEndpoint.ChainID, listenEndpoint.ApiInterface, func() (bool, error) {
-			return rpccs.sendInitialRelays(3)
+			if initialRelays {
+				// Only start after everything is initialized - check consumer session manager
+				ok, err := rpccs.waitForPairing()
+				if !ok {
+					return false, err
+				}
+			}
+
+			success, err := rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
+			initialRelays = false
+			return success, err
 		})
-		rpccs.relaysMonitor.Start(ctx)
 	}
 
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
 		return err
 	}
+
 	go chainListener.Serve(ctx, cmdFlags)
-	// we trigger a latest block call to get some more information on our providers
-	go rpccs.sendInitialRelays(MaxRelayRetries)
+
+	// we trigger a latest block call to get some more information on our providers, using the relays monitor
+	if RelaysHealthEnable {
+		rpccs.relaysMonitor.Start(ctx)
+	}
 	return nil
 }
 
-// sending a few latest blocks relays to providers in order to have some data on the providers when relays start arriving
-func (rpccs *RPCConsumerServer) sendInitialRelays(count int) (success bool, err error) {
-	// only start after everythign is initialized
+func (rpccs *RPCConsumerServer) waitForPairing() (bool, error) {
 	reinitializedChan := make(chan bool)
-	// check consumer session manager
+
 	go func() {
 		for {
 			if rpccs.consumerSessionManager.Initialized() {
@@ -113,31 +125,50 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) (success bool, err 
 			time.Sleep(time.Second)
 		}
 	}()
+
 	select {
 	case <-reinitializedChan:
 		break
 	case <-time.After(30 * time.Second):
-		return false, utils.LavaFormatError("failed initial relays, csm was not initialised after timeout", nil, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}}...)
+		return false, utils.LavaFormatError("failed initial relays, csm was not initialized after timeout", nil,
+			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+			utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
+		)
 	}
 
-	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
+	return true, nil
+}
+
+func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage, err error) {
 	parsing, collectionData, ok := rpccs.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	if !ok {
-		return false, utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}}...)
+		return false, nil, nil, utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil,
+			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+			utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
+		)
 	}
+
 	path := parsing.ApiName
 	data := []byte(parsing.FunctionTemplate)
-	chainMessage, err := rpccs.chainParser.ParseMsg(path, data, collectionData.Type, nil, 0)
+	chainMessage, err = rpccs.chainParser.ParseMsg(path, data, collectionData.Type, nil, 0)
 	if err != nil {
-		return false, utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err)
+		return false, nil, nil, utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err,
+			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+			utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface))
 	}
+
 	reqBlock, _ := chainMessage.RequestedBlock()
 	seenBlock := int64(0)
-	relayRequestData := lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), nil)
+	relay = lavaprotocol.NewRelayData(ctx, collectionData.Type, path, data, seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), nil)
+	return
+}
+
+func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage) (success bool, err error) {
 	unwantedProviders := map[string]struct{}{}
 	timeouts := 0
-	for iter := 0; iter < count; iter++ {
-		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, "-init-", "", &unwantedProviders, timeouts)
+
+	for i := 0; i < retries; i++ {
+		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relay, "-init-", "", &unwantedProviders, timeouts)
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "unwantedProviders", Value: unwantedProviders}}...)
 			if relayResult != nil && relayResult.ProviderInfo.ProviderAddress != "" {
@@ -154,12 +185,28 @@ func (rpccs *RPCConsumerServer) sendInitialRelays(count int) (success bool, err 
 				rpccs.relaysMonitor.LogRelay()
 			}
 			success = true
-			break
+
+			// If this is the first time we send relays, we want to send all of them, instead of break on first successful relay
+			// That way, we populate the providers with the latest blocks with successful relays
+			if !initialRelays {
+				break
+			}
 		}
 		time.Sleep(2 * time.Millisecond)
 	}
 
 	return success, err
+}
+
+// sending a few latest blocks relays to providers in order to have some data on the providers when relays start arriving
+func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays bool) (success bool, err error) {
+	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
+	ok, relay, chainMessage, err := rpccs.craftRelay(ctx)
+	if !ok {
+		return false, err
+	}
+
+	return rpccs.sendRelayWithRetries(ctx, retries, initialRelays, relay, chainMessage)
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
@@ -230,7 +277,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 				errorRelayResult.ProviderInfo.ProviderAddress += relayResult.ProviderInfo.ProviderAddress
 				_, ok := blockOnSyncLoss[relayResult.ProviderInfo.ProviderAddress]
 				if !ok && lavasession.IsSessionSyncLoss(err) {
-					// allow this provider to be wantedProvider on a retry, if it didnt fail once on syncLoss
+					// allow this provider to be wantedProvider on a retry, if it didn't fail once on syncLoss
 					blockOnSyncLoss[relayResult.ProviderInfo.ProviderAddress] = struct{}{}
 					utils.LavaFormatWarning("Identified SyncLoss in provider, not removing it from list for another attempt", err, utils.Attribute{Key: "address", Value: relayResult.ProviderInfo.ProviderAddress})
 				} else {
