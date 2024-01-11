@@ -45,7 +45,7 @@ sed $SED_INLINE \
 
 
 GASPRICE="0.000000001ulava"
-lavad tx bank send $(lavad keys show alice -a) $(lavad keys show validator2 -a --home $home) 500000ulava -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE 
+lavad tx bank send $(lavad keys show alice -a) $(lavad keys show validator2 -a --home $home) 10000000000001ulava -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE 
 sleep 3
 
 lavad tx staking create-validator -y --from validator2 --amount="10000000000000ulava" --pubkey=$(lavad tendermint show-validator --home $home) \
