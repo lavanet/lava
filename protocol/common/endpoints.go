@@ -83,12 +83,13 @@ func (url *NodeUrl) LowerContextTimeout(ctx context.Context, timeout time.Durati
 }
 
 type AuthConfig struct {
-	AuthHeaders map[string]string `yaml:"auth-headers,omitempty" json:"auth-headers,omitempty" mapstructure:"auth-headers"`
-	AuthQuery   string            `yaml:"auth-query,omitempty" json:"auth-query,omitempty" mapstructure:"auth-query"`
-	UseTLS      bool              `yaml:"use-tls,omitempty" json:"use-tls,omitempty" mapstructure:"use-tls"`
-	KeyPem      string            `yaml:"key-pem,omitempty" json:"key-pem,omitempty" mapstructure:"key-pem"`
-	CertPem     string            `yaml:"cert-pem,omitempty" json:"cert-pem,omitempty" mapstructure:"cert-pem"`
-	CaCert      string            `yaml:"cacert-pem,omitempty" json:"cacert-pem,omitempty" mapstructure:"cacert-pem"`
+	AuthHeaders   map[string]string `yaml:"auth-headers,omitempty" json:"auth-headers,omitempty" mapstructure:"auth-headers"`
+	AuthQuery     string            `yaml:"auth-query,omitempty" json:"auth-query,omitempty" mapstructure:"auth-query"`
+	UseTLS        bool              `yaml:"use-tls,omitempty" json:"use-tls,omitempty" mapstructure:"use-tls"`
+	AllowInsecure bool              `yaml:"allow-insecure,omitempty" json:"allow-insecure,omitempty" mapstructure:"allow-insecure"`
+	KeyPem        string            `yaml:"key-pem,omitempty" json:"key-pem,omitempty" mapstructure:"key-pem"`
+	CertPem       string            `yaml:"cert-pem,omitempty" json:"cert-pem,omitempty" mapstructure:"cert-pem"`
+	CaCert        string            `yaml:"cacert-pem,omitempty" json:"cacert-pem,omitempty" mapstructure:"cacert-pem"`
 }
 
 func (ac *AuthConfig) GetUseTls() bool {

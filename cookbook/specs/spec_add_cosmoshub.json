@@ -176,6 +176,27 @@
                                         "expected_value": "theta-testnet-001"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 14400
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "5200791"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 14200
+                                }
                             }
                         ]
                     }
