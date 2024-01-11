@@ -85,6 +85,10 @@ func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types
 	}
 
 	// project name per subscription is unique: check for duplicates
+	// we also check !isDeleted because when a new subscription is created
+	// in the same epoch that a subscription from the same creator was expired,
+	// we'll find the old admin project but since it's deleted we want to ignore
+	// it and allow creating a new admin project
 	var emptyProject types.Project
 	_, isDeleted, _, found := k.projectsFS.FindEntryDetailed(ctx, project.Index, epoch, &emptyProject)
 	if found && !isDeleted {
@@ -152,7 +156,7 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string) error 
 	return k.projectsFS.DelEntry(ctx, project.Index, nextEpoch)
 }
 
-// Forced deletion of projects of an expired subscription (happens immediately)
+// PurgeProject forces the deletion of projects of an expired subscription (happens immediately)
 func (k Keeper) PurgeProject(ctx sdk.Context, projectID string) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
@@ -217,10 +221,12 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 			)
 		}
 
-		project.AppendKey(types.ProjectDeveloperKey(key.Key))
-
 		// by now, the key was either not found, or found and belongs to us already.
 		// if the former, then we surely need to add it.
+		// the case of (found && isDeleted) happens when a new subscription is created
+		// in the same epoch that a subscription from the same creator was expired. In
+		// this case, the admin's project key is marked as deleted but not removed yet
+		// (so it's found). In this case we want to allow a new key to be created.
 		if !found || (found && isDeleted) {
 			devkeyData := types.ProtoDeveloperData{
 				ProjectID: project.GetIndex(),
@@ -234,6 +240,8 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 				)
 			}
 		}
+
+		project.AppendKey(types.ProjectDeveloperKey(key.Key))
 	}
 
 	return nil
