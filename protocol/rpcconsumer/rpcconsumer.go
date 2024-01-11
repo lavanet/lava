@@ -170,7 +170,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
-
+	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(RelaysHealthInterval, consumerMetricsManager)
 	policyUpdaters := syncMapPolicyUpdaters{}
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
@@ -268,9 +268,15 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager)
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
+			var relaysMonitor *metrics.RelaysMonitor
+			if RelaysHealthEnable {
+				relaysMonitor = metrics.NewRelaysMonitor(RelaysHealthInterval, rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
+				relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.String(), relaysMonitor)
+			}
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, cmdFlags)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses,
+				privKey, lavaChainID, cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, cmdFlags)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -286,6 +292,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	for err := range errCh {
 		return err
 	}
+
+	relaysMonitorAggregator.StartMonitoring(ctx)
 
 	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
 	for chain := range chainMutexes {

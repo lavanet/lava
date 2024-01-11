@@ -68,6 +68,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	consumerAddress sdk.AccAddress,
 	consumerConsistency *ConsumerConsistency,
+	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
@@ -83,8 +84,9 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.consumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
 	initialRelays := true
+	rpccs.relaysMonitor = relaysMonitor
 	if RelaysHealthEnable {
-		rpccs.relaysMonitor = metrics.NewRelaysMonitor(RelaysHealthInterval, listenEndpoint.ChainID, listenEndpoint.ApiInterface, func() (bool, error) {
+		rpccs.relaysMonitor.SetRelaySender(func() (bool, error) {
 			if initialRelays {
 				// Only start after everything is initialized - check consumer session manager
 				ok, err := rpccs.waitForPairing()
@@ -163,12 +165,15 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 	return
 }
 
-func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage) (success bool, err error) {
+func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage) (bool, error) {
 	unwantedProviders := map[string]struct{}{}
 	timeouts := 0
+	success := false
+	var err error
 
 	for i := 0; i < retries; i++ {
-		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relay, "-init-", "", &unwantedProviders, timeouts)
+		var relayResult *common.RelayResult
+		relayResult, err = rpccs.sendRelayToProvider(ctx, chainMessage, relay, "-init-", "", &unwantedProviders, timeouts)
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "unwantedProviders", Value: unwantedProviders}}...)
 			if relayResult != nil && relayResult.ProviderInfo.ProviderAddress != "" {

@@ -18,7 +18,8 @@ func TestHappyFlow(t *testing.T) {
 	extraTimeToWait := time.Second
 	timeToSleep := interval + extraTimeToWait
 
-	relaysMonitor := NewRelaysMonitor(interval, "test_chain", "rest", relaySender)
+	relaysMonitor := NewRelaysMonitor(interval, "test_chain", "rest")
+	relaysMonitor.SetRelaySender(relaySender)
 	relaysMonitor.Start(context.Background())
 
 	t.Run("HappyFlow", func(t *testing.T) {

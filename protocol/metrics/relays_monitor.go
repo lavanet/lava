@@ -19,16 +19,21 @@ type RelaysMonitor struct {
 	isHealthy uint32
 }
 
-func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string, relaySender func() (bool, error)) *RelaysMonitor {
+func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string) *RelaysMonitor {
 	return &RelaysMonitor{
 		chainID:      chainID,
 		apiInterface: apiInterface,
-		relaySender:  relaySender,
 		ticker:       time.NewTicker(interval),
 		interval:     interval,
 		lock:         sync.RWMutex{},
 		isHealthy:    1,
 	}
+}
+
+func (sem *RelaysMonitor) SetRelaySender(relaySender func() (bool, error)) {
+	sem.lock.Lock()
+	sem.relaySender = relaySender
+	sem.lock.Unlock()
 }
 
 func (sem *RelaysMonitor) Start(ctx context.Context) {
@@ -74,6 +79,7 @@ func (sem *RelaysMonitor) storeHealthStatus(healthy bool) {
 	if healthy {
 		value = 1
 	}
+
 	atomic.StoreUint32(&sem.isHealthy, value)
 }
 
