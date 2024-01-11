@@ -142,7 +142,12 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 					ChainID:        endpoint.ChainID,
 					ApiInterface:   endpoint.ApiInterface,
 					Geolocation:    1, // doesn't matter
-					NodeUrls:       []commonlib.NodeUrl{{Url: endpoint.NetworkAddress}},
+					NodeUrls: []commonlib.NodeUrl{{
+						Url: endpoint.NetworkAddress,
+						AuthConfig: commonlib.AuthConfig{
+							UseTLS:        viper.GetBool(chainproxy.GRPCUseTls),
+							AllowInsecure: viper.GetBool(chainproxy.GRPCAllowInsecureConnection),
+						}}},
 				}
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
@@ -163,5 +168,7 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 	// RPCConsumer command flags
 	flags.AddTxFlagsToCmd(cmdTestRPCConsumer)
 	cmdTestRPCConsumer.Flags().Uint(chainproxy.ParallelConnectionsFlag, chainproxy.NumberOfParallelConnections, "parallel connections")
+	cmdTestRPCConsumer.Flags().Bool(chainproxy.GRPCAllowInsecureConnection, false, "used to test grpc, to allow insecure (self signed cert).")
+	cmdTestRPCConsumer.Flags().Bool(chainproxy.GRPCUseTls, true, "use tls configuration for grpc connections to your consumer")
 	return cmdTestRPCConsumer
 }

@@ -27,6 +27,8 @@ import (
 
 const (
 	ParallelConnectionsFlag                    = "parallel-connections"
+	GRPCUseTls                                 = "use-tls"
+	GRPCAllowInsecureConnection                = "allow-insecure-connection"
 	MaximumNumberOfParallelConnectionsAttempts = 10
 )
 
@@ -265,6 +267,9 @@ func NewGRPCConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) 
 				}
 			}
 		}
+		if nodeUrl.AuthConfig.AllowInsecure {
+			tlsConf.InsecureSkipVerify = true // this will allow us to use self signed certificates in development.
+		}
 		connector.credentials = credentials.NewTLS(&tlsConf)
 	}
 
@@ -431,7 +436,7 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, addr strin
 		nctx, cancel := connector.nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
 		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), connector.getTransportCredentials())
 		if err != nil {
-			utils.LavaFormatWarning("gtpc could not connect to the node, retrying", err, []utils.Attribute{{
+			utils.LavaFormatWarning("grpc could not connect to the node, retrying", err, []utils.Attribute{{
 				Key: "Current Number Of Connections", Value: currentNumberOfConnections,
 			}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}, {Key: "nodeUrl", Value: connector.nodeUrl.UrlStr()}}...)
 			cancel()
