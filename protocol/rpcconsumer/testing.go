@@ -147,7 +147,8 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 						AuthConfig: commonlib.AuthConfig{
 							UseTLS:        viper.GetBool(chainproxy.GRPCUseTls),
 							AllowInsecure: viper.GetBool(chainproxy.GRPCAllowInsecureConnection),
-						}}},
+						},
+					}},
 				}
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
