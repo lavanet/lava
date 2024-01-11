@@ -1340,7 +1340,6 @@ func runProtocolE2E(timeout time.Duration) {
 	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()
-	lt.sleepUntilNextEpoch()
 
 	// emergency mode
 	utils.LavaFormatInfo("Restarting lava to emergency mode")
