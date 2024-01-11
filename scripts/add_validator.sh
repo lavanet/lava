@@ -48,7 +48,7 @@ GASPRICE="0.000000001ulava"
 lavad tx bank send $(lavad keys show alice -a) $(lavad keys show validator2 -a --home $home) 500000ulava -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE 
 sleep 3
 
-lavad tx staking create-validator -y --from validator2 --amount="50000ulava" --pubkey=$(lavad tendermint show-validator --home $home) \
+lavad tx staking create-validator -y --from validator2 --amount="10000000000000ulava" --pubkey=$(lavad tendermint show-validator --home $home) \
 	--commission-rate="0.10" \
     --commission-max-rate="0.20" \
     --commission-max-change-rate="0.01" \
