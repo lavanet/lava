@@ -21,13 +21,13 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(maxCU uint64, blacklistedExpeditedMsgs []string) Params {
-	return Params{MaxCU: maxCU, WhitelistedExpeditedMsgs: blacklistedExpeditedMsgs}
+func NewParams(maxCU uint64, whitelistExpeditedMsgs []string) Params {
+	return Params{MaxCU: maxCU, WhitelistedExpeditedMsgs: whitelistExpeditedMsgs}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultMaxCU, []string{})
+	return NewParams(DefaultMaxCU, nil)
 }
 
 // ParamSetPairs get the params.ParamSet
