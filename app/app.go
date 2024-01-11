@@ -166,7 +166,7 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_32_0,
 	upgrades.Upgrade_0_32_3,
 	upgrades.Upgrade_0_33_0,
-	upgrades.Upgrade_0_32_4,
+	upgrades.Upgrade_0_33_1,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals

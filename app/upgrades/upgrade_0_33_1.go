@@ -7,10 +7,10 @@ import (
 	"github.com/lavanet/lava/app/keepers"
 )
 
-func v0_32_4_UpgradeHandler(
+func v_33_1(
 	m *module.Manager,
 	c module.Configurator,
-	bapm BaseAppParamManager,
+	_ BaseAppParamManager,
 	lk *keepers.LavaKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {

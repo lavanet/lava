@@ -188,9 +188,9 @@ var Upgrade_0_32_3 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-var Upgrade_0_32_4 = Upgrade{
-	UpgradeName:          "v0.32.4",
-	CreateUpgradeHandler: v0_32_4_UpgradeHandler,
+var Upgrade_0_33_1 = Upgrade{
+	UpgradeName:          "v0.33.1",
+	CreateUpgradeHandler: v_33_1,
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
