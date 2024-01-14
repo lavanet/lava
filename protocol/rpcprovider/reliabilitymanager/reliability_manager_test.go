@@ -11,6 +11,7 @@ import (
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -225,7 +226,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 			Name:  "banana",
 			Value: "55",
 		}
-		chainMessage, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, "GET", metadataValue, 0)
+		chainMessage, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, "GET", metadataValue, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
 		reqBlock, _ := chainMessage.RequestedBlock()
 		relayRequestData := lavaprotocol.NewRelayData(ts.Ctx, "GET", "/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, 0, reqBlock, spectypes.APIInterfaceRest, chainMessage.GetRPCMessage().GetHeaders(), "", nil)

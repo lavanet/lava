@@ -343,6 +343,27 @@
                                         "expected_value": "agoric-3"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 14400
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "2115669"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block":14200
+                                }
                             }
                         ]
                     }

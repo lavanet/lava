@@ -18,7 +18,7 @@ Init and build the SDK:
 
 ```bash
 cd ecosystem/lava-sdk
-./scripts/init_sdk.sh
+./scripts/init_sdk.sh -s
 yarn build
 cd -
 ```
