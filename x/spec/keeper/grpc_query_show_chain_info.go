@@ -20,9 +20,16 @@ func (k Keeper) ShowChainInfo(goCtx context.Context, req *types.QueryShowChainIn
 
 	var apiInterfacesStructList []*types.ApiList
 	var optionalInterfaceList []string
+	var spec types.Spec
 
-	spec, found := k.GetSpec(ctx, req.ChainName)
-	if !found {
+	for _, s := range k.GetAllSpec(ctx) {
+		if s.Name == req.ChainName || s.Index == req.ChainName {
+			spec = s
+			break
+		}
+	}
+
+	if spec.Index == "" {
 		return nil, fmt.Errorf("spec not found")
 	}
 
