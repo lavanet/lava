@@ -253,6 +253,7 @@ func TestTrackedCuWithQos(t *testing.T) {
 
 			// advance month + blocksToSave + 1 to trigger the provider monthly payment
 			ts.AdvanceMonths(1)
+			ts.AdvanceEpoch()
 			ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 			balance1 := ts.GetBalance(provider1Acc.Addr)
@@ -260,6 +261,7 @@ func TestTrackedCuWithQos(t *testing.T) {
 
 			reward, err := ts.QueryDualstakingDelegatorRewards(provider1Acc.Addr.String(), provider1Acc.Addr.String(), ts.spec.Index)
 			require.Nil(ts.T, err)
+			require.Len(t, reward.Rewards, 1)
 			require.Equal(ts.T, tt.p1ExpectedReward, reward.Rewards[0].Amount.Amount.Int64())
 			_, err = ts.TxDualstakingClaimRewards(provider1Acc.Addr.String(), provider1Acc.Addr.String())
 			require.Nil(ts.T, err)
@@ -362,6 +364,7 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 
 	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	reward, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), ts.spec.Index)
