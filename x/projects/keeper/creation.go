@@ -90,8 +90,7 @@ func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types
 	// we'll find the old admin project but since it's deleted we want to ignore
 	// it and allow creating a new admin project
 	var emptyProject types.Project
-	_, isDeleted, _, found := k.projectsFS.FindEntryDetailed(ctx, project.Index, epoch, &emptyProject)
-	if found && !isDeleted {
+	if found := k.projectsFS.FindEntry(ctx, project.Index, epoch, &emptyProject); found {
 		return utils.LavaFormatWarning("create project failed",
 			fmt.Errorf("project name already exist for current subscription"),
 			utils.Attribute{Key: "subscription", Value: subAddr},
@@ -114,31 +113,24 @@ func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types
 	return k.projectsFS.AppendEntry(ctx, project.Index, epoch, &project)
 }
 
-// DeleteProject deletes a project from a subscription (takes effect at the beginning of next epoch)
-// only for the case of subscription expiry, the project deletion happens immediately (next block)
-func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string, subExpiry bool) error {
+// DeleteProject deletes a project from a subscription
+// (takes effect at the beginning of next epoch)
+func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
-	var block uint64
-	if subExpiry {
-		// upon subscription expiry, project deletion takes effect immediately
-		block = ctxBlock
-	} else {
-		// project deletion takes effect at the beginning of the next epoch
-		nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
-		if err != nil {
-			return utils.LavaFormatError("critical: DeleteProject failed to get next epoch", err,
-				utils.Attribute{Key: "projectID", Value: projectID},
-				utils.Attribute{Key: "block", Value: ctxBlock},
-			)
-		}
-		block = nextEpoch
+	// project deletion takes effect at the beginning of the next epoch
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
+	if err != nil {
+		return utils.LavaFormatError("critical: DeleteProject failed to get next epoch", err,
+			utils.Attribute{Key: "projectID", Value: projectID},
+			utils.Attribute{Key: "block", Value: ctxBlock},
+		)
 	}
 
 	var project types.Project
-	entryBlock, _, _, found := k.projectsFS.FindEntryDetailed(ctx, projectID, block, &project)
+	found := k.projectsFS.FindEntry(ctx, projectID, nextEpoch, &project)
 	if !found {
-		return utils.LavaFormatError("purge project failed",
+		return utils.LavaFormatWarning("delete project failed",
 			fmt.Errorf("project not found"),
 			utils.Attribute{Key: "projectID", Value: projectID},
 			utils.Attribute{Key: "block", Value: ctxBlock},
@@ -154,18 +146,13 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string, subExp
 	}
 
 	for _, projectKey := range project.GetProjectKeys() {
-		err := k.unregisterKey(ctx, projectKey, &project, block)
+		err := k.unregisterKey(ctx, projectKey, &project, nextEpoch)
 		if err != nil {
 			return err
 		}
 	}
 
-	if subExpiry {
-		// modify the project to remove the project keys
-		k.projectsFS.ModifyEntry(ctx, project.Index, entryBlock, &project)
-	}
-
-	return k.projectsFS.DelEntry(ctx, project.Index, block)
+	return k.projectsFS.DelEntry(ctx, project.Index, nextEpoch)
 }
 
 // registerKey adds a key to a project. For developer keys it also updates the
@@ -182,7 +169,7 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 
 	if key.IsType(types.ProjectKey_DEVELOPER) {
 		var devkeyData types.ProtoDeveloperData
-		_, isDeleted, _, found := k.developerKeysFS.FindEntryDetailed(ctx, key.Key, epoch, &devkeyData)
+		found := k.developerKeysFS.FindEntry(ctx, key.Key, epoch, &devkeyData)
 
 		// check that the developer key is valid, and that it does not already
 		// belong to a different project.
@@ -196,11 +183,7 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 
 		// by now, the key was either not found, or found and belongs to us already.
 		// if the former, then we surely need to add it.
-		// the case of (found && isDeleted) happens when a new subscription is created
-		// in the same epoch that a subscription from the same creator was expired. In
-		// this case, the admin's project key is marked as deleted but not removed yet
-		// (so it's found). In this case we want to allow a new key to be created.
-		if !found || (found && isDeleted) {
+		if !found {
 			devkeyData := types.ProtoDeveloperData{
 				ProjectID: project.GetIndex(),
 			}
