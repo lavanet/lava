@@ -114,24 +114,31 @@ func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types
 	return k.projectsFS.AppendEntry(ctx, project.Index, epoch, &project)
 }
 
-// DeleteProject deletes a project from a subscription
-// (takes effect at the beginning of next epoch)
-func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string) error {
+// DeleteProject deletes a project from a subscription (takes effect at the beginning of next epoch)
+// only for the case of subscription expiry, the project deletion happens immediately (next block)
+func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string, subExpiry bool) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
-	// project deletion takes effect at the beginning of the next epoch
-	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
-	if err != nil {
-		return utils.LavaFormatError("critical: DeleteProject failed to get next epoch", err,
-			utils.Attribute{Key: "projectID", Value: projectID},
-			utils.Attribute{Key: "block", Value: ctxBlock},
-		)
+	var block uint64
+	if subExpiry {
+		// upon subscription expiry, project deletion takes effect immediately
+		block = ctxBlock
+	} else {
+		// project deletion takes effect at the beginning of the next epoch
+		nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, ctxBlock)
+		if err != nil {
+			return utils.LavaFormatError("critical: DeleteProject failed to get next epoch", err,
+				utils.Attribute{Key: "projectID", Value: projectID},
+				utils.Attribute{Key: "block", Value: ctxBlock},
+			)
+		}
+		block = nextEpoch
 	}
 
 	var project types.Project
-	found := k.projectsFS.FindEntry(ctx, projectID, nextEpoch, &project)
+	entryBlock, _, _, found := k.projectsFS.FindEntryDetailed(ctx, projectID, block, &project)
 	if !found {
-		return utils.LavaFormatWarning("delete project failed",
+		return utils.LavaFormatError("purge project failed",
 			fmt.Errorf("project not found"),
 			utils.Attribute{Key: "projectID", Value: projectID},
 			utils.Attribute{Key: "block", Value: ctxBlock},
@@ -147,52 +154,18 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string) error 
 	}
 
 	for _, projectKey := range project.GetProjectKeys() {
-		err = k.unregisterKey(ctx, projectKey, &project, nextEpoch)
+		err := k.unregisterKey(ctx, projectKey, &project, block)
 		if err != nil {
 			return err
 		}
 	}
 
-	return k.projectsFS.DelEntry(ctx, project.Index, nextEpoch)
-}
-
-// PurgeProject forces the deletion of projects of an expired subscription (happens immediately)
-func (k Keeper) PurgeProject(ctx sdk.Context, projectID string) error {
-	ctxBlock := uint64(ctx.BlockHeight())
-
-	var project types.Project
-	entryBlock, _, _, found := k.projectsFS.FindEntryDetailed(ctx, projectID, ctxBlock, &project)
-	if !found {
-		return utils.LavaFormatError("purge project failed",
-			fmt.Errorf("project not found"),
-			utils.Attribute{Key: "projectID", Value: projectID},
-			utils.Attribute{Key: "block", Value: ctxBlock},
-		)
+	if subExpiry {
+		// modify the project to remove the project keys
+		k.projectsFS.ModifyEntry(ctx, project.Index, entryBlock, &project)
 	}
 
-	for _, projectKey := range project.ProjectKeys {
-		err := k.developerKeysFS.DelEntry(ctx, projectKey.Key, ctxBlock)
-		if err != nil {
-			return utils.LavaFormatError("purge project failed", err,
-				utils.Attribute{Key: "projectID", Value: projectID},
-				utils.Attribute{Key: "projectKey", Value: projectKey.Key},
-				utils.Attribute{Key: "block", Value: ctxBlock},
-			)
-		}
-		found := project.DeleteKey(projectKey)
-		if !found {
-			return utils.LavaFormatError("purge project failed", fmt.Errorf("could not find key to delete"),
-				utils.Attribute{Key: "projectID", Value: projectID},
-				utils.Attribute{Key: "projectKey", Value: projectKey.Key},
-				utils.Attribute{Key: "block", Value: ctxBlock},
-			)
-		}
-	}
-
-	// modify the project to remove the project keys
-	k.projectsFS.ModifyEntry(ctx, project.Index, entryBlock, &project)
-
-	return k.projectsFS.DelEntry(ctx, project.Index, ctxBlock)
+	return k.projectsFS.DelEntry(ctx, project.Index, block)
 }
 
 // registerKey adds a key to a project. For developer keys it also updates the
