@@ -149,9 +149,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 			return nil, nil, nil, closeServer, err
 		}
 	}
-
-	chainFetcher := NewChainFetcher(ctx, chainRouter, chainParser, endpoint, nil)
-
+	chainFetcher := NewChainFetcher(&ChainFetcherOptions{ctx, chainRouter, chainParser, endpoint, nil})
 	return chainParser, chainRouter, chainFetcher, closeServer, err
 }
 

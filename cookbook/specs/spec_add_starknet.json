@@ -634,7 +634,7 @@
                         ],
                         "verifications": [
                             {
-                                "name": "enabled",
+                                "name": "trace",
                                 "parse_directive": {
                                     "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"starknet_traceBlockTransactions\",\"params\":[\"latest\"],\"id\":1}",
                                     "function_tag": "VERIFICATION",

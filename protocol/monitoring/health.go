@@ -341,7 +341,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 			}
 			return nil
 		}
-		chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, compatibleEndpoint, nil)
+		chainFetcher := chainlib.NewChainFetcher(&chainlib.ChainFetcherOptions{Ctx: ctx, ChainRouter: chainProxy, ChainParser: chainParser, Endpoint: compatibleEndpoint, Cache: nil})
 		var latestBlock int64
 		for i := uint64(0); i <= QueryRetries; i++ {
 			sendCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
