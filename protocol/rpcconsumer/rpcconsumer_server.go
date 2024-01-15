@@ -335,12 +335,48 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		return &common.RelayResult{ProviderInfo: common.ProviderInfo{ProviderAddress: ""}}, utils.LavaFormatError("Subscriptions are disabled currently", nil)
 	}
 
+	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
+	if rpccs.sharedState {
+		sharedStateId = rpccs.consumerConsistency.Key(dappID, consumerIp) // use same key as we use for consistency, (for better consistency :-D)
+	}
+
 	privKey := rpccs.privKey
 	chainID := rpccs.listenEndpoint.ChainID
 	lavaChainID := rpccs.lavaChainID
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
 	reqBlock, _ := chainMessage.RequestedBlock()
+
+	// try using cache before sending relay
+	var cacheError error
+	if reqBlock != spectypes.NOT_APPLICABLE {
+		var cacheReply *pairingtypes.CacheRelayReply
+		cacheReply, cacheError = rpccs.cache.GetEntry(ctx, &pairingtypes.RelayCacheGet{Request: relayRequestData, BlockHash: nil, ChainID: chainID, Finalized: false, SharedStateId: sharedStateId}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+		reply := cacheReply.GetReply()
+		// read seen block from cache even if we had a miss we still want to get the seen block so we can use it to get the right provider.
+		cacheSeenBlock := cacheReply.GetSeenBlock()
+		// check if the cache seen block is greater than my local seen block, this means the user requested this
+		// request spoke with another consumer instance and use that block for inter consumer consistency.
+		if rpccs.sharedState && cacheSeenBlock > relayRequestData.SeenBlock {
+			relayRequestData.SeenBlock = cacheSeenBlock
+		}
+		utils.LavaFormatDebug("seen block fetched from cache", utils.LogAttr("seen block", relayRequestData.SeenBlock))
+		if cacheError == nil && reply != nil {
+			// Info was fetched from cache, so we don't need to change the state
+			// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+			relayResult.Reply = reply
+			relayResult.Request.RelayData = relayRequestData
+			lavaprotocol.UpdateRequestedBlock(relayResult.Request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
+			return relayResult, nil
+		}
+	} else {
+		utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: chainMessage.GetApi().Name})
+	}
+	// cache failed, move on to regular relay
+	if performance.NotConnectedError.Is(cacheError) {
+		utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
+	}
+
 	if reqBlock == spectypes.LATEST_BLOCK && relayRequestData.SeenBlock != 0 {
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = relayRequestData.SeenBlock
@@ -349,6 +385,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	addon := chainlib.GetAddon(chainMessage)
 	extensions := chainMessage.GetExtensions()
+
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
@@ -416,33 +453,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					return
 				}
 			}
-			requestedBlock, _ := chainMessage.RequestedBlock()
-			if requestedBlock != spectypes.NOT_APPLICABLE {
-				// try using cache before sending relay
-				var cacheReply *pairingtypes.CacheRelayReply
-				cacheReply, errResponse = rpccs.cache.GetEntry(goroutineCtx, &pairingtypes.RelayCacheGet{Request: localRelayResult.Request.RelayData, BlockHash: nil, ChainID: chainID, Finalized: false, Provider: localRelayResult.Request.RelaySession.Provider, SharedState: rpccs.sharedState}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
-				reply := cacheReply.GetReply()
-				if errResponse == nil && reply != nil {
-					// Info was fetched from cache, so we don't need to change the state
-					// so we can return here, no need to update anything and calculate as this info was fetched from the cache
-					localRelayResult.Reply = reply
-					lavaprotocol.UpdateRequestedBlock(localRelayResult.Request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
-					errResponse = rpccs.consumerSessionManager.OnSessionUnUsed(singleConsumerSession)
-
-					return
-				}
-			} else {
-				utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: chainMessage.GetApi().Name})
-			}
-
-			// cache failed, move on to regular relay
-			if performance.NotConnectedError.Is(errResponse) {
-				utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", errResponse))
-			}
 
 			// unique per dappId and ip
 			consumerToken := common.GetUniqueToken(dappID, consumerIp)
-
 			localRelayResult, relayLatency, errResponse, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, relayTimeout, chainMessage, consumerToken)
 			if errResponse != nil {
 				failRelaySession := func(origErr error, backoff_ bool) {
@@ -511,7 +524,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					new_ctx := context.Background()
 					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 					defer cancel()
-					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: copyPrivateData, BlockHash: nil, ChainID: chainID, Response: copyReply, Finalized: localRelayResult.Finalized, Provider: localRelayResult.Request.RelaySession.Provider, OptionalMetadata: nil, SharedState: rpccs.sharedState}) // caching in the portal doesn't care about hashes
+					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: copyPrivateData, BlockHash: nil, ChainID: chainID, Response: copyReply, Finalized: localRelayResult.Finalized, OptionalMetadata: nil, SharedStateId: sharedStateId}) // caching in the portal doesn't care about hashes
 					if err2 != nil {
 						utils.LavaFormatWarning("error updating cache with new entry", err2)
 					}

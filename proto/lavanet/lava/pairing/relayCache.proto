@@ -29,7 +29,7 @@ message RelayCacheGet {
     string chainID = 3; //Used to differentiate between different chains so each has its own bucket
     bool finalized = 4;
     string provider = 5;
-    bool shared_state = 6;
+    string shared_state_id = 6; // empty id for no shared state
 }
 
 message RelayCacheSet {
@@ -40,5 +40,5 @@ message RelayCacheSet {
     bool finalized = 5;
     string provider = 6;
     repeated Metadata optional_metadata = 7 [(gogoproto.nullable)   = false];
-    bool shared_state = 8;
+    string shared_state_id = 8; // empty id for no shared state
 }
