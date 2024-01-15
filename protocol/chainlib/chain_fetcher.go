@@ -299,14 +299,13 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 }
 
 type ChainFetcherOptions struct {
-	Ctx         context.Context
 	ChainRouter ChainRouter
 	ChainParser ChainParser
 	Endpoint    *lavasession.RPCProviderEndpoint
 	Cache       *performance.Cache
 }
 
-func NewChainFetcher(options *ChainFetcherOptions) *ChainFetcher {
+func NewChainFetcher(ctx context.Context, options *ChainFetcherOptions) *ChainFetcher {
 	return &ChainFetcher{
 		chainRouter: options.ChainRouter,
 		chainParser: options.ChainParser,

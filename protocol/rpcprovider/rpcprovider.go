@@ -348,8 +348,9 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		var chainFetcher chainlib.ChainFetcherIf
 		if enabled, _ := chainParser.DataReliabilityParams(); enabled {
 			chainFetcher = chainlib.NewChainFetcher(
+				ctx,
 				&chainlib.ChainFetcherOptions{
-					Ctx: ctx, ChainRouter: chainRouter,
+					ChainRouter: chainRouter,
 					ChainParser: chainParser,
 					Endpoint:    rpcProviderEndpoint,
 					Cache:       rpcp.cache,

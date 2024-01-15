@@ -7,6 +7,3 @@ endpoints:
         - url: <url-here>
           Addons:
             - trace
-          skip-verifications:
-            - trace
-            - another-verifications-example
