@@ -8,6 +8,7 @@ import (
 	v3 "github.com/lavanet/lava/x/plans/migrations/v3"
 	v7 "github.com/lavanet/lava/x/plans/migrations/v7"
 	v8 "github.com/lavanet/lava/x/plans/migrations/v8"
+	v9 "github.com/lavanet/lava/x/plans/migrations/v9"
 	projectsv3 "github.com/lavanet/lava/x/projects/migrations/v3"
 )
 
@@ -149,6 +150,77 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 			}
 
 			m.keeper.plansFS.ModifyEntry(ctx, ind, block, &p8)
+		}
+	}
+
+	return nil
+}
+
+func (m Migrator) Migrate8to9(ctx sdk.Context) error {
+	adventurerLimit := uint64(1)
+	explorerLimit := uint64(2)
+	whaleLimit := uint64(8)
+
+	plansInds := m.keeper.plansFS.GetAllEntryIndices(ctx)
+	for _, ind := range plansInds {
+		blocks := m.keeper.plansFS.GetAllEntryVersions(ctx, ind)
+		for _, block := range blocks {
+			var p8 v8.Plan
+			m.keeper.plansFS.ReadEntry(ctx, ind, block, &p8)
+			var projects uint64
+			switch p8.Index {
+			case "adventurer":
+				projects = adventurerLimit
+			case "explorer":
+				projects = explorerLimit
+			case "whale":
+				projects = whaleLimit
+			default:
+				projects = math.MaxUint64
+			}
+
+			cp9arr := []v9.ChainPolicy{}
+			for _, cp8 := range p8.PlanPolicy.ChainPolicies {
+				cp9 := v9.ChainPolicy{
+					ChainId: cp8.ChainId,
+					Apis:    cp8.Apis,
+				}
+
+				var req9arr []v9.ChainRequirement
+				for _, req8 := range cp8.Requirements {
+					req9 := v9.ChainRequirement{
+						Extensions: req8.Extensions,
+						Collection: req8.Collection,
+					}
+					req9arr = append(req9arr, req9)
+				}
+
+				cp9.Requirements = req9arr
+				cp9arr = append(cp9arr, cp9)
+			}
+
+			p9 := v9.Plan{
+				Index:                    p8.Index,
+				Block:                    p8.Block,
+				Price:                    p8.Price,
+				AllowOveruse:             p8.AllowOveruse,
+				OveruseRate:              p8.OveruseRate,
+				Description:              p8.Description,
+				Type:                     p8.Type,
+				AnnualDiscountPercentage: p8.AnnualDiscountPercentage,
+				Projects:                 projects,
+				PlanPolicy: v9.Policy{
+					ChainPolicies:         cp9arr,
+					GeolocationProfile:    p8.PlanPolicy.GeolocationProfile,
+					TotalCuLimit:          p8.PlanPolicy.TotalCuLimit,
+					EpochCuLimit:          p8.PlanPolicy.EpochCuLimit,
+					MaxProvidersToPair:    p8.PlanPolicy.MaxProvidersToPair,
+					SelectedProvidersMode: v9.SELECTED_PROVIDERS_MODE(p8.PlanPolicy.SelectedProvidersMode),
+					SelectedProviders:     p8.PlanPolicy.SelectedProviders,
+				},
+			}
+
+			m.keeper.plansFS.ModifyEntry(ctx, ind, block, &p9)
 		}
 	}
 
