@@ -2,7 +2,14 @@ syntax = "proto3";
 package lavanet.lava.subscription;
 
 option go_package = "github.com/lavanet/lava/x/subscription/types";
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
 
 message TrackedCu {
     uint64 cu = 1; // CU counter for CU after QoS consideration
+}
+
+message CuTrackerTimerData {
+    uint64 block = 1; // sub block
+    cosmos.base.v1beta1.Coin credit = 2 [(gogoproto.nullable) = false]; // credit to be used for rewards
 }

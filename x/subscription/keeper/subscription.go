@@ -451,7 +451,19 @@ func (k Keeper) addCuTrackerTimerForSubscription(ctx sdk.Context, block uint64, 
 				utils.Attribute{Key: "block", Value: block},
 			)
 		} else {
-			k.cuTrackerTS.AddTimerByBlockHeight(ctx, nextEpoch+blocksToSave-1, []byte(sub.Consumer), []byte(strconv.FormatUint(sub.Block, 10)))
+			creditReward := sub.Credit.Amount.QuoRaw(int64(sub.DurationLeft))
+			timerData := types.CuTrackerTimerData{
+				Block:  sub.Block,
+				Credit: sdk.NewCoin(commontypes.TokenDenom, creditReward),
+			}
+			marshaledTimerData, err := k.cdc.Marshal(&timerData)
+			if err != nil {
+				utils.LavaFormatError("critical: failed assigning CU tracker callback. can't marshal cu tracker timer data, skipping", err,
+					utils.Attribute{Key: "block", Value: block},
+				)
+				return
+			}
+			k.cuTrackerTS.AddTimerByBlockHeight(ctx, nextEpoch+blocksToSave-1, []byte(sub.Consumer), marshaledTimerData)
 		}
 	}
 }
