@@ -6,10 +6,13 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	v2 "github.com/lavanet/lava/x/subscription/migrations/v2"
 	v5 "github.com/lavanet/lava/x/subscription/migrations/v5"
 	v6 "github.com/lavanet/lava/x/subscription/migrations/v6"
+	v7 "github.com/lavanet/lava/x/subscription/migrations/v7"
+	v8 "github.com/lavanet/lava/x/subscription/migrations/v8"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -176,6 +179,58 @@ func (m Migrator) Migrate6to7(ctx sdk.Context) error {
 			}
 
 			m.keeper.subsFS.ModifyEntry(ctx, index, block, &subscriptionV7)
+		}
+	}
+
+	return nil
+}
+
+// Migrate7to8 implements store migration from v7 to v8:
+// init new credit field
+func (m Migrator) Migrate7to8(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate 7->8: subscriptions")
+
+	for _, index := range m.keeper.subsFS.GetAllEntryIndices(ctx) {
+		for _, block := range m.keeper.subsFS.GetAllEntryVersions(ctx, index) {
+			var s7 v7.Subscription
+			found := m.keeper.subsFS.FindEntry(ctx, index, block, &s7)
+			if !found {
+				utils.LavaFormatError("cannot migrate sub", fmt.Errorf("sub not found"),
+					utils.Attribute{Key: "index", Value: index},
+					utils.Attribute{Key: "block", Value: block},
+				)
+			}
+
+			var futureSub v8.FutureSubscription
+			if s7.FutureSubscription != nil {
+				futureSub = v8.FutureSubscription{
+					Creator:        s7.FutureSubscription.Creator,
+					PlanIndex:      s7.FutureSubscription.PlanIndex,
+					PlanBlock:      s7.FutureSubscription.PlanBlock,
+					DurationBought: s7.FutureSubscription.DurationBought,
+					Credit:         sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
+				}
+			}
+
+			s8 := v8.Subscription{
+				Creator:             s7.Creator,
+				Consumer:            s7.Consumer,
+				Block:               s7.Block,
+				PlanIndex:           s7.PlanIndex,
+				PlanBlock:           s7.PlanBlock,
+				DurationBought:      s7.DurationBought,
+				DurationLeft:        s7.DurationLeft,
+				MonthExpiryTime:     s7.MonthExpiryTime,
+				MonthCuTotal:        s7.MonthCuTotal,
+				MonthCuLeft:         s7.MonthCuLeft,
+				Cluster:             s7.Cluster,
+				DurationTotal:       s7.DurationTotal,
+				FutureSubscription:  &futureSub,
+				AutoRenewalNextPlan: s7.AutoRenewalNextPlan,
+				Credit:              sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
+			}
+
+			m.keeper.subsFS.ModifyEntry(ctx, index, block, &s8)
 		}
 	}
 
