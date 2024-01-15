@@ -122,7 +122,6 @@ func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, f
 
 			remainingTokensToSlash = remainingTokensToSlash.Sub(tokensToSlash)
 		}
-
 	}
 
 	details := make(map[string]string)
