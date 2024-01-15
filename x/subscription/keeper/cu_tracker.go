@@ -253,11 +253,18 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	// send remainder of rewards to the community pool
 	rewardsRemainder := totalTokenAmount.Sub(totalTokenRewarded)
 	if !rewardsRemainder.IsZero() {
-		err = k.rewardsKeeper.FundCommunityPoolFromModule(ctx, rewardsRemainder, types.ModuleName)
-		if err != nil {
-			utils.LavaFormatError("failed sending remainder of rewards to the community pool", err,
-				utils.Attribute{Key: "rewards_remainder", Value: rewardsRemainder.String()},
-			)
+		if found {
+			// sub not expired yet, return rewards remainder to credit
+			latestSub.Credit = latestSub.Credit.AddAmount(rewardsRemainder)
+			k.subsFS.ModifyEntry(ctx, latestSub.Consumer, latestEntryBlock, &latestSub)
+		} else {
+			// sub expired, send rewards remainder to the community pool
+			err = k.rewardsKeeper.FundCommunityPoolFromModule(ctx, rewardsRemainder, types.ModuleName)
+			if err != nil {
+				utils.LavaFormatError("failed sending remainder of rewards to the community pool", err,
+					utils.Attribute{Key: "rewards_remainder", Value: rewardsRemainder.String()},
+				)
+			}
 		}
 	}
 }

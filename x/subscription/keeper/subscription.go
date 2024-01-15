@@ -421,8 +421,6 @@ func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
 			k.RemoveExpiredSubscription(ctx, consumer, block, sub.PlanIndex, sub.PlanBlock)
 		}
 	}
-
-	// TODO: make credit remainder in reward distribution get back to the subscription credit. If the sub expires, move the credit remaining to community pool
 }
 
 func (k Keeper) verifySubExists(ctx sdk.Context, consumer string, block uint64, sub *types.Subscription) bool {
