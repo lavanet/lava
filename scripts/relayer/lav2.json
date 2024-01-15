@@ -1,0 +1,16 @@
+{
+    "type": "cosmos",
+    "value": {
+      "key": "default",
+      "chain-id": "lava-local-2",
+      "rpc-addr": "http://127.0.0.1:36657",
+      "account-prefix": "lava@",
+      "keyring-backend": "test",
+      "gas-adjustment": 1.2,
+      "gas-prices": "0.000001ulava",
+      "debug": true,
+      "timeout": "40s",
+      "output-format": "json",
+      "sign-mode": "direct"
+    }
+  }
