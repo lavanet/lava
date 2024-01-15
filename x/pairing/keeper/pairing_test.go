@@ -982,6 +982,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 		Index:      "free",
 		Block:      ts.BlockHeight(),
 		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Projects:   3,
 		PlanPolicy: freePlanPolicy,
 	}
 
@@ -989,6 +990,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 		Index:      "basic",
 		Block:      ts.BlockHeight(),
 		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Projects:   5,
 		PlanPolicy: basicPlanPolicy,
 	}
 
@@ -996,6 +998,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 		Index:      "premium",
 		Block:      ts.BlockHeight(),
 		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Projects:   7,
 		PlanPolicy: premiumPlanPolicy,
 	}
 
@@ -1196,6 +1199,7 @@ func TestDuplicateProviders(t *testing.T) {
 		Index:      "basic",
 		Block:      ts.BlockHeight(),
 		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Projects:   5,
 		PlanPolicy: basicPlanPolicy,
 	}
 
@@ -1247,6 +1251,7 @@ func TestNoRequiredGeo(t *testing.T) {
 		Index:      "free",
 		Block:      ts.BlockHeight(),
 		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		Projects:   3,
 		PlanPolicy: freePlanPolicy,
 	}
 
