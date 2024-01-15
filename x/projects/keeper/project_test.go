@@ -248,10 +248,10 @@ func TestDeleteProject(t *testing.T) {
 	_, err = ts.GetProjectForBlock(projectID, ts.BlockHeight())
 	require.NoError(t, err)
 
-	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, "nonsense")
+	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, "nonsense", false)
 	require.Error(t, err)
 
-	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectID)
+	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectID, false)
 	require.NoError(t, err)
 
 	_, err = ts.GetProjectForBlock(projectID, ts.BlockHeight())
@@ -871,9 +871,9 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	require.NoError(t, err)
 
 	// now delete the projects (double delete) in same epoch
-	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectsID[0])
+	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectsID[0], false)
 	require.NoError(t, err)
-	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectsID[1])
+	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectsID[1], false)
 	require.NoError(t, err)
 
 	proj, err := ts.GetProjectForBlock(projectsID[0], ts.BlockHeight())
@@ -899,9 +899,9 @@ func TestDelKeysDelProjectSameEpoch(t *testing.T) {
 	// part (2): delete project then keys
 
 	// delete the projects
-	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectsID[2])
+	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectsID[2], false)
 	require.NoError(t, err)
-	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectsID[3])
+	err = ts.Keepers.Projects.DeleteProject(ts.Ctx, sub1Addr, projectsID[3], false)
 	require.NoError(t, err)
 
 	// delete key from each project: should being  (project being deleted)
