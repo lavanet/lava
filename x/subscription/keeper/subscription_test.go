@@ -13,6 +13,7 @@ import (
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -2279,4 +2280,101 @@ func TestSubscriptionUpgradeAffectsTimer(t *testing.T) {
 
 		verifyTimerStore("after buying premium-plus")
 	})
+}
+
+// TestBuySubscriptionImmediatelyAfterExpiration buys a subcription a block after a subscription
+// of the same user is expired
+func TestBuySubscriptionImmediatelyAfterExpiration(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	_, consumerAddr := ts.Account("sub1")
+	ctxBlock := ts.BlockHeight()
+
+	freePlan := ts.Plan("free")
+	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	sub, found := ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, ctxBlock, sub.Block)
+
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlock()
+	ctxBlockAfterMonth := ts.BlockHeight()
+
+	_, found = ts.getSubscription(consumerAddr)
+	require.False(t, found)
+
+	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	sub, found = ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, ctxBlockAfterMonth, sub.Block)
+}
+
+// check that all project related actions (adding/deleting keys, adding/deleting projects) are working as expected
+func TestProjectActionsAfterSubExpiry(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 1) // 1 sub, 0 adm, 1 dev
+	_, consumer := ts.Account("sub1")
+	_, dev := ts.Account("dev1")
+	freePlan := ts.Plan("free")
+
+	// buy a subscription, add a project and add a developer key to it
+	_, err := ts.TxSubscriptionBuy(consumer, consumer, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	pd := projectstypes.ProjectData{
+		Name:    "dummy",
+		Enabled: true,
+	}
+	dummyProjectIndex := projectstypes.ProjectIndex(consumer, pd.Name)
+	err = ts.TxSubscriptionAddProject(consumer, pd)
+	require.NoError(t, err)
+
+	res, err := ts.QuerySubscriptionListProjects(consumer)
+	require.NoError(t, err)
+	projects := res.Projects
+	require.Len(t, projects, 2) // new project + admin project
+	err = ts.TxProjectAddKeys(dummyProjectIndex, consumer, projectstypes.ProjectDeveloperKey(dev))
+	require.NoError(t, err)
+
+	// expire the current sub
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlock()
+
+	// after expiring the last subscription, do the exact same in the newly bought subscription
+	// no errors should happen
+	_, err = ts.TxSubscriptionBuy(consumer, consumer, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	err = ts.TxSubscriptionAddProject(consumer, pd)
+	require.NoError(t, err)
+
+	err = ts.TxProjectAddKeys(dummyProjectIndex, consumer, projectstypes.ProjectDeveloperKey(dev))
+	require.NoError(t, err)
+
+	res, err = ts.QuerySubscriptionListProjects(consumer)
+	require.NoError(t, err)
+	require.Len(t, res.Projects, 2) // new project + admin project
+	require.True(t, slices.UnorderedEqual(res.Projects, []string{
+		dummyProjectIndex,
+		projectstypes.ProjectIndex(consumer, projectstypes.ADMIN_PROJECT_NAME),
+	}))
+	resProj, err := ts.QueryProjectInfo(dummyProjectIndex)
+	projectKey := resProj.Project.ProjectKeys[0]
+	require.NoError(t, err)
+	require.Len(t, resProj.Project.ProjectKeys, 1)
+	require.Equal(t, projectstypes.ProjectDeveloperKey(dev), projectKey)
+
+	// delete the new project and key
+	err = ts.TxProjectDelKeys(dummyProjectIndex, consumer, projectKey)
+	require.NoError(t, err)
+	err = ts.TxSubscriptionDelProject(consumer, pd.Name)
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch() // normal deletion happens after an epoch
+
+	res, err = ts.QuerySubscriptionListProjects(consumer)
+	require.NoError(t, err)
+	require.Len(t, res.Projects, 1) // only admin project should remain
 }
