@@ -28,6 +28,7 @@ func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.Cons
 		if req.Method == http.MethodOptions {
 			resp.Header().Set("Access-Control-Allow-Methods", cmdFlags.MethodsFlag)
 			resp.Header().Set("Access-Control-Allow-Headers", cmdFlags.HeadersFlag)
+			resp.Header().Set("Access-Control-Allow-Credentials", cmdFlags.CredentialsFlag)
 			resp.Header().Set("Access-Control-Max-Age", cmdFlags.CDNCacheDuration)
 			resp.WriteHeader(fiber.StatusNoContent)
 			_, _ = resp.Write(make([]byte, 0))

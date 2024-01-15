@@ -482,6 +482,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
 				HeadersFlag:      viper.GetString(common.CorsHeadersFlag),
+				CredentialsFlag:  viper.GetString(common.CorsCredentialsFlag),
 				OriginFlag:       viper.GetString(common.CorsOriginFlag),
 				MethodsFlag:      viper.GetString(common.CorsMethodsFlag),
 				CDNCacheDuration: viper.GetString(common.CDNCacheDurationFlag),
@@ -509,6 +510,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
 	cmdRPCConsumer.Flags().BoolVar(&DebugRelaysFlag, DebugRelaysFlagName, false, "adding debug information to relays")
 	// CORS related flags
+	cmdRPCConsumer.Flags().String(common.CorsCredentialsFlag, "true", "Set up CORS allowed credentials,default \"true\"")
 	cmdRPCConsumer.Flags().String(common.CorsHeadersFlag, "", "Set up CORS allowed headers, * for all, default simple cors specification headers")
 	cmdRPCConsumer.Flags().String(common.CorsOriginFlag, "*", "Set up CORS allowed origin, enabled * by default")
 	cmdRPCConsumer.Flags().String(common.CorsMethodsFlag, "GET,POST,PUT,DELETE,OPTIONS", "set up Allowed OPTIONS methods, defaults to: \"GET,POST,PUT,DELETE,OPTIONS\"")
