@@ -609,6 +609,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	require.NoError(t, err)
 
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	_, err = ts.TxDualstakingClaimRewards(providerAcct.Addr.String(), providerAcct.Addr.String())
@@ -649,6 +650,7 @@ func TestFrozenProviderGetReward(t *testing.T) {
 
 	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	planPrice := ts.plan.Price.Amount.Int64()
