@@ -22,6 +22,7 @@ const (
 	CorsOriginFlag       = "cors-origin"        // comma separated list of origins, or * for all, default enabled completely
 	CorsMethodsFlag      = "cors-methods"       // comma separated list of methods, default "GET,POST,PUT,DELETE,OPTIONS"
 	CDNCacheDurationFlag = "cdn-cache-duration" // how long to cache the preflight response default 24 hours (in seconds) "86400"
+	SharedStateFlag      = "shared-state"
 )
 
 const (

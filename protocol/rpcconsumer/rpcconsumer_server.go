@@ -49,6 +49,7 @@ type RPCConsumerServer struct {
 	consumerAddress        sdk.AccAddress
 	consumerServices       map[string]struct{}
 	consumerConsistency    *ConsumerConsistency
+	sharedState            bool // using the cache backend to sync the latest seen block with other consumers
 }
 
 type ConsumerTxSender interface {
@@ -70,6 +71,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	consumerAddress sdk.AccAddress,
 	consumerConsistency *ConsumerConsistency,
 	cmdFlags common.ConsumerCmdFlags,
+	sharedState bool,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
@@ -83,6 +85,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.consumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
+	rpccs.sharedState = sharedState
 
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
@@ -417,7 +420,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			if requestedBlock != spectypes.NOT_APPLICABLE {
 				// try using cache before sending relay
 				var cacheReply *pairingtypes.CacheRelayReply
-				cacheReply, errResponse = rpccs.cache.GetEntry(goroutineCtx, localRelayResult.Request.RelayData, nil, chainID, false, localRelayResult.Request.RelaySession.Provider) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+				cacheReply, errResponse = rpccs.cache.GetEntry(goroutineCtx, &pairingtypes.RelayCacheGet{Request: localRelayResult.Request.RelayData, BlockHash: nil, ChainID: chainID, Finalized: false, Provider: localRelayResult.Request.RelaySession.Provider, SharedState: rpccs.sharedState}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
 				reply := cacheReply.GetReply()
 				if errResponse == nil && reply != nil {
 					// Info was fetched from cache, so we don't need to change the state
@@ -508,7 +511,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					new_ctx := context.Background()
 					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 					defer cancel()
-					err2 := rpccs.cache.SetEntry(new_ctx, copyPrivateData, nil, chainID, copyReply, localRelayResult.Finalized, localRelayResult.Request.RelaySession.Provider, nil) // caching in the portal doesn't care about hashes
+					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: copyPrivateData, BlockHash: nil, ChainID: chainID, Response: copyReply, Finalized: localRelayResult.Finalized, Provider: localRelayResult.Request.RelaySession.Provider, OptionalMetadata: nil, SharedState: rpccs.sharedState}) // caching in the portal doesn't care about hashes
 					if err2 != nil {
 						utils.LavaFormatWarning("error updating cache with new entry", err2)
 					}
