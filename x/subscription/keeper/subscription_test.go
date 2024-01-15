@@ -1284,7 +1284,7 @@ func TestPlanRemovedWhenSubscriptionExpires(t *testing.T) {
 
 	// expire the subscription
 	ts.AdvanceMonths(1)
-	ts.AdvanceBlock(6)
+	ts.AdvanceEpoch()
 	res, err := ts.QuerySubscriptionCurrent(sub1)
 	require.NoError(t, err)
 	require.Nil(t, res.Sub)
@@ -1540,8 +1540,9 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 	// Send relay under the premium-plus subscription
 	sendRelayPayment()
 
-	// Advance month + blocksToSave + 1 to trigger the provider monthly payment
+	// Advance month + epoch + blocksToSave + 1 to trigger the provider monthly payment (cu tracker timer is from next epoch)
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	// Query provider's rewards
@@ -2282,7 +2283,7 @@ func TestSubscriptionUpgradeAffectsTimer(t *testing.T) {
 }
 
 // TestBuySubscriptionImmediatelyAfterExpiration buys a subcription a block after a subscription
-// of the same user is expired. Should fail
+// of the same user is expired. Should fail because the subscription is deleted in the next epoch
 func TestBuySubscriptionImmediatelyAfterExpiration(t *testing.T) {
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
@@ -2300,7 +2301,7 @@ func TestBuySubscriptionImmediatelyAfterExpiration(t *testing.T) {
 	ts.AdvanceBlock()
 
 	_, found = ts.getSubscription(consumerAddr)
-	require.False(t, found)
+	require.True(t, found)
 
 	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, 1, false, false)
 	require.Error(t, err)
@@ -2371,7 +2372,7 @@ func TestAddProjectChangePolicyJustAfterSubExpiry(t *testing.T) {
 	adminProj := res.Projects[0]
 
 	ts.AdvanceMonths(1)
-	ts.AdvanceBlock()
+	ts.AdvanceEpoch() // advance epoch because the sub deletion triggers on the next epoch
 
 	// try to add a project to the expired subscription
 	policy := common.CreateMockPolicy()
