@@ -7,7 +7,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -189,7 +188,7 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 		PlanBlock:           plan.Block,
 		DurationTotal:       0,
 		AutoRenewalNextPlan: autoRenewalNextPlan,
-		Credit:              sdk.NewCoin(commontypes.TokenDenom, math.ZeroInt()),
+		Credit:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()),
 	}
 
 	sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
