@@ -260,7 +260,8 @@ func (k Keeper) SnapshotSubscriptionProjects(ctx sdk.Context, subscriptionAddr s
 // snapshot project, create a snapshot of a project and reset the cu
 func (k Keeper) snapshotProject(ctx sdk.Context, projectID string, block uint64) {
 	var project types.Project
-	if found := k.projectsFS.FindEntry(ctx, projectID, block, &project); !found {
+	entryBlock, _, _, found := k.projectsFS.FindEntryDetailed(ctx, projectID, block, &project)
+	if !found {
 		utils.LavaFormatError("critical: snapshot of project failed (find)", legacyerrors.ErrKeyNotFound,
 			utils.Attribute{Key: "project", Value: projectID},
 			utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
@@ -291,4 +292,9 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string, block uint64)
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProjectResetFailEventName, details, "reset projects failed: unable to append project")
 		return
 	}
+
+	utils.LavaFormatDebug("snapshotting project",
+		utils.LogAttr("entry_block", entryBlock),
+		utils.LogAttr("block", block),
+		utils.LogAttr("project_id", projectID))
 }

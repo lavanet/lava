@@ -132,11 +132,18 @@ func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, alloc
 // the calculated blocks are multiplied with a slack factor (for error margin)
 func (k Keeper) BlocksToNextTimerExpiry(ctx sdk.Context) int64 {
 	timeToNextTimerExpiry := k.TimeToNextTimerExpiry(ctx)
+
 	blockCreationTime := int64(k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds())
 	if blockCreationTime == 0 {
 		return 30
 	}
-	blocksToNextTimerExpiry := types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry).QuoInt64(blockCreationTime).Ceil().TruncateInt64()
+
+	effectiveTimeToNextTimerExpiry := sdkmath.LegacyNewDec(timeToNextTimerExpiry)
+	if timeToNextTimerExpiry != math.MaxInt64 {
+		effectiveTimeToNextTimerExpiry = types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry)
+	}
+
+	blocksToNextTimerExpiry := effectiveTimeToNextTimerExpiry.QuoInt64(blockCreationTime).Ceil().TruncateInt64()
 	if blocksToNextTimerExpiry < 2 {
 		return 2
 	}
