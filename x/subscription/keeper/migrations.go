@@ -6,12 +6,10 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	v2 "github.com/lavanet/lava/x/subscription/migrations/v2"
 	v5 "github.com/lavanet/lava/x/subscription/migrations/v5"
 	v6 "github.com/lavanet/lava/x/subscription/migrations/v6"
-	v7 "github.com/lavanet/lava/x/subscription/migrations/v7"
 	v8 "github.com/lavanet/lava/x/subscription/migrations/v8"
 	"github.com/lavanet/lava/x/subscription/types"
 )
@@ -192,44 +190,43 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 
 	for _, index := range m.keeper.subsFS.GetAllEntryIndices(ctx) {
 		for _, block := range m.keeper.subsFS.GetAllEntryVersions(ctx, index) {
-			var s7 v7.Subscription
-			found := m.keeper.subsFS.FindEntry(ctx, index, block, &s7)
+			// read current subscription from fixation to new subscription struct
+			var s8 v8.Subscription
+			m.keeper.subsFS.ReadEntry(ctx, index, block, &s8)
+
+			// calculate sub's credit
+			plan, found := m.keeper.plansKeeper.FindPlan(ctx, s8.PlanIndex, s8.PlanBlock)
 			if !found {
-				utils.LavaFormatError("cannot migrate sub", fmt.Errorf("sub not found"),
-					utils.Attribute{Key: "index", Value: index},
-					utils.Attribute{Key: "block", Value: block},
+				utils.LavaFormatError("cannot migrate sub", fmt.Errorf("sub's plan not found"),
+					utils.Attribute{Key: "consumer", Value: index},
+					utils.Attribute{Key: "sub_block", Value: block},
+					utils.Attribute{Key: "plan", Value: s8.PlanIndex},
+					utils.Attribute{Key: "plan_block", Value: s8.PlanBlock},
 				)
 			}
+			creditAmount := plan.Price.Amount.MulRaw(int64(s8.DurationLeft))
+			credit := sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), creditAmount)
 
-			var futureSub v8.FutureSubscription
-			if s7.FutureSubscription != nil {
-				futureSub = v8.FutureSubscription{
-					Creator:        s7.FutureSubscription.Creator,
-					PlanIndex:      s7.FutureSubscription.PlanIndex,
-					PlanBlock:      s7.FutureSubscription.PlanBlock,
-					DurationBought: s7.FutureSubscription.DurationBought,
-					Credit:         sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
+			// calculate future sub's credit
+			if s8.FutureSubscription != nil {
+				futurePlan, found := m.keeper.plansKeeper.FindPlan(ctx, s8.FutureSubscription.PlanIndex, s8.FutureSubscription.PlanBlock)
+				if !found {
+					utils.LavaFormatError("cannot migrate sub", fmt.Errorf("sub's future plan not found"),
+						utils.Attribute{Key: "consumer", Value: index},
+						utils.Attribute{Key: "sub_block", Value: block},
+						utils.Attribute{Key: "plan", Value: s8.PlanIndex},
+						utils.Attribute{Key: "plan_block", Value: s8.PlanBlock},
+					)
 				}
+
+				futureCreditAmount := futurePlan.Price.Amount.MulRaw(int64(s8.FutureSubscription.DurationBought))
+				futureCredit := sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), futureCreditAmount)
+
+				s8.Credit = credit
+				s8.FutureSubscription.Credit = futureCredit
 			}
 
-			s8 := v8.Subscription{
-				Creator:             s7.Creator,
-				Consumer:            s7.Consumer,
-				Block:               s7.Block,
-				PlanIndex:           s7.PlanIndex,
-				PlanBlock:           s7.PlanBlock,
-				DurationBought:      s7.DurationBought,
-				DurationLeft:        s7.DurationLeft,
-				MonthExpiryTime:     s7.MonthExpiryTime,
-				MonthCuTotal:        s7.MonthCuTotal,
-				MonthCuLeft:         s7.MonthCuLeft,
-				Cluster:             s7.Cluster,
-				DurationTotal:       s7.DurationTotal,
-				FutureSubscription:  &futureSub,
-				AutoRenewalNextPlan: s7.AutoRenewalNextPlan,
-				Credit:              sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
-			}
-
+			// modify sub entry
 			m.keeper.subsFS.ModifyEntry(ctx, index, block, &s8)
 		}
 	}
