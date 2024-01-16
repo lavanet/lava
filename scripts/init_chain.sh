@@ -103,8 +103,6 @@ done
 # its total balance is 3% from the total tokens amount: 10^9 * 10^6 ulava
 lavad add-genesis-account validators_rewards_allocation_pool 30000000000000ulava --module-account 
 lavad add-genesis-account providers_rewards_allocation_pool 30000000000000ulava --module-account 
-lavad keys add bela
-lavad add-genesis-account bela 30000000ulava  --vesting-start-time 1705398200 --vesting-amount 1000ulava --periodic-number 100  --periodic-length 1 --periodic-first 200ulava
 lavad gentx alice 10000000000000ulava --chain-id lava
 lavad collect-gentxs
 lavad start --pruning=nothing
