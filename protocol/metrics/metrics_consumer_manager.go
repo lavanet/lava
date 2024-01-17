@@ -83,7 +83,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		Help: "The current virtual epoch measured",
 	}, []string{"spec"})
 	endpointsHealthChecksOkMetric := prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "lava_consumer_endpoints_health_checks_ok",
+		Name: "lava_consumer_overall_health",
 		Help: "At least one endpoint is healthy",
 	})
 	endpointsHealthChecksOkMetric.Set(1)
