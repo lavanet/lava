@@ -75,7 +75,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 				NewLatestCallback:   printOnNewLatestCallback,
 				ConsistencyCallback: consistencyErrorCallback,
 			}
-			chainFetcher := chainlib.NewChainFetcher(ctx, chainProxy, chainParser, rpcProviderEndpoint, nil)
+			chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{ChainRouter: chainProxy, ChainParser: chainParser, Endpoint: rpcProviderEndpoint, Cache: nil})
 			chainTracker, err := chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
 			if err != nil {
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})

@@ -296,6 +296,8 @@ func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheck
 			c.Set("Access-Control-Allow-Methods", cmdFlags.MethodsFlag)
 			// allow headers
 			c.Set("Access-Control-Allow-Headers", cmdFlags.HeadersFlag)
+			// allow credentials
+			c.Set("Access-Control-Allow-Credentials", cmdFlags.CredentialsFlag)
 			// Cache preflight request for 24 hours (in seconds)
 			c.Set("Access-Control-Max-Age", cmdFlags.CDNCacheDuration)
 			return c.SendStatus(fiber.StatusNoContent)

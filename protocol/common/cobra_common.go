@@ -21,6 +21,7 @@ const (
 	ProcessStartLogText = "Process Started"
 	// cors related flags
 	CorsHeadersFlag         = "cors-headers"           // comma separated list of headers, or * for all, default simple cors specification headers
+	CorsCredentialsFlag     = "cors-credentials"       // comma separated list of headers, or * for all, default simple cors specification headers
 	CorsOriginFlag          = "cors-origin"            // comma separated list of origins, or * for all, default enabled completely
 	CorsMethodsFlag         = "cors-methods"           // comma separated list of methods, default "GET,POST,PUT,DELETE,OPTIONS"
 	CDNCacheDurationFlag    = "cdn-cache-duration"     // how long to cache the preflight response default 24 hours (in seconds) "86400"
@@ -40,6 +41,7 @@ const (
 // helper struct to propagate flags deeper into the code in an organized manner
 type ConsumerCmdFlags struct {
 	HeadersFlag              string        // comma separated list of headers, or * for all, default simple cors specification headers
+	CredentialsFlag          string        // access-control-allow-credentials, defaults to "true"
 	OriginFlag               string        // comma separated list of origins, or * for all, default enabled completely
 	MethodsFlag              string        // whether to allow access control headers *, most proxies have their own access control so its not required
 	CDNCacheDuration         string        // how long to cache the preflight response defaults 24 hours (in seconds) "86400"

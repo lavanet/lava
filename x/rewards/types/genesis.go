@@ -1,6 +1,10 @@
 package types
 
-import fmt "fmt"
+import (
+	fmt "fmt"
+
+	"github.com/lavanet/lava/x/timerstore/types"
+)
 
 // this line is used by starport scaffolding # genesis/types/import
 
@@ -11,7 +15,9 @@ const DefaultIndex uint64 = 1
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		// this line is used by starport scaffolding # genesis/types/default
-		Params: DefaultParams(),
+		Params:          DefaultParams(),
+		RefillRewardsTS: *types.DefaultGenesis(),
+		BasePays:        []BasePayGenesis{},
 	}
 }
 

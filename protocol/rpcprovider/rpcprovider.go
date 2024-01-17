@@ -90,6 +90,21 @@ type ProviderStateTrackerInf interface {
 	GetAverageBlockTime() time.Duration
 }
 
+type rpcProviderStartOptions struct {
+	ctx                       context.Context
+	txFactory                 tx.Factory
+	clientCtx                 client.Context
+	rpcProviderEndpoints      []*lavasession.RPCProviderEndpoint
+	cache                     *performance.Cache
+	parallelConnections       uint
+	metricsListenAddress      string
+	rewardStoragePath         string
+	rewardTTL                 time.Duration
+	shardID                   uint
+	rewardsSnapshotThreshold  uint
+	rewardsSnapshotTimeoutSec uint
+}
+
 type RPCProvider struct {
 	providerStateTracker ProviderStateTrackerInf
 	rpcProviderListeners map[string]*ProviderListener
@@ -108,8 +123,8 @@ type RPCProvider struct {
 	chainTrackers          *ChainTrackers
 }
 
-func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcProviderEndpoints []*lavasession.RPCProviderEndpoint, cache *performance.Cache, parallelConnections uint, metricsListenAddress string, rewardStoragePath string, rewardTTL time.Duration, shardID uint, rewardsSnapshotThreshold uint, rewardsSnapshotTimeoutSec uint) (err error) {
-	ctx, cancel := context.WithCancel(ctx)
+func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
+	ctx, cancel := context.WithCancel(options.ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
 	defer func() {
@@ -117,15 +132,15 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		cancel()
 	}()
 	rpcp.chainTrackers = &ChainTrackers{}
-	rpcp.parallelConnections = parallelConnections
-	rpcp.cache = cache
-	rpcp.providerMetricsManager = metrics.NewProviderMetricsManager(metricsListenAddress) // start up prometheus metrics
+	rpcp.parallelConnections = options.parallelConnections
+	rpcp.cache = options.cache
+	rpcp.providerMetricsManager = metrics.NewProviderMetricsManager(options.metricsListenAddress) // start up prometheus metrics
 	rpcp.providerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ProviderVersion)
 	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)
-	rpcp.shardID = shardID
+	rpcp.shardID = options.shardID
 	// single state tracker
-	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
+	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
+	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
 	if err != nil {
 		return err
 	}
@@ -140,21 +155,21 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 
 	// single reward server
-	rewardDB := rewardserver.NewRewardDBWithTTL(rewardTTL)
-	rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, rewardStoragePath, rewardsSnapshotThreshold, rewardsSnapshotTimeoutSec, rpcp.chainTrackers)
+	rewardDB := rewardserver.NewRewardDBWithTTL(options.rewardTTL)
+	rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, options.rewardStoragePath, options.rewardsSnapshotThreshold, options.rewardsSnapshotTimeoutSec, rpcp.chainTrackers)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
 	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
-	keyName, err := sigs.GetKeyName(clientCtx)
+	keyName, err := sigs.GetKeyName(options.clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
 	}
-	privKey, err := sigs.GetPrivKey(clientCtx, keyName)
+	privKey, err := sigs.GetPrivKey(options.clientCtx, keyName)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
 	}
 	rpcp.privKey = privKey
-	clientKey, _ := clientCtx.Keyring.Key(keyName)
-	rpcp.lavaChainID = clientCtx.ChainID
+	clientKey, _ := options.clientCtx.Keyring.Key(keyName)
+	rpcp.lavaChainID = options.clientCtx.ChainID
 
 	pubKey, err := clientKey.GetPubKey()
 	if err != nil {
@@ -166,7 +181,7 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed unmarshaling public address", err, utils.Attribute{Key: "keyName", Value: keyName}, utils.Attribute{Key: "pubkey", Value: pubKey.Address()})
 	}
 	utils.LavaFormatInfo("RPCProvider pubkey: " + rpcp.addr.String())
-	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(rpcProviderEndpoints))})
+	utils.LavaFormatInfo("RPCProvider setting up endpoints", utils.Attribute{Key: "count", Value: strconv.Itoa(len(options.rpcProviderEndpoints))})
 	blockMemorySize, err := rpcp.providerStateTracker.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx) // get the number of blocks to keep in PSM.
 	if err != nil {
 		utils.LavaFormatFatal("Failed fetching GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment in RPCProvider Start", err)
@@ -174,23 +189,23 @@ func (rpcp *RPCProvider) Start(ctx context.Context, txFactory tx.Factory, client
 	rpcp.blockMemorySize = blockMemorySize
 	// pre loop to handle synchronous actions
 	rpcp.chainMutexes = map[string]*sync.Mutex{}
-	for idx, endpoint := range rpcProviderEndpoints {
+	for idx, endpoint := range options.rpcProviderEndpoints {
 		rpcp.chainMutexes[endpoint.ChainID] = &sync.Mutex{}   // create a mutex per chain for shared resources
 		if idx > 0 && endpoint.NetworkAddress.Address == "" { // handle undefined addresses as the previous endpoint for shared listeners
-			endpoint.NetworkAddress = rpcProviderEndpoints[idx-1].NetworkAddress
+			endpoint.NetworkAddress = options.rpcProviderEndpoints[idx-1].NetworkAddress
 		}
 	}
 
 	specValidator := NewSpecValidator()
-	disabledEndpointsList := rpcp.SetupProviderEndpoints(rpcProviderEndpoints, specValidator, true)
+	disabledEndpointsList := rpcp.SetupProviderEndpoints(options.rpcProviderEndpoints, specValidator, true)
 	specValidator.Start(ctx)
 	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	if len(disabledEndpointsList) > 0 {
 		utils.LavaFormatError(utils.FormatStringerList("[-] RPCProvider running with disabled endpoints:", disabledEndpointsList, "[-]"), nil)
-		if len(disabledEndpointsList) == len(rpcProviderEndpoints) {
+		if len(disabledEndpointsList) == len(options.rpcProviderEndpoints) {
 			utils.LavaFormatFatal("all endpoints are disabled", nil)
 		}
-		activeEndpointsList := getActiveEndpoints(rpcProviderEndpoints, disabledEndpointsList)
+		activeEndpointsList := getActiveEndpoints(options.rpcProviderEndpoints, disabledEndpointsList)
 		utils.LavaFormatInfo(utils.FormatStringerList("[+] active endpoints:", activeEndpointsList, "[+]"))
 		// try to save disabled endpoints
 		go rpcp.RetryDisabledEndpoints(disabledEndpointsList, specValidator, 1)
@@ -332,7 +347,15 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 
 		var chainFetcher chainlib.ChainFetcherIf
 		if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-			chainFetcher = chainlib.NewChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint, rpcp.cache)
+			chainFetcher = chainlib.NewChainFetcher(
+				ctx,
+				&chainlib.ChainFetcherOptions{
+					ChainRouter: chainRouter,
+					ChainParser: chainParser,
+					Endpoint:    rpcProviderEndpoint,
+					Cache:       rpcp.cache,
+				},
+			)
 		} else {
 			chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 		}
@@ -608,8 +631,20 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			rewardsSnapshotTimeoutSec := viper.GetUint(rewardserver.RewardsSnapshotTimeoutSecFlagName)
 			rpcProvider := RPCProvider{}
 			err = rpcProvider.Start(
-				ctx, txFactory, clientCtx, rpcProviderEndpoints, cache, numberOfNodeParallelConnections, prometheusListenAddr,
-				rewardStoragePath, rewardTTL, shardID, rewardsSnapshotThreshold, rewardsSnapshotTimeoutSec)
+				&rpcProviderStartOptions{
+					ctx,
+					txFactory,
+					clientCtx,
+					rpcProviderEndpoints,
+					cache,
+					numberOfNodeParallelConnections,
+					prometheusListenAddr,
+					rewardStoragePath,
+					rewardTTL,
+					shardID,
+					rewardsSnapshotThreshold,
+					rewardsSnapshotTimeoutSec,
+				})
 			return err
 		},
 	}
@@ -634,6 +669,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().Uint64Var(&chaintracker.PollingMultiplier, chaintracker.PollingMultiplierFlagName, 1, "when set, forces the chain tracker to poll more often, improving the sync at the cost of more queries")
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationInterval, SpecValidationIntervalFlagName, SpecValidationInterval, "determines the interval of which to run validation on the spec for all connected chains")
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationIntervalDisabledChains, SpecValidationIntervalDisabledChainsFlagName, SpecValidationIntervalDisabledChains, "determines the interval of which to run validation on the spec for all disabled chains, determines recovery time")
+
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
 }

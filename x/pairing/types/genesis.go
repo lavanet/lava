@@ -2,6 +2,9 @@ package types
 
 import (
 	"fmt"
+
+	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 // DefaultIndex is the default capability global index
@@ -14,6 +17,8 @@ func DefaultGenesis() *GenesisState {
 		ProviderPaymentStorageList:             []ProviderPaymentStorage{},
 		EpochPaymentsList:                      []EpochPayments{},
 		BadgeUsedCuList:                        []BadgeUsedCu{},
+		BadgesTS:                               *timerstoretypes.DefaultGenesis(),
+		ProviderQosFS:                          *fixationtypes.DefaultGenesis(),
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
