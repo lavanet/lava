@@ -260,7 +260,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	}
 
 	// Setup HTTP Server
-	app := createAndSetupBaseAppListener(cmdFlags)
+	app := createAndSetupBaseAppListener(cmdFlags, apil.endpoint.HealthCheckPath, apil.healthReporter)
 
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
@@ -334,15 +334,6 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 		query := "?" + string(fiberCtx.Request().URI().QueryString())
 		path := "/" + fiberCtx.Params("*")
-		if path == apil.endpoint.HealthCheckPath {
-			if apil.healthReporter.IsHealthy() {
-				fiberCtx.Status(http.StatusOK)
-				return fiberCtx.SendString("Health status OK")
-			} else {
-				fiberCtx.Status(http.StatusServiceUnavailable)
-				return fiberCtx.SendString("Health status Failure")
-			}
-		}
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 

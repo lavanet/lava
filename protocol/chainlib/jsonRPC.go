@@ -301,7 +301,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	}
 	test_mode := common.IsTestMode(ctx)
 	// Setup HTTP Server
-	app := createAndSetupBaseAppListener(cmdFlags)
+	app := createAndSetupBaseAppListener(cmdFlags, apil.endpoint.HealthCheckPath, apil.healthReporter)
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client
@@ -454,15 +454,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 	})
 
-	app.Get(apil.endpoint.HealthCheckPath, func(fiberCtx *fiber.Ctx) error {
-		if apil.healthReporter.IsHealthy() {
-			fiberCtx.Status(http.StatusOK)
-			return fiberCtx.SendString("Health status OK")
-		} else {
-			fiberCtx.Status(http.StatusServiceUnavailable)
-			return fiberCtx.SendString("Health status Failure")
-		}
-	})
 	// Go
 	ListenWithRetry(app, apil.endpoint.NetworkAddress)
 }

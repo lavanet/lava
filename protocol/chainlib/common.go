@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -283,7 +284,7 @@ func GetRelayTimeout(chainMessage ChainMessage, chainParser ChainParser, timeout
 }
 
 // setup a common preflight and cors configuration allowing wild cards and preflight caching.
-func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags) *fiber.App {
+func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheckPath string, healthReporter HealthReporter) *fiber.App {
 	app := fiber.New(fiber.Config{})
 	app.Use(favicon.New())
 	app.Use(func(c *fiber.Ctx) error {
@@ -304,5 +305,16 @@ func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags) *fiber.App 
 		}
 		return c.Next()
 	})
+
+	app.Get(healthCheckPath, func(fiberCtx *fiber.Ctx) error {
+		if healthReporter.IsHealthy() {
+			fiberCtx.Status(http.StatusOK)
+			return fiberCtx.SendString("Health status OK")
+		} else {
+			fiberCtx.Status(http.StatusServiceUnavailable)
+			return fiberCtx.SendString("Health status Failure")
+		}
+	})
+
 	return app
 }
