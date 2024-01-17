@@ -73,7 +73,6 @@ func (s *RelayerCacheServer) getSeenBlockForSharedStateMode(id string) int64 {
 			utils.LavaFormatInfo("Failed fetching state from cache for this user id", utils.LogAttr("id", id))
 			return 0 // we cant set the seen block in this case it will be returned 0 and wont be used in the consumer side.
 		}
-		utils.LavaFormatInfo("getting seen block cache", utils.LogAttr("id", id), utils.LogAttr("value", value))
 		if cacheValue, ok := value.(int64); ok {
 			return cacheValue
 		}
@@ -83,17 +82,23 @@ func (s *RelayerCacheServer) getSeenBlockForSharedStateMode(id string) int64 {
 }
 
 func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (cacheReply *pairingtypes.CacheRelayReply, err error) {
-	cacheReply.SeenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.SharedStateId)
-
 	requestedBlock := relayCacheGet.Request.RequestBlock // save requested block
 	cacheReply, err = s.getRelayInner(ctx, relayCacheGet)
+
 	var hit bool
 	if err != nil {
 		s.cacheMiss(ctx, err)
+		// cacheReply is nil as we didn't get a hit. we still need to set the seen block.
+		if cacheReply == nil {
+			cacheReply = &pairingtypes.CacheRelayReply{}
+		}
 	} else {
 		hit = true
 		s.cacheHit(ctx)
 	}
+	// set seen block if required
+	cacheReply.SeenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.SharedStateId)
+
 	// add prometheus metrics
 	s.CacheServer.CacheMetrics.AddApiSpecific(requestedBlock, relayCacheGet.ChainID, getMethodFromRequest(relayCacheGet), relayCacheGet.Request.ApiInterface, hit)
 	return

@@ -358,14 +358,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		// check if the cache seen block is greater than my local seen block, this means the user requested this
 		// request spoke with another consumer instance and use that block for inter consumer consistency.
 		if rpccs.sharedState && cacheSeenBlock > relayRequestData.SeenBlock {
+			utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", relayRequestData.SeenBlock))
 			relayRequestData.SeenBlock = cacheSeenBlock
 		}
-		utils.LavaFormatDebug("seen block fetched from cache", utils.LogAttr("seen block", relayRequestData.SeenBlock))
 		if cacheError == nil && reply != nil {
 			// Info was fetched from cache, so we don't need to change the state
 			// so we can return here, no need to update anything and calculate as this info was fetched from the cache
-			relayResult.Reply = reply
-			relayResult.Request.RelayData = relayRequestData
+			relayResult = &common.RelayResult{Reply: reply, Request: &pairingtypes.RelayRequest{RelayData: relayRequestData}}
 			lavaprotocol.UpdateRequestedBlock(relayResult.Request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
 			return relayResult, nil
 		}
