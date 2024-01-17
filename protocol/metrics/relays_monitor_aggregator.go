@@ -24,8 +24,8 @@ func NewRelaysMonitorAggregator(interval time.Duration, rpcConsumerLogs *Consume
 
 func (rma *RelaysMonitorAggregator) RegisterRelaysMonitor(rpcEndpointKey string, relaysMonitor *RelaysMonitor) {
 	rma.lock.Lock()
+	defer rma.lock.Unlock()
 	rma.relaysMonitors[rpcEndpointKey] = relaysMonitor
-	rma.lock.Unlock()
 }
 
 func (rma *RelaysMonitorAggregator) StartMonitoring(ctx context.Context) {

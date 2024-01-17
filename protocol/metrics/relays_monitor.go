@@ -25,15 +25,14 @@ func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string) *Rel
 		apiInterface: apiInterface,
 		ticker:       time.NewTicker(interval),
 		interval:     interval,
-		lock:         sync.RWMutex{},
 		isHealthy:    1, // setting process to healthy by default, after init relays we know if its truly healthy or not.
 	}
 }
 
 func (sem *RelaysMonitor) SetRelaySender(relaySender func() (bool, error)) {
 	sem.lock.Lock()
+	defer sem.lock.Unlock()
 	sem.relaySender = relaySender
-	sem.lock.Unlock()
 }
 
 func (sem *RelaysMonitor) Start(ctx context.Context) {
