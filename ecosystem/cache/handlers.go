@@ -140,7 +140,7 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 	// Setting the seen block for shared state.
 	// Getting the max block number between the seen block on the consumer side vs the latest block on the response of the provider
 	latestKnownBlock := int64(math.Max(float64(relayCacheSet.Response.LatestBlock), float64(relayCacheSet.Request.SeenBlock)))
-	go s.setLatestBlock(latestBlockKey(relayCacheSet.ChainID, relayCacheSet.Provider, relayCacheSet.SharedStateId), latestKnownBlock)
+	s.setLatestBlock(latestBlockKey(relayCacheSet.ChainID, relayCacheSet.Provider, relayCacheSet.SharedStateId), latestKnownBlock)
 	// TODO: make this non-blocking
 	inputFormatter, _ := format.FormatterForRelayRequestAndResponse(relayCacheSet.Request.ApiInterface)
 	relayCacheSet.Request.Data = inputFormatter(relayCacheSet.Request.Data) // so we can find the entry regardless of id
@@ -217,6 +217,21 @@ func (s *RelayerCacheServer) setLatestBlock(key string, latestBlock int64) {
 		cacheStore := LastestCacheStore{latestBlock: latestBlock, latestExpirationTime: time.Now().Add(DefaultExpirationForNonFinalized)}
 		utils.LavaFormatDebug("setting latest block", utils.Attribute{Key: "key", Value: key}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		s.CacheServer.finalizedCache.Set(key, cacheStore, cacheStore.Cost()) // no expiration time
+		// validate we didn't have a race with another set latest block.
+		// this mechanism could be improved and also changed in the future.
+		go func() {
+			for i := 0; i < SharedStateWriteAttempts; i++ {
+				time.Sleep(time.Millisecond)
+				currentLatest, _ := s.getLatestBlockInner(key) // we need to bypass the expirationTimeCheck
+				if currentLatest > latestBlock {
+					return // there is a newer block stored we are no longer relevant we can just stop validating.
+				}
+				if currentLatest < latestBlock {
+					// other cache set raced us and we need to rewrite our value again as its a newer value
+					s.CacheServer.finalizedCache.Set(key, cacheStore, cacheStore.Cost())
+				}
+			}
+		}()
 	}
 }
 
