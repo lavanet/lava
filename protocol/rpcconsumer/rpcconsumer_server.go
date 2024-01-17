@@ -84,23 +84,6 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.consumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
-	initialRelays := true
-	rpccs.relaysMonitor = relaysMonitor
-	if RelaysHealthEnable {
-		rpccs.relaysMonitor.SetRelaySender(func() (bool, error) {
-			if initialRelays {
-				// Only start after everything is initialized - check consumer session manager
-				ok, err := rpccs.waitForPairing()
-				if !ok {
-					return false, err
-				}
-			}
-
-			success, err := rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
-			initialRelays = false
-			return success, err
-		})
-	}
 
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
@@ -109,11 +92,35 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 
 	go chainListener.Serve(ctx, cmdFlags)
 
+	initialRelays := true
+	rpccs.relaysMonitor = relaysMonitor
+
 	// we trigger a latest block call to get some more information on our providers, using the relays monitor
 	if RelaysHealthEnable {
+		rpccs.relaysMonitor.SetRelaySender(func() (bool, error) {
+			success, err := rpccs.sendCraftedRelaysWrapper(initialRelays)
+			if success {
+				initialRelays = false
+			}
+			return success, err
+		})
 		rpccs.relaysMonitor.Start(ctx)
+	} else {
+		rpccs.sendCraftedRelaysWrapper(true)
 	}
 	return nil
+}
+
+func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bool, error) {
+	if initialRelays {
+		// Only start after everything is initialized - check consumer session manager
+		ok, err := rpccs.waitForPairing()
+		if !ok {
+			return false, err
+		}
+	}
+
+	return rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
 }
 
 func (rpccs *RPCConsumerServer) waitForPairing() (bool, error) {
