@@ -24,7 +24,7 @@ func FormatterForRelayRequestAndResponseJsonRPC() (inputFormatter func([]byte) [
 		}
 		batch := []json.RawMessage{}
 		err := json.Unmarshal(inpData, &batch)
-		if err == nil && len(batch) > 1 {
+		if err == nil && len(batch) >= 1 {
 			modifiedInpArray := []json.RawMessage{}
 			for _, batchData := range batch {
 				var extractedIDForBatch interface{}
@@ -56,7 +56,7 @@ func FormatterForRelayRequestAndResponseJsonRPC() (inputFormatter func([]byte) [
 		}
 		batch := []json.RawMessage{}
 		err := json.Unmarshal(inpData, &batch)
-		if err == nil && len(batch) > 1 && len(extractedIDArray) == len(batch) {
+		if err == nil && len(batch) >= 1 && len(extractedIDArray) == len(batch) {
 			modifiedInpArray := []json.RawMessage{}
 			for i, batchData := range batch {
 				modifiedInp, err := sjson.SetBytes(batchData, IDFieldName, extractedIDArray[i])
