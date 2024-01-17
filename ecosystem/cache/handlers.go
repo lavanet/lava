@@ -28,7 +28,9 @@ var (
 )
 
 const (
-	SEP = ";"
+	SharedStateWriteAttempts = 5
+	Int64Cost                = 8 // the cost is directly set to 8, which is the size in bytes of the int64
+	SEP                      = ";"
 )
 
 type RelayerCacheServer struct {
@@ -64,9 +66,26 @@ func (cv *LastestCacheStore) Cost() int64 {
 	return 8 + 16
 }
 
-func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (cacheReply *pairingtypes.CacheRelayReply, err error) {
-	requestedBlock := relayCacheGet.Request.RequestBlock // save requested block
+func (s *RelayerCacheServer) getSeenBlockForSharedStateMode(id string) int64 {
+	if id != "" {
+		value, found := getNonExpiredFromCache(s.CacheServer.finalizedCache, id)
+		if !found {
+			utils.LavaFormatInfo("Failed fetching state from cache for this user id", utils.LogAttr("id", id))
+			return 0 // we cant set the seen block in this case it will be returned 0 and wont be used in the consumer side.
+		}
+		utils.LavaFormatInfo("getting seen block cache", utils.LogAttr("id", id), utils.LogAttr("value", value))
+		if cacheValue, ok := value.(int64); ok {
+			return cacheValue
+		}
+		utils.LavaFormatError("Failed converting cache result to int64", nil, utils.LogAttr("value", value))
+	}
+	return 0
+}
 
+func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (cacheReply *pairingtypes.CacheRelayReply, err error) {
+	cacheReply.SeenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.SharedStateId)
+
+	requestedBlock := relayCacheGet.Request.RequestBlock // save requested block
 	cacheReply, err = s.getRelayInner(ctx, relayCacheGet)
 	var hit bool
 	if err != nil {
@@ -120,10 +139,31 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 	return nil, HashMismatchError
 }
 
+// this method tries to set the seen block a few times until it succeeds. it will try to make sure its value is set
+// to prevent race conditions when we have a few writes in the same time with older values we will try to set our value eventually
+// if its the newest seen block
+func (s *RelayerCacheServer) setSeenBlockOnSharedStateMode(id string, block int64) {
+	if id == "" {
+		return
+	}
+	s.CacheServer.finalizedCache.SetWithTTL(id, block, Int64Cost, s.CacheServer.ExpirationFinalized)
+	for i := 0; i < SharedStateWriteAttempts; i++ {
+		time.Sleep(time.Millisecond) // add some delay between read attempts
+		storedBlock := s.getSeenBlockForSharedStateMode(id)
+		if storedBlock < block {
+			// we need to write again as some other operation raced us.
+			utils.LavaFormatDebug("stored block smaller than expected, rewriting", utils.LogAttr("stored", storedBlock), utils.LogAttr("block", block))
+			s.CacheServer.finalizedCache.SetWithTTL(id, block, Int64Cost, s.CacheServer.ExpirationFinalized)
+		}
+	}
+}
+
 func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairingtypes.RelayCacheSet) (*emptypb.Empty, error) {
 	if relayCacheSet.Request.RequestBlock < 0 {
 		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.Request.RequestBlock})
 	}
+	// setting the seen block for shared state.
+	go s.setSeenBlockOnSharedStateMode(relayCacheSet.SharedStateId, relayCacheSet.Request.SeenBlock)
 	// TODO: make this non-blocking
 	inputFormatter, _ := format.FormatterForRelayRequestAndResponse(relayCacheSet.Request.ApiInterface)
 	relayCacheSet.Request.Data = inputFormatter(relayCacheSet.Request.Data) // so we can find the entry regardless of id

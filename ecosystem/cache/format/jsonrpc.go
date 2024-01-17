@@ -95,7 +95,7 @@ func getExtractedIdAndModifyInputForJson(inpData []byte) (modifiedInp []byte, ex
 	}
 	modifiedInp, err = sjson.SetBytes(inpData, IDFieldName, DefaultIDValue)
 	if err != nil {
-		return inpData, extractedID, utils.LavaFormatWarning("failed to set id in json", nil, utils.Attribute{Key: "jsonData", Value: inpData}, utils.LogAttr("extractedID", extractedID))
+		return inpData, extractedID, utils.LavaFormatWarning("failed to set id in json", err, utils.Attribute{Key: "jsonData", Value: inpData}, utils.LogAttr("extractedID", extractedID))
 	}
 	return modifiedInp, extractedID, nil
 }
