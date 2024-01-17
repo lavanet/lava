@@ -221,10 +221,10 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 
 				futureCreditAmount := futurePlan.Price.Amount.MulRaw(int64(s8.FutureSubscription.DurationBought))
 				futureCredit := sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), futureCreditAmount)
-
-				s8.Credit = credit
 				s8.FutureSubscription.Credit = futureCredit
 			}
+
+			s8.Credit = credit
 
 			// modify sub entry
 			m.keeper.subsFS.ModifyEntry(ctx, index, block, &s8)
