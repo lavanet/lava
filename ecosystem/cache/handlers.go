@@ -137,10 +137,6 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 	if relayCacheSet.Request.RequestBlock < 0 {
 		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.Request.RequestBlock})
 	}
-	// Setting the seen block for shared state.
-	// Getting the max block number between the seen block on the consumer side vs the latest block on the response of the provider
-	latestKnownBlock := int64(math.Max(float64(relayCacheSet.Response.LatestBlock), float64(relayCacheSet.Request.SeenBlock)))
-	s.setLatestBlock(latestBlockKey(relayCacheSet.ChainID, relayCacheSet.Provider, relayCacheSet.SharedStateId), latestKnownBlock)
 	// TODO: make this non-blocking
 	inputFormatter, _ := format.FormatterForRelayRequestAndResponse(relayCacheSet.Request.ApiInterface)
 	relayCacheSet.Request.Data = inputFormatter(relayCacheSet.Request.Data) // so we can find the entry regardless of id
@@ -159,6 +155,11 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		cache := s.CacheServer.tempCache
 		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.getExpirationForChain(relayCacheSet.ChainID, relayCacheSet.BlockHash))
 	}
+	// Setting the seen block for shared state.
+	// Getting the max block number between the seen block on the consumer side vs the latest block on the response of the provider
+	latestKnownBlock := int64(math.Max(float64(relayCacheSet.Request.RequestBlock), float64(relayCacheSet.Request.SeenBlock)))
+	s.setLatestBlock(latestBlockKey(relayCacheSet.ChainID, relayCacheSet.Provider, relayCacheSet.SharedStateId), latestKnownBlock)
+
 	return &emptypb.Empty{}, nil
 }
 
