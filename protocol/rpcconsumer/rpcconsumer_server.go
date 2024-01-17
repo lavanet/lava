@@ -96,7 +96,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.relaysMonitor = relaysMonitor
 
 	// we trigger a latest block call to get some more information on our providers, using the relays monitor
-	if RelaysHealthEnable {
+	if cmdFlags.RelaysHealthEnableFlag {
 		rpccs.relaysMonitor.SetRelaySender(func() (bool, error) {
 			success, err := rpccs.sendCraftedRelaysWrapper(initialRelays)
 			if success {

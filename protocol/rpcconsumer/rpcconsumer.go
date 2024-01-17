@@ -43,10 +43,10 @@ const (
 )
 
 var (
-	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface"}
-	DebugRelaysFlag        = false
-	RelaysHealthEnable     = true
-	RelaysHealthInterval   = 5 * time.Minute
+	Yaml_config_properties         = []string{"network-address", "chain-id", "api-interface"}
+	DebugRelaysFlag                = false
+	RelaysHealthEnableFlagDefault  = true
+	RelayHealthIntervalFlagDefault = 5 * time.Minute
 )
 
 type strategyValue struct {
@@ -170,7 +170,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
-	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(RelaysHealthInterval, consumerMetricsManager)
+	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
 	policyUpdaters := syncMapPolicyUpdaters{}
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
@@ -269,8 +269,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
 			var relaysMonitor *metrics.RelaysMonitor
-			if RelaysHealthEnable {
-				relaysMonitor = metrics.NewRelaysMonitor(RelaysHealthInterval, rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
+			if cmdFlags.RelaysHealthEnableFlag {
+				relaysMonitor = metrics.NewRelaysMonitor(cmdFlags.RelaysHealthIntervalFlag, rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
 				relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.String(), relaysMonitor)
 			}
 			rpcConsumerServer := &RPCConsumerServer{}
@@ -492,12 +492,12 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
-				HeadersFlag:             viper.GetString(common.CorsHeadersFlag),
-				OriginFlag:              viper.GetString(common.CorsOriginFlag),
-				MethodsFlag:             viper.GetString(common.CorsMethodsFlag),
-				CDNCacheDuration:        viper.GetString(common.CDNCacheDurationFlag),
-				RelaysHealthEnableFlag:  viper.GetBool(common.RelaysHealthEnableFlag),
-				RelayHealthIntervalFlag: viper.GetString(common.RelayHealthIntervalFlag),
+				HeadersFlag:              viper.GetString(common.CorsHeadersFlag),
+				OriginFlag:               viper.GetString(common.CorsOriginFlag),
+				MethodsFlag:              viper.GetString(common.CorsMethodsFlag),
+				CDNCacheDuration:         viper.GetString(common.CDNCacheDurationFlag),
+				RelaysHealthEnableFlag:   viper.GetBool(common.RelaysHealthEnableFlag),
+				RelaysHealthIntervalFlag: viper.GetDuration(common.RelayHealthIntervalFlag),
 			}
 
 			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags)
@@ -527,8 +527,8 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(common.CorsMethodsFlag, "GET,POST,PUT,DELETE,OPTIONS", "set up Allowed OPTIONS methods, defaults to: \"GET,POST,PUT,DELETE,OPTIONS\"")
 	cmdRPCConsumer.Flags().String(common.CDNCacheDurationFlag, "86400", "set up preflight options response cache duration, default 86400 (24h in seconds)")
 	// Relays health check related flags
-	cmdRPCConsumer.Flags().BoolVar(&RelaysHealthEnable, common.RelaysHealthEnableFlag, RelaysHealthEnable, "enables relays health check")
-	cmdRPCConsumer.Flags().DurationVar(&RelaysHealthInterval, common.RelayHealthIntervalFlag, RelaysHealthInterval, "interval between relay health checks")
+	cmdRPCConsumer.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
+	cmdRPCConsumer.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
 
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	common.AddRollingLogConfig(cmdRPCConsumer)
