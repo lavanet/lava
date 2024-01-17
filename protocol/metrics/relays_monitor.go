@@ -30,12 +30,20 @@ func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string) *Rel
 }
 
 func (sem *RelaysMonitor) SetRelaySender(relaySender func() (bool, error)) {
+	if sem == nil {
+		return
+	}
+
 	sem.lock.Lock()
 	defer sem.lock.Unlock()
 	sem.relaySender = relaySender
 }
 
 func (sem *RelaysMonitor) Start(ctx context.Context) {
+	if sem == nil {
+		return
+	}
+
 	// We run the relaySender right away, because we call this function from the RPCConsumerServer on it's initialization.
 	// This means that the relaySender will be called right away, and we don't have to wait for the ticker to fire.
 	// There is a difference between the first call to relaySender and the subsequent calls.
@@ -62,6 +70,10 @@ func (sem *RelaysMonitor) startInner(ctx context.Context) {
 }
 
 func (sem *RelaysMonitor) LogRelay() {
+	if sem == nil {
+		return
+	}
+
 	sem.lock.Lock()
 	defer sem.lock.Unlock()
 
@@ -70,6 +82,10 @@ func (sem *RelaysMonitor) LogRelay() {
 }
 
 func (sem *RelaysMonitor) IsHealthy() bool {
+	if sem == nil {
+		return false
+	}
+
 	return sem.loadHealthStatus()
 }
 

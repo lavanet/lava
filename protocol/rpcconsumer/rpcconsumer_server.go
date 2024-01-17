@@ -194,9 +194,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 			unwantedProviders = map[string]struct{}{}
 			utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderInfo.ProviderAddress}}...)
 
-			if RelaysHealthEnable {
-				rpccs.relaysMonitor.LogRelay()
-			}
+			rpccs.relaysMonitor.LogRelay()
 			success = true
 
 			// If this is the first time we send relays, we want to send all of them, instead of break on first successful relay
@@ -372,9 +370,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	}
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, retries)
 
-	if RelaysHealthEnable {
-		rpccs.relaysMonitor.LogRelay()
-	}
+	rpccs.relaysMonitor.LogRelay()
 
 	return returnedResult, nil
 }
@@ -888,9 +884,5 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 }
 
 func (rpccs *RPCConsumerServer) IsHealthy() bool {
-	if RelaysHealthEnable {
-		return rpccs.relaysMonitor.IsHealthy()
-	} else {
-		return false
-	}
+	return rpccs.relaysMonitor.IsHealthy()
 }
