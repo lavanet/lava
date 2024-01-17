@@ -26,7 +26,7 @@ func NewRelaysMonitor(interval time.Duration, chainID, apiInterface string) *Rel
 		ticker:       time.NewTicker(interval),
 		interval:     interval,
 		lock:         sync.RWMutex{},
-		isHealthy:    1,
+		isHealthy:    1, // setting process to healthy by default, after init relays we know if its truly healthy or not.
 	}
 }
 
