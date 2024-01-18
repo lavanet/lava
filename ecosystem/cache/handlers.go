@@ -30,7 +30,6 @@ var (
 
 const (
 	SharedStateWriteAttempts = 5
-	Int64Cost                = 8 // the cost is directly set to 8, which is the size in bytes of the int64
 	SEP                      = ";"
 )
 
