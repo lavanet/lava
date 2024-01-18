@@ -2291,7 +2291,7 @@ func TestProjectsNumEnforcement(t *testing.T) {
 
 	// change the number of allowed projects to 2
 	freePlan := ts.Plan("free")
-	freePlan.Projects = 2
+	freePlan.ProjectsLimit = 2
 	err := ts.TxProposalAddPlans(freePlan)
 	require.NoError(t, err)
 

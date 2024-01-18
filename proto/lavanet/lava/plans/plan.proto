@@ -23,7 +23,7 @@ message Plan {
     string type = 12 [(gogoproto.jsontag) = "type"]; // plan type
     uint64 annual_discount_percentage = 13 [(gogoproto.jsontag) = "annual_discount_percentage"]; // discount for buying the plan for a year
     Policy plan_policy = 14 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "plan_policy"];
-    uint64 projects = 15 [(gogoproto.jsontag) = "projects"]; // number of allowed projects
+    uint64 projects_limit = 15 [(gogoproto.jsontag) = "projects_limit"]; // number of allowed projects
 }
 
 // The geolocation values are encoded as bits in a bitmask, with two special values:

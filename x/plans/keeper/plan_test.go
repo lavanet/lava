@@ -62,7 +62,7 @@ func (ts *tester) createTestPlans(count int, withSameIndex bool, startIndex int)
 			AllowOveruse:             true,
 			OveruseRate:              overuseRate,
 			AnnualDiscountPercentage: 20,
-			Projects:                 10,
+			ProjectsLimit:            10,
 		}
 
 		plans = append(plans, plan)

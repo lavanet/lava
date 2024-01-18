@@ -60,7 +60,7 @@ func TestDecodeJsonPlan(t *testing.T) {
 		AnnualDiscountPercentage: 20,
 		AllowOveruse:             true,
 		OveruseRate:              2,
-		Projects:                 10,
+		ProjectsLimit:            10,
 		PlanPolicy: Policy{
 			ChainPolicies: []ChainPolicy{
 				{ChainId: "LAV1", Apis: []string{}},
@@ -137,7 +137,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 				AnnualDiscountPercentage: 20,
 				AllowOveruse:             true,
 				OveruseRate:              2,
-				Projects:                 10,
+				ProjectsLimit:            10,
 				PlanPolicy: Policy{
 					ChainPolicies: []ChainPolicy{
 						{ChainId: "LAV1", Apis: []string{}},
@@ -159,7 +159,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 				AnnualDiscountPercentage: 20,
 				AllowOveruse:             true,
 				OveruseRate:              2,
-				Projects:                 5,
+				ProjectsLimit:            5,
 				PlanPolicy: Policy{
 					ChainPolicies: []ChainPolicy{
 						{ChainId: "LAV1", Apis: []string{}},
