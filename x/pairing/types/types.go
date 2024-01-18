@@ -21,10 +21,11 @@ const (
 )
 
 const (
-	FlagMoniker         = "provider-moniker"
-	FlagCommission      = "delegate-commission"
-	FlagDelegationLimit = "delegate-limit"
-	MAX_LEN_MONIKER     = 50
+	FlagMoniker                  = "provider-moniker"
+	FlagCommission               = "delegate-commission"
+	FlagDelegationLimit          = "delegate-limit"
+	MAX_LEN_MONIKER              = 50
+	MAX_ENDPOINTS_AMOUNT_PER_GEO = 5 // max number of endpoints per geolocation for provider stake entry
 )
 
 // unresponsiveness consts
