@@ -18,13 +18,6 @@ func (k msgServer) AddKeys(goCtx context.Context, msg *types.MsgAddKeys) (*types
 		)
 	}
 
-	if len(msg.ProjectKeys) > types.MAX_KEYS_AMOUNT {
-		return nil, utils.LavaFormatWarning("cannot add project keys", fmt.Errorf("max number of keys exceeded"),
-			utils.LogAttr("project_keys_amount", len(msg.ProjectKeys)),
-			utils.LogAttr("max_keys_allowed", types.MAX_KEYS_AMOUNT),
-		)
-	}
-
 	for _, projectKey := range msg.GetProjectKeys() {
 		if !projectKey.IsTypeValid() {
 			return nil, utils.LavaFormatWarning(
