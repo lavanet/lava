@@ -438,7 +438,7 @@ export class LavaSDK {
 
       if (this.rpcConsumerServerRouter.size < 1) {
         const skippedApiInterfaces: Array<string | undefined> = [];
-        apiCollectionList.forEach((collection) => {
+        apiCollectionList.forEach((collection: any) => {
           skippedApiInterfaces.push(
             collection.getCollectionData()?.getApiInterface()
           );

@@ -140,7 +140,13 @@ func (k Keeper) blocksToNextTimerExpiry(ctx sdk.Context, timeToNextTimerExpiry i
 	if blockCreationTime == 0 {
 		return 30
 	}
-	blocksToNextTimerExpiry := types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry).QuoInt64(blockCreationTime).Ceil().TruncateInt64()
+
+	effectiveTimeToNextTimerExpiry := sdkmath.LegacyNewDec(timeToNextTimerExpiry)
+	if timeToNextTimerExpiry != math.MaxInt64 {
+		effectiveTimeToNextTimerExpiry = types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry)
+	}
+
+	blocksToNextTimerExpiry := effectiveTimeToNextTimerExpiry.QuoInt64(blockCreationTime).Ceil().TruncateInt64()
 	if blocksToNextTimerExpiry < 2 {
 		return 2
 	}
