@@ -80,6 +80,17 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID, adminKey string, pr
 		)
 	}
 
+	if len(project.ProjectKeys)+len(projectKeys) > types.MAX_KEYS_AMOUNT {
+		return utils.LavaFormatWarning("failed to add keys", fmt.Errorf("max number of keys for project exceeded"),
+			utils.LogAttr("project", projectID),
+			utils.LogAttr("block", ctxBlock),
+			utils.LogAttr("admin_key", adminKey),
+			utils.LogAttr("current_project_keys_amount", len(project.ProjectKeys)),
+			utils.LogAttr("keys_to_add_amount", len(projectKeys)),
+			utils.LogAttr("max_keys_allowed", types.MAX_KEYS_AMOUNT),
+		)
+	}
+
 	// note that realBlockNextEpoch is expected to always be at epoch boundaries (except
 	// perhaps the first epoch of deploying this version, but that's ephemeral)
 

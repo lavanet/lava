@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
@@ -1257,4 +1258,55 @@ func TestPendingProject(t *testing.T) {
 	devRes, err = ts.QueryProjectDeveloper(sub)
 	require.NoError(t, err)
 	require.Nil(t, devRes.PendingProject)
+}
+
+// TestMaxKeysInProject tests that the max amount of keys in project is enforced as expected
+// scenarios:
+// 1. add keys to existing project and try to exceed max amount
+// 2. delete one key (from project with max keys) and make sure you can add one more key
+// 3. try to create a project with more keys than max to begin with
+func TestMaxKeysInProject(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, types.MAX_KEYS_AMOUNT+1, 0)
+
+	// create dummy keys
+	var dummyKeys []types.ProjectKey
+	for i := 1; i <= types.MAX_KEYS_AMOUNT+1; i++ {
+		_, admin := ts.Account("adm" + strconv.Itoa(i))
+		dummyKeys = append(dummyKeys, types.ProjectAdminKey(admin))
+	}
+
+	// buy subscription. has one key (auto-generated admin key)
+	_, sub := ts.Account("sub1")
+	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1, false, false)
+	require.NoError(t, err)
+	res, err := ts.QueryProjectDeveloper(sub)
+	require.NoError(t, err)
+	proj := res.Project
+
+	// try adding more keys than allowed at once (should fail - one key too much)
+	err = ts.TxProjectAddKeys(proj.Index, sub, dummyKeys...)
+	require.Error(t, err)
+
+	// add MAX_KEYS_AMOUNT-1, should succeed
+	err = ts.TxProjectAddKeys(proj.Index, sub, dummyKeys[2:]...)
+	require.NoError(t, err)
+
+	// delete key and immediately try to add key - should fail since deletion is applied on next epoch
+	err = ts.TxProjectDelKeys(proj.Index, sub, dummyKeys[2])
+	require.NoError(t, err)
+	err = ts.TxProjectAddKeys(proj.Index, sub, dummyKeys[0])
+	require.Error(t, err)
+
+	// wait an epoch and add the previosly added key, should succeed
+	ts.AdvanceEpoch()
+	err = ts.TxProjectAddKeys(proj.Index, sub, dummyKeys[2])
+	require.NoError(t, err)
+
+	// try to add a new project with more keys than allowed, should fail
+	err = ts.TxSubscriptionAddProject(sub, types.ProjectData{
+		Name:        "dummy",
+		ProjectKeys: dummyKeys,
+	})
+	require.Error(t, err)
 }

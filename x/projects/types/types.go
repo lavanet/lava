@@ -2,6 +2,7 @@ package types
 
 const (
 	MAX_PROJECT_NAME_LEN = 50
+	MAX_KEYS_AMOUNT      = 10
 )
 
 // set policy enum
