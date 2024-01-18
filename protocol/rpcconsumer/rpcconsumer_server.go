@@ -114,8 +114,8 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bool, error) {
 	if initialRelays {
 		// Only start after everything is initialized - check consumer session manager
-		ok, err := rpccs.waitForPairing()
-		if !ok {
+		err := rpccs.waitForPairing()
+		if err != nil {
 			return false, err
 		}
 	}
@@ -123,7 +123,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 	return rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
 }
 
-func (rpccs *RPCConsumerServer) waitForPairing() (bool, error) {
+func (rpccs *RPCConsumerServer) waitForPairing() error {
 	reinitializedChan := make(chan bool)
 
 	go func() {
@@ -140,13 +140,13 @@ func (rpccs *RPCConsumerServer) waitForPairing() (bool, error) {
 	case <-reinitializedChan:
 		break
 	case <-time.After(30 * time.Second):
-		return false, utils.LavaFormatError("failed initial relays, csm was not initialized after timeout", nil,
+		return utils.LavaFormatError("failed initial relays, csm was not initialized after timeout", nil,
 			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 			utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
 		)
 	}
 
-	return true, nil
+	return nil
 }
 
 func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage, err error) {
