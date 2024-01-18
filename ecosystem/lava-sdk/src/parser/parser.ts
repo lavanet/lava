@@ -1,4 +1,5 @@
 import {
+  NOT_APPLICABLE,
   LATEST_BLOCK,
   EARLIEST_BLOCK,
   PENDING_BLOCK,
@@ -55,6 +56,9 @@ export class Parser {
     blockParser: BlockParser
   ): number | Error {
     const result = this.parse(rpcInput, blockParser, PARSE_PARAMS);
+    if (result == null) {
+      return NOT_APPLICABLE;
+    }
     if (result instanceof Error) {
       return result;
     }
@@ -66,8 +70,11 @@ export class Parser {
   public static parseFromReply(
     rpcInput: RPCInput,
     blockParser: BlockParser
-  ): string | Error {
+  ): string | Error | null {
     const result = this.parse(rpcInput, blockParser, PARSE_RESULT);
+    if (result == null) {
+      return null;
+    }
     if (result instanceof Error) {
       return result;
     }
@@ -85,6 +92,10 @@ export class Parser {
     blockParser: BlockParser
   ): number | Error {
     const result = this.parseFromReply(rpcInput, blockParser);
+    if (result == null) {
+      return NOT_APPLICABLE;
+    }
+
     if (result instanceof Error) {
       return result;
     }
@@ -95,8 +106,12 @@ export class Parser {
   public static parseFromReplyAndDecode(
     rpcInput: RPCInput,
     resultParser: BlockParser
-  ): string | Error {
+  ): string | Error | null {
     const result = this.parseFromReply(rpcInput, resultParser);
+    if (result == null) {
+      return null;
+    }
+
     if (result instanceof Error) {
       return result;
     }

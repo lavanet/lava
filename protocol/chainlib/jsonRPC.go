@@ -271,17 +271,22 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 }
 
 type JsonRPCChainListener struct {
-	endpoint    *lavasession.RPCEndpoint
-	relaySender RelaySender
-	logger      *metrics.RPCConsumerLogs
+	endpoint       *lavasession.RPCEndpoint
+	relaySender    RelaySender
+	healthReporter HealthReporter
+	logger         *metrics.RPCConsumerLogs
 }
 
 // NewJrpcChainListener creates a new instance of JsonRPCChainListener
-func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *JsonRPCChainListener) {
+func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
+	relaySender RelaySender, healthReporter HealthReporter,
+	rpcConsumerLogs *metrics.RPCConsumerLogs,
+) (chainListener *JsonRPCChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &JsonRPCChainListener{
 		listenEndpoint,
 		relaySender,
+		healthReporter,
 		rpcConsumerLogs,
 	}
 
@@ -296,7 +301,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	}
 	test_mode := common.IsTestMode(ctx)
 	// Setup HTTP Server
-	app := createAndSetupBaseAppListener(cmdFlags)
+	app := createAndSetupBaseAppListener(cmdFlags, apil.endpoint.HealthCheckPath, apil.healthReporter)
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client
@@ -449,10 +454,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 	})
 
-	app.Get(apil.endpoint.HealthCheckPath, func(fiberCtx *fiber.Ctx) error {
-		fiberCtx.Status(http.StatusOK)
-		return fiberCtx.SendString("Health status OK")
-	})
 	// Go
 	ListenWithRetry(app, apil.endpoint.NetworkAddress)
 }
