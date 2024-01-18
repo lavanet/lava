@@ -100,9 +100,26 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "0xa4ba"
+                                        "expected_value": "0xa4b1"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 288000
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 284000
+                                }
                             }
                         ]
                     }
