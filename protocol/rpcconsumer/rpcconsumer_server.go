@@ -211,6 +211,11 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 
 // sending a few latest blocks relays to providers in order to have some data on the providers when relays start arriving
 func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays bool) (success bool, err error) {
+	utils.LavaFormatDebug("Sending crafted relays",
+		utils.LogAttr("chainId", rpccs.listenEndpoint.ChainID),
+		utils.LogAttr("apiInterface", rpccs.listenEndpoint.ApiInterface),
+	)
+
 	ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 	ok, relay, chainMessage, err := rpccs.craftRelay(ctx)
 	if !ok {
