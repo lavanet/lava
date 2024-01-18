@@ -50,6 +50,13 @@ func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chain
 		}
 	}
 
+	utils.LavaFormatDebug("adding tracked cu",
+		utils.LogAttr("sub", sub),
+		utils.LogAttr("provider", provider),
+		utils.LogAttr("chain_id", chainID),
+		utils.LogAttr("added_cu", cuToAdd),
+		utils.LogAttr("block", block))
+
 	return nil
 }
 

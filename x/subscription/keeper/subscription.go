@@ -288,6 +288,7 @@ func (k Keeper) renewSubscription(ctx sdk.Context, sub *types.Subscription) erro
 	sub.PlanBlock = plan.Block
 	sub.DurationBought += 1
 	sub.DurationLeft = 1
+	sub.Block = uint64(block)
 
 	// Charge creator for 1 extra month
 	price := plan.GetPrice()
@@ -716,6 +717,11 @@ func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer strin
 		sub.MonthCuLeft -= cuAmount
 	}
 
+	utils.LavaFormatDebug("charging sub for cu amonut",
+		utils.LogAttr("sub", consumer),
+		utils.LogAttr("sub_block", sub.Block),
+		utils.LogAttr("charge_cu", cuAmount),
+		utils.LogAttr("month_cu_left", sub.MonthCuLeft))
 	k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
 	return sub, nil
 }
