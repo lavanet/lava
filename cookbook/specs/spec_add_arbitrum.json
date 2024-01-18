@@ -48,6 +48,10 @@
                                 "values": [
                                     {
                                         "latest_distance": 288000
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "0x0"
                                     }
                                 ]
                             }

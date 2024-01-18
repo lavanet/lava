@@ -1,6 +1,8 @@
 package types
 
-import fmt "fmt"
+import (
+	fmt "fmt"
+)
 
 type CurrentContainer struct {
 	index             int
@@ -54,6 +56,17 @@ func (v *Verification) Overwrite(other Combinable) (Combinable, bool) {
 	if v.ParseDirective == nil {
 		if otherVerification, ok := other.(*Verification); ok && otherVerification.ParseDirective != nil {
 			v.ParseDirective = otherVerification.ParseDirective
+			values := map[string]interface{}{}
+			// mark all the current values
+			for _, value := range v.Values {
+				values[value.Extension] = nil
+			}
+			// import all values that are not overwritten
+			for _, othervalue := range otherVerification.Values {
+				if _, ok := values[othervalue.Extension]; !ok {
+					v.Values = append(v.Values, othervalue)
+				}
+			}
 			return v, true
 		}
 	}
