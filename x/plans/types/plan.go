@@ -45,10 +45,6 @@ func (p Plan) ValidatePlan() error {
 		return sdkerrors.Wrap(ErrInvalidPlanAnnualDiscount, "plan's annual discount is invalid (not between 0-100 percent)")
 	}
 
-	if p.GetProjectsLimit() == 0 {
-		return sdkerrors.Wrap(ErrInvalidPlanProjects, "plan's projects field must be a non-zero positive integer")
-	}
-
 	err := p.PlanPolicy.ValidateBasicPolicy(true)
 	if err != nil {
 		return err

@@ -85,7 +85,7 @@ func TestDecodeJsonPlan(t *testing.T) {
         "annual_discount_percentage": 20,
         "allow_overuse": true,
         "overuse_rate": 2,
-		"projects": 10,
+		"projects_limit": 10,
         "plan_policy": {
             "chain_policies": [
                 {
@@ -195,7 +195,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 					"annual_discount_percentage": 20,
 					"allow_overuse": true,
 					"overuse_rate": 2,
-					"projects": 10,
+					"projects_limit": 10,
 					"plan_policy": {
 						"chain_policies": [
 							{
@@ -234,7 +234,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 					"annual_discount_percentage": 20,
 					"allow_overuse": true,
 					"overuse_rate": 2,
-					"projects": 5,
+					"projects_limit": 5,
 					"plan_policy": {
 						"chain_policies": [
 							{
