@@ -68,6 +68,15 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantyp
 func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
 	ctxBlock := uint64(ctx.BlockHeight())
 
+	if len(projectData.ProjectKeys) > types.MAX_KEYS_AMOUNT {
+		return utils.LavaFormatWarning("create project failed", fmt.Errorf("max number of keys for project exceeded"),
+			utils.LogAttr("project", projectData.Name),
+			utils.LogAttr("block", ctxBlock),
+			utils.LogAttr("project_keys_amount", len(projectData.ProjectKeys)),
+			utils.LogAttr("max_keys_allowed", types.MAX_KEYS_AMOUNT),
+		)
+	}
+
 	// project creation takes effect retroactively at the beginning of the current epoch
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, ctxBlock)
 	if err != nil {
