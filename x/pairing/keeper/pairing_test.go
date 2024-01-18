@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
+	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -2250,4 +2251,64 @@ func TestPairingPerformance(t *testing.T) {
 
 	duration := time.Since(before)
 	require.Less(t, duration.Nanoseconds(), time.Second.Nanoseconds())
+}
+
+// TestMaxEndpointPerGeolocationLimit tests that there is no way to stake a provider with more endpoints per geolocation
+// that is allowed (determined by MAX_ENDPOINTS_AMOUNT_PER_GEO).
+// scenarios:
+// 1. try to create new stake entry with more endpoints than allowed in USE, should fail
+// 2. try to create new stake entry with MAX_ENDPOINTS_AMOUNT_PER_GEO for USE and EU, should succeed
+// 3. try modifying the existing stake entry with more endpoints than allowed in USE, should fail
+func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
+	ts := newTester(t)
+
+	// create dummy endpoints
+	var endpoints []epochstoragetypes.Endpoint
+	geolocations := []int32{planstypes.Geolocation_value["USE"], planstypes.Geolocation_value["EU"]}
+	for _, geo := range geolocations {
+		for i := 0; i < types.MAX_ENDPOINTS_AMOUNT_PER_GEO+1; i++ {
+			endpoint := epochstoragetypes.Endpoint{
+				IPPORT:        "123",
+				ApiInterfaces: []string{ts.spec.ApiCollections[0].CollectionData.ApiInterface},
+				Geolocation:   geo,
+			}
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+
+	// try staking with MAX_ENDPOINTS_AMOUNT_PER_GEO+1 endpoint in USE, should fail
+	_, addr := ts.AddAccount(common.PROVIDER, 0, testStake)
+	err := ts.StakeProviderExtra(
+		addr,
+		ts.spec,
+		testStake/2,
+		endpoints[:types.MAX_ENDPOINTS_AMOUNT_PER_GEO+1],
+		geolocations[0],
+		"dummy_provider",
+	)
+	require.Error(t, err)
+
+	// try staking with MAX_ENDPOINTS_AMOUNT_PER_GEO-1 for USE and EU, should succeed
+	validEndpointsArray := endpoints[1 : len(endpoints)-1]
+	err = ts.StakeProviderExtra(
+		addr,
+		ts.spec,
+		testStake/2,
+		validEndpointsArray,
+		geolocations[0]+geolocations[1],
+		"dummy_provider",
+	)
+	require.NoError(t, err)
+
+	// try modifying the existing stake entry with more endpoints than allowed in USE, should fail
+	// note, calling StakeProviderExtra for an existing stake entry will run the modify stake entry code flow
+	err = ts.StakeProviderExtra(
+		addr,
+		ts.spec,
+		testStake/2,
+		endpoints[:types.MAX_ENDPOINTS_AMOUNT_PER_GEO+1],
+		geolocations[0],
+		"dummy_provider",
+	)
+	require.Error(t, err)
 }
