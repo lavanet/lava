@@ -1292,6 +1292,10 @@ func TestMaxKeysInProject(t *testing.T) {
 	err = ts.TxProjectAddKeys(proj.Index, sub, dummyKeys[2:]...)
 	require.NoError(t, err)
 
+	// try to delete more keys than allowed, should fail
+	err = ts.TxProjectDelKeys(proj.Index, sub, dummyKeys...)
+	require.Error(t, err)
+
 	// delete key and immediately try to add key - should fail since deletion is applied on next epoch
 	err = ts.TxProjectDelKeys(proj.Index, sub, dummyKeys[2])
 	require.NoError(t, err)
