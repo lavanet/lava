@@ -1513,15 +1513,7 @@
                             },
                             {
                                 "name": "pruning",
-                                "values": [
-                                    {
-                                        "latest_distance": 14400
-                                    },
-                                    {
-                                        "extension": "archive",
-                                        "expected_value": "0x0"
-                                    }
-                                ]
+                                "values": []
                             }
                         ],
                         "extensions": [
