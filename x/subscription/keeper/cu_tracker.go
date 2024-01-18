@@ -247,17 +247,17 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	var latestSub types.Subscription
 	latestEntryBlock, _, _, found := k.subsFS.FindEntryDetailed(ctx, subObj.Consumer, uint64(ctx.BlockHeight()), &latestSub)
 	if found {
+		// return rewards remainder to credit
+		if !rewardsRemainder.IsZero() {
+			latestSub.Credit = latestSub.Credit.AddAmount(rewardsRemainder)
+		}
+
 		// subscription not expired - update credit according to usage
 		updatedCredit := latestSub.Credit.Amount.Sub(totalTokenAmount)
 		if updatedCredit.IsNegative() {
 			latestSub.Credit.Amount = sdk.ZeroInt()
 		} else {
 			latestSub.Credit.Amount = updatedCredit
-		}
-
-		// return rewards remainder to credit
-		if !rewardsRemainder.IsZero() {
-			latestSub.Credit = latestSub.Credit.AddAmount(rewardsRemainder)
 		}
 
 		k.subsFS.ModifyEntry(ctx, latestSub.Consumer, latestEntryBlock, &latestSub)
