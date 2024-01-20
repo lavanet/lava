@@ -32,12 +32,13 @@ const (
 )
 
 type NodeUrl struct {
-	Url          string        `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
-	InternalPath string        `yaml:"internal-path,omitempty" json:"internal-path,omitempty" mapstructure:"internal-path"`
-	AuthConfig   AuthConfig    `yaml:"auth-config,omitempty" json:"auth-config,omitempty" mapstructure:"auth-config"`
-	IpForwarding bool          `yaml:"ip-forwarding,omitempty" json:"ip-forwarding,omitempty" mapstructure:"ip-forwarding"`
-	Timeout      time.Duration `yaml:"timeout,omitempty" json:"timeout,omitempty" mapstructure:"timeout"`
-	Addons       []string      `yaml:"addons,omitempty" json:"addons,omitempty" mapstructure:"addons"`
+	Url               string        `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
+	InternalPath      string        `yaml:"internal-path,omitempty" json:"internal-path,omitempty" mapstructure:"internal-path"`
+	AuthConfig        AuthConfig    `yaml:"auth-config,omitempty" json:"auth-config,omitempty" mapstructure:"auth-config"`
+	IpForwarding      bool          `yaml:"ip-forwarding,omitempty" json:"ip-forwarding,omitempty" mapstructure:"ip-forwarding"`
+	Timeout           time.Duration `yaml:"timeout,omitempty" json:"timeout,omitempty" mapstructure:"timeout"`
+	Addons            []string      `yaml:"addons,omitempty" json:"addons,omitempty" mapstructure:"addons"`
+	SkipVerifications []string      `yaml:"skip-verifications,omitempty" json:"skip-verifications,omitempty" mapstructure:"skip-verifications"`
 }
 
 func (nurl NodeUrl) String() string {
@@ -83,12 +84,13 @@ func (url *NodeUrl) LowerContextTimeout(ctx context.Context, timeout time.Durati
 }
 
 type AuthConfig struct {
-	AuthHeaders map[string]string `yaml:"auth-headers,omitempty" json:"auth-headers,omitempty" mapstructure:"auth-headers"`
-	AuthQuery   string            `yaml:"auth-query,omitempty" json:"auth-query,omitempty" mapstructure:"auth-query"`
-	UseTLS      bool              `yaml:"use-tls,omitempty" json:"use-tls,omitempty" mapstructure:"use-tls"`
-	KeyPem      string            `yaml:"key-pem,omitempty" json:"key-pem,omitempty" mapstructure:"key-pem"`
-	CertPem     string            `yaml:"cert-pem,omitempty" json:"cert-pem,omitempty" mapstructure:"cert-pem"`
-	CaCert      string            `yaml:"cacert-pem,omitempty" json:"cacert-pem,omitempty" mapstructure:"cacert-pem"`
+	AuthHeaders   map[string]string `yaml:"auth-headers,omitempty" json:"auth-headers,omitempty" mapstructure:"auth-headers"`
+	AuthQuery     string            `yaml:"auth-query,omitempty" json:"auth-query,omitempty" mapstructure:"auth-query"`
+	UseTLS        bool              `yaml:"use-tls,omitempty" json:"use-tls,omitempty" mapstructure:"use-tls"`
+	AllowInsecure bool              `yaml:"allow-insecure,omitempty" json:"allow-insecure,omitempty" mapstructure:"allow-insecure"`
+	KeyPem        string            `yaml:"key-pem,omitempty" json:"key-pem,omitempty" mapstructure:"key-pem"`
+	CertPem       string            `yaml:"cert-pem,omitempty" json:"cert-pem,omitempty" mapstructure:"cert-pem"`
+	CaCert        string            `yaml:"cacert-pem,omitempty" json:"cacert-pem,omitempty" mapstructure:"cacert-pem"`
 }
 
 func (ac *AuthConfig) GetUseTls() bool {

@@ -171,6 +171,15 @@
                                     }
                                 ]
                             }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block":14200
+                                }
+                            }
                         ]
                     },
                     {
@@ -320,6 +329,15 @@
                                         "expected_value": "agoric-3"
                                     }
                                 ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block":14200
+                                }
                             }
                         ]
                     },

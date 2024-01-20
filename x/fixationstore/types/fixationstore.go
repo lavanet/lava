@@ -1070,7 +1070,9 @@ func (fs *FixationStore) Export(ctx sdk.Context) GenesisState {
 
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
-		Version: FixationVersion(),
+		Version:    FixationVersion(),
+		Timerstore: *timerstoretypes.DefaultGenesis(),
+		Entries:    []GenesisEntries{},
 	}
 }
 

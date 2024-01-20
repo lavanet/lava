@@ -26,6 +26,7 @@ type SpecValidator struct {
 
 	chainFetchers     map[string][]*chainlib.ChainFetcherIf // key is chainId
 	providerListeners map[string]*ProviderListener          // key is address
+	skipValidations   map[string]struct{}                   // key is a validation name to skip
 }
 
 func NewSpecValidator() *SpecValidator {
@@ -33,6 +34,7 @@ func NewSpecValidator() *SpecValidator {
 		lock:              sync.RWMutex{},
 		chainFetchers:     make(map[string][]*chainlib.ChainFetcherIf),
 		providerListeners: make(map[string]*ProviderListener),
+		skipValidations:   make(map[string]struct{}),
 	}
 }
 

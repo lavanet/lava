@@ -25,6 +25,14 @@ func (k Keeper) Pools(goCtx context.Context, req *types.QueryPoolsRequest) (*typ
 			Name:    string(types.ValidatorsRewardsAllocationPoolName),
 			Balance: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), k.TotalPoolTokens(ctx, types.ValidatorsRewardsAllocationPoolName)),
 		},
+		{
+			Name:    string(types.ProviderRewardsDistributionPool),
+			Balance: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)),
+		},
+		{
+			Name:    string(types.ProvidersRewardsAllocationPool),
+			Balance: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), k.TotalPoolTokens(ctx, types.ProvidersRewardsAllocationPool)),
+		},
 	}
 
 	estimatedBlocksToRefill := k.BlocksToNextTimerExpiry(ctx)
