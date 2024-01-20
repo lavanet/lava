@@ -819,6 +819,15 @@
                                     }
                                 ]
                             }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 14200
+                                }
+                            }
                         ]
                     },
                     {
@@ -1670,7 +1679,16 @@
                         "headers": [],
                         "inheritance_apis": [],
                         "parse_directives": [],
-                        "verifications": []
+                        "verifications": [],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 14200
+                                }
+                            }
+                        ]
                     },
                     {
                         "enabled": true,
@@ -2287,6 +2305,15 @@
                                         "expected_value": "axelar-dojo-1"
                                     }
                                 ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 14200
+                                }
                             }
                         ]
                     },

@@ -63,6 +63,7 @@ func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryPro
 					utils.LogAttr("subObj.MonthCuTotal", subObj.MonthCuTotal),
 					utils.LogAttr("subObj.MonthCuLeft", subObj.MonthCuLeft),
 					utils.LogAttr("totalCuTracked", totalCuTracked),
+					utils.LogAttr("sub_block", subObj.Block),
 				)
 			}
 

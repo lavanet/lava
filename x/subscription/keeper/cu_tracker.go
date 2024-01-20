@@ -8,7 +8,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -50,6 +49,13 @@ func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chain
 				utils.Attribute{Key: "cu_to_be_added", Value: strconv.FormatUint(cuToAdd, 10)})
 		}
 	}
+
+	utils.LavaFormatDebug("adding tracked cu",
+		utils.LogAttr("sub", sub),
+		utils.LogAttr("provider", provider),
+		utils.LogAttr("chain_id", chainID),
+		utils.LogAttr("added_cu", cuToAdd),
+		utils.LogAttr("block", block))
 
 	return nil
 }
@@ -179,7 +185,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		// calculate the provider reward (smaller than totalMonthlyReward
 		// because it's shared with delegators)
 		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
-		creditToSub := sdk.NewCoin(commontypes.TokenDenom, totalMonthlyReward)
+		creditToSub := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward)
 		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyReward)
 
 		// aggregate the reward for the provider
@@ -224,22 +230,28 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		}
 	}
 
+	rewardsRemainder := totalTokenAmount.Sub(totalTokenRewarded)
+
 	var latestSub types.Subscription
 	latestEntryBlock, _, _, found := k.subsFS.FindEntryDetailed(ctx, sub, uint64(ctx.BlockHeight()), &latestSub)
 	if found {
-		latestSub.Credit = latestSub.Credit.SubAmount(totalTokenAmount)
-		k.subsFS.ModifyEntry(ctx, latestSub.Consumer, latestEntryBlock, &latestSub)
-	}
-
-	// send remainder of rewards to the community pool
-	rewardsRemainder := totalTokenAmount.Sub(totalTokenRewarded)
-	if !rewardsRemainder.IsZero() {
-		if found {
-			// sub not expired yet, return rewards remainder to credit
+		// return rewards remainder to credit
+		if !rewardsRemainder.IsZero() {
 			latestSub.Credit = latestSub.Credit.AddAmount(rewardsRemainder)
-			k.subsFS.ModifyEntry(ctx, latestSub.Consumer, latestEntryBlock, &latestSub)
+		}
+
+		// subscription not expired - update credit according to usage
+		updatedCredit := latestSub.Credit.Amount.Sub(totalTokenAmount)
+		if updatedCredit.IsNegative() {
+			latestSub.Credit.Amount = sdk.ZeroInt()
 		} else {
-			// sub expired, send rewards remainder to the community pool
+			latestSub.Credit.Amount = updatedCredit
+		}
+
+		k.subsFS.ModifyEntry(ctx, latestSub.Consumer, latestEntryBlock, &latestSub)
+	} else if !rewardsRemainder.IsZero() {
+		{
+			// sub expired (no need to update credit), send rewards remainder to the community pool
 			err = k.rewardsKeeper.FundCommunityPoolFromModule(ctx, rewardsRemainder, types.ModuleName)
 			if err != nil {
 				utils.LavaFormatError("failed sending remainder of rewards to the community pool", err,

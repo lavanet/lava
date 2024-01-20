@@ -1304,6 +1304,15 @@
                                     }
                                 ]
                             }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 17040
+                                }
+                            }
                         ]
                     },
                     {
@@ -2605,6 +2614,15 @@
                                         "expected_value": "osmosis-1"
                                     }
                                 ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 17040
+                                }
                             }
                         ]
                     },

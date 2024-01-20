@@ -4,6 +4,6 @@ endpoints:
       network-address:
         address: "127.0.0.1:2220"
       node-urls:
-        - url: <NODE-URL>
+        - url: <url-here>
           Addons:
             - trace

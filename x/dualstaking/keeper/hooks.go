@@ -113,7 +113,7 @@ func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, f
 		if tokensToSlash.IsPositive() {
 			err := h.k.UnbondUniformProviders(ctx, d.DelegatorAddress, sdk.NewCoin(commontypes.TokenDenom, tokensToSlash))
 			if err != nil {
-				return utils.LavaFormatError("slash hook failed", err,
+				utils.LavaFormatError("slash hook failed", err,
 					utils.Attribute{Key: "validator_address", Value: valAddr.String()},
 					utils.Attribute{Key: "delegator_address", Value: d.DelegatorAddress},
 					utils.Attribute{Key: "slash_amount", Value: tokensToSlash.String()},

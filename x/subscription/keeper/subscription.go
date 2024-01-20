@@ -7,7 +7,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -189,7 +188,7 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 		PlanBlock:           plan.Block,
 		DurationTotal:       0,
 		AutoRenewalNextPlan: autoRenewalNextPlan,
-		Credit:              sdk.NewCoin(commontypes.TokenDenom, math.ZeroInt()),
+		Credit:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()),
 	}
 
 	sub.MonthCuTotal = plan.PlanPolicy.GetTotalCuLimit()
@@ -301,6 +300,7 @@ func (k Keeper) renewSubscription(ctx sdk.Context, sub *types.Subscription) erro
 	sub.PlanBlock = plan.Block
 	sub.DurationBought += 1
 	sub.DurationLeft = 1
+	sub.Block = uint64(block)
 
 	// Charge creator for 1 extra month
 	price := plan.GetPrice()
@@ -454,7 +454,7 @@ func (k Keeper) addCuTrackerTimerForSubscription(ctx sdk.Context, block uint64, 
 			creditReward := sub.Credit.Amount.QuoRaw(int64(sub.DurationLeft))
 			timerData := types.CuTrackerTimerData{
 				Block:  sub.Block,
-				Credit: sdk.NewCoin(commontypes.TokenDenom, creditReward),
+				Credit: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), creditReward),
 			}
 			marshaledTimerData, err := k.cdc.Marshal(&timerData)
 			if err != nil {
@@ -761,6 +761,11 @@ func (k Keeper) ChargeComputeUnitsToSubscription(ctx sdk.Context, consumer strin
 		sub.MonthCuLeft -= cuAmount
 	}
 
+	utils.LavaFormatDebug("charging sub for cu amonut",
+		utils.LogAttr("sub", consumer),
+		utils.LogAttr("sub_block", sub.Block),
+		utils.LogAttr("charge_cu", cuAmount),
+		utils.LogAttr("month_cu_left", sub.MonthCuLeft))
 	k.subsFS.ModifyEntry(ctx, consumer, sub.Block, &sub)
 	return sub, nil
 }
