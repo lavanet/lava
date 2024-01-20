@@ -2266,7 +2266,7 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	var endpoints []epochstoragetypes.Endpoint
 	geolocations := []int32{planstypes.Geolocation_value["USE"], planstypes.Geolocation_value["EU"]}
 	for _, geo := range geolocations {
-		for i := 0; i < types.MAX_ENDPOINTS_AMOUNT_PER_GEO+1; i++ {
+		for i := 0; i < (2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1; i++ {
 			endpoint := epochstoragetypes.Endpoint{
 				IPPORT:        "123",
 				ApiInterfaces: []string{ts.spec.ApiCollections[0].CollectionData.ApiInterface},
@@ -2276,20 +2276,20 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 		}
 	}
 
-	// try staking with MAX_ENDPOINTS_AMOUNT_PER_GEO+1 endpoint in USE, should fail
+	// try staking with 2*MAX_ENDPOINTS_AMOUNT_PER_GEO+1 endpoint in USE, should fail
 	_, addr := ts.AddAccount(common.PROVIDER, 0, testStake)
 	err := ts.StakeProviderExtra(
 		addr,
 		ts.spec,
 		testStake/2,
-		endpoints[:types.MAX_ENDPOINTS_AMOUNT_PER_GEO+1],
+		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],
 		geolocations[0],
 		"dummy_provider",
 	)
 	require.Error(t, err)
 
-	// try staking with MAX_ENDPOINTS_AMOUNT_PER_GEO-1 for USE and EU, should succeed
-	validEndpointsArray := endpoints[1 : len(endpoints)-1]
+	// try staking with MAX_ENDPOINTS_AMOUNT_PER_GEO*2 for USE and EU, should succeed
+	validEndpointsArray := endpoints[types.MAX_ENDPOINTS_AMOUNT_PER_GEO : 3*types.MAX_ENDPOINTS_AMOUNT_PER_GEO]
 	err = ts.StakeProviderExtra(
 		addr,
 		ts.spec,
@@ -2306,7 +2306,7 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 		addr,
 		ts.spec,
 		testStake/2,
-		endpoints[:types.MAX_ENDPOINTS_AMOUNT_PER_GEO+1],
+		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],
 		geolocations[0],
 		"dummy_provider",
 	)
