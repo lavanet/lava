@@ -151,7 +151,12 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		return
 	}
 
-	totalTokenAmount := subObj.Credit.Amount.QuoRaw(int64(subObj.DurationLeft))
+	var totalTokenAmount math.Int
+	if subObj.DurationLeft == 0 {
+		totalTokenAmount = subObj.Credit.Amount
+	} else {
+		totalTokenAmount = subObj.Credit.Amount.QuoRaw(int64(subObj.DurationLeft))
+	}
 	if totalTokenAmount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
 		totalTokenAmount = sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
 	}
