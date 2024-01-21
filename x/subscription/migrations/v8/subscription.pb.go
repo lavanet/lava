@@ -257,8 +257,8 @@ func (m *FutureSubscription) GetCredit() types.Coin {
 }
 
 func init() {
-	proto.RegisterType((*Subscription)(nil), "lavanet.lava.subscription.Subscription")
-	proto.RegisterType((*FutureSubscription)(nil), "lavanet.lava.subscription.FutureSubscription")
+	proto.RegisterType((*Subscription)(nil), "lavanet.lava.subscription.SubscriptionV8")
+	proto.RegisterType((*FutureSubscription)(nil), "lavanet.lava.subscription.FutureSubscriptionV8")
 }
 
 func init() {

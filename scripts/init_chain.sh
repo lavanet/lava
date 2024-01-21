@@ -37,6 +37,7 @@ if [ "$1" == "debug" ]; then
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
         | jq '.app_state.epochstorage.params.epochsToSave = "5"' \
         | jq '.app_state.epochstorage.params.epochBlocks = "4"' \
+        | jq '.app_state.downtime.params.downtime_duration = "1s"' \
     )
 else
     # Edit genesis file without the additional line

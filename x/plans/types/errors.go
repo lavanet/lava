@@ -26,4 +26,5 @@ var (
 	ErrPolicyInvalidSelectedProvidersConfig = sdkerrors.Register(ModuleName, 15, "plan's selected providers config is invalid")
 	ErrPolicyGeolocation                    = sdkerrors.Register(ModuleName, 16, "plan's geolocation is invalid")
 	ErrInvalidDenom                         = sdkerrors.Register(ModuleName, 17, commontypes.ErrInvalidDenomMsg)
+	ErrInvalidPlanProjects                  = sdkerrors.Register(ModuleName, 18, "plan's projects field is invalid")
 )
