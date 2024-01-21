@@ -10,6 +10,7 @@ import (
 	v2 "github.com/lavanet/lava/x/subscription/migrations/v2"
 	v5 "github.com/lavanet/lava/x/subscription/migrations/v5"
 	v6 "github.com/lavanet/lava/x/subscription/migrations/v6"
+	v8 "github.com/lavanet/lava/x/subscription/migrations/v8"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -176,6 +177,57 @@ func (m Migrator) Migrate6to7(ctx sdk.Context) error {
 			}
 
 			m.keeper.subsFS.ModifyEntry(ctx, index, block, &subscriptionV7)
+		}
+	}
+
+	return nil
+}
+
+// Migrate7to8 implements store migration from v7 to v8:
+// init new credit field
+func (m Migrator) Migrate7to8(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate 7->8: subscriptions")
+
+	for _, index := range m.keeper.subsFS.GetAllEntryIndices(ctx) {
+		for _, block := range m.keeper.subsFS.GetAllEntryVersions(ctx, index) {
+			// read current subscription from fixation to new subscription struct
+			var s8 v8.Subscription
+			m.keeper.subsFS.ReadEntry(ctx, index, block, &s8)
+
+			// calculate sub's credit
+			plan, found := m.keeper.plansKeeper.FindPlan(ctx, s8.PlanIndex, s8.PlanBlock)
+			if !found {
+				utils.LavaFormatError("cannot migrate sub", fmt.Errorf("sub's plan not found"),
+					utils.Attribute{Key: "consumer", Value: index},
+					utils.Attribute{Key: "sub_block", Value: block},
+					utils.Attribute{Key: "plan", Value: s8.PlanIndex},
+					utils.Attribute{Key: "plan_block", Value: s8.PlanBlock},
+				)
+			}
+			creditAmount := plan.Price.Amount.MulRaw(int64(s8.DurationLeft))
+			credit := sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), creditAmount)
+
+			// calculate future sub's credit
+			if s8.FutureSubscription != nil {
+				futurePlan, found := m.keeper.plansKeeper.FindPlan(ctx, s8.FutureSubscription.PlanIndex, s8.FutureSubscription.PlanBlock)
+				if !found {
+					utils.LavaFormatError("cannot migrate sub", fmt.Errorf("sub's future plan not found"),
+						utils.Attribute{Key: "consumer", Value: index},
+						utils.Attribute{Key: "sub_block", Value: block},
+						utils.Attribute{Key: "plan", Value: s8.PlanIndex},
+						utils.Attribute{Key: "plan_block", Value: s8.PlanBlock},
+					)
+				}
+
+				futureCreditAmount := futurePlan.Price.Amount.MulRaw(int64(s8.FutureSubscription.DurationBought))
+				futureCredit := sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), futureCreditAmount)
+				s8.FutureSubscription.Credit = futureCredit
+			}
+
+			s8.Credit = credit
+
+			// modify sub entry
+			m.keeper.subsFS.ModifyEntry(ctx, index, block, &s8)
 		}
 	}
 

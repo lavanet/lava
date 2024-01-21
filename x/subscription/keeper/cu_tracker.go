@@ -143,16 +143,21 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	// Note: We take the subscription from the FixationStore, based on the given block.
 	// So, even if the plan changed during the month, we still take the original plan, based on the given block.
 	block = trackedCuList[0].block
-	plan, err := k.GetPlanFromSubscription(ctx, sub, block)
-	if err != nil {
+	subObj, _, found := k.GetSubscriptionForBlock(ctx, sub, block)
+	if !found {
 		utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
 			utils.Attribute{Key: "sub_consumer", Value: sub},
 		)
 		return
 	}
 
-	totalTokenAmount := plan.Price.Amount
-	if plan.Price.Amount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
+	var totalTokenAmount math.Int
+	if subObj.DurationLeft == 0 {
+		totalTokenAmount = subObj.Credit.Amount
+	} else {
+		totalTokenAmount = subObj.Credit.Amount.QuoRaw(int64(subObj.DurationLeft))
+	}
+	if totalTokenAmount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
 		totalTokenAmount = sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
 	}
 
@@ -187,7 +192,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			continue
 		}
 
-		// provider monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * plan_price
+		// provider monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * totalTokenAmount
 		providerAdjustment, ok := adjustmentFactorForProvider[provider]
 		if !ok {
 			maxRewardBoost := k.rewardsKeeper.MaxRewardBoost(ctx)
@@ -203,6 +208,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		// calculate the provider reward (smaller than totalMonthlyReward
 		// because it's shared with delegators)
 		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
+		creditToSub := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward)
 		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyReward)
 
 		// aggregate the reward for the provider
@@ -235,26 +241,47 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			)
 		} else {
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.MonthlyCuTrackerProviderRewardEventName, map[string]string{
-				"provider":       provider,
-				"sub":            sub,
-				"plan":           plan.Index,
-				"tracked_cu":     strconv.FormatUint(trackedCu, 10),
-				"plan_price":     plan.Price.String(),
-				"reward":         providerReward.String(),
-				"block":          strconv.FormatInt(ctx.BlockHeight(), 10),
-				"adjustment_raw": providerAdjustment.String(),
+				"provider":         provider,
+				"sub":              sub,
+				"plan":             subObj.PlanIndex,
+				"tracked_cu":       strconv.FormatUint(trackedCu, 10),
+				"credit_used":      creditToSub.String(),
+				"credit_remaining": subObj.Credit.String(),
+				"reward":           providerReward.String(),
+				"block":            strconv.FormatInt(ctx.BlockHeight(), 10),
+				"adjustment_raw":   providerAdjustment.String(),
 			}, "Provider got monthly reward successfully")
 		}
 	}
 
-	// send remainder of rewards to the community pool
 	rewardsRemainder := totalTokenAmount.Sub(totalTokenRewarded)
-	if !rewardsRemainder.IsZero() {
-		err = k.rewardsKeeper.FundCommunityPoolFromModule(ctx, rewardsRemainder, types.ModuleName)
-		if err != nil {
-			utils.LavaFormatError("failed sending remainder of rewards to the community pool", err,
-				utils.Attribute{Key: "rewards_remainder", Value: rewardsRemainder.String()},
-			)
+
+	var latestSub types.Subscription
+	latestEntryBlock, _, _, found := k.subsFS.FindEntryDetailed(ctx, subObj.Consumer, uint64(ctx.BlockHeight()), &latestSub)
+	if found {
+		// return rewards remainder to credit
+		if !rewardsRemainder.IsZero() {
+			latestSub.Credit = latestSub.Credit.AddAmount(rewardsRemainder)
+		}
+
+		// subscription not expired - update credit according to usage
+		updatedCredit := latestSub.Credit.Amount.Sub(totalTokenAmount)
+		if updatedCredit.IsNegative() {
+			latestSub.Credit.Amount = sdk.ZeroInt()
+		} else {
+			latestSub.Credit.Amount = updatedCredit
+		}
+
+		k.subsFS.ModifyEntry(ctx, latestSub.Consumer, latestEntryBlock, &latestSub)
+	} else if !rewardsRemainder.IsZero() {
+		{
+			// sub expired (no need to update credit), send rewards remainder to the community pool
+			err = k.rewardsKeeper.FundCommunityPoolFromModule(ctx, rewardsRemainder, types.ModuleName)
+			if err != nil {
+				utils.LavaFormatError("failed sending remainder of rewards to the community pool", err,
+					utils.Attribute{Key: "rewards_remainder", Value: rewardsRemainder.String()},
+				)
+			}
 		}
 	}
 }

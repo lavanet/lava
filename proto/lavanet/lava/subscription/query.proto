@@ -5,6 +5,8 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/subscription/params.proto";
+import "cosmos/base/v1beta1/coin.proto";
+
 // this line is used by starport scaffolding # 1
 import "lavanet/lava/subscription/subscription.proto";
 
@@ -83,6 +85,7 @@ message ListInfoStruct {
   reserved 10;
   string auto_renewal_next_plan = 11;
   FutureSubscription future_subscription = 12;
+  cosmos.base.v1beta1.Coin credit = 13;
 }
 
 message QueryNextToMonthExpiryRequest {
