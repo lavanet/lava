@@ -34,7 +34,7 @@ func isValidIPv4(address string) bool {
 }
 
 // isValidAddress checks if the given address is a valid and not a reserved or local address.
-func IsValidAddress(address string) bool {
+func IsValidNetworkAddress(address string) bool {
 	// Split the address into host and port
 	if strings.HasPrefix(address, "http://") {
 		address = strings.TrimPrefix(address, "http://")
@@ -62,7 +62,7 @@ func IsValidAddress(address string) bool {
 	return false
 }
 
-func ValidateProviderAddressConsensus(address string) (valid bool) {
+func IsValidNetworkAddressConsensus(address string) (valid bool) {
 	invalidOrProtectedIps := []string{
 		"0.0.0.0", "::", ":", "localhost",
 	}

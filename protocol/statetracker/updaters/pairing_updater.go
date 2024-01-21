@@ -6,6 +6,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/ips"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"golang.org/x/net/context"
@@ -154,6 +155,10 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 
 		relevantEndpoints := []epochstoragetypes.Endpoint{}
 		for _, endpoint := range providerEndpoints {
+			if !ips.IsValidNetworkAddress(endpoint.IPPORT) {
+				utils.LavaFormatInfo("Found an invalid provider endpoint pointing to protected address, skipping provider", utils.LogAttr("info", endpoint))
+				continue
+			}
 			// only take into account endpoints that use the same api interface and the same geolocation
 			for _, endpointApiInterface := range endpoint.ApiInterfaces {
 				if endpointApiInterface == rpcEndpoint.ApiInterface { // we take all geolocations provided by the chain. the provider optimizer will prioritize the relevant ones

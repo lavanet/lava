@@ -28,7 +28,7 @@ func TestValidAddressesProtocol(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.value, func(t *testing.T) {
-			value := IsValidAddress(tt.value)
+			value := IsValidNetworkAddress(tt.value)
 			require.Equal(t, tt.valid, value)
 
 			value = ValidateProviderAddressConsensus(tt.value)
