@@ -163,7 +163,7 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 	return nil, HashMismatchError
 }
 
-func (s *RelayerCacheServer) performWriteValidationWithRetry(
+func (s *RelayerCacheServer) performInt64WriteWithValidationAndRetry(
 	getBlockCallback func() int64,
 	setBlockCallback func(),
 	newInfo int64,
@@ -205,7 +205,7 @@ func (s *RelayerCacheServer) setSeenBlockOnSharedStateMode(chainId, sharedStateI
 	get := func() int64 {
 		return s.getSeenBlockForSharedStateMode(chainId, sharedStateId)
 	}
-	s.performWriteValidationWithRetry(get, set, seenBlock)
+	s.performInt64WriteWithValidationAndRetry(get, set, seenBlock)
 }
 
 func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairingtypes.RelayCacheSet) (*emptypb.Empty, error) {
@@ -295,7 +295,7 @@ func (s *RelayerCacheServer) setLatestBlock(key string, latestBlock int64) {
 		existingLatest, _ := s.getLatestBlockInner(key) // we need to bypass the expirationTimeCheck
 		return existingLatest
 	}
-	s.performWriteValidationWithRetry(get, set, latestBlock)
+	s.performInt64WriteWithValidationAndRetry(get, set, latestBlock)
 }
 
 func (s *RelayerCacheServer) getExpirationForChain(chainID string, blockHash []byte) time.Duration {
