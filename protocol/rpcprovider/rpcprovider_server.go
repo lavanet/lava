@@ -499,6 +499,10 @@ func (rpcps *RPCProviderServer) validateBadgeSession(ctx context.Context, relayS
 			utils.LogAttr("relayEpoch", relaySession.Epoch),
 		)
 	}
+
+	if int64(relaySession.Badge.Epoch) != relaySession.Epoch {
+		return utils.LavaFormatWarning("Badge epoch validation failed", nil, utils.LogAttr("badge_epoch", relaySession.Badge.Epoch), utils.LogAttr("relay_epoch", relaySession.Epoch))
+	}
 	return nil
 }
 
@@ -674,7 +678,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	ignoredMetadata := []pairingtypes.Metadata{}
 	if requestedBlockHash != nil || finalized {
 		var cacheReply *pairingtypes.CacheRelayReply
-		cacheReply, err = cache.GetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized, rpcps.providerAddress.String())
+		cacheReply, err = cache.GetEntry(ctx, &pairingtypes.RelayCacheGet{Request: request.RelayData, BlockHash: requestedBlockHash, ChainID: rpcps.rpcProviderEndpoint.ChainID, Finalized: finalized, Provider: rpcps.providerAddress.String()})
 		reply = cacheReply.GetReply()
 		ignoredMetadata = cacheReply.GetOptionalMetadata()
 		if err != nil && performance.NotConnectedError.Is(err) {
@@ -716,7 +720,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 				new_ctx := context.Background()
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
-				err := cache.SetEntry(new_ctx, copyPrivateData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, copyReply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
+				err := cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: copyPrivateData, BlockHash: requestedBlockHash, ChainID: rpcps.rpcProviderEndpoint.ChainID, Response: copyReply, Finalized: finalized, Provider: rpcps.providerAddress.String(), OptionalMetadata: ignoredMetadata})
 				if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 					utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
 				}

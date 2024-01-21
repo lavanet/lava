@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -28,7 +30,8 @@ var (
 )
 
 const (
-	SEP = ";"
+	DbValueConfirmationAttempts = 5
+	SEP                         = ";"
 )
 
 type RelayerCacheServer struct {
@@ -64,10 +67,54 @@ func (cv *LastestCacheStore) Cost() int64 {
 	return 8 + 16
 }
 
-func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (cacheReply *pairingtypes.CacheRelayReply, err error) {
+func (s *RelayerCacheServer) getSeenBlockForSharedStateMode(chainId string, sharedStateId string) int64 {
+	if sharedStateId != "" {
+		id := latestBlockKey(chainId, sharedStateId)
+		value, found := getNonExpiredFromCache(s.CacheServer.finalizedCache, id)
+		if !found {
+			utils.LavaFormatInfo("Failed fetching state from cache for this user id", utils.LogAttr("id", id))
+			return 0 // we cant set the seen block in this case it will be returned 0 and wont be used in the consumer side.
+		}
+		utils.LavaFormatInfo("getting seen block cache", utils.LogAttr("id", id), utils.LogAttr("value", value))
+		if cacheValue, ok := value.(int64); ok {
+			return cacheValue
+		}
+		utils.LavaFormatFatal("Failed converting cache result to int64", nil, utils.LogAttr("value", value))
+	}
+	return 0
+}
+
+func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
+	cacheReply := &pairingtypes.CacheRelayReply{}
+	var err error
+	var seenBlock int64
+
+	waitGroup := sync.WaitGroup{}
+	waitGroup.Add(2)                                     // currently we have two groups getRelayInner and getSeenBlock
 	requestedBlock := relayCacheGet.Request.RequestBlock // save requested block
 
-	cacheReply, err = s.getRelayInner(ctx, relayCacheGet)
+	// fetch all reads at the same time.
+	go func() {
+		defer waitGroup.Done()
+		var cacheReplyTmp *pairingtypes.CacheRelayReply
+		cacheReplyTmp, err = s.getRelayInner(ctx, relayCacheGet)
+		if cacheReplyTmp != nil {
+			cacheReply = cacheReplyTmp // set cache reply only if its not nil, as we need to store seen block in it.
+		}
+	}()
+	go func() {
+		defer waitGroup.Done()
+		// set seen block if required
+		seenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.ChainID, relayCacheGet.SharedStateId)
+	}()
+
+	// wait for all reads to complete before moving forward
+	waitGroup.Wait()
+	// set seen block.
+	if seenBlock > cacheReply.SeenBlock {
+		cacheReply.SeenBlock = seenBlock
+	}
+
 	var hit bool
 	if err != nil {
 		s.cacheMiss(ctx, err)
@@ -77,14 +124,14 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	}
 	// add prometheus metrics
 	s.CacheServer.CacheMetrics.AddApiSpecific(requestedBlock, relayCacheGet.ChainID, getMethodFromRequest(relayCacheGet), relayCacheGet.Request.ApiInterface, hit)
-	return
+	return cacheReply, err
 }
 
 func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
 	inputFormatter, outputFormatter := format.FormatterForRelayRequestAndResponse(relayCacheGet.Request.ApiInterface)
 	relayCacheGet.Request.Data = inputFormatter(relayCacheGet.Request.Data)
 	requestedBlock := relayCacheGet.Request.RequestBlock
-	getLatestBlock := s.getLatestBlock(relayCacheGet.ChainID, relayCacheGet.Provider)
+	getLatestBlock := s.getLatestBlock(latestBlockKey(relayCacheGet.ChainID, relayCacheGet.Provider))
 	relayCacheGet.Request.RequestBlock = lavaprotocol.ReplaceRequestedBlock(requestedBlock, getLatestBlock)
 	cacheKey := formatCacheKey(relayCacheGet.Request.ApiInterface, relayCacheGet.ChainID, relayCacheGet.Request, relayCacheGet.Provider)
 	utils.LavaFormatDebug("Got Cache Get", utils.Attribute{Key: "cacheKey", Value: parser.CapStringLen(cacheKey)},
@@ -120,6 +167,51 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 	return nil, HashMismatchError
 }
 
+func (s *RelayerCacheServer) performInt64WriteWithValidationAndRetry(
+	getBlockCallback func() int64,
+	setBlockCallback func(),
+	newInfo int64,
+) {
+	existingInfo := getBlockCallback()
+	// validate we have a newer block than the existing stored in the db.
+	if existingInfo <= newInfo { // refreshes state even if its equal
+		// for seen block we expire the entry after one hour otherwise this user will stay in the db for ever
+		setBlockCallback()
+		// a validation routine to make sure we don't have a race for the block rewrites as there are concurrent writes.
+		// this will be solved once we implement a db with a queue but for now its a good enough solution.
+		go func() {
+			for i := 0; i < DbValueConfirmationAttempts; i++ {
+				time.Sleep(time.Millisecond) // add some delay between read attempts
+				currentInfo := getBlockCallback()
+				if currentInfo > newInfo {
+					return // there is a newer block stored we are no longer relevant we can just stop validating.
+				}
+				if currentInfo < newInfo {
+					// other cache set raced us and we need to rewrite our value again as its a newer value
+					setBlockCallback()
+				}
+			}
+		}()
+	}
+}
+
+// this method tries to set the seen block a few times until it succeeds. it will try to make sure its value is set
+// to prevent race conditions when we have a few writes in the same time with older values we will try to set our value eventually
+// if its the newest seen block
+func (s *RelayerCacheServer) setSeenBlockOnSharedStateMode(chainId, sharedStateId string, seenBlock int64) {
+	if sharedStateId == "" {
+		return
+	}
+	key := latestBlockKey(chainId, sharedStateId)
+	set := func() {
+		s.CacheServer.finalizedCache.SetWithTTL(key, seenBlock, 0, s.CacheServer.ExpirationFinalized)
+	}
+	get := func() int64 {
+		return s.getSeenBlockForSharedStateMode(chainId, sharedStateId)
+	}
+	s.performInt64WriteWithValidationAndRetry(get, set, seenBlock)
+}
+
 func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairingtypes.RelayCacheSet) (*emptypb.Empty, error) {
 	if relayCacheSet.Request.RequestBlock < 0 {
 		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.Request.RequestBlock})
@@ -142,7 +234,11 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		cache := s.CacheServer.tempCache
 		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.getExpirationForChain(relayCacheSet.ChainID, relayCacheSet.BlockHash))
 	}
-	s.setLatestBlock(relayCacheSet.ChainID, relayCacheSet.Provider, relayCacheSet.Request.RequestBlock)
+	// Setting the seen block for shared state.
+	// Getting the max block number between the seen block on the consumer side vs the latest block on the response of the provider
+	latestKnownBlock := int64(math.Max(float64(relayCacheSet.Response.LatestBlock), float64(relayCacheSet.Request.SeenBlock)))
+	s.setSeenBlockOnSharedStateMode(relayCacheSet.ChainID, relayCacheSet.SharedStateId, latestKnownBlock)
+	s.setLatestBlock(latestBlockKey(relayCacheSet.ChainID, relayCacheSet.Provider), latestKnownBlock)
 	return &emptypb.Empty{}, nil
 }
 
@@ -173,8 +269,8 @@ func (s *RelayerCacheServer) PrintCacheStats(ctx context.Context, desc string) {
 	)
 }
 
-func (s *RelayerCacheServer) getLatestBlockInner(chainID string, providerAddr string) (latestBlock int64, expirationTime time.Time) {
-	value, found := getNonExpiredFromCache(s.CacheServer.finalizedCache, latestBlockKey(chainID, providerAddr))
+func (s *RelayerCacheServer) getLatestBlockInner(key string) (latestBlock int64, expirationTime time.Time) {
+	value, found := getNonExpiredFromCache(s.CacheServer.finalizedCache, key)
 	if !found {
 		return spectypes.NOT_APPLICABLE, time.Time{}
 	}
@@ -185,23 +281,25 @@ func (s *RelayerCacheServer) getLatestBlockInner(chainID string, providerAddr st
 	return spectypes.NOT_APPLICABLE, time.Time{}
 }
 
-func (s *RelayerCacheServer) getLatestBlock(chainID string, providerAddr string) int64 {
-	latestBlock, expirationTime := s.getLatestBlockInner(chainID, providerAddr)
+func (s *RelayerCacheServer) getLatestBlock(key string) int64 {
+	latestBlock, expirationTime := s.getLatestBlockInner(key)
 	if latestBlock != spectypes.NOT_APPLICABLE && expirationTime.After(time.Now()) {
 		return latestBlock
 	}
 	return spectypes.NOT_APPLICABLE
 }
 
-func (s *RelayerCacheServer) setLatestBlock(chainID string, providerAddr string, latestBlock int64) {
-	existingLatest, _ := s.getLatestBlockInner(chainID, providerAddr) // we need to bypass the expirationTimeCheck
-
-	if existingLatest <= latestBlock { // equal refreshes latest if it expired
-		// we are setting this with a futuristic invalidation time, we still want the entry in cache to protect us from putting a lower last block
-		cacheStore := LastestCacheStore{latestBlock: latestBlock, latestExpirationTime: time.Now().Add(DefaultExpirationForNonFinalized)}
-		utils.LavaFormatDebug("setting latest block", utils.Attribute{Key: "providerAddr", Value: providerAddr}, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
-		s.CacheServer.finalizedCache.Set(latestBlockKey(chainID, providerAddr), cacheStore, cacheStore.Cost()) // no expiration time
+func (s *RelayerCacheServer) setLatestBlock(key string, latestBlock int64) {
+	cacheStore := LastestCacheStore{latestBlock: latestBlock, latestExpirationTime: time.Now().Add(DefaultExpirationForNonFinalized)}
+	utils.LavaFormatDebug("setting latest block", utils.Attribute{Key: "key", Value: key}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+	set := func() {
+		s.CacheServer.finalizedCache.Set(key, cacheStore, cacheStore.Cost()) // no expiration time
 	}
+	get := func() int64 {
+		existingLatest, _ := s.getLatestBlockInner(key) // we need to bypass the expirationTimeCheck
+		return existingLatest
+	}
+	s.performInt64WriteWithValidationAndRetry(get, set, latestBlock)
 }
 
 func (s *RelayerCacheServer) getExpirationForChain(chainID string, blockHash []byte) time.Duration {
@@ -295,9 +393,11 @@ func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized 
 	}
 }
 
-func latestBlockKey(chainID string, providerAddr string) string {
+// used both by shared-state id and provider address id. so we just call the 2nd arg unique id
+// as it can be both provider address or the unique user id (ip + dapp id)
+func latestBlockKey(chainID string, uniqueId string) string {
 	// because we want to support coherence in providers
-	return chainID + providerAddr
+	return chainID + "_" + uniqueId
 }
 
 func getMethodFromRequest(relayCacheGet *pairingtypes.RelayCacheGet) string {
