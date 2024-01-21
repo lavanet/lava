@@ -32,14 +32,18 @@ func NewBadgeStateTracker(ctx context.Context, clientCtx cosmosclient.Context, c
 	if err != nil {
 		return nil, err
 	}
-	sq := updaters.NewStateQuery(ctx, clientCtx)
-	esq := updaters.NewEpochStateQuery(sq)
+	stateTracker := updaters.NewStateQuery(ctx, clientCtx)
+	epochStateTracker := updaters.NewEpochStateQuery(stateTracker)
 
-	pst := &BadgeStateTracker{StateTracker: stateTrackerBase, stateQuery: esq, ConsumerEmergencyTrackerInf: emergencyTracker}
+	badgeStateTracker := &BadgeStateTracker{
+		StateTracker:                stateTrackerBase,
+		stateQuery:                  epochStateTracker,
+		ConsumerEmergencyTrackerInf: emergencyTracker,
+	}
 
-	pst.RegisterForEpochUpdates(ctx, emergencyTracker)
-	err = pst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
-	return pst, err
+	badgeStateTracker.RegisterForEpochUpdates(ctx, emergencyTracker)
+	err = badgeStateTracker.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
+	return badgeStateTracker, err
 }
 
 func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
