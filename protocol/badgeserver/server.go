@@ -207,7 +207,9 @@ func (s *Server) getClientGeolocationOrDefault(clientIpAddress string) string {
 			return fmt.Sprintf("%d", ip.Geolocation)
 		}
 	} else {
-		utils.LavaFormatInfo("Ip service not configured correctly")
+		utils.LavaFormatInfo("Ip service not configured correctly, using default geolocation",
+			utils.LogAttr("defaultGeolocation", s.IpService.DefaultGeolocation),
+		)
 	}
 	return fmt.Sprintf("%d", s.IpService.DefaultGeolocation)
 }

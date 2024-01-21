@@ -31,7 +31,7 @@ import (
 
 var (
 	// The name of our config file, without the file extension because viper supports many different config file languages.
-	defaultConfigFilename = "badgeserver"
+	DefaultConfigFilename = "badgeserver.yml"
 	// The environment variable prefix of all environment variables bound to our command line flags.
 	// For example, --number is bound to STING_NUMBER.
 	envPrefix = "BADGE"
@@ -39,22 +39,23 @@ var (
 
 func CreateBadgeServerCobraCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     `badgeserver [config-file] --port=8080 --log-level=debug --chain-id=lava`,
+		Use:     `badgeserver [config-path] --port=8080 --log-level=debug --chain-id=lava`,
 		Short:   `badgeserver sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
 		Long:    `badgeserver sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
 		Example: `badgeserver badgeserver.yml --port=8080 --log-level=debug --chain-id=lava --from user1`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			viper.SetConfigName(defaultConfigFilename)
+			if len(args) == 1 {
+				viper.AddConfigPath(args[0])
+			}
+
+			viper.SetConfigName(DefaultConfigFilename)
 			viper.SetConfigType("yml")
 			viper.AddConfigPath(".")
 			viper.AddConfigPath("./config")
 
 			rand.InitRandomSeed()
 			if err := viper.ReadInConfig(); err != nil {
-				// It's okay if there isn't a config file
-				if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-					return err
-				}
+				return err
 			}
 
 			viper.SetEnvPrefix(envPrefix)
