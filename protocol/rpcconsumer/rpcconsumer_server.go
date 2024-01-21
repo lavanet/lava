@@ -445,6 +445,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			// Info was fetched from cache, so we don't need to change the state
 			// so we can return here, no need to update anything and calculate as this info was fetched from the cache
 			relayResult = &common.RelayResult{Reply: reply, Request: &pairingtypes.RelayRequest{RelayData: relayRequestData}}
+			lavaprotocol.SetRequestedBlockNotApplicable(relayResult.Request.RelayData)
 			return relayResult, nil
 		}
 	} else {
