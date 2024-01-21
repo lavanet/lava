@@ -166,6 +166,8 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 
 	server.InitializeStateTracker(stateTracker)
 
+	stateTracker.RegisterForEpochUpdates(ctx, server)
+
 	grpcServer := grpc.NewServer()
 	grpc_health_v1.RegisterHealthServer(grpcServer, &HealthServer{})
 	pairingtypes.RegisterBadgeGeneratorServer(grpcServer, server)
