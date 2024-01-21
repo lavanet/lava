@@ -96,7 +96,11 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	// fetch all reads at the same time.
 	go func() {
 		defer waitGroup.Done()
-		cacheReply, err = s.getRelayInner(ctx, relayCacheGet)
+		var cacheReplyTmp *pairingtypes.CacheRelayReply
+		cacheReplyTmp, err = s.getRelayInner(ctx, relayCacheGet)
+		if cacheReplyTmp != nil {
+			cacheReply = cacheReplyTmp // set cache reply only if its not nil, as we need to store seen block in it.
+		}
 	}()
 	go func() {
 		defer waitGroup.Done()
@@ -173,7 +177,7 @@ func (s *RelayerCacheServer) performInt64WriteWithValidationAndRetry(
 	if existingInfo <= newInfo { // refreshes state even if its equal
 		// for seen block we expire the entry after one hour otherwise this user will stay in the db for ever
 		setBlockCallback()
-		// a validation routine to make sure we don't have a race for seen block rewrites as there are concurrent writes.
+		// a validation routine to make sure we don't have a race for the block rewrites as there are concurrent writes.
 		// this will be solved once we implement a db with a queue but for now its a good enough solution.
 		go func() {
 			for i := 0; i < DbValueConfirmationAttempts; i++ {
