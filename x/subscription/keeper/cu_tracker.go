@@ -218,14 +218,13 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			)
 		} else {
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.MonthlyCuTrackerProviderRewardEventName, map[string]string{
-				"provider":         provider,
-				"sub":              sub,
-				"tracked_cu":       strconv.FormatUint(trackedCu, 10),
-				"credit_used":      creditToSub.String(),
-				"credit_remaining": timerData.Credit.String(),
-				"reward":           providerReward.String(),
-				"block":            strconv.FormatInt(ctx.BlockHeight(), 10),
-				"adjustment_raw":   providerAdjustment.String(),
+				"provider":       provider,
+				"sub":            sub,
+				"tracked_cu":     strconv.FormatUint(trackedCu, 10),
+				"credit_used":    creditToSub.String(),
+				"reward":         providerReward.String(),
+				"block":          strconv.FormatInt(ctx.BlockHeight(), 10),
+				"adjustment_raw": providerAdjustment.String(),
 			}, "Provider got monthly reward successfully")
 		}
 	}
@@ -260,6 +259,11 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			}
 		}
 	}
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RemainingCreditEventName, map[string]string{
+		"sub":              sub,
+		"credit_remaining": latestSub.Credit.String(),
+		"block":            strconv.FormatInt(ctx.BlockHeight(), 10),
+	}, "CU tracker reward and reset executed successfully, printing remaining subscription credit")
 }
 
 func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, trackedCu uint64, totalCuUsedBySub uint64) math.Int {
