@@ -448,12 +448,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			lavaprotocol.SetRequestedBlockNotApplicable(relayResult.Request.RelayData)
 			return relayResult, nil
 		}
+		// cache failed, move on to regular relay
+		if performance.NotConnectedError.Is(cacheError) {
+			utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
+		}
 	} else {
 		utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: chainMessage.GetApi().Name})
-	}
-	// cache failed, move on to regular relay
-	if performance.NotConnectedError.Is(cacheError) {
-		utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
 	}
 
 	if reqBlock == spectypes.LATEST_BLOCK && relayRequestData.SeenBlock != 0 {

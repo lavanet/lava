@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -78,33 +79,48 @@ func (s *RelayerCacheServer) getSeenBlockForSharedStateMode(chainId string, shar
 		if cacheValue, ok := value.(int64); ok {
 			return cacheValue
 		}
-		utils.LavaFormatError("Failed converting cache result to int64", nil, utils.LogAttr("value", value))
+		utils.LavaFormatFatal("Failed converting cache result to int64", nil, utils.LogAttr("value", value))
 	}
 	return 0
 }
 
-func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (cacheReply *pairingtypes.CacheRelayReply, err error) {
+func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
+	cacheReply := &pairingtypes.CacheRelayReply{}
+	var err error
+	var seenBlock int64
+
+	waitGroup := sync.WaitGroup{}
+	waitGroup.Add(2)                                     // currently we have two groups getRelayInner and getSeenBlock
 	requestedBlock := relayCacheGet.Request.RequestBlock // save requested block
-	cacheReply, err = s.getRelayInner(ctx, relayCacheGet)
+
+	// fetch all reads at the same time.
+	go func() {
+		defer waitGroup.Done()
+		cacheReply, err = s.getRelayInner(ctx, relayCacheGet)
+	}()
+	go func() {
+		defer waitGroup.Done()
+		// set seen block if required
+		seenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.ChainID, relayCacheGet.SharedStateId)
+	}()
+
+	// wait for all reads to complete before moving forward
+	waitGroup.Wait()
+	// set seen block.
+	if seenBlock > cacheReply.SeenBlock {
+		cacheReply.SeenBlock = seenBlock
+	}
 
 	var hit bool
 	if err != nil {
 		s.cacheMiss(ctx, err)
-		// cacheReply is nil as we didn't get a hit. we still need to set the seen block.
-		if cacheReply == nil {
-			cacheReply = &pairingtypes.CacheRelayReply{}
-		}
 	} else {
 		hit = true
 		s.cacheHit(ctx)
 	}
-
-	// set seen block if required
-	cacheReply.SeenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.ChainID, relayCacheGet.SharedStateId)
-
 	// add prometheus metrics
 	s.CacheServer.CacheMetrics.AddApiSpecific(requestedBlock, relayCacheGet.ChainID, getMethodFromRequest(relayCacheGet), relayCacheGet.Request.ApiInterface, hit)
-	return
+	return cacheReply, err
 }
 
 func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
@@ -147,6 +163,33 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 	return nil, HashMismatchError
 }
 
+func (s *RelayerCacheServer) performWriteValidationWithRetry(
+	getBlockCallback func() int64,
+	setBlockCallback func(), newInfo int64) {
+
+	existingInfo := getBlockCallback()
+	// validate we have a newer block than the existing stored in the db.
+	if existingInfo <= newInfo { // refreshes state even if its equal
+		// for seen block we expire the entry after one hour otherwise this user will stay in the db for ever
+		setBlockCallback()
+		// a validation routine to make sure we don't have a race for seen block rewrites as there are concurrent writes.
+		// this will be solved once we implement a db with a queue but for now its a good enough solution.
+		go func() {
+			for i := 0; i < DbValueConfirmationAttempts; i++ {
+				time.Sleep(time.Millisecond) // add some delay between read attempts
+				currentInfo := getBlockCallback()
+				if currentInfo > newInfo {
+					return // there is a newer block stored we are no longer relevant we can just stop validating.
+				}
+				if currentInfo < newInfo {
+					// other cache set raced us and we need to rewrite our value again as its a newer value
+					setBlockCallback()
+				}
+			}
+		}()
+	}
+}
+
 // this method tries to set the seen block a few times until it succeeds. it will try to make sure its value is set
 // to prevent race conditions when we have a few writes in the same time with older values we will try to set our value eventually
 // if its the newest seen block
@@ -154,28 +197,14 @@ func (s *RelayerCacheServer) setSeenBlockOnSharedStateMode(chainId, sharedStateI
 	if sharedStateId == "" {
 		return
 	}
-	existingSeenBlock := s.getSeenBlockForSharedStateMode(chainId, sharedStateId)
-	// validate we have a newer block than the existing stored in the db.
-	if existingSeenBlock <= seenBlock { // refreshes state even if its equal
-		key := latestBlockKey(chainId, sharedStateId)
-		// for seen block we expire the entry after one hour otherwise this user will stay in the db for ever
+	key := latestBlockKey(chainId, sharedStateId)
+	set := func() {
 		s.CacheServer.finalizedCache.SetWithTTL(key, seenBlock, 0, s.CacheServer.ExpirationFinalized)
-		// a validation routine to make sure we don't have a race for seen block rewrites as there are concurrent writes.
-		// this will be solved once we implement a db with a queue but for now its a good enough solution.
-		go func() {
-			for i := 0; i < DbValueConfirmationAttempts; i++ {
-				time.Sleep(time.Millisecond) // add some delay between read attempts
-				currentSeenBlock := s.getSeenBlockForSharedStateMode(chainId, sharedStateId)
-				if currentSeenBlock > seenBlock {
-					return // there is a newer block stored we are no longer relevant we can just stop validating.
-				}
-				if currentSeenBlock < seenBlock {
-					// other cache set raced us and we need to rewrite our value again as its a newer value
-					s.CacheServer.finalizedCache.SetWithTTL(key, seenBlock, 0, s.CacheServer.ExpirationFinalized) // no expiration time
-				}
-			}
-		}()
 	}
+	get := func() int64 {
+		return s.getSeenBlockForSharedStateMode(chainId, sharedStateId)
+	}
+	s.performWriteValidationWithRetry(get, set, seenBlock)
 }
 
 func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairingtypes.RelayCacheSet) (*emptypb.Empty, error) {
@@ -256,29 +285,16 @@ func (s *RelayerCacheServer) getLatestBlock(key string) int64 {
 }
 
 func (s *RelayerCacheServer) setLatestBlock(key string, latestBlock int64) {
-	existingLatest, _ := s.getLatestBlockInner(key) // we need to bypass the expirationTimeCheck
-
-	if existingLatest <= latestBlock { // equal refreshes latest if it expired
-		// we are setting this with a futuristic invalidation time, we still want the entry in cache to protect us from putting a lower last block
-		cacheStore := LastestCacheStore{latestBlock: latestBlock, latestExpirationTime: time.Now().Add(DefaultExpirationForNonFinalized)}
-		utils.LavaFormatDebug("setting latest block", utils.Attribute{Key: "key", Value: key}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+	cacheStore := LastestCacheStore{latestBlock: latestBlock, latestExpirationTime: time.Now().Add(DefaultExpirationForNonFinalized)}
+	utils.LavaFormatDebug("setting latest block", utils.Attribute{Key: "key", Value: key}, utils.Attribute{Key: "latestBlock", Value: latestBlock})
+	set := func() {
 		s.CacheServer.finalizedCache.Set(key, cacheStore, cacheStore.Cost()) // no expiration time
-		// validate we didn't have a race with another set latest block.
-		// this mechanism could be improved and also changed in the future.
-		go func() {
-			for i := 0; i < DbValueConfirmationAttempts; i++ {
-				time.Sleep(time.Millisecond)
-				currentLatest, _ := s.getLatestBlockInner(key) // we need to bypass the expirationTimeCheck
-				if currentLatest > latestBlock {
-					return // there is a newer block stored we are no longer relevant we can just stop validating.
-				}
-				if currentLatest < latestBlock {
-					// other cache set raced us and we need to rewrite our value again as its a newer value
-					s.CacheServer.finalizedCache.Set(key, cacheStore, cacheStore.Cost())
-				}
-			}
-		}()
 	}
+	get := func() int64 {
+		existingLatest, _ := s.getLatestBlockInner(key) // we need to bypass the expirationTimeCheck
+		return existingLatest
+	}
+	s.performWriteValidationWithRetry(get, set, latestBlock)
 }
 
 func (s *RelayerCacheServer) getExpirationForChain(chainID string, blockHash []byte) time.Duration {

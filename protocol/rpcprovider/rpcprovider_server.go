@@ -487,6 +487,10 @@ func (rpcps *RPCProviderServer) validateBadgeSession(ctx context.Context, relayS
 	if relaySession.LavaChainId != relaySession.Badge.LavaChainId {
 		return utils.LavaFormatWarning("mismatch in badge lavaChainId", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
+
+	if int64(relaySession.Badge.Epoch) != relaySession.Epoch {
+		return utils.LavaFormatWarning("Badge epoch validation failed", nil, utils.LogAttr("badge_epoch", relaySession.Badge.Epoch), utils.LogAttr("relay_epoch", relaySession.Epoch))
+	}
 	return nil
 }
 
