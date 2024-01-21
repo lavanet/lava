@@ -980,24 +980,27 @@ func TestGeolocationPairingScores(t *testing.T) {
 
 	// propose all plans and buy subscriptions
 	freePlan := planstypes.Plan{
-		Index:      "free",
-		Block:      ts.BlockHeight(),
-		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
-		PlanPolicy: freePlanPolicy,
+		Index:         "free",
+		Block:         ts.BlockHeight(),
+		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		ProjectsLimit: 3,
+		PlanPolicy:    freePlanPolicy,
 	}
 
 	basicPlan := planstypes.Plan{
-		Index:      "basic",
-		Block:      ts.BlockHeight(),
-		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
-		PlanPolicy: basicPlanPolicy,
+		Index:         "basic",
+		Block:         ts.BlockHeight(),
+		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		ProjectsLimit: 5,
+		PlanPolicy:    basicPlanPolicy,
 	}
 
 	premiumPlan := planstypes.Plan{
-		Index:      "premium",
-		Block:      ts.BlockHeight(),
-		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
-		PlanPolicy: premiumPlanPolicy,
+		Index:         "premium",
+		Block:         ts.BlockHeight(),
+		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		ProjectsLimit: 7,
+		PlanPolicy:    premiumPlanPolicy,
 	}
 
 	plans := []planstypes.Plan{freePlan, basicPlan, premiumPlan}
@@ -1194,10 +1197,11 @@ func TestDuplicateProviders(t *testing.T) {
 	}
 
 	basicPlan := planstypes.Plan{
-		Index:      "basic",
-		Block:      ts.BlockHeight(),
-		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
-		PlanPolicy: basicPlanPolicy,
+		Index:         "basic",
+		Block:         ts.BlockHeight(),
+		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		ProjectsLimit: 5,
+		PlanPolicy:    basicPlanPolicy,
 	}
 
 	_, basicAddr := ts.GetAccount(common.CONSUMER, 0)
@@ -1245,10 +1249,11 @@ func TestNoRequiredGeo(t *testing.T) {
 	}
 
 	freePlan := planstypes.Plan{
-		Index:      "free",
-		Block:      ts.BlockHeight(),
-		Price:      sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
-		PlanPolicy: freePlanPolicy,
+		Index:         "free",
+		Block:         ts.BlockHeight(),
+		Price:         sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)),
+		ProjectsLimit: 3,
+		PlanPolicy:    freePlanPolicy,
 	}
 
 	_, freeAddr := ts.GetAccount(common.CONSUMER, 0)

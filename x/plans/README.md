@@ -32,15 +32,16 @@ A plan consists of limitations that are associated with a subscription. A consum
 
 ```go
 type Plan struct {
-    index            string  // plan unique index
-    block            uint64  // the epoch that this plan was created
-    price            Coin    // plan price (in ulava)
-    allow_overuse    bool    // allow CU overuse flag
-    overuse_rate     uint64  // price of CU overuse (higher price per CU)
-    description      string  // plan description (for humans)
-    type             string  // plan type (currently unused)
-    annual_discount  uint64  // discount for buying a yearly plan (percentage)
-    plan_policy      Policy  // plan's policy
+    Index                     string  // plan unique index
+    Block                     uint64  // the epoch that this plan was created
+    Price                     Coin    // plan price (in ulava)
+    AllowOveruse              bool    // allow CU overuse flag
+    OveruseRate               uint64  // price of CU overuse (higher price per CU)
+    Description               string  // plan description (for humans)
+    Type                      string  // plan type (currently unused)
+    AnnualDiscountPercentage  uint64  // discount for buying a yearly plan (percentage)
+    PlanPolicy                Policy  // plan's policy
+    ProjectsLimit             uint64  // number of allowed projects
 }
 ```
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`).

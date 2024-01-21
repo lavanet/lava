@@ -34,6 +34,7 @@ func CreateMockPlan() plantypes.Plan {
 		OveruseRate:              10,
 		AnnualDiscountPercentage: 20,
 		PlanPolicy:               CreateMockPolicy(),
+		ProjectsLimit:            10,
 	}
 
 	return plan
