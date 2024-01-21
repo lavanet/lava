@@ -165,8 +165,9 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 
 func (s *RelayerCacheServer) performWriteValidationWithRetry(
 	getBlockCallback func() int64,
-	setBlockCallback func(), newInfo int64) {
-
+	setBlockCallback func(),
+	newInfo int64,
+) {
 	existingInfo := getBlockCallback()
 	// validate we have a newer block than the existing stored in the db.
 	if existingInfo <= newInfo { // refreshes state even if its equal
