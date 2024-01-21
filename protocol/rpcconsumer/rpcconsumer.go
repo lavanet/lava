@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -42,8 +43,10 @@ const (
 )
 
 var (
-	Yaml_config_properties = []string{"network-address", "chain-id", "api-interface"}
-	DebugRelaysFlag        = false
+	Yaml_config_properties         = []string{"network-address", "chain-id", "api-interface"}
+	DebugRelaysFlag                = false
+	RelaysHealthEnableFlagDefault  = true
+	RelayHealthIntervalFlagDefault = 5 * time.Minute
 )
 
 type strategyValue struct {
@@ -167,7 +170,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
-
+	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
 	policyUpdaters := syncMapPolicyUpdaters{}
 	for _, rpcEndpoint := range rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
@@ -265,9 +268,15 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager)
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
+			var relaysMonitor *metrics.RelaysMonitor
+			if cmdFlags.RelaysHealthEnableFlag {
+				relaysMonitor = metrics.NewRelaysMonitor(cmdFlags.RelaysHealthIntervalFlag, rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
+				relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.String(), relaysMonitor)
+			}
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, privKey, lavaChainID, cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, cmdFlags)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses,
+				privKey, lavaChainID, cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, cmdFlags)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -283,6 +292,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	for err := range errCh {
 		return err
 	}
+
+	relaysMonitorAggregator.StartMonitoring(ctx)
 
 	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
 	for chain := range chainMutexes {
@@ -481,10 +492,13 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
-				HeadersFlag:      viper.GetString(common.CorsHeadersFlag),
-				OriginFlag:       viper.GetString(common.CorsOriginFlag),
-				MethodsFlag:      viper.GetString(common.CorsMethodsFlag),
-				CDNCacheDuration: viper.GetString(common.CDNCacheDurationFlag),
+				HeadersFlag:              viper.GetString(common.CorsHeadersFlag),
+				CredentialsFlag:          viper.GetString(common.CorsCredentialsFlag),
+				OriginFlag:               viper.GetString(common.CorsOriginFlag),
+				MethodsFlag:              viper.GetString(common.CorsMethodsFlag),
+				CDNCacheDuration:         viper.GetString(common.CDNCacheDurationFlag),
+				RelaysHealthEnableFlag:   viper.GetBool(common.RelaysHealthEnableFlag),
+				RelaysHealthIntervalFlag: viper.GetDuration(common.RelayHealthIntervalFlag),
 			}
 
 			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags)
@@ -509,10 +523,14 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
 	cmdRPCConsumer.Flags().BoolVar(&DebugRelaysFlag, DebugRelaysFlagName, false, "adding debug information to relays")
 	// CORS related flags
+	cmdRPCConsumer.Flags().String(common.CorsCredentialsFlag, "true", "Set up CORS allowed credentials,default \"true\"")
 	cmdRPCConsumer.Flags().String(common.CorsHeadersFlag, "", "Set up CORS allowed headers, * for all, default simple cors specification headers")
 	cmdRPCConsumer.Flags().String(common.CorsOriginFlag, "*", "Set up CORS allowed origin, enabled * by default")
 	cmdRPCConsumer.Flags().String(common.CorsMethodsFlag, "GET,POST,PUT,DELETE,OPTIONS", "set up Allowed OPTIONS methods, defaults to: \"GET,POST,PUT,DELETE,OPTIONS\"")
 	cmdRPCConsumer.Flags().String(common.CDNCacheDurationFlag, "86400", "set up preflight options response cache duration, default 86400 (24h in seconds)")
+	// Relays health check related flags
+	cmdRPCConsumer.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
+	cmdRPCConsumer.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
 
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	common.AddRollingLogConfig(cmdRPCConsumer)

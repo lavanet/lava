@@ -475,17 +475,29 @@ func (rpcps *RPCProviderServer) validateBadgeSession(ctx context.Context, relayS
 	if relaySession.Badge == nil { // not a badge session
 		return nil
 	}
+
 	// validating badge signer
 	badgeUserSigner, err := sigs.ExtractSignerAddress(relaySession)
 	if err != nil {
-		return utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.LogAttr("GUID", ctx))
 	}
+
+	// validating badge signer
 	if badgeUserSigner.String() != relaySession.Badge.Address {
-		return utils.LavaFormatWarning("did not pass badge signer validation", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return utils.LavaFormatWarning("did not pass badge signer validation", nil, utils.LogAttr("GUID", ctx))
 	}
+
 	// validating badge lavaChainId
 	if relaySession.LavaChainId != relaySession.Badge.LavaChainId {
-		return utils.LavaFormatWarning("mismatch in badge lavaChainId", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return utils.LavaFormatWarning("mismatch in badge lavaChainId", nil, utils.LogAttr("GUID", ctx))
+	}
+
+	// validating badge epoch
+	if int64(relaySession.Badge.Epoch) != relaySession.Epoch {
+		return utils.LavaFormatWarning("Badge epoch validation failed", nil,
+			utils.LogAttr("badgeEpoch", relaySession.Badge.Epoch),
+			utils.LogAttr("relayEpoch", relaySession.Epoch),
+		)
 	}
 	return nil
 }

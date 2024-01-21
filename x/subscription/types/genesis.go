@@ -2,6 +2,7 @@ package types
 
 import (
 	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
+	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
 
 // this line is used by starport scaffolding # genesis/types/import
@@ -13,8 +14,12 @@ const DefaultIndex uint64 = 1
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		// this line is used by starport scaffolding # genesis/types/default
-		Params: DefaultParams(),
-		SubsFS: *fixationstoretypes.DefaultGenesis(),
+		Params:      DefaultParams(),
+		SubsFS:      *fixationstoretypes.DefaultGenesis(),
+		SubsTS:      *timerstoretypes.DefaultGenesis(),
+		CuTrackerFS: *fixationstoretypes.DefaultGenesis(),
+		CuTrackerTS: *timerstoretypes.DefaultGenesis(),
+		Adjustments: []Adjustment{},
 	}
 }
 

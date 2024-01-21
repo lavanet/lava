@@ -86,7 +86,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 
 	valDistPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName).Int64()
 	providerDistPoolBalance := k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool).Int64()
-	nextRefillBlock := k.BlocksToNextTimerExpiry(ctx) + ctx.BlockHeight()
+	nextRefillBlock := k.blocksToNextTimerExpiry(ctx, nextMonth.Unix()-ctx.BlockTime().UTC().Unix()) + ctx.BlockHeight()
 	details := map[string]string{
 		"allocation_pool_remaining_lifetime":   strconv.FormatUint(monthsLeft, 10),
 		"validators_distribution_pool_balance": strconv.FormatInt(valDistPoolBalance, 10),
@@ -132,11 +132,21 @@ func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, alloc
 // the calculated blocks are multiplied with a slack factor (for error margin)
 func (k Keeper) BlocksToNextTimerExpiry(ctx sdk.Context) int64 {
 	timeToNextTimerExpiry := k.TimeToNextTimerExpiry(ctx)
+	return k.blocksToNextTimerExpiry(ctx, timeToNextTimerExpiry)
+}
+
+func (k Keeper) blocksToNextTimerExpiry(ctx sdk.Context, timeToNextTimerExpiry int64) int64 {
 	blockCreationTime := int64(k.downtimeKeeper.GetParams(ctx).DowntimeDuration.Seconds())
 	if blockCreationTime == 0 {
 		return 30
 	}
-	blocksToNextTimerExpiry := types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry).QuoInt64(blockCreationTime).Ceil().TruncateInt64()
+
+	effectiveTimeToNextTimerExpiry := sdkmath.LegacyNewDec(timeToNextTimerExpiry)
+	if timeToNextTimerExpiry != math.MaxInt64 {
+		effectiveTimeToNextTimerExpiry = types.BlocksToTimerExpirySlackFactor.MulInt64(timeToNextTimerExpiry)
+	}
+
+	blocksToNextTimerExpiry := effectiveTimeToNextTimerExpiry.QuoInt64(blockCreationTime).Ceil().TruncateInt64()
 	if blocksToNextTimerExpiry < 2 {
 		return 2
 	}

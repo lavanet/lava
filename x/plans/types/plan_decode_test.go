@@ -60,6 +60,7 @@ func TestDecodeJsonPlan(t *testing.T) {
 		AnnualDiscountPercentage: 20,
 		AllowOveruse:             true,
 		OveruseRate:              2,
+		ProjectsLimit:            10,
 		PlanPolicy: Policy{
 			ChainPolicies: []ChainPolicy{
 				{ChainId: "LAV1", Apis: []string{}},
@@ -84,6 +85,7 @@ func TestDecodeJsonPlan(t *testing.T) {
         "annual_discount_percentage": 20,
         "allow_overuse": true,
         "overuse_rate": 2,
+		"projects_limit": 10,
         "plan_policy": {
             "chain_policies": [
                 {
@@ -135,6 +137,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 				AnnualDiscountPercentage: 20,
 				AllowOveruse:             true,
 				OveruseRate:              2,
+				ProjectsLimit:            10,
 				PlanPolicy: Policy{
 					ChainPolicies: []ChainPolicy{
 						{ChainId: "LAV1", Apis: []string{}},
@@ -156,6 +159,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 				AnnualDiscountPercentage: 20,
 				AllowOveruse:             true,
 				OveruseRate:              2,
+				ProjectsLimit:            5,
 				PlanPolicy: Policy{
 					ChainPolicies: []ChainPolicy{
 						{ChainId: "LAV1", Apis: []string{}},
@@ -191,6 +195,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 					"annual_discount_percentage": 20,
 					"allow_overuse": true,
 					"overuse_rate": 2,
+					"projects_limit": 10,
 					"plan_policy": {
 						"chain_policies": [
 							{
@@ -229,6 +234,7 @@ func TestDecodePlanAddProposal(t *testing.T) {
 					"annual_discount_percentage": 20,
 					"allow_overuse": true,
 					"overuse_rate": 2,
+					"projects_limit": 5,
 					"plan_policy": {
 						"chain_policies": [
 							{
