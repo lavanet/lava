@@ -40,6 +40,9 @@ func IsValidNetworkAddress(address string) bool {
 	}
 
 	host, _, err := net.SplitHostPort(address)
+	if strings.Contains(host, ":") {
+		return false // too many columns in address
+	}
 	if err == nil && host != "" {
 		if host == "::" || host == "localhost" || host == "0.0.0.0" {
 			return false
