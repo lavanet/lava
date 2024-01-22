@@ -13,7 +13,6 @@ import (
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/common"
-	commonlib "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider"
@@ -48,6 +47,7 @@ type LavaEntity struct {
 func (le LavaEntity) MarshalText() ([]byte, error) {
 	return json.Marshal(le.String())
 }
+
 func (le *LavaEntity) MarshalJSON() ([]byte, error) {
 	return json.Marshal(le.String())
 }
@@ -360,7 +360,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 			NodeUrls: []common.NodeUrl{
 				{
 					Url: endpoint.NetworkAddress,
-					AuthConfig: commonlib.AuthConfig{
+					AuthConfig: common.AuthConfig{
 						UseTLS:        viper.GetBool(ConsumerGrpcTLSFlagName),
 						AllowInsecure: viper.GetBool(allowInsecureConsumerDialingFlagName),
 					},
