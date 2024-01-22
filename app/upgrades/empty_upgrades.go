@@ -198,7 +198,7 @@ var Upgrade_0_33_0 = Upgrade{
 
 var Upgrade_0_34_0 = Upgrade{
 	UpgradeName:          "v0.34.0",
-	CreateUpgradeHandler: v0_32_0_UpgradeHandler,
+	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
 		Added: []string{icahosttypes.StoreKey, icacontrollertypes.StoreKey},
 	},
