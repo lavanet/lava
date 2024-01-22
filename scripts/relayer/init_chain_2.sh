@@ -1,5 +1,5 @@
 #!/bin/bash
-# make install-all
+# this scripts boots up another chain in different ports to run in parrallel with the regular /scripts/init_chain.sh script
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/../useful_commands.sh
 
@@ -40,6 +40,7 @@ if [ "$1" == "debug" ]; then
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
         | jq '.app_state.epochstorage.params.epochsToSave = "5"' \
         | jq '.app_state.epochstorage.params.epochBlocks = "4"' \
+        | jq '.app_state.downtime.params.downtime_duration = "1s"' \
     )
 else
     # Edit genesis file without the additional line

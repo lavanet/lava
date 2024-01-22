@@ -1,5 +1,5 @@
 #!/bin/bash
-# make install-all
+# this scripts boots up a relayer between the 2 local chain (using init_chain.sh and init_chain_2.sh)
 killall -9 rly
 rm -rf ~/.relayer/
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -22,3 +22,4 @@ rly keys use lava-local-2 rly2
 
 rly paths new lava-local-1 lava-local-2 demo-path
 rly tx link demo-path -d -t 3s
+
