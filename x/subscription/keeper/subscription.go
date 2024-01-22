@@ -445,7 +445,26 @@ func (k Keeper) addCuTrackerTimerForSubscription(ctx sdk.Context, block uint64, 
 			utils.Attribute{Key: "block", Value: block},
 		)
 	} else {
-		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave-1, []byte(sub.Consumer), []byte(strconv.FormatUint(sub.Block, 10)))
+		nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
+		if err != nil {
+			utils.LavaFormatError("critical: failed assigning CU tracker callback. can't get next epoch, skipping", err,
+				utils.Attribute{Key: "block", Value: block},
+			)
+		} else {
+			creditReward := sub.Credit.Amount.QuoRaw(int64(sub.DurationLeft))
+			timerData := types.CuTrackerTimerData{
+				Block:  sub.Block,
+				Credit: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), creditReward),
+			}
+			marshaledTimerData, err := k.cdc.Marshal(&timerData)
+			if err != nil {
+				utils.LavaFormatError("critical: failed assigning CU tracker callback. can't marshal cu tracker timer data, skipping", err,
+					utils.Attribute{Key: "block", Value: block},
+				)
+				return
+			}
+			k.cuTrackerTS.AddTimerByBlockHeight(ctx, nextEpoch+blocksToSave-1, []byte(sub.Consumer), marshaledTimerData)
+		}
 	}
 }
 
@@ -635,8 +654,17 @@ func (k Keeper) RemoveExpiredSubscription(ctx sdk.Context, consumer string, bloc
 	// delete all projects before deleting
 	k.delAllProjectsFromSubscription(ctx, consumer)
 
-	// delete subscription effective now (don't wait for end of epoch)
-	err := k.subsFS.DelEntry(ctx, consumer, block)
+	// delete subscription effective next epoch
+	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
+	if err != nil {
+		utils.LavaFormatError("deleting expired subscription failed. can't get next epoch", err,
+			utils.Attribute{Key: "consumer", Value: consumer},
+			utils.Attribute{Key: "block", Value: strconv.FormatUint(block, 10)},
+		)
+		return
+	}
+
+	err = k.subsFS.DelEntry(ctx, consumer, nextEpoch)
 	if err != nil {
 		utils.LavaFormatError("deleting expired subscription failed", err,
 			utils.Attribute{Key: "consumer", Value: consumer},
