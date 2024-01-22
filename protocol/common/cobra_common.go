@@ -27,6 +27,7 @@ const (
 	CDNCacheDurationFlag    = "cdn-cache-duration"     // how long to cache the preflight response default 24 hours (in seconds) "86400"
 	RelaysHealthEnableFlag  = "relays-health-enable"   // enable relays health check, default true
 	RelayHealthIntervalFlag = "relays-health-interval" // interval between each relay health check, default 5m
+	SharedStateFlag         = "shared-state"
 )
 
 const (

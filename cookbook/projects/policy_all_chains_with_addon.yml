@@ -17,6 +17,12 @@ Policy:
             api_interface: "jsonrpc"
             type: "POST"
             add_on: "debug"
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+          extensions:
+            - "archive"
+          mixed: true        
     - chain_id: FTM250
       requirements:
         - collection:

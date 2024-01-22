@@ -1097,9 +1097,10 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 
 	// propose all plans
 	freePlan := planstypes.Plan{
-		Index: "free",
-		Block: uint64(ctx.BlockHeight()),
-		Price: sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
+		Index:         "free",
+		Block:         uint64(ctx.BlockHeight()),
+		Price:         sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
+		ProjectsLimit: 3,
 		PlanPolicy: planstypes.Policy{
 			GeolocationProfile: 4, // USE
 			TotalCuLimit:       10,
@@ -1109,9 +1110,10 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	}
 
 	basicPlan := planstypes.Plan{
-		Index: "basic",
-		Block: uint64(ctx.BlockHeight()),
-		Price: sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
+		Index:         "basic",
+		Block:         uint64(ctx.BlockHeight()),
+		Price:         sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
+		ProjectsLimit: 5,
 		PlanPolicy: planstypes.Policy{
 			GeolocationProfile: 0, // GLS
 			TotalCuLimit:       10,
@@ -1121,9 +1123,10 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	}
 
 	premiumPlan := planstypes.Plan{
-		Index: "premium",
-		Block: uint64(ctx.BlockHeight()),
-		Price: sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
+		Index:         "premium",
+		Block:         uint64(ctx.BlockHeight()),
+		Price:         sdk.NewCoin(keepers.StakingKeeper.BondDenom(ctx), sdk.NewInt(1)),
+		ProjectsLimit: 10,
 		PlanPolicy: planstypes.Policy{
 			GeolocationProfile: 65535, // GL
 			TotalCuLimit:       10,

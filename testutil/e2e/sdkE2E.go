@@ -152,15 +152,13 @@ func runSDKE2E(timeout time.Duration) {
 	sdk.RunSDKTests(ctx, grpcConn, privateKey, publicKey, lt.logs["01_sdkTest"], "7070")
 
 	// Emergency mode tests
-	utils.LavaFormatInfo("Sleeping Until New Epoch")
+	utils.LavaFormatInfo("Sleeping Until All Rewards are collected")
+	lt.sleepUntilNextEpoch()
+	lt.sleepUntilNextEpoch()
+	lt.sleepUntilNextEpoch()
 	lt.sleepUntilNextEpoch()
 
 	utils.LavaFormatInfo("Restarting lava to emergency mode")
-
-	// wait 3 seconds to allow rpcproviders claim rewards before node will be restarted(after restarting node
-	// we have ctx.BlockHeight == 0, until new block will be created)
-	time.Sleep(time.Second * 3)
-
 	lt.stopLava()
 	go lt.startLavaInEmergencyMode(lavaContext, 100000)
 
