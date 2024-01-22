@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
-	"time"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -37,12 +37,8 @@ func (k Keeper) BlockReward(goCtx context.Context, req *types.QueryBlockRewardRe
 	reward := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards)
 
 	if validatorsRewards.Int64() > int64(15000) {
-		var i int
-		for i < 86400 {
-			fmt.Printf("SLEEPING validatorsRewards: %v\n", validatorsRewards)
-			time.Sleep(1 * time.Second)
-			i++
-		}
+		err := fmt.Errorf("irregular block rewards, rewards: %s", strconv.FormatInt(validatorsRewards.Int64(), 10))
+		panic(err)
 	}
 
 	return &types.QueryBlockRewardResponse{Reward: reward}, nil
