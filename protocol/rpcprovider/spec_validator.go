@@ -18,7 +18,7 @@ const (
 
 var (
 	SpecValidationInterval               = 3 * time.Hour
-	SpecValidationIntervalDisabledChains = 10 * time.Minute
+	SpecValidationIntervalDisabledChains = 3 * time.Minute
 )
 
 type SpecValidator struct {
