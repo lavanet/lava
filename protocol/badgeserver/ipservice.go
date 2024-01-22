@@ -45,6 +45,8 @@ func (service *IpService) readCountryCsvFileData() (*map[string]int, error) {
 	}
 	defer file.Close()
 	reader := csv.NewReader(file)
+	reader.Comma = ';'
+
 	for {
 		row, err := reader.Read()
 		if err != nil {
@@ -53,10 +55,7 @@ func (service *IpService) readCountryCsvFileData() (*map[string]int, error) {
 			}
 			return nil, err
 		}
-		for _, rowData := range row {
-			countryData := strings.Split(rowData, ";")
-			countries[countryData[0]], _ = strconv.Atoi(countryData[len(countryData)-1])
-		}
+		countries[row[0]], _ = strconv.Atoi(row[len(row)-1])
 	}
 	return &countries, nil
 }
