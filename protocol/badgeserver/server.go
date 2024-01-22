@@ -223,7 +223,8 @@ func (s *Server) getClientGeolocationOrDefault(clientIpAddress string) string {
 }
 
 func (s *Server) addPairingListToResponse(ctx context.Context, request *pairingtypes.GenerateBadgeRequest,
-	configurations *ProjectConfiguration, response *pairingtypes.GenerateBadgeResponse) error {
+	configurations *ProjectConfiguration, response *pairingtypes.GenerateBadgeResponse,
+) error {
 	chainID := request.SpecId
 	if chainID == "" {
 		// TODO: Is this a valid flow?
@@ -244,7 +245,6 @@ func (s *Server) addPairingListToResponse(ctx context.Context, request *pairingt
 			ChainID: chainID,
 			Client:  s.projectPublicKey,
 		})
-
 		if err != nil {
 			return utils.LavaFormatError("Failed to get pairings", err,
 				utils.LogAttr("epoch", s.GetEpoch()),
