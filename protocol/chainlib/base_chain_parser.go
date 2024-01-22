@@ -131,7 +131,6 @@ func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy PolicyInf, chainId st
 func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation map[string]struct{}) {
 	bcp.rwLock.Lock()
 	defer bcp.rwLock.Unlock()
-	utils.LavaFormatDebug("info on policyInformation", utils.LogAttr("policyInformation", policyInformation))
 	// reset the current one in case we configured it previously
 	configuredExtensions := make(map[extensionslib.ExtensionKey]*spectypes.Extension)
 	for collectionKey, apiCollection := range bcp.apiCollections {
@@ -155,9 +154,7 @@ func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation 
 	bcp.extensionParser.SetConfiguredExtensions(configuredExtensions)
 	// manage allowed addons
 	for addon := range bcp.allowedAddons {
-		utils.LavaFormatDebug("info on addons", utils.LogAttr("addon", addon))
 		if _, ok := policyInformation[addon]; ok {
-			utils.LavaFormatDebug("found addon", utils.LogAttr("addon", addon))
 			bcp.allowedAddons[addon] = true
 		}
 	}

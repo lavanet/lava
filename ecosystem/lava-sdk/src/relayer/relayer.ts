@@ -116,6 +116,11 @@ export class Relayer {
     if (this.badge) {
       // Badge is separated from the signature!
       requestSession.setBadge(this.badge);
+      if (requestSession.getEpoch() != this.badge.getEpoch()) {
+        Logger.error(
+          `Epoch mismatch between badge and session. Badge epoch: ${this.badge.getEpoch()}. Session epoch: ${requestSession.getEpoch()}`
+        );
+      }
     }
     relayRequest.setRelaySession(requestSession);
 
