@@ -15,7 +15,6 @@ func isValidDomainName(domain string) bool {
 	// Basic regular expression for domain name validation
 	// This is a simplified regex and may need adjustments based on your specific requirements
 	domainRegex := regexp.MustCompile(`^[a-zA-Z0-9.-]+$`)
-
 	return domainRegex.MatchString(domain)
 }
 
@@ -47,19 +46,16 @@ func IsValidNetworkAddress(address string) bool {
 		if host == "::" || host == "localhost" || host == "0.0.0.0" {
 			return false
 		}
-
 		if isValidIPv4(host) {
 			return validateIp(host)
 		}
-
 		// probably a domain name
 		if !isValidDomainName(host) {
 			utils.LavaFormatError("Failed parsing domain name, and ip address", nil)
 			return false
 		}
 	}
-
-	return false
+	return true
 }
 
 func IsValidNetworkAddressConsensus(address string) (valid bool) {
@@ -84,6 +80,5 @@ func IsValidNetworkAddressConsensus(address string) (valid bool) {
 	if strings.HasPrefix(host, "127.0.0.") {
 		return false
 	}
-
 	return true
 }
