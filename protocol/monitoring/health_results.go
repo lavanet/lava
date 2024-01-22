@@ -11,15 +11,15 @@ import (
 )
 
 type HealthResults struct {
-	LatestBlocks       map[string]int64
-	ProviderData       map[LavaEntity]ReplyData
-	ConsumerBlocks     map[LavaEntity]int64
-	SubscriptionsData  map[string]SubscriptionData
-	FrozenProviders    map[LavaEntity]struct{}
-	UnhealthyProviders map[LavaEntity]string
-	UnhealthyConsumers map[LavaEntity]string
-	Specs              map[string]*spectypes.Spec
-	Lock               sync.RWMutex
+	LatestBlocks       map[string]int64            `json:"latestBlocks,omitempty"`
+	ConsumerBlocks     map[LavaEntity]int64        `json:"consumerBlocks,omitempty"`
+	ProviderData       map[LavaEntity]ReplyData    `json:"providerData,omitempty"`
+	SubscriptionsData  map[string]SubscriptionData `json:"subscriptionsData,omitempty"`
+	FrozenProviders    map[LavaEntity]struct{}     `json:"frozenProviders,omitempty"`
+	UnhealthyProviders map[LavaEntity]string       `json:"unhealthyProviders,omitempty"`
+	UnhealthyConsumers map[LavaEntity]string       `json:"unhealthyConsumers,omitempty"`
+	Specs              map[string]*spectypes.Spec  `json:"specs,omitempty"`
+	Lock               sync.RWMutex                `json:"-"`
 }
 
 func (healthResults *HealthResults) FormatForLatestBlock() map[string]uint64 {
@@ -30,7 +30,7 @@ func (healthResults *HealthResults) FormatForLatestBlock() map[string]uint64 {
 		results[entity.String()] = uint64(block)
 	}
 	for entity, data := range healthResults.ProviderData {
-		results[entity.String()] = uint64(data.block)
+		results[entity.String()] = uint64(data.Block)
 	}
 	for entity := range healthResults.UnhealthyProviders {
 		results[entity.String()] = 0
@@ -148,12 +148,12 @@ func (healthResults *HealthResults) SetProviderData(providerKey LavaEntity, late
 	healthResults.Lock.Lock()
 	defer healthResults.Lock.Unlock()
 	if existing, ok := healthResults.ProviderData[providerKey]; ok {
-		if existing.block == 0 {
-			existing.block = latestData.block
+		if existing.Block == 0 {
+			existing.Block = latestData.Block
 		} else {
-			latestData.block = slices.Min([]int64{existing.block, latestData.block})
+			latestData.Block = slices.Min([]int64{existing.Block, latestData.Block})
 		}
-		latestData.latency = slices.Max([]time.Duration{existing.latency, latestData.latency})
+		latestData.Latency = slices.Max([]time.Duration{existing.Latency, latestData.Latency})
 	}
 	healthResults.ProviderData[providerKey] = latestData
 }
