@@ -2388,3 +2388,47 @@ func TestAddProjectChangePolicyJustAfterSubExpiry(t *testing.T) {
 	_, err = ts.TxProjectSetPolicy(adminProj, consumerAddr, &policy)
 	require.Error(t, err)
 }
+
+// TestProjectsNumEnforcement tests the plan policy's projects num enforcement.
+// scenario: a consumer buy a plan with 2 allowed projects. The consumer should be
+// able to add only one more project (buying the subscription auto-creates an admin project)
+func TestProjectsNumEnforcement(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	_, consumer := ts.Account("sub1")
+
+	// change the number of allowed projects to 2
+	freePlan := ts.Plan("free")
+	freePlan.ProjectsLimit = 2
+	err := ts.TxProposalAddPlans(freePlan)
+	require.NoError(t, err)
+
+	// buy the free plan (inside setup)
+	_, err = ts.TxSubscriptionBuy(consumer, consumer, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// add a project (should succeed)
+	policy := common.CreateMockPolicy()
+	pd := projectstypes.ProjectData{
+		Name:        "dummy",
+		Enabled:     true,
+		ProjectKeys: []projectstypes.ProjectKey{projectstypes.ProjectAdminKey(consumer)},
+		Policy:      &policy,
+	}
+	err = ts.TxSubscriptionAddProject(consumer, pd)
+	require.NoError(t, err)
+
+	// add another project (should fail)
+	pd.Name = "dummy2"
+	err = ts.TxSubscriptionAddProject(consumer, pd)
+	require.Error(t, err)
+
+	// delete the first project (advance epoch to apply)
+	err = ts.TxSubscriptionDelProject(consumer, "dummy")
+	require.NoError(t, err)
+	ts.AdvanceEpoch()
+
+	// add the second project (should succeed now)
+	err = ts.TxSubscriptionAddProject(consumer, pd)
+	require.NoError(t, err)
+}

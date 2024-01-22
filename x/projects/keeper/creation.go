@@ -66,6 +66,15 @@ func (k Keeper) CreateAdminProject(ctx sdk.Context, subAddr string, plan plantyp
 // CreateProject adds a new project to a subscription
 // (takes effect retroactively at the beginning of this epoch)
 func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types.ProjectData, plan plantypes.Plan) error {
+	projects := k.GetAllProjectsForSubscription(ctx, subAddr)
+	if len(projects) >= int(plan.ProjectsLimit) && plan.ProjectsLimit != 0 {
+		return utils.LavaFormatWarning("CreateProject failed", fmt.Errorf("subscription already has max number of projects"),
+			utils.LogAttr("plan", plan.Index),
+			utils.LogAttr("plan_projects_limit", plan.ProjectsLimit),
+			utils.LogAttr("sub_number_of_projects", len(projects)),
+		)
+	}
+
 	ctxBlock := uint64(ctx.BlockHeight())
 
 	if len(projectData.ProjectKeys) > types.MAX_KEYS_AMOUNT {

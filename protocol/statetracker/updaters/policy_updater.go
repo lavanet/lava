@@ -79,6 +79,7 @@ func (pu *PolicyUpdater) UpdateEpoch(epoch uint64) {
 		utils.LavaFormatError("could not get GetConsumerPolicy updated, did not update policy", err, utils.LogAttr("epoch", epoch))
 		return
 	}
+	utils.LavaFormatDebug("Updating consumer's polices", utils.LogAttr("epoch", epoch))
 	for apiInterface, policyUpdatable := range pu.policyUpdatables {
 		err = pu.setPolicy(policyUpdatable, policy, apiInterface)
 		if err != nil {
