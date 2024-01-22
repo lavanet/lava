@@ -31,7 +31,7 @@ func TestValidAddressesProtocol(t *testing.T) {
 			value := IsValidNetworkAddress(tt.value)
 			require.Equal(t, tt.valid, value)
 
-			value = ValidateProviderAddressConsensus(tt.value)
+			value = IsValidNetworkAddressConsensus(tt.value)
 			require.Equal(t, tt.valid, value)
 		})
 	}
