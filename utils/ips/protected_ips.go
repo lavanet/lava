@@ -35,10 +35,8 @@ func isValidIPv4(address string) bool {
 // isValidAddress checks if the given address is a valid and not a reserved or local address.
 func IsValidNetworkAddress(address string) bool {
 	// Split the address into host and port
-	if strings.HasPrefix(address, "http://") {
-		address = strings.TrimPrefix(address, "http://")
-	} else if strings.HasPrefix(address, "https://") {
-		address = strings.TrimPrefix(address, "https://")
+	if strings.HasPrefix(address, "http://") || strings.HasPrefix(address, "https://") {
+		return false // grpc addresses does not support http prefix.
 	}
 
 	host, _, err := net.SplitHostPort(address)
@@ -62,10 +60,8 @@ func IsValidNetworkAddressConsensus(address string) (valid bool) {
 	invalidOrProtectedIps := []string{
 		"0.0.0.0", "::", ":", "localhost",
 	}
-	if strings.HasPrefix(address, "http://") {
-		address = strings.TrimPrefix(address, "http://")
-	} else if strings.HasPrefix(address, "https://") {
-		address = strings.TrimPrefix(address, "https://")
+	if strings.HasPrefix(address, "http://") || strings.HasPrefix(address, "https://") {
+		return false // grpc addresses does not support http prefix.
 	}
 	if slices.Contains(invalidOrProtectedIps, address) {
 		return false
