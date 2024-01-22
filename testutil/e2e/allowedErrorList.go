@@ -14,3 +14,7 @@ var allowedErrors = map[string]string{
 var allowedErrorsDuringEmergencyMode = map[string]string{
 	"connection refused": "Connection to tendermint port sometimes can happen as we shut down the node and we try to fetch info during emergency mode",
 }
+
+var allowedErrorsPaymentE2E = map[string]string{
+	"conflict with is already open for this client": "This error is allowed because it's unrelated to payment E2E",
+}
