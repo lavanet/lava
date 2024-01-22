@@ -73,6 +73,9 @@ func IsValidNetworkAddressConsensus(address string) (valid bool) {
 	if err != nil {
 		return false
 	}
+	if strings.Contains(host, ":") {
+		return false // too many columns in url.
+	}
 	if slices.Contains(invalidOrProtectedIps, host) {
 		return false
 	}
