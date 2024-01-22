@@ -83,29 +83,18 @@ type trackedCuInfo struct {
 	block     uint64
 }
 
-func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string, subBlockStr string) (trackedCuList []trackedCuInfo, totalCuTracked uint64) {
+func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string, block uint64) (trackedCuList []trackedCuInfo, totalCuTracked uint64) {
 	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
 
 	for _, key := range keys {
 		_, provider, chainID := types.DecodeCuTrackerKey(key)
-		block, err := strconv.ParseUint(subBlockStr, 10, 64)
-		if err != nil {
-			utils.LavaFormatError("cannot remove cu tracker", err,
-				utils.Attribute{Key: "sub", Value: sub},
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chain_id", Value: chainID},
-				utils.Attribute{Key: "block_str", Value: subBlockStr},
-			)
-			continue
-		}
-
 		cu, found, _ := k.GetTrackedCu(ctx, sub, provider, chainID, block)
 		if !found {
 			utils.LavaFormatWarning("cannot remove cu tracker", legacyerrors.ErrKeyNotFound,
 				utils.Attribute{Key: "sub", Value: sub},
 				utils.Attribute{Key: "provider", Value: provider},
 				utils.Attribute{Key: "chain_id", Value: chainID},
-				utils.Attribute{Key: "block", Value: subBlockStr},
+				utils.Attribute{Key: "block", Value: strconv.FormatUint(block, 10)},
 			)
 			continue
 		}
@@ -124,17 +113,17 @@ func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string, subBlockStr str
 // remove only before the sub is deleted
 func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes []byte, cuTrackerTimerData []byte) {
 	sub := string(cuTrackerTimerKeyBytes)
-	blockStr := string(cuTrackerTimerData)
-	_, err := strconv.ParseUint(blockStr, 10, 64)
+	var timerData types.CuTrackerTimerData
+	err := k.cdc.Unmarshal(cuTrackerTimerData, &timerData)
 	if err != nil {
-		utils.LavaFormatError(types.ErrCuTrackerPayoutFailed.Error(), err,
-			utils.Attribute{Key: "blockStr", Value: blockStr},
+		utils.LavaFormatError(types.ErrCuTrackerPayoutFailed.Error(), fmt.Errorf("invalid data from cu tracker timer"),
+			utils.Attribute{Key: "timer_data", Value: timerData.String()},
+			utils.Attribute{Key: "consumer", Value: sub},
 		)
 		return
 	}
-	trackedCuList, totalCuTracked := k.GetSubTrackedCuInfo(ctx, sub, blockStr)
+	trackedCuList, totalCuTracked := k.GetSubTrackedCuInfo(ctx, sub, timerData.Block)
 
-	var block uint64
 	if len(trackedCuList) == 0 || totalCuTracked == 0 {
 		// no tracked CU for this sub, nothing to do
 		return
@@ -142,21 +131,9 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 	// Note: We take the subscription from the FixationStore, based on the given block.
 	// So, even if the plan changed during the month, we still take the original plan, based on the given block.
-	block = trackedCuList[0].block
-	subObj, _, found := k.GetSubscriptionForBlock(ctx, sub, block)
-	if !found {
-		utils.LavaFormatError("cannot find subscription's plan", types.ErrCuTrackerPayoutFailed,
-			utils.Attribute{Key: "sub_consumer", Value: sub},
-		)
-		return
-	}
+	block := trackedCuList[0].block
 
-	var totalTokenAmount math.Int
-	if subObj.DurationLeft == 0 {
-		totalTokenAmount = subObj.Credit.Amount
-	} else {
-		totalTokenAmount = subObj.Credit.Amount.QuoRaw(int64(subObj.DurationLeft))
-	}
+	totalTokenAmount := timerData.Credit.Amount
 	if totalTokenAmount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
 		totalTokenAmount = sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
 	}
@@ -241,15 +218,13 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			)
 		} else {
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.MonthlyCuTrackerProviderRewardEventName, map[string]string{
-				"provider":         provider,
-				"sub":              sub,
-				"plan":             subObj.PlanIndex,
-				"tracked_cu":       strconv.FormatUint(trackedCu, 10),
-				"credit_used":      creditToSub.String(),
-				"credit_remaining": subObj.Credit.String(),
-				"reward":           providerReward.String(),
-				"block":            strconv.FormatInt(ctx.BlockHeight(), 10),
-				"adjustment_raw":   providerAdjustment.String(),
+				"provider":       provider,
+				"sub":            sub,
+				"tracked_cu":     strconv.FormatUint(trackedCu, 10),
+				"credit_used":    creditToSub.String(),
+				"reward":         providerReward.String(),
+				"block":          strconv.FormatInt(ctx.BlockHeight(), 10),
+				"adjustment_raw": providerAdjustment.String(),
 			}, "Provider got monthly reward successfully")
 		}
 	}
@@ -257,7 +232,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	rewardsRemainder := totalTokenAmount.Sub(totalTokenRewarded)
 
 	var latestSub types.Subscription
-	latestEntryBlock, _, _, found := k.subsFS.FindEntryDetailed(ctx, subObj.Consumer, uint64(ctx.BlockHeight()), &latestSub)
+	latestEntryBlock, _, _, found := k.subsFS.FindEntryDetailed(ctx, sub, uint64(ctx.BlockHeight()), &latestSub)
 	if found {
 		// return rewards remainder to credit
 		if !rewardsRemainder.IsZero() {
@@ -284,6 +259,11 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			}
 		}
 	}
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RemainingCreditEventName, map[string]string{
+		"sub":              sub,
+		"credit_remaining": latestSub.Credit.String(),
+		"block":            strconv.FormatInt(ctx.BlockHeight(), 10),
+	}, "CU tracker reward and reset executed successfully, printing remaining subscription credit")
 }
 
 func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, trackedCu uint64, totalCuUsedBySub uint64) math.Int {

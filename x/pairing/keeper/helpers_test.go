@@ -227,6 +227,7 @@ func (ts *tester) payAndVerifyBalance(
 
 	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	// verify provider's balance

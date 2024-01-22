@@ -103,6 +103,10 @@ func (k Keeper) CreateProject(ctx sdk.Context, subAddr string, projectData types
 	}
 
 	// project name per subscription is unique: check for duplicates
+	// we also check !isDeleted because when a new subscription is created
+	// in the same epoch that a subscription from the same creator was expired,
+	// we'll find the old admin project but since it's deleted we want to ignore
+	// it and allow creating a new admin project
 	var emptyProject types.Project
 	if found := k.projectsFS.FindEntry(ctx, project.Index, epoch, &emptyProject); found {
 		return utils.LavaFormatWarning("create project failed",
@@ -160,7 +164,7 @@ func (k Keeper) DeleteProject(ctx sdk.Context, creator, projectID string) error 
 	}
 
 	for _, projectKey := range project.GetProjectKeys() {
-		err = k.unregisterKey(ctx, projectKey, &project, nextEpoch)
+		err := k.unregisterKey(ctx, projectKey, &project, nextEpoch)
 		if err != nil {
 			return err
 		}
@@ -195,8 +199,6 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 			)
 		}
 
-		project.AppendKey(types.ProjectDeveloperKey(key.Key))
-
 		// by now, the key was either not found, or found and belongs to us already.
 		// if the former, then we surely need to add it.
 		if !found {
@@ -212,6 +214,8 @@ func (k Keeper) registerKey(ctx sdk.Context, key types.ProjectKey, project *type
 				)
 			}
 		}
+
+		project.AppendKey(types.ProjectDeveloperKey(key.Key))
 	}
 
 	return nil

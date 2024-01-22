@@ -35,7 +35,7 @@ type (
 		subsTS timerstoretypes.TimerStore
 
 		cuTrackerFS fixationtypes.FixationStore // key: "<sub> <provider>", value: month aggregated CU
-		cuTrackerTS timerstoretypes.TimerStore
+		cuTrackerTS timerstoretypes.TimerStore  // key: sub, value: credit for reward
 	}
 )
 
