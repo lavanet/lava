@@ -39,7 +39,7 @@ var (
 
 func CreateBadgeServerCobraCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     `badgeserver [config-path] --port=8080 --log-level=debug --chain-id=lava`,
+		Use:     `badgeserver [config-path] --port=[serving-port] --log-level=[log-level] --chain-id=[chain-id]`,
 		Short:   `badgeserver sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
 		Long:    `badgeserver sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
 		Example: `badgeserver badgeserver.yml --port=8080 --log-level=debug --chain-id=lava --from user1`,
@@ -106,6 +106,8 @@ func bindFlags(cmd *cobra.Command, v *viper.Viper) {
 }
 
 func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
+	utils.LavaFormatInfo("Starting the badge server...")
+
 	port := v.GetString(PortFieldName)
 	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
@@ -142,6 +144,7 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	if err != nil {
 		utils.LavaFormatFatal("failed getting public key from key name", err)
 	}
+
 	var pubKeyAddr sdk.AccAddress
 	err = pubKeyAddr.Unmarshal(pubKey.Address())
 	if err != nil {
@@ -189,6 +192,8 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 		http.Handle("/metrics", promhttp.Handler())
 		http.ListenAndServe(":"+metricsPort, nil)
 	}()
+
+	utils.LavaFormatInfo("Badge server started")
 	if err := httpServer.Serve(listener); err != nil {
 		utils.LavaFormatFatal("Http Server failed to start", err)
 	}
