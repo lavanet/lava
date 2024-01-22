@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
@@ -51,7 +52,7 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 			urlPath = craftData.Path
 		}
 		// chain fetcher sends the replaced request inside data
-		chainMessage, err := apip.ParseMsg(urlPath, data, craftData.ConnectionType, metadata, 0)
+		chainMessage, err := apip.ParseMsg(urlPath, data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
 		if err == nil {
 			chainMessage.AppendHeader(metadata)
 		}
@@ -77,7 +78,7 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 }
 
 // ParseMsg parses message data into chain message object
-func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error) {
+func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionType string, metadata []pairingtypes.Metadata, extensionInfo extensionslib.ExtensionInfo) (ChainMessage, error) {
 	// Guard that the RestChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("RestChainParser not defined")
@@ -129,7 +130,7 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	}
 
 	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &restMessage, apiCollection)
-	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, latestBlock)
+	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
@@ -229,17 +230,22 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 }
 
 type RestChainListener struct {
-	endpoint    *lavasession.RPCEndpoint
-	relaySender RelaySender
-	logger      *metrics.RPCConsumerLogs
+	endpoint       *lavasession.RPCEndpoint
+	relaySender    RelaySender
+	healthReporter HealthReporter
+	logger         *metrics.RPCConsumerLogs
 }
 
 // NewRestChainListener creates a new instance of RestChainListener
-func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint, relaySender RelaySender, rpcConsumerLogs *metrics.RPCConsumerLogs) (chainListener *RestChainListener) {
+func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
+	relaySender RelaySender, healthReporter HealthReporter,
+	rpcConsumerLogs *metrics.RPCConsumerLogs,
+) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
 		listenEndpoint,
 		relaySender,
+		healthReporter,
 		rpcConsumerLogs,
 	}
 
@@ -254,7 +260,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	}
 
 	// Setup HTTP Server
-	app := createAndSetupBaseAppListener(cmdFlags)
+	app := createAndSetupBaseAppListener(cmdFlags, apil.endpoint.HealthCheckPath, apil.healthReporter)
 
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
@@ -328,10 +334,6 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 		query := "?" + string(fiberCtx.Request().URI().QueryString())
 		path := "/" + fiberCtx.Params("*")
-		if path == apil.endpoint.HealthCheckPath {
-			fiberCtx.Status(http.StatusOK)
-			return fiberCtx.SendString("Health status OK")
-		}
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 

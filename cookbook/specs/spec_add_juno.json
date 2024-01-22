@@ -43,6 +43,15 @@
                                     }
                                 ]
                             }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 24344
+                                }
+                            }
                         ]
                     },
                     {
@@ -121,6 +130,15 @@
                                     }
                                 ]
                             }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 24344
+                                }
+                            }
                         ]
                     },
                     {
@@ -143,6 +161,27 @@
                                         "expected_value": "juno-1"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 24686
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "1"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 24344
+                                }
                             }
                         ]
                     }

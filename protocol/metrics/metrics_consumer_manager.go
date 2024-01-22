@@ -12,19 +12,20 @@ import (
 )
 
 type ConsumerMetricsManager struct {
-	totalCURequestedMetric     *prometheus.CounterVec
-	totalRelaysRequestedMetric *prometheus.CounterVec
-	totalErroredMetric         *prometheus.CounterVec
-	blockMetric                *prometheus.GaugeVec
-	latencyMetric              *prometheus.GaugeVec
-	qosMetric                  *prometheus.GaugeVec
-	qosExcellenceMetric        *prometheus.GaugeVec
-	LatestBlockMetric          *prometheus.GaugeVec
-	LatestProviderRelay        *prometheus.GaugeVec
-	virtualEpochMetric         *prometheus.GaugeVec
-	lock                       sync.Mutex
-	protocolVersionMetric      *prometheus.GaugeVec
-	providerRelays             map[string]uint64
+	totalCURequestedMetric        *prometheus.CounterVec
+	totalRelaysRequestedMetric    *prometheus.CounterVec
+	totalErroredMetric            *prometheus.CounterVec
+	blockMetric                   *prometheus.GaugeVec
+	latencyMetric                 *prometheus.GaugeVec
+	qosMetric                     *prometheus.GaugeVec
+	qosExcellenceMetric           *prometheus.GaugeVec
+	LatestBlockMetric             *prometheus.GaugeVec
+	LatestProviderRelay           *prometheus.GaugeVec
+	virtualEpochMetric            *prometheus.GaugeVec
+	endpointsHealthChecksOkMetric prometheus.Gauge
+	lock                          sync.Mutex
+	protocolVersionMetric         *prometheus.GaugeVec
+	providerRelays                map[string]uint64
 }
 
 func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
@@ -81,6 +82,11 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		Name: "virtual_epoch",
 		Help: "The current virtual epoch measured",
 	}, []string{"spec"})
+	endpointsHealthChecksOkMetric := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "lava_consumer_overall_health",
+		Help: "At least one endpoint is healthy",
+	})
+	endpointsHealthChecksOkMetric.Set(1)
 	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_provider_protocol_version",
 		Help: "The current running lavap version for the process. major := version / 1000000, minor := (version / 1000) % 1000, patch := version % 1000",
@@ -96,6 +102,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	prometheus.MustRegister(latestBlockMetric)
 	prometheus.MustRegister(latestProviderRelay)
 	prometheus.MustRegister(virtualEpochMetric)
+	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
 	http.Handle("/metrics", promhttp.Handler())
 	go func() {
@@ -103,18 +110,19 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		http.ListenAndServe(networkAddress, nil)
 	}()
 	return &ConsumerMetricsManager{
-		totalCURequestedMetric:     totalCURequestedMetric,
-		totalRelaysRequestedMetric: totalRelaysRequestedMetric,
-		totalErroredMetric:         totalErroredMetric,
-		blockMetric:                blockMetric,
-		latencyMetric:              latencyMetric,
-		qosMetric:                  qosMetric,
-		qosExcellenceMetric:        qosExcellenceMetric,
-		LatestBlockMetric:          latestBlockMetric,
-		LatestProviderRelay:        latestProviderRelay,
-		providerRelays:             map[string]uint64{},
-		virtualEpochMetric:         virtualEpochMetric,
-		protocolVersionMetric:      protocolVersionMetric,
+		totalCURequestedMetric:        totalCURequestedMetric,
+		totalRelaysRequestedMetric:    totalRelaysRequestedMetric,
+		totalErroredMetric:            totalErroredMetric,
+		blockMetric:                   blockMetric,
+		latencyMetric:                 latencyMetric,
+		qosMetric:                     qosMetric,
+		qosExcellenceMetric:           qosExcellenceMetric,
+		LatestBlockMetric:             latestBlockMetric,
+		LatestProviderRelay:           latestProviderRelay,
+		providerRelays:                map[string]uint64{},
+		virtualEpochMetric:            virtualEpochMetric,
+		endpointsHealthChecksOkMetric: endpointsHealthChecksOkMetric,
+		protocolVersionMetric:         protocolVersionMetric,
 	}
 }
 
@@ -193,6 +201,14 @@ func (pme *ConsumerMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
 		return
 	}
 	pme.virtualEpochMetric.WithLabelValues("lava").Set(float64(virtualEpoch))
+}
+
+func (pme *ConsumerMetricsManager) SetEndpointsHealthChecksOkStatus(status bool) {
+	var value float64 = 0
+	if status {
+		value = 1
+	}
+	pme.endpointsHealthChecksOkMetric.Set(value)
 }
 
 func (pme *ConsumerMetricsManager) ResetQOSMetrics() {

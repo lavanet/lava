@@ -4,6 +4,12 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
+type ExtensionInfo struct {
+	ExtensionOverride    []string
+	LatestBlock          uint64
+	AdditionalExtensions []string
+}
+
 type ExtensionsChainMessage interface {
 	SetExtension(*spectypes.Extension)
 	RequestedBlock() (latest int64, earliest int64)

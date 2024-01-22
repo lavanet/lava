@@ -730,6 +730,15 @@
                                     }
                                 ]
                             }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 14200
+                                }
+                            }
                         ]
                     },
                     {
@@ -1438,6 +1447,15 @@
                                     }
                                 ]
                             }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 14200
+                                }
+                            }
                         ]
                     },
                     {
@@ -1460,6 +1478,15 @@
                                         "expected_value": "canto_7700-1"
                                     }
                                 ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 14200
+                                }
                             }
                         ]
                     },
@@ -1487,6 +1514,15 @@
                             {
                                 "name": "pruning",
                                 "values": []
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 14200
+                                }
                             }
                         ]
                     }

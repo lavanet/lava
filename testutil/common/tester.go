@@ -479,10 +479,10 @@ func (ts *Tester) TxSubscriptionAddProject(creator string, pd projectstypes.Proj
 }
 
 // TxSubscriptionDelProject: implement 'tx subscription del-project'
-func (ts *Tester) TxSubscriptionDelProject(creator, projectID string) error {
+func (ts *Tester) TxSubscriptionDelProject(creator, projectName string) error {
 	msg := &subscriptiontypes.MsgDelProject{
 		Creator: creator,
-		Name:    projectID,
+		Name:    projectName,
 	}
 	_, err := ts.Servers.SubscriptionServer.DelProject(ts.GoCtx, msg)
 	return err

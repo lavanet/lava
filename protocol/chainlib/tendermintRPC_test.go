@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -63,7 +64,7 @@ func TestTendermintChainParser_NilGuard(t *testing.T) {
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
 	apip.getSupportedApi("", "")
-	apip.ParseMsg("", []byte{}, "", nil, 0)
+	apip.ParseMsg("", []byte{}, "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 }
 
 func TestTendermintGetSupportedApi(t *testing.T) {
@@ -122,7 +123,7 @@ func TestTendermintParseMessage(t *testing.T) {
 
 	marshalledData, _ := json.Marshal(data)
 
-	msg, err := apip.ParseMsg("API1", marshalledData, connectionType_test, nil, 0)
+	msg, err := apip.ParseMsg("API1", marshalledData, connectionType_test, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 
 	assert.Nil(t, err)
 	assert.Equal(t, msg.GetApi().Name, apip.serverApis[ApiKey{Name: "API1", ConnectionType: connectionType_test}].api.Name)
@@ -185,7 +186,7 @@ func TestTendermintRpcBatchCall(t *testing.T) {
 	require.NotNil(t, chainProxy)
 	require.NotNil(t, chainFetcher)
 
-	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), "", nil, 0)
+	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
 	requestedBlock, earliestReqBlock := chainMessage.RequestedBlock()
 	require.Equal(t, int64(100), requestedBlock)
@@ -227,7 +228,7 @@ func TestTendermintRpcBatchCallWithSameID(t *testing.T) {
 	require.NotNil(t, chainProxy)
 	require.NotNil(t, chainFetcher)
 
-	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), "", nil, 0)
+	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
 	requestedBlock, earliestReqBlock := chainMessage.RequestedBlock()
 	require.Equal(t, int64(100), requestedBlock)
@@ -261,7 +262,7 @@ func TestTendermintURIRPC(t *testing.T) {
 	require.NotNil(t, chainProxy)
 	require.NotNil(t, chainFetcher)
 	requestUrl := "tx_search?query=%22recv_packet.packet_src_channel=%27channel-227%27%20AND%20recv_packet.packet_sequence=%271123%27%20%20AND%20recv_packet.packet_dst_channel=%27channel-3%27%22"
-	chainMessage, err := chainParser.ParseMsg(requestUrl, nil, "", nil, 0)
+	chainMessage, err := chainParser.ParseMsg(requestUrl, nil, "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
 	nodeMessage, ok := chainMessage.GetRPCMessage().(*rpcInterfaceMessages.TendermintrpcMessage)
 	require.True(t, ok)

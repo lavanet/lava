@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
@@ -208,8 +209,13 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 			relaySession.DisbandSession()
 		}
 	}(relaySession) // lock in the session address
+
+	extensionInfo := extensionslib.ExtensionInfo{LatestBlock: 0, ExtensionOverride: request.RelayData.Extensions}
+	if extensionInfo.ExtensionOverride == nil { // in case consumer did not set an extension, we skip the extension parsing and we are sending it to the regular url
+		extensionInfo.ExtensionOverride = []string{}
+	}
 	// parse the message to extract the cu and chainMessage for sending it
-	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata(), 0)
+	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata(), extensionInfo)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -469,17 +475,33 @@ func (rpcps *RPCProviderServer) validateBadgeSession(ctx context.Context, relayS
 	if relaySession.Badge == nil { // not a badge session
 		return nil
 	}
+
 	// validating badge signer
 	badgeUserSigner, err := sigs.ExtractSignerAddress(relaySession)
 	if err != nil {
-		return utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return utils.LavaFormatWarning("cannot extract badge user from relay", err, utils.LogAttr("GUID", ctx))
 	}
+
+	// validating badge signer
 	if badgeUserSigner.String() != relaySession.Badge.Address {
-		return utils.LavaFormatWarning("did not pass badge signer validation", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return utils.LavaFormatWarning("did not pass badge signer validation", nil, utils.LogAttr("GUID", ctx))
 	}
+
 	// validating badge lavaChainId
 	if relaySession.LavaChainId != relaySession.Badge.LavaChainId {
-		return utils.LavaFormatWarning("mismatch in badge lavaChainId", err, utils.Attribute{Key: "GUID", Value: ctx})
+		return utils.LavaFormatWarning("mismatch in badge lavaChainId", nil, utils.LogAttr("GUID", ctx))
+	}
+
+	// validating badge epoch
+	if int64(relaySession.Badge.Epoch) != relaySession.Epoch {
+		return utils.LavaFormatWarning("Badge epoch validation failed", nil,
+			utils.LogAttr("badgeEpoch", relaySession.Badge.Epoch),
+			utils.LogAttr("relayEpoch", relaySession.Epoch),
+		)
+	}
+
+	if int64(relaySession.Badge.Epoch) != relaySession.Epoch {
+		return utils.LavaFormatWarning("Badge epoch validation failed", nil, utils.LogAttr("badge_epoch", relaySession.Badge.Epoch), utils.LogAttr("relay_epoch", relaySession.Epoch))
 	}
 	return nil
 }
@@ -656,7 +678,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	ignoredMetadata := []pairingtypes.Metadata{}
 	if requestedBlockHash != nil || finalized {
 		var cacheReply *pairingtypes.CacheRelayReply
-		cacheReply, err = cache.GetEntry(ctx, request.RelayData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, finalized, rpcps.providerAddress.String())
+		cacheReply, err = cache.GetEntry(ctx, &pairingtypes.RelayCacheGet{Request: request.RelayData, BlockHash: requestedBlockHash, ChainID: rpcps.rpcProviderEndpoint.ChainID, Finalized: finalized, Provider: rpcps.providerAddress.String()})
 		reply = cacheReply.GetReply()
 		ignoredMetadata = cacheReply.GetOptionalMetadata()
 		if err != nil && performance.NotConnectedError.Is(err) {
@@ -698,7 +720,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 				new_ctx := context.Background()
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
-				err := cache.SetEntry(new_ctx, copyPrivateData, requestedBlockHash, rpcps.rpcProviderEndpoint.ChainID, copyReply, finalized, rpcps.providerAddress.String(), ignoredMetadata)
+				err := cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: copyPrivateData, BlockHash: requestedBlockHash, ChainID: rpcps.rpcProviderEndpoint.ChainID, Response: copyReply, Finalized: finalized, Provider: rpcps.providerAddress.String(), OptionalMetadata: ignoredMetadata})
 				if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 					utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
 				}

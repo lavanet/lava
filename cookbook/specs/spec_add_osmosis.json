@@ -1304,6 +1304,15 @@
                                     }
                                 ]
                             }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 17040
+                                }
+                            }
                         ]
                     },
                     {
@@ -2606,6 +2615,15 @@
                                     }
                                 ]
                             }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 17040
+                                }
+                            }
                         ]
                     },
                     {
@@ -2628,6 +2646,27 @@
                                         "expected_value": "osmosis-1"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 17280
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "1"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 17040
+                                }
                             }
                         ]
                     }

@@ -33,16 +33,17 @@ func NewChainListener(
 	ctx context.Context,
 	listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender,
+	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
 ) (ChainListener, error) {
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
+		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
+		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceRest:
-		return NewRestChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs), nil
+		return NewRestChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceGrpc:
 		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs, chainParser), nil
 	}
@@ -50,7 +51,7 @@ func NewChainListener(
 }
 
 type ChainParser interface {
-	ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, latestBlock uint64) (ChainMessage, error)
+	ParseMsg(url string, data []byte, connectionType string, metadata []pairingtypes.Metadata, extensionInfo extensionslib.ExtensionInfo) (ChainMessage, error)
 	SetSpec(spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32)
@@ -82,6 +83,10 @@ type ChainMessageForSend interface {
 	GetApi() *spectypes.Api
 	GetRPCMessage() rpcInterfaceMessages.GenericMessage
 	GetApiCollection() *spectypes.ApiCollection
+}
+
+type HealthReporter interface {
+	IsHealthy() bool
 }
 
 type RelaySender interface {

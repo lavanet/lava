@@ -39,6 +39,7 @@ if [ "$1" == "debug" ]; then
         | jq '.app_state.epochstorage.params.epochBlocks = "4"' \
         | jq '.app_state.distribution.params.community_tax = "0"' \
         | jq '.app_state.rewards.params.validators_subscription_participation = "0"' \
+        | jq '.app_state.downtime.params.downtime_duration = "1s"' \
     )
 else
     # Edit genesis file without the additional line
@@ -55,7 +56,10 @@ else
         | jq '.app_state.staking.params.bond_denom = "ulava"' \
         | jq '.app_state.crisis.constant_fee.denom = "ulava"' \
         | jq '.app_state.downtime.params.downtime_duration = "6s"' \
-        | jq '.app_state.downtime.params.epoch_duration = "8s"' \
+        | jq '.app_state.downtime.params.epoch_duration = "10s"' \
+        | jq '.app_state.epochstorage.params.epochsToSave = "8"' \
+        | jq '.app_state.epochstorage.params.epochBlocks = "10"' \
+        | jq '.app_state.pairing.params.recommendedEpochNumToCollectPayment = "2"' \
     )
 fi
 
@@ -89,6 +93,8 @@ sed $SED_INLINE \
 
 # Edit app.toml file
 sed $SED_INLINE -e "s/enable = .*/enable = true/" "$path$app"
+sed $SED_INLINE -e "/Enable defines if the Rosetta API server should be enabled.*/{n;s/enable = .*/enable = false/}" "$path$app"
+
 
 # Add users
 users=("alice" "bob" "user1" "user2" "user3" "user4" "user5" "servicer1" "servicer2" "servicer3" "servicer4" "servicer5" "servicer6" "servicer7" "servicer8" "servicer9" "servicer10")

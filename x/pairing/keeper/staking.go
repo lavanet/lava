@@ -56,6 +56,18 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			utils.Attribute{Key: "geolocation", Value: geolocation},
 		)
 	}
+
+	// validate there are no more than 5 endpoints per geolocation
+	if len(endpoints) > len(planstypes.GetGeolocationsFromUint(geolocation))*types.MAX_ENDPOINTS_AMOUNT_PER_GEO {
+		return utils.LavaFormatWarning("stake provider failed", fmt.Errorf("number of endpoint for geolocation exceeded limit"),
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("moniker", moniker),
+			utils.LogAttr("geolocation", geolocation),
+			utils.LogAttr("max_endpoints_allowed", types.MAX_ENDPOINTS_AMOUNT_PER_GEO),
+		)
+	}
+
 	// new staking takes effect from the next block
 	stakeAppliedBlock := uint64(ctx.BlockHeight()) + 1
 

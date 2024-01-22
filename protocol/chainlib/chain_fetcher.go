@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/common"
@@ -63,6 +65,10 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 			return err
 		}
 		for _, verification := range verifications {
+			if slices.Contains(url.SkipVerifications, verification.Name) {
+				utils.LavaFormatDebug("Skipping Verification", utils.LogAttr("verification", verification.Name))
+				continue
+			}
 			// we give several chances for starting up
 			var err error
 			for attempts := 0; attempts < 3; attempts++ {
@@ -87,7 +93,8 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 		new_ctx := context.Background()
 		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 		defer cancel()
-		err := cf.cache.SetEntry(new_ctx, relayData, requestedBlockHash, cf.endpoint.ChainID, reply, finalized, "", nil)
+		// provider side doesn't use SharedStateId, so we default it to empty so it wont have effect.
+		err := cf.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: relayData, BlockHash: requestedBlockHash, ChainID: cf.endpoint.ChainID, Response: reply, Finalized: finalized, OptionalMetadata: nil, SharedStateId: ""})
 		if err != nil {
 			utils.LavaFormatWarning("chain fetcher error updating cache with new entry", err)
 		}
@@ -292,9 +299,20 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	return res, nil
 }
 
-func NewChainFetcher(ctx context.Context, chainRouter ChainRouter, chainParser ChainParser, endpoint *lavasession.RPCProviderEndpoint, cache *performance.Cache) *ChainFetcher {
-	cf := &ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint, cache: cache}
-	return cf
+type ChainFetcherOptions struct {
+	ChainRouter ChainRouter
+	ChainParser ChainParser
+	Endpoint    *lavasession.RPCProviderEndpoint
+	Cache       *performance.Cache
+}
+
+func NewChainFetcher(ctx context.Context, options *ChainFetcherOptions) *ChainFetcher {
+	return &ChainFetcher{
+		chainRouter: options.ChainRouter,
+		chainParser: options.ChainParser,
+		endpoint:    options.Endpoint,
+		cache:       options.Cache,
+	}
 }
 
 type LavaChainFetcher struct {

@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -253,6 +254,7 @@ func TestTrackedCuWithQos(t *testing.T) {
 
 			// advance month + blocksToSave + 1 to trigger the provider monthly payment
 			ts.AdvanceMonths(1)
+			ts.AdvanceEpoch()
 			ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 			balance1 := ts.GetBalance(provider1Acc.Addr)
@@ -260,6 +262,7 @@ func TestTrackedCuWithQos(t *testing.T) {
 
 			reward, err := ts.QueryDualstakingDelegatorRewards(provider1Acc.Addr.String(), provider1Acc.Addr.String(), ts.spec.Index)
 			require.Nil(ts.T, err)
+			require.Len(t, reward.Rewards, 1)
 			require.Equal(ts.T, tt.p1ExpectedReward, reward.Rewards[0].Amount.Amount.Int64())
 			_, err = ts.TxDualstakingClaimRewards(provider1Acc.Addr.String(), provider1Acc.Addr.String())
 			require.Nil(ts.T, err)
@@ -362,6 +365,7 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 
 	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	reward, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), ts.spec.Index)
@@ -410,6 +414,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 	ts.AdvanceMonths(1).AdvanceEpoch() // advance first month of delegation so it'll apply
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	// send two relay payments in spec and spec1
 	relaySession := ts.newRelaySession(provider, 0, relayCuSum, ts.BlockHeight(), 0)
@@ -427,8 +432,8 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-	// check for expected balance: planPrice*100/200 (from spec1) + planPrice*(100/200)*(2/3) (from spec, considering delegations)
-	// for planPrice=100, expected monthly payout is 50+33
+	// check for expected balance: credit*100/200 (from spec1) + credit*(100/200)*(2/3) (from spec, considering delegations)
+	// for credit=100 (first month there was no use, so no credit was spent), expected monthly payout is 50+33
 	expectedTotalPayout := uint64(83)
 	expectedPayouts := []types.SubscriptionPayout{
 		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 33},
@@ -446,7 +451,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	// check the expected subscrription payout
 	subRes, err := ts.QueryPairingSubscriptionMonthlyPayout(client)
 	require.NoError(t, err)
-	require.Equal(t, uint64(100), subRes.Total) // total reward = plan price
+	require.Equal(t, uint64(100), subRes.Total) // total reward = credit
 	expectedSubPayouts := []types.ChainIDPayout{
 		{
 			ChainId: ts.spec.Index, Payouts: []*types.ProviderPayout{
@@ -473,13 +478,19 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	oldBalance := ts.GetBalance(providerAcct.Addr)
 
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	resq, err := ts.QueryDualstakingDelegatorRewards(provider, provider, "")
+	require.NoError(t, err)
+	fmt.Printf("resq.Rewards: %v\n", resq.Rewards)
 
 	_, err = ts.TxDualstakingClaimRewards(providerAcct.Addr.String(), providerAcct.Addr.String())
 	require.Nil(ts.T, err)
 
+	// another month has passed, so the expected payout is doubled
 	balance := ts.GetBalance(providerAcct.Addr)
-	require.Equal(t, expectedTotalPayout, uint64(balance-oldBalance))
+	require.Equal(t, expectedTotalPayout*2, uint64(balance-oldBalance))
 
 	// verify that the monthly payout query return 0 after the payment was transferred to the provider
 	res, err = ts.QueryPairingProviderMonthlyPayout(provider)
@@ -598,6 +609,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	require.NoError(t, err)
 
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	_, err = ts.TxDualstakingClaimRewards(providerAcct.Addr.String(), providerAcct.Addr.String())
@@ -638,6 +650,7 @@ func TestFrozenProviderGetReward(t *testing.T) {
 
 	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	planPrice := ts.plan.Price.Amount.Int64()
