@@ -29,7 +29,7 @@ func (lt *lavaTest) startBadgeServer(ctx context.Context, privateKey, publicKey,
 		panic(err)
 	}
 
-	command := fmt.Sprintf("%s badgegenerator --port=%s --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava-local-1", lt.protocolPath, port)
+	command := fmt.Sprintf("%s badgegenerator --port=%s --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava", lt.protocolPath, port)
 	err = os.Setenv("BADGE_DEFAULT_GEOLOCATION", "1")
 	if err != nil {
 		panic(err)

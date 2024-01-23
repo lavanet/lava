@@ -45,7 +45,7 @@ func (lt *lavaTest) stakeLavaForPayment(ctx context.Context) {
 func (lt *lavaTest) startLavaProvidersForPayment(ctx context.Context) {
 	for idx := 1; idx <= 2; idx++ {
 		command := fmt.Sprintf(
-			"%s rpcprovider %s/lavaProvider%d --chain-id=lava-local-1 --from servicer%d %s",
+			"%s rpcprovider %s/lavaProvider%d --chain-id=lava --from servicer%d %s",
 			lt.protocolPath, configFolder, idx+5, idx, lt.lavadArgs,
 		)
 		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx)
@@ -64,7 +64,7 @@ func (lt *lavaTest) startLavaProvidersForPayment(ctx context.Context) {
 func (lt *lavaTest) startLavaConsumerForPayment(ctx context.Context) {
 	for idx, u := range []string{"user1"} {
 		command := fmt.Sprintf(
-			"%s rpcconsumer %s/lavaConsumer%d.yml --chain-id=lava-local-1 --from %s %s --concurrent-providers 1",
+			"%s rpcconsumer %s/lavaConsumer%d.yml --chain-id=lava --from %s %s --concurrent-providers 1",
 			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "06_RPCConsumer_" + fmt.Sprintf("%02d", idx+1)

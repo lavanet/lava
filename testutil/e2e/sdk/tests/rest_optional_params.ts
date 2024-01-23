@@ -5,7 +5,7 @@ async function main() {
     const lavaSdkRest = await LavaSDK.create({
         privateKey: process.env.PRIVATE_KEY,
         chainIds: ["LAV1"],
-        lavaChainId: "lava-local-1",
+        lavaChainId: "lava",
         pairingListConfig: process.env.PAIRING_LIST,
         allowInsecureTransport: true,
         logLevel: "debug",
@@ -29,7 +29,7 @@ async function main() {
             const chainID = result["block"]["header"]["chain_id"];
 
             // Validate chainID
-            if (chainID != "lava-local-1") {
+            if (chainID != "lava") {
                 throw new Error(" ERR [rest_optional_params] Chain ID is not equal to lava");
             } else {
                 console.log(i, "[rest_optional_params] Success: Fetching Lava chain ID using REST passed. Chain ID correctly matches 'lava'");

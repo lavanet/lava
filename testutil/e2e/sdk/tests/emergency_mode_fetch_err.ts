@@ -5,7 +5,7 @@ async function main() {
     const lavaSDKTendermint = await LavaSDK.create({
         privateKey: process.env.PRIVATE_KEY,
         chainIds: "LAV1",
-        lavaChainId: "lava-local-1",
+        lavaChainId: "lava",
         pairingListConfig: process.env.PAIRING_LIST,
         allowInsecureTransport: true,
         logLevel: "debug",
@@ -27,7 +27,7 @@ async function main() {
             const chainID = parsedResponse.result["node_info"].network;
 
             // Validate chainID
-            if (chainID !== "lava-local-1") {
+            if (chainID !== "lava") {
                 throw new Error(" ERR [emergency_mode_fetch_err] Chain ID is not equal to lava");
             } else {
                 console.log(i, "[emergency_mode_fetch_err] Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");

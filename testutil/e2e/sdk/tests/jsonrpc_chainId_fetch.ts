@@ -5,7 +5,7 @@ async function main() {
     const eth = await LavaSDK.create({
         privateKey: process.env.PRIVATE_KEY,
         chainIds: "ETH1",
-        lavaChainId:"lava-local-1",
+        lavaChainId:"lava",
         pairingListConfig:process.env.PAIRING_LIST,
         allowInsecureTransport: true,
         logLevel: "debug",

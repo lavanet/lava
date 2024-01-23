@@ -2,7 +2,7 @@
     "type": "cosmos",
     "value": {
       "key": "default",
-      "chain-id": "lava-local-1",
+      "chain-id": "lava",
       "rpc-addr": "http://127.0.0.1:26657",
       "account-prefix": "lava@",
       "keyring-backend": "test",

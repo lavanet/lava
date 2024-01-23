@@ -37,7 +37,7 @@ var (
 
 func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     `badgegenerator --port=8080 --log-level=debug --lava-rpc=http://127.0.0.1:26657 --lava-grpc=127.0.0.1:9090 --chain-id=lava-local-1`,
+		Use:     `badgegenerator --port=8080 --log-level=debug --lava-rpc=http://127.0.0.1:26657 --lava-grpc=127.0.0.1:9090 --chain-id=lava`,
 		Short:   `badgegenerator sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
 		Long:    `badgegenerator sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
 		Example: `badgegenerator <flags>`,

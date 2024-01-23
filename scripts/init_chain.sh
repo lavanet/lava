@@ -11,7 +11,7 @@ if ! command_exists jq; then
 fi
 
 rm -rf ~/.lava
-chainID="lava-local-1"
+chainID="lava"
 lavad init validator --chain-id $chainID
 lavad config broadcast-mode sync
 lavad config keyring-backend test
