@@ -34,7 +34,7 @@ func (rf RedelegationFlager) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate boo
 		return ctx, fmt.Errorf("cannot send batch requests with redelegation messages")
 	}
 
-	keeper.DisableDualstakingHook = redelegations
+	rf.Keeper.SetDisableDualstakingHook(ctx, redelegations)
 
 	return next(ctx, tx, simulate)
 }
