@@ -17,6 +17,7 @@ func (k Keeper) ProviderConflicts(c context.Context, req *types.QueryProviderCon
 	var (
 		reported []string
 		notVoted []string
+		revealed []string
 	)
 
 	ctx := sdk.UnwrapSDKContext(c)
@@ -28,6 +29,10 @@ func (k Keeper) ProviderConflicts(c context.Context, req *types.QueryProviderCon
 			reported = append(reported, conflict.Index)
 		}
 
+		if conflict.VoteState == types.StateReveal {
+			revealed = append(revealed, conflict.Index)
+		}
+
 		for _, vote := range conflict.Votes {
 			if vote.Address == req.Provider && vote.Result == types.NoVote {
 				notVoted = append(notVoted, conflict.Index)
@@ -35,5 +40,5 @@ func (k Keeper) ProviderConflicts(c context.Context, req *types.QueryProviderCon
 		}
 	}
 
-	return &types.QueryProviderConflictsResponse{Reported: reported, NotVoted: notVoted}, nil
+	return &types.QueryProviderConflictsResponse{Reported: reported, NotVoted: notVoted, Revealed: revealed}, nil
 }
