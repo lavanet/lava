@@ -27,7 +27,7 @@ async function main() {
             const chainID = parsedResponse.result["node_info"].network;
 
             // Validate chainID
-            if (chainID !== "lava") {
+            if (chainID !== "lava-local-1") {
                 throw new Error(" ERR [emergency_mode_fetch_err] Chain ID is not equal to lava");
             } else {
                 console.log(i, "[emergency_mode_fetch_err] Success: Fetching Lava chain ID using tendermintrpc passed. Chain ID correctly matches 'lava'");

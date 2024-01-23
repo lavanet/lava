@@ -31,7 +31,7 @@ async function main() {
             const chainID = parsedResponse["default_node_info"].network;
 
             // Validate chainID
-            if (chainID != "lava") {
+            if (chainID != "lava-local-1") {
                 throw new Error(" ERR [rest_chainId_fetch] Chain ID is not equal to lava");
             }else{
                 console.log(i, "[rest_chainId_fetch] Success: Fetching Lava chain ID using REST passed. Chain ID correctly matches 'lava'");

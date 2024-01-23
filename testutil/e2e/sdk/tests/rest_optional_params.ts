@@ -29,7 +29,7 @@ async function main() {
             const chainID = result["block"]["header"]["chain_id"];
 
             // Validate chainID
-            if (chainID != "lava") {
+            if (chainID != "lava-local-1") {
                 throw new Error(" ERR [rest_optional_params] Chain ID is not equal to lava");
             } else {
                 console.log(i, "[rest_optional_params] Success: Fetching Lava chain ID using REST passed. Chain ID correctly matches 'lava'");
