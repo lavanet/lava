@@ -8,7 +8,7 @@ async function main() {
             projectId: process.env.BADGE_PROJECT_ID,
         },
         chainIds: ["ETH1"],
-        lavaChainId:"lava",
+        lavaChainId:"lava-local-1",
         pairingListConfig:process.env.PAIRING_LIST, 
         allowInsecureTransport: true,
         logLevel: "debug",

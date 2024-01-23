@@ -5,7 +5,7 @@ async function main() {
     const lavaSDKTendermint = await LavaSDK.create({
         privateKey: process.env.PRIVATE_KEY,
         chainIds: "LAV1",
-        lavaChainId: "lava",
+        lavaChainId: "lava-local-1",
         pairingListConfig: process.env.PAIRING_LIST,
         allowInsecureTransport: true,
         logLevel: "debug",

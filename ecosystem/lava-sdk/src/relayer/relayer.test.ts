@@ -50,7 +50,7 @@ describe("Test relay request", () => {
     ];
     const relayer = new Relayer({
       allowInsecureTransport: true,
-      lavaChainId: "lava",
+      lavaChainId: "lava-local-1",
       privKey: "",
       secure: true,
     });

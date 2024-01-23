@@ -67,7 +67,7 @@ function setupConsumerSessionManager(
 function setupRelayer(): Relayer {
   return new Relayer({
     allowInsecureTransport: true,
-    lavaChainId: "lava",
+    lavaChainId: "lava-local-1",
     privKey: "",
     secure: true,
   });
