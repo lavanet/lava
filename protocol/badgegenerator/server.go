@@ -1,17 +1,17 @@
-package badgegenerator
+package badgeserver
 
 import (
 	"context"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 
 	"google.golang.org/grpc/metadata"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
-	"github.com/lavanet/lava/protocol/badgegenerator/grpc"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
@@ -23,39 +23,33 @@ const dummyApiInterface = "badgeApiInterface"
 
 type Server struct {
 	pairingtypes.UnimplementedBadgeGeneratorServer
-	ProjectsConfiguration map[string]map[string]*ProjectConfiguration // geolocation/project_id/project_data
+	ProjectsConfiguration GelocationToProjectsConfiguration // geolocation/project_id/project_data
 	epoch                 uint64
-	grpcFetcher           *grpc.GRPCFetcher
+	chainFetcher          *chainlib.LavaChainFetcher
 	ChainId               string
 	IpService             *IpService
 	metrics               *MetricsService
 	stateTracker          *BadgeStateTracker
 	specs                 map[string]spectypes.Spec // holding the specs for all chains
 	specLock              sync.RWMutex
+	clientCtx             client.Context
+	projectPublicKey      string
+	projectPrivateKey     *btcSecp256k1.PrivateKey
 }
 
-func NewServer(ipService *IpService, grpcUrl, chainId, userData string) (*Server, error) {
+func NewServer(ipService *IpService, chainId string, projectsData GelocationToProjectsConfiguration, chainFetcher *chainlib.LavaChainFetcher, clientCtx client.Context, projectPublicKey string, projectPrivateKey *btcSecp256k1.PrivateKey) (*Server, error) {
 	server := &Server{
-		ProjectsConfiguration: map[string]map[string]*ProjectConfiguration{},
+		ProjectsConfiguration: GelocationToProjectsConfiguration{},
 		ChainId:               chainId,
 		IpService:             ipService,
 		specs:                 map[string]spectypes.Spec{},
+		chainFetcher:          chainFetcher,
+		clientCtx:             clientCtx,
+		projectPublicKey:      projectPublicKey,
+		projectPrivateKey:     projectPrivateKey,
 	}
 
-	if userData != "" {
-		projectsData := make(map[string]map[string]*ProjectConfiguration)
-		err := json.Unmarshal([]byte(userData), &projectsData)
-		if err != nil {
-			utils.LavaFormatWarning("provided information: ", err, utils.Attribute{Key: "userData", Value: userData})
-			return nil, err
-		}
-		server.ProjectsConfiguration = projectsData
-	}
-	grpcFetch, err := grpc.NewGRPCFetcher(grpcUrl)
-	if err != nil {
-		return nil, err
-	}
-	server.grpcFetcher = grpcFetch
+	server.ProjectsConfiguration = projectsData
 	server.metrics = InitMetrics()
 	return server, nil
 }
@@ -96,6 +90,7 @@ func (s *Server) checkSpecExists(specID string) (spectypes.Spec, bool) {
 func (s *Server) getSpec(ctx context.Context, specId string) (spectypes.Spec, error) {
 	_, found := s.checkSpecExists(specId)
 	if !found {
+		utils.LavaFormatDebug("Spec not found, registering for updates for the first time", utils.LogAttr("spec_id", specId))
 		err := s.stateTracker.RegisterForSpecUpdates(ctx, s, lavasession.RPCEndpoint{ChainID: specId, ApiInterface: dummyApiInterface})
 		if err != nil {
 			return spectypes.Spec{}, utils.LavaFormatError("BadgeServer Failed registering for spec updates", err)
@@ -118,17 +113,20 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 	if err != nil {
 		return nil, utils.LavaFormatError("badge server failed fetching spec", err)
 	}
+
 	metadata, _ := metadata.FromIncomingContext(ctx)
 	clientAddress := metadata.Get(RefererHeaderKey)
 	ipAddress := ""
 	if len(clientAddress) > 0 {
 		ipAddress = clientAddress[0]
 	}
-	projectData, err := s.validateRequest(ipAddress, req)
+
+	projectData, err := s.validateRequestAndGetProjectData(ipAddress, req)
 	if err != nil {
 		s.metrics.AddRequest(false)
 		return nil, err
 	}
+
 	badge := pairingtypes.Badge{
 		CuAllocation: uint64(projectData.EpochsMaxCu),
 		Epoch:        s.GetEpoch(),
@@ -139,83 +137,66 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 
 	result := pairingtypes.GenerateBadgeResponse{
 		Badge:              &badge,
-		BadgeSignerAddress: projectData.ProjectPublicKey,
+		BadgeSignerAddress: s.projectPublicKey,
 		Spec:               &spec,
 	}
 
-	err = s.addPairingListToResponse(req, projectData, &result)
+	err = s.addPairingListToResponse(ctx, req, projectData, &result)
 	if err != nil {
 		s.metrics.AddRequest(false)
 		return nil, err
 	}
 
-	err = signTheResponse(projectData.ProjectPrivateKey, &result)
+	err = signTheResponse(s.projectPrivateKey, &result)
 	if err != nil {
 		s.metrics.AddRequest(false)
 		return nil, err
 	}
+
 	s.metrics.AddRequest(true)
 	return &result, nil
 }
 
-func (s *Server) validateRequest(clientAddress string, in *pairingtypes.GenerateBadgeRequest) (*ProjectConfiguration, error) {
-	if in == nil {
-		err := fmt.Errorf("invalid request, no input data provided")
-		utils.LavaFormatError("Validation failed", err)
-		return nil, err
+func (s *Server) validateRequestAndGetProjectData(clientIPAddress string, request *pairingtypes.GenerateBadgeRequest) (*ProjectConfiguration, error) {
+	if request == nil {
+		return nil, utils.LavaFormatError("Validation failed", fmt.Errorf("invalid request, no input data provided"))
 	}
-	if in.BadgeAddress == "" || in.ProjectId == "" {
-		fmt.Println("In: ", in)
-		err := fmt.Errorf("bad request, no valid input data provided")
-		utils.LavaFormatError("Validation failed", err)
-		return nil, err
+
+	if request.BadgeAddress == "" || request.ProjectId == "" {
+		return nil, utils.LavaFormatError("Validation failed", fmt.Errorf("bad request, no valid input data provided"), utils.LogAttr("request", request))
 	}
-	geolocation := s.getClientGeolocationOrDefault(clientAddress)
+
+	geolocation := s.getClientGeolocationOrDefault(clientIPAddress)
 	geolocationData, exist := s.ProjectsConfiguration[geolocation]
 	if !exist {
-		err := fmt.Errorf("invalid configuration for this geolocation")
-		utils.LavaFormatError(
-			"invalid configuration",
-			err,
-			utils.Attribute{
-				Key:   "BadgeAddress",
-				Value: in.BadgeAddress,
-			}, utils.Attribute{
-				Key:   "ProjectId",
-				Value: in.ProjectId,
-			},
-			utils.Attribute{
-				Key:   "geolocation",
-				Value: geolocation,
-			},
-			utils.Attribute{
-				Key:   "ip",
-				Value: clientAddress,
-			},
+		return nil, utils.LavaFormatError(
+			"Validation failed",
+			fmt.Errorf("geolocation not found in configuration"),
+			utils.LogAttr("BadgeAddress", request.BadgeAddress),
+			utils.LogAttr("ProjectId", request.ProjectId),
+			utils.LogAttr("geolocation", geolocation),
+			utils.LogAttr("clientIPAddress", clientIPAddress),
 		)
-		return nil, err
 	}
-	projectData, exist := geolocationData[in.ProjectId]
+
+	// When loading the YAML configuration, the keys are lower-cased automatically, therefore we lowercase the requested projectId here
+	projectIdLower := strings.ToLower(request.ProjectId)
+	projectData, exist := geolocationData[projectIdLower]
 	if !exist {
+		utils.LavaFormatInfo("ProjectId not found in configuration, falling back to default",
+			utils.LogAttr("projectId", request.ProjectId),
+			utils.LogAttr("defaultProjectId", DefaultProjectId),
+		)
+
 		projectData, exist = geolocationData[DefaultProjectId]
 		if !exist {
-			err := fmt.Errorf("default project not found")
-			utils.LavaFormatError(
+			return nil, utils.LavaFormatError(
 				"Validation failed",
-				err,
-				utils.Attribute{
-					Key:   "BadgeAddress",
-					Value: in.BadgeAddress,
-				}, utils.Attribute{
-					Key:   "ProjectId",
-					Value: in.ProjectId,
-				},
-				utils.Attribute{
-					Key:   "geolocation",
-					Value: geolocation,
-				},
+				fmt.Errorf("default project not found"),
+				utils.LogAttr("BadgeAddress", request.BadgeAddress),
+				utils.LogAttr("ProjectId", request.ProjectId),
+				utils.LogAttr("geolocation", geolocation),
 			)
-			return nil, err
 		}
 	}
 	return projectData, nil
@@ -223,54 +204,62 @@ func (s *Server) validateRequest(clientAddress string, in *pairingtypes.Generate
 
 func (s *Server) getClientGeolocationOrDefault(clientIpAddress string) string {
 	if s.IpService != nil && len(clientIpAddress) > 0 {
-		utils.LavaFormatDebug("searching for ip", utils.Attribute{
-			Key:   "clientIp",
-			Value: clientIpAddress,
-		})
+		utils.LavaFormatDebug("searching for ip", utils.LogAttr("clientIp", clientIpAddress))
+
 		ip, err := s.IpService.SearchForIp(clientIpAddress)
 		if err != nil {
 			utils.LavaFormatError("error searching for client ip-geolocation", err)
 		} else if ip == nil {
-			utils.LavaFormatInfo("ip not found")
+			utils.LavaFormatInfo("ip not found", utils.LogAttr("ip", clientIpAddress))
 		} else {
 			return fmt.Sprintf("%d", ip.Geolocation)
 		}
 	} else {
-		utils.LavaFormatInfo("Ip service not configured correctly")
+		utils.LavaFormatInfo("Ip service not configured correctly, using default geolocation",
+			utils.LogAttr("defaultGeolocation", s.IpService.DefaultGeolocation),
+		)
 	}
 	return fmt.Sprintf("%d", s.IpService.DefaultGeolocation)
 }
 
-func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeRequest, configurations *ProjectConfiguration, response *pairingtypes.GenerateBadgeResponse) error {
+func (s *Server) addPairingListToResponse(ctx context.Context, request *pairingtypes.GenerateBadgeRequest,
+	configurations *ProjectConfiguration, response *pairingtypes.GenerateBadgeResponse,
+) error {
 	chainID := request.SpecId
-	if chainID != "" {
-		if configurations.PairingList == nil {
-			configurations.PairingList = make(map[string]*pairingtypes.QueryGetPairingResponse)
-		}
-		if configurations.UpdatedEpoch == nil {
-			configurations.UpdatedEpoch = make(map[string]uint64)
-		}
-		if configurations.PairingList[chainID] == nil || response.Badge.Epoch != configurations.UpdatedEpoch[chainID] {
-			pairings, err := s.grpcFetcher.FetchPairings(chainID, configurations.ProjectPublicKey)
-			if err != nil {
-				utils.LavaFormatError("Failed to get pairings", err,
-					utils.Attribute{Key: "epoch", Value: s.GetEpoch()},
-					utils.Attribute{Key: "BadgeAddress", Value: request.GetBadgeAddress()},
-					utils.Attribute{Key: "ProjectId", Value: request.ProjectId})
-				return err
-			}
-			configurations.PairingList[chainID] = pairings
-			configurations.UpdatedEpoch[chainID] = response.Badge.Epoch
-		}
-		response.GetPairingResponse = configurations.PairingList[chainID]
+	if chainID == "" {
+		// TODO: Is this a valid flow?
+		return nil
 	}
+
+	if configurations.PairingList == nil {
+		configurations.PairingList = make(map[string]*pairingtypes.QueryGetPairingResponse)
+	}
+
+	if configurations.UpdatedEpoch == nil {
+		configurations.UpdatedEpoch = make(map[string]uint64)
+	}
+
+	if configurations.PairingList[chainID] == nil || response.Badge.Epoch != configurations.UpdatedEpoch[chainID] {
+		querier := pairingtypes.NewQueryClient(s.clientCtx)
+		getPairingResponse, err := querier.GetPairing(ctx, &pairingtypes.QueryGetPairingRequest{
+			ChainID: chainID,
+			Client:  s.projectPublicKey,
+		})
+		if err != nil {
+			return utils.LavaFormatError("Failed to get pairings", err,
+				utils.LogAttr("epoch", s.GetEpoch()),
+				utils.LogAttr("BadgeAddress", request.GetBadgeAddress()),
+				utils.LogAttr("ProjectId", request.ProjectId))
+		}
+		configurations.PairingList[chainID] = getPairingResponse
+		configurations.UpdatedEpoch[chainID] = response.Badge.Epoch
+	}
+	response.GetPairingResponse = configurations.PairingList[chainID]
 	return nil
 }
 
 // note this update the signature of the response
-func signTheResponse(privateKeyString string, response *pairingtypes.GenerateBadgeResponse) error {
-	privateKeyBytes, _ := hex.DecodeString(privateKeyString)
-	privateKey, _ := btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), privateKeyBytes)
+func signTheResponse(privateKey *btcSecp256k1.PrivateKey, response *pairingtypes.GenerateBadgeResponse) error {
 	signature, err := sigs.Sign(privateKey, *response.Badge)
 	if err != nil {
 		return err

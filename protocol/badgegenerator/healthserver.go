@@ -1,4 +1,4 @@
-package badgegenerator
+package badgeserver
 
 import (
 	"golang.org/x/net/context"

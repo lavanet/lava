@@ -1,13 +1,13 @@
-package badgegenerator
+package badgeserver
 
 import "github.com/lavanet/lava/x/pairing/types"
 
+type GelocationToProjectsConfiguration map[string]map[string]*ProjectConfiguration
+
 type ProjectConfiguration struct {
-	ProjectPublicKey  string                                    `json:"project_public_key"`
-	ProjectPrivateKey string                                    `json:"private_key"`
-	EpochsMaxCu       int64                                     `json:"epochs_max_cu"`
-	UpdatedEpoch      map[string]uint64                         `json:"update_epoch,omitempty"`
-	PairingList       map[string]*types.QueryGetPairingResponse `json:"pairing_list,omitempty"`
+	EpochsMaxCu  int64                                     `yaml:"epochs-max-cu,omitempty" json:"epochs-max-cu,omitempty" mapstructure:"epochs-max-cu,omitempty"`
+	UpdatedEpoch map[string]uint64                         `yaml:"update-epoch,omitempty" json:"update-epoch,omitempty" mapstructure:"update-epoch,omitempty"`
+	PairingList  map[string]*types.QueryGetPairingResponse `yaml:"pairing-list,omitempty" json:"pairing-list,omitempty" mapstructure:"pairing-list,omitempty"`
 }
 
 type UserBadgeItem struct {

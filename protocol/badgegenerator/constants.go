@@ -1,14 +1,13 @@
-package badgegenerator
+package badgeserver
 
 const (
-	PortEnvironmentVariable               = "PORT"
-	MetricsPortEnvironmentVariable        = "METRICS_PORT"
-	UserDataEnvironmentVariable           = "USER_DATA"
-	GrpcUrlEnvironmentVariable            = "GRPC_URL"
-	LavaChainIDEnvironmentVariable        = "CHAIN_ID"
-	DefaultGeolocationEnvironmentVariable = "DEFAULT_GEOLOCATION"
-	CountriesFilePathEnvironmentVariable  = "COUNTRIES_FILE_PATH"
-	IpFilePathEnvironmentVariable         = "IP_FILE_PATH"
+	PortFieldName               = "port"
+	MetricsPortFieldName        = "metrics-port"
+	ProjectDataFieldName        = "projects-data"
+	LavaChainIDFieldName        = "chain-id"
+	DefaultGeolocationFieldName = "default-geolocation"
+	CountriesFilePathFieldName  = "countries-file-path"
+	IpFilePathFieldName         = "ip-file-path"
 )
 
 const DefaultProjectId = "default"

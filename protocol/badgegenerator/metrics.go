@@ -1,4 +1,4 @@
-package badgegenerator
+package badgeserver
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
