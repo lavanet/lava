@@ -87,7 +87,7 @@ if [ "$1" == "debug" ]; then
     | jq '.app_state.conflict.params.majorityPercent = "0.999000000000000000"' \
     | jq '.app_state.conflict.params.votePeriod = "2"' \
     | jq '.app_state.conflict.params.voteStartSpan = "3"' \
-    | jq '.app_state.downtime.params.downtime_duration = "1.2s"' \
+    | jq '.app_state.downtime.params.downtime_duration = "2s"' \
     | jq '.app_state.downtime.params.epoch_duration = "8s"' \
     | jq '.app_state.epochstorage.params.epochBlocks = "8"' \
     | jq '.app_state.epochstorage.params.epochsToSave = "1"' \
