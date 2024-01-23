@@ -9,7 +9,7 @@ import (
 
 func TestGenesisState_Validate(t *testing.T) {
 	defaultParamsWithDuplicateBlacklistedExpeditedMsgs := types.DefaultParams()
-	defaultParamsWithDuplicateBlacklistedExpeditedMsgs.WhitelistedExpeditedMsgs = []string{"a", "a"}
+	defaultParamsWithDuplicateBlacklistedExpeditedMsgs.AllowlistedExpeditedMsgs = []string{"a", "a"}
 
 	for _, tc := range []struct {
 		desc     string

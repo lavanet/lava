@@ -24,7 +24,7 @@ import (
 func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 	account := authtypes.NewModuleAddressOrBech32Address("cosmos1qypqxpq9qcrsszgjx3ysxf7j8xq9q9qyq9q9q9")
 	govAuthority := authtypes.NewModuleAddress(govtypes.ModuleName)
-	whitelistedContent := plantypes.PlansDelProposal{}
+	allowlistedContent := plantypes.PlansDelProposal{}
 
 	tests := []struct {
 		name       string
@@ -32,7 +32,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 		shouldFail bool
 	}{
 		{
-			name: "should not fail if the message is in the whitelist, expedited",
+			name: "should not fail if the message is in the allowlist, expedited",
 			theMsg: func() sdk.Msg {
 				proposal, err := v1.NewMsgSubmitProposal(
 					[]sdk.Msg{
@@ -52,7 +52,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			shouldFail: false,
 		},
 		{
-			name: "should fail if none of the messages are in the whitelist, expedited",
+			name: "should fail if none of the messages are in the allowlist, expedited",
 			theMsg: func() sdk.Msg {
 				proposal, err := v1.NewMsgSubmitProposal(
 					[]sdk.Msg{
@@ -72,7 +72,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			shouldFail: true,
 		},
 		{
-			name: "a new msg exec proposal with an expedited message with a whitelisted message should not fail",
+			name: "a new msg exec proposal with an expedited message with a allowlisted message should not fail",
 			theMsg: func() sdk.Msg {
 				proposal, err := v1.NewMsgSubmitProposal(
 					[]sdk.Msg{
@@ -97,7 +97,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			shouldFail: false,
 		},
 		{
-			name: "a new msg exec proposal with an expedited message with a non-whitelisted message should fail",
+			name: "a new msg exec proposal with an expedited message with a non-allowlisted message should fail",
 			theMsg: func() sdk.Msg {
 				proposal, err := v1.NewMsgSubmitProposal(
 					[]sdk.Msg{
@@ -122,9 +122,9 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			shouldFail: true,
 		},
 		{
-			name: "a v1 proposal that contains a legacy proposal with whitelisted content should not fail, expedited",
+			name: "a v1 proposal that contains a legacy proposal with allowlisted content should not fail, expedited",
 			theMsg: func() sdk.Msg {
-				anyContent, err := codectypes.NewAnyWithValue(&whitelistedContent)
+				anyContent, err := codectypes.NewAnyWithValue(&allowlistedContent)
 				require.NoError(t, err)
 				submitProposal := v1.NewMsgExecLegacyContent(
 					anyContent,
@@ -149,7 +149,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 			shouldFail: false,
 		},
 		{
-			name: "a v1 proposal that contains a legacy proposal with not whitelisted content should fail, expedited",
+			name: "a v1 proposal that contains a legacy proposal with not allowlisted content should fail, expedited",
 			theMsg: func() sdk.Msg {
 				anyContent, err := codectypes.NewAnyWithValue(&plantypes.PlansAddProposal{})
 				require.NoError(t, err)
@@ -183,10 +183,10 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			k, ctx := testkeeper.SpecKeeper(t)
 			params := spectypes.DefaultParams()
-			params.WhitelistedExpeditedMsgs = []string{
+			params.AllowlistedExpeditedMsgs = []string{
 				proto.MessageName(&banktypes.MsgSend{}),
-				proto.MessageName(&whitelistedContent),
-			} // we whitelist MsgSend proposal
+				proto.MessageName(&allowlistedContent),
+			} // we allowlist MsgSend proposal
 
 			k.SetParams(ctx, params)
 

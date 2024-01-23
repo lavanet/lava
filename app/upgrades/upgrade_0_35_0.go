@@ -7,20 +7,20 @@ import (
 	"github.com/lavanet/lava/app/keepers"
 )
 
-func v_33_1(
+func v_35_0(
 	m *module.Manager,
 	c module.Configurator,
 	_ BaseAppParamManager,
 	lk *keepers.LavaKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-		// reset whitelist to empty
-		lk.SpecKeeper.WhitelistReset(ctx)
+		// reset allowlist to empty
+		lk.SpecKeeper.AllowlistReset(ctx)
 
 		params := lk.SpecKeeper.GetParams(ctx)
-		params.WhitelistedExpeditedMsgs = []string{
+		params.AllowlistedExpeditedMsgs = []string{
 			// proto.MessageName(&upgradetypes.MsgCancelUpgrade{}),
-			// TODO: Here we setup the whitelisted messages we want to allow via expedited proposals
+			// TODO: Here we setup the allowlisted messages we want to allow via expedited proposals
 		}
 		lk.SpecKeeper.SetParams(ctx, params)
 

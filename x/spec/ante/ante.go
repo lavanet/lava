@@ -54,7 +54,7 @@ func (e ExpeditedProposalFilterAnteDecorator) blockDisallowedExpeditedProposals(
 		}
 		// ensure all proposal exec messages are allowed
 		for i, propMsg := range propMsgs {
-			err = e.ensureInWhitelist(ctx, propMsg)
+			err = e.ensureInallowlist(ctx, propMsg)
 			if err != nil {
 				return fmt.Errorf("proposal exec message at index %d is not allowed to be expedited: %w", i, err)
 			}
@@ -81,22 +81,22 @@ func (e ExpeditedProposalFilterAnteDecorator) blockDisallowedExpeditedProposals(
 	}
 }
 
-func (e ExpeditedProposalFilterAnteDecorator) ensureInWhitelist(ctx sdk.Context, msg proto.Message) error {
-	whitelist := e.getWhitelist(ctx)
+func (e ExpeditedProposalFilterAnteDecorator) ensureInallowlist(ctx sdk.Context, msg proto.Message) error {
+	allowlist := e.getallowlist(ctx)
 
 	switch m := msg.(type) {
 	// if the proposal is the one which executes a legacy content, then
-	// we check that the content type is in the whitelist.
+	// we check that the content type is in the allowlist.
 	case *v1.MsgExecLegacyContent:
 		contentName := getCanonicalProtoNameFromAny(m.Content)
-		_, allowed := whitelist[contentName]
+		_, allowed := allowlist[contentName]
 		if !allowed {
 			return fmt.Errorf("expedited proposal, attempted to execute legacy content %s which is disallowed", contentName)
 		}
 		return nil
 	default:
 		msgName := proto.MessageName(m)
-		_, allowed := whitelist[msgName]
+		_, allowed := allowlist[msgName]
 		if !allowed {
 			return fmt.Errorf("expedited proposal, attempted to execute proposal message %s which is disallowed", msgName)
 		}
@@ -104,13 +104,13 @@ func (e ExpeditedProposalFilterAnteDecorator) ensureInWhitelist(ctx sdk.Context,
 	}
 }
 
-func (e ExpeditedProposalFilterAnteDecorator) getWhitelist(ctx sdk.Context) map[string]struct{} {
-	whitelist := e.k.WhitelistedExpeditedMsgs(ctx)
-	whitelistSet := make(map[string]struct{}, len(whitelist))
-	for _, w := range whitelist {
-		whitelistSet[w] = struct{}{}
+func (e ExpeditedProposalFilterAnteDecorator) getallowlist(ctx sdk.Context) map[string]struct{} {
+	allowlist := e.k.AllowlistedExpeditedMsgs(ctx)
+	allowlistSet := make(map[string]struct{}, len(allowlist))
+	for _, w := range allowlist {
+		allowlistSet[w] = struct{}{}
 	}
-	return whitelistSet
+	return allowlistSet
 }
 
 func getCanonicalProtoNameFromAny(any *codectypes.Any) string {
