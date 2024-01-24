@@ -170,6 +170,9 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				{Key: "parsedResult", Value: parsedResult},
 				{Key: "verification.Value", Value: verification.Value},
 				{Key: "Method", Value: parsing.GetApiName()},
+				{Key: "Extension", Value: verification.Extension},
+				{Key: "Addon", Value: verification.Addon},
+				{Key: "Verification", Value: verification.Name},
 			}...)
 		}
 	}
