@@ -17,7 +17,7 @@ type ConsumerRelayServerClient struct {
 	addQueue           []UpdateMetricsRequest
 	ticker             *time.Ticker
 	lock               sync.RWMutex
-	sendID             int
+	sendCnt            int
 	isSendQueueRunning bool
 }
 type UpdateMetricsRequest struct {
@@ -36,6 +36,8 @@ func NewConsumerRelayServerClient(endPointAddress string) *ConsumerRelayServerCl
 		utils.LavaFormatInfo("Running with Consumer Relay Server Disabled")
 		return nil
 	}
+
+	utils.LavaFormatInfo("[CUC] CUC is enabled", utils.LogAttr("endPointAddress", endPointAddress))
 
 	cuc := &ConsumerRelayServerClient{
 		endPointAddress: endPointAddress,
@@ -70,21 +72,21 @@ func (cuc *ConsumerRelayServerClient) relayDataSendQueueTick() {
 		sendQueue := cuc.addQueue
 		cuc.addQueue = make([]UpdateMetricsRequest, 0)
 		cuc.isSendQueueRunning = true
-		cuc.sendID++
-		utils.LavaFormatDebug("[CUC] Swapped queues", utils.LogAttr("sendQueue_length", len((sendQueue))), utils.LogAttr("send_id", cuc.sendID))
+		cuc.sendCnt++
+		utils.LavaFormatDebug("[CUC] Swapped queues", utils.LogAttr("sendQueue_length", len((sendQueue))), utils.LogAttr("sendcnt", cuc.sendCnt))
 
-		sendID := cuc.sendID
+		sendCnt := cuc.sendCnt
 		cucEndpointAddress := cuc.endPointAddress
 
 		go func() {
-			cuc.sendRelayData(sendQueue, sendID, cucEndpointAddress)
+			cuc.sendRelayData(sendQueue, sendCnt, cucEndpointAddress)
 
 			cuc.lock.Lock()
 			cuc.isSendQueueRunning = false
 			cuc.lock.Unlock()
 		}()
 	} else {
-		utils.LavaFormatDebug("[CUC] server is busy skipping send", utils.LogAttr("id", cuc.sendID))
+		utils.LavaFormatDebug("[CUC] Sending in progress, skipping iteration will send on next", utils.LogAttr("sendcnt", cuc.sendCnt))
 	}
 }
 
@@ -111,19 +113,21 @@ func (cuc *ConsumerRelayServerClient) SetRelayMetrics(relayMetric *RelayMetrics)
 	cuc.appendQueue(request)
 }
 
-func (cuc *ConsumerRelayServerClient) aggregateAndSendRelayData(sendQueue []UpdateMetricsRequest, sendID int, cucEndpointAddress string) (*http.Response, error) {
+func (cuc *ConsumerRelayServerClient) aggregateAndSendRelayData(sendQueue []UpdateMetricsRequest, sendCnt int, cucEndpointAddress string) (*http.Response, error) {
+	utils.LavaFormatDebug("[CUC] Sending data to server - start ", utils.LogAttr("Size of metrics to send", len(sendQueue)))
+
 	if cuc == nil {
-		return nil, utils.LavaFormatError("CUC is nil. misuse detected", nil)
+		return nil, utils.LavaFormatError("Sending data to server - CUC is nil. misuse detected", nil)
 	}
 
 	if len(sendQueue) == 0 {
-		return nil, errors.New("sendQueue is empty")
+		return nil, errors.New("Sending data to server - SendQueue is empty")
 	}
 
 	aggregatedRequests := cuc.aggregateRelayData(sendQueue)
 
 	if len(aggregatedRequests) == 0 {
-		return nil, errors.New("no requests after aggregate")
+		return nil, errors.New("Sending data to server - No requests after aggregate")
 	}
 
 	client := &http.Client{
@@ -132,25 +136,25 @@ func (cuc *ConsumerRelayServerClient) aggregateAndSendRelayData(sendQueue []Upda
 
 	jsonData, err := json.Marshal(aggregatedRequests)
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed marshaling aggregated requests", err)
+		return nil, utils.LavaFormatError("Sending data to server - Failed marshaling aggregated requests", err)
 	}
 
 	var resp *http.Response
 	for i := 0; i < 3; i++ {
 		resp, err = client.Post(cucEndpointAddress+"/updateMetrics", "application/json", bytes.NewBuffer(jsonData))
 		if err != nil {
-			utils.LavaFormatDebug("[CUC] Failed to post request", utils.LogAttr("Attempt", i+1), utils.LogAttr("err", err))
+			utils.LavaFormatDebug("[CUC] Sending data to server - Failed to post request", utils.LogAttr("Attempt", i+1), utils.LogAttr("err", err))
 			time.Sleep(2 * time.Second)
 		} else {
-			utils.LavaFormatInfo("[CUC] Successfully sent request", utils.LogAttr("Attempt", i+1), utils.LogAttr("Number of aggregated requests", len(aggregatedRequests)))
+			utils.LavaFormatDebug("[CUC] Sending data to server - Successfully sent request", utils.LogAttr("Attempt", i+1), utils.LogAttr("Number of aggregated requests", len(aggregatedRequests)))
 			return resp, nil
 		}
 	}
 
-	return nil, utils.LavaFormatWarning("[CUC] Failed to send requests after 3 attempts", err)
+	return nil, utils.LavaFormatWarning("[CUC] Sending data to server - Failed to send requests after 3 attempts", err)
 }
 
-func (cuc *ConsumerRelayServerClient) handleSendRelayResponse(resp *http.Response, sendID int) {
+func (cuc *ConsumerRelayServerClient) handleSendRelayResponse(resp *http.Response, sendCnt int) {
 	if cuc == nil {
 		return
 	}
@@ -158,23 +162,23 @@ func (cuc *ConsumerRelayServerClient) handleSendRelayResponse(resp *http.Respons
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			utils.LavaFormatWarning("[CUC] failed reading response body", err)
+			utils.LavaFormatWarning("[CUC] Sending data to server - failed reading response body", err)
 		} else {
-			utils.LavaFormatWarning("[CUC] Received non-200 status code", nil, utils.LogAttr("status_code", resp.StatusCode), utils.LogAttr("body", string(bodyBytes)))
+			utils.LavaFormatWarning("[CUC] Sending data to server - Received non-200 status code", nil, utils.LogAttr("status_code", resp.StatusCode), utils.LogAttr("body", string(bodyBytes)))
 		}
 	}
 }
 
-func (cuc *ConsumerRelayServerClient) sendRelayData(sendQueue []UpdateMetricsRequest, sendID int, cucEndpointAddress string) {
+func (cuc *ConsumerRelayServerClient) sendRelayData(sendQueue []UpdateMetricsRequest, sendCnt int, cucEndpointAddress string) {
 	if cuc == nil {
 		return
 	}
-	resp, err := cuc.aggregateAndSendRelayData(sendQueue, sendID, cucEndpointAddress)
+	resp, err := cuc.aggregateAndSendRelayData(sendQueue, sendCnt, cucEndpointAddress)
 	if err != nil {
-		utils.LavaFormatWarning("[CUC] failed sendRelay data", err)
+		utils.LavaFormatWarning("[CUC] Sending data to server - failed sendRelay data", err)
 		return
 	}
-	cuc.handleSendRelayResponse(resp, sendID)
+	cuc.handleSendRelayResponse(resp, sendCnt)
 }
 
 func generateRequestArregatedCacheKey(req UpdateMetricsRequest) string {
