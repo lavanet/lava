@@ -3,11 +3,13 @@ package keeper
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -168,7 +170,19 @@ func (k Keeper) verifySubscriptionBuyInputAndGetPlan(ctx sdk.Context, block uint
 			utils.Attribute{Key: "block", Value: block},
 		)
 	}
-	return
+
+	if len(plan.AllowedBuyers) != 0 {
+		if !slices.Contains(plan.AllowedBuyers, creator) {
+			allowedBuyers := strings.Join(plan.AllowedBuyers, ",")
+			return nil, EMPTY_PLAN, utils.LavaFormatWarning("subscription buy input is invalid", fmt.Errorf("creator is not part of the allowed buyers list"),
+				utils.LogAttr("creator", creator),
+				utils.LogAttr("plan", plan.Index),
+				utils.LogAttr("allowed_buyers", allowedBuyers),
+			)
+		}
+	}
+
+	return creatorAcct, plan, nil
 }
 
 func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, creator, consumer string,
@@ -294,6 +308,17 @@ func (k Keeper) renewSubscription(ctx sdk.Context, sub *types.Subscription) erro
 			utils.Attribute{Key: "planIndex", Value: sub.PlanIndex},
 			utils.Attribute{Key: "block", Value: block},
 		)
+	}
+
+	if len(plan.AllowedBuyers) != 0 {
+		if !slices.Contains(plan.AllowedBuyers, sub.Creator) {
+			allowedBuyers := strings.Join(plan.AllowedBuyers, ",")
+			return utils.LavaFormatWarning("cannot auto-renew subscription", fmt.Errorf("creator is not part of the allowed buyers list"),
+				utils.LogAttr("creator", sub.Creator),
+				utils.LogAttr("plan", plan.Index),
+				utils.LogAttr("allowed_buyers", allowedBuyers),
+			)
+		}
 	}
 
 	sub.PlanIndex = plan.Index
