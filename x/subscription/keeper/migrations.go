@@ -203,6 +203,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 					utils.Attribute{Key: "plan", Value: s8.PlanIndex},
 					utils.Attribute{Key: "plan_block", Value: s8.PlanBlock},
 				)
+				continue
 			}
 			creditAmount := plan.Price.Amount.MulRaw(int64(s8.DurationLeft))
 			credit := sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), creditAmount)
@@ -217,6 +218,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 						utils.Attribute{Key: "plan", Value: s8.PlanIndex},
 						utils.Attribute{Key: "plan_block", Value: s8.PlanBlock},
 					)
+					continue
 				}
 
 				futureCreditAmount := futurePlan.Price.Amount.MulRaw(int64(s8.FutureSubscription.DurationBought))
