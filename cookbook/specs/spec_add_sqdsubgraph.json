@@ -96,11 +96,43 @@
                             "api_interface": "rest",
                             "internal_path": "",
                             "type": "POST",
-                            "add_on": "convex"
+                            "add_on": "compound-v3"
                         },
                         "apis": [
                             {
-                                "name": "/subgraphs/name/convex",
+                                "name": "/subgraphs/name/compound-v3",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 200,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": true,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": []
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": "aave-v3"
+                        },
+                        "apis": [
+                            {
+                                "name": "/subgraphs/name/aave-v3",
                                 "block_parsing": {
                                     "parser_arg": [
                                         ""
