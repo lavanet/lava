@@ -142,6 +142,7 @@ func (cuc *ConsumerRelayServerClient) aggregateAndSendRelayData(sendQueue []Upda
 			utils.LavaFormatDebug("[CUC] Failed to post request", utils.LogAttr("Attempt", i+1), utils.LogAttr("err", err))
 			time.Sleep(2 * time.Second)
 		} else {
+			utils.LavaFormatInfo("[CUC] Successfully sent request", utils.LogAttr("Attempt", i+1), utils.LogAttr("Number of aggregated requests", len(aggregatedRequests)))
 			return resp, nil
 		}
 	}
