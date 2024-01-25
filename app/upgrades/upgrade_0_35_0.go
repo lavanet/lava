@@ -3,8 +3,12 @@ package upgrades
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	"github.com/cosmos/gogoproto/proto"
+	ibctypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/lavanet/lava/app/keepers"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 func v_35_0(
@@ -19,8 +23,10 @@ func v_35_0(
 
 		params := lk.SpecKeeper.GetParams(ctx)
 		params.AllowlistedExpeditedMsgs = []string{
-			// proto.MessageName(&upgradetypes.MsgCancelUpgrade{}),
-			// TODO: Here we setup the allowlisted messages we want to allow via expedited proposals
+			proto.MessageName(&spectypes.SpecAddProposal{}),
+			proto.MessageName(&paramtypes.ParameterChangeProposal{}),
+			proto.MessageName(&ibctypes.ClientUpdateProposal{}),
+			proto.MessageName(&ibctypes.UpgradeProposal{}),
 		}
 		lk.SpecKeeper.SetParams(ctx, params)
 
