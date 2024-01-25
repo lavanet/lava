@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	KeyMaxCU            = []byte("MaxCU")
-	DefaultMaxCU uint64 = 10000
+	KeyMaxCU                         = []byte("MaxCU")
+	KeyallowlistExpeditedMsgs        = []byte("AllowlistedExpeditedMsgs")
+	DefaultMaxCU              uint64 = 10000
 )
 
 var _ paramtypes.ParamSet = (*Params)(nil)
@@ -20,25 +21,30 @@ func ParamKeyTable() paramtypes.KeyTable {
 }
 
 // NewParams creates a new Params instance
-func NewParams(maxCU uint64) Params {
-	return Params{MaxCU: maxCU}
+func NewParams(maxCU uint64, allowlistedExpeditedMsgs []string) Params {
+	return Params{MaxCU: maxCU, AllowlistedExpeditedMsgs: allowlistedExpeditedMsgs}
 }
 
 // DefaultParams returns a default set of parameters
 func DefaultParams() Params {
-	return NewParams(DefaultMaxCU)
+	return NewParams(DefaultMaxCU, nil)
 }
 
 // ParamSetPairs get the params.ParamSet
 func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyMaxCU, &p.MaxCU, validateMaxCU),
+		paramtypes.NewParamSetPair(KeyallowlistExpeditedMsgs, &p.AllowlistedExpeditedMsgs, validateallowlistedExpeditedMsgs),
 	}
 }
 
 // Validate validates the set of params
 func (p Params) Validate() error {
 	if err := validateMaxCU(p.MaxCU); err != nil {
+		return err
+	}
+
+	if err := validateallowlistedExpeditedMsgs(p.AllowlistedExpeditedMsgs); err != nil {
 		return err
 	}
 
@@ -61,6 +67,24 @@ func validateMaxCU(v interface{}) error {
 	}
 	// TODO implement validation
 	_ = maxCU
+
+	return nil
+}
+
+func validateallowlistedExpeditedMsgs(v interface{}) error {
+	allowlistedExpeditedMsgs, ok := v.([]string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	// check for duplicates
+	allowlistedExpeditedMsgsMap := make(map[string]struct{})
+	for _, msg := range allowlistedExpeditedMsgs {
+		if _, ok := allowlistedExpeditedMsgsMap[msg]; ok {
+			return fmt.Errorf("duplicate message in allowlistedExpeditedMessages: %s", msg)
+		}
+		allowlistedExpeditedMsgsMap[msg] = struct{}{}
+	}
 
 	return nil
 }

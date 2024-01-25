@@ -17,7 +17,7 @@ var _ = strconv.IntSize
 func TestProviderConflicts(t *testing.T) {
 	keeper, ctx := keepertest.ConflictKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNConflictVote(keeper, ctx, 7)
+	msgs := createNConflictVote(keeper, ctx, 8)
 
 	const (
 		FIRST_PROVIDER                  = 0
@@ -27,6 +27,7 @@ func TestProviderConflicts(t *testing.T) {
 		VOTED                           = 4
 		PROVIDER_REPORTED_AND_NOT_VOTED = 5
 		PROVIDER_REPORTED_AND_VOTED     = 6
+		CONFLICT_REVEALED               = 7
 	)
 
 	var providers []string
@@ -53,6 +54,8 @@ func TestProviderConflicts(t *testing.T) {
 		case PROVIDER_REPORTED_AND_VOTED:
 			msg.FirstProvider.Account = providers[PROVIDER_REPORTED_AND_VOTED]
 			msg.Votes = append(msg.Votes, types.Vote{Address: providers[PROVIDER_REPORTED_AND_VOTED], Result: types.Provider0})
+		case CONFLICT_REVEALED:
+			msg.Votes = append(msg.Votes, types.Vote{Address: providers[CONFLICT_REVEALED], Result: types.Commit})
 		}
 
 		keeper.SetConflictVote(ctx, msg)
@@ -63,48 +66,63 @@ func TestProviderConflicts(t *testing.T) {
 		provider         string
 		expectedReported []string
 		expectedNotVoted []string
+		expectedRevealed []string
 	}{
 		{
 			desc:             "First provider",
 			provider:         providers[FIRST_PROVIDER],
 			expectedReported: []string{strconv.Itoa(FIRST_PROVIDER)},
 			expectedNotVoted: []string{},
+			expectedRevealed: []string{},
 		},
 		{
 			desc:             "Second provider",
 			provider:         providers[SECOND_PROVIDER],
 			expectedReported: []string{strconv.Itoa(SECOND_PROVIDER)},
 			expectedNotVoted: []string{},
+			expectedRevealed: []string{},
 		},
 		{
 			desc:             "None of the providers",
 			provider:         "dummy",
 			expectedReported: []string{},
 			expectedNotVoted: []string{},
+			expectedRevealed: []string{},
 		},
 		{
 			desc:             "Not voted",
 			provider:         providers[NOT_VOTED],
 			expectedReported: []string{},
 			expectedNotVoted: []string{strconv.Itoa(NOT_VOTED)},
+			expectedRevealed: []string{},
 		},
 		{
 			desc:             "Voted",
 			provider:         providers[VOTED],
 			expectedReported: []string{},
 			expectedNotVoted: []string{},
+			expectedRevealed: []string{},
 		},
 		{
 			desc:             "Provider reported and not voted",
 			provider:         providers[PROVIDER_REPORTED_AND_NOT_VOTED],
 			expectedReported: []string{strconv.Itoa(PROVIDER_REPORTED_AND_NOT_VOTED)},
 			expectedNotVoted: []string{strconv.Itoa(PROVIDER_REPORTED_AND_NOT_VOTED)},
+			expectedRevealed: []string{},
 		},
 		{
 			desc:             "First Provider and voted",
 			provider:         providers[PROVIDER_REPORTED_AND_VOTED],
 			expectedReported: []string{strconv.Itoa(PROVIDER_REPORTED_AND_VOTED)},
 			expectedNotVoted: []string{},
+			expectedRevealed: []string{},
+		},
+		{
+			desc:             "Revealed conflict",
+			provider:         providers[CONFLICT_REVEALED],
+			expectedReported: []string{},
+			expectedNotVoted: []string{},
+			expectedRevealed: []string{strconv.Itoa(CONFLICT_REVEALED)},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
