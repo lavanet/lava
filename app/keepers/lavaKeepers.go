@@ -2,6 +2,7 @@ package keepers
 
 import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
@@ -71,5 +72,6 @@ type LavaKeepers struct {
 	RewardsKeeper         rewardsmodulekeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 	GroupKeeper           groupkeeper.Keeper
+	AuthzKeeper           authzkeeper.Keeper
 	ICAHostKeeper         icahostkeeper.Keeper
 }

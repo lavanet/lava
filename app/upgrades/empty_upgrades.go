@@ -4,6 +4,7 @@ import (
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	"github.com/cosmos/cosmos-sdk/x/group"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
@@ -208,5 +209,5 @@ var Upgrade_0_34_0 = Upgrade{
 var Upgrade_0_35_0 = Upgrade{
 	UpgradeName:          "v0.35.0",
 	CreateUpgradeHandler: v_35_0,
-	StoreUpgrades:        store.StoreUpgrades{Added: []string{group.StoreKey}},
+	StoreUpgrades:        store.StoreUpgrades{Added: []string{authzkeeper.StoreKey, group.StoreKey}},
 }
