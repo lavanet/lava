@@ -55,7 +55,7 @@ func TestProviderConflicts(t *testing.T) {
 			msg.FirstProvider.Account = providers[PROVIDER_REPORTED_AND_VOTED]
 			msg.Votes = append(msg.Votes, types.Vote{Address: providers[PROVIDER_REPORTED_AND_VOTED], Result: types.Provider0})
 		case CONFLICT_REVEALED:
-			msg.VoteState = types.StateReveal
+			msg.Votes = append(msg.Votes, types.Vote{Address: providers[CONFLICT_REVEALED], Result: types.Commit})
 		}
 
 		keeper.SetConflictVote(ctx, msg)
