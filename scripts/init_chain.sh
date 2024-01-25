@@ -98,11 +98,11 @@ sed $SED_INLINE -e "/Enable defines if the Rosetta API server should be enabled.
 
 
 # Add users
-users=("alice" "user1" "servicer1" "servicer2" "servicer3")
+users=("alice" "bob" "user1" "user2" "user3" "user4" "user5" "servicer1" "servicer2" "servicer3" "servicer4" "servicer5" "servicer6" "servicer7" "servicer8" "servicer9" "servicer10")
 
 for user in "${users[@]}"; do
     lavad keys add "$user"
-    lavad add-genesis-account "$user" 199999980000000ulava
+    lavad add-genesis-account "$user" 50000000000000ulava
 done
 
 # add validators_allocation_pool for validators block rewards
