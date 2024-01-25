@@ -73,7 +73,7 @@ message QueryProviderConflictsRequest {
 message QueryProviderConflictsResponse {
 	repeated string reported = 1;
 	repeated string not_voted = 2;
-	repeated string revealed = 3;
+	repeated string commited = 3;
 }
 
 message QueryConsumerConflictsRequest {
