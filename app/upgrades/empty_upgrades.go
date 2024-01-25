@@ -4,6 +4,7 @@ import (
 	store "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
@@ -190,12 +191,6 @@ var Upgrade_0_32_3 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-var Upgrade_0_35_0 = Upgrade{
-	UpgradeName:          "v0.35.0",
-	CreateUpgradeHandler: v_35_0,
-	StoreUpgrades:        store.StoreUpgrades{},
-}
-
 var Upgrade_0_33_0 = Upgrade{
 	UpgradeName:          "v0.33.0",
 	CreateUpgradeHandler: defaultUpgradeHandler,
@@ -208,4 +203,10 @@ var Upgrade_0_34_0 = Upgrade{
 	StoreUpgrades: store.StoreUpgrades{
 		Added: []string{icahosttypes.StoreKey, icacontrollertypes.StoreKey},
 	},
+}
+
+var Upgrade_0_35_0 = Upgrade{
+	UpgradeName:          "v0.35.0",
+	CreateUpgradeHandler: v_35_0,
+	StoreUpgrades:        store.StoreUpgrades{Added: []string{authzkeeper.StoreKey}},
 }
