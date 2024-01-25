@@ -26,7 +26,7 @@ def parse_endpoints_from_spec(lava_spec_file: str) -> dict[str, list[str]]:
 
         for api in api_collection.get("apis", []):
             api_name = api.get("name", "")
-            if "lavanet" in api_name:
+            if not ("cosmos" in api_name or "cosmwasm" in api_name or "/ibc/" in api_name):
                 endpoints[interface_type].append(api_name)
 
     print(f"    ### {len(endpoints['grpc'])} gRPC endpoints")
