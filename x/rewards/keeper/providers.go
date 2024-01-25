@@ -247,7 +247,7 @@ func (k Keeper) FundCommunityPoolFromModule(ctx sdk.Context, amount math.Int, se
 	return nil
 }
 
-// isEndOfMonth checks that we're close to next timer expiry by at least 10 blocks
+// isEndOfMonth checks that we're close to next timer expiry by at least 24 hours
 func (k Keeper) isEndOfMonth(ctx sdk.Context) bool {
-	return ctx.BlockHeight()+10 > k.BlocksToNextTimerExpiry(ctx)
+	return ctx.BlockTime().UTC().Unix()+86400 > k.TimeToNextTimerExpiry(ctx)
 }
