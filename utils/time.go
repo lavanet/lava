@@ -12,12 +12,30 @@ func NextMonth(date time.Time) time.Time {
 	// day 28, which all months always have (at the cost of the user possibly
 	// losing 1 (and up to 3) days of subscription in the first month.
 
+	if DebugPaymentE2E == "debug_payment_e2e" {
+		return time.Date(
+			date.Year(),
+			date.Month(),
+			date.Day(),
+			date.Hour(),
+			date.Minute()+2,
+			date.Second(),
+			0,
+			time.UTC,
+		)
+	}
+
+	dayOfMonth := date.Day()
+	if dayOfMonth > 28 {
+		dayOfMonth = 28
+	}
+
 	return time.Date(
 		date.Year(),
-		date.Month(),
-		date.Day(),
+		date.Month()+1,
+		dayOfMonth,
 		date.Hour(),
-		date.Minute()+2,
+		date.Minute(),
 		date.Second(),
 		0,
 		time.UTC,
