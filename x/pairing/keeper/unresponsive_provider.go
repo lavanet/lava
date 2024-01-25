@@ -11,6 +11,8 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
+const THRESHOLD_FACTOR = 4
+
 // Function that returns a map that links between a provider that should be punished and its providerCuCounterForUnreponsiveness
 func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers uint64) {
 	// check the epochsNum consts
@@ -183,7 +185,7 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch, epochsNumToCh
 	}
 
 	// the complainers' CU is larger than the provider serviced CU -> should be punished (return providerPaymentStorageKeyList so the complainers' CU can be reset after the punishment)
-	if complainersCu > providerServicedCu {
+	if complainersCu > THRESHOLD_FACTOR*providerServicedCu {
 		return providerPaymentStorageKeyList, complainersCu, providerServicedCu, nil
 	}
 
