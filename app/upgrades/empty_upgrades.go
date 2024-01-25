@@ -6,6 +6,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
+	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
+	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
 	"github.com/lavanet/lava/app/keepers"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
@@ -188,8 +190,22 @@ var Upgrade_0_32_3 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
+var Upgrade_0_35_0 = Upgrade{
+	UpgradeName:          "v0.35.0",
+	CreateUpgradeHandler: v_35_0,
+	StoreUpgrades:        store.StoreUpgrades{},
+}
+
 var Upgrade_0_33_0 = Upgrade{
 	UpgradeName:          "v0.33.0",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
+}
+
+var Upgrade_0_34_0 = Upgrade{
+	UpgradeName:          "v0.34.0",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades: store.StoreUpgrades{
+		Added: []string{icahosttypes.StoreKey, icacontrollertypes.StoreKey},
+	},
 }

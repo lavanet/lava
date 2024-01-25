@@ -9,6 +9,7 @@ import (
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
 		k.MaxCU(ctx),
+		k.AllowlistedExpeditedMsgs(ctx),
 	)
 }
 
@@ -21,4 +22,14 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 func (k Keeper) MaxCU(ctx sdk.Context) (res uint64) {
 	k.paramstore.Get(ctx, types.KeyMaxCU, &res)
 	return
+}
+
+// AllowlistedExpeditedMsgs returns the AllowlistedExpeditedMsgs param
+func (k Keeper) AllowlistedExpeditedMsgs(ctx sdk.Context) (res []string) {
+	k.paramstore.Get(ctx, types.KeyallowlistExpeditedMsgs, &res)
+	return
+}
+
+func (k Keeper) AllowlistReset(ctx sdk.Context) {
+	k.paramstore.Set(ctx, types.KeyallowlistExpeditedMsgs, []string{})
 }
