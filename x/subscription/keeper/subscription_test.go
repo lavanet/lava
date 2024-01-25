@@ -2432,3 +2432,132 @@ func TestProjectsNumEnforcement(t *testing.T) {
 	err = ts.TxSubscriptionAddProject(consumer, pd)
 	require.NoError(t, err)
 }
+
+// TestAllowedBuyersNewSubscription checks that when only the allowed buyers can buy a new subscription
+// Scenarios:
+//  1. no allowed buyers list -> anyone can buy
+//  2. two consumers, only one is allowed -> only one should be able to purchase
+func TestAllowedBuyersNewSubscription(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
+	_, consumer1 := ts.Account("sub1")
+	_, consumer2 := ts.Account("sub2")
+
+	// buy subscription with empty allowed buyers list
+	freePlan := ts.Plan("free")
+	require.Len(t, freePlan.AllowedBuyers, 0)
+	_, err := ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// change the plan's allowed buyers list
+	freePlan.AllowedBuyers = append(freePlan.AllowedBuyers, consumer1)
+	err = ts.TxProposalAddPlans(freePlan)
+	require.NoError(t, err)
+
+	// buy subscription with both consumers. consumer2 should fail
+	_, err = ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, freePlan.Index, 1, false, false)
+	require.Error(t, err)
+}
+
+// TestAllowedBuyersAutoRenewal checks that users can auto renew subscription only if they're part
+// of the allowed buyers
+// Scenarios:
+//  1. buy a subscription without auto renewal, remove the creator from the allowed buyers list,
+//     try to use auto renewal TX -> should fail
+//  2. buy another subscription with auto-renewal on (with the only allowed user). before the subscription
+//     auto-renews, remove current user from the allowed list -> auto renewal should fail
+func TestAllowedBuyersAutoRenewal(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
+	_, consumer1 := ts.Account("sub1")
+	_, consumer2 := ts.Account("sub2")
+
+	// buy subscription with empty allowed buyers list (without auto-renewal)
+	freePlan := ts.Plan("free")
+	require.Len(t, freePlan.AllowedBuyers, 0)
+	_, err := ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// change the plan's allowed buyers list - only consumer2 can purchase now
+	freePlan.AllowedBuyers = append(freePlan.AllowedBuyers, consumer2)
+	err = ts.TxProposalAddPlans(freePlan)
+	require.NoError(t, err)
+
+	// try making the subscription auto renew -> should fail
+	err = ts.TxSubscriptionAutoRenewal(consumer1, consumer1, freePlan.Index, true)
+	require.Error(t, err)
+
+	// buy subscription with consumer2 (with auto-renewal)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, freePlan.Index, 1, true, false)
+	require.NoError(t, err)
+
+	// change the plan's allowed buyers list - only consumer1 can purchase now
+	// note, we can't make it empty because empty list allows everyone to buy
+	freePlan.AllowedBuyers = []string{consumer1}
+	err = ts.TxProposalAddPlans(freePlan)
+	require.NoError(t, err)
+
+	// advance month to trigger the subscription's auto-renewal
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// the auto-renewal should have failed, so we're not supposed to find a subscription for consumer2
+	_, found := ts.getSubscription(consumer2)
+	require.False(t, found)
+}
+
+// TestAllowedBuyersFutureSubscription checks that when specifying a future subscription the creator
+// is allowed to buy it
+// Scenarios:
+// 1. buy a valid subscription with a future subscription that the user is not allowed to purchase -> should fail
+func TestAllowedBuyersFutureSubscription(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
+	_, consumer1 := ts.Account("sub1")
+	_, consumer2 := ts.Account("sub2")
+
+	// buy subscription with empty allowed buyers list (without auto-renewal)
+	freePlan := ts.Plan("free")
+	require.Len(t, freePlan.AllowedBuyers, 0)
+	_, err := ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// change the premium plan's allowed buyers list - only consumer2 can purchase now
+	premiumPlan := ts.Plan("premium")
+	premiumPlan.AllowedBuyers = append(premiumPlan.AllowedBuyers, consumer2)
+	err = ts.TxProposalAddPlans(premiumPlan)
+	require.NoError(t, err)
+
+	// try buying a future subscription for the premium plan -> should fail
+	_, err = ts.TxSubscriptionBuy(consumer1, consumer1, premiumPlan.Index, 1, false, true)
+	require.Error(t, err)
+}
+
+// TestAllowedBuyersUpgradeSubscription checks that a user can't upgrade to a subscription it's not allowed to buy
+// Scenarios:
+// 1. try to upgrade subscription to a plan the user is not allowed to purchase -> should fail
+func TestAllowedBuyersUpgradeSubscription(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
+	_, consumer1 := ts.Account("sub1")
+	_, consumer2 := ts.Account("sub2")
+
+	// buy subscription with empty allowed buyers list (without auto-renewal)
+	freePlan := ts.Plan("free")
+	require.Len(t, freePlan.AllowedBuyers, 0)
+	_, err := ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// change the premium plan's allowed buyers list - only consumer2 can purchase now
+	premiumPlan := ts.Plan("premium")
+	premiumPlan.AllowedBuyers = append(premiumPlan.AllowedBuyers, consumer2)
+	err = ts.TxProposalAddPlans(premiumPlan)
+	require.NoError(t, err)
+
+	// try to upgrade the subscription to the premium plan -> should fail
+	_, err = ts.TxSubscriptionBuy(consumer1, consumer1, premiumPlan.Index, 1, false, false)
+	require.Error(t, err)
+}
