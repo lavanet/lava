@@ -10,4 +10,5 @@ message Params {
   option (gogoproto.goproto_stringer) = false;
   reserved 1;
   uint64 maxCU = 2 [(gogoproto.moretags) = "yaml:\"max_compute_units\""];
+  repeated string allowlisted_expedited_msgs = 3 [(gogoproto.moretags) = "yaml:\"allowlisted_expedited_msgs\""];
 }

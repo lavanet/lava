@@ -864,6 +864,7 @@ func New(
 			app.DualstakingKeeper,
 			encodingConfig.TxConfig.SignModeHandler(),
 			app.FeeGrantKeeper,
+			app.SpecKeeper,
 			ante.DefaultSigVerificationGasConsumer),
 	)
 	app.SetEndBlocker(app.EndBlocker)
