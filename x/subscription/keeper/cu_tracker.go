@@ -10,6 +10,7 @@ import (
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -135,6 +136,12 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 	totalTokenAmount := timerData.Credit.Amount
 	if totalTokenAmount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
+		remainder := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalTokenAmount.Quo(sdk.NewIntFromUint64(totalCuTracked)).Sub(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)))
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, string(rewardstypes.ValidatorsRewardsDistributionPoolName), sdk.NewCoins(remainder))
+		if err != nil {
+			utils.LavaFormatError("could not send provider reward remainder to validators distribution pool", err,
+				utils.LogAttr("remainder", remainder.String()))
+		}
 		totalTokenAmount = sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU * totalCuTracked)
 	}
 
