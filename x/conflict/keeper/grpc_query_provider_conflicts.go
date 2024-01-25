@@ -42,5 +42,5 @@ func (k Keeper) ProviderConflicts(c context.Context, req *types.QueryProviderCon
 		}
 	}
 
-	return &types.QueryProviderConflictsResponse{Reported: reported, NotVoted: notVoted, Commited: committed}, nil
+	return &types.QueryProviderConflictsResponse{Reported: reported, NotVoted: notVoted, Committed: committed}, nil
 }
