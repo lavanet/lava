@@ -26,6 +26,12 @@ service Query {
   rpc BlockReward(QueryBlockRewardRequest) returns (QueryBlockRewardResponse) {
     option (google.api.http).get = "/lavanet/lava/rewards/block_reward";
   }
+
+  // ProviderReward queries for the providers reward for their services
+  rpc ProviderReward(QueryProviderRewardRequest) returns (QueryProviderRewardResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/provider_reward";
+  }
+
   // this line is used by starport scaffolding # 2
 }
 
@@ -61,6 +67,23 @@ message QueryBlockRewardRequest {}
 // QueryBlockRewardResponse is response type for the Query/BlockReward RPC method.
 message QueryBlockRewardResponse {
   cosmos.base.v1beta1.Coin reward = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryProviderRewardRequest is request type for the Query/ProviderReward RPC method.
+message QueryProviderRewardRequest {
+  string chain_id  = 1;
+  string provider = 2;
+}
+
+message RewardInfo {
+  string chain_id = 1;
+  string provider = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+}
+
+// QueryProviderRewardResponse is response type for the Query/ProviderReward RPC method.
+message QueryProviderRewardResponse {
+  repeated RewardInfo rewards = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3
