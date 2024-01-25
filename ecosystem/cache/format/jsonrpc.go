@@ -24,7 +24,7 @@ func FormatterForRelayRequestAndResponseJsonRPC() (inputFormatter func([]byte) [
 		}
 		batch := []json.RawMessage{}
 		err := json.Unmarshal(inpData, &batch)
-		if err == nil && len(batch) > 1 {
+		if err == nil && len(batch) >= 1 {
 			modifiedInpArray := []json.RawMessage{}
 			for _, batchData := range batch {
 				var extractedIDForBatch interface{}
@@ -56,7 +56,7 @@ func FormatterForRelayRequestAndResponseJsonRPC() (inputFormatter func([]byte) [
 		}
 		batch := []json.RawMessage{}
 		err := json.Unmarshal(inpData, &batch)
-		if err == nil && len(batch) > 1 && len(extractedIDArray) == len(batch) {
+		if err == nil && len(batch) >= 1 && len(extractedIDArray) == len(batch) {
 			modifiedInpArray := []json.RawMessage{}
 			for i, batchData := range batch {
 				modifiedInp, err := sjson.SetBytes(batchData, IDFieldName, extractedIDArray[i])
@@ -95,7 +95,7 @@ func getExtractedIdAndModifyInputForJson(inpData []byte) (modifiedInp []byte, ex
 	}
 	modifiedInp, err = sjson.SetBytes(inpData, IDFieldName, DefaultIDValue)
 	if err != nil {
-		return inpData, extractedID, utils.LavaFormatWarning("failed to set id in json", nil, utils.Attribute{Key: "jsonData", Value: inpData}, utils.LogAttr("extractedID", extractedID))
+		return inpData, extractedID, utils.LavaFormatWarning("failed to set id in json", err, utils.Attribute{Key: "jsonData", Value: inpData}, utils.LogAttr("extractedID", extractedID))
 	}
 	return modifiedInp, extractedID, nil
 }

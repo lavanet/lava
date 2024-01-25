@@ -68,6 +68,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment ffrom the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
@@ -110,6 +111,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment ffrom the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
@@ -155,6 +157,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment ffrom the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
@@ -203,6 +206,7 @@ func TestProvidersEndRewards(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment ffrom the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
@@ -262,6 +266,7 @@ func Test2SpecsZeroShares(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment ffrom the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
@@ -325,6 +330,7 @@ func Test2SpecsDoubleShares(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment ffrom the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
@@ -385,6 +391,7 @@ func TestBonusRewards3Providers(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment ffrom the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc1.Addr.String(), "", "")
@@ -474,6 +481,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment from the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	expectedReward := sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU)
@@ -523,6 +531,7 @@ func TestBonusReward49months(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment ffrom the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
@@ -574,6 +583,7 @@ func TestBonusRewardsEquall5Providers(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment ffrom the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	for _, providerAcc := range providerAccs {
@@ -640,6 +650,7 @@ func TestBonusRewards5Providers(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment ffrom the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	for _, providerAcc := range providerAccs {
@@ -714,6 +725,7 @@ func TestCommunityTaxOne(t *testing.T) {
 
 	// first months there are no bonus rewards, just payment from the subscription
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	expectedReward := sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU)

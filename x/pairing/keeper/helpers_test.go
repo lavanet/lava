@@ -175,9 +175,6 @@ func (ts *tester) payAndVerifyBalance(
 	originalProjectUsedCu := proj.Project.UsedCu
 	originalSubCuLeft := sub.Sub.MonthCuLeft
 
-	plan, found := ts.Keepers.Plans.GetPlan(ts.Ctx, sub.Sub.PlanIndex)
-	require.True(ts.T, found)
-
 	// perform payment
 	res, err := ts.TxPairingRelayPayment(relayPayment.Creator, relayPayment.Relays...)
 	if !validPayment {
@@ -230,13 +227,14 @@ func (ts *tester) payAndVerifyBalance(
 
 	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	// verify provider's balance
-	planPrice := plan.Price.Amount
+	credit := sub.Sub.Credit.Amount.QuoRaw(int64(sub.Sub.DurationLeft))
 	want := sdk.ZeroInt()
 	if totalCuUsed != 0 {
-		want = planPrice.MulRaw(int64(providerReward)).QuoRaw(int64(totalCuUsed))
+		want = credit.MulRaw(int64(providerReward)).QuoRaw(int64(totalCuUsed))
 	}
 
 	balanceWant := ts.GetBalance(providerAddr) + want.Int64()

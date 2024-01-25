@@ -14,6 +14,7 @@
         "annual_discount_percentage": 20,
         "allow_overuse": false,
         "overuse_rate": 0,
+        "projects": 100,
         "plan_policy": {
           "chain_policies": [],
           "geolocation_profile": "GL",

@@ -14,6 +14,7 @@
                 "annual_discount_percentage": 0,
                 "allow_overuse": false,
                 "overuse_rate": 0,
+                "projects": 1,
                 "plan_policy": {
                     "geolocation_profile": "GL",
                     "total_cu_limit": 1000000000,

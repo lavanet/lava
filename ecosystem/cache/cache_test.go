@@ -394,7 +394,7 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 			request2 := shallowCopy(request)
 			request2.RequestBlock = latestBlockForRelay + 1 // make latest block advance
 			request2.Data = []byte(StubData + "nonRelevantData")
-
+			response.LatestBlock = latestBlockForRelay + 1
 			messageSet2 := pairingtypes.RelayCacheSet{
 				Request:   shallowCopy(request2),
 				BlockHash: tt.hash,

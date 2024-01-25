@@ -14,6 +14,7 @@ import (
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
+	icahostkeeper "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/keeper"
 	ibctransferkeeper "github.com/cosmos/ibc-go/v7/modules/apps/transfer/keeper"
 	ibckeeper "github.com/cosmos/ibc-go/v7/modules/core/keeper"
 	conflictmodulekeeper "github.com/lavanet/lava/x/conflict/keeper"
@@ -68,4 +69,5 @@ type LavaKeepers struct {
 	DowntimeKeeper        downtimemodulekeeper.Keeper
 	RewardsKeeper         rewardsmodulekeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
+	ICAHostKeeper         icahostkeeper.Keeper
 }

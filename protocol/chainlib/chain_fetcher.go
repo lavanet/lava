@@ -93,7 +93,8 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 		new_ctx := context.Background()
 		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 		defer cancel()
-		err := cf.cache.SetEntry(new_ctx, relayData, requestedBlockHash, cf.endpoint.ChainID, reply, finalized, "", nil)
+		// provider side doesn't use SharedStateId, so we default it to empty so it wont have effect.
+		err := cf.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: relayData, BlockHash: requestedBlockHash, ChainID: cf.endpoint.ChainID, Response: reply, Finalized: finalized, OptionalMetadata: nil, SharedStateId: ""})
 		if err != nil {
 			utils.LavaFormatWarning("chain fetcher error updating cache with new entry", err)
 		}
@@ -169,6 +170,9 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				{Key: "parsedResult", Value: parsedResult},
 				{Key: "verification.Value", Value: verification.Value},
 				{Key: "Method", Value: parsing.GetApiName()},
+				{Key: "Extension", Value: verification.Extension},
+				{Key: "Addon", Value: verification.Addon},
+				{Key: "Verification", Value: verification.Name},
 			}...)
 		}
 	}
