@@ -18,7 +18,11 @@ import (
 
 type ProxyCallBack = func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error)
 
-func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.ConsumerCmdFlags) (*grpc.Server, *http.Server, error) {
+type HealthReporter interface {
+	IsHealthy() bool
+}
+
+func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.ConsumerCmdFlags, healthReporter HealthReporter) (*grpc.Server, *http.Server, error) {
 	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(RawBytesCodec{}))
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
@@ -36,7 +40,11 @@ func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.Cons
 		}
 
 		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
-			resp.WriteHeader(fiber.StatusOK)
+			if healthReporter.IsHealthy() {
+				resp.WriteHeader(fiber.StatusOK)
+			} else {
+				resp.WriteHeader(fiber.StatusServiceUnavailable)
+			}
 			_, _ = resp.Write(make([]byte, 0))
 			return
 		}

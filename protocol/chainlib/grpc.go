@@ -250,16 +250,18 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 }
 
 type GrpcChainListener struct {
-	endpoint    *lavasession.RPCEndpoint
-	relaySender RelaySender
-	logger      *metrics.RPCConsumerLogs
-	chainParser *GrpcChainParser
+	endpoint       *lavasession.RPCEndpoint
+	relaySender    RelaySender
+	logger         *metrics.RPCConsumerLogs
+	chainParser    *GrpcChainParser
+	healthReporter HealthReporter
 }
 
 func NewGrpcChainListener(
 	ctx context.Context,
 	listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender,
+	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
 ) (chainListener *GrpcChainListener) {
@@ -269,6 +271,7 @@ func NewGrpcChainListener(
 		relaySender,
 		rpcConsumerLogs,
 		chainParser.(*GrpcChainParser),
+		healthReporter,
 	}
 	return chainListener
 }
@@ -318,7 +321,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		return relayReply.Data, convertRelayMetaDataToMDMetaData(metadataToReply), nil
 	}
 
-	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback, apil.endpoint.HealthCheckPath, cmdFlags)
+	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback, apil.endpoint.HealthCheckPath, cmdFlags, apil.healthReporter)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
