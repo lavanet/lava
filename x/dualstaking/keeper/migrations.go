@@ -369,3 +369,9 @@ func GetStakeStorages(lavaChainID string) map[string]epochstoragetypes.StakeStor
 	}
 	return stakestoragesMap
 }
+
+// MigrateVersion3To4 sets the DisableDualstakingHook flag to false
+func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
+	m.keeper.SetDisableDualstakingHook(ctx, false)
+	return nil
+}

@@ -67,6 +67,7 @@ func (rf RedelegationFlager) disableRedelegationHooks(ctx sdk.Context, msgs []sd
 		return utils.LavaFormatWarning("could not disable redelegation hooks", fmt.Errorf("cannot send batch requests with redelegation messages"))
 	}
 
-	keeper.DisableDualstakingHook = redelegations
+	rf.Keeper.SetDisableDualstakingHook(ctx, redelegations)
+
 	return nil
 }
