@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils/slices"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -93,7 +92,7 @@ func (healthResults *HealthResults) updateLatestBlock(specId string, latestBlock
 	}
 }
 
-func (healthResults *HealthResults) updateConsumerError(endpoint *lavasession.RPCEndpoint, err error) {
+func (healthResults *HealthResults) updateConsumerError(endpoint *HealthRPCEndpoint, err error) {
 	healthResults.Lock.Lock()
 	defer healthResults.Lock.Unlock()
 	healthResults.ConsumerBlocks[LavaEntity{
@@ -115,7 +114,7 @@ func (healthResults *HealthResults) updateConsumerError(endpoint *lavasession.RP
 	}] = msg
 }
 
-func (healthResults *HealthResults) updateConsumer(endpoint *lavasession.RPCEndpoint, latestBlock int64) {
+func (healthResults *HealthResults) updateConsumer(endpoint *HealthRPCEndpoint, latestBlock int64) {
 	healthResults.Lock.Lock()
 	defer healthResults.Lock.Unlock()
 	healthResults.ConsumerBlocks[LavaEntity{

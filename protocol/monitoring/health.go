@@ -64,8 +64,8 @@ func RunHealth(ctx context.Context,
 	clientCtx client.Context,
 	subscriptionAddresses []string,
 	providerAddresses []string,
-	consumerEndpoints []*lavasession.RPCEndpoint,
-	referenceEndpoints []*lavasession.RPCEndpoint,
+	consumerEndpoints []*HealthRPCEndpoint,
+	referenceEndpoints []*HealthRPCEndpoint,
 	prometheusListenAddr string,
 ) (*HealthResults, error) {
 	specQuerier := spectypes.NewQueryClient(clientCtx)
@@ -293,8 +293,8 @@ func RunHealth(ctx context.Context,
 
 func CheckConsumersAndReferences(ctx context.Context,
 	clientCtx client.Context,
-	referenceEndpoints []*lavasession.RPCEndpoint,
-	consumerEndpoints []*lavasession.RPCEndpoint,
+	referenceEndpoints []*HealthRPCEndpoint,
+	consumerEndpoints []*HealthRPCEndpoint,
 	healthResults *HealthResults,
 ) error {
 	// populate data from providers
@@ -304,7 +304,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 		healthResults.updateLatestBlock(specId, providerBlock)
 	}
 	errCh := make(chan error, 1)
-	queryEndpoint := func(endpoint *lavasession.RPCEndpoint, isReference bool) error {
+	queryEndpoint := func(endpoint *HealthRPCEndpoint, isReference bool) error {
 		chainParser, err := chainlib.NewChainParser(endpoint.ApiInterface)
 		if err != nil {
 			return err
@@ -371,7 +371,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 	wg.Add(len(referenceEndpoints))
 	wg.Add(len(consumerEndpoints))
 	for _, endpoint := range referenceEndpoints {
-		go func(ep *lavasession.RPCEndpoint) {
+		go func(ep *HealthRPCEndpoint) {
 			// Decrement the WaitGroup counter when the goroutine completes
 			defer wg.Done()
 			err := queryEndpoint(ep, true)
@@ -385,7 +385,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 	}
 	// query our consumers
 	for _, endpoint := range consumerEndpoints {
-		go func(ep *lavasession.RPCEndpoint) {
+		go func(ep *HealthRPCEndpoint) {
 			// Decrement the WaitGroup counter when the goroutine completes
 			defer wg.Done()
 			err := queryEndpoint(ep, false)
