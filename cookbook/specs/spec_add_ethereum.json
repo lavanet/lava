@@ -1283,7 +1283,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "debug_traceTransaction ",
+                                "name": "debug_traceTransaction",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
