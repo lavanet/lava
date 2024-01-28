@@ -326,10 +326,10 @@ func CheckConsumersAndReferences(ctx context.Context,
 				},
 			},
 		}
-		var chainProxy chainlib.ChainRouter
+		var chainRouter chainlib.ChainRouter
 		for i := uint64(0); i <= QueryRetries; i++ {
 			sendCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-			chainProxy, err = chainlib.GetChainRouter(sendCtx, 1, compatibleEndpoint, chainParser)
+			chainRouter, err = chainlib.GetChainRouter(sendCtx, 1, compatibleEndpoint, chainParser)
 			cancel()
 			if err == nil {
 				break
@@ -342,7 +342,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 			}
 			return nil
 		}
-		chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{ChainRouter: chainProxy, ChainParser: chainParser, Endpoint: compatibleEndpoint, Cache: nil})
+		chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{ChainRouter: chainRouter, ChainParser: chainParser, Endpoint: compatibleEndpoint, Cache: nil})
 		validationErr := chainFetcher.Validate(ctx)
 		if validationErr != nil {
 			if isReference {
