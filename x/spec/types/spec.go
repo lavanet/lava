@@ -130,18 +130,16 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		for _, extension := range apiCollection.Extensions {
 			extensionsNames = append(extensionsNames, extension.Name)
 		}
-		if len(extensionsNames) == 0 {
-			continue
-		}
-
-		// validate verifications
-		for _, verification := range apiCollection.Verifications {
-			for _, parseValue := range verification.Values {
-				if parseValue.Extension != "" && !slices.Contains(extensionsNames, parseValue.Extension) {
-					return details, utils.LavaFormatWarning("verification's extension not found in extension list", fmt.Errorf("spec verification validation failed"),
-						utils.LogAttr("verification_extension", parseValue.Extension),
-						utils.LogAttr("spec_extensions", strings.Join(extensionsNames, ",")),
-					)
+		if len(extensionsNames) > 0 {
+			// validate verifications
+			for _, verification := range apiCollection.Verifications {
+				for _, parseValue := range verification.Values {
+					if parseValue.Extension != "" && !slices.Contains(extensionsNames, parseValue.Extension) {
+						return details, utils.LavaFormatWarning("verification's extension not found in extension list", fmt.Errorf("spec verification validation failed"),
+							utils.LogAttr("verification_extension", parseValue.Extension),
+							utils.LogAttr("spec_extensions", strings.Join(extensionsNames, ",")),
+						)
+					}
 				}
 			}
 		}
