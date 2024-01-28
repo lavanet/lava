@@ -9,6 +9,8 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -120,6 +122,24 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 			if strings.ToLower(header.Name) != header.Name {
 				details["header"] = header.Name
 				return details, fmt.Errorf("header names must be lower case %s", header.Name)
+			}
+		}
+
+		// get the spec's extension names list
+		extensionsNames := []string{}
+		for _, extension := range apiCollection.Extensions {
+			extensionsNames = append(extensionsNames, extension.Name)
+		}
+
+		// validate verifications
+		for _, verification := range apiCollection.Verifications {
+			for _, parseValue := range verification.Values {
+				if !slices.Contains(extensionsNames, parseValue.Extension) {
+					return details, utils.LavaFormatWarning("verification's extension not found in extension list", fmt.Errorf("spec verification validation failed"),
+						utils.LogAttr("verification_extension", parseValue.Extension),
+						utils.LogAttr("spec_extensions", strings.Join(extensionsNames, ",")),
+					)
+				}
 			}
 		}
 	}
