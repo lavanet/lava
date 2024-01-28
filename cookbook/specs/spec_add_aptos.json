@@ -472,9 +472,22 @@
                                 },
                                 "values": [
                                     {
+                                        "latest_distance": 21600
+                                    },
+                                    {
+                                        "extension": "archive",
                                         "expected_value": "0"
                                     }
                                 ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 21300
+                                }
                             }
                         ]
                     },
