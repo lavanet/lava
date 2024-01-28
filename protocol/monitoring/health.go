@@ -291,6 +291,18 @@ func RunHealth(ctx context.Context,
 	return healthResults, nil
 }
 
+type HealthPolicy struct {
+	addons []string
+}
+
+func (pp *HealthPolicy) GetSupportedAddons(specID string) (addons []string, err error) {
+	return pp.addons, nil
+}
+
+func (pp *HealthPolicy) GetSupportedExtensions(specID string) (extensions []epochstoragetypes.EndpointService, err error) {
+	return []epochstoragetypes.EndpointService{}, nil
+}
+
 func CheckConsumersAndReferences(ctx context.Context,
 	clientCtx client.Context,
 	referenceEndpoints []*HealthRPCEndpoint,
@@ -314,6 +326,10 @@ func CheckConsumersAndReferences(ctx context.Context,
 			return err
 		}
 		chainParser.SetSpec(*spec)
+		chainParser.SetPolicy(&HealthPolicy{
+			addons: endpoint.Addons,
+		}, endpoint.ChainID, endpoint.ApiInterface)
+
 		compatibleEndpoint := &lavasession.RPCProviderEndpoint{
 			NetworkAddress: lavasession.NetworkAddressData{},
 			ChainID:        endpoint.ChainID,
