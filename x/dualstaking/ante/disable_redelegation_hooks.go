@@ -27,7 +27,7 @@ func (rf RedelegationFlager) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate boo
 		return ctx, err
 	}
 
-	err = rf.disableRedelegationHooks(ctx, msgs)
+	err = rf.DisableRedelegationHooks(ctx, msgs)
 	if err != nil {
 		return ctx, err
 	}
@@ -52,7 +52,7 @@ func (rf RedelegationFlager) unwrapAuthz(tx sdk.Tx) ([]sdk.Msg, error) {
 	return unwrappedMsgs, nil
 }
 
-func (rf RedelegationFlager) disableRedelegationHooks(ctx sdk.Context, msgs []sdk.Msg) error {
+func (rf RedelegationFlager) DisableRedelegationHooks(ctx sdk.Context, msgs []sdk.Msg) error {
 	redelegations := false
 	others := false
 	for _, msg := range msgs {
