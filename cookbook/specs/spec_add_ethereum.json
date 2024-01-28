@@ -13,7 +13,7 @@
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 13000,
                 "allowed_block_lag_for_qos_sync": 2,
-                                "shares" : 1,
+                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -207,7 +207,7 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0,
-                                "timeout_ms":1000
+                                "timeout_ms": 1000
                             },
                             {
                                 "name": "eth_getBalance",
@@ -1088,7 +1088,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block":6554
+                                    "block": 6554
                                 }
                             }
                         ]
@@ -1328,7 +1328,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block":6554
+                                    "block": 6554
                                 }
                             }
                         ]
@@ -1348,7 +1348,7 @@
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 13000,
                 "allowed_block_lag_for_qos_sync": 2,
-                                "shares" : 1,
+                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
