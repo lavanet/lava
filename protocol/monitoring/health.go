@@ -321,7 +321,8 @@ func CheckConsumersAndReferences(ctx context.Context,
 			Geolocation:    0,
 			NodeUrls: []common.NodeUrl{
 				{
-					Url: endpoint.NetworkAddress,
+					Url:    endpoint.NetworkAddress,
+					Addons: endpoint.Addons,
 				},
 			},
 		}
@@ -342,6 +343,15 @@ func CheckConsumersAndReferences(ctx context.Context,
 			return nil
 		}
 		chainFetcher := chainlib.NewChainFetcher(ctx, &chainlib.ChainFetcherOptions{ChainRouter: chainProxy, ChainParser: chainParser, Endpoint: compatibleEndpoint, Cache: nil})
+		validationErr := chainFetcher.Validate(ctx)
+		if validationErr != nil {
+			if isReference {
+				utils.LavaFormatDebug("failed validating reference", utils.LogAttr("endpoint", endpoint.String()))
+			} else {
+				healthResults.updateConsumerError(endpoint, validationErr)
+			}
+			return nil
+		}
 		var latestBlock int64
 		for i := uint64(0); i <= QueryRetries; i++ {
 			sendCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
