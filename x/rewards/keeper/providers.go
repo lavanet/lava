@@ -10,6 +10,8 @@ import (
 	"github.com/lavanet/lava/x/rewards/types"
 )
 
+const DAY_SECONDS = 60 * 60 * 24
+
 func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int) {
 	index := types.BasePayIndex{Provider: provider, ChainID: chainid}
 	basepay, found := k.getBasePay(ctx, index)
@@ -249,5 +251,5 @@ func (k Keeper) FundCommunityPoolFromModule(ctx sdk.Context, amount math.Int, se
 
 // isEndOfMonth checks that we're close to next timer expiry by at least 24 hours
 func (k Keeper) isEndOfMonth(ctx sdk.Context) bool {
-	return ctx.BlockTime().UTC().Unix()+86400 > k.TimeToNextTimerExpiry(ctx)
+	return ctx.BlockTime().UTC().Unix()+DAY_SECONDS > k.TimeToNextTimerExpiry(ctx)
 }
