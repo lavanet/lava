@@ -135,14 +135,8 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 				for _, parseValue := range verification.Values {
 					_, found := extensionsNames[parseValue.Extension]
 					if parseValue.Extension != "" && !found {
-						names := make([]string, 0, len(extensionsNames))
-						for k := range extensionsNames {
-							names = append(names, k)
-						}
-						sort.Strings(names)
 						return details, utils.LavaFormatWarning("verification's extension not found in extension list", fmt.Errorf("spec verification validation failed"),
 							utils.LogAttr("verification_extension", parseValue.Extension),
-							utils.LogAttr("spec_extensions", strings.Join(names, ",")),
 						)
 					}
 				}
