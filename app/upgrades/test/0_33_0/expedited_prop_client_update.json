@@ -1,0 +1,20 @@
+{
+  "title": "Update Client",
+  "description": "Update Client",
+  "summary": "Update Client",
+  "messages": [
+    {
+      "@type": "/cosmos.gov.v1.MsgExecLegacyContent",
+      "authority": "lava@10d07y265gmmuvt4z0w9aw880jnsr700jz6yq37",
+      "content": {
+        "@type": "/ibc.core.client.v1.ClientUpdateProposal",
+        "title": "Update Client: Revive client to Osmosis-testing7 (local)",
+        "description": "This proposal will update the expired client on channel-1/2",
+        "subject_client_id": "07-tendermint-7",
+        "substitute_client_id": "07-tendermint-8"
+      }
+    }
+  ],
+  "deposit": "1000000ulava",
+  "expedited": false
+}
