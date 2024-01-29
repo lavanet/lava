@@ -10,7 +10,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -126,18 +125,24 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 		}
 
 		// get the spec's extension names list
-		extensionsNames := []string{}
+		extensionsNames := map[string]struct{}{}
 		for _, extension := range apiCollection.Extensions {
-			extensionsNames = append(extensionsNames, extension.Name)
+			extensionsNames[extension.Name] = struct{}{}
 		}
 		if len(extensionsNames) > 0 {
 			// validate verifications
 			for _, verification := range apiCollection.Verifications {
 				for _, parseValue := range verification.Values {
-					if parseValue.Extension != "" && !slices.Contains(extensionsNames, parseValue.Extension) {
+					_, found := extensionsNames[parseValue.Extension]
+					if parseValue.Extension != "" && !found {
+						names := make([]string, 0, len(extensionsNames))
+						for k := range extensionsNames {
+							names = append(names, k)
+						}
+						sort.Strings(names)
 						return details, utils.LavaFormatWarning("verification's extension not found in extension list", fmt.Errorf("spec verification validation failed"),
 							utils.LogAttr("verification_extension", parseValue.Extension),
-							utils.LogAttr("spec_extensions", strings.Join(extensionsNames, ",")),
+							utils.LogAttr("spec_extensions", strings.Join(names, ",")),
 						)
 					}
 				}
