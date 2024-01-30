@@ -1303,6 +1303,14 @@
                                         "expected_value": "osmosis-1"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 17280
+                                    }
+                                ]
                             }
                         ],
                         "extensions": [
@@ -2612,6 +2620,14 @@
                                 "values": [
                                     {
                                         "expected_value": "osmosis-1"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 17280
                                     }
                                 ]
                             }

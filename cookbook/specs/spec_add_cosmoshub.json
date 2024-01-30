@@ -43,6 +43,14 @@
                                         "expected_value": "cosmoshub-4"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 14400
+                                    }
+                                ]
                             }
                         ],
                         "extensions": [
@@ -73,6 +81,14 @@
                                 "values": [
                                     {
                                         "expected_value": "cosmoshub-4"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 14400
                                     }
                                 ]
                             }

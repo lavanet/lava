@@ -2062,6 +2062,23 @@
                                         "expected_value": "on"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_template": "/cosmos/base/tendermint/v1beta1/blocks/%d",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "block_id",
+                                            "hash"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL",
+                                        "encoding": "base64"
+                                    },
+                                    "api_name": "/cosmos/base/tendermint/v1beta1/blocks/{height}"
+                                }
                             }
                         ]
                     },
@@ -3712,6 +3729,23 @@
                                         "expected_value": "on"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_template": "{\"height\":\"%d\"}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "blockId",
+                                            "hash"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL",
+                                        "encoding": "base64"
+                                    },
+                                    "api_name": "cosmos.base.tendermint.v1beta1.Service/GetBlockByHeight"
+                                }
                             }
                         ]
                     },

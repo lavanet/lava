@@ -818,6 +818,14 @@
                                         "expected_value": "axelar-dojo-1"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 14400
+                                    }
+                                ]
                             }
                         ],
                         "extensions": [
@@ -2303,6 +2311,14 @@
                                 "values": [
                                     {
                                         "expected_value": "axelar-dojo-1"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 14400
                                     }
                                 ]
                             }
