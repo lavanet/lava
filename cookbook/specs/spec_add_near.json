@@ -401,7 +401,8 @@
                                 },
                                 "values": [
                                     {
-                                        "latest_distance": 64800
+                                        "latest_distance": 64800,
+                                        "severity": "Warning"
                                     },
                                     {
                                         "extension": "archive",
