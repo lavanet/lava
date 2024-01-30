@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
+	dualstakingante "github.com/lavanet/lava/x/dualstaking/ante"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
@@ -654,6 +655,9 @@ func (ts *Tester) TxReDelegateValidator(delegator, fromValidator, toValidator si
 		sdk.ValAddress(toValidator.Addr),
 		sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), amount),
 	)
+	rf := dualstakingante.NewRedelegationFlager(ts.Keepers.Dualstaking)
+	err := rf.DisableRedelegationHooks(ts.Ctx, []sdk.Msg{msg})
+	require.NoError(ts.T, err)
 	return ts.Servers.StakingServer.BeginRedelegate(ts.GoCtx, msg)
 }
 

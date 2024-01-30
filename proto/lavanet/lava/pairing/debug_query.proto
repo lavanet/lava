@@ -1,0 +1,25 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "lavanet/lava/epochstorage/stake_entry.proto";
+import "lavanet/lava/dualstaking/delegate.proto";
+import "cosmos/staking/v1beta1/staking.proto";
+import "lavanet/lava/subscription/subscription.proto";
+import "lavanet/lava/projects/project.proto";
+
+message QueryDebugQueryResponse {
+	uint64 block_reward = 1;
+	uint64 val_dist_pool_balance = 2;
+	uint64 val_alloc_pool_balance = 3;
+	uint64 provider_dist_pool_balance = 4;
+	uint64 provider_alloc_pool_balance = 5;
+	uint64 provider_full_reward = 6;
+	uint64 provider_reward_no_bonus = 7;
+	uint64 block = 8;
+	uint64 months_left = 9;
+	uint64 validator_reward = 10;
+}
