@@ -29,6 +29,9 @@ const (
 	// empty provider consts
 	EMPTY_PROVIDER         = "empty_provider"
 	EMPTY_PROVIDER_CHAINID = ""
+
+	// DisableDualstakingHooks prefix
+	DisableDualstakingHookPrefix = "disable-dualstaking-hooks"
 )
 
 func KeyPrefix(p string) []byte {

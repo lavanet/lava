@@ -7,9 +7,11 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	dualstakingante "github.com/lavanet/lava/x/dualstaking/ante"
 	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
+	specante "github.com/lavanet/lava/x/spec/ante"
+	"github.com/lavanet/lava/x/spec/keeper"
 )
 
-func NewAnteHandler(accountKeeper ante.AccountKeeper, bankKeeper authtypes.BankKeeper, dualstakingKeeper dualstakingkeeper.Keeper, signModeHandler signing.SignModeHandler, feegrantKeeper ante.FeegrantKeeper, sigGasConsumer ante.SignatureVerificationGasConsumer) sdk.AnteHandler {
+func NewAnteHandler(accountKeeper ante.AccountKeeper, bankKeeper authtypes.BankKeeper, dualstakingKeeper dualstakingkeeper.Keeper, signModeHandler signing.SignModeHandler, feegrantKeeper ante.FeegrantKeeper, specKeeper keeper.Keeper, sigGasConsumer ante.SignatureVerificationGasConsumer) sdk.AnteHandler {
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
 		ante.NewExtensionOptionsDecorator(nil),
@@ -24,6 +26,7 @@ func NewAnteHandler(accountKeeper ante.AccountKeeper, bankKeeper authtypes.BankK
 		ante.NewSigVerificationDecorator(accountKeeper, signModeHandler),
 		ante.NewIncrementSequenceDecorator(accountKeeper),
 		dualstakingante.NewRedelegationFlager(dualstakingKeeper),
+		specante.NewExpeditedProposalFilterAnteDecorator(specKeeper),
 	}
 	return sdk.ChainAnteDecorators(anteDecorators...)
 }

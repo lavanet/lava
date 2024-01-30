@@ -409,7 +409,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 						Value:           parseValue.ExpectedValue,
 						LatestDistance:  parseValue.LatestDistance,
 						VerificationKey: verificationKey,
-						Severity:        verification.Severity,
+						Severity:        parseValue.Severity,
 					}
 
 					if extensionVerifications, ok := verifications[verificationKey]; !ok {
