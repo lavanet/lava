@@ -3,11 +3,14 @@ package keeper_test
 import (
 	"testing"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
+	subsciption "github.com/lavanet/lava/x/subscription/keeper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -541,4 +544,78 @@ func TestAddProjectAfterPlanUpdate(t *testing.T) {
 	// in terms of strictness: newPlan < adminPolicy < oldPlan, but newPlan should not apply
 	// to the second project (since it's under a subscription that uses the old plan)
 	require.Equal(t, adminPolicy.EpochCuLimit, verify.CuPerEpoch)
+}
+
+// TestTokenPerCuLimit checks that in a situation where the subscription's credit is more
+// than the total CU tracked multiplied by LIMIT_TOKEN_PER_CU, the total tokens that are rewarded
+// are LIMIT_TOKEN_PER_CU * totalCuTracked (less than the credit). Also, The tokens remaining
+// are supposed to be sent to the validator's distribution pool
+func TestTokenPerCuLimit(t *testing.T) {
+	// setupForPayments buys a subscription for client (which has an admin project)
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+	_, provider := ts.GetAccount(common.PROVIDER, 0)
+	clientAcc, client := ts.GetAccount(common.CONSUMER, 0)
+
+	// create a premium plan and upgrade to it (mostly to increase plan price -> sub has increased credit)
+	premiumPlan := common.CreateMockPlan()
+	premiumPlan.Index = "premium"
+	premiumPlan.Price = sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(100000))
+	premiumPlan.Block = ts.BlockHeight()
+	premiumPlan.AnnualDiscountPercentage += 5
+	premiumPlan.PlanPolicy.TotalCuLimit += 10000
+	premiumPlan.PlanPolicy.EpochCuLimit += 1000
+	ts.AddPlan(premiumPlan.Index, premiumPlan)
+	_, err := ts.TxSubscriptionBuy(client, client, premiumPlan.Index, 1, true, false)
+	require.NoError(t, err)
+
+	// advance epoch and verify the client is paired with the provider
+	ts.AdvanceEpoch()
+	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, client)
+	require.NoError(t, err)
+	require.Equal(t, provider, pairing.Providers[0].Address)
+
+	// get the subscription's credit and make sure it's more than relayCuSum * LIMIT_TOKEN_PER_CU
+	r1, err := ts.QuerySubscriptionCurrent(client)
+	require.NoError(t, err)
+	require.Greater(t, r1.Sub.Credit.Amount.Int64(), int64(subsciption.LIMIT_TOKEN_PER_CU)*int64(relayCuSum))
+
+	// send a relay with cuSum
+	msg := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
+	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+	require.NoError(t, err)
+
+	// advance month + epoch and keep the validator distribution pool balance
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+	r2, err := ts.QueryRewardsPools()
+	require.NoError(t, err)
+	var distPoolBeforeBalance uint64
+	for _, pool := range r2.Pools {
+		if pool.Name == string(rewardstypes.ValidatorsRewardsDistributionPoolName) {
+			distPoolBeforeBalance = pool.Balance.Amount.Uint64()
+		}
+	}
+
+	// blocksToSave + 1 to trigger the provider monthly payment
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	// check for expected reward for provider
+	expectedProviderReward := int64(subsciption.LIMIT_TOKEN_PER_CU) * int64(relayCuSum)
+	r3, err := ts.QueryDualstakingDelegatorRewards(provider, provider, ts.spec.Index)
+	require.Nil(ts.T, err)
+	require.Equal(t, expectedProviderReward, r3.Rewards[0].Amount.Amount.Int64())
+
+	// check for expected balance of the pool
+	expectedPoolIncrease := uint64(r1.Sub.Credit.Amount.Int64() - int64(subsciption.LIMIT_TOKEN_PER_CU)*int64(relayCuSum))
+	r2, err = ts.QueryRewardsPools()
+	require.NoError(t, err)
+	var distPoolAfterBalance uint64
+	for _, pool := range r2.Pools {
+		if pool.Name == string(rewardstypes.ValidatorsRewardsDistributionPoolName) {
+			distPoolAfterBalance = pool.Balance.Amount.Uint64()
+		}
+	}
+	// using InEpsilon because the pool's balance decreases a bit due to block rewards
+	require.InEpsilon(t, distPoolBeforeBalance+expectedPoolIncrease, distPoolAfterBalance, 0.05)
 }
