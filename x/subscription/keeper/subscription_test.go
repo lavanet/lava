@@ -2534,6 +2534,12 @@ func TestAllowedBuyersFutureSubscription(t *testing.T) {
 	// try buying a future subscription for the premium plan -> should fail
 	_, err = ts.TxSubscriptionBuy(consumer1, consumer1, premiumPlan.Index, 1, false, true)
 	require.Error(t, err)
+
+	// buy a free subscription and a future premium subscription with consumer 2 -> should succeed
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, premiumPlan.Index, 1, false, true)
+	require.NoError(t, err)
 }
 
 // TestAllowedBuyersUpgradeSubscription checks that a user can't upgrade to a subscription it's not allowed to buy
@@ -2560,4 +2566,10 @@ func TestAllowedBuyersUpgradeSubscription(t *testing.T) {
 	// try to upgrade the subscription to the premium plan -> should fail
 	_, err = ts.TxSubscriptionBuy(consumer1, consumer1, premiumPlan.Index, 1, false, false)
 	require.Error(t, err)
+
+	// buy a free subscription and upgrade to a premium subscription with consumer 2 -> should succeed
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, premiumPlan.Index, 1, false, false)
+	require.NoError(t, err)
 }
