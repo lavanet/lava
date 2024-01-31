@@ -30,13 +30,18 @@ type VerificationKey struct {
 	Addon     string
 }
 
+type BlockVerification struct {
+	EarliestSupported bool
+	LatestDistance    uint64
+}
+
 type VerificationContainer struct {
-	ConnectionType string
-	Name           string
-	ParseDirective spectypes.ParseDirective
-	Value          string
-	LatestDistance uint64
-	Severity       spectypes.ParseValue_VerificationSeverity
+	ConnectionType    string
+	Name              string
+	ParseDirective    spectypes.ParseDirective
+	Value             string
+	BlockVerification BlockVerification
+	Severity          spectypes.ParseValue_VerificationSeverity
 	VerificationKey
 }
 

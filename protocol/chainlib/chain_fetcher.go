@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -107,19 +106,17 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	collectionType := verification.ConnectionType
 	path := parsing.ApiName
 	data := []byte(fmt.Sprintf(parsing.FunctionTemplate))
-	earliestAvailable := true
 
 	// craft data for GET_BLOCK_BY_NUM verification that cannot use "earliest"
-	if strings.Contains(parsing.FunctionTemplate, "%d") {
-		earliestAvailable = false
-		if verification.LatestDistance != 0 && latestBlock != 0 {
-			if latestBlock >= verification.LatestDistance {
-				data = []byte(fmt.Sprintf(parsing.FunctionTemplate, latestBlock-verification.LatestDistance))
+	if !verification.BlockVerification.EarliestSupported {
+		if verification.BlockVerification.LatestDistance != 0 && latestBlock != 0 {
+			if latestBlock >= verification.BlockVerification.LatestDistance {
+				data = []byte(fmt.Sprintf(parsing.FunctionTemplate, latestBlock-verification.BlockVerification.LatestDistance))
 			} else {
 				return utils.LavaFormatWarning("[-] verify failed getting non-earliest block for chainMessage", fmt.Errorf("latestBlock is smaller than latestDistance"),
 					utils.LogAttr("path", path),
 					utils.LogAttr("latest_block", latestBlock),
-					utils.LogAttr("Latest_distance", verification.LatestDistance),
+					utils.LogAttr("Latest_distance", verification.BlockVerification.LatestDistance),
 				)
 			}
 		}
@@ -149,7 +146,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			{Key: "Response", Value: string(reply.Data)},
 		}...)
 	}
-	if verification.LatestDistance != 0 && latestBlock != 0 && earliestAvailable {
+	if verification.BlockVerification.LatestDistance != 0 && latestBlock != 0 && verification.BlockVerification.EarliestSupported {
 		parsedResultAsNumber, err := strconv.ParseUint(parsedResult, 0, 64)
 		if err != nil {
 			return utils.LavaFormatWarning("[-] verify failed to parse result as number", err, []utils.Attribute{
@@ -169,14 +166,14 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				{Key: "parsedResult", Value: parsedResultAsNumber},
 			}...)
 		}
-		if latestBlock-parsedResultAsNumber < verification.LatestDistance {
+		if latestBlock-parsedResultAsNumber < verification.BlockVerification.LatestDistance {
 			return utils.LavaFormatWarning("[-] verify failed expected block distance is not sufficient", err, []utils.Attribute{
 				{Key: "chainId", Value: chainId},
 				{Key: "nodeUrl", Value: proxyUrl.Url},
 				{Key: "Method", Value: parsing.GetApiName()},
 				{Key: "latestBlock", Value: latestBlock},
 				{Key: "parsedResult", Value: parsedResultAsNumber},
-				{Key: "expected", Value: verification.LatestDistance},
+				{Key: "expected", Value: verification.BlockVerification.LatestDistance},
 			}...)
 		}
 	}

@@ -4333,6 +4333,20 @@
                                     "encoding": "hex"
                                 },
                                 "api_name": "block"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+                                "function_tag": "GET_EARLIEST_BLOCK",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "sync_info",
+                                        "earliest_block_height"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "encoding": "base64"
+                                },
+                                "api_name": "earliest_block"
                             }
                         ],
                         "verifications": [
@@ -4366,7 +4380,7 @@
                                         "parser_func": "PARSE_CANONICAL",
                                         "encoding": "base64"
                                     },
-                                    "api_name": "block"
+                                    "api_name": "earliest_block"
                                 }
                             },
                             {

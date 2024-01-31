@@ -342,6 +342,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 	apiCollections := map[CollectionKey]*spectypes.ApiCollection{}
 	verifications := map[VerificationKey][]VerificationContainer{}
 	if spec.Enabled {
+		earliestSupported := false // mark whether an API collection can use "earliest" in getBlockByNum verification
 		for _, apiCollection := range spec.ApiCollections {
 			if !apiCollection.Enabled {
 				continue
@@ -355,6 +356,9 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 				Addon:          apiCollection.CollectionData.AddOn,
 			}
 			for _, parsing := range apiCollection.ParseDirectives {
+				if parsing.FunctionTag == spectypes.FUNCTION_TAG_GET_EARLIEST_BLOCK {
+					earliestSupported = true
+				}
 				taggedApis[parsing.FunctionTag] = TaggedContainer{
 					Parsing:       parsing,
 					ApiCollection: apiCollection,
@@ -402,14 +406,19 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 						Addon:     apiCollection.CollectionData.AddOn,
 					}
 
+					blockVerification := BlockVerification{
+						EarliestSupported: earliestSupported,
+						LatestDistance:    parseValue.LatestDistance,
+					}
+
 					verCont := VerificationContainer{
-						ConnectionType:  apiCollection.CollectionData.Type,
-						Name:            verification.Name,
-						ParseDirective:  *verification.ParseDirective,
-						Value:           parseValue.ExpectedValue,
-						LatestDistance:  parseValue.LatestDistance,
-						VerificationKey: verificationKey,
-						Severity:        parseValue.Severity,
+						ConnectionType:    apiCollection.CollectionData.Type,
+						Name:              verification.Name,
+						ParseDirective:    *verification.ParseDirective,
+						Value:             parseValue.ExpectedValue,
+						BlockVerification: blockVerification,
+						VerificationKey:   verificationKey,
+						Severity:          parseValue.Severity,
 					}
 
 					if extensionVerifications, ok := verifications[verificationKey]; !ok {
