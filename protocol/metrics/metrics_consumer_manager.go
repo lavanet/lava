@@ -219,7 +219,7 @@ func (pme *ConsumerMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
 	pme.virtualEpochMetric.WithLabelValues("lava").Set(float64(virtualEpoch))
 }
 
-func (pme *ConsumerMetricsManager) SetEndpointsHealthChecksOkStatus(status bool) {
+func (pme *ConsumerMetricsManager) UpdateHealthCheckStatus(status bool) {
 	if pme == nil {
 		return
 	}
