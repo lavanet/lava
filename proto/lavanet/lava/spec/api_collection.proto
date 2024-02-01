@@ -31,18 +31,18 @@ message Verification {
   string name =1;
   ParseDirective parse_directive =2;
   repeated ParseValue values=3;
-
-  enum VerificationSeverity {
-    Fail = 0;
-    Warning = 1;
-  }
-  VerificationSeverity severity = 4;
+  reserved 4;
 }
 
 message ParseValue {
   string extension =1;
   string expected_value =2;
   uint64 latest_distance = 3;
+  enum VerificationSeverity {
+    Fail = 0;
+    Warning = 1;
+  }
+  VerificationSeverity severity = 4;
 }
 
 message CollectionData {

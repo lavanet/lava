@@ -79,7 +79,7 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 			}
 			if err != nil {
 				err := utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
-				if verification.Severity == spectypes.Verification_Fail {
+				if verification.Severity == spectypes.ParseValue_Fail {
 					return err
 				}
 			}
@@ -170,6 +170,9 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				{Key: "parsedResult", Value: parsedResult},
 				{Key: "verification.Value", Value: verification.Value},
 				{Key: "Method", Value: parsing.GetApiName()},
+				{Key: "Extension", Value: verification.Extension},
+				{Key: "Addon", Value: verification.Addon},
+				{Key: "Verification", Value: verification.Name},
 			}...)
 		}
 	}

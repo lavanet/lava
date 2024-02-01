@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	commontypes "github.com/lavanet/lava/common/types"
@@ -46,7 +47,7 @@ func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAd
 // create new delegation period record
 // add description
 func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
-	if DisableDualstakingHook {
+	if h.k.GetDisableDualstakingHook(ctx) {
 		return nil
 	}
 
@@ -145,7 +146,7 @@ func (h Hooks) AfterValidatorBeginUnbonding(_ sdk.Context, _ sdk.ConsAddress, _ 
 }
 
 func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
-	if DisableDualstakingHook {
+	if h.k.GetDisableDualstakingHook(ctx) {
 		return nil
 	}
 
@@ -175,4 +176,33 @@ func (h Hooks) BeforeDelegationRemoved(ctx sdk.Context, delAddr sdk.AccAddress, 
 
 func (h Hooks) AfterUnbondingInitiated(_ sdk.Context, _ uint64) error {
 	return nil
+}
+
+// DisableDualstakingHook : dualstaking uses hooks to catch delegations/unbonding tx's to do the same action on the providers delegations.
+// in the case of redelegation, since the user doesnt put/takes tokens back we dont want to take action in the providers delegations.
+// this flag is a local flag used to mark the next hooks to do nothing since this was cause by redelegation tx (redelegation = delegation + unbond)
+
+// SetDisableDualstakingHook set disableDualstakingHook in the store
+func (k Keeper) SetDisableDualstakingHook(ctx sdk.Context, val bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DisableDualstakingHookPrefix))
+	b := []byte{0}
+	if val {
+		b = []byte{1}
+	}
+	store.Set([]byte{0}, b)
+}
+
+// GetDisableDualstakingHook returns disableDualstakingHook
+func (k Keeper) GetDisableDualstakingHook(ctx sdk.Context) bool {
+	if k.storeKey == nil {
+		return false
+	}
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DisableDualstakingHookPrefix))
+
+	b := store.Get([]byte{0})
+	if b == nil {
+		return false
+	}
+
+	return b[0] != 0
 }

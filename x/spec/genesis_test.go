@@ -3,6 +3,9 @@ package spec_test
 import (
 	"testing"
 
+	types2 "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/gogoproto/proto"
+
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/lavanet/lava/x/spec"
@@ -11,9 +14,11 @@ import (
 )
 
 func TestGenesis(t *testing.T) {
-	genesisState := types.GenesisState{
-		Params: types.DefaultParams(),
+	params := types.DefaultParams()
+	params.AllowlistedExpeditedMsgs = []string{proto.MessageName(&types2.MsgUpdateParams{})}
 
+	genesisState := types.GenesisState{
+		Params: params,
 		SpecList: []types.Spec{
 			{
 				Index: "0",

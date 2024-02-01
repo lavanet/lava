@@ -8,6 +8,9 @@ import (
 )
 
 func TestGenesisState_Validate(t *testing.T) {
+	defaultParamsWithDuplicateBlacklistedExpeditedMsgs := types.DefaultParams()
+	defaultParamsWithDuplicateBlacklistedExpeditedMsgs.AllowlistedExpeditedMsgs = []string{"a", "a"}
+
 	for _, tc := range []struct {
 		desc     string
 		genState *types.GenesisState
@@ -62,6 +65,22 @@ func TestGenesisState_Validate(t *testing.T) {
 				SpecCount: 0,
 			},
 			valid: false,
+		},
+		{
+			desc: "duplicated message in BlacklistedExpeditedMessages",
+			genState: &types.GenesisState{
+				Params:   defaultParamsWithDuplicateBlacklistedExpeditedMsgs,
+				SpecList: []types.Spec{},
+			},
+			valid: false,
+		},
+		{
+			desc: "valid message in BlacklistedExpeditedMessages",
+			genState: &types.GenesisState{
+				Params:   types.DefaultParams(),
+				SpecList: []types.Spec{},
+			},
+			valid: true,
 		},
 		// this line is used by starport scaffolding # types/genesis/testcase
 	} {

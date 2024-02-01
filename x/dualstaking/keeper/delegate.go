@@ -534,6 +534,7 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 		if delegations[i].Amount.Amount.LT(amountToDeduct) {
 			unbondAmount[key] = delegations[i].Amount
 			amount = amount.Sub(delegations[i].Amount)
+			delegations[i].Amount.Amount = sdk.ZeroInt()
 		} else {
 			coinToDeduct := sdk.NewCoin(delegations[i].Amount.Denom, amountToDeduct)
 			unbondAmount[key] = coinToDeduct

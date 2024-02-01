@@ -9,6 +9,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 )
 
 const (
@@ -120,6 +121,25 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 			if strings.ToLower(header.Name) != header.Name {
 				details["header"] = header.Name
 				return details, fmt.Errorf("header names must be lower case %s", header.Name)
+			}
+		}
+
+		// get the spec's extension names list
+		extensionsNames := map[string]struct{}{}
+		for _, extension := range apiCollection.Extensions {
+			extensionsNames[extension.Name] = struct{}{}
+		}
+		if len(extensionsNames) > 0 {
+			// validate verifications
+			for _, verification := range apiCollection.Verifications {
+				for _, parseValue := range verification.Values {
+					_, found := extensionsNames[parseValue.Extension]
+					if parseValue.Extension != "" && !found {
+						return details, utils.LavaFormatWarning("verification's extension not found in extension list", fmt.Errorf("spec verification validation failed"),
+							utils.LogAttr("verification_extension", parseValue.Extension),
+						)
+					}
+				}
 			}
 		}
 	}

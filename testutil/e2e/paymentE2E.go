@@ -1,13 +1,16 @@
 package e2e
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"go/build"
 	"math"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -170,6 +173,88 @@ func (lt *lavaTest) checkPayment(providers []string, startRewards []sdk.Coin) {
 	}
 }
 
+func (lt *lavaTest) saveLogsForPayment() {
+	if _, err := os.Stat(lt.logPath); errors.Is(err, os.ErrNotExist) {
+		err = os.MkdirAll(lt.logPath, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+	}
+	errorFound := false
+	errorFiles := []string{}
+	errorPrint := make(map[string]string)
+	for fileName, logBuffer := range lt.logs {
+		file, err := os.Create(lt.logPath + fileName + ".log")
+		if err != nil {
+			panic(err)
+		}
+		writer := bufio.NewWriter(file)
+		writer.Write(logBuffer.Bytes())
+		writer.Flush()
+		utils.LavaFormatDebug("writing file", []utils.Attribute{{Key: "fileName", Value: fileName}, {Key: "lines", Value: len(logBuffer.Bytes())}}...)
+		file.Close()
+
+		lines := strings.Split(logBuffer.String(), "\n")
+		errorLines := []string{}
+		for _, line := range lines {
+			if fileName == "00_StartLava" { // TODO remove this and solve the errors
+				break
+			}
+			if strings.Contains(line, " ERR ") || strings.Contains(line, "[Error]" /* sdk errors*/) {
+				isAllowedError := false
+				for errorSubstring := range allowedErrors {
+					if strings.Contains(line, errorSubstring) {
+						isAllowedError = true
+						break
+					}
+				}
+
+				for errorSubstring := range allowedErrorsPaymentE2E {
+					if strings.Contains(line, errorSubstring) {
+						isAllowedError = true
+						break
+					}
+				}
+
+				// When test did not finish properly save all logs. If test finished properly save only non allowed errors.
+				if !lt.testFinishedProperly || !isAllowedError {
+					errorFound = true
+					errorLines = append(errorLines, line)
+				}
+			}
+		}
+		if len(errorLines) == 0 {
+			continue
+		}
+
+		// dump all errors into the log file
+		errors := strings.Join(errorLines, "\n")
+		errFile, err := os.Create(lt.logPath + fileName + "_errors.log")
+		if err != nil {
+			panic(err)
+		}
+		writer = bufio.NewWriter(errFile)
+		writer.Write([]byte(errors))
+		writer.Flush()
+		errFile.Close()
+
+		// keep at most 5 errors to display
+		count := len(errorLines)
+		if count > 5 {
+			count = 5
+		}
+		errorPrint[fileName] = strings.Join(errorLines[:count], "\n")
+		errorFiles = append(errorFiles, fileName)
+	}
+
+	if errorFound {
+		for _, errLine := range errorPrint {
+			fmt.Println("ERROR: ", errLine)
+		}
+		panic("Error found in logs on " + lt.logPath + strings.Join(errorFiles, ", "))
+	}
+}
+
 func withinRange(value1, value2, percentage uint64) bool {
 	maxDifference := value1 * percentage / 100
 	return math.Abs(float64(value1)-float64(value2)) <= float64(maxDifference)
@@ -207,13 +292,13 @@ func runPaymentE2E(timeout time.Duration) {
 	// use defer to save logs in case the tests fail
 	defer func() {
 		if r := recover(); r != nil {
-			lt.saveLogs()
+			lt.saveLogsForPayment()
 			for _, cmd := range lt.commands {
 				cmd.Process.Kill()
 			}
 			panic("E2E Failed")
 		} else {
-			lt.saveLogs()
+			lt.saveLogsForPayment()
 		}
 	}()
 
