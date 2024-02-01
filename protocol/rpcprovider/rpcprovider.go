@@ -51,6 +51,9 @@ const (
 var (
 	Yaml_config_properties     = []string{"network-address.address", "chain-id", "api-interface", "node-urls.url"}
 	DefaultRPCProviderFileName = "rpcprovider.yml"
+
+	RelaysHealthEnableFlagDefault  = true
+	RelayHealthIntervalFlagDefault = 5 * time.Minute
 )
 
 // used to call SetPolicy in base chain parser so we are allowed to run verifications on the addons and extensions
@@ -103,6 +106,8 @@ type rpcProviderStartOptions struct {
 	shardID                   uint
 	rewardsSnapshotThreshold  uint
 	rewardsSnapshotTimeoutSec uint
+	relaysHealthEnableFlag    bool          // enables relay health check
+	relaysHealthIntervalFlag  time.Duration // interval for relay health check
 }
 
 type RPCProvider struct {
@@ -110,17 +115,20 @@ type RPCProvider struct {
 	rpcProviderListeners map[string]*ProviderListener
 	lock                 sync.Mutex
 	// all of the following members need to be concurrency proof
-	providerMetricsManager *metrics.ProviderMetricsManager
-	rewardServer           *rewardserver.RewardServer
-	privKey                *btcec.PrivateKey
-	lavaChainID            string
-	addr                   sdk.AccAddress
-	blockMemorySize        uint64
-	chainMutexes           map[string]*sync.Mutex
-	parallelConnections    uint
-	cache                  *performance.Cache
-	shardID                uint // shardID is a flag that allows setting up multiple provider databases of the same chain
-	chainTrackers          *ChainTrackers
+	providerMetricsManager    *metrics.ProviderMetricsManager
+	rewardServer              *rewardserver.RewardServer
+	privKey                   *btcec.PrivateKey
+	lavaChainID               string
+	addr                      sdk.AccAddress
+	blockMemorySize           uint64
+	chainMutexes              map[string]*sync.Mutex
+	parallelConnections       uint
+	cache                     *performance.Cache
+	shardID                   uint // shardID is a flag that allows setting up multiple provider databases of the same chain
+	chainTrackers             *ChainTrackers
+	relaysMonitorAggregator   *metrics.RelaysMonitorAggregator
+	relaysHealthCheckEnabled  bool
+	relaysHealthCheckInterval time.Duration
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -138,6 +146,9 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.providerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ProviderVersion)
 	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)
 	rpcp.shardID = options.shardID
+	rpcp.relaysHealthCheckEnabled = options.relaysHealthEnableFlag
+	rpcp.relaysHealthCheckInterval = options.relaysHealthIntervalFlag
+	rpcp.relaysMonitorAggregator = metrics.NewRelaysMonitorAggregator(rpcp.relaysHealthCheckInterval, rpcp.providerMetricsManager)
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
@@ -198,6 +209,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 
 	specValidator := NewSpecValidator()
 	disabledEndpointsList := rpcp.SetupProviderEndpoints(options.rpcProviderEndpoints, specValidator, true)
+	rpcp.relaysMonitorAggregator.StartMonitoring(ctx)
 	specValidator.Start(ctx)
 	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	if len(disabledEndpointsList) > 0 {
@@ -419,8 +431,14 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// add a database for this chainID if does not exist.
 	rpcp.rewardServer.AddDataBase(rpcProviderEndpoint.ChainID, rpcp.addr.String(), rpcp.shardID)
 
+	var relaysMonitor *metrics.RelaysMonitor = nil
+	if rpcp.relaysHealthCheckEnabled {
+		relaysMonitor = metrics.NewRelaysMonitor(rpcp.relaysHealthCheckInterval, chainID, rpcEndpoint.ApiInterface)
+		rpcp.relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.Key(), relaysMonitor)
+	}
+
 	rpcProviderServer := &RPCProviderServer{}
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -629,6 +647,8 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			shardID := viper.GetUint(ShardIDFlagName)
 			rewardsSnapshotThreshold := viper.GetUint(rewardserver.RewardsSnapshotThresholdFlagName)
 			rewardsSnapshotTimeoutSec := viper.GetUint(rewardserver.RewardsSnapshotTimeoutSecFlagName)
+			enableRelaysHealth := viper.GetBool(common.RelaysHealthEnableFlag)
+			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
 			rpcProvider := RPCProvider{}
 			err = rpcProvider.Start(
 				&rpcProviderStartOptions{
@@ -644,6 +664,8 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 					shardID,
 					rewardsSnapshotThreshold,
 					rewardsSnapshotTimeoutSec,
+					enableRelaysHealth,
+					relaysHealthInterval,
 				})
 			return err
 		},
@@ -669,6 +691,8 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().Uint64Var(&chaintracker.PollingMultiplier, chaintracker.PollingMultiplierFlagName, 1, "when set, forces the chain tracker to poll more often, improving the sync at the cost of more queries")
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationInterval, SpecValidationIntervalFlagName, SpecValidationInterval, "determines the interval of which to run validation on the spec for all connected chains")
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationIntervalDisabledChains, SpecValidationIntervalDisabledChainsFlagName, SpecValidationIntervalDisabledChains, "determines the interval of which to run validation on the spec for all disabled chains, determines recovery time")
+	cmdRPCProvider.Flags().Bool(common.RelaysHealthEnableFlag, true, "enables relays health check")
+	cmdRPCProvider.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
 
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider

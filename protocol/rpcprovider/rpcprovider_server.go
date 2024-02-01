@@ -56,6 +56,7 @@ type RPCProviderServer struct {
 	lavaChainID               string
 	allowedMissingCUThreshold float64
 	metrics                   *metrics.ProviderMetrics
+	relaysMonitor             *metrics.RelaysMonitor
 }
 
 type ReliabilityManagerInf interface {
@@ -90,6 +91,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	lavaChainID string,
 	allowedMissingCUThreshold float64,
 	providerMetrics *metrics.ProviderMetrics,
+	relaysMonitor *metrics.RelaysMonitor,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -104,6 +106,47 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.lavaChainID = lavaChainID
 	rpcps.allowedMissingCUThreshold = allowedMissingCUThreshold
 	rpcps.metrics = providerMetrics
+	rpcps.relaysMonitor = relaysMonitor
+
+	rpcps.initRelaysMonitor(ctx)
+}
+func (rpcps *RPCProviderServer) initRelaysMonitor(ctx context.Context) {
+	if rpcps.relaysMonitor == nil {
+		return
+	}
+
+	rpcps.relaysMonitor.SetRelaySender(func() (bool, error) {
+		chainMessage, err := rpcps.craftChainMessage(ctx)
+		if err != nil {
+			return false, err
+		}
+
+		_, _, _, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
+		return err == nil, err
+	})
+
+	rpcps.relaysMonitor.Start(ctx)
+}
+
+func (rpcps *RPCProviderServer) craftChainMessage(ctx context.Context) (chainMessage chainlib.ChainMessage, err error) {
+	parsing, collectionData, ok := rpcps.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	if !ok {
+		return nil, utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil,
+			utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
+			utils.LogAttr("APIInterface", rpcps.rpcProviderEndpoint.ApiInterface),
+		)
+	}
+
+	path := parsing.ApiName
+	data := []byte(parsing.FunctionTemplate)
+	chainMessage, err = rpcps.chainParser.ParseMsg(path, data, collectionData.Type, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	if err != nil {
+		return nil, utils.LavaFormatError("failed creating chain message in rpc consumer init relays", err,
+			utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
+			utils.LogAttr("APIInterface", rpcps.rpcProviderEndpoint.ApiInterface))
+	}
+
+	return chainMessage, nil
 }
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
@@ -984,4 +1027,8 @@ func (rpcps *RPCProviderServer) tryGetTimeoutFromRequest(ctx context.Context) (t
 		}
 	}
 	return 0, false, nil
+}
+
+func (rpcps *RPCProviderServer) IsHealthy() bool {
+	return rpcps.relaysMonitor.IsHealthy()
 }

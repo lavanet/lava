@@ -3,6 +3,7 @@ package metrics
 import (
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lavanet/lava/utils"
@@ -18,22 +19,24 @@ const (
 )
 
 type ProviderMetricsManager struct {
-	providerMetrics             map[string]*ProviderMetrics
-	lock                        sync.RWMutex
-	totalCUServicedMetric       *prometheus.CounterVec
-	totalCUPaidMetric           *prometheus.CounterVec
-	totalRelaysServicedMetric   *prometheus.CounterVec
-	totalErroredMetric          *prometheus.CounterVec
-	consumerQoSMetric           *prometheus.GaugeVec
-	blockMetric                 *prometheus.GaugeVec
-	lastServicedBlockTimeMetric *prometheus.GaugeVec
-	disabledChainsMetric        *prometheus.GaugeVec
-	fetchLatestFailedMetric     *prometheus.CounterVec
-	fetchBlockFailedMetric      *prometheus.CounterVec
-	fetchLatestSuccessMetric    *prometheus.CounterVec
-	fetchBlockSuccessMetric     *prometheus.CounterVec
-	protocolVersionMetric       *prometheus.GaugeVec
-	virtualEpochMetric          *prometheus.GaugeVec
+	providerMetrics               map[string]*ProviderMetrics
+	lock                          sync.RWMutex
+	totalCUServicedMetric         *prometheus.CounterVec
+	totalCUPaidMetric             *prometheus.CounterVec
+	totalRelaysServicedMetric     *prometheus.CounterVec
+	totalErroredMetric            *prometheus.CounterVec
+	consumerQoSMetric             *prometheus.GaugeVec
+	blockMetric                   *prometheus.GaugeVec
+	lastServicedBlockTimeMetric   *prometheus.GaugeVec
+	disabledChainsMetric          *prometheus.GaugeVec
+	fetchLatestFailedMetric       *prometheus.CounterVec
+	fetchBlockFailedMetric        *prometheus.CounterVec
+	fetchLatestSuccessMetric      *prometheus.CounterVec
+	fetchBlockSuccessMetric       *prometheus.CounterVec
+	protocolVersionMetric         *prometheus.GaugeVec
+	virtualEpochMetric            *prometheus.GaugeVec
+	endpointsHealthChecksOkMetric prometheus.Gauge
+	endpointsHealthChecksOk       uint64
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -108,6 +111,11 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		Name: "virtual_epoch",
 		Help: "The current virtual epoch measured",
 	}, []string{"spec"})
+	endpointsHealthChecksOkMetric := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "lava_provider_overall_health",
+		Help: "At least one endpoint is healthy",
+	})
+	endpointsHealthChecksOkMetric.Set(1)
 
 	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_provider_protocol_version",
@@ -127,6 +135,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(fetchLatestSuccessMetric)
 	prometheus.MustRegister(fetchBlockSuccessMetric)
 	prometheus.MustRegister(virtualEpochMetric)
+	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -205,6 +214,15 @@ func (pme *ProviderMetricsManager) AddPayment(specID string, cu uint64) {
 			break // we need to increase the metric only once
 		}
 	}
+}
+
+func (pme *ProviderMetricsManager) UpdateHealthCheckStatus(status bool) {
+	var value float64 = 0
+	if status {
+		value = 1
+	}
+	pme.endpointsHealthChecksOkMetric.Set(value)
+	atomic.StoreUint64(&pme.endpointsHealthChecksOk, uint64(value))
 }
 
 func (pme *ProviderMetricsManager) SetBlock(latestLavaBlock int64) {
