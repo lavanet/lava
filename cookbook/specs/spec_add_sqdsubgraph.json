@@ -100,7 +100,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/subgraphs/name/compound-v3",
+                                "name": "/subgraphs/name/papercliplabs/compound-v3",
                                 "block_parsing": {
                                     "parser_arg": [
                                         ""
@@ -119,8 +119,7 @@
                             }
                         ],
                         "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": []
+                        "parse_directives": []
                     },
                     {
                         "enabled": true,
@@ -132,7 +131,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/subgraphs/name/aave-v3",
+                                "name": "/subgraphs/name/aave/protocol-v3",
                                 "block_parsing": {
                                     "parser_arg": [
                                         ""
@@ -151,8 +150,7 @@
                             }
                         ],
                         "inheritance_apis": [],
-                        "parse_directives": [],
-                        "verifications": []
+                        "parse_directives": []
                     }
                 ]
             }
