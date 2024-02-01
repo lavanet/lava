@@ -20,6 +20,11 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+const (
+	HealthCheckURLPathFlagName    = "health-check-url-path"
+	HealthCheckURLPathFlagDefault = "/lava/health"
+)
+
 type ProviderListener struct {
 	networkAddress string
 	relayServer    *relayServer
@@ -51,7 +56,7 @@ func (pl *ProviderListener) Shutdown(shutdownCtx context.Context) error {
 	return nil
 }
 
-func NewProviderListener(ctx context.Context, networkAddress lavasession.NetworkAddressData) *ProviderListener {
+func NewProviderListener(ctx context.Context, networkAddress lavasession.NetworkAddressData, healthCheckPath string) *ProviderListener {
 	pl := &ProviderListener{networkAddress: networkAddress.Address}
 
 	// GRPC
@@ -64,6 +69,11 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
 		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web, lava-sdk-relay-timeout")
+
+		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
+			_, _ = resp.Write(make([]byte, 0))
+			return
+		}
 
 		wrappedServer.ServeHTTP(resp, req)
 	}

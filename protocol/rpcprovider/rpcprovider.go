@@ -108,6 +108,7 @@ type rpcProviderStartOptions struct {
 	rewardsSnapshotTimeoutSec uint
 	relaysHealthEnableFlag    bool          // enables relay health check
 	relaysHealthIntervalFlag  time.Duration // interval for relay health check
+	grpcHealthCheckEndpoint   string
 }
 
 type RPCProvider struct {
@@ -129,6 +130,7 @@ type RPCProvider struct {
 	relaysMonitorAggregator   *metrics.RelaysMonitorAggregator
 	relaysHealthCheckEnabled  bool
 	relaysHealthCheckInterval time.Duration
+	grpcHealthCheckEndpoint   string
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -149,6 +151,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.relaysHealthCheckEnabled = options.relaysHealthEnableFlag
 	rpcp.relaysHealthCheckInterval = options.relaysHealthIntervalFlag
 	rpcp.relaysMonitorAggregator = metrics.NewRelaysMonitorAggregator(rpcp.relaysHealthCheckInterval, rpcp.providerMetricsManager)
+	rpcp.grpcHealthCheckEndpoint = options.grpcHealthCheckEndpoint
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
@@ -448,7 +451,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		listener, ok = rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address]
 		if !ok {
 			utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
-			listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
+			listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, rpcp.grpcHealthCheckEndpoint)
 			specValidator.AddRPCProviderListener(rpcProviderEndpoint.NetworkAddress.Address, listener)
 			rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address] = listener
 		}
@@ -649,6 +652,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			rewardsSnapshotTimeoutSec := viper.GetUint(rewardserver.RewardsSnapshotTimeoutSecFlagName)
 			enableRelaysHealth := viper.GetBool(common.RelaysHealthEnableFlag)
 			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
+			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
 			rpcProvider := RPCProvider{}
 			err = rpcProvider.Start(
 				&rpcProviderStartOptions{
@@ -666,6 +670,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 					rewardsSnapshotTimeoutSec,
 					enableRelaysHealth,
 					relaysHealthInterval,
+					healthCheckURLPath,
 				})
 			return err
 		},
@@ -693,6 +698,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationIntervalDisabledChains, SpecValidationIntervalDisabledChainsFlagName, SpecValidationIntervalDisabledChains, "determines the interval of which to run validation on the spec for all disabled chains, determines recovery time")
 	cmdRPCProvider.Flags().Bool(common.RelaysHealthEnableFlag, true, "enables relays health check")
 	cmdRPCProvider.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
+	cmdRPCProvider.Flags().String(HealthCheckURLPathFlagName, HealthCheckURLPathFlagDefault, "the url path for the provider's grpc health check")
 
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
