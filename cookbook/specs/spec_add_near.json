@@ -383,6 +383,41 @@
                                         "expected_value": "mainnet"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "sync_info",
+                                            "earliest_block_height"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "status"
+                                },
+                                "values": [
+                                    {
+                                        "latest_distance": 64800,
+                                        "severity": "Warning"
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "9820210"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 63900
+                                }
                             }
                         ]
                     }
