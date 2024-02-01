@@ -21,7 +21,7 @@ func TestGRPCProxy(t *testing.T) {
 		responseHeaders := make(metadata.MD)
 		responseHeaders["test-headers"] = append(responseHeaders["test-headers"], "55")
 		return respBytes, responseHeaders, nil
-	}, "", common.ConsumerCmdFlags{HeadersFlag: "*", OriginFlag: "*", MethodsFlag: "GET,POST,OPTIONS", CDNCacheDuration: "86400"})
+	}, "", common.ConsumerCmdFlags{HeadersFlag: "*", OriginFlag: "*", MethodsFlag: "GET,POST,OPTIONS", CDNCacheDuration: "86400"}, nil)
 	require.NoError(t, err)
 
 	client := testproto.NewTestClient(testproto.InMemoryClientConn(t, proxyGRPCSrv))
