@@ -39,7 +39,7 @@ func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.Cons
 			return
 		}
 
-		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
+		if healthReporter != nil && req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
 			if healthReporter.IsHealthy() {
 				resp.WriteHeader(fiber.StatusOK)
 			} else {
