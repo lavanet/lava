@@ -138,28 +138,42 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
 
+	providerMetricsManager := &ProviderMetricsManager{
+		providerMetrics:               map[string]*ProviderMetrics{},
+		totalCUServicedMetric:         totalCUServicedMetric,
+		totalCUPaidMetric:             totalCUPaidMetric,
+		totalRelaysServicedMetric:     totalRelaysServicedMetric,
+		totalErroredMetric:            totalErroredMetric,
+		consumerQoSMetric:             consumerQoSMetric,
+		blockMetric:                   blockMetric,
+		lastServicedBlockTimeMetric:   lastServicedBlockTimeMetric,
+		disabledChainsMetric:          disabledChainsMetric,
+		fetchLatestFailedMetric:       fetchLatestFailedMetric,
+		fetchBlockFailedMetric:        fetchBlockFailedMetric,
+		fetchLatestSuccessMetric:      fetchLatestSuccessMetric,
+		fetchBlockSuccessMetric:       fetchBlockSuccessMetric,
+		virtualEpochMetric:            virtualEpochMetric,
+		endpointsHealthChecksOkMetric: endpointsHealthChecksOkMetric,
+		endpointsHealthChecksOk:       1,
+		protocolVersionMetric:         protocolVersionMetric,
+	}
+
 	http.Handle("/metrics", promhttp.Handler())
+	http.HandleFunc("/metrics/health-overall", func(w http.ResponseWriter, r *http.Request) {
+		statusCode := http.StatusOK
+		if atomic.LoadUint64(&providerMetricsManager.endpointsHealthChecksOk) == 0 {
+			statusCode = http.StatusServiceUnavailable
+		}
+
+		w.WriteHeader(statusCode)
+	})
+
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
 		http.ListenAndServe(networkAddress, nil)
 	}()
-	return &ProviderMetricsManager{
-		providerMetrics:             map[string]*ProviderMetrics{},
-		totalCUServicedMetric:       totalCUServicedMetric,
-		totalCUPaidMetric:           totalCUPaidMetric,
-		totalRelaysServicedMetric:   totalRelaysServicedMetric,
-		totalErroredMetric:          totalErroredMetric,
-		consumerQoSMetric:           consumerQoSMetric,
-		blockMetric:                 blockMetric,
-		lastServicedBlockTimeMetric: lastServicedBlockTimeMetric,
-		disabledChainsMetric:        disabledChainsMetric,
-		fetchLatestFailedMetric:     fetchLatestFailedMetric,
-		fetchBlockFailedMetric:      fetchBlockFailedMetric,
-		fetchLatestSuccessMetric:    fetchLatestSuccessMetric,
-		fetchBlockSuccessMetric:     fetchBlockSuccessMetric,
-		virtualEpochMetric:          virtualEpochMetric,
-		protocolVersionMetric:       protocolVersionMetric,
-	}
+
+	return providerMetricsManager
 }
 
 func (pme *ProviderMetricsManager) getProviderMetric(specID, apiInterface string) *ProviderMetrics {
@@ -217,6 +231,10 @@ func (pme *ProviderMetricsManager) AddPayment(specID string, cu uint64) {
 }
 
 func (pme *ProviderMetricsManager) UpdateHealthCheckStatus(status bool) {
+	if pme == nil {
+		return
+	}
+
 	var value float64 = 0
 	if status {
 		value = 1
