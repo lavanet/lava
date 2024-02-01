@@ -1513,7 +1513,20 @@
                             },
                             {
                                 "name": "pruning",
-                                "values": []
+                                "values": [
+                                    {
+                                        "name": "pruning",
+                                        "values": [
+                                            {
+                                                "expected_value":""
+                                            },
+                                            {
+                                                "extension": "archive",
+                                                "expected_value":""
+                                            }
+                                        ]
+                                    }
+                                ]
                             }
                         ],
                         "extensions": [

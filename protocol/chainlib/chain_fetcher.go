@@ -106,6 +106,11 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	collectionType := verification.ConnectionType
 	path := parsing.ApiName
 	data := []byte(fmt.Sprintf(parsing.FunctionTemplate))
+	if !verification.IsActive() {
+		utils.LavaFormatDebug("skipping disabled verification", []utils.Attribute{{Key: "Extension", Value: verification.Extension},
+			{Key: "Addon", Value: verification.Addon}, utils.LogAttr("name", verification.Name), {Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
+		return nil
+	}
 	chainMessage, err := CraftChainMessage(parsing, collectionType, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: collectionType}, cf.ChainFetcherMetadata())
 	if err != nil {
 		return utils.LavaFormatError("[-] verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)

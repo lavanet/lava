@@ -40,6 +40,13 @@ type VerificationContainer struct {
 	VerificationKey
 }
 
+func (vc *VerificationContainer) IsActive() bool {
+	if vc.Value == "" && vc.LatestDistance == 0 {
+		return false
+	}
+	return true
+}
+
 type TaggedContainer struct {
 	Parsing       *spectypes.ParseDirective
 	ApiCollection *spectypes.ApiCollection
