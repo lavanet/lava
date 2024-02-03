@@ -198,7 +198,6 @@ func blockInterfaceToString(block interface{}) string {
 		return castedBlock
 	case float64:
 		return strconv.FormatFloat(castedBlock, 'f', -1, 64)
-
 	case int64:
 		return strconv.FormatInt(castedBlock, 10)
 	case uint64:
@@ -223,12 +222,12 @@ func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 	if err != nil {
 		return nil, utils.LavaFormatProduction("invalid input format, data is not json", err, utils.Attribute{Key: "data", Value: unmarshalledData})
 	}
-	switch unmarshaledDataTyped := unmarshalledData.(type) {
+	switch unmarshalledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
-		if uint64(len(unmarshaledDataTyped)) <= param_index {
+		if uint64(len(unmarshalledDataTyped)) <= param_index {
 			return nil, ValueNotSetError
 		}
-		block := unmarshaledDataTyped[param_index]
+		block := unmarshalledDataTyped[param_index]
 		// TODO: turn this into type assertion instead
 
 		retArr := make([]interface{}, 0)
@@ -236,7 +235,7 @@ func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		return retArr, nil
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
-		return nil, utils.LavaFormatProduction("Parse type unsupported in parse by arg, only list parameters are currently supported", nil, utils.Attribute{Key: "request", Value: unmarshaledDataTyped})
+		return nil, utils.LavaFormatProduction("Parse type unsupported in parse by arg, only list parameters are currently supported", nil, utils.Attribute{Key: "request", Value: unmarshalledDataTyped})
 	}
 }
 
