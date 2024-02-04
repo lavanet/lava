@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -103,6 +104,9 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 
 func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer, latestBlock uint64) error {
 	parsing := &verification.ParseDirective
+	if parsing.FunctionTag == spectypes.FUNCTION_TAG_GET_EARLIEST_BLOCK {
+		parsing = &verification.BlockVerification.EarliestParseDirective
+	}
 	collectionType := verification.ConnectionType
 	path := parsing.ApiName
 	data := []byte(fmt.Sprintf(parsing.FunctionTemplate))
@@ -119,7 +123,8 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	}
 
 	// craft data for GET_BLOCK_BY_NUM verification that cannot use "earliest"
-	if !verification.BlockVerification.EarliestSupported {
+	// also check for %d because the data constructed assumes its presence
+	if !verification.BlockVerification.EarliestSupported && strings.Contains(parsing.FunctionTemplate, "%d") {
 		if verification.BlockVerification.LatestDistance != 0 && latestBlock != 0 {
 			if latestBlock >= verification.BlockVerification.LatestDistance {
 				data = []byte(fmt.Sprintf(parsing.FunctionTemplate, latestBlock-verification.BlockVerification.LatestDistance))
@@ -145,7 +150,10 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 
 	parserInput, err := FormatResponseForParsing(reply, chainMessage)
 	if err != nil {
-		return err
+		return utils.LavaFormatWarning("[-] verify failed to parse result", err,
+			utils.LogAttr("chain_id", chainId),
+			utils.LogAttr("Api_interface", cf.endpoint.ApiInterface),
+		)
 	}
 
 	parsedResult, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)

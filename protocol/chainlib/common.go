@@ -31,8 +31,9 @@ type VerificationKey struct {
 }
 
 type BlockVerification struct {
-	EarliestSupported bool
-	LatestDistance    uint64
+	EarliestSupported      bool
+	LatestDistance         uint64
+	EarliestParseDirective spectypes.ParseDirective
 }
 
 type VerificationContainer struct {

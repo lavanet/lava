@@ -343,6 +343,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 	verifications := map[VerificationKey][]VerificationContainer{}
 	if spec.Enabled {
 		earliestSupported := false // mark whether an API collection can use "earliest" in getBlockByNum verification
+		earliestParseDirective := spectypes.ParseDirective{}
 		for _, apiCollection := range spec.ApiCollections {
 			if !apiCollection.Enabled {
 				continue
@@ -358,6 +359,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 			for _, parsing := range apiCollection.ParseDirectives {
 				if parsing.FunctionTag == spectypes.FUNCTION_TAG_GET_EARLIEST_BLOCK {
 					earliestSupported = true
+					earliestParseDirective = *parsing
 				}
 				taggedApis[parsing.FunctionTag] = TaggedContainer{
 					Parsing:       parsing,
@@ -407,8 +409,9 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 					}
 
 					blockVerification := BlockVerification{
-						EarliestSupported: earliestSupported,
-						LatestDistance:    parseValue.LatestDistance,
+						EarliestSupported:      earliestSupported,
+						LatestDistance:         parseValue.LatestDistance,
+						EarliestParseDirective: earliestParseDirective,
 					}
 
 					verCont := VerificationContainer{
