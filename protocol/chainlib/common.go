@@ -327,3 +327,15 @@ func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheck
 
 	return app
 }
+
+func truncateAndPadString(s string, maxLength int) string {
+	// Truncate to a maximum length
+	if len(s) > maxLength {
+		s = s[:maxLength]
+	}
+
+	// Pad with empty strings if the length is less than the specified maximum length
+	s = fmt.Sprintf("%-*s", maxLength, s)
+
+	return s
+}
