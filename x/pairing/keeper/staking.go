@@ -143,6 +143,25 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		{Key: "geolocation", Value: geolocation},
 	}
 
+	// if there are registered delegations to the provider, count them in the delegateTotal
+	delegateTotal := sdk.ZeroInt()
+	epoch := k.epochStorageKeeper.GetEpochStart(ctx)
+	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, senderAddr.String(), epoch)
+	if err != nil {
+		utils.LavaFormatWarning("cannot get provider's delegators", err,
+			utils.LogAttr("provider", senderAddr.String()),
+			utils.LogAttr("block", epoch),
+		)
+	}
+
+	for _, d := range delegations {
+		if d.Delegator == senderAddr.String() {
+			// ignore provider self delegation
+			continue
+		}
+		delegateTotal = delegateTotal.Add(d.Amount.Amount)
+	}
+
 	stakeEntry := epochstoragetypes.StakeEntry{
 		Stake:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
 		Address:            creator,
@@ -151,7 +170,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		Geolocation:        geolocation,
 		Chain:              chainID,
 		Moniker:            moniker,
-		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
+		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
 		DelegateLimit:      delegationLimit,
 		DelegateCommission: delegationCommission,
 	}
