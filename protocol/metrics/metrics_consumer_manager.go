@@ -220,6 +220,9 @@ func (pme *ConsumerMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
 }
 
 func (pme *ConsumerMetricsManager) SetEndpointsHealthChecksOkStatus(status bool) {
+	if pme == nil {
+		return
+	}
 	var value float64 = 0
 	if status {
 		value = 1
