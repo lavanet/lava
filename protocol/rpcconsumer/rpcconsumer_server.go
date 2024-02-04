@@ -284,6 +284,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	retries := uint64(0)
 	timeouts := 0
 	unwantedProviders := rpccs.GetInitialUnwantedProviders(directiveHeaders)
+
 	for ; retries < MaxRelayRetries; retries++ {
 		// TODO: make this async between different providers
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders, timeouts)
@@ -425,7 +426,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// try using cache before sending relay
 	var cacheError error
-	if reqBlock != spectypes.NOT_APPLICABLE {
+	if reqBlock != spectypes.NOT_APPLICABLE || !chainMessage.GetForceCacheRefresh() {
 		var cacheReply *pairingtypes.CacheRelayReply
 		cacheReply, cacheError = rpccs.cache.GetEntry(ctx, &pairingtypes.RelayCacheGet{Request: relayRequestData, BlockHash: nil, ChainID: chainID, Finalized: false, SharedStateId: sharedStateId}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
 		reply := cacheReply.GetReply()
@@ -831,6 +832,8 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 			headerDirectives[name] = metaElement.Value
 		case common.EXTENSION_OVERRIDE_HEADER_NAME:
 			headerDirectives[name] = metaElement.Value
+		case common.FORCE_CACHE_REFRESH_HEADER_NAME:
+			headerDirectives[name] = metaElement.Value
 		default:
 			metadataRet = append(metadataRet, metaElement)
 		}
@@ -874,6 +877,9 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 			chainMessage.TimeoutOverride(timeout)
 		}
 	}
+
+	_, ok = directiveHeaders[common.FORCE_CACHE_REFRESH_HEADER_NAME]
+	chainMessage.SetForceCacheRefresh(ok)
 }
 
 func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, retries uint64) {
