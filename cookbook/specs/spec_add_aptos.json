@@ -455,6 +455,40 @@
                                         "expected_value": "1"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_template": "/",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "oldest_block_height"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/"
+                                },
+                                "values": [
+                                    {
+                                        "latest_distance": 21600,
+                                        "severity": "Warning"
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "0"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 21300
+                                }
                             }
                         ]
                     },

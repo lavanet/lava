@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"sync/atomic"
 
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -23,6 +24,7 @@ type ConsumerMetricsManager struct {
 	LatestProviderRelay           *prometheus.GaugeVec
 	virtualEpochMetric            *prometheus.GaugeVec
 	endpointsHealthChecksOkMetric prometheus.Gauge
+	endpointsHealthChecksOk       uint64
 	lock                          sync.Mutex
 	protocolVersionMetric         *prometheus.GaugeVec
 	providerRelays                map[string]uint64
@@ -104,12 +106,8 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	prometheus.MustRegister(virtualEpochMetric)
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
-	http.Handle("/metrics", promhttp.Handler())
-	go func() {
-		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
-		http.ListenAndServe(networkAddress, nil)
-	}()
-	return &ConsumerMetricsManager{
+
+	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:        totalCURequestedMetric,
 		totalRelaysRequestedMetric:    totalRelaysRequestedMetric,
 		totalErroredMetric:            totalErroredMetric,
@@ -122,8 +120,26 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		providerRelays:                map[string]uint64{},
 		virtualEpochMetric:            virtualEpochMetric,
 		endpointsHealthChecksOkMetric: endpointsHealthChecksOkMetric,
+		endpointsHealthChecksOk:       1,
 		protocolVersionMetric:         protocolVersionMetric,
 	}
+
+	http.Handle("/metrics", promhttp.Handler())
+	http.HandleFunc("/metrics/health-overall", func(w http.ResponseWriter, r *http.Request) {
+		statusCode := http.StatusOK
+		if atomic.LoadUint64(&consumerMetricsManager.endpointsHealthChecksOk) == 0 {
+			statusCode = http.StatusServiceUnavailable
+		}
+
+		w.WriteHeader(statusCode)
+	})
+
+	go func() {
+		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
+		http.ListenAndServe(networkAddress, nil)
+	}()
+
+	return consumerMetricsManager
 }
 
 func (pme *ConsumerMetricsManager) SetBlock(block int64) {
@@ -204,11 +220,15 @@ func (pme *ConsumerMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
 }
 
 func (pme *ConsumerMetricsManager) SetEndpointsHealthChecksOkStatus(status bool) {
+	if pme == nil {
+		return
+	}
 	var value float64 = 0
 	if status {
 		value = 1
 	}
 	pme.endpointsHealthChecksOkMetric.Set(value)
+	atomic.StoreUint64(&pme.endpointsHealthChecksOk, uint64(value))
 }
 
 func (pme *ConsumerMetricsManager) ResetQOSMetrics() {

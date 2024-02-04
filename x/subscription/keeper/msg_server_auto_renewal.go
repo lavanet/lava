@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -55,12 +56,24 @@ func (k msgServer) AutoRenewal(goCtx context.Context, msg *types.MsgAutoRenewal)
 			msg.Index = sub.PlanIndex
 		}
 
-		if _, found := k.plansKeeper.FindPlan(ctx, msg.Index, uint64(ctx.BlockHeight())); !found {
+		plan, found := k.plansKeeper.FindPlan(ctx, msg.Index, uint64(ctx.BlockHeight()))
+		if !found {
 			return nil, utils.LavaFormatWarning("could not change auto-renewal of subscription", fmt.Errorf("could not find plan (%s)", msg.Index),
 				utils.Attribute{Key: "creator", Value: msg.Creator},
 				utils.Attribute{Key: "consumer", Value: msg.Consumer},
 				utils.Attribute{Key: "index", Value: msg.Index},
 			)
+		}
+
+		if len(plan.AllowedBuyers) != 0 {
+			if !slices.Contains(plan.AllowedBuyers, msg.Creator) {
+				allowedBuyers := strings.Join(plan.AllowedBuyers, ",")
+				return nil, utils.LavaFormatWarning("cannot apply auto-renewal to subscription", fmt.Errorf("creator is not part of the allowed buyers list"),
+					utils.LogAttr("creator", msg.Creator),
+					utils.LogAttr("plan", plan.Index),
+					utils.LogAttr("allowed_buyers", allowedBuyers),
+				)
+			}
 		}
 	}
 

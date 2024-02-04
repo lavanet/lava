@@ -1578,7 +1578,15 @@
                             },
                             {
                                 "name": "pruning",
-                                "values": []
+                                "values": [
+                                    {
+                                        "expected_value":""
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value":""
+                                    }
+                                ]
                             }
                         ],
                         "extensions": [

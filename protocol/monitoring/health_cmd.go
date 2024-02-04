@@ -45,7 +45,7 @@ const (
 	SuppressionCountThresholdFlagName = "suppression-alert-count-threshold"
 )
 
-func ParseEndpoints(keyName string, viper_endpoints *viper.Viper) (endpoints []*lavasession.RPCEndpoint, err error) {
+func ParseEndpoints(keyName string, viper_endpoints *viper.Viper) (endpoints []*HealthRPCEndpoint, err error) {
 	err = viper_endpoints.UnmarshalKey(keyName, &endpoints)
 	if err != nil {
 		utils.LavaFormatError("could not unmarshal key to endpoints", err, utils.LogAttr("key", keyName), utils.Attribute{Key: "viper_endpoints", Value: viper_endpoints.AllSettings()})
@@ -101,6 +101,9 @@ reference_endpoints:
 			if err != nil {
 				utils.LavaFormatFatal("could not load config file", err, utils.Attribute{Key: "expected_config_name", Value: viper.ConfigFileUsed()})
 			}
+
+			utils.LavaFormatDebug("Loaded endpoints", utils.LogAttr("consumer_endpoints", viper.Get(consumerEndpointPropertyName)))
+
 			// set log format
 			logFormat := viper.GetString(flags.FlagLogFormat)
 			utils.JsonFormat = logFormat == "json"
@@ -155,8 +158,8 @@ reference_endpoints:
 				clientCtx client.Context,
 				subscriptionAddresses []string,
 				providerAddresses []string,
-				consumerEndpoints []*lavasession.RPCEndpoint,
-				referenceEndpoints []*lavasession.RPCEndpoint,
+				consumerEndpoints []*HealthRPCEndpoint,
+				referenceEndpoints []*HealthRPCEndpoint,
 				prometheusListenAddr string,
 			) {
 				utils.LavaFormatInfo("[+] starting health run")

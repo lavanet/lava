@@ -168,6 +168,7 @@ func (m Migrator) Migrate6to7(ctx sdk.Context) error {
 					utils.Attribute{Key: "index", Value: index},
 					utils.Attribute{Key: "block", Value: block},
 				)
+				continue
 			}
 
 			if subscriptionV6.AutoRenewal {
