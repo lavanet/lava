@@ -46,7 +46,7 @@ type VerificationContainer struct {
 }
 
 func (vc *VerificationContainer) IsActive() bool {
-	if vc.Value == "" && vc.LatestDistance == 0 {
+	if vc.Value == "" && vc.BlockVerification.LatestDistance == 0 {
 		return false
 	}
 	return true
