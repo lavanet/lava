@@ -27,6 +27,7 @@ const (
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
 	RELAY_TIMEOUT_HEADER_NAME             = "lava-relay-timeout"
 	EXTENSION_OVERRIDE_HEADER_NAME        = "lava-extension"
+	FORCE_CACHE_REFRESH_HEADER_NAME       = "lava-force-cache-refresh"
 	// send http request to /lava/health to see if the process is up - (ret code 200)
 	DEFAULT_HEALTH_PATH = "/lava/health"
 )

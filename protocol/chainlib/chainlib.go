@@ -76,6 +76,9 @@ type ChainMessage interface {
 	OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser)
 	DisableErrorHandling()
 	TimeoutOverride(...time.Duration) time.Duration
+	GetForceCacheRefresh() bool
+	SetForceCacheRefresh(force bool) bool
+
 	ChainMessageForSend
 }
 

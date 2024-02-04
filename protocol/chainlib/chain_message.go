@@ -24,6 +24,7 @@ type baseChainMessageContainer struct {
 	apiCollection          *spectypes.ApiCollection
 	extensions             []*spectypes.Extension
 	timeoutOverride        time.Duration
+	forceCacheRefresh      bool
 }
 
 func (pm *baseChainMessageContainer) TimeoutOverride(override ...time.Duration) time.Duration {
@@ -31,6 +32,15 @@ func (pm *baseChainMessageContainer) TimeoutOverride(override ...time.Duration) 
 		pm.timeoutOverride = override[0]
 	}
 	return pm.timeoutOverride
+}
+
+func (pm *baseChainMessageContainer) SetForceCacheRefresh(force bool) bool {
+	pm.forceCacheRefresh = force
+	return pm.forceCacheRefresh
+}
+
+func (pm *baseChainMessageContainer) GetForceCacheRefresh() bool {
+	return pm.forceCacheRefresh
 }
 
 func (pm *baseChainMessageContainer) DisableErrorHandling() {
