@@ -286,11 +286,7 @@ func LavaFormatFatal(description string, err error, attributes ...Attribute) {
 // while in production some errors may occur as consumers / providers might set up their processes in the wrong way.
 // in test environment we dont expect to have these errors and if they occur we would like to fail the test.
 func LavaFormatProduction(description string, err error, attributes ...Attribute) error {
-	if ExtendedLogLevel == "production" {
-		return LavaFormatWarning(description, err, attributes...)
-	} else {
-		return LavaFormatError(description, err, attributes...)
-	}
+	return LavaFormatError(description, err, attributes...)
 }
 
 func LavaFormatError(description string, err error, attributes ...Attribute) error {
