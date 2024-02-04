@@ -241,6 +241,12 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		logEvent = zerologlog.Debug()
 		rollingLoggerEvent = rollingLogLogger.Debug()
 		// prefix = "Debug:"
+	default:
+		// default is log level error
+		// prefix = "Error:"
+		logEvent = zerologlog.Error()
+		rollingLoggerEvent = rollingLogLogger.Error()
+
 	}
 	output := description
 	attrStrings := []string{}
