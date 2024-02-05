@@ -30,24 +30,18 @@ type VerificationKey struct {
 	Addon     string
 }
 
-type BlockVerification struct {
-	EarliestSupported      bool
-	LatestDistance         uint64
-	EarliestParseDirective spectypes.ParseDirective
-}
-
 type VerificationContainer struct {
-	ConnectionType    string
-	Name              string
-	ParseDirective    spectypes.ParseDirective
-	Value             string
-	BlockVerification BlockVerification
-	Severity          spectypes.ParseValue_VerificationSeverity
+	ConnectionType string
+	Name           string
+	ParseDirective spectypes.ParseDirective
+	Value          string
+	LatestDistance uint64
+	Severity       spectypes.ParseValue_VerificationSeverity
 	VerificationKey
 }
 
 func (vc *VerificationContainer) IsActive() bool {
-	if vc.Value == "" && vc.BlockVerification.LatestDistance == 0 {
+	if vc.Value == "" && vc.LatestDistance == 0 {
 		return false
 	}
 	return true
