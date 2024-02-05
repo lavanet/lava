@@ -191,10 +191,11 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
-		api:                  api,
-		msg:                  grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
-		latestRequestedBlock: requestedBlock,
-		apiCollection:        apiCollection,
+		api:                      api,
+		msg:                      grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
+		latestRequestedBlock:     requestedBlock,
+		apiCollection:            apiCollection,
+		resultErrorParsingMethod: rpcInterfaceMessages.GrpcMessage{}.CheckResponseError,
 	}
 	return nodeMsg
 }

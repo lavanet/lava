@@ -231,21 +231,23 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 		return nil, err
 	}
 	nodeMsg := &baseChainMessageContainer{
-		api:                    serviceApi,
-		apiCollection:          apiCollection,
-		latestRequestedBlock:   requestedBlock,
-		msg:                    &batchMessage,
-		earliestRequestedBlock: earliestRequestedBlock,
+		api:                      serviceApi,
+		apiCollection:            apiCollection,
+		latestRequestedBlock:     requestedBlock,
+		msg:                      &batchMessage,
+		earliestRequestedBlock:   earliestRequestedBlock,
+		resultErrorParsingMethod: rpcInterfaceMessages.TendermintrpcMessage{}.CheckResponseError,
 	}
 	return nodeMsg, err
 }
 
 func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
-		api:                  serviceApi,
-		apiCollection:        apiCollection,
-		latestRequestedBlock: requestedBlock,
-		msg:                  msg,
+		api:                      serviceApi,
+		apiCollection:            apiCollection,
+		latestRequestedBlock:     requestedBlock,
+		msg:                      msg,
+		resultErrorParsingMethod: rpcInterfaceMessages.TendermintrpcMessage{}.CheckResponseError,
 	}
 	return nodeMsg
 }

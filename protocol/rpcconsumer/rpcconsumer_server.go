@@ -3,6 +3,7 @@ package rpcconsumer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -50,6 +51,11 @@ type RPCConsumerServer struct {
 	consumerConsistency    *ConsumerConsistency
 	sharedState            bool // using the cache backend to sync the latest seen block with other consumers
 	relaysMonitor          *metrics.RelaysMonitor
+}
+
+type relayResponse struct {
+	relayResult *common.RelayResult
+	err         error
 }
 
 type ConsumerTxSender interface {
@@ -277,7 +283,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	}
 	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), common.GetExtensionNames(chainMessage.GetExtensions()))
 	relayResults := []*common.RelayResult{}
-	relayErrors := &RelayErrors{}
+	relayErrors := &RelayErrors{onFailureMergeAll: true}
 	blockOnSyncLoss := map[string]struct{}{}
 	modifiedOnLatestReq := false
 	errorRelayResult := &common.RelayResult{} // returned on error
@@ -359,7 +365,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			utils.LavaFormatDebug("all relays timeout", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors.relayErrors})
 			return errorRelayResult, utils.LavaFormatError("Failed all relay retries due to timeout consider adding 'lava-relay-timeout' header to extend the allowed timeout duration", nil, utils.Attribute{Key: "GUID", Value: ctx})
 		}
-		return errorRelayResult, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "GUID", Value: ctx}, relayErrors.GetBestErrorMessageForUser())
+		bestRelayError := relayErrors.GetBestErrorMessageForUser()
+		return errorRelayResult, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("error", bestRelayError.err))
 	} else if len(relayErrors.relayErrors) > 0 {
 		utils.LavaFormatDebug("relay succeeded but had some errors", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors})
 	}
@@ -478,11 +485,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions))
 		}
 		return &common.RelayResult{ProviderInfo: common.ProviderInfo{ProviderAddress: ""}}, err
-	}
-
-	type relayResponse struct {
-		relayResult *common.RelayResult
-		err         error
 	}
 
 	// Make a channel for all providers to send responses
@@ -619,37 +621,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	result := make(chan *relayResponse)
-
-	go func(timeout time.Duration) {
-		responsesReceived := 0
-		relayReturned := false
-		for {
-			select {
-			case response := <-responses:
-				// increase responses received
-				responsesReceived++
-				if response.err == nil && !relayReturned {
-					// Return the first successful response
-					result <- response
-					relayReturned = true
-				}
-
-				if responsesReceived == len(sessions) {
-					// Return the last response if all previous responses were error
-					if !relayReturned {
-						result <- response
-					}
-
-					// if it was returned, just close this go routine
-					return
-				}
-			case <-time.After(relayTimeout + 2*time.Second):
-				// Timeout occurred, send an error to result channel
-				result <- &relayResponse{nil, NoResponseTimeout}
-				return
-			}
-		}
-	}(relayTimeout)
+	// Getting the best result from the providers,
+	// if there was an error we wait for the next result util timeout or a valid response
+	// priority order {valid response -> error response -> relay error}
+	// if there were multiple error responses picking the majority
+	go rpccs.getBestResult(result, relayTimeout, responses, len(sessions), chainMessage)
 
 	response := <-result
 
@@ -660,6 +636,87 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	return response.relayResult, response.err
+}
+
+func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, timeout time.Duration, responses chan *relayResponse, numberOfSessions int, chainMessage chainlib.ChainMessage) {
+	responsesReceived := 0
+	nodeResponseErrors := &RelayErrors{relayErrors: []RelayError{}}
+	protocolResponseErrors := &RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true}
+	// a helper function to fetch the best response (prioritize node over protocol)
+	getBestResponseBetweenNodeAndProtocolErrors := func() error {
+		if len(nodeResponseErrors.relayErrors) > 0 { // if we have node errors, we prefer returning them over protocol errors.
+			bestErrorMessage := nodeResponseErrors.GetBestErrorMessageForUser()
+			finalResult <- bestErrorMessage.response
+			return nil
+		}
+		if len(protocolResponseErrors.relayErrors) > 0 { // if we have protocol errors at this point return the best one
+			protocolsBestErrorMessage := protocolResponseErrors.GetBestErrorMessageForUser()
+			finalResult <- protocolsBestErrorMessage.response
+			return nil
+		}
+		return fmt.Errorf("Failed getting best response")
+	}
+
+	for {
+		select {
+		case response := <-responses:
+			utils.LavaFormatDebug("Got Response", utils.LogAttr("responsesReceived", responsesReceived), utils.LogAttr("out_of", numberOfSessions))
+			// increase responses received
+			responsesReceived++
+			if response.err == nil {
+				utils.LavaFormatDebug("no protocol error", utils.LogAttr("Status code", response.relayResult.StatusCode))
+				// validate if its a error response (from the node not the provider)
+				foundError, errorMessage := chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
+				utils.LavaFormatDebug("node error", utils.LogAttr("foundError", foundError), utils.LogAttr("errorMessage", errorMessage))
+				if foundError {
+					utils.LavaFormatDebug("Relay returned a node error, we are continuing to wait for the next response")
+					// this is a node error, meaning we still didn't get a good response.
+					// we will choose to wait until there will be a response or timeout happens
+					// if timeout happens we will take the majority of response messages
+					nodeResponseErrors.relayErrors = append(nodeResponseErrors.relayErrors, RelayError{err: fmt.Errorf(errorMessage), ProviderInfo: response.relayResult.ProviderInfo, response: response})
+				} else {
+					utils.LavaFormatDebug("returned result")
+					// Return the first successful response
+					finalResult <- response
+					return // returning response
+				}
+			} else {
+				// we want to keep the error message in a separate response error structure
+				// in case we got only errors and we want to return the best one
+				protocolResponseErrors.relayErrors = append(protocolResponseErrors.relayErrors, RelayError{err: response.err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
+			}
+
+			// check if this is the last response we are going to receive
+			// we get here only if all other responses including this one are not valid responses
+			// (wether its a node error or protocol errors)
+			if responsesReceived == numberOfSessions {
+				err := getBestResponseBetweenNodeAndProtocolErrors()
+				if err == nil { // successfully sent the channel response
+					return
+				}
+
+				// if we got here, we for some reason failed to fetch both the best node error and the protocol error
+				// it indicates mostly an unwanted behavior.
+				utils.LavaFormatWarning("failed getting best error message for both node and protocol", nil,
+					utils.LogAttr("nodeResponseErrors", nodeResponseErrors),
+					utils.LogAttr("protocolsBestErrorMessage", protocolResponseErrors),
+					utils.LogAttr("numberOfSessions", numberOfSessions),
+				)
+				finalResult <- response
+				return
+			}
+		case <-time.After(timeout + 2*time.Second):
+			// Timeout occurred, try fetching the best result we have, prefer node errors over protocol errors
+			err := getBestResponseBetweenNodeAndProtocolErrors()
+			if err == nil { // successfully sent the channel response
+				return
+			}
+
+			// failed fetching any error, getting here indicates a real context timeout happened.
+			finalResult <- &relayResponse{nil, NoResponseTimeout}
+			return
+		}
+	}
 }
 
 func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string) (relayResultRet *common.RelayResult, relayLatency time.Duration, err error, needsBackoff bool) {

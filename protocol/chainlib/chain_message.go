@@ -6,6 +6,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -17,14 +18,24 @@ type updatableRPCInput interface {
 }
 
 type baseChainMessageContainer struct {
-	api                    *spectypes.Api
-	latestRequestedBlock   int64
-	earliestRequestedBlock int64
-	msg                    updatableRPCInput
-	apiCollection          *spectypes.ApiCollection
-	extensions             []*spectypes.Extension
-	timeoutOverride        time.Duration
-	forceCacheRefresh      bool
+	api                      *spectypes.Api
+	latestRequestedBlock     int64
+	earliestRequestedBlock   int64
+	msg                      updatableRPCInput
+	apiCollection            *spectypes.ApiCollection
+	extensions               []*spectypes.Extension
+	timeoutOverride          time.Duration
+	forceCacheRefresh        bool
+	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+}
+
+// not necessary for base chain message.
+func (pm *baseChainMessageContainer) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	if pm.resultErrorParsingMethod == nil {
+		utils.LavaFormatError("tried calling resultErrorParsingMethod when it is not set", nil)
+		return false, ""
+	}
+	return pm.resultErrorParsingMethod(data, httpStatusCode)
 }
 
 func (pm *baseChainMessageContainer) TimeoutOverride(override ...time.Duration) time.Duration {

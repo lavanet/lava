@@ -78,6 +78,7 @@ type ChainMessage interface {
 	TimeoutOverride(...time.Duration) time.Duration
 	GetForceCacheRefresh() bool
 	SetForceCacheRefresh(force bool) bool
+	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 
 	ChainMessageForSend
 }
