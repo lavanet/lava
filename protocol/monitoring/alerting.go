@@ -354,17 +354,17 @@ func (al *Alerting) ProvidersAlerts(healthResults *HealthResults) {
 		specId := provider.SpecId
 		if al.allowedTimeGapVsReference > 0 {
 			latestBlock := healthResults.LatestBlocks[specId]
-			if latestBlock > data.block {
-				gap := latestBlock - data.block
+			if latestBlock > data.Block {
+				gap := latestBlock - data.Block
 				timeGap := time.Duration(gap*healthResults.Specs[specId].AverageBlockTime) * time.Millisecond
 				if timeGap > al.allowedTimeGapVsReference {
-					attrs = append(attrs, AlertAttribute{entity: provider, data: fmt.Sprintf("block gap: %s/%s", utils.StrValue(data.block), utils.StrValue(latestBlock))})
+					attrs = append(attrs, AlertAttribute{entity: provider, data: fmt.Sprintf("block gap: %s/%s", utils.StrValue(data.Block), utils.StrValue(latestBlock))})
 				}
 			}
 		}
 		if al.maxProviderLatency > 0 {
-			if data.latency > al.maxProviderLatency {
-				attrsForLatency = append(attrsForLatency, AlertAttribute{entity: provider, data: fmt.Sprintf("latency: %s/%s", utils.StrValue(data.latency), utils.StrValue(al.maxProviderLatency))})
+			if data.Latency > al.maxProviderLatency {
+				attrsForLatency = append(attrsForLatency, AlertAttribute{entity: provider, data: fmt.Sprintf("latency: %s/%s", utils.StrValue(data.Latency), utils.StrValue(al.maxProviderLatency))})
 			}
 		}
 	}
