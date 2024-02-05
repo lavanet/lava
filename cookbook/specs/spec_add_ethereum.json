@@ -1026,7 +1026,7 @@
                                     "parser_func": "PARSE_CANONICAL",
                                     "encoding": "hex"
                                 },
-                                "api_name": "eth_getBlockByNumber_earliest"
+                                "api_name": "eth_getBlockByNumber"
                             }
                         ],
                         "verifications": [
