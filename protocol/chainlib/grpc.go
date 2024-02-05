@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
 	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/protocol/parser"
-
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -283,8 +283,6 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		return
 	}
 
-	utils.LavaFormatInfo("gRPC PortalStart")
-
 	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error) {
@@ -297,7 +295,11 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		dappID := extractDappIDFromGrpcHeader(metadataValues)
 
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
-		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
+		utils.LavaFormatInfo("in <<< GRPC Relay ",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("method", method),
+			utils.LogAttr("headers", grpcHeaders),
+		)
 		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
 		consumerIp := common.GetIpFromGrpcContext(ctx)
 		relayResult, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, consumerIp, metricsData, grpcHeaders)
@@ -345,6 +347,14 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		serveExecutor = func() error { return httpServer.Serve(lis) }
 	}
 
+	fmt.Printf(fmt.Sprintf(`
+ ┌───────────────────────────────────────────────────┐ 
+ │               Lava's Grpc Server                  │ 
+ │               %s│ 
+ │               Lavap Version: %s│ 
+ └───────────────────────────────────────────────────┘
+
+`, truncateAndPadString(apil.endpoint.NetworkAddress, 36), truncateAndPadString(protocoltypes.DefaultVersion.ConsumerTarget, 21)))
 	if err := serveExecutor(); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
 	}
