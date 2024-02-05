@@ -75,7 +75,7 @@ echo "$json_content" > pairingList.json
 signer=$(lavad keys show user1 -a)
 echo "Signer address: $signer"
 PROJECT_ID="sampleProjectId"
-BADGE_PORT=8080
+BADGE_PORT=8081
 BADGE_URL=http://localhost:$BADGE_PORT
 
 cp examples/jsonRPC_badge.ts examples/jsonRPC_badge_test.ts
@@ -94,9 +94,15 @@ sed -i "s|projectId:.*|projectId: \"$PROJECT_ID\",|g" examples/jsonRPC_badge_tes
 sed -i "s|projectId:.*|projectId: \"$PROJECT_ID\",|g" examples/restAPI_badge_test.ts
 sed -i "s|projectId:.*|projectId: \"$PROJECT_ID\",|g" examples/tendermintRPC_badge_test.ts
 
-BADGE_DEFAULT_GEOLOCATION="$GEOLOCATION" BADGE_USER_DATA="{\"$GEOLOCATION\":{\"$PROJECT_ID\":{\"project_public_key\":\"$signer\",\"private_key\":\"$privateKey\",\"epochs_max_cu\":2233333333}}}" lavad badgegenerator --grpc-url=127.0.0.1:9090 --log_level=debug --chain-id lava --port $BADGE_PORT
+badgeserverconfigdirectory=~/go/lava/config
+badgeserverconfigfile=$badgeserverconfigdirectory/badgeserver.yml
+sed -i '/^projects-data:/,/^  [0-9]*:/ s/^  [0-9]*:/'"  $GEOLOCATION"':/' $badgeserverconfigfile
+sed -i 's/^default-geolocation:.*/default-geolocation: '$GEOLOCATION'/' $badgeserverconfigfile
+sed -i '/^    default:/ s/default:/'$PROJECT_ID':/' $badgeserverconfigfile
 
-badgeResponse=$(curl -s -X POST -H "Content-Type: application/json" -d "{\"badge_address\": \"user1\", \"project_id\": \"$PROJECT_ID\"}" $BADGE_URL/lavanet.lava.pairing.BadgeGenerator/GenerateBadge)
+lavap badgeserver $badgeserverconfigdirectory --log_level=debug --chain-id lava --port $BADGE_PORT --from user1
+
+badgeResponse=$(curl -s -X POST -H "Content-Type: application/json" -d "{\"badge_address\": \"$signer\", \"project_id\": \"$PROJECT_ID\"}" $BADGE_URL/lavanet.lava.pairing.BadgeGenerator/GenerateBadge)
 
 if [[ -z "$badgeResponse" ]]; then
   echo "Failed to generate the badge. Please check if the badge server is running and accessible."

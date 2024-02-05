@@ -1,4 +1,4 @@
-package badgegenerator
+package badgeserver
 
 import (
 	"context"
@@ -13,11 +13,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -29,38 +31,38 @@ import (
 
 var (
 	// The name of our config file, without the file extension because viper supports many different config file languages.
-	defaultConfigFilename = "badgegenerator"
+	DefaultConfigFilename = "badgeserver.yml"
 	// The environment variable prefix of all environment variables bound to our command line flags.
 	// For example, --number is bound to STING_NUMBER.
 	envPrefix = "BADGE"
 )
 
-func CreateBadgeGeneratorCobraCommand() *cobra.Command {
+func CreateBadgeServerCobraCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     `badgegenerator --port=8080 --log-level=debug --lava-rpc=http://127.0.0.1:26657 --lava-grpc=127.0.0.1:9090 --chain-id=lava`,
-		Short:   `badgegenerator sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
-		Long:    `badgegenerator sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
-		Example: `badgegenerator <flags>`,
+		Use:     `badgeserver [config-path] --port=[serving-port] --log-level=[log-level] --chain-id=[chain-id]`,
+		Short:   `badgeserver sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
+		Long:    `badgeserver sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
+		Example: `badgeserver badgeserver.yml --port=8080 --log-level=debug --chain-id=lava --from user1`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			utils.LavaFormatWarning("This command is deprecated and will be removed in the future. Please use the badgeserver command under lavap instead.", nil)
-			v := viper.New()
-			v.SetConfigName(defaultConfigFilename)
-			v.SetConfigType("yml")
-			v.AddConfigPath(".")
-			v.AddConfigPath("./config")
-			rand.InitRandomSeed()
-			if err := v.ReadInConfig(); err != nil {
-				// It's okay if there isn't a config file
-				if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-					return err
-				}
+			if len(args) == 1 {
+				viper.AddConfigPath(args[0])
 			}
 
-			v.SetEnvPrefix(envPrefix)
-			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-			v.AutomaticEnv()
+			viper.SetConfigName(DefaultConfigFilename)
+			viper.SetConfigType("yml")
+			viper.AddConfigPath(".")
+			viper.AddConfigPath("./config")
 
-			bindFlags(cmd, v)
+			rand.InitRandomSeed()
+			if err := viper.ReadInConfig(); err != nil {
+				return err
+			}
+
+			viper.SetEnvPrefix(envPrefix)
+			viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+			viper.AutomaticEnv()
+
+			bindFlags(cmd, viper.GetViper())
 
 			logFormat := viper.GetString(flags.FlagLogFormat)
 			utils.JsonFormat = logFormat == "json"
@@ -70,18 +72,18 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 			}
 			utils.SetGlobalLoggingLevel(logLevel)
 
-			RunBadgeServer(cmd, v)
+			RunBadgeServer(cmd, viper.GetViper())
 
 			return nil
 		},
 	}
 
-	cmd.Flags().String("grpc-url", "", "--grpc-url=127.0.0.1:9090")
 	cmd.Flags().Int("epoch-interval", 30, "--epoch-interval=30")
-	cmd.Flags().String("port", "8080", "--port=8080")
-	cmd.Flags().String("metrics-port", "8081", "--metrics-port=8081")
-	cmd.Flags().String(flags.FlagChainID, app.Name, "network chain id")
-	cmd.Flags().String(flags.FlagNode, "tcp://localhost:26657", "<host>:<port> to Tendermint RPC interface for this chain")
+	cmd.Flags().String("port", "8080", "badge server listening port")
+	cmd.Flags().String("metrics-port", "8081", "badge server metrics port")
+	cmd.Flags().String(flags.FlagFrom, "", "Name or address of private key with which to sign")
+	cmd.Flags().String(flags.FlagChainID, app.Name, "The network chain ID")
+	cmd.Flags().String(flags.FlagNode, "tcp://localhost:26657", "<host>:<port> to tendermint rpc interface for this chain")
 
 	return cmd
 }
@@ -104,25 +106,26 @@ func bindFlags(cmd *cobra.Command, v *viper.Viper) {
 }
 
 func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
-	port := v.GetString(PortEnvironmentVariable)
+	utils.LavaFormatInfo("Starting the badge server...")
+
+	port := v.GetString(PortFieldName)
 	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		utils.LavaFormatFatal("Error in open listener", err)
 	}
-	defaultGeolocation := v.GetInt(DefaultGeolocationEnvironmentVariable)
-	countriesFilePath := v.GetString(CountriesFilePathEnvironmentVariable)
-	ipFilePath := v.GetString(IpFilePathEnvironmentVariable)
+	defaultGeolocation := v.GetInt(DefaultGeolocationFieldName)
+	countriesFilePath := v.GetString(CountriesFilePathFieldName)
+	ipFilePath := v.GetString(IpFilePathFieldName)
 	ipService, err := InitIpService(defaultGeolocation, countriesFilePath, ipFilePath)
 	if err != nil {
 		utils.LavaFormatFatal("Error initializing ip service", err)
 	}
-	grpcUrl := v.GetString(GrpcUrlEnvironmentVariable)
-	chainId := v.GetString(LavaChainIDEnvironmentVariable)
-	userData := v.GetString(UserDataEnvironmentVariable)
+	chainId := v.GetString(LavaChainIDFieldName)
 
-	server, err := NewServer(ipService, grpcUrl, chainId, userData)
+	projectsData := make(GelocationToProjectsConfiguration)
+	err = v.UnmarshalKey(ProjectDataFieldName, &projectsData)
 	if err != nil {
-		utils.LavaFormatFatal("Error in server creation", err)
+		utils.LavaFormatFatal("Error in unmarshalling projects data", err)
 	}
 
 	ctx := context.Background()
@@ -130,22 +133,50 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	if err != nil {
 		utils.LavaFormatFatal("Error initiating client to lava", err)
 	}
+
+	keyName, err := sigs.GetKeyName(clientCtx)
+	if err != nil {
+		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
+	}
+
+	clientKey, _ := clientCtx.Keyring.Key(keyName)
+	pubKey, err := clientKey.GetPubKey()
+	if err != nil {
+		utils.LavaFormatFatal("failed getting public key from key name", err)
+	}
+
+	var pubKeyAddr sdk.AccAddress
+	err = pubKeyAddr.Unmarshal(pubKey.Address())
+	if err != nil {
+		utils.LavaFormatFatal("failed unmarshalling public address", err)
+	}
+
+	privKey, err := sigs.GetPrivKey(clientCtx, keyName)
+	if err != nil {
+		utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
+	}
+
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
 	stateTracker, err := NewBadgeStateTracker(ctx, clientCtx, lavaChainFetcher, chainId)
 	if err != nil {
 		utils.LavaFormatFatal("Error initiating state tracker", err)
 	}
 	// setting stateTracker in server so we can register for spec updates.
+	server, err := NewServer(ipService, chainId, projectsData, lavaChainFetcher, clientCtx, pubKeyAddr.String(), privKey)
+	if err != nil {
+		utils.LavaFormatFatal("Error in server creation", err)
+	}
+
 	server.InitializeStateTracker(stateTracker)
 
 	stateTracker.RegisterForEpochUpdates(ctx, server)
 
-	s := grpc.NewServer()
-	grpc_health_v1.RegisterHealthServer(s, &HealthServer{})
-	pairingtypes.RegisterBadgeGeneratorServer(s, server)
-	gogoreflection.Register(s)
+	grpcServer := grpc.NewServer()
+	grpc_health_v1.RegisterHealthServer(grpcServer, &HealthServer{})
+	pairingtypes.RegisterBadgeGeneratorServer(grpcServer, server)
+	gogoreflection.Register(grpcServer)
 
-	wrappedServer := grpcweb.WrapServer(s)
+	wrappedServer := grpcweb.WrapServer(grpcServer)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
@@ -157,10 +188,12 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 		Handler: h2c.NewHandler(http.HandlerFunc(handler), &http2.Server{}),
 	}
 	go func() {
-		metricsPort := v.GetString(MetricsPortEnvironmentVariable)
+		metricsPort := v.GetString(MetricsPortFieldName)
 		http.Handle("/metrics", promhttp.Handler())
 		http.ListenAndServe(":"+metricsPort, nil)
 	}()
+
+	utils.LavaFormatInfo("Badge server started")
 	if err := httpServer.Serve(listener); err != nil {
 		utils.LavaFormatFatal("Http Server failed to start", err)
 	}
