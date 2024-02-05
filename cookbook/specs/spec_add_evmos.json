@@ -735,24 +735,6 @@
                   "extra_compute_units": 0
                 },
                 {
-                  "name": "/evmos/evm/v1/cosmos_account/{address}",
-                  "block_parsing": {
-                    "parser_arg": [
-                      "latest"
-                    ],
-                    "parser_func": "DEFAULT"
-                  },
-                  "compute_units": 10,
-                  "enabled": true,
-                  "category": {
-                    "deterministic": true,
-                    "local": false,
-                    "subscription": false,
-                    "stateful": 0
-                  },
-                  "extra_compute_units": 0
-                },
-                {
                   "name": "/evmos/vesting/v2/balances/{address}",
                   "block_parsing": {
                     "parser_arg": [
