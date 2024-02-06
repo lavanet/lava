@@ -145,12 +145,19 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	// if there are registered delegations to the provider, count them in the delegateTotal
 	delegateTotal := sdk.ZeroInt()
-	epoch := k.epochStorageKeeper.GetEpochStart(ctx)
-	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, senderAddr.String(), epoch)
+	nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		utils.LavaFormatWarning("cannot get next epoch to count past delegations", err,
+			utils.LogAttr("provider", senderAddr.String()),
+			utils.LogAttr("block", nextEpoch),
+		)
+	}
+
+	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, senderAddr.String(), nextEpoch)
 	if err != nil {
 		utils.LavaFormatWarning("cannot get provider's delegators", err,
 			utils.LogAttr("provider", senderAddr.String()),
-			utils.LogAttr("block", epoch),
+			utils.LogAttr("block", nextEpoch),
 		)
 	}
 
