@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -37,6 +38,8 @@ type ProviderMetricsManager struct {
 	virtualEpochMetric            *prometheus.GaugeVec
 	endpointsHealthChecksOkMetric prometheus.Gauge
 	endpointsHealthChecksOk       uint64
+	relaysMonitors                map[string]*RelaysMonitor
+	relaysMonitorsLock            sync.RWMutex
 }
 
 func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
@@ -156,6 +159,7 @@ func NewProviderMetricsManager(networkAddress string) *ProviderMetricsManager {
 		endpointsHealthChecksOkMetric: endpointsHealthChecksOkMetric,
 		endpointsHealthChecksOk:       1,
 		protocolVersionMetric:         protocolVersionMetric,
+		relaysMonitors:                map[string]*RelaysMonitor{},
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -194,9 +198,30 @@ func (pme *ProviderMetricsManager) AddProviderMetrics(specID, apiInterface strin
 	if pme == nil {
 		return nil
 	}
+
 	if pme.getProviderMetric(specID, apiInterface) == nil {
 		providerMetric := NewProviderMetrics(specID, apiInterface, pme.totalCUServicedMetric, pme.totalCUPaidMetric, pme.totalRelaysServicedMetric, pme.totalErroredMetric, pme.consumerQoSMetric)
 		pme.setProviderMetric(providerMetric)
+
+		endpoint := fmt.Sprintf("/metrics/%s/%s/health", specID, apiInterface)
+		http.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
+			pme.relaysMonitorsLock.Lock()
+			defer pme.relaysMonitorsLock.Unlock()
+
+			statusCode := http.StatusOK
+			relaysMonitor, ok := pme.relaysMonitors[specID+apiInterface]
+			if ok && !relaysMonitor.IsHealthy() {
+				statusCode = http.StatusServiceUnavailable
+			}
+
+			w.WriteHeader(statusCode)
+		})
+
+		utils.LavaFormatInfo("prometheus: health endpoint listening",
+			utils.LogAttr("specID", specID),
+			utils.LogAttr("apiInterface", apiInterface),
+			utils.LogAttr("endpoint", endpoint),
+		)
 	}
 	return pme.getProviderMetric(specID, apiInterface)
 }
@@ -304,4 +329,10 @@ func (pme *ProviderMetricsManager) SetVersion(version string) {
 		return
 	}
 	SetVersionInner(pme.protocolVersionMetric, version)
+}
+
+func (pme *ProviderMetricsManager) RegisterRelaysMonitor(chainID, apiInterface string, relaysMonitor *RelaysMonitor) {
+	pme.relaysMonitorsLock.Lock()
+	defer pme.relaysMonitorsLock.Unlock()
+	pme.relaysMonitors[chainID+apiInterface] = relaysMonitor
 }

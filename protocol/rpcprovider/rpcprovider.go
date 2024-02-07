@@ -325,21 +325,22 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 	chainID := rpcProviderEndpoint.ChainID
+	apiInterface := rpcProviderEndpoint.ApiInterface
 	providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, rpcp.blockMemorySize)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
-	chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
+	chainParser, err := chainlib.NewChainParser(apiInterface)
 	if err != nil {
 		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 
-	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: rpcProviderEndpoint.ApiInterface}
+	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: apiInterface}
 	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	if err != nil {
 		return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 
 	// after registering for spec updates our chain parser contains the spec and we can add our addons and extensions to allow our provider to function properly
-	chainParser.SetPolicy(rpcp.getAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls), rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
+	chainParser.SetPolicy(rpcp.getAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls), rpcProviderEndpoint.ChainID, apiInterface)
 
 	chainRouter, err := chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)
 	if err != nil {
@@ -389,7 +390,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 					utils.Attribute{Key: "oldBlock", Value: oldBlock},
 					utils.Attribute{Key: "newBlock", Value: newBlock},
 					utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
-					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
+					utils.Attribute{Key: "apiInterface", Value: apiInterface},
 				)
 			}
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
@@ -426,7 +427,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		return err
 	}
 
-	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, rpcProviderEndpoint.ApiInterface)
+	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface)
 
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, rpcp.providerStateTracker, rpcp.addr.String(), chainRouter, chainParser)
 	rpcp.providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
@@ -436,8 +437,9 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 
 	var relaysMonitor *metrics.RelaysMonitor = nil
 	if rpcp.relaysHealthCheckEnabled {
-		relaysMonitor = metrics.NewRelaysMonitor(rpcp.relaysHealthCheckInterval, chainID, rpcEndpoint.ApiInterface)
+		relaysMonitor = metrics.NewRelaysMonitor(rpcp.relaysHealthCheckInterval, chainID, apiInterface)
 		rpcp.relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.Key(), relaysMonitor)
+		rpcp.providerMetricsManager.RegisterRelaysMonitor(chainID, apiInterface, relaysMonitor)
 	}
 
 	rpcProviderServer := &RPCProviderServer{}
@@ -467,7 +469,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// prevents these objects form being overrun later
 	chainParser.Activate()
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
-	rpcp.providerMetricsManager.SetEnabledChain(rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
+	rpcp.providerMetricsManager.SetEnabledChain(rpcProviderEndpoint.ChainID, apiInterface)
 	return nil
 }
 
