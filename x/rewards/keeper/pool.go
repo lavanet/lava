@@ -8,19 +8,19 @@ import (
 )
 
 // TotalPoolTokens gets the total tokens supply from a pool
-func (k Keeper) TotalPoolTokens(ctx sdk.Context, pool types.Pool) math.Int {
+func (k Keeper) TotalPoolTokens(ctx sdk.Context, pool types.Pool, denom string) math.Int {
 	poolAddr := k.accountKeeper.GetModuleAddress(string(pool))
-	return k.bankKeeper.GetBalance(ctx, poolAddr, k.stakingKeeper.BondDenom(ctx)).Amount
+	return k.bankKeeper.GetBalance(ctx, poolAddr, denom).Amount
 }
 
 // BurnPoolTokens removes coins from a pool module account
-func (k Keeper) BurnPoolTokens(ctx sdk.Context, pool types.Pool, amt math.Int) error {
+func (k Keeper) BurnPoolTokens(ctx sdk.Context, pool types.Pool, amt math.Int, denom string) error {
 	if !amt.IsPositive() {
 		// skip as no coins need to be burned
 		return nil
 	}
 
-	coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amt))
+	coins := sdk.NewCoins(sdk.NewCoin(denom, amt))
 
 	return k.bankKeeper.BurnCoins(ctx, string(pool), coins)
 }
