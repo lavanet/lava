@@ -564,11 +564,11 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	//provider completely unbond from validator, delegation is removed, but stakeentry still exists
+	// provider completely unbond from validator, delegation is removed, but stakeentry still exists
 	_, err = ts.TxUnbondValidator(providerAcct, validator, sdk.NewInt(9999))
 	require.NoError(t, err)
 
-	//other delegator should not be able to delegate to the provider
+	// other delegator should not be able to delegate to the provider
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
 		dualstakingtypes.EMPTY_PROVIDER,
 		provider,
@@ -577,7 +577,7 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
 	require.Error(t, err)
 
-	//checking that provider is not found
+	// checking that provider is not found
 	_, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
 	require.False(t, found)
 
