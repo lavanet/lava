@@ -18,14 +18,16 @@ type updatableRPCInput interface {
 }
 
 type baseChainMessageContainer struct {
-	api                      *spectypes.Api
-	latestRequestedBlock     int64
-	earliestRequestedBlock   int64
-	msg                      updatableRPCInput
-	apiCollection            *spectypes.ApiCollection
-	extensions               []*spectypes.Extension
-	timeoutOverride          time.Duration
-	forceCacheRefresh        bool
+	api                    *spectypes.Api
+	latestRequestedBlock   int64
+	earliestRequestedBlock int64
+	msg                    updatableRPCInput
+	apiCollection          *spectypes.ApiCollection
+	extensions             []*spectypes.Extension
+	timeoutOverride        time.Duration
+	forceCacheRefresh      bool
+	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
+	// and validate it doesn't contain a node error
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 }
 

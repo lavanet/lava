@@ -656,26 +656,26 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 		}
 		return fmt.Errorf("failed getting best response")
 	}
-
+	startTime := time.Now()
 	for {
 		select {
 		case response := <-responses:
-			utils.LavaFormatDebug("Got Response", utils.LogAttr("responsesReceived", responsesReceived), utils.LogAttr("out_of", numberOfSessions))
 			// increase responses received
 			responsesReceived++
 			if response.err == nil {
-				utils.LavaFormatDebug("no protocol error", utils.LogAttr("Status code", response.relayResult.StatusCode))
 				// validate if its a error response (from the node not the provider)
 				foundError, errorMessage := chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
-				utils.LavaFormatDebug("node error", utils.LogAttr("foundError", foundError), utils.LogAttr("errorMessage", errorMessage))
+
+				// print debug only when we have multiple responses
+				if numberOfSessions > 1 {
+					utils.LavaFormatDebug("Got Response", utils.LogAttr("responsesReceived", responsesReceived), utils.LogAttr("out_of", numberOfSessions), utils.LogAttr("foundError", foundError), utils.LogAttr("errorMessage", errorMessage), utils.LogAttr("Status code", response.relayResult.StatusCode))
+				}
 				if foundError {
-					utils.LavaFormatDebug("Relay returned a node error, we are continuing to wait for the next response")
 					// this is a node error, meaning we still didn't get a good response.
 					// we will choose to wait until there will be a response or timeout happens
 					// if timeout happens we will take the majority of response messages
 					nodeResponseErrors.relayErrors = append(nodeResponseErrors.relayErrors, RelayError{err: fmt.Errorf(errorMessage), ProviderInfo: response.relayResult.ProviderInfo, response: response})
 				} else {
-					utils.LavaFormatDebug("returned result")
 					// Return the first successful response
 					finalResult <- response
 					return // returning response
@@ -688,7 +688,7 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 
 			// check if this is the last response we are going to receive
 			// we get here only if all other responses including this one are not valid responses
-			// (wether its a node error or protocol errors)
+			// (whether its a node error or protocol errors)
 			if responsesReceived == numberOfSessions {
 				err := getBestResponseBetweenNodeAndProtocolErrors()
 				if err == nil { // successfully sent the channel response
@@ -705,7 +705,7 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 				finalResult <- response
 				return
 			}
-		case <-time.After(timeout + 2*time.Second):
+		case <-time.After(timeout + 3*time.Second - time.Since(startTime)):
 			// Timeout occurred, try fetching the best result we have, prefer node errors over protocol errors
 			err := getBestResponseBetweenNodeAndProtocolErrors()
 			if err == nil { // successfully sent the channel response

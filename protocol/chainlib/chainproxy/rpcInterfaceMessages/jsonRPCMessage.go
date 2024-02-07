@@ -169,3 +169,27 @@ func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 	}
 	return JsonrpcBatchMessage{batch: batch}, nil
 }
+
+// returns if error exists and
+func CheckResponseErrorForJsonRpcBatch(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	result := []JsonrpcMessage{}
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
+		return false, ""
+	}
+	aggregatedResults := ""
+	numberOfBatchElements := len(result)
+	for idx, batchResult := range result {
+		if batchResult.Error == nil {
+			continue
+		}
+		if batchResult.Error.Message != "" {
+			aggregatedResults += batchResult.Error.Message
+			if idx < numberOfBatchElements-1 {
+				aggregatedResults += ",-," // add a unique comma separator between results
+			}
+		}
+	}
+	return aggregatedResults != "", aggregatedResults
+}

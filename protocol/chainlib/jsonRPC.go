@@ -198,7 +198,7 @@ func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, reque
 		latestRequestedBlock:     requestedBlock,
 		msg:                      &batchMessage,
 		earliestRequestedBlock:   earliestRequestedBlock,
-		resultErrorParsingMethod: rpcInterfaceMessages.JsonrpcMessage{}.CheckResponseError,
+		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
 	}
 	return nodeMsg, err
 }
@@ -209,7 +209,7 @@ func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedB
 		apiCollection:            apiCollection,
 		latestRequestedBlock:     requestedBlock,
 		msg:                      msg,
-		resultErrorParsingMethod: rpcInterfaceMessages.JsonrpcMessage{}.CheckResponseError,
+		resultErrorParsingMethod: msg.CheckResponseError,
 	}
 	return nodeMsg
 }

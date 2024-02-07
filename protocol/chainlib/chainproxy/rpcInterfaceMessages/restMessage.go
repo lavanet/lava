@@ -27,8 +27,12 @@ func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 		utils.LavaFormatWarning("Failed unmarshalling RestMessage CheckResponseError", err, utils.LogAttr("data", string(data)))
 		return false, ""
 	}
-	if errMsg, ok := result["message"].(string); ok {
-		return true, errMsg
+	// make sure we have both message and code for an error message.
+	if errMsg, okMessage := result["message"].(string); okMessage {
+		if _, okCode := result["code"].(string); okCode {
+			return true, errMsg
+		}
+		utils.LavaFormatWarning("found only message without code in returned result", nil, utils.LogAttr("result", result))
 	}
 	return false, ""
 }
