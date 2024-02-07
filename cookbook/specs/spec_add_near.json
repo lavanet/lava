@@ -267,7 +267,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 40,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -277,7 +277,7 @@
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0,
-                                "timeout_ms": 10000
+                                "timeout_ms": 4000
                             },
                             {
                                 "name": "tx",
