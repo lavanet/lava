@@ -3,6 +3,7 @@ package types
 import (
 	fmt "fmt"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/timerstore/types"
 )
 
@@ -15,9 +16,10 @@ const DefaultIndex uint64 = 1
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		// this line is used by starport scaffolding # genesis/types/default
-		Params:          DefaultParams(),
-		RefillRewardsTS: *types.DefaultGenesis(),
-		BasePays:        []BasePayGenesis{},
+		Params:             DefaultParams(),
+		RefillRewardsTS:    *types.DefaultGenesis(),
+		BasePays:           []BasePayGenesis{},
+		IprpcSubscriptions: []string{},
 	}
 }
 
@@ -29,6 +31,13 @@ func (gs GenesisState) Validate() error {
 	if len(timeEntries) > 1 {
 		return fmt.Errorf(`there should be up to one timer in RefillRewardsTS
 			at all times. amount of timers found: %v`, len(timeEntries))
+	}
+
+	for _, sub := range gs.IprpcSubscriptions {
+		_, err := sdk.AccAddressFromBech32(sub)
+		if err != nil {
+			return fmt.Errorf("invalid subscription address. err: %s", err.Error())
+		}
 	}
 
 	return gs.Params.Validate()
