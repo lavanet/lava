@@ -4,6 +4,7 @@ import (
 	fmt "fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/x/timerstore/types"
 )
 
@@ -20,6 +21,7 @@ func DefaultGenesis() *GenesisState {
 		RefillRewardsTS:    *types.DefaultGenesis(),
 		BasePays:           []BasePayGenesis{},
 		IprpcSubscriptions: []string{},
+		MinIprpcCost:       sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
 	}
 }
 
@@ -38,6 +40,14 @@ func (gs GenesisState) Validate() error {
 		if err != nil {
 			return fmt.Errorf("invalid subscription address. err: %s", err.Error())
 		}
+	}
+
+	if gs.MinIprpcCost.Denom != DefaultGenesis().MinIprpcCost.Denom {
+		return fmt.Errorf("invalid min iprpc cost denom. MinIprpcCost: %s", gs.MinIprpcCost.String())
+	}
+
+	if gs.MinIprpcCost.Amount.IsNegative() {
+		return fmt.Errorf("negative min iprpc cost. MinIprpcCost: %s", gs.MinIprpcCost.String())
 	}
 
 	return gs.Params.Validate()

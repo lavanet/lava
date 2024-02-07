@@ -6,6 +6,26 @@ import (
 	"github.com/lavanet/lava/x/rewards/types"
 )
 
+/********************** Min IPRPC Cost **********************/
+
+// SetMinIprpcCost sets the min iprpc cost
+func (k Keeper) SetMinIprpcCost(ctx sdk.Context, cost sdk.Coin) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.MinIprpcCostPrefix))
+	b := k.cdc.MustMarshal(&cost)
+	store.Set([]byte{0}, b)
+}
+
+// GetMinIprpcCost gets the min iprpc cost
+func (k Keeper) GetMinIprpcCost(ctx sdk.Context) sdk.Coin {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.MinIprpcCostPrefix))
+	b := store.Get([]byte{0})
+	var cost sdk.Coin
+	k.cdc.MustUnmarshal(b, &cost)
+	return cost
+}
+
+/********************** IPRPC Subscription **********************/
+
 // SetIprpcSubscription set a subscription in the IprpcSubscription store
 func (k Keeper) SetIprpcSubscription(ctx sdk.Context, address string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.IprpcSubscriptionPrefix))

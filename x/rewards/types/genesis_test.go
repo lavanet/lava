@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/x/rewards/types"
-	timerstore "github.com/lavanet/lava/x/timerstore/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -23,9 +22,10 @@ func TestGenesisState_Validate(t *testing.T) {
 			desc: "invalid iprpc subscriptions",
 			genState: &types.GenesisState{
 				Params:             types.DefaultParams(),
-				RefillRewardsTS:    *timerstore.DefaultGenesis(),
-				BasePays:           []types.BasePayGenesis{},
+				RefillRewardsTS:    types.DefaultGenesis().RefillRewardsTS,
+				BasePays:           types.DefaultGenesis().BasePays,
 				IprpcSubscriptions: []string{"invalidAddress"},
+				MinIprpcCost:       types.DefaultGenesis().MinIprpcCost,
 			},
 			valid: false,
 		},

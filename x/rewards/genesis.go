@@ -32,6 +32,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.RefillRewardsTS = k.ExportRewardsRefillTS(ctx)
 	genesis.BasePays = k.GetAllBasePay(ctx)
 	genesis.IprpcSubscriptions = k.GetAllIprpcSubscription(ctx)
+	genesis.MinIprpcCost = k.GetMinIprpcCost(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis
