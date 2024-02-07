@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -396,15 +397,21 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 				}] = header
 			}
 			for _, verification := range apiCollection.Verifications {
+				if verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_VERIFICATION {
+					if _, ok := taggedApis[verification.ParseDirective.FunctionTag]; ok {
+						verification.ParseDirective = taggedApis[verification.ParseDirective.FunctionTag].Parsing
+					} else {
+						utils.LavaFormatError("Bad verification definition", fmt.Errorf("verification function tag is not defined in the collections parse directives"), utils.LogAttr("function_tag", verification.ParseDirective.FunctionTag))
+						continue
+					}
+				}
+
 				for _, parseValue := range verification.Values {
 					verificationKey := VerificationKey{
 						Extension: parseValue.Extension,
 						Addon:     apiCollection.CollectionData.AddOn,
 					}
 
-					if verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_VERIFICATION {
-						verification.ParseDirective = taggedApis[verification.ParseDirective.FunctionTag].Parsing
-					}
 					verCont := VerificationContainer{
 						ConnectionType:  apiCollection.CollectionData.Type,
 						Name:            verification.Name,

@@ -131,6 +131,11 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 					utils.LogAttr("Latest_distance", verification.LatestDistance),
 				)
 			}
+		} else {
+			return utils.LavaFormatWarning("[-] verification misconfiguration", fmt.Errorf("FUNCTION_TAG_GET_BLOCK_BY_NUM defined without LatestDistance or LatestBlock"),
+				utils.LogAttr("latest_block", latestBlock),
+				utils.LogAttr("Latest_distance", verification.LatestDistance),
+			)
 		}
 	}
 

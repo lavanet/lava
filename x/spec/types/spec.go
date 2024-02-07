@@ -96,6 +96,11 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 					return details, fmt.Errorf("unsupported api encoding %s in apiCollection %v ", parsing.ResultParsing.Encoding, apiCollection.CollectionData)
 				}
 			}
+			if parsing.FunctionTag == FUNCTION_TAG_GET_BLOCK_BY_NUM {
+				if !strings.Contains(parsing.FunctionTemplate, "%d") {
+					return details, fmt.Errorf("function tag FUNCTION_TAG_GET_BLOCK_BY_NUM does not contain %%d")
+				}
+			}
 		}
 		currentApis := map[string]struct{}{}
 		// validate apis
