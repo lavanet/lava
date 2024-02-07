@@ -989,7 +989,6 @@ func (lt *lavaTest) sleepUntilNextEpoch() {
 }
 
 func (lt *lavaTest) markEmergencyModeLogsStart() {
-	utils.LavaFormatInfo("Writing Emergency line to the following files", utils.LogAttr("log_files", lt.logs))
 	for log, buffer := range lt.logs {
 		_, err := buffer.WriteString(EmergencyModeStartLine + "\n")
 		utils.LavaFormatInfo("Adding EmergencyMode Start Line to", utils.LogAttr("log_name", log))
