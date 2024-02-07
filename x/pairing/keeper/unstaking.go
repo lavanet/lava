@@ -52,13 +52,15 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 	}
 
 	// index might have changed in the unbond
-	existingEntry, _, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
-	err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, indexInStakeStorage)
-	if err != nil {
-		return utils.LavaFormatWarning("can't remove stake Entry, stake entry not found in index", err,
-			utils.Attribute{Key: "index", Value: indexInStakeStorage},
-			utils.Attribute{Key: "spec", Value: chainID},
-		)
+	existingEntry, found, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
+	if found {
+		err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, indexInStakeStorage)
+		if err != nil {
+			return utils.LavaFormatWarning("can't remove stake Entry, stake entry not found in index", err,
+				utils.Attribute{Key: "index", Value: indexInStakeStorage},
+				utils.Attribute{Key: "spec", Value: chainID},
+			)
+		}
 	}
 
 	details := map[string]string{

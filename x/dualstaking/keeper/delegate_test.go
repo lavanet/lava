@@ -504,8 +504,8 @@ func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 
 	staked := sdk.NewCoin("ulava", sdk.NewInt(testStake))
 
-	// unbond once
-	_, err := ts.TxDualstakingUnbond(provider1Addr, provider1Addr, ts.spec.Name, staked)
+	// unbond once (not unstaking completely but still below min stake)
+	_, err := ts.TxDualstakingUnbond(provider1Addr, provider1Addr, ts.spec.Name, staked.SubAmount(sdk.OneInt()))
 	require.NoError(t, err)
 
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
@@ -514,7 +514,7 @@ func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
 	// now in effect
-	staked = staked.Sub(staked)
+	staked = staked.Sub(staked.SubAmount(sdk.OneInt()))
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
 	require.True(t, staked.IsEqual(stakeEntry.Stake))
 	require.True(t, stakeEntry.IsFrozen())
@@ -556,7 +556,7 @@ func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
 	stake := sdk.NewCoin("ulava", sdk.NewInt(testStake))
 
 	// redelegate once
-	_, err := ts.TxDualstakingRedelegate(provider1Addr, provider1Addr, provider2Addr, ts.spec.Name, ts.spec.Name, stake)
+	_, err := ts.TxDualstakingRedelegate(provider1Addr, provider1Addr, provider2Addr, ts.spec.Name, ts.spec.Name, stake.SubAmount(sdk.OneInt()))
 	require.NoError(t, err)
 
 	// advance epoch to digest the delegate
@@ -564,16 +564,16 @@ func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
 	// now in effect
 
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
-	require.True(t, stakeEntry.Stake.IsZero())
+	require.True(t, stakeEntry.Stake.Amount.Equal(sdk.OneInt()))
 	require.True(t, stakeEntry.IsFrozen())
 
 	stakeEntry = ts.getStakeEntry(provider2Acct.Addr, ts.spec.Name)
 	require.True(t, stake.IsEqual(stakeEntry.Stake))
-	require.True(t, stake.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, stakeEntry.DelegateTotal.IsEqual(stake.SubAmount(sdk.OneInt())))
 	require.False(t, stakeEntry.IsFrozen())
 
 	// redelegate again
-	_, err = ts.TxDualstakingRedelegate(provider2Addr, provider2Addr, provider1Addr, ts.spec.Name, ts.spec.Name, stake)
+	_, err = ts.TxDualstakingRedelegate(provider2Addr, provider2Addr, provider1Addr, ts.spec.Name, ts.spec.Name, stake.SubAmount(sdk.OneInt()))
 	require.NoError(t, err)
 
 	// advance epoch to digest the delegate
@@ -581,13 +581,13 @@ func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
 	// now in effect
 
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
-	require.True(t, stakeEntry.Stake.IsZero())
-	require.True(t, stake.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, stakeEntry.Stake.Amount.Equal(sdk.OneInt()))
+	require.True(t, stakeEntry.DelegateTotal.IsEqual(stake.SubAmount(sdk.OneInt())))
 	require.True(t, stakeEntry.IsFrozen())
 
 	stakeEntry = ts.getStakeEntry(provider2Acct.Addr, ts.spec.Name)
-	require.True(t, stakeEntry.Stake.IsZero())
-	require.True(t, stake.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, stakeEntry.Stake.Amount.Equal(sdk.OneInt()))
+	require.True(t, stakeEntry.DelegateTotal.IsEqual(stake.SubAmount(sdk.OneInt())))
 	require.True(t, stakeEntry.IsFrozen())
 }
 
@@ -608,7 +608,7 @@ func TestStakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	require.False(t, stakeEntry.IsFrozen())
 
 	// unbond once
-	_, err := ts.TxUnbondValidator(provider1Acct, validator1Acct, stakeInt)
+	_, err := ts.TxUnbondValidator(provider1Acct, validator1Acct, stakeInt.Sub(sdk.OneInt()))
 	require.NoError(t, err)
 
 	// advance epoch to digest the delegate
@@ -616,6 +616,6 @@ func TestStakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	// now in effect
 
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
-	require.True(t, stakeEntry.Stake.IsZero())
+	require.True(t, stakeEntry.Stake.Amount.Equal(sdk.OneInt()))
 	require.True(t, stakeEntry.IsFrozen())
 }

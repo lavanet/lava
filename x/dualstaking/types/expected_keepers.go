@@ -41,6 +41,8 @@ type EpochstorageKeeper interface {
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
 	SetStakeStorageCurrent(ctx sdk.Context, chainID string, stakeStorage epochstoragetypes.StakeStorage)
+	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, idx uint64) error
+	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64) error
 	// Methods imported from epochstorage should be defined here
 }
 

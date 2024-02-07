@@ -27,6 +27,7 @@ import (
 	lavaslices "github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"golang.org/x/exp/slices"
 )
 
@@ -236,7 +237,17 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 		if err != nil {
 			return fmt.Errorf("invalid or insufficient funds: %w", err)
 		}
-		if stakeEntry.Stake.IsLT(k.specKeeper.GetMinStake(ctx, chainID)) {
+		if stakeEntry.Stake.IsZero() {
+			err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, index)
+			if err != nil {
+				return utils.LavaFormatError("can't remove stake Entry after decreasing provider self delegation", err,
+					utils.Attribute{Key: "index", Value: index},
+					utils.Attribute{Key: "spec", Value: chainID},
+				)
+			}
+			unstakeHoldBlocks := k.getUnstakeHoldBlocks(ctx, stakeEntry.Chain)
+			return k.epochstorageKeeper.AppendUnstakeEntry(ctx, stakeEntry, unstakeHoldBlocks)
+		} else if stakeEntry.Stake.IsLT(k.specKeeper.GetMinStake(ctx, chainID)) {
 			stakeEntry.Freeze()
 		}
 	} else {
@@ -249,6 +260,27 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)
 
 	return nil
+}
+
+func (k Keeper) getUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64 {
+	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
+	if !found {
+		utils.LavaFormatError("critical: failed to get spec for chainID",
+			fmt.Errorf("unknown chainID"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
+	}
+
+	// note: if spec was not found, the default choice is Spec_dynamic == 0
+
+	block := uint64(ctx.BlockHeight())
+	if providerType == spectypes.Spec_static {
+		return k.epochstorageKeeper.UnstakeHoldBlocksStatic(ctx, block)
+	} else {
+		return k.epochstorageKeeper.UnstakeHoldBlocks(ctx, block)
+	}
+
+	// NOT REACHED
 }
 
 // delegate lets a delegator delegate an amount of coins to a provider.
