@@ -106,7 +106,7 @@ func (connector *Connector) createConnection(ctx context.Context, nodeUrl common
 			return nil, ctx.Err()
 		}
 		timeout := common.AverageWorldLatency * (1 + time.Duration(numberOfConnectionAttempts))
-		nctx, cancel := nodeUrl.LowerContextTimeout(ctx, timeout)
+		nctx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, timeout)
 		// add auth path
 		rpcClient, err = rpcclient.DialContext(nctx, nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url))
 		if err != nil {
@@ -159,7 +159,7 @@ func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberO
 	var rpcClient *rpcclient.Client
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
-		nctx, cancel := connector.nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
+		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
 		rpcClient, err = rpcclient.DialContext(nctx, connector.nodeUrl.Url)
 		if err != nil {
 			utils.LavaFormatDebug(
@@ -295,7 +295,7 @@ func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context, num
 	var grpcClient *grpc.ClientConn
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
-		nctx, cancel := connector.nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
+		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
 		grpcClient, err = grpc.DialContext(nctx, connector.nodeUrl.Url, grpc.WithBlock(), connector.getTransportCredentials())
 		if err != nil {
 			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", []utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}, {Key: "nodeUrl", Value: connector.nodeUrl.UrlStr()}}...)
@@ -433,7 +433,7 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, addr strin
 			connector.Close()
 			return nil, ctx.Err()
 		}
-		nctx, cancel := connector.nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
+		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
 		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), connector.getTransportCredentials())
 		if err != nil {
 			utils.LavaFormatWarning("grpc could not connect to the node, retrying", err, []utils.Attribute{{

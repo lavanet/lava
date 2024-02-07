@@ -42,6 +42,10 @@ type NodeUrl struct {
 	SkipVerifications []string      `yaml:"skip-verifications,omitempty" json:"skip-verifications,omitempty" mapstructure:"skip-verifications"`
 }
 
+type ChainMessageGetApiInterface interface {
+	GetApi() *spectypes.Api
+}
+
 func (nurl NodeUrl) String() string {
 	urlStr := nurl.UrlStr()
 
@@ -77,7 +81,30 @@ func (url *NodeUrl) SetIpForwardingIfNecessary(ctx context.Context, headerSetter
 	}
 }
 
-func (url *NodeUrl) LowerContextTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+func (url *NodeUrl) LowerContextTimeoutWithDuration(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	if url == nil || url.Timeout <= 0 {
+		return CapContextTimeout(ctx, timeout)
+	}
+	return CapContextTimeout(ctx, timeout+url.Timeout)
+}
+
+func (url *NodeUrl) LowerContextTimeout(ctx context.Context, chainMessage ChainMessageGetApiInterface, averageBlockTime time.Duration) (context.Context, context.CancelFunc) {
+	var timeout time.Duration
+	specOverwriteTimeout := chainMessage.GetApi().TimeoutMs
+	if specOverwriteTimeout > 0 {
+		timeout = time.Millisecond * time.Duration(specOverwriteTimeout)
+	} else {
+		timeout = LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
+	}
+
+	// check if this API is hanging (waiting for block confirmation)
+	if chainMessage.GetApi().Category.HangingApi {
+		timeout += averageBlockTime
+	}
+	// allowing the consumer's context to increase the timeout by up to x2
+	// this allows the consumer to get extra timeout than the spec up to a threshold so
+	// the provider wont be attacked by infinite context timeout
+	timeout = timeout * 2
 	if url == nil || url.Timeout <= 0 {
 		return CapContextTimeout(ctx, timeout)
 	}
