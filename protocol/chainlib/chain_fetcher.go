@@ -162,7 +162,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			{Key: "Response", Value: string(reply.Data)},
 		}...)
 	}
-	if verification.LatestDistance != 0 && latestBlock != 0 && verification.ParseDirective.FunctionTag == spectypes.FUNCTION_TAG_GET_EARLIEST_BLOCK {
+	if verification.LatestDistance != 0 && latestBlock != 0 && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
 		parsedResultAsNumber, err := strconv.ParseUint(parsedResult, 0, 64)
 		if err != nil {
 			return utils.LavaFormatWarning("[-] verify failed to parse result as number", err, []utils.Attribute{
