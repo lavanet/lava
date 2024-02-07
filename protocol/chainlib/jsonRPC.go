@@ -554,8 +554,9 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 	if chainMessage.GetApi().Category.HangingApi {
 		relayTimeout += cp.averageBlockTime
 	}
-	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+
+	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 	defer cancel()
 	batch := nodeMessage.GetBatch()
 	err = rpc.BatchCallContext(connectCtx, batch, nodeMessage.GetDisableErrorHandling())
@@ -629,6 +630,8 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			relayTimeout += cp.averageBlockTime
 		}
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
+		// we use the minimum timeout between the two, spec or context. to prevent the provider
+		// we don't use the context alone so the provider wont be hanging for ever by an attack
 		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
 		defer cancel()
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, nodeMessage.GetDisableErrorHandling())

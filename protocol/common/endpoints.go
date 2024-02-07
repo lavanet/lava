@@ -79,9 +79,9 @@ func (url *NodeUrl) SetIpForwardingIfNecessary(ctx context.Context, headerSetter
 
 func (url *NodeUrl) LowerContextTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	if url == nil || url.Timeout <= 0 {
-		return LowerContextTimeout(ctx, timeout)
+		return CapContextTimeout(ctx, timeout)
 	}
-	return LowerContextTimeout(ctx, timeout+url.Timeout)
+	return CapContextTimeout(ctx, timeout+url.Timeout)
 }
 
 type AuthConfig struct {

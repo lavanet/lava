@@ -277,7 +277,7 @@
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0,
-                                "timeout_ms": 4000
+                                "timeout_ms": 10000
                             },
                             {
                                 "name": "tx",
