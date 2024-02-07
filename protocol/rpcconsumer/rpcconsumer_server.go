@@ -665,7 +665,6 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 			if response.err == nil {
 				// validate if its a error response (from the node not the provider)
 				foundError, errorMessage := chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
-
 				// print debug only when we have multiple responses
 				if numberOfSessions > 1 {
 					utils.LavaFormatDebug("Got Response", utils.LogAttr("responsesReceived", responsesReceived), utils.LogAttr("out_of", numberOfSessions), utils.LogAttr("foundError", foundError), utils.LogAttr("errorMessage", errorMessage), utils.LogAttr("Status code", response.relayResult.StatusCode))
@@ -685,7 +684,6 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 				// in case we got only errors and we want to return the best one
 				protocolResponseErrors.relayErrors = append(protocolResponseErrors.relayErrors, RelayError{err: response.err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
 			}
-
 			// check if this is the last response we are going to receive
 			// we get here only if all other responses including this one are not valid responses
 			// (whether its a node error or protocol errors)
@@ -694,7 +692,6 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 				if err == nil { // successfully sent the channel response
 					return
 				}
-
 				// if we got here, we for some reason failed to fetch both the best node error and the protocol error
 				// it indicates mostly an unwanted behavior.
 				utils.LavaFormatWarning("failed getting best error message for both node and protocol", nil,
@@ -711,7 +708,6 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 			if err == nil { // successfully sent the channel response
 				return
 			}
-
 			// failed fetching any error, getting here indicates a real context timeout happened.
 			finalResult <- &relayResponse{nil, NoResponseTimeout}
 			return
