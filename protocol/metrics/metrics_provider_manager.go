@@ -332,6 +332,10 @@ func (pme *ProviderMetricsManager) SetVersion(version string) {
 }
 
 func (pme *ProviderMetricsManager) RegisterRelaysMonitor(chainID, apiInterface string, relaysMonitor *RelaysMonitor) {
+	if pme == nil {
+		return
+	}
+
 	pme.relaysMonitorsLock.Lock()
 	defer pme.relaysMonitorsLock.Unlock()
 	pme.relaysMonitors[chainID+apiInterface] = relaysMonitor
