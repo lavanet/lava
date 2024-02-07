@@ -104,7 +104,7 @@ func (url *NodeUrl) LowerContextTimeout(ctx context.Context, chainMessage ChainM
 	// allowing the consumer's context to increase the timeout by up to x2
 	// this allows the consumer to get extra timeout than the spec up to a threshold so
 	// the provider wont be attacked by infinite context timeout
-	timeout = timeout * 2
+	timeout *= 2
 	if url == nil || url.Timeout <= 0 {
 		return CapContextTimeout(ctx, timeout)
 	}
