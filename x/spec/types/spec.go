@@ -97,7 +97,7 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 				}
 			}
 			if parsing.FunctionTag == FUNCTION_TAG_GET_BLOCK_BY_NUM {
-				if !strings.Contains(parsing.FunctionTemplate, "%d") {
+				if !strings.Contains(parsing.FunctionTemplate, "%") {
 					return details, fmt.Errorf("function tag FUNCTION_TAG_GET_BLOCK_BY_NUM does not contain %%d")
 				}
 			}
