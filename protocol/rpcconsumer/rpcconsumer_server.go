@@ -654,7 +654,7 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 			finalResult <- protocolsBestErrorMessage.response
 			return nil
 		}
-		return fmt.Errorf("Failed getting best response")
+		return fmt.Errorf("failed getting best response")
 	}
 
 	for {
