@@ -110,6 +110,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 
 	rpcps.initRelaysMonitor(ctx)
 }
+
 func (rpcps *RPCProviderServer) initRelaysMonitor(ctx context.Context) {
 	if rpcps.relaysMonitor == nil {
 		return
