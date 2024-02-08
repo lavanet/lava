@@ -626,6 +626,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// if there were multiple error responses picking the majority
 	response := rpccs.getBestResult(relayTimeout, responses, len(sessions), chainMessage)
 
+	if response == nil {
+		return nil, utils.LavaFormatError("Received unnexpected nil response from getBestResult", nil, utils.LogAttr("sessions", sessions), utils.LogAttr("chainMessage", chainMessage))
+	}
+
 	if response.err == nil && response.relayResult != nil && response.relayResult.Reply != nil {
 		// no error, update the seen block
 		blockSeen := response.relayResult.Reply.LatestBlock
