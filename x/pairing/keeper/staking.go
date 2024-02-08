@@ -147,7 +147,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	delegateTotal := sdk.ZeroInt()
 	nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
 	if err != nil {
-		utils.LavaFormatWarning("cannot get next epoch to count past delegations", err,
+		return utils.LavaFormatWarning("cannot get next epoch to count past delegations", err,
 			utils.LogAttr("provider", senderAddr.String()),
 			utils.LogAttr("block", nextEpoch),
 		)
