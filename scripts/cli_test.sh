@@ -182,6 +182,7 @@ trace lavad q fixationstore versions entry subs-fs $(lavad keys show alice -a) 1
 echo "Testing rewards q commands"
 trace lavad q rewards pools >/dev/null
 trace lavad q rewards block-reward >/dev/null
+trace lavad q rewards show-iprpc-data > /dev/null
 
 echo "Testing events command"
 trace lavad test events 30 10 --event lava_relay_payment --from alice --timeout 1s >/dev/null

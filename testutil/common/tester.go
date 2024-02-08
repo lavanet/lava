@@ -854,6 +854,11 @@ func (ts *Tester) QueryRewardsBlockReward() (*rewardstypes.QueryBlockRewardRespo
 	return ts.Keepers.Rewards.BlockReward(ts.GoCtx, msg)
 }
 
+func (ts *Tester) QueryShowIprpcData() (*rewardstypes.QueryShowIprpcDataResponse, error) {
+	msg := &rewardstypes.QueryShowIprpcDataRequest{}
+	return ts.Keepers.Rewards.ShowIprpcData(ts.GoCtx, msg)
+}
+
 // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
