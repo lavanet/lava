@@ -621,7 +621,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
 		// we use the minimum timeout between the two, spec or context. to prevent the provider
-		// we don't use the context alone so the provider wont be hanging for ever by an attack
+		// we don't use the context alone so the provider won't be hanging forever by an attack
 		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
 		defer cancel()
 
