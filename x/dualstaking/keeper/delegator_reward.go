@@ -139,9 +139,9 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 		)
 	}
 
-	var rewardCoins sdk.Coin
+	rewardCoins := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
 	for _, reward := range res.Rewards {
-		rewardCoins = rewardCoins.Add(sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: reward.Amount.Amount})
+		rewardCoins = rewardCoins.AddAmount(reward.Amount.Amount)
 
 		ind := types.DelegationKey(reward.Provider, delegator, reward.ChainId)
 		k.RemoveDelegatorReward(ctx, ind)
