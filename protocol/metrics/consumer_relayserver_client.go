@@ -117,17 +117,17 @@ func (cuc *ConsumerRelayServerClient) aggregateAndSendRelayData(sendQueue []Upda
 	utils.LavaFormatDebug("[CUC] Sending data to server - start ", utils.LogAttr("Size of metrics to send", len(sendQueue)))
 
 	if cuc == nil {
-		return nil, utils.LavaFormatError("Sending data to server - CUC is nil. misuse detected", nil)
+		return nil, utils.LavaFormatError("sending data to server - CUC is nil. misuse detected", nil)
 	}
 
 	if len(sendQueue) == 0 {
-		return nil, errors.New("Sending data to server - SendQueue is empty")
+		return nil, errors.New("sending data to server - SendQueue is empty")
 	}
 
 	aggregatedRequests := cuc.aggregateRelayData(sendQueue)
 
 	if len(aggregatedRequests) == 0 {
-		return nil, errors.New("Sending data to server - No requests after aggregate")
+		return nil, errors.New("sending data to server - No requests after aggregate")
 	}
 
 	client := &http.Client{
@@ -136,7 +136,7 @@ func (cuc *ConsumerRelayServerClient) aggregateAndSendRelayData(sendQueue []Upda
 
 	jsonData, err := json.Marshal(aggregatedRequests)
 	if err != nil {
-		return nil, utils.LavaFormatError("Sending data to server - Failed marshaling aggregated requests", err)
+		return nil, utils.LavaFormatError("sending data to server - Failed marshaling aggregated requests", err)
 	}
 
 	var resp *http.Response
