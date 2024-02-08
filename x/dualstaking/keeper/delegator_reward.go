@@ -139,6 +139,10 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 		)
 	}
 
+	if len(res.Rewards) == 0 {
+		return sdk.Coin{}, nil
+	}
+
 	rewardCoins := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
 	for _, reward := range res.Rewards {
 		rewardCoins = rewardCoins.AddAmount(reward.Amount.Amount)
