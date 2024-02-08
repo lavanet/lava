@@ -653,6 +653,14 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
+		// validate result is valid
+		if replyMessage.Error == nil {
+			responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
+			if responseIsNilValidationError != nil {
+				return nil, "", nil, responseIsNilValidationError
+			}
+		}
+
 		replyMsg = *replyMessage
 		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
 		if err != nil {
