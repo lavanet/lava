@@ -20,7 +20,7 @@ const (
 
 func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	details := map[string]string{"spec": spec.Name, "status": strconv.FormatBool(spec.Enabled), "chainID": spec.Index}
-	functionTags := map[FUNCTION_TAG]bool{}
+	functionTagsAll := map[FUNCTION_TAG]bool{}
 
 	availableAPIInterface := map[string]struct{}{
 		APIInterfaceJsonRPC:       {},
@@ -72,6 +72,7 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	}
 
 	for _, apiCollection := range spec.ApiCollections {
+		functionTags := map[FUNCTION_TAG]bool{}
 		if len(apiCollection.Apis) == 0 {
 			return details, fmt.Errorf("api apiCollection list empty for %v", apiCollection.CollectionData)
 		}
@@ -89,10 +90,15 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 				return details, fmt.Errorf("empty or unsupported function tag %s", parsing.FunctionTag)
 			}
 			functionTags[parsing.FunctionTag] = true
-
+			functionTagsAll[parsing.FunctionTag] = true
 			if parsing.ResultParsing.Encoding != "" {
 				if _, ok := availavleEncodings[parsing.ResultParsing.Encoding]; !ok {
 					return details, fmt.Errorf("unsupported api encoding %s in apiCollection %v ", parsing.ResultParsing.Encoding, apiCollection.CollectionData)
+				}
+			}
+			if parsing.FunctionTag == FUNCTION_TAG_GET_BLOCK_BY_NUM {
+				if !strings.Contains(parsing.FunctionTemplate, "%") {
+					return details, fmt.Errorf("function tag FUNCTION_TAG_GET_BLOCK_BY_NUM does not contain %%d")
 				}
 			}
 		}
@@ -144,13 +150,20 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 						)
 					}
 				}
+				if verification.ParseDirective.FunctionTag != FUNCTION_TAG_VERIFICATION {
+					if !functionTags[verification.ParseDirective.FunctionTag] {
+						return details, utils.LavaFormatWarning("verification's function tag not found in the parse directives", fmt.Errorf("spec verification validation failed"),
+							utils.LogAttr("verification_tag", verification.ParseDirective.FunctionTag),
+						)
+					}
+				}
 			}
 		}
 	}
 
 	if spec.DataReliabilityEnabled && spec.Enabled {
 		for _, tag := range []FUNCTION_TAG{FUNCTION_TAG_GET_BLOCKNUM, FUNCTION_TAG_GET_BLOCK_BY_NUM} {
-			if found := functionTags[tag]; !found {
+			if found := functionTagsAll[tag]; !found {
 				return details, fmt.Errorf("missing tagged functions for hash comparison: %s", tag)
 			}
 		}

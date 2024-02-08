@@ -16,7 +16,7 @@
                 "imports": [
                     "ETH1"
                 ],
-                                "shares" : 1,
+                "shares" : 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
