@@ -345,7 +345,7 @@ func truncateAndPadString(s string, maxLength int) string {
 
 // return if response is valid or not - true
 func ValidateNilResponse(responseString string) error {
-	if !slices.Contains(InvalidResponses, responseString) {
+	if slices.Contains(InvalidResponses, responseString) {
 		return fmt.Errorf("response returned an empty value: %s", responseString)
 	}
 	return nil
