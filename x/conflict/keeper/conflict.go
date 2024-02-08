@@ -15,8 +15,14 @@ func (k Keeper) ValidateFinalizationConflict(ctx sdk.Context, conflictData *type
 }
 
 func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.ResponseConflict, clientAddr sdk.AccAddress) error {
-	// 1. validate mismatching data
 	chainID := conflictData.ConflictRelayData0.Request.RelaySession.SpecId
+
+	// 0. validate deterministic api
+	if !k.specKeeper.IsDeterministicAPI(ctx, chainID, conflictData.ConflictRelayData0.Request.RelayData.ApiUrl) {
+		return fmt.Errorf("detecion conflict api is not deterministic, apiname:%s", conflictData.ConflictRelayData0.Request.RelayData.ApiUrl)
+	}
+
+	// 1. validate mismatching data
 	if chainID != conflictData.ConflictRelayData1.Request.RelaySession.SpecId {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", chainID, conflictData.ConflictRelayData1.Request.RelaySession.SpecId)
 	}

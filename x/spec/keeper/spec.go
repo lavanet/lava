@@ -359,3 +359,18 @@ func (k Keeper) GetMinStake(ctx sdk.Context, chainID string) sdk.Coin {
 
 	return spec.MinStakeProvider
 }
+
+func (k Keeper) IsDeterministicAPI(ctx sdk.Context, chainID string, apiName string) bool {
+	spec, found := k.GetSpec(ctx, chainID)
+	if !found {
+		return false
+	}
+	for _, collection := range spec.ApiCollections {
+		for _, api := range collection.Apis {
+			if api.Name == apiName {
+				return api.Category.Deterministic
+			}
+		}
+	}
+	return false
+}
