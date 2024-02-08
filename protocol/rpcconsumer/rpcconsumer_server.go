@@ -627,7 +627,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	response := rpccs.getBestResult(relayTimeout, responses, len(sessions), chainMessage)
 
 	if response == nil {
-		return nil, utils.LavaFormatError("Received unnexpected nil response from getBestResult", nil, utils.LogAttr("sessions", sessions), utils.LogAttr("chainMessage", chainMessage))
+		return nil, utils.LavaFormatError("Received unexpected nil response from getBestResult", nil, utils.LogAttr("sessions", sessions), utils.LogAttr("chainMessage", chainMessage))
 	}
 
 	if response.err == nil && response.relayResult != nil && response.relayResult.Reply != nil {
