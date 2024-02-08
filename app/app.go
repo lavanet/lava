@@ -524,6 +524,7 @@ func New(
 		app.DistrKeeper,
 		authtypes.FeeCollectorName,
 		app.TimerStoreKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
 

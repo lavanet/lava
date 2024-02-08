@@ -1,10 +1,29 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
 )
+
+func (k Keeper) SetIprpcData(ctx sdk.Context, cost sdk.Coin, subs []string) error {
+	if cost.Denom != k.stakingKeeper.BondDenom(ctx) {
+		return utils.LavaFormatWarning("min iprpc cost must be in acceptable denom", fmt.Errorf("invalid cost"),
+			utils.LogAttr("cost", cost.String()),
+			utils.LogAttr("acceptable_denom", k.stakingKeeper.BondDenom(ctx)),
+		)
+	}
+	k.SetMinIprpcCost(ctx, cost)
+
+	for _, sub := range subs {
+		k.SetIprpcSubscription(ctx, sub)
+	}
+
+	return nil
+}
 
 /********************** Min IPRPC Cost **********************/
 
