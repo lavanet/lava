@@ -745,7 +745,14 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("tendermingRPC error", err)
 		}
-
+		// if we didn't get a node error.
+		if replyMessage.Error == nil {
+			// validate result is valid
+			responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
+			if responseIsNilValidationError != nil {
+				return nil, "", nil, responseIsNilValidationError
+			}
+		}
 		replyMsg = replyMessage
 
 		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, rpcMessage.ID)
