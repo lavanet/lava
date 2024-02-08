@@ -115,6 +115,10 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 				details["api"] = api.Name
 				return details, fmt.Errorf("compute units out or range %s", api.Name)
 			}
+			if strings.Contains(api.Name, " ") {
+				details["api"] = api.Name
+				return details, fmt.Errorf("api name includes a space character %s", api.Name)
+			}
 		}
 		currentHeaders := map[string]struct{}{}
 		for _, header := range apiCollection.Headers {

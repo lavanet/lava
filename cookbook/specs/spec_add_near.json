@@ -13,7 +13,7 @@
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 1200,
                 "allowed_block_lag_for_qos_sync": 8,
-                                "shares" : 1,
+                "shares" : 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -254,7 +254,8 @@
                                     "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 1
+                                    "stateful": 1,
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -266,7 +267,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 40,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -275,7 +276,8 @@
                                     "stateful": 1,
                                     "hanging_api": true
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "timeout_ms": 4000
                             },
                             {
                                 "name": "tx",

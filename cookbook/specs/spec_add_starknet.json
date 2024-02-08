@@ -68,7 +68,7 @@
                                 "name": "starknet_call",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "1"
                                     ],
@@ -107,7 +107,7 @@
                                 "name": "starknet_estimateFee",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "1"
                                     ],
@@ -128,7 +128,7 @@
                                 "name": "starknet_getBlockTransactionCount",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
@@ -149,7 +149,7 @@
                                 "name": "starknet_getBlockWithTxHashes",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
@@ -209,7 +209,7 @@
                                 "name": "starknet_getClassAt",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
@@ -230,7 +230,7 @@
                                 "name": "starknet_getClassHashAt",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
@@ -287,7 +287,7 @@
                                 "name": "starknet_getStateUpdate",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
@@ -308,7 +308,7 @@
                                 "name": "starknet_getStorageAt",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "2"
                                     ],
@@ -329,7 +329,7 @@
                                 "name": "starknet_getTransactionByBlockIdAndIndex",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],

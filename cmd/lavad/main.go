@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	"github.com/lavanet/lava/app"
+	cmdcommon "github.com/lavanet/lava/cmd/common"
 	"github.com/lavanet/lava/cmd/lavad/cmd"
 	"github.com/lavanet/lava/protocol/badgegenerator"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
@@ -30,12 +31,13 @@ func main() {
 	// badge generator cobra command
 	badgeGenerator := badgegenerator.CreateBadgeGeneratorCobraCommand()
 
+	deprecationWarningMessage := "This command will become deprecated on this binary, in the future. Please switch to the 'lavap' binary for this command."
 	// Add RPC Consumer Command
-	rootCmd.AddCommand(cmdRPCConsumer)
+	rootCmd.AddCommand(cmdcommon.CreateWarningLogCommandWrapper(cmdRPCConsumer, deprecationWarningMessage))
 	// Add RPC Provider Command
-	rootCmd.AddCommand(cmdRPCProvider)
+	rootCmd.AddCommand(cmdcommon.CreateWarningLogCommandWrapper(cmdRPCProvider, deprecationWarningMessage))
 	// Add Badge Generator Command
-	rootCmd.AddCommand(badgeGenerator)
+	rootCmd.AddCommand(cmdcommon.CreateWarningLogCommandWrapper(badgeGenerator, deprecationWarningMessage))
 
 	testCmd := &cobra.Command{
 		Use:   "test",

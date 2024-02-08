@@ -2,6 +2,7 @@ package monitoring
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -23,6 +24,7 @@ import (
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -37,9 +39,17 @@ const (
 )
 
 type LavaEntity struct {
-	Address      string
-	SpecId       string
-	ApiInterface string
+	Address      string `json:"address"`
+	SpecId       string `json:"specId"`
+	ApiInterface string `json:"apiInterface"`
+}
+
+func (le LavaEntity) MarshalText() ([]byte, error) {
+	return json.Marshal(le.String())
+}
+
+func (le *LavaEntity) MarshalJSON() ([]byte, error) {
+	return json.Marshal(le.String())
 }
 
 func (e *LavaEntity) String() string {
@@ -50,14 +60,14 @@ func (e *LavaEntity) String() string {
 }
 
 type ReplyData struct {
-	block   int64
-	latency time.Duration
+	Block   int64         `json:"block"`
+	Latency time.Duration `json:"latency"`
 }
 
 type SubscriptionData struct {
-	FullMonthsLeft               uint64
-	UsagePercentageLeftThisMonth float64
-	DurationLeft                 time.Duration
+	FullMonthsLeft               uint64        `json:"fullMonthsLeft"`
+	UsagePercentageLeftThisMonth float64       `json:"usagePercentageLeftThisMonth"`
+	DurationLeft                 time.Duration `json:"durationLeft"`
 }
 
 func RunHealth(ctx context.Context,
@@ -109,55 +119,82 @@ func RunHealth(ctx context.Context,
 			chainIdToApiInterfaces[chainInfo.ChainID] = chainInfo.EnabledApiInterfaces
 		}
 	}
+	getAllProviders := false
+	if len(providerAddresses) == 1 && providerAddresses[0] == AllProvidersMarker {
+		getAllProviders = true
+	}
+
 	errCh := make(chan error, 1)
 
 	// get a list of all necessary specs for the test
 	dualStakingQuerier := dualstakingtypes.NewQueryClient(clientCtx)
-	var wgspecs sync.WaitGroup
-	wgspecs.Add(len(providerAddresses))
-
-	processProvider := func(providerAddress string) {
-		defer wgspecs.Done()
-		var err error
+	if getAllProviders {
+		// var specResp *spectypes.QueryGetSpecResponse
+		var specsResp *spectypes.QueryShowAllChainsResponse
 		for i := 0; i < BasicQueryRetries; i++ {
-			var response *dualstakingtypes.QueryDelegatorProvidersResponse
-			queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-			response, err = dualStakingQuerier.DelegatorProviders(queryCtx, &dualstakingtypes.QueryDelegatorProvidersRequest{
-				Delegator:   providerAddress,
-				WithPending: false,
-			})
+			queryCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			specsResp, err = specQuerier.ShowAllChains(queryCtx, &spectypes.QueryShowAllChainsRequest{})
 			cancel()
-			if err != nil || response == nil {
-				time.Sleep(QuerySleepTime)
-				continue
+			if err == nil {
+				break
 			}
-			delegations := response.GetDelegations()
-			for _, delegation := range delegations {
-				if delegation.Provider == providerAddress {
-					healthResults.setSpec(&spectypes.Spec{Index: delegation.ChainID})
-					for _, apiInterface := range chainIdToApiInterfaces[delegation.ChainID] {
-						healthResults.SetProviderData(LavaEntity{
-							Address:      providerAddress,
-							SpecId:       delegation.ChainID,
-							ApiInterface: apiInterface,
-						}, ReplyData{})
-					}
-				}
-			}
-			return
+			time.Sleep(QuerySleepTime)
 		}
 		if err != nil {
-			select {
-			case errCh <- err:
-			default:
+			return nil, err
+		}
+		if specsResp == nil || len(specsResp.ChainInfoList) == 0 {
+			return nil, utils.LavaFormatError("empty specs response", nil)
+		}
+		for _, specInfo := range specsResp.ChainInfoList {
+			healthResults.setSpec(&spectypes.Spec{Index: specInfo.ChainID})
+		}
+	} else {
+		var wgproviders sync.WaitGroup
+		wgproviders.Add(len(providerAddresses))
+		processProvider := func(providerAddress string) {
+			defer wgproviders.Done()
+			var err error
+			for i := 0; i < BasicQueryRetries; i++ {
+				var response *dualstakingtypes.QueryDelegatorProvidersResponse
+				queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+				response, err = dualStakingQuerier.DelegatorProviders(queryCtx, &dualstakingtypes.QueryDelegatorProvidersRequest{
+					Delegator:   providerAddress,
+					WithPending: false,
+				})
+				cancel()
+				if err != nil || response == nil {
+					time.Sleep(QuerySleepTime)
+					continue
+				}
+				delegations := response.GetDelegations()
+				for _, delegation := range delegations {
+					if delegation.Provider == providerAddress {
+						healthResults.setSpec(&spectypes.Spec{Index: delegation.ChainID})
+						for _, apiInterface := range chainIdToApiInterfaces[delegation.ChainID] {
+							healthResults.SetProviderData(LavaEntity{
+								Address:      providerAddress,
+								SpecId:       delegation.ChainID,
+								ApiInterface: apiInterface,
+							}, ReplyData{})
+						}
+					}
+				}
+				return
+			}
+			if err != nil {
+				select {
+				case errCh <- err:
+				default:
+				}
 			}
 		}
-	}
 
-	for _, providerAddress := range providerAddresses {
-		go processProvider(providerAddress)
+		for _, providerAddress := range providerAddresses {
+			go processProvider(providerAddress)
+		}
+		wgproviders.Wait()
 	}
-
 	for _, consumerEndpoint := range consumerEndpoints {
 		healthResults.setSpec(&spectypes.Spec{Index: consumerEndpoint.ChainID})
 	}
@@ -166,11 +203,11 @@ func RunHealth(ctx context.Context,
 		healthResults.setSpec(&spectypes.Spec{Index: referenceEndpoint.ChainID})
 	}
 
-	wgspecs.Wait()
 	if len(errCh) > 0 {
 		return nil, utils.LavaFormatWarning("[-] process providers specs", <-errCh)
 	}
 	// add specs
+	var wgspecs sync.WaitGroup
 	specs := healthResults.getSpecs()
 	processSpec := func(specId string) {
 		defer wgspecs.Done()
@@ -195,6 +232,7 @@ func RunHealth(ctx context.Context,
 		default:
 		}
 	}
+
 	wgspecs.Add(len(specs))
 	// populate the specs
 	utils.LavaFormatDebug("[+] populating specs")
@@ -246,7 +284,7 @@ func RunHealth(ctx context.Context,
 				}
 
 				mutex.Lock() // Lock before updating stakeEntries
-				if _, ok := healthResults.getProviderData(lookupKey); ok {
+				if _, ok := healthResults.getProviderData(lookupKey); ok || getAllProviders {
 					if providerEntry.StakeAppliedBlock > uint64(currentBlock) {
 						healthResults.FreezeProvider(providerKey)
 					} else {
@@ -311,7 +349,7 @@ func CheckConsumersAndReferences(ctx context.Context,
 ) error {
 	// populate data from providers
 	for entry, data := range healthResults.ProviderData {
-		providerBlock := data.block
+		providerBlock := data.Block
 		specId := entry.SpecId
 		healthResults.updateLatestBlock(specId, providerBlock)
 	}
@@ -337,7 +375,11 @@ func CheckConsumersAndReferences(ctx context.Context,
 			Geolocation:    0,
 			NodeUrls: []common.NodeUrl{
 				{
-					Url:    endpoint.NetworkAddress,
+					Url: endpoint.NetworkAddress,
+					AuthConfig: common.AuthConfig{
+						UseTLS:        viper.GetBool(ConsumerGrpcTLSFlagName),
+						AllowInsecure: viper.GetBool(allowInsecureConsumerDialingFlagName),
+					},
 					Addons: endpoint.Addons,
 				},
 			},
@@ -570,8 +612,8 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 					continue
 				}
 				latestData := ReplyData{
-					block:   latestBlockFromProbe,
-					latency: probeLatency,
+					Block:   latestBlockFromProbe,
+					Latency: probeLatency,
 				}
 				healthResults.SetProviderData(providerKey, latestData)
 			}

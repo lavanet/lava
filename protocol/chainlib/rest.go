@@ -136,10 +136,11 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 
 func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
-		api:                  serviceApi,
-		apiCollection:        apiCollection,
-		msg:                  restMessage,
-		latestRequestedBlock: requestBlock,
+		api:                      serviceApi,
+		apiCollection:            apiCollection,
+		msg:                      restMessage,
+		latestRequestedBlock:     requestBlock,
+		resultErrorParsingMethod: restMessage.CheckResponseError,
 	}
 	return nodeMsg
 }
@@ -289,7 +290,13 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
+		utils.LavaFormatInfo("in <<<",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("path", path),
+			utils.LogAttr("dappID", dappID),
+			utils.LogAttr("msgSeed", msgSeed),
+			utils.LogAttr("headers", restHeaders),
+		)
 		requestBody := string(fiberCtx.Body())
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
@@ -346,7 +353,13 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			msgSeed = strconv.FormatUint(guid, 10)
 		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
-		utils.LavaFormatInfo("in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "path", Value: path}, utils.Attribute{Key: "dappID", Value: dappID}, utils.Attribute{Key: "msgSeed", Value: msgSeed})
+		utils.LavaFormatInfo("in <<<",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("path", path),
+			utils.LogAttr("dappID", dappID),
+			utils.LogAttr("msgSeed", msgSeed),
+			utils.LogAttr("headers", restHeaders),
+		)
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
@@ -435,13 +448,8 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
 	urlPath := rcp.NodeUrl.Url + nodeMessage.Path
 
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetApi().Category.HangingApi {
-		relayTimeout += rcp.averageBlockTime
-	}
-
-	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+	// set context with timeout
+	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, chainMessage, rcp.averageBlockTime)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(urlPath), msgBuffer)
