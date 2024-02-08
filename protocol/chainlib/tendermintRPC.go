@@ -231,21 +231,23 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 		return nil, err
 	}
 	nodeMsg := &baseChainMessageContainer{
-		api:                    serviceApi,
-		apiCollection:          apiCollection,
-		latestRequestedBlock:   requestedBlock,
-		msg:                    &batchMessage,
-		earliestRequestedBlock: earliestRequestedBlock,
+		api:                      serviceApi,
+		apiCollection:            apiCollection,
+		latestRequestedBlock:     requestedBlock,
+		msg:                      &batchMessage,
+		earliestRequestedBlock:   earliestRequestedBlock,
+		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
 	}
 	return nodeMsg, err
 }
 
 func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
-		api:                  serviceApi,
-		apiCollection:        apiCollection,
-		latestRequestedBlock: requestedBlock,
-		msg:                  msg,
+		api:                      serviceApi,
+		apiCollection:            apiCollection,
+		latestRequestedBlock:     requestedBlock,
+		msg:                      msg,
+		resultErrorParsingMethod: msg.CheckResponseError,
 	}
 	return nodeMsg
 }
@@ -612,13 +614,8 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	// construct the url by concatenating the node url with the path variable
 	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path
 
-	// create context
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetApi().Category.HangingApi {
-		relayTimeout += cp.averageBlockTime
-	}
-	connectCtx, cancel := cp.httpNodeUrl.LowerContextTimeout(ctx, relayTimeout)
+	// set context with timeout
+	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
 	defer cancel()
 
 	// create a new http request
@@ -719,16 +716,11 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		// subscribe to the rpc call if the channel is not nil
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
-		// create a context with a timeout set by the LocalNodeTimePerCu function
-		relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-		// check if this API is hanging (waiting for block confirmation)
-		if chainMessage.GetApi().Category.HangingApi {
-			relayTimeout += cp.averageBlockTime
-		}
-		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
-
-		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+		// set context with timeout
+		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
 		defer cancel()
+
+		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		// perform the rpc call
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false, nodeMessage.GetDisableErrorHandling())
 		if err != nil {

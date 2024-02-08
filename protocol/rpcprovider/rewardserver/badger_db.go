@@ -85,12 +85,10 @@ func (mdb *BadgerDB) FindOne(key string) (one []byte, err error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
-
-	return
+	return one, nil
 }
 
 func (mdb *BadgerDB) FindAll() (map[string][]byte, error) {
