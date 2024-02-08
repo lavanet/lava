@@ -659,6 +659,7 @@ func New(
 		keys[protocolmoduletypes.StoreKey],
 		keys[protocolmoduletypes.MemStoreKey],
 		app.GetSubspace(protocolmoduletypes.ModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	protocolModule := protocolmodule.NewAppModule(appCodec, app.ProtocolKeeper)
 

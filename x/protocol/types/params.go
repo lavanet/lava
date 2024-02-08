@@ -96,7 +96,7 @@ func versionToInteger(v string) (int, error) {
 }
 
 // Validate validates the set of params
-func (p Params) Validate(genesis bool) error {
+func (p Params) Validate() error {
 	return validateVersion(p.Version)
 }
 
