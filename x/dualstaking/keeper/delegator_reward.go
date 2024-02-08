@@ -121,44 +121,45 @@ func (k Keeper) CalcDelegatorReward(delegatorsReward math.Int, totalDelegations 
 	return delegatorsReward.Mul(delegation.Amount.Amount).Quo(totalDelegations)
 }
 
-func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string) error {
+func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string) (sdk.Coin, error) {
 	goCtx := sdk.WrapSDKContext(ctx)
+
+	delegatorAcc, err := sdk.AccAddressFromBech32(delegator)
+	if err != nil {
+		return sdk.Coin{}, utils.LavaFormatError("critical: could not claim delegator reward from provider", err,
+			utils.Attribute{Key: "delegator", Value: delegator},
+			utils.Attribute{Key: "provider", Value: provider},
+		)
+	}
+
 	res, err := k.DelegatorRewards(goCtx, &types.QueryDelegatorRewardsRequest{Delegator: delegator, Provider: provider})
 	if err != nil {
-		return utils.LavaFormatWarning("could not claim delegator rewards", err,
+		return sdk.Coin{}, utils.LavaFormatWarning("could not claim delegator rewards", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
 		)
 	}
 
+	var rewardCoins sdk.Coin
 	for _, reward := range res.Rewards {
-		delegatorAcc, err := sdk.AccAddressFromBech32(delegator)
-		if err != nil {
-			utils.LavaFormatError("critical: could not claim delegator reward from provider", err,
-				utils.Attribute{Key: "delegator", Value: delegator},
-				utils.Attribute{Key: "provider", Value: provider},
-			)
-			continue
-		}
-
-		rewardCoins := sdk.Coins{sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: reward.Amount.Amount}}
-
-		// not minting new coins because they're minted when the provider
-		// asked for payment (and the delegator reward map was updated)
-		err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delegatorAcc, rewardCoins)
-		if err != nil {
-			// panic:ok: reward transfer should never fail
-			utils.LavaFormatPanic("critical: failed to send reward to delegator for provider", err,
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "delegator", Value: delegator},
-				utils.Attribute{Key: "reward", Value: rewardCoins},
-			)
-		}
+		rewardCoins = rewardCoins.Add(sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: reward.Amount.Amount})
 
 		ind := types.DelegationKey(reward.Provider, delegator, reward.ChainId)
 		k.RemoveDelegatorReward(ctx, ind)
 	}
 
-	return nil
+	// not minting new coins because they're minted when the provider
+	// asked for payment (and the delegator reward map was updated)
+	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delegatorAcc, sdk.NewCoins(rewardCoins))
+	if err != nil {
+		// panic:ok: reward transfer should never fail
+		utils.LavaFormatPanic("critical: failed to send reward to delegator for provider", err,
+			utils.Attribute{Key: "provider", Value: provider},
+			utils.Attribute{Key: "delegator", Value: delegator},
+			utils.Attribute{Key: "reward", Value: rewardCoins},
+		)
+	}
+
+	return rewardCoins, nil
 }
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
