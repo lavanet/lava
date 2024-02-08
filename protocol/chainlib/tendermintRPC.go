@@ -236,7 +236,7 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 		latestRequestedBlock:     requestedBlock,
 		msg:                      &batchMessage,
 		earliestRequestedBlock:   earliestRequestedBlock,
-		resultErrorParsingMethod: rpcInterfaceMessages.TendermintrpcMessage{}.CheckResponseError,
+		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
 	}
 	return nodeMsg, err
 }
@@ -247,7 +247,7 @@ func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, request
 		apiCollection:            apiCollection,
 		latestRequestedBlock:     requestedBlock,
 		msg:                      msg,
-		resultErrorParsingMethod: rpcInterfaceMessages.TendermintrpcMessage{}.CheckResponseError,
+		resultErrorParsingMethod: msg.CheckResponseError,
 	}
 	return nodeMsg
 }

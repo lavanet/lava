@@ -14,38 +14,30 @@ type RelayErrors struct {
 	onFailureMergeAll bool
 }
 
-type relayErrorAppearances struct {
-	indexes     []int // which indexes contain the errors
-	appearances int   // number of appearances
-}
-
-func (r *RelayErrors) findMaxAppearances(input map[string]*relayErrorAppearances) (int, []int) {
-	var maxVal int
+// checking the errors that appeared the most and returning the number of errors that were the same and the index of one of them
+func (r *RelayErrors) findMaxAppearances(input map[string][]int) (maxVal int, indexToReturn int) {
 	var maxValIndexArray []int // one of the indexes
-	firstIteration := true
 	for _, val := range input {
-		if firstIteration || val.appearances > maxVal {
-			maxVal = val.appearances
-			maxValIndexArray = val.indexes
-			firstIteration = false
+		if len(val) > maxVal {
+			maxVal = len(val)
+			maxValIndexArray = val
 		}
 	}
-	return maxVal, maxValIndexArray
+	if len(maxValIndexArray) > 0 {
+		indexToReturn = maxValIndexArray[0]
+	} else {
+		indexToReturn = -1
+	}
+	return
 }
 
 func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	bestIndex := -1
 	bestResult := github_com_cosmos_cosmos_sdk_types.ZeroDec()
-	errorMap := make(map[string]*relayErrorAppearances)
+	errorMap := make(map[string][]int)
 	for idx, relayError := range r.relayErrors {
 		errorMessage := relayError.err.Error()
-		value, ok := errorMap[errorMessage]
-		if ok {
-			value.appearances++
-			value.indexes = append(value.indexes, idx)
-		} else {
-			errorMap[errorMessage] = &relayErrorAppearances{indexes: []int{idx}, appearances: 1}
-		}
+		errorMap[errorMessage] = append(errorMap[errorMessage], idx)
 		if relayError.ProviderInfo.ProviderQoSExcellenceSummery.IsNil() || relayError.ProviderInfo.ProviderStake.Amount.IsNil() {
 			continue
 		}
@@ -56,10 +48,10 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 		}
 	}
 
-	errorCount, indexes := r.findMaxAppearances(errorMap)
-	if len(indexes) > 0 && errorCount >= (len(r.relayErrors)/2) {
+	errorCount, index := r.findMaxAppearances(errorMap)
+	if index >= 0 && errorCount >= (len(r.relayErrors)/2) {
 		// we have majority of errors we can return this error.
-		return r.relayErrors[indexes[0]]
+		return r.relayErrors[index]
 	}
 
 	if bestIndex != -1 {
@@ -77,9 +69,16 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	return r.relayErrors[0]
 }
 
-func (r *RelayErrors) getAllErrors() []error {
+func (r *RelayErrors) getAllUniqueErrors() []error {
 	allErrors := make([]error, len(r.relayErrors))
+	repeatingErrors := make(map[string]struct{})
 	for idx, relayError := range r.relayErrors {
+		errString := relayError.err.Error() // using strings to filter repeating errors
+		_, ok := repeatingErrors[errString]
+		if ok {
+			continue
+		}
+		repeatingErrors[errString] = struct{}{}
 		allErrors[idx] = relayError.err
 	}
 	return allErrors
@@ -87,11 +86,11 @@ func (r *RelayErrors) getAllErrors() []error {
 
 func (r *RelayErrors) mergeAllErrors() error {
 	mergedMessage := ""
-	allErrors := r.getAllErrors()
-	allErrorsLenght := len(allErrors)
+	allErrors := r.getAllUniqueErrors()
+	allErrorsLength := len(allErrors)
 	for idx, message := range allErrors {
 		mergedMessage += strconv.Itoa(idx) + ". " + message.Error()
-		if idx < allErrorsLenght {
+		if idx < allErrorsLength {
 			mergedMessage += ", "
 		}
 	}

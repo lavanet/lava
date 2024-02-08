@@ -29,7 +29,8 @@ const (
 	EXTENSION_OVERRIDE_HEADER_NAME        = "lava-extension"
 	FORCE_CACHE_REFRESH_HEADER_NAME       = "lava-force-cache-refresh"
 	// send http request to /lava/health to see if the process is up - (ret code 200)
-	DEFAULT_HEALTH_PATH = "/lava/health"
+	DEFAULT_HEALTH_PATH                                       = "/lava/health"
+	MAXIMUM_ALLOWED_TIMEOUT_EXTEND_MULTIPLIER_BY_THE_CONSUMER = 4
 )
 
 type NodeUrl struct {
@@ -104,7 +105,7 @@ func (url *NodeUrl) LowerContextTimeout(ctx context.Context, chainMessage ChainM
 	// allowing the consumer's context to increase the timeout by up to x2
 	// this allows the consumer to get extra timeout than the spec up to a threshold so
 	// the provider wont be attacked by infinite context timeout
-	timeout *= 2
+	timeout *= MAXIMUM_ALLOWED_TIMEOUT_EXTEND_MULTIPLIER_BY_THE_CONSUMER
 	if url == nil || url.Timeout <= 0 {
 		return CapContextTimeout(ctx, timeout)
 	}

@@ -620,14 +620,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		}(providerPublicAddress, sessionInfo)
 	}
 
-	result := make(chan *relayResponse)
 	// Getting the best result from the providers,
 	// if there was an error we wait for the next result util timeout or a valid response
 	// priority order {valid response -> error response -> relay error}
 	// if there were multiple error responses picking the majority
-	go rpccs.getBestResult(result, relayTimeout, responses, len(sessions), chainMessage)
-
-	response := <-result
+	response := rpccs.getBestResult(relayTimeout, responses, len(sessions), chainMessage)
 
 	if response.err == nil && response.relayResult != nil && response.relayResult.Reply != nil {
 		// no error, update the seen block
@@ -638,23 +635,21 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	return response.relayResult, response.err
 }
 
-func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, timeout time.Duration, responses chan *relayResponse, numberOfSessions int, chainMessage chainlib.ChainMessage) {
+func (rpccs *RPCConsumerServer) getBestResult(timeout time.Duration, responses chan *relayResponse, numberOfSessions int, chainMessage chainlib.ChainMessage) *relayResponse {
 	responsesReceived := 0
 	nodeResponseErrors := &RelayErrors{relayErrors: []RelayError{}}
 	protocolResponseErrors := &RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true}
 	// a helper function to fetch the best response (prioritize node over protocol)
-	getBestResponseBetweenNodeAndProtocolErrors := func() error {
+	getBestResponseBetweenNodeAndProtocolErrors := func() (*relayResponse, error) {
 		if len(nodeResponseErrors.relayErrors) > 0 { // if we have node errors, we prefer returning them over protocol errors.
 			bestErrorMessage := nodeResponseErrors.GetBestErrorMessageForUser()
-			finalResult <- bestErrorMessage.response
-			return nil
+			return bestErrorMessage.response, nil
 		}
 		if len(protocolResponseErrors.relayErrors) > 0 { // if we have protocol errors at this point return the best one
 			protocolsBestErrorMessage := protocolResponseErrors.GetBestErrorMessageForUser()
-			finalResult <- protocolsBestErrorMessage.response
-			return nil
+			return protocolsBestErrorMessage.response, nil
 		}
-		return fmt.Errorf("failed getting best response")
+		return nil, fmt.Errorf("failed getting best response")
 	}
 	startTime := time.Now()
 	for {
@@ -676,8 +671,7 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 					nodeResponseErrors.relayErrors = append(nodeResponseErrors.relayErrors, RelayError{err: fmt.Errorf(errorMessage), ProviderInfo: response.relayResult.ProviderInfo, response: response})
 				} else {
 					// Return the first successful response
-					finalResult <- response
-					return // returning response
+					return response // returning response
 				}
 			} else {
 				// we want to keep the error message in a separate response error structure
@@ -688,9 +682,9 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 			// we get here only if all other responses including this one are not valid responses
 			// (whether its a node error or protocol errors)
 			if responsesReceived == numberOfSessions {
-				err := getBestResponseBetweenNodeAndProtocolErrors()
+				bestRelayResult, err := getBestResponseBetweenNodeAndProtocolErrors()
 				if err == nil { // successfully sent the channel response
-					return
+					return bestRelayResult
 				}
 				// if we got here, we for some reason failed to fetch both the best node error and the protocol error
 				// it indicates mostly an unwanted behavior.
@@ -699,18 +693,16 @@ func (rpccs *RPCConsumerServer) getBestResult(finalResult chan *relayResponse, t
 					utils.LogAttr("protocolsBestErrorMessage", protocolResponseErrors),
 					utils.LogAttr("numberOfSessions", numberOfSessions),
 				)
-				finalResult <- response
-				return
+				return response
 			}
 		case <-time.After(timeout + 3*time.Second - time.Since(startTime)):
 			// Timeout occurred, try fetching the best result we have, prefer node errors over protocol errors
-			err := getBestResponseBetweenNodeAndProtocolErrors()
+			bestRelayResponse, err := getBestResponseBetweenNodeAndProtocolErrors()
 			if err == nil { // successfully sent the channel response
-				return
+				return bestRelayResponse
 			}
 			// failed fetching any error, getting here indicates a real context timeout happened.
-			finalResult <- &relayResponse{nil, NoResponseTimeout}
-			return
+			return &relayResponse{nil, NoResponseTimeout}
 		}
 	}
 }
