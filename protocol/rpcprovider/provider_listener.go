@@ -71,7 +71,8 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web, lava-sdk-relay-timeout")
 
 		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
-			_, _ = resp.Write(make([]byte, 0))
+			resp.WriteHeader(http.StatusOK)
+			resp.Write([]byte("Healthy"))
 			return
 		}
 

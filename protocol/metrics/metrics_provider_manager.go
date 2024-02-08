@@ -204,17 +204,18 @@ func (pme *ProviderMetricsManager) AddProviderMetrics(specID, apiInterface strin
 		pme.setProviderMetric(providerMetric)
 
 		endpoint := fmt.Sprintf("/metrics/%s/%s/health", specID, apiInterface)
-		http.HandleFunc(endpoint, func(w http.ResponseWriter, r *http.Request) {
+		http.HandleFunc(endpoint, func(resp http.ResponseWriter, r *http.Request) {
 			pme.relaysMonitorsLock.Lock()
 			defer pme.relaysMonitorsLock.Unlock()
 
-			statusCode := http.StatusOK
 			relaysMonitor, ok := pme.relaysMonitors[specID+apiInterface]
 			if ok && !relaysMonitor.IsHealthy() {
-				statusCode = http.StatusServiceUnavailable
+				resp.WriteHeader(http.StatusServiceUnavailable)
+				resp.Write([]byte("Unhealthy"))
+			} else {
+				resp.WriteHeader(http.StatusOK)
+				resp.Write([]byte("Healthy"))
 			}
-
-			w.WriteHeader(statusCode)
 		})
 
 		utils.LavaFormatInfo("prometheus: health endpoint listening",
