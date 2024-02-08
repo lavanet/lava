@@ -20,7 +20,7 @@ func (k msgServer) SetIprpcData(goCtx context.Context, msg *types.MsgSetIprpcDat
 	}
 
 	if msg.Authority != k.authority {
-		sdkerrors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
+		return &types.MsgSetIprpcDataResponse{}, sdkerrors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
 	}
 
 	err = k.Keeper.SetIprpcData(ctx, msg.MinIprpcCost, msg.IprpcSubscriptions)
