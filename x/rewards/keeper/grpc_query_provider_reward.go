@@ -18,16 +18,8 @@ func (k Keeper) ProviderReward(goCtx context.Context, req *types.QueryProviderRe
 
 	var rewards []types.RewardInfo
 
-	for _, basepay := range k.GetAllBasePay(ctx) {
-		index := types.BasePayKeyRecover(basepay.GetIndex())
-
-		if index.Provider != req.Provider {
-			continue
-		}
-
-		if index.ChainID == req.ChainID || req.ChainID == "" {
-			rewards = append(rewards, types.RewardInfo{Provider: index.Provider, ChainId: index.ChainID, Amount: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), basepay.BasePay.Total)})
-		}
+	for _, basepay := range k.GetAllBasePayForChain(ctx, req.ChainId, req.ChainId) {
+		rewards = append(rewards, types.RewardInfo{Provider: basepay.Provider, ChainId: basepay.ChainID, Amount: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), basepay.BasePay.Total)})
 	}
 
 	return &types.QueryProviderRewardResponse{Rewards: rewards}, nil
