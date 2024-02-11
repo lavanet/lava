@@ -13,6 +13,7 @@ func TestValidAddressesProtocol(t *testing.T) {
 		valid bool
 	}{
 		{valid: true, value: "test.domain.test:443"},
+		{valid: false, value: "fe80::215:5dff:feb4:b31d"}, // local ipv6
 		{valid: false, value: "http://test.domain.test:443"},
 		{valid: false, value: ":"},
 		{valid: false, value: "http://::"},
@@ -30,7 +31,7 @@ func TestValidAddressesProtocol(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run("Test Name: "+tt.value, func(t *testing.T) {
-			value := IsValidNetworkAddress(tt.value)
+			value := IsValidNetworkAddressProtocol(tt.value)
 			require.Equal(t, tt.valid, value)
 
 			value = IsValidNetworkAddressConsensus(tt.value)

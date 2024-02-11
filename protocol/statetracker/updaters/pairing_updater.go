@@ -157,7 +157,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 		relevantEndpoints := []epochstoragetypes.Endpoint{}
 		for _, endpoint := range providerEndpoints {
 			if !pu.allowProtectedIps { // check only if we indicate. (used for tests only)
-				if !ips.IsValidNetworkAddress(endpoint.IPPORT) {
+				if !ips.IsValidNetworkAddressProtocol(endpoint.IPPORT) {
 					utils.LavaFormatInfo("Found an invalid provider endpoint pointing to protected address, skipping provider", utils.LogAttr("info", endpoint))
 					// need to report this provider otherwise it will stay onchain for ever
 					continue
