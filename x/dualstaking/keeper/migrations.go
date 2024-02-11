@@ -375,3 +375,10 @@ func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
 	m.keeper.SetDisableDualstakingHook(ctx, false)
 	return nil
 }
+
+// MigrateVersion4To5 sets the MinSelfDelegation param with a default value
+func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
+	params := dualstakingtypes.DefaultParams()
+	m.keeper.SetParams(ctx, params)
+	return nil
+}
