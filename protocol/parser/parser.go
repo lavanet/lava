@@ -447,6 +447,11 @@ func parseArrayOfInterfaces(data []interface{}, propName, innerSeparator string)
 				return appendInterfaceToInterfaceArray(valueArr[1])
 			}
 		}
+		if m, ok := val.(map[string]interface{}); ok {
+			if propValue, foundProp := m[propName]; foundProp {
+				return appendInterfaceToInterfaceArray(blockInterfaceToString(propValue))
+			}
+		}
 	}
 
 	return nil

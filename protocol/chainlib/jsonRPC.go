@@ -193,21 +193,23 @@ func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, reque
 		return nil, err
 	}
 	nodeMsg := &baseChainMessageContainer{
-		api:                    serviceApi,
-		apiCollection:          apiCollection,
-		latestRequestedBlock:   requestedBlock,
-		msg:                    &batchMessage,
-		earliestRequestedBlock: earliestRequestedBlock,
+		api:                      serviceApi,
+		apiCollection:            apiCollection,
+		latestRequestedBlock:     requestedBlock,
+		msg:                      &batchMessage,
+		earliestRequestedBlock:   earliestRequestedBlock,
+		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
 	}
 	return nodeMsg, err
 }
 
 func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
-		api:                  serviceApi,
-		apiCollection:        apiCollection,
-		latestRequestedBlock: requestedBlock,
-		msg:                  msg,
+		api:                      serviceApi,
+		apiCollection:            apiCollection,
+		latestRequestedBlock:     requestedBlock,
+		msg:                      msg,
+		resultErrorParsingMethod: msg.CheckResponseError,
 	}
 	return nodeMsg
 }
@@ -547,14 +549,11 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 			defer rpc.SetHeader(metadata.Name, "")
 		}
 	}
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetApi().Category.HangingApi {
-		relayTimeout += cp.averageBlockTime
-	}
-	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
-	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+	// set context with timeout
+	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
 	defer cancel()
+
+	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 	batch := nodeMessage.GetBatch()
 	err = rpc.BatchCallContext(connectCtx, batch, nodeMessage.GetDisableErrorHandling())
 	if err != nil {
@@ -621,14 +620,12 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if ch != nil {
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
-		relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-		// check if this API is hanging (waiting for block confirmation)
-		if chainMessage.GetApi().Category.HangingApi {
-			relayTimeout += cp.averageBlockTime
-		}
-		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
-		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+		// we use the minimum timeout between the two, spec or context. to prevent the provider from hanging
+		// we don't use the context alone so the provider won't be hanging forever by an attack
+		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
 		defer cancel()
+
+		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, nodeMessage.GetDisableErrorHandling())
 		if err != nil {
 			// here we are getting an error for every code that is not 200-300
@@ -653,6 +650,14 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
+		// validate result is valid
+		if replyMessage.Error == nil {
+			responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
+			if responseIsNilValidationError != nil {
+				return nil, "", nil, responseIsNilValidationError
+			}
+		}
+
 		replyMsg = *replyMessage
 		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
 		if err != nil {

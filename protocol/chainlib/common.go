@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -24,6 +25,8 @@ const (
 	RetryListeningInterval    = 10 // seconds
 	debug                     = false
 )
+
+var InvalidResponses = []string{"null", "", "nil", "undefined"}
 
 type VerificationKey struct {
 	Extension string
@@ -338,4 +341,12 @@ func truncateAndPadString(s string, maxLength int) string {
 	s = fmt.Sprintf("%-*s", maxLength, s)
 
 	return s
+}
+
+// return if response is valid or not - true
+func ValidateNilResponse(responseString string) error {
+	if slices.Contains(InvalidResponses, responseString) {
+		return fmt.Errorf("response returned an empty value: %s", responseString)
+	}
+	return nil
 }
