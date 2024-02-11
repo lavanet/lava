@@ -237,7 +237,7 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 		if err != nil {
 			return fmt.Errorf("invalid or insufficient funds: %w", err)
 		}
-		if stakeEntry.Stake.IsZero() {
+		if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
 			err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, index)
 			if err != nil {
 				return utils.LavaFormatError("can't remove stake Entry after decreasing provider self delegation", err,
