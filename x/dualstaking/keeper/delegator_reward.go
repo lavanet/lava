@@ -136,6 +136,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 	if err != nil {
 		return sdk.Coin{}, utils.LavaFormatWarning("could not claim delegator rewards", err,
 			utils.Attribute{Key: "delegator", Value: delegator},
+			utils.Attribute{Key: "provider", Value: provider},
 		)
 	}
 
