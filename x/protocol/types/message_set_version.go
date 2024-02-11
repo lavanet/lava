@@ -39,5 +39,5 @@ func (msg *MsgSetVersion) ValidateBasic() error {
 		return sdkerrors.Wrap(err, "invalid authority address")
 	}
 
-	return nil
+	return msg.Version.validateVersion()
 }
