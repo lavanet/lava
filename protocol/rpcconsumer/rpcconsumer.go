@@ -133,7 +133,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
-	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, consumerMetricsManager)
+	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, consumerMetricsManager, options.cmdFlags.AllowProtectedIps)
 	if err != nil {
 		utils.LavaFormatFatal("failed to create a NewConsumerStateTracker", err)
 	}
@@ -313,7 +313,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			utils.LavaFormatError("could not load policy Updater for chain", nil, utils.LogAttr("chain", chain))
 			continue
 		}
-		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater)
+		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater, options.cmdFlags.AllowProtectedIps)
 	}
 
 	utils.LavaFormatInfo("RPCConsumer done setting up all endpoints, ready for requests")

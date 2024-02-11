@@ -30,7 +30,7 @@ type ConsumerStateTracker struct {
 	ConsumerEmergencyTrackerInf
 }
 
-func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager) (ret *ConsumerStateTracker, err error) {
+func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager, allowProtectedIps bool) (ret *ConsumerStateTracker, err error) {
 	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
 	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
 	if err != nil {
@@ -47,7 +47,7 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 		ConsumerEmergencyTrackerInf: emergencyTracker,
 	}
 
-	cst.RegisterForPairingUpdates(ctx, emergencyTracker)
+	cst.RegisterForPairingUpdates(ctx, emergencyTracker, allowProtectedIps)
 	err = cst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
 	return cst, err
 }
@@ -66,8 +66,8 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	}
 }
 
-func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, pairingUpdatable updaters.PairingUpdatable) {
-	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery, false)
+func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, pairingUpdatable updaters.PairingUpdatable, allowProtectedIps bool) {
+	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery, allowProtectedIps)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
 	pairingUpdater, ok := pairingUpdaterRaw.(*updaters.PairingUpdater)
 	if !ok {

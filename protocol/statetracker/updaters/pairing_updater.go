@@ -26,11 +26,12 @@ type PairingUpdater struct {
 	nextBlockForUpdate         uint64
 	stateQuery                 *ConsumerStateQuery
 	pairingUpdatables          []*PairingUpdatable
-	AllowProtectedIps          bool
+	allowProtectedIps          bool
 }
 
 func NewPairingUpdater(stateQuery *ConsumerStateQuery, allowProtectedIps bool) *PairingUpdater {
-	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery, AllowProtectedIps: allowProtectedIps}
+	utils.LavaFormatInfo("new pairing updater", utils.LogAttr("allowProtectedIps", allowProtectedIps))
+	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery, allowProtectedIps: allowProtectedIps}
 }
 
 func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {
@@ -156,9 +157,13 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 
 		relevantEndpoints := []epochstoragetypes.Endpoint{}
 		for _, endpoint := range providerEndpoints {
-			if !ips.IsValidNetworkAddress(endpoint.IPPORT) {
-				utils.LavaFormatInfo("Found an invalid provider endpoint pointing to protected address, skipping provider", utils.LogAttr("info", endpoint))
-				continue
+			utils.LavaFormatInfo("pu.allowProtectedIps", utils.LogAttr("pu.allowProtectedIps", pu.allowProtectedIps))
+			if !pu.allowProtectedIps { // check only if we indicate. (used for tests only)
+				if !ips.IsValidNetworkAddress(endpoint.IPPORT) {
+					utils.LavaFormatInfo("Found an invalid provider endpoint pointing to protected address, skipping provider", utils.LogAttr("info", endpoint))
+					// need to report this provider otherwise it will stay onchain for ever
+					continue
+				}
 			}
 			// only take into account endpoints that use the same api interface and the same geolocation
 			for _, endpointApiInterface := range endpoint.ApiInterfaces {
