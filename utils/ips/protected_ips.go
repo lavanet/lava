@@ -55,11 +55,8 @@ func isValidIPv6(address string) bool {
 // isValidAddress checks if the given address is a valid and not a reserved or local address.
 func IsValidNetworkAddressProtocol(address string) bool {
 	// Split the address into host and port
-	if !IsValidNetworkAddressConsensus(address) {
-		return false
-	}
-	// in case we want to add more functionality for protocol specific
-	return true
+	return IsValidNetworkAddressConsensus(address)
+	// in case we want to add more functionality to the protocol specific use cases in the future
 }
 
 // using disallowedIps to validate off network.
