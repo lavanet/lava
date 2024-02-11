@@ -18,7 +18,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	chainID := conflictData.ConflictRelayData0.Request.RelaySession.SpecId
 
 	// 0. validate deterministic api
-	if !k.specKeeper.IsDeterministicAPI(ctx, chainID, conflictData.ConflictRelayData0.Request.RelayData.ApiUrl) {
+	if !k.specKeeper.IsDeterministicAPI(ctx, chainID, conflictData.ConflictRelayData0.Request.RelayData.ApiInterface, conflictData.ConflictRelayData0.Request.RelayData.ConnectionType, conflictData.ConflictRelayData0.Request.RelayData.ApiUrl) {
 		return fmt.Errorf("detecion conflict api is not deterministic, apiname:%s", conflictData.ConflictRelayData0.Request.RelayData.ApiUrl)
 	}
 
