@@ -246,7 +246,7 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 			}
 			unstakeHoldBlocks := k.epochstorageKeeper.GetUnstakeHoldBlocks(ctx, stakeEntry.Chain)
 			return k.epochstorageKeeper.AppendUnstakeEntry(ctx, stakeEntry, unstakeHoldBlocks)
-		} else if stakeEntry.Stake.IsLT(k.specKeeper.GetMinStake(ctx, chainID)) {
+		} else if stakeEntry.EffectiveStake().LT(k.specKeeper.GetMinStake(ctx, chainID).Amount) {
 			stakeEntry.Freeze()
 		}
 	} else {

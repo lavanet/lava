@@ -29,7 +29,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			utils.Attribute{Key: "spec", Value: specChainID},
 			utils.Attribute{Key: "provider", Value: creator},
 			utils.Attribute{Key: "stake", Value: amount},
-			utils.Attribute{Key: "minStake", Value: k.dualstakingKeeper.MinSelfDelegation(ctx).String()},
+			utils.Attribute{Key: "minSelfDelegation", Value: k.dualstakingKeeper.MinSelfDelegation(ctx).String()},
 		)
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
@@ -183,7 +183,10 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	if stakeEntry.EffectiveStake().LT(spec.MinStakeProvider.Amount) {
+		details = append(details, utils.Attribute{Key: "frozen", Value: true})
 		stakeEntry.Freeze()
+	} else {
+		details = append(details, utils.Attribute{Key: "frozen", Value: false})
 	}
 
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
