@@ -137,6 +137,7 @@ import (
 	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
 	projectsmoduletypes "github.com/lavanet/lava/x/projects/types"
 	protocolmodule "github.com/lavanet/lava/x/protocol"
+	protocolmoduleclient "github.com/lavanet/lava/x/protocol/client/cli"
 	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
 	protocolmoduletypes "github.com/lavanet/lava/x/protocol/types"
 	rewardsmodule "github.com/lavanet/lava/x/rewards"
@@ -200,6 +201,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		plansmoduleclient.PlansAddProposalHandler,
 		plansmoduleclient.PlansDelProposalHandler,
 		pairingmoduleclient.PairingUnstakeProposal,
+		protocolmoduleclient.SetProtocolVersionProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -659,6 +661,7 @@ func New(
 		keys[protocolmoduletypes.StoreKey],
 		keys[protocolmoduletypes.MemStoreKey],
 		app.GetSubspace(protocolmoduletypes.ModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	protocolModule := protocolmodule.NewAppModule(appCodec, app.ProtocolKeeper)
 
