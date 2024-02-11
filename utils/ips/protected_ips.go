@@ -35,18 +35,11 @@ func isValidIPv4(address string) bool {
 // isValidAddress checks if the given address is a valid and not a reserved or local address.
 func IsValidNetworkAddress(address string) bool {
 	// Split the address into host and port
-	if strings.HasPrefix(address, "http://") || strings.HasPrefix(address, "https://") {
-		return false // grpc addresses does not support http prefix.
+	if !IsValidNetworkAddressConsensus(address) {
+		return false
 	}
-
 	host, _, err := net.SplitHostPort(address)
-	if strings.Contains(host, ":") {
-		return false // too many columns in address
-	}
 	if err == nil && host != "" {
-		if host == "::" || host == "localhost" || host == "0.0.0.0" {
-			return false
-		}
 		if isValidIPv4(host) {
 			return validateIp(host)
 		}

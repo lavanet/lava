@@ -12,6 +12,8 @@ func TestValidAddressesProtocol(t *testing.T) {
 		value string
 		valid bool
 	}{
+		{valid: false, value: "test.domain.test:443"},
+		{valid: false, value: "http://test.domain.test:443"},
 		{valid: false, value: ":"},
 		{valid: false, value: "http://::"},
 		{valid: false, value: "::"},
@@ -27,7 +29,7 @@ func TestValidAddressesProtocol(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.value, func(t *testing.T) {
+		t.Run("Test Name: "+tt.value, func(t *testing.T) {
 			value := IsValidNetworkAddress(tt.value)
 			require.Equal(t, tt.valid, value)
 
