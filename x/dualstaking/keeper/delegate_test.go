@@ -523,6 +523,30 @@ func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	require.True(t, stakeEntry.IsFrozen())
 }
 
+func TestDualstakingUnbondStakeIsLowerThanMinSelfDelegationCausesUnstake(t *testing.T) {
+	ts := newTester(t)
+
+	// 0 delegator, 1 provider staked, 0 provider unstaked, 0 provider unstaking
+	ts.setupForDelegation(0, 1, 0, 0)
+
+	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+
+	staked := sdk.NewCoin("ulava", sdk.NewInt(testStake))
+	amountToUnbond := staked.SubAmount(math.OneInt())
+
+	// unbond once (not unstaking completely but still below min stake)
+	_, err := ts.TxDualstakingUnbond(provider1Addr, provider1Addr, ts.spec.Name, amountToUnbond)
+	require.NoError(t, err)
+
+	stakeEntry := ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
+	require.True(t, staked.IsEqual(stakeEntry.Stake))
+
+	// advance epoch to digest the delegate
+	ts.AdvanceEpoch()
+	// provider should be unstaked -> getStakeEntry should panic
+	require.Panics(t, func() { ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name) })
+}
+
 func TestDualstakingBondStakeIsGreaterThanMinStakeCausesUnFreeze(t *testing.T) {
 	ts := newTester(t)
 
