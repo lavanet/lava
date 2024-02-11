@@ -13,7 +13,13 @@ func TestValidAddressesProtocol(t *testing.T) {
 		valid bool
 	}{
 		{valid: true, value: "test.domain.test:443"},
-		{valid: false, value: "fe80::215:5dff:feb4:b31d"}, // local ipv6
+		{valid: true, value: "test.test:443"},
+		{valid: true, value: "g.g:443"},
+		{valid: true, value: "super.long.example.of.sub.domains.to.test.with.and.see.if.it.works.g:443"},
+		{valid: false, value: "g..g:443"},
+		{valid: false, value: "test..domain.test:443"},
+		{valid: false, value: "testtest:443"},
+		{valid: false, value: "fe80::215:6dff:fec4:b31d"}, // local ipv6
 		{valid: false, value: "http://test.domain.test:443"},
 		{valid: false, value: ":"},
 		{valid: false, value: "http://::"},

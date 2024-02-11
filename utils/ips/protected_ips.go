@@ -24,10 +24,12 @@ var restrictedIPPrefixes = []string{
 
 // isValidDomainName checks if the given string is a valid domain name.
 func isValidDomainName(domain string) bool {
-	// Basic regular expression for domain name validation
-	// This is a simplified regex and may need adjustments based on your specific requirements
-	domainRegex := regexp.MustCompile(`^[a-zA-Z0-9.-]+$`)
-	return domainRegex.MatchString(domain)
+	// Regular expression pattern for domain validation
+	pattern := `^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)+([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$`
+	// Compile the regular expression
+	regex := regexp.MustCompile(pattern)
+	// Match the domain against the regular expression
+	return regex.MatchString(domain)
 }
 
 func validateIp(ip net.IP) bool {
