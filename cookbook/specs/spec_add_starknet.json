@@ -13,7 +13,7 @@
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 180000,
                 "allowed_block_lag_for_qos_sync": 2,
-                                "shares" : 1,
+                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -68,11 +68,11 @@
                                 "name": "starknet_call",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "1"
                                     ],
-                                    "parser_func": " PARSE_DICTIONARY_OR_ORDERED",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -107,11 +107,11 @@
                                 "name": "starknet_estimateFee",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "1"
                                     ],
-                                    "parser_func": " PARSE_DICTIONARY_OR_ORDERED",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -128,11 +128,11 @@
                                 "name": "starknet_getBlockTransactionCount",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
-                                    "parser_func": " PARSE_DICTIONARY_OR_ORDERED",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -149,11 +149,11 @@
                                 "name": "starknet_getBlockWithTxHashes",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
-                                    "parser_func": " PARSE_DICTIONARY_OR_ORDERED",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -209,11 +209,11 @@
                                 "name": "starknet_getClassAt",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
-                                    "parser_func": " PARSE_DICTIONARY_OR_ORDERED",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -230,11 +230,11 @@
                                 "name": "starknet_getClassHashAt",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
-                                    "parser_func": " PARSE_DICTIONARY_OR_ORDERED",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -287,11 +287,11 @@
                                 "name": "starknet_getStateUpdate",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
-                                    "parser_func": " PARSE_DICTIONARY_OR_ORDERED",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -308,11 +308,11 @@
                                 "name": "starknet_getStorageAt",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "2"
                                     ],
-                                    "parser_func": " PARSE_DICTIONARY_OR_ORDERED",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -329,11 +329,11 @@
                                 "name": "starknet_getTransactionByBlockIdAndIndex",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "block_id",
+                                        "block_number",
                                         ":",
                                         "0"
                                     ],
-                                    "parser_func": " PARSE_DICTIONARY_OR_ORDERED",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -433,7 +433,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging_api" : true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -452,7 +452,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging_api" : true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -471,7 +471,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging_api" : true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -569,6 +569,40 @@
                         "enabled": true,
                         "collection_data": {
                             "api_interface": "jsonrpc",
+                            "internal_path": "/rpc/v0_5",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "/rpc/v0_6",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "inheritance_apis": [
+                            {
+                                "api_interface": "jsonrpc",
+                                "internal_path": "",
+                                "type": "POST",
+                                "add_on": ""
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
                             "internal_path": "",
                             "type": "POST",
                             "add_on": "trace"
@@ -621,7 +655,7 @@
                                     "encoding": "base64"
                                 },
                                 "compute_units": 1000,
-                                "timeout_ms":20000,
+                                "timeout_ms": 20000,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": true,
@@ -670,7 +704,7 @@
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 1800000,
                 "allowed_block_lag_for_qos_sync": 1,
-                                "shares" : 1,
+                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

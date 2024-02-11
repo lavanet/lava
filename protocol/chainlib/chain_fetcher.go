@@ -78,9 +78,8 @@ func (cf *ChainFetcher) Validate(ctx context.Context) error {
 				}
 			}
 			if err != nil {
-				err := utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
-				if verification.Severity == spectypes.Verification_Fail {
-					return err
+				if verification.Severity == spectypes.ParseValue_Fail {
+					return utils.LavaFormatError("invalid Verification on provider startup", err, utils.Attribute{Key: "Addons", Value: addons}, utils.Attribute{Key: "verification", Value: verification.Name})
 				}
 			}
 		}
@@ -93,7 +92,8 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 		new_ctx := context.Background()
 		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 		defer cancel()
-		err := cf.cache.SetEntry(new_ctx, relayData, requestedBlockHash, cf.endpoint.ChainID, reply, finalized, "", nil)
+		// provider side doesn't use SharedStateId, so we default it to empty so it wont have effect.
+		err := cf.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: relayData, BlockHash: requestedBlockHash, ChainID: cf.endpoint.ChainID, Response: reply, Finalized: finalized, OptionalMetadata: nil, SharedStateId: ""})
 		if err != nil {
 			utils.LavaFormatWarning("chain fetcher error updating cache with new entry", err)
 		}
@@ -102,9 +102,43 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 
 func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationContainer, latestBlock uint64) error {
 	parsing := &verification.ParseDirective
+
 	collectionType := verification.ConnectionType
 	path := parsing.ApiName
 	data := []byte(fmt.Sprintf(parsing.FunctionTemplate))
+
+	if !verification.IsActive() {
+		utils.LavaFormatDebug("skipping disabled verification", []utils.Attribute{
+			{Key: "Extension", Value: verification.Extension},
+			{Key: "Addon", Value: verification.Addon},
+			utils.LogAttr("name", verification.Name),
+			{Key: "chainID", Value: cf.endpoint.ChainID},
+			{Key: "APIInterface", Value: cf.endpoint.ApiInterface},
+		}...)
+		return nil
+	}
+
+	// craft data for GET_BLOCK_BY_NUM verification that cannot use "earliest"
+	// also check for %d because the data constructed assumes its presence
+	if verification.ParseDirective.FunctionTag == spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
+		if verification.LatestDistance != 0 && latestBlock != 0 {
+			if latestBlock >= verification.LatestDistance {
+				data = []byte(fmt.Sprintf(parsing.FunctionTemplate, latestBlock-verification.LatestDistance))
+			} else {
+				return utils.LavaFormatWarning("[-] verify failed getting non-earliest block for chainMessage", fmt.Errorf("latestBlock is smaller than latestDistance"),
+					utils.LogAttr("path", path),
+					utils.LogAttr("latest_block", latestBlock),
+					utils.LogAttr("Latest_distance", verification.LatestDistance),
+				)
+			}
+		} else {
+			return utils.LavaFormatWarning("[-] verification misconfiguration", fmt.Errorf("FUNCTION_TAG_GET_BLOCK_BY_NUM defined without LatestDistance or LatestBlock"),
+				utils.LogAttr("latest_block", latestBlock),
+				utils.LogAttr("Latest_distance", verification.LatestDistance),
+			)
+		}
+	}
+
 	chainMessage, err := CraftChainMessage(parsing, collectionType, cf.chainParser, &CraftData{Path: path, Data: data, ConnectionType: collectionType}, cf.ChainFetcherMetadata())
 	if err != nil {
 		return utils.LavaFormatError("[-] verify failed creating chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
@@ -117,7 +151,10 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 
 	parserInput, err := FormatResponseForParsing(reply, chainMessage)
 	if err != nil {
-		return err
+		return utils.LavaFormatWarning("[-] verify failed to parse result", err,
+			utils.LogAttr("chain_id", chainId),
+			utils.LogAttr("Api_interface", cf.endpoint.ApiInterface),
+		)
 	}
 
 	parsedResult, err := parser.ParseFromReply(parserInput, parsing.ResultParsing)
@@ -129,7 +166,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			{Key: "Response", Value: string(reply.Data)},
 		}...)
 	}
-	if verification.LatestDistance != 0 && latestBlock != 0 {
+	if verification.LatestDistance != 0 && latestBlock != 0 && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
 		parsedResultAsNumber, err := strconv.ParseUint(parsedResult, 0, 64)
 		if err != nil {
 			return utils.LavaFormatWarning("[-] verify failed to parse result as number", err, []utils.Attribute{
@@ -169,6 +206,9 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				{Key: "parsedResult", Value: parsedResult},
 				{Key: "verification.Value", Value: verification.Value},
 				{Key: "Method", Value: parsing.GetApiName()},
+				{Key: "Extension", Value: verification.Extension},
+				{Key: "Addon", Value: verification.Addon},
+				{Key: "Verification", Value: verification.Name},
 			}...)
 		}
 	}

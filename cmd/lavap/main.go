@@ -11,6 +11,7 @@ import (
 	"github.com/lavanet/lava/cmd/lavad/cmd"
 	"github.com/lavanet/lava/ecosystem/cache"
 	"github.com/lavanet/lava/protocol/badgegenerator"
+	"github.com/lavanet/lava/protocol/badgeserver"
 	"github.com/lavanet/lava/protocol/monitoring"
 	"github.com/lavanet/lava/protocol/performance/connection"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
@@ -36,6 +37,8 @@ func main() {
 	cmdRPCProvider := rpcprovider.CreateRPCProviderCobraCommand()
 	// badge generator cobra command
 	badgeGenerator := badgegenerator.CreateBadgeGeneratorCobraCommand()
+	// badge generator cobra command
+	badgeServer := badgeserver.CreateBadgeServerCobraCommand()
 
 	// Add Version Command
 	rootCmd.AddCommand(cmdVersion)
@@ -45,6 +48,8 @@ func main() {
 	rootCmd.AddCommand(cmdRPCProvider)
 	// Add Badge Generator Command
 	rootCmd.AddCommand(badgeGenerator)
+	// Add Badge Generator Command
+	rootCmd.AddCommand(badgeServer)
 
 	testCmd := &cobra.Command{
 		Use:   "test",

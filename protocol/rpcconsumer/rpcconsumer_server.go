@@ -3,6 +3,7 @@ package rpcconsumer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -48,7 +49,13 @@ type RPCConsumerServer struct {
 	lavaChainID            string
 	consumerAddress        sdk.AccAddress
 	consumerConsistency    *ConsumerConsistency
+	sharedState            bool // using the cache backend to sync the latest seen block with other consumers
 	relaysMonitor          *metrics.RelaysMonitor
+}
+
+type relayResponse struct {
+	relayResult *common.RelayResult
+	err         error
 }
 
 type ConsumerTxSender interface {
@@ -71,6 +78,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	consumerConsistency *ConsumerConsistency,
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
+	sharedState bool,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
@@ -84,6 +92,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.finalizationConsensus = finalizationConsensus
 	rpccs.consumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
+	rpccs.sharedState = sharedState
 
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser)
 	if err != nil {
@@ -274,13 +283,14 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	}
 	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), common.GetExtensionNames(chainMessage.GetExtensions()))
 	relayResults := []*common.RelayResult{}
-	relayErrors := &RelayErrors{}
+	relayErrors := &RelayErrors{onFailureMergeAll: true}
 	blockOnSyncLoss := map[string]struct{}{}
 	modifiedOnLatestReq := false
 	errorRelayResult := &common.RelayResult{} // returned on error
 	retries := uint64(0)
 	timeouts := 0
 	unwantedProviders := rpccs.GetInitialUnwantedProviders(directiveHeaders)
+
 	for ; retries < MaxRelayRetries; retries++ {
 		// TODO: make this async between different providers
 		relayResult, err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, &unwantedProviders, timeouts)
@@ -355,7 +365,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			utils.LavaFormatDebug("all relays timeout", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors.relayErrors})
 			return errorRelayResult, utils.LavaFormatError("Failed all relay retries due to timeout consider adding 'lava-relay-timeout' header to extend the allowed timeout duration", nil, utils.Attribute{Key: "GUID", Value: ctx})
 		}
-		return errorRelayResult, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "GUID", Value: ctx}, relayErrors.GetBestErrorMessageForUser())
+		bestRelayError := relayErrors.GetBestErrorMessageForUser()
+		return errorRelayResult, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("error", bestRelayError.err))
 	} else if len(relayErrors.relayErrors) > 0 {
 		utils.LavaFormatDebug("relay succeeded but had some errors", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors})
 	}
@@ -408,12 +419,56 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		return &common.RelayResult{ProviderInfo: common.ProviderInfo{ProviderAddress: ""}}, utils.LavaFormatError("Subscriptions are disabled currently", nil)
 	}
 
+	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
+	if rpccs.sharedState {
+		sharedStateId = rpccs.consumerConsistency.Key(dappID, consumerIp) // use same key as we use for consistency, (for better consistency :-D)
+	}
+
 	privKey := rpccs.privKey
 	chainID := rpccs.listenEndpoint.ChainID
 	lavaChainID := rpccs.lavaChainID
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
 	reqBlock, _ := chainMessage.RequestedBlock()
+
+	// try using cache before sending relay
+	var cacheError error
+	if reqBlock != spectypes.NOT_APPLICABLE || !chainMessage.GetForceCacheRefresh() {
+		var cacheReply *pairingtypes.CacheRelayReply
+		cacheReply, cacheError = rpccs.cache.GetEntry(ctx, &pairingtypes.RelayCacheGet{Request: relayRequestData, BlockHash: nil, ChainID: chainID, Finalized: false, SharedStateId: sharedStateId}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+		reply := cacheReply.GetReply()
+		// read seen block from cache even if we had a miss we still want to get the seen block so we can use it to get the right provider.
+		cacheSeenBlock := cacheReply.GetSeenBlock()
+		// check if the cache seen block is greater than my local seen block, this means the user requested this
+		// request spoke with another consumer instance and use that block for inter consumer consistency.
+		if rpccs.sharedState && cacheSeenBlock > relayRequestData.SeenBlock {
+			utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", relayRequestData.SeenBlock))
+			relayRequestData.SeenBlock = cacheSeenBlock
+			// setting the fetched seen block from the cache server to our local cache as well.
+			rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, dappID, consumerIp)
+		}
+
+		// handle cache reply
+		if cacheError == nil && reply != nil {
+			// Info was fetched from cache, so we don't need to change the state
+			// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+			relayResult = &common.RelayResult{
+				Reply: reply,
+				Request: &pairingtypes.RelayRequest{
+					RelayData: relayRequestData,
+				},
+				Finalized: false, // set false to skip data reliability
+			}
+			return relayResult, nil
+		}
+		// cache failed, move on to regular relay
+		if performance.NotConnectedError.Is(cacheError) {
+			utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
+		}
+	} else {
+		utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: chainMessage.GetApi().Name})
+	}
+
 	if reqBlock == spectypes.LATEST_BLOCK && relayRequestData.SeenBlock != 0 {
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = relayRequestData.SeenBlock
@@ -422,6 +477,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	addon := chainlib.GetAddon(chainMessage)
 	extensions := chainMessage.GetExtensions()
+
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), *unwantedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
@@ -429,11 +485,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions))
 		}
 		return &common.RelayResult{ProviderInfo: common.ProviderInfo{ProviderAddress: ""}}, err
-	}
-
-	type relayResponse struct {
-		relayResult *common.RelayResult
-		err         error
 	}
 
 	// Make a channel for all providers to send responses
@@ -489,33 +540,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					return
 				}
 			}
-			requestedBlock, _ := chainMessage.RequestedBlock()
-			if requestedBlock != spectypes.NOT_APPLICABLE {
-				// try using cache before sending relay
-				var cacheReply *pairingtypes.CacheRelayReply
-				cacheReply, errResponse = rpccs.cache.GetEntry(goroutineCtx, localRelayResult.Request.RelayData, nil, chainID, false, localRelayResult.Request.RelaySession.Provider) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
-				reply := cacheReply.GetReply()
-				if errResponse == nil && reply != nil {
-					// Info was fetched from cache, so we don't need to change the state
-					// so we can return here, no need to update anything and calculate as this info was fetched from the cache
-					localRelayResult.Reply = reply
-					lavaprotocol.UpdateRequestedBlock(localRelayResult.Request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
-					errResponse = rpccs.consumerSessionManager.OnSessionUnUsed(singleConsumerSession)
-
-					return
-				}
-			} else {
-				utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: chainMessage.GetApi().Name})
-			}
-
-			// cache failed, move on to regular relay
-			if performance.NotConnectedError.Is(errResponse) {
-				utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", errResponse))
-			}
 
 			// unique per dappId and ip
 			consumerToken := common.GetUniqueToken(dappID, consumerIp)
-
 			localRelayResult, relayLatency, errResponse, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, relayTimeout, chainMessage, consumerToken)
 			if errResponse != nil {
 				failRelaySession := func(origErr error, backoff_ bool) {
@@ -584,7 +611,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					new_ctx := context.Background()
 					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 					defer cancel()
-					err2 := rpccs.cache.SetEntry(new_ctx, copyPrivateData, nil, chainID, copyReply, localRelayResult.Finalized, localRelayResult.Request.RelaySession.Provider, nil) // caching in the portal doesn't care about hashes
+					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: copyPrivateData, BlockHash: nil, ChainID: chainID, Response: copyReply, Finalized: localRelayResult.Finalized, OptionalMetadata: nil, SharedStateId: sharedStateId}) // caching in the portal doesn't care about hashes
 					if err2 != nil {
 						utils.LavaFormatWarning("error updating cache with new entry", err2)
 					}
@@ -593,40 +620,15 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		}(providerPublicAddress, sessionInfo)
 	}
 
-	result := make(chan *relayResponse)
+	// Getting the best result from the providers,
+	// if there was an error we wait for the next result util timeout or a valid response
+	// priority order {valid response -> error response -> relay error}
+	// if there were multiple error responses picking the majority
+	response := rpccs.getBestResult(relayTimeout, responses, len(sessions), chainMessage)
 
-	go func(timeout time.Duration) {
-		responsesReceived := 0
-		relayReturned := false
-		for {
-			select {
-			case response := <-responses:
-				// increase responses received
-				responsesReceived++
-				if response.err == nil && !relayReturned {
-					// Return the first successful response
-					result <- response
-					relayReturned = true
-				}
-
-				if responsesReceived == len(sessions) {
-					// Return the last response if all previous responses were error
-					if !relayReturned {
-						result <- response
-					}
-
-					// if it was returned, just close this go routine
-					return
-				}
-			case <-time.After(relayTimeout + 2*time.Second):
-				// Timeout occurred, send an error to result channel
-				result <- &relayResponse{nil, NoResponseTimeout}
-				return
-			}
-		}
-	}(relayTimeout)
-
-	response := <-result
+	if response == nil {
+		return nil, utils.LavaFormatError("Received unexpected nil response from getBestResult", nil, utils.LogAttr("sessions", sessions), utils.LogAttr("chainMessage", chainMessage))
+	}
 
 	if response.err == nil && response.relayResult != nil && response.relayResult.Reply != nil {
 		// no error, update the seen block
@@ -635,6 +637,78 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	return response.relayResult, response.err
+}
+
+func (rpccs *RPCConsumerServer) getBestResult(timeout time.Duration, responses chan *relayResponse, numberOfSessions int, chainMessage chainlib.ChainMessage) *relayResponse {
+	responsesReceived := 0
+	nodeResponseErrors := &RelayErrors{relayErrors: []RelayError{}}
+	protocolResponseErrors := &RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true}
+	// a helper function to fetch the best response (prioritize node over protocol)
+	getBestResponseBetweenNodeAndProtocolErrors := func() (*relayResponse, error) {
+		if len(nodeResponseErrors.relayErrors) > 0 { // if we have node errors, we prefer returning them over protocol errors.
+			bestErrorMessage := nodeResponseErrors.GetBestErrorMessageForUser()
+			return bestErrorMessage.response, nil
+		}
+		if len(protocolResponseErrors.relayErrors) > 0 { // if we have protocol errors at this point return the best one
+			protocolsBestErrorMessage := protocolResponseErrors.GetBestErrorMessageForUser()
+			return protocolsBestErrorMessage.response, nil
+		}
+		return nil, fmt.Errorf("failed getting best response")
+	}
+	startTime := time.Now()
+	for {
+		select {
+		case response := <-responses:
+			// increase responses received
+			responsesReceived++
+			if response.err == nil {
+				// validate if its a error response (from the node not the provider)
+				foundError, errorMessage := chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
+				// print debug only when we have multiple responses
+				if numberOfSessions > 1 {
+					utils.LavaFormatDebug("Got Response", utils.LogAttr("responsesReceived", responsesReceived), utils.LogAttr("out_of", numberOfSessions), utils.LogAttr("foundError", foundError), utils.LogAttr("errorMessage", errorMessage), utils.LogAttr("Status code", response.relayResult.StatusCode))
+				}
+				if foundError {
+					// this is a node error, meaning we still didn't get a good response.
+					// we will choose to wait until there will be a response or timeout happens
+					// if timeout happens we will take the majority of response messages
+					nodeResponseErrors.relayErrors = append(nodeResponseErrors.relayErrors, RelayError{err: fmt.Errorf(errorMessage), ProviderInfo: response.relayResult.ProviderInfo, response: response})
+				} else {
+					// Return the first successful response
+					return response // returning response
+				}
+			} else {
+				// we want to keep the error message in a separate response error structure
+				// in case we got only errors and we want to return the best one
+				protocolResponseErrors.relayErrors = append(protocolResponseErrors.relayErrors, RelayError{err: response.err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
+			}
+			// check if this is the last response we are going to receive
+			// we get here only if all other responses including this one are not valid responses
+			// (whether its a node error or protocol errors)
+			if responsesReceived == numberOfSessions {
+				bestRelayResult, err := getBestResponseBetweenNodeAndProtocolErrors()
+				if err == nil { // successfully sent the channel response
+					return bestRelayResult
+				}
+				// if we got here, we for some reason failed to fetch both the best node error and the protocol error
+				// it indicates mostly an unwanted behavior.
+				utils.LavaFormatWarning("failed getting best error message for both node and protocol", nil,
+					utils.LogAttr("nodeResponseErrors", nodeResponseErrors),
+					utils.LogAttr("protocolsBestErrorMessage", protocolResponseErrors),
+					utils.LogAttr("numberOfSessions", numberOfSessions),
+				)
+				return response
+			}
+		case <-time.After(timeout + 3*time.Second - time.Since(startTime)):
+			// Timeout occurred, try fetching the best result we have, prefer node errors over protocol errors
+			bestRelayResponse, err := getBestResponseBetweenNodeAndProtocolErrors()
+			if err == nil { // successfully sent the channel response
+				return bestRelayResponse
+			}
+			// failed fetching any error, getting here indicates a real context timeout happened.
+			return &relayResponse{nil, NoResponseTimeout}
+		}
+	}
 }
 
 func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string) (relayResultRet *common.RelayResult, relayLatency time.Duration, err error, needsBackoff bool) {
@@ -807,6 +881,8 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 			headerDirectives[name] = metaElement.Value
 		case common.EXTENSION_OVERRIDE_HEADER_NAME:
 			headerDirectives[name] = metaElement.Value
+		case common.FORCE_CACHE_REFRESH_HEADER_NAME:
+			headerDirectives[name] = metaElement.Value
 		default:
 			metadataRet = append(metadataRet, metaElement)
 		}
@@ -847,9 +923,13 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 		timeout, err := time.ParseDuration(timeoutStr)
 		if err == nil {
 			// set an override timeout
+			utils.LavaFormatDebug("User indicated to set the timeout using flag", utils.LogAttr("timeout", timeoutStr))
 			chainMessage.TimeoutOverride(timeout)
 		}
 	}
+
+	_, ok = directiveHeaders[common.FORCE_CACHE_REFRESH_HEADER_NAME]
+	chainMessage.SetForceCacheRefresh(ok)
 }
 
 func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, retries uint64) {

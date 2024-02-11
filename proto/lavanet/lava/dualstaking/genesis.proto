@@ -14,6 +14,6 @@ message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
   lavanet.lava.fixationstore.GenesisState delegationsFS = 2 [(gogoproto.nullable) = false];
   lavanet.lava.fixationstore.GenesisState delegatorsFS = 3 [(gogoproto.nullable) = false];
-  lavanet.lava.timerstore.GenesisState unbondingsTS = 4 [(gogoproto.nullable) = false];
+  reserved 4;
   repeated DelegatorReward delegator_reward_list = 5 [(gogoproto.nullable) = false];
 }

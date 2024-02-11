@@ -42,6 +42,7 @@ func CreateBadgeGeneratorCobraCommand() *cobra.Command {
 		Long:    `badgegenerator sets up a server to listen for badges requests from the lava sdk and respond with a signed badge`,
 		Example: `badgegenerator <flags>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			utils.LavaFormatWarning("This command is deprecated and will be removed in the future. Please use the badgeserver command under lavap instead.", nil)
 			v := viper.New()
 			v.SetConfigName(defaultConfigFilename)
 			v.SetConfigType("yml")
@@ -136,6 +137,8 @@ func RunBadgeServer(cmd *cobra.Command, v *viper.Viper) {
 	}
 	// setting stateTracker in server so we can register for spec updates.
 	server.InitializeStateTracker(stateTracker)
+
+	stateTracker.RegisterForEpochUpdates(ctx, server)
 
 	s := grpc.NewServer()
 	grpc_health_v1.RegisterHealthServer(s, &HealthServer{})

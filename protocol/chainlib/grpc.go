@@ -13,12 +13,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
 	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/protocol/parser"
-
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/lavanet/lava/protocol/chainlib/grpcproxy"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -191,10 +191,11 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
-		api:                  api,
-		msg:                  grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
-		latestRequestedBlock: requestedBlock,
-		apiCollection:        apiCollection,
+		api:                      api,
+		msg:                      grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
+		latestRequestedBlock:     requestedBlock,
+		apiCollection:            apiCollection,
+		resultErrorParsingMethod: grpcMessage.CheckResponseError,
 	}
 	return nodeMsg
 }
@@ -250,16 +251,18 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 }
 
 type GrpcChainListener struct {
-	endpoint    *lavasession.RPCEndpoint
-	relaySender RelaySender
-	logger      *metrics.RPCConsumerLogs
-	chainParser *GrpcChainParser
+	endpoint       *lavasession.RPCEndpoint
+	relaySender    RelaySender
+	logger         *metrics.RPCConsumerLogs
+	chainParser    *GrpcChainParser
+	healthReporter HealthReporter
 }
 
 func NewGrpcChainListener(
 	ctx context.Context,
 	listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender,
+	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
 ) (chainListener *GrpcChainListener) {
@@ -269,6 +272,7 @@ func NewGrpcChainListener(
 		relaySender,
 		rpcConsumerLogs,
 		chainParser.(*GrpcChainParser),
+		healthReporter,
 	}
 	return chainListener
 }
@@ -279,8 +283,6 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	if apil == nil {
 		return
 	}
-
-	utils.LavaFormatInfo("gRPC PortalStart")
 
 	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
 	apiInterface := apil.endpoint.ApiInterface
@@ -294,7 +296,11 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		dappID := extractDappIDFromGrpcHeader(metadataValues)
 
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
-		utils.LavaFormatInfo("GRPC Got Relay ", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "method", Value: method})
+		utils.LavaFormatInfo("in <<< GRPC Relay ",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("method", method),
+			utils.LogAttr("headers", grpcHeaders),
+		)
 		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
 		consumerIp := common.GetIpFromGrpcContext(ctx)
 		relayResult, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, consumerIp, metricsData, grpcHeaders)
@@ -318,7 +324,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		return relayReply.Data, convertRelayMetaDataToMDMetaData(metadataToReply), nil
 	}
 
-	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback, apil.endpoint.HealthCheckPath, cmdFlags)
+	_, httpServer, err := grpcproxy.NewGRPCProxy(sendRelayCallback, apil.endpoint.HealthCheckPath, cmdFlags, apil.healthReporter)
 	if err != nil {
 		utils.LavaFormatFatal("provider failure RegisterServer", err, utils.Attribute{Key: "listenAddr", Value: apil.endpoint.NetworkAddress})
 	}
@@ -342,6 +348,14 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		serveExecutor = func() error { return httpServer.Serve(lis) }
 	}
 
+	fmt.Printf(fmt.Sprintf(`
+ ┌───────────────────────────────────────────────────┐ 
+ │               Lava's Grpc Server                  │ 
+ │               %s│ 
+ │               Lavap Version: %s│ 
+ └───────────────────────────────────────────────────┘
+
+`, truncateAndPadString(apil.endpoint.NetworkAddress, 36), truncateAndPadString(protocoltypes.DefaultVersion.ConsumerTarget, 21)))
 	if err := serveExecutor(); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
 	}
@@ -426,12 +440,6 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		ctx = metadata.NewOutgoingContext(ctx, md)
 	}
 
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetApi().Category.HangingApi {
-		relayTimeout += cp.averageBlockTime
-	}
-
 	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
@@ -507,7 +515,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
-	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
 	defer cancel()
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
 	if err != nil {

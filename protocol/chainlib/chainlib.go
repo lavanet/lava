@@ -45,7 +45,7 @@ func NewChainListener(
 	case spectypes.APIInterfaceRest:
 		return NewRestChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
 	case spectypes.APIInterfaceGrpc:
-		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, rpcConsumerLogs, chainParser), nil
+		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, chainParser), nil
 	}
 	return nil, fmt.Errorf("chainListener for apiInterface (%s) not found", listenEndpoint.ApiInterface)
 }
@@ -76,6 +76,10 @@ type ChainMessage interface {
 	OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser)
 	DisableErrorHandling()
 	TimeoutOverride(...time.Duration) time.Duration
+	GetForceCacheRefresh() bool
+	SetForceCacheRefresh(force bool) bool
+	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+
 	ChainMessageForSend
 }
 

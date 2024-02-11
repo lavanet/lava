@@ -37,6 +37,13 @@ Now you can run the test running:
 go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s
 ```
 
+Or, In one line: 
+```bash 
+yarn --cwd ./ecosystem/lava-sdk/ build; yarn --cwd ./ecosystem/lavajs/ e2e-setup; go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s -test.count=1
+```
+
+notice test.count is added to prevent cache from forming
+
 ---
 
 ## Run all our E2E using the following command (from the root) {NOT STABLE}

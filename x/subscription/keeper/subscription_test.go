@@ -1284,7 +1284,7 @@ func TestPlanRemovedWhenSubscriptionExpires(t *testing.T) {
 
 	// expire the subscription
 	ts.AdvanceMonths(1)
-	ts.AdvanceBlock(6)
+	ts.AdvanceEpoch()
 	res, err := ts.QuerySubscriptionCurrent(sub1)
 	require.NoError(t, err)
 	require.Nil(t, res.Sub)
@@ -1540,8 +1540,9 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 	// Send relay under the premium-plus subscription
 	sendRelayPayment()
 
-	// Advance month + blocksToSave + 1 to trigger the provider monthly payment
+	// Advance month + epoch + blocksToSave + 1 to trigger the provider monthly payment (cu tracker timer is from next epoch)
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	// Query provider's rewards
@@ -2279,4 +2280,296 @@ func TestSubscriptionUpgradeAffectsTimer(t *testing.T) {
 
 		verifyTimerStore("after buying premium-plus")
 	})
+}
+
+// TestBuySubscriptionImmediatelyAfterExpiration buys a subcription a block after a subscription
+// of the same user is expired. Should fail because the subscription is deleted in the next epoch
+func TestBuySubscriptionImmediatelyAfterExpiration(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	_, consumerAddr := ts.Account("sub1")
+	ctxBlock := ts.BlockHeight()
+
+	freePlan := ts.Plan("free")
+	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	sub, found := ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, ctxBlock, sub.Block)
+
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlock()
+
+	_, found = ts.getSubscription(consumerAddr)
+	require.True(t, found)
+
+	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, 1, false, false)
+	require.Error(t, err)
+}
+
+// TestChangeProjectJustBeforeSubExpiry tests the following scenario:
+// a subscription is just about to end and the subscription's project's policy is changed
+// since policy changes are applied after an epoch, the policy changes "after" the sub is expired
+// the expected result should be no unexpected errors and the project change should not exist
+func TestChangeProjectJustBeforeSubExpiry(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	_, consumerAddr := ts.Account("sub1")
+	ctxBlock := ts.BlockHeight()
+
+	freePlan := ts.Plan("free")
+	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	sub, found := ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, ctxBlock, sub.Block)
+
+	ts.AdvanceMonths(1)
+
+	// get project and change its policy
+	proj, err := ts.GetProjectForDeveloper(consumerAddr, ctxBlock)
+	require.NoError(t, err)
+	newPolicy := common.CreateMockPolicy()
+	_, err = ts.TxProjectSetPolicy(proj.Index, consumerAddr, &newPolicy)
+	require.NoError(t, err)
+
+	// advance epoch. the subscription and project should be deleted
+	ts.AdvanceEpoch()
+	_, err = ts.GetProjectForBlock(proj.Index, uint64(ts.Ctx.BlockHeight()))
+	require.Error(t, err)
+
+	_, err = ts.GetProjectForDeveloper(consumerAddr, uint64(ts.Ctx.BlockHeight()))
+	require.Error(t, err)
+
+	// do the checks again for sanity
+	ts.AdvanceEpoch()
+	_, err = ts.GetProjectForBlock(proj.Index, uint64(ts.Ctx.BlockHeight()))
+	require.Error(t, err)
+
+	_, err = ts.GetProjectForDeveloper(consumerAddr, uint64(ts.Ctx.BlockHeight()))
+	require.Error(t, err)
+}
+
+// TestAddProjectChangePolicyJustAfterSubExpiry tests the following scenario:
+// the subscription expires. Right after, you try to add a project to the project
+// and edit the sub's admin project's policy. Both should fail since the sub is expired
+func TestAddProjectChangePolicyJustAfterSubExpiry(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	_, consumerAddr := ts.Account("sub1")
+	ctxBlock := ts.BlockHeight()
+
+	freePlan := ts.Plan("free")
+	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	sub, found := ts.getSubscription(consumerAddr)
+	require.True(t, found)
+	require.Equal(t, ctxBlock, sub.Block)
+
+	res, err := ts.QuerySubscriptionListProjects(consumerAddr)
+	require.NoError(t, err)
+	require.Len(t, res.Projects, 1) // admin project only
+	adminProj := res.Projects[0]
+
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch() // advance epoch because the sub deletion triggers on the next epoch
+
+	// try to add a project to the expired subscription
+	policy := common.CreateMockPolicy()
+	err = ts.TxSubscriptionAddProject(consumerAddr, projectstypes.ProjectData{
+		Name:        "dummy",
+		Enabled:     true,
+		ProjectKeys: []projectstypes.ProjectKey{projectstypes.ProjectAdminKey(consumerAddr)},
+		Policy:      &policy,
+	})
+	require.Error(t, err)
+
+	// try to edit the admin project's policy
+	_, err = ts.TxProjectSetPolicy(adminProj, consumerAddr, &policy)
+	require.Error(t, err)
+}
+
+// TestProjectsNumEnforcement tests the plan policy's projects num enforcement.
+// scenario: a consumer buy a plan with 2 allowed projects. The consumer should be
+// able to add only one more project (buying the subscription auto-creates an admin project)
+func TestProjectsNumEnforcement(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
+	_, consumer := ts.Account("sub1")
+
+	// change the number of allowed projects to 2
+	freePlan := ts.Plan("free")
+	freePlan.ProjectsLimit = 2
+	err := ts.TxProposalAddPlans(freePlan)
+	require.NoError(t, err)
+
+	// buy the free plan (inside setup)
+	_, err = ts.TxSubscriptionBuy(consumer, consumer, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// add a project (should succeed)
+	policy := common.CreateMockPolicy()
+	pd := projectstypes.ProjectData{
+		Name:        "dummy",
+		Enabled:     true,
+		ProjectKeys: []projectstypes.ProjectKey{projectstypes.ProjectAdminKey(consumer)},
+		Policy:      &policy,
+	}
+	err = ts.TxSubscriptionAddProject(consumer, pd)
+	require.NoError(t, err)
+
+	// add another project (should fail)
+	pd.Name = "dummy2"
+	err = ts.TxSubscriptionAddProject(consumer, pd)
+	require.Error(t, err)
+
+	// delete the first project (advance epoch to apply)
+	err = ts.TxSubscriptionDelProject(consumer, "dummy")
+	require.NoError(t, err)
+	ts.AdvanceEpoch()
+
+	// add the second project (should succeed now)
+	err = ts.TxSubscriptionAddProject(consumer, pd)
+	require.NoError(t, err)
+}
+
+// TestAllowedBuyersNewSubscription checks that when only the allowed buyers can buy a new subscription
+// Scenarios:
+//  1. no allowed buyers list -> anyone can buy
+//  2. two consumers, only one is allowed -> only one should be able to purchase
+func TestAllowedBuyersNewSubscription(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
+	_, consumer1 := ts.Account("sub1")
+	_, consumer2 := ts.Account("sub2")
+
+	// buy subscription with empty allowed buyers list
+	freePlan := ts.Plan("free")
+	require.Len(t, freePlan.AllowedBuyers, 0)
+	_, err := ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// change the plan's allowed buyers list
+	freePlan.AllowedBuyers = append(freePlan.AllowedBuyers, consumer1)
+	err = ts.TxProposalAddPlans(freePlan)
+	require.NoError(t, err)
+
+	// buy subscription with both consumers. consumer2 should fail
+	_, err = ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, freePlan.Index, 1, false, false)
+	require.Error(t, err)
+}
+
+// TestAllowedBuyersAutoRenewal checks that users can auto renew subscription only if they're part
+// of the allowed buyers
+// Scenarios:
+//  1. buy a subscription without auto renewal, remove the creator from the allowed buyers list,
+//     try to use auto renewal TX -> should fail
+//  2. buy another subscription with auto-renewal on (with the only allowed user). before the subscription
+//     auto-renews, remove current user from the allowed list -> auto renewal should fail
+func TestAllowedBuyersAutoRenewal(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
+	_, consumer1 := ts.Account("sub1")
+	_, consumer2 := ts.Account("sub2")
+
+	// buy subscription with empty allowed buyers list (without auto-renewal)
+	freePlan := ts.Plan("free")
+	require.Len(t, freePlan.AllowedBuyers, 0)
+	_, err := ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// change the plan's allowed buyers list - only consumer2 can purchase now
+	freePlan.AllowedBuyers = append(freePlan.AllowedBuyers, consumer2)
+	err = ts.TxProposalAddPlans(freePlan)
+	require.NoError(t, err)
+
+	// try making the subscription auto renew -> should fail
+	err = ts.TxSubscriptionAutoRenewal(consumer1, consumer1, freePlan.Index, true)
+	require.Error(t, err)
+
+	// buy subscription with consumer2 (with auto-renewal)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, freePlan.Index, 1, true, false)
+	require.NoError(t, err)
+
+	// change the plan's allowed buyers list - only consumer1 can purchase now
+	// note, we can't make it empty because empty list allows everyone to buy
+	freePlan.AllowedBuyers = []string{consumer1}
+	err = ts.TxProposalAddPlans(freePlan)
+	require.NoError(t, err)
+
+	// advance month to trigger the subscription's auto-renewal
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// the auto-renewal should have failed, so we're not supposed to find a subscription for consumer2
+	_, found := ts.getSubscription(consumer2)
+	require.False(t, found)
+}
+
+// TestAllowedBuyersFutureSubscription checks that when specifying a future subscription the creator
+// is allowed to buy it
+// Scenarios:
+// 1. buy a valid subscription with a future subscription that the user is not allowed to purchase -> should fail
+func TestAllowedBuyersFutureSubscription(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
+	_, consumer1 := ts.Account("sub1")
+	_, consumer2 := ts.Account("sub2")
+
+	// buy subscription with empty allowed buyers list (without auto-renewal)
+	freePlan := ts.Plan("free")
+	require.Len(t, freePlan.AllowedBuyers, 0)
+	_, err := ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// change the premium plan's allowed buyers list - only consumer2 can purchase now
+	premiumPlan := ts.Plan("premium")
+	premiumPlan.AllowedBuyers = append(premiumPlan.AllowedBuyers, consumer2)
+	err = ts.TxProposalAddPlans(premiumPlan)
+	require.NoError(t, err)
+
+	// try buying a future subscription for the premium plan -> should fail
+	_, err = ts.TxSubscriptionBuy(consumer1, consumer1, premiumPlan.Index, 1, false, true)
+	require.Error(t, err)
+
+	// buy a free subscription and a future premium subscription with consumer 2 -> should succeed
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, premiumPlan.Index, 1, false, true)
+	require.NoError(t, err)
+}
+
+// TestAllowedBuyersUpgradeSubscription checks that a user can't upgrade to a subscription it's not allowed to buy
+// Scenarios:
+// 1. try to upgrade subscription to a plan the user is not allowed to purchase -> should fail
+func TestAllowedBuyersUpgradeSubscription(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(2, 0, 0) // 2 sub, 0 adm, 0 dev
+	_, consumer1 := ts.Account("sub1")
+	_, consumer2 := ts.Account("sub2")
+
+	// buy subscription with empty allowed buyers list (without auto-renewal)
+	freePlan := ts.Plan("free")
+	require.Len(t, freePlan.AllowedBuyers, 0)
+	_, err := ts.TxSubscriptionBuy(consumer1, consumer1, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// change the premium plan's allowed buyers list - only consumer2 can purchase now
+	premiumPlan := ts.Plan("premium")
+	premiumPlan.AllowedBuyers = append(premiumPlan.AllowedBuyers, consumer2)
+	err = ts.TxProposalAddPlans(premiumPlan)
+	require.NoError(t, err)
+
+	// try to upgrade the subscription to the premium plan -> should fail
+	_, err = ts.TxSubscriptionBuy(consumer1, consumer1, premiumPlan.Index, 1, false, false)
+	require.Error(t, err)
+
+	// buy a free subscription and upgrade to a premium subscription with consumer 2 -> should succeed
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, freePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, premiumPlan.Index, 1, false, false)
+	require.NoError(t, err)
 }

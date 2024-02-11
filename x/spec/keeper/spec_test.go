@@ -836,7 +836,9 @@ func TestCookbookSpecs(t *testing.T) {
 			for _, apiCol := range fullspec.ApiCollections {
 				for _, verification := range apiCol.Verifications {
 					require.NotNil(t, verification.ParseDirective)
-					require.NotEqual(t, "", verification.ParseDirective.ApiName)
+					if verification.ParseDirective.FunctionTag == types.FUNCTION_TAG_VERIFICATION {
+						require.NotEqual(t, "", verification.ParseDirective.ApiName)
+					}
 				}
 				verifications = append(verifications, apiCol.Verifications...)
 			}
@@ -844,6 +846,8 @@ func TestCookbookSpecs(t *testing.T) {
 				// all specs need to have verifications
 				require.Greater(t, len(verifications), 0, fullspec.Index)
 			}
+			_, err = fullspec.ValidateSpec(10000000)
+			require.NoError(t, err)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -131,7 +132,6 @@ func (bcp *BaseChainParser) BuildMapFromPolicyQuery(policy PolicyInf, chainId st
 func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation map[string]struct{}) {
 	bcp.rwLock.Lock()
 	defer bcp.rwLock.Unlock()
-	utils.LavaFormatDebug("info on policyInformation", utils.LogAttr("policyInformation", policyInformation))
 	// reset the current one in case we configured it previously
 	configuredExtensions := make(map[extensionslib.ExtensionKey]*spectypes.Extension)
 	for collectionKey, apiCollection := range bcp.apiCollections {
@@ -155,9 +155,7 @@ func (bcp *BaseChainParser) SetPolicyFromAddonAndExtensionMap(policyInformation 
 	bcp.extensionParser.SetConfiguredExtensions(configuredExtensions)
 	// manage allowed addons
 	for addon := range bcp.allowedAddons {
-		utils.LavaFormatDebug("info on addons", utils.LogAttr("addon", addon))
 		if _, ok := policyInformation[addon]; ok {
-			utils.LavaFormatDebug("found addon", utils.LogAttr("addon", addon))
 			bcp.allowedAddons[addon] = true
 		}
 	}
@@ -399,6 +397,15 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 				}] = header
 			}
 			for _, verification := range apiCollection.Verifications {
+				if verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_VERIFICATION {
+					if _, ok := taggedApis[verification.ParseDirective.FunctionTag]; ok {
+						verification.ParseDirective = taggedApis[verification.ParseDirective.FunctionTag].Parsing
+					} else {
+						utils.LavaFormatError("Bad verification definition", fmt.Errorf("verification function tag is not defined in the collections parse directives"), utils.LogAttr("function_tag", verification.ParseDirective.FunctionTag))
+						continue
+					}
+				}
+
 				for _, parseValue := range verification.Values {
 					verificationKey := VerificationKey{
 						Extension: parseValue.Extension,
@@ -412,7 +419,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 						Value:           parseValue.ExpectedValue,
 						LatestDistance:  parseValue.LatestDistance,
 						VerificationKey: verificationKey,
-						Severity:        verification.Severity,
+						Severity:        parseValue.Severity,
 					}
 
 					if extensionVerifications, ok := verifications[verificationKey]; !ok {

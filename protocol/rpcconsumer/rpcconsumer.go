@@ -103,14 +103,27 @@ type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
 }
 
+type rpcConsumerStartOptions struct {
+	txFactory                 tx.Factory
+	clientCtx                 client.Context
+	rpcEndpoints              []*lavasession.RPCEndpoint
+	requiredResponses         int
+	cache                     *performance.Cache
+	strategy                  provideroptimizer.Strategy
+	maxConcurrentProviders    uint
+	analyticsServerAddressess AnalyticsServerAddressess
+	cmdFlags                  common.ConsumerCmdFlags
+	stateShare                bool
+}
+
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
-func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, rpcEndpoints []*lavasession.RPCEndpoint, requiredResponses int, cache *performance.Cache, strategy provideroptimizer.Strategy, maxConcurrentProviders uint, analyticsServerAddressess AnalyticsServerAddressess, cmdFlags common.ConsumerCmdFlags) (err error) {
+func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOptions) (err error) {
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
 
-	consumerMetricsManager := metrics.NewConsumerMetricsManager(analyticsServerAddressess.MetricsListenAddress)     // start up prometheus metrics
-	consumerUsageserveManager := metrics.NewConsumerRelayServerClient(analyticsServerAddressess.RelayServerAddress) // start up relay server reporting
+	consumerMetricsManager := metrics.NewConsumerMetricsManager(options.analyticsServerAddressess.MetricsListenAddress)     // start up prometheus metrics
+	consumerUsageserveManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddressess.RelayServerAddress) // start up relay server reporting
 
 	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageserveManager)
 	if err != nil {
@@ -119,23 +132,23 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	consumerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ConsumerVersion)
 
 	// spawn up ConsumerStateTracker
-	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, clientCtx)
-	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, txFactory, clientCtx, lavaChainFetcher, consumerMetricsManager)
+	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
+	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, consumerMetricsManager)
 	if err != nil {
 		utils.LavaFormatFatal("failed to create a NewConsumerStateTracker", err)
 	}
 	rpcc.consumerStateTracker = consumerStateTracker
 
-	lavaChainID := clientCtx.ChainID
-	keyName, err := sigs.GetKeyName(clientCtx)
+	lavaChainID := options.clientCtx.ChainID
+	keyName, err := sigs.GetKeyName(options.clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
 	}
-	privKey, err := sigs.GetPrivKey(clientCtx, keyName)
+	privKey, err := sigs.GetPrivKey(options.clientCtx, keyName)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting private key from key name", err, utils.Attribute{Key: "keyName", Value: keyName})
 	}
-	clientKey, _ := clientCtx.Keyring.Key(keyName)
+	clientKey, _ := options.clientCtx.Keyring.Key(keyName)
 
 	pubkey, err := clientKey.GetPubKey()
 	if err != nil {
@@ -149,14 +162,14 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 	}
 	// we want one provider optimizer per chain so we will store them for reuse across rpcEndpoints
 	chainMutexes := map[string]*sync.Mutex{}
-	for _, endpoint := range rpcEndpoints {
+	for _, endpoint := range options.rpcEndpoints {
 		chainMutexes[endpoint.ChainID] = &sync.Mutex{} // create a mutex per chain for shared resources
 	}
 	var optimizers sync.Map
 	var consumerConsistencies sync.Map
 	var finalizationConsensuses sync.Map
 	var wg sync.WaitGroup
-	parallelJobs := len(rpcEndpoints)
+	parallelJobs := len(options.rpcEndpoints)
 	wg.Add(parallelJobs)
 	errCh := make(chan error)
 
@@ -170,9 +183,9 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 		utils.LavaFormatFatal("failed fetching protocol version from node", err)
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
-	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
+	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
 	policyUpdaters := syncMapPolicyUpdaters{}
-	for _, rpcEndpoint := range rpcEndpoints {
+	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
 			chainParser, err := chainlib.NewChainParser(rpcEndpoint.ApiInterface)
@@ -212,7 +225,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 				if !exists {
 					// doesn't exist for this chain create a new one
 					baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-					optimizer = provideroptimizer.NewProviderOptimizer(strategy, averageBlockTime, baseLatency, maxConcurrentProviders)
+					optimizer = provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders)
 					optimizers.Store(chainID, optimizer)
 				} else {
 					var ok bool
@@ -223,8 +236,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 					}
 				}
 				value, exists = consumerConsistencies.Load(chainID)
-				if !exists {
-					// doesn't exist for this chain create a new one
+				if !exists { // doesn't exist for this chain create a new one
 					consumerConsistency = NewConsumerConsistency(chainID)
 					consumerConsistencies.Store(chainID, consumerConsistency)
 				} else {
@@ -269,14 +281,13 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, txFactory tx.Factory, client
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
 			var relaysMonitor *metrics.RelaysMonitor
-			if cmdFlags.RelaysHealthEnableFlag {
-				relaysMonitor = metrics.NewRelaysMonitor(cmdFlags.RelaysHealthIntervalFlag, rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
+			if options.cmdFlags.RelaysHealthEnableFlag {
+				relaysMonitor = metrics.NewRelaysMonitor(options.cmdFlags.RelaysHealthIntervalFlag, rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
 				relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.String(), relaysMonitor)
 			}
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses,
-				privKey, lavaChainID, cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, cmdFlags)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -501,8 +512,8 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				RelaysHealthIntervalFlag: viper.GetDuration(common.RelayHealthIntervalFlag),
 			}
 
-			err = rpcConsumer.Start(ctx, txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags)
-
+			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
+			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags, rpcConsumerSharedState})
 			return err
 		},
 	}
@@ -528,6 +539,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(common.CorsOriginFlag, "*", "Set up CORS allowed origin, enabled * by default")
 	cmdRPCConsumer.Flags().String(common.CorsMethodsFlag, "GET,POST,PUT,DELETE,OPTIONS", "set up Allowed OPTIONS methods, defaults to: \"GET,POST,PUT,DELETE,OPTIONS\"")
 	cmdRPCConsumer.Flags().String(common.CDNCacheDurationFlag, "86400", "set up preflight options response cache duration, default 86400 (24h in seconds)")
+	cmdRPCConsumer.Flags().Bool(common.SharedStateFlag, false, "Share the consumer consistency state with the cache service. this should be used with cache backend enabled if you want to state sync multiple rpc consumers")
 	// Relays health check related flags
 	cmdRPCConsumer.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
 	cmdRPCConsumer.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")

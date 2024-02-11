@@ -63,7 +63,14 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 	if !ok {
 		return spectypes.NOT_APPLICABLE, fmt.Errorf("ParseBlockFromParams - result[0].(string) - type assertion failed, type:" + fmt.Sprintf("%s", result[0]))
 	}
-	return rpcInput.ParseBlock(resString)
+	parsedBlock, err := rpcInput.ParseBlock(resString)
+	if err != nil {
+		if blockParser.DefaultValue != "" {
+			utils.LavaFormatDebug("Failed parsing block from string, assuming default value", utils.LogAttr("failed_parsed_value", resString), utils.LogAttr("default_value", blockParser.DefaultValue))
+			return rpcInput.ParseBlock(blockParser.DefaultValue)
+		}
+	}
+	return parsedBlock, err
 }
 
 // This returns the parsed response without decoding
@@ -438,6 +445,11 @@ func parseArrayOfInterfaces(data []interface{}, propName, innerSeparator string)
 			} else {
 				// if yes return the value
 				return appendInterfaceToInterfaceArray(valueArr[1])
+			}
+		}
+		if m, ok := val.(map[string]interface{}); ok {
+			if propValue, foundProp := m[propName]; foundProp {
+				return appendInterfaceToInterfaceArray(blockInterfaceToString(propValue))
 			}
 		}
 	}

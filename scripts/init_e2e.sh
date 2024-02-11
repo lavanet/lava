@@ -31,7 +31,7 @@ wait_next_block
 lavad tx gov vote 3 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 STAKE="500000000000ulava"
-lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2221,1" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2221,1,archive,debug" 1 -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2222,1" 1 -y --from servicer2 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2223,1" 1 -y --from servicer3 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 lavad tx pairing stake-provider "ETH1" $STAKE "127.0.0.1:2224,1" 1 -y --from servicer4 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -70,7 +70,9 @@ plan_index=$(lavad q subscription current $(lavad keys show user1 -a) | yq .sub.
 if [ "$plan_index" != "DefaultPlan" ]; then "echo subscription ${user1addr}: wrong plan index $plan_index .sub.plan_index doesn't contain DefaultPlan"; exit 1; fi
 
 user3addr=$(lavad keys show user3 -a)
-
+# add debug addons and archive 
+wait_next_block
+lavad tx project set-policy $(lavad keys show user1 -a)-admin ./testutil/e2e/e2eProviderConfigs/consumer_policy.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx subscription add-project "myproject1" -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block

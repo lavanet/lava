@@ -13,7 +13,7 @@
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 13000,
                 "allowed_block_lag_for_qos_sync": 2,
-                                "shares" : 1,
+                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -207,7 +207,7 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0,
-                                "timeout_ms":1000
+                                "timeout_ms": 1000
                             },
                             {
                                 "name": "eth_getBalance",
@@ -1014,6 +1014,19 @@
                                     "encoding": "hex"
                                 },
                                 "api_name": "eth_getBlockByNumber"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"earliest\", false],\"id\":1}",
+                                "function_tag": "GET_EARLIEST_BLOCK",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "number"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "encoding": "hex"
+                                },
+                                "api_name": "eth_getBlockByNumber"
                             }
                         ],
                         "verifications": [
@@ -1040,17 +1053,7 @@
                             {
                                 "name": "pruning",
                                 "parse_directive": {
-                                    "function_tag": "VERIFICATION",
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_getBlockByNumber\",\"params\":[\"earliest\", false],\"id\":1}",
-                                    "result_parsing": {
-                                        "parser_arg": [
-                                            "0",
-                                            "number"
-                                        ],
-                                        "parser_func": "PARSE_CANONICAL",
-                                        "encoding": "hex"
-                                    },
-                                    "api_name": "eth_getBlockByNumber"
+                                    "function_tag": "GET_EARLIEST_BLOCK"
                                 },
                                 "values": [
                                     {
@@ -1088,7 +1091,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block":6554
+                                    "block": 6554
                                 }
                             }
                         ]
@@ -1283,7 +1286,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "debug_traceTransaction ",
+                                "name": "debug_traceTransaction",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1328,7 +1331,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block":6554
+                                    "block": 6554
                                 }
                             }
                         ]
@@ -1348,7 +1351,7 @@
                 "blocks_in_finalization_proof": 3,
                 "average_block_time": 13000,
                 "allowed_block_lag_for_qos_sync": 2,
-                                "shares" : 1,
+                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"

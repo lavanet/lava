@@ -216,6 +216,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 	_, err := ts.TxPairingRelayPayment(provider1Addr, relays...)
 	require.NoError(t, err)
 	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	// reward + before == after

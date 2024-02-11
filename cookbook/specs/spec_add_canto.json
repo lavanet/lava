@@ -18,7 +18,7 @@
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 6500,
                 "allowed_block_lag_for_qos_sync": 2,
-                                "shares" : 1,
+                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "50000000000"
@@ -727,6 +727,15 @@
                                 "values": [
                                     {
                                         "expected_value": "canto_7700-1"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 14400,
+                                        "severity": "Warning"
                                     }
                                 ]
                             }
@@ -1446,6 +1455,15 @@
                                         "expected_value": "canto_7700-1"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 14400,
+                                        "severity": "Warning"
+                                    }
+                                ]
                             }
                         ],
                         "extensions": [
@@ -1513,7 +1531,15 @@
                             },
                             {
                                 "name": "pruning",
-                                "values": []
+                                "values": [
+                                    {
+                                        "expected_value": ""
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": ""
+                                    }
+                                ]
                             }
                         ],
                         "extensions": [

@@ -6,6 +6,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -24,6 +25,19 @@ type baseChainMessageContainer struct {
 	apiCollection          *spectypes.ApiCollection
 	extensions             []*spectypes.Extension
 	timeoutOverride        time.Duration
+	forceCacheRefresh      bool
+	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
+	// and validate it doesn't contain a node error
+	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+}
+
+// not necessary for base chain message.
+func (pm *baseChainMessageContainer) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	if pm.resultErrorParsingMethod == nil {
+		utils.LavaFormatError("tried calling resultErrorParsingMethod when it is not set", nil)
+		return false, ""
+	}
+	return pm.resultErrorParsingMethod(data, httpStatusCode)
 }
 
 func (pm *baseChainMessageContainer) TimeoutOverride(override ...time.Duration) time.Duration {
@@ -31,6 +45,15 @@ func (pm *baseChainMessageContainer) TimeoutOverride(override ...time.Duration) 
 		pm.timeoutOverride = override[0]
 	}
 	return pm.timeoutOverride
+}
+
+func (pm *baseChainMessageContainer) SetForceCacheRefresh(force bool) bool {
+	pm.forceCacheRefresh = force
+	return pm.forceCacheRefresh
+}
+
+func (pm *baseChainMessageContainer) GetForceCacheRefresh() bool {
+	return pm.forceCacheRefresh
 }
 
 func (pm *baseChainMessageContainer) DisableErrorHandling() {
