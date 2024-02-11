@@ -22,6 +22,7 @@ func DefaultGenesis() *GenesisState {
 		BasePays:           []BasePayGenesis{},
 		IprpcSubscriptions: []string{},
 		MinIprpcCost:       sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
+		IprpcRewards:       []IprpcReward{{SpecFunds: []Specfund{}}},
 	}
 }
 
@@ -48,6 +49,16 @@ func (gs GenesisState) Validate() error {
 
 	if gs.MinIprpcCost.Amount.IsNegative() {
 		return fmt.Errorf("negative min iprpc cost. MinIprpcCost: %s", gs.MinIprpcCost.String())
+	}
+
+	for _, iprpcReward := range gs.IprpcRewards {
+		for _, specFund := range iprpcReward.SpecFunds {
+			for _, coin := range specFund.Fund {
+				if !coin.IsValid() {
+					return fmt.Errorf("invalid iprpc reward fund. invalid coin: %s", coin.String())
+				}
+			}
+		}
 	}
 
 	return gs.Params.Validate()

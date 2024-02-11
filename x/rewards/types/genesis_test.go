@@ -26,6 +26,7 @@ func TestGenesisState_Validate(t *testing.T) {
 				BasePays:           types.DefaultGenesis().BasePays,
 				IprpcSubscriptions: []string{"invalidAddress"},
 				MinIprpcCost:       types.DefaultGenesis().MinIprpcCost,
+				IprpcRewards:       types.DefaultGenesis().IprpcRewards,
 			},
 			valid: false,
 		},

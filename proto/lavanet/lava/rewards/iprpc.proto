@@ -1,0 +1,17 @@
+syntax = "proto3";
+package lavanet.lava.rewards;
+
+option go_package = "github.com/lavanet/lava/x/rewards/types";
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+// list object that holds the 
+message IprpcReward {
+    uint64 id = 1;
+    repeated Specfund spec_funds = 2 [(gogoproto.nullable) = false]; 
+}
+
+message Specfund {
+    string spec = 1;
+	repeated cosmos.base.v1beta1.Coin fund = 2 [(gogoproto.nullable) = false];
+}

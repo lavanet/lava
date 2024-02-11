@@ -24,6 +24,12 @@ const (
 
 	// prefix for min IPRPC cost
 	MinIprpcCostPrefix = "min-iprpc-cost"
+
+	// prefix for IPRPC reward element
+	IprpcRewardPrefix = "iprpc-reward"
+
+	// prefix for IPRPC rewards count
+	IprpcRewardsCountPrefix = "iprpc-rewards-count"
 )
 
 func KeyPrefix(p string) []byte {
