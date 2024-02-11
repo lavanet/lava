@@ -7,7 +7,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unstakeDescription string) error {
@@ -72,35 +71,13 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 	}
 	utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, unstakeDescription)
 
-	unstakeHoldBlocks := k.getUnstakeHoldBlocks(ctx, existingEntry.Chain)
+	unstakeHoldBlocks := k.epochStorageKeeper.GetUnstakeHoldBlocks(ctx, existingEntry.Chain)
 	return k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
 }
 
 func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) {
 	// this pops all the entries that had their deadline pass
 	k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
-}
-
-// NOTE: duplicated in x/dualstaking/keeper/delegate.go; any changes should be applied there too.
-func (k Keeper) getUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64 {
-	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
-	if !found {
-		utils.LavaFormatError("critical: failed to get spec for chainID",
-			fmt.Errorf("unknown chainID"),
-			utils.Attribute{Key: "chainID", Value: chainID},
-		)
-	}
-
-	// note: if spec was not found, the default choice is Spec_dynamic == 0
-
-	block := uint64(ctx.BlockHeight())
-	if providerType == spectypes.Spec_static {
-		return k.epochStorageKeeper.UnstakeHoldBlocksStatic(ctx, block)
-	} else {
-		return k.epochStorageKeeper.UnstakeHoldBlocks(ctx, block)
-	}
-
-	// NOT REACHED
 }
 
 func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDescription string) error {
@@ -158,7 +135,7 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			}
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderUnstakeEventName, details, unstakeDescription)
 
-			unstakeHoldBlocks := k.getUnstakeHoldBlocks(ctx, existingEntry.Chain)
+			unstakeHoldBlocks := k.epochStorageKeeper.GetUnstakeHoldBlocks(ctx, existingEntry.Chain)
 			return k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
 		}
 	}

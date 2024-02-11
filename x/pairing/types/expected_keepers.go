@@ -56,6 +56,7 @@ type EpochstorageKeeper interface {
 	AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
 	GetDeletedEpochs(ctx sdk.Context) []uint64
 	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
+	GetUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64
 }
 
 type AccountKeeper interface {
