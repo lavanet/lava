@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSetIprpcData_ValidateBasic(t *testing.T) {
+func TestSetVersion_ValidateBasic(t *testing.T) {
 	tests := []struct {
 		name  string
 		msg   MsgSetVersion

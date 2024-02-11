@@ -20,7 +20,7 @@ type (
 		memKey     storetypes.StoreKey
 		paramstore paramtypes.Subspace
 
-		// the address capable of executing a MsgSetIprpcData message. Typically, this
+		// the address capable of executing a MsgSetVersion message. Typically, this
 		// should be the x/gov module account.
 		authority string
 	}

@@ -42,7 +42,3 @@ const (
 	RefillRewardsPoolTimerPrefix = "refill-rewards-pool-ts"
 	RefillRewardsPoolTimerName   = "refill-rewards-timer"
 )
-
-const (
-	SetIprpcDataEventName = "set-iprpc-data"
-)

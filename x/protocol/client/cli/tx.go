@@ -42,7 +42,7 @@ func GetTxCmd() *cobra.Command {
 var SetProtocolVersionProposalHandler = govclient.NewProposalHandler(NewSubmitSetProtocolVersionProposalTxCmd)
 
 // NewSubmitSetProtocolVersionProposalTxCmd returns a CLI command handler for creating
-// a set-iprpc-data proposal governance transaction.
+// a set-version proposal governance transaction.
 func NewSubmitSetProtocolVersionProposalTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "set-protocol-version target minimum <deposit>",
