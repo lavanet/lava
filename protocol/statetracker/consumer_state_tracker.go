@@ -52,9 +52,9 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	return cst, err
 }
 
-func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
+func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, allowProtectedIps bool) {
 	// register this CSM to get the updated pairing list when a new epoch starts
-	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery)
+	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery, allowProtectedIps)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
 	pairingUpdater, ok := pairingUpdaterRaw.(*updaters.PairingUpdater)
 	if !ok {
@@ -67,7 +67,7 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 }
 
 func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, pairingUpdatable updaters.PairingUpdatable) {
-	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery)
+	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery, false)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
 	pairingUpdater, ok := pairingUpdaterRaw.(*updaters.PairingUpdater)
 	if !ok {

@@ -26,10 +26,11 @@ type PairingUpdater struct {
 	nextBlockForUpdate         uint64
 	stateQuery                 *ConsumerStateQuery
 	pairingUpdatables          []*PairingUpdatable
+	AllowProtectedIps          bool
 }
 
-func NewPairingUpdater(stateQuery *ConsumerStateQuery) *PairingUpdater {
-	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery}
+func NewPairingUpdater(stateQuery *ConsumerStateQuery, allowProtectedIps bool) *PairingUpdater {
+	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery, AllowProtectedIps: allowProtectedIps}
 }
 
 func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {

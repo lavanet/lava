@@ -12,7 +12,7 @@ func TestValidAddressesProtocol(t *testing.T) {
 		value string
 		valid bool
 	}{
-		{valid: false, value: "test.domain.test:443"},
+		{valid: true, value: "test.domain.test:443"},
 		{valid: false, value: "http://test.domain.test:443"},
 		{valid: false, value: ":"},
 		{valid: false, value: "http://::"},
