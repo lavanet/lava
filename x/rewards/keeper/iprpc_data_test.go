@@ -11,6 +11,11 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/testutil/sample"
 )
 
 // Prevent strconv unused error
@@ -65,4 +70,55 @@ func TestIprpcSubscriptionsGetAll(t *testing.T) {
 		nullify.Fill(items),
 		nullify.Fill(keeper.GetAllIprpcSubscription(ctx)),
 	)
+}
+
+// TestIprpcDataValidation tests that IPRPC data's validation works as expected
+func TestIprpcDataValidation(t *testing.T) {
+	ts := newTester(t, true)
+	_, val := ts.GetAccount(common.VALIDATOR, 0)
+
+	template := []struct {
+		name      string
+		authority string
+		cost      sdk.Coin
+		subs      []string
+		success   bool
+	}{
+		{
+			name:      "valid data",
+			authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+			cost:      sdk.NewCoin(ts.TokenDenom(), math.OneInt()),
+			subs:      []string{sample.AccAddress()},
+			success:   true,
+		},
+		{
+			name:      "invalid auth",
+			authority: val,
+			cost:      sdk.NewCoin(ts.TokenDenom(), math.OneInt()),
+			subs:      []string{sample.AccAddress()},
+			success:   false,
+		},
+		{
+			name:      "invalid subs",
+			authority: authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+			cost:      sdk.NewCoin(ts.TokenDenom(), math.OneInt()),
+			subs:      []string{sample.AccAddress(), "invalid_addr"},
+			success:   false,
+		},
+	}
+
+	for _, tt := range template {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ts.TxRewardsSetIprpcDataProposal(ts.Ctx, tt.authority, tt.cost, tt.subs)
+			if tt.success {
+				require.NoError(t, err)
+				res, err := ts.QueryShowIprpcData()
+				require.NoError(t, err)
+				require.True(t, tt.cost.IsEqual(res.MinCost))
+				require.Equal(t, tt.subs, res.IprpcSubscriptions)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
 }
