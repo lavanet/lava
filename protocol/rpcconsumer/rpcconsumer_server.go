@@ -675,7 +675,7 @@ func (rpccs *RPCConsumerServer) getBestResult(timeout time.Duration, responses c
 					nodeResponseErrors.relayErrors = append(nodeResponseErrors.relayErrors, RelayError{err: fmt.Errorf(errorMessage), ProviderInfo: response.relayResult.ProviderInfo, response: response})
 				} else {
 					// Return the first successful response
-					return response // returning response
+					return response
 				}
 			} else {
 				// we want to keep the error message in a separate response error structure
@@ -686,13 +686,13 @@ func (rpccs *RPCConsumerServer) getBestResult(timeout time.Duration, responses c
 			// we get here only if all other responses including this one are not valid responses
 			// (whether its a node error or protocol errors)
 			if responsesReceived == numberOfSessions {
-				bestRelayResult, err := getBestResponseBetweenNodeAndProtocolErrors()
+				bestResponse, err := getBestResponseBetweenNodeAndProtocolErrors()
 				if err == nil { // successfully sent the channel response
-					return bestRelayResult
+					return bestResponse
 				}
 				// if we got here, we for some reason failed to fetch both the best node error and the protocol error
 				// it indicates mostly an unwanted behavior.
-				utils.LavaFormatWarning("failed getting best error message for both node and protocol", nil,
+				utils.LavaFormatWarning("failed getting best error message for both node and protocol", err,
 					utils.LogAttr("nodeResponseErrors", nodeResponseErrors),
 					utils.LogAttr("protocolsBestErrorMessage", protocolResponseErrors),
 					utils.LogAttr("numberOfSessions", numberOfSessions),
