@@ -106,9 +106,13 @@ type rpcProviderStartOptions struct {
 	shardID                   uint
 	rewardsSnapshotThreshold  uint
 	rewardsSnapshotTimeoutSec uint
-	relaysHealthEnableFlag    bool          // enables relay health check
-	relaysHealthIntervalFlag  time.Duration // interval for relay health check
-	grpcHealthCheckEndpoint   string
+	healthCheckMetricsOptions *rpcProviderHealthCheckMetricsOptions
+}
+
+type rpcProviderHealthCheckMetricsOptions struct {
+	relaysHealthEnableFlag   bool          // enables relay health check
+	relaysHealthIntervalFlag time.Duration // interval for relay health check
+	grpcHealthCheckEndpoint  string
 }
 
 type RPCProvider struct {
@@ -655,25 +659,31 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			enableRelaysHealth := viper.GetBool(common.RelaysHealthEnableFlag)
 			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
 			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
+
+			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
+				enableRelaysHealth,
+				relaysHealthInterval,
+				healthCheckURLPath,
+			}
+
+			rpcProviderStartOptions := rpcProviderStartOptions{
+				ctx,
+				txFactory,
+				clientCtx,
+				rpcProviderEndpoints,
+				cache,
+				numberOfNodeParallelConnections,
+				prometheusListenAddr,
+				rewardStoragePath,
+				rewardTTL,
+				shardID,
+				rewardsSnapshotThreshold,
+				rewardsSnapshotTimeoutSec,
+				&rpcProviderHealthCheckMetricsOptions,
+			}
+
 			rpcProvider := RPCProvider{}
-			err = rpcProvider.Start(
-				&rpcProviderStartOptions{
-					ctx,
-					txFactory,
-					clientCtx,
-					rpcProviderEndpoints,
-					cache,
-					numberOfNodeParallelConnections,
-					prometheusListenAddr,
-					rewardStoragePath,
-					rewardTTL,
-					shardID,
-					rewardsSnapshotThreshold,
-					rewardsSnapshotTimeoutSec,
-					enableRelaysHealth,
-					relaysHealthInterval,
-					healthCheckURLPath,
-				})
+			err = rpcProvider.Start(&rpcProviderStartOptions)
 			return err
 		},
 	}
