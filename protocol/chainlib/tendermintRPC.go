@@ -307,12 +307,14 @@ type TendermintRpcChainListener struct {
 	relaySender    RelaySender
 	healthReporter HealthReporter
 	logger         *metrics.RPCConsumerLogs
+	refererData    *RefererData
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
 func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
+	refererData *RefererData,
 ) (chainListener *TendermintRpcChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &TendermintRpcChainListener{
@@ -320,6 +322,7 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 		relaySender,
 		healthReporter,
 		rpcConsumerLogs,
+		refererData,
 	}
 
 	return chainListener
@@ -370,6 +373,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			defer cancel() // incase there's a problem make sure to cancel the connection
 			utils.LavaFormatInfo("ws in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
 			msgSeed = strconv.FormatUint(guid, 10)
+			refererMatch, ok := websocketConn.Locals(refererMatchString).(string)
+			if ok && refererMatch != "" && apil.refererData != nil {
+				go apil.refererData.SendReferer(refererMatch)
+			}
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, websocketConn.RemoteAddr().String(), metricsData, nil)
 			reply := relayResult.GetReply()
@@ -421,7 +428,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 	app.Get("/ws", websocketCallbackWithDappID)
 	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
-	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
+	handlerPost := func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
@@ -443,6 +450,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
+		refererMatch := fiberCtx.Params(refererMatchString, "")
+		if refererMatch != "" && apil.refererData != nil {
+			go apil.refererData.SendReferer(refererMatch)
+		}
 		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, headers)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
@@ -474,9 +485,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		response := string(reply.Data)
 		// Return json response
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
-	})
+	}
 
-	app.Get("/*", func(fiberCtx *fiber.Ctx) error {
+	handlerGet := func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 
@@ -499,6 +510,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
+		refererMatch := fiberCtx.Params(refererMatchString, "")
+		if refererMatch != "" && apil.refererData != nil {
+			go apil.refererData.SendReferer(refererMatch)
+		}
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, headers)
 		msgSeed := strconv.FormatUint(guid, 10)
 		reply := relayResult.GetReply()
@@ -535,7 +550,25 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		}
 		// Return json response
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
-	})
+	}
+
+	if apil.refererData != nil && apil.refererData.Marker != "" {
+		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", func(c *fiber.Ctx) error {
+			if websocket.IsWebSocketUpgrade(c) {
+				c.Locals("allowed", true)
+				return c.Next()
+			}
+			return fiber.ErrUpgradeRequired
+		})
+		websocketCallbackWithDappIDAndReferer := constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(webSocketCallback, apil.logger.StoreMetricData)
+		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", websocketCallbackWithDappIDAndReferer)
+		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/websocket", websocketCallbackWithDappIDAndReferer)
+		app.Post("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerPost)
+		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerGet)
+	}
+
+	app.Post("/*", handlerPost)
+	app.Get("/*", handlerGet)
 	//
 	// Go
 	ListenWithRetry(app, apil.endpoint.NetworkAddress)

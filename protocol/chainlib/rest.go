@@ -235,12 +235,14 @@ type RestChainListener struct {
 	relaySender    RelaySender
 	healthReporter HealthReporter
 	logger         *metrics.RPCConsumerLogs
+	refererData    *RefererData
 }
 
 // NewRestChainListener creates a new instance of RestChainListener
 func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
+	refererData *RefererData,
 ) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
@@ -248,6 +250,7 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 		relaySender,
 		healthReporter,
 		rpcConsumerLogs,
+		refererData,
 	}
 
 	return chainListener
@@ -266,7 +269,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
 	// Catch Post
-	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
+	handlerPost := func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
@@ -297,6 +300,10 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("msgSeed", msgSeed),
 			utils.LogAttr("headers", restHeaders),
 		)
+		refererMatch := fiberCtx.Params(refererMatchString, "")
+		if refererMatch != "" && apil.refererData != nil {
+			go apil.refererData.SendReferer(refererMatch)
+		}
 		requestBody := string(fiberCtx.Body())
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
@@ -328,10 +335,9 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		}
 		// Return json response
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
-	})
+	}
 
-	// Catch the others
-	app.Use("/*", func(fiberCtx *fiber.Ctx) error {
+	handlerUse := func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
@@ -360,6 +366,10 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("msgSeed", msgSeed),
 			utils.LogAttr("headers", restHeaders),
 		)
+		refererMatch := fiberCtx.Params(refererMatchString, "")
+		if refererMatch != "" && apil.refererData != nil {
+			go apil.refererData.SendReferer(refererMatch)
+		}
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
@@ -391,7 +401,16 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 		// Return json response
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
-	})
+	}
+
+	if apil.refererData != nil && apil.refererData.Marker != "" {
+		app.Post("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerPost)
+		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerUse)
+	}
+
+	app.Post("/*", handlerPost)
+	// Catch the others
+	app.Use("/*", handlerUse)
 
 	// Go
 	ListenWithRetry(app, apil.endpoint.NetworkAddress)
