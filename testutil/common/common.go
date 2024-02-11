@@ -70,11 +70,11 @@ func CreateMsgDetectionTest(ctx context.Context, consumer, provider0, provider1 
 	// request 0
 	msg.ResponseConflict = &conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &conflicttypes.ReplyMetadata{}}, ConflictRelayData1: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &conflicttypes.ReplyMetadata{}}}
 	msg.ResponseConflict.ConflictRelayData0.Request.RelayData = &types.RelayPrivateData{
-		ConnectionType: "",
+		ConnectionType: spec.ApiCollections[0].CollectionData.Type,
 		ApiUrl:         spec.ApiCollections[0].Apis[0].Name,
 		Data:           []byte("DUMMYREQUEST"),
 		RequestBlock:   100,
-		ApiInterface:   "",
+		ApiInterface:   spec.ApiCollections[0].CollectionData.ApiInterface,
 		Salt:           []byte{1},
 	}
 
