@@ -152,10 +152,10 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.providerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ProviderVersion)
 	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)
 	rpcp.shardID = options.shardID
-	rpcp.relaysHealthCheckEnabled = options.relaysHealthEnableFlag
-	rpcp.relaysHealthCheckInterval = options.relaysHealthIntervalFlag
+	rpcp.relaysHealthCheckEnabled = options.healthCheckMetricsOptions.relaysHealthEnableFlag
+	rpcp.relaysHealthCheckInterval = options.healthCheckMetricsOptions.relaysHealthIntervalFlag
 	rpcp.relaysMonitorAggregator = metrics.NewRelaysMonitorAggregator(rpcp.relaysHealthCheckInterval, rpcp.providerMetricsManager)
-	rpcp.grpcHealthCheckEndpoint = options.grpcHealthCheckEndpoint
+	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
