@@ -43,6 +43,15 @@ const (
 	RefillRewardsPoolTimerName   = "refill-rewards-timer"
 )
 
+// IPRPC Pool:
+// IPRPC (Incentivized Providers RPC) pool is meant to hold bonus rewards for providers that
+// provide service on specific specs. The rewards from this pool are distributed on a monthly
+// basis
+const (
+	IprpcPoolName              Pool   = "iprpc_pool"
+	IprpcPoolEmissionEventName string = "iprpc_pool_emmission"
+)
+
 const (
 	SetIprpcDataEventName = "set-iprpc-data"
 )
