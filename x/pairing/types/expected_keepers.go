@@ -108,6 +108,7 @@ type DualstakingKeeper interface {
 	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error
 	UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin, unstake bool) error
 	GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]dualstakingtypes.Delegation, error)
+	MinSelfDelegation(ctx sdk.Context) sdk.Coin
 }
 
 type FixationStoreKeeper interface {
