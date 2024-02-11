@@ -8,7 +8,7 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
-var disallowedIps = []string{
+var reservedIPPrefixes = []string{
 	"127.0.0.",   // IPv4 loopback
 	"10.0.0.",    // RFC1918
 	"172.16.0.",  // RFC1918
@@ -70,7 +70,7 @@ func validateIpFromDisallowedList(addr string) bool {
 	}
 
 	// Check if the address is in the disallowed list
-	for _, disallowed := range disallowedIps {
+	for _, disallowed := range reservedIPPrefixes {
 		if strings.HasPrefix(addr, disallowed) {
 			return false // Disallowed IP address
 		}
