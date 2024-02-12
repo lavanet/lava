@@ -17,7 +17,7 @@ type charRestrictionEnum string
 const (
 	NAME_RESTRICTIONS        charRestrictionEnum = "name"
 	DESCRIPTION_RESTRICTIONS charRestrictionEnum = "description"
-	INDEX_RESTRICTIONS charRestrictionEnum = "index"
+	INDEX_RESTRICTIONS       charRestrictionEnum = "index"
 )
 
 func isCharDisallowed(c rune, disallowedChars []rune) bool {
