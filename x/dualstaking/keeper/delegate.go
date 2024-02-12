@@ -236,6 +236,13 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 		if err != nil {
 			return fmt.Errorf("invalid or insufficient funds: %w", err)
 		}
+		details := map[string]string{
+			"provider":        stakeEntry.Address,
+			"chain_id":        stakeEntry.Chain,
+			"moniker":         stakeEntry.Moniker,
+			"stake":           stakeEntry.Stake.String(),
+			"effective_stake": stakeEntry.EffectiveStake().String() + stakeEntry.Stake.Denom,
+		}
 		if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
 			err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, index)
 			if err != nil {
@@ -244,9 +251,13 @@ func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provide
 					utils.Attribute{Key: "spec", Value: chainID},
 				)
 			}
+			details["min_self_delegation"] = k.GetParams(ctx).MinSelfDelegation.String()
+			utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeFromUnbond, details, "unstaking provider due to unbond that lowered its stake below min self delegation")
 			unstakeHoldBlocks := k.epochstorageKeeper.GetUnstakeHoldBlocks(ctx, stakeEntry.Chain)
 			return k.epochstorageKeeper.AppendUnstakeEntry(ctx, stakeEntry, unstakeHoldBlocks)
 		} else if stakeEntry.EffectiveStake().LT(k.specKeeper.GetMinStake(ctx, chainID).Amount) {
+			details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, chainID).String()
+			utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to unbond that lowered its stake below min spec stake")
 			stakeEntry.Freeze()
 		}
 	} else {
