@@ -79,6 +79,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	relaysMonitor *metrics.RelaysMonitor,
 	cmdFlags common.ConsumerCmdFlags,
 	sharedState bool,
+	refererData *chainlib.RefererData,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
@@ -94,7 +95,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.consumerConsistency = consumerConsistency
 	rpccs.sharedState = sharedState
 
-	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser)
+	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData)
 	if err != nil {
 		return err
 	}

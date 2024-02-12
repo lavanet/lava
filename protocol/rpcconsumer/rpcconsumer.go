@@ -37,9 +37,11 @@ import (
 )
 
 const (
-	DefaultRPCConsumerFileName = "rpcconsumer.yml"
-	DebugRelaysFlagName        = "debug-relays"
-	DebugProbesFlagName        = "debug-probes"
+	DefaultRPCConsumerFileName    = "rpcconsumer.yml"
+	DebugRelaysFlagName           = "debug-relays"
+	DebugProbesFlagName           = "debug-probes"
+	refererBackendAddressFlagName = "referer-be-address"
+	refererMarkerFlagName         = "referer-marker"
 )
 
 var (
@@ -114,6 +116,7 @@ type rpcConsumerStartOptions struct {
 	analyticsServerAddressess AnalyticsServerAddressess
 	cmdFlags                  common.ConsumerCmdFlags
 	stateShare                bool
+	refererData               *chainlib.RefererData
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -287,7 +290,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			}
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare)
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -500,6 +503,14 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				RelayServerAddress:   viper.GetString(metrics.RelayServerFlagName),
 			}
 
+			var refererData *chainlib.RefererData
+			if viper.GetString(refererBackendAddressFlagName) != "" || viper.GetString(refererMarkerFlagName) != "" {
+				refererData = &chainlib.RefererData{
+					Address: viper.GetString(refererBackendAddressFlagName), // address is used to send to a backend if necessary
+					Marker:  viper.GetString(refererMarkerFlagName),         // marker is necessary to unwrap paths
+				}
+			}
+
 			maxConcurrentProviders := viper.GetUint(common.MaximumConcurrentProvidersFlagName)
 
 			consumerPropagatedFlags := common.ConsumerCmdFlags{
@@ -513,7 +524,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
-			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags, rpcConsumerSharedState})
+			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags, rpcConsumerSharedState, refererData})
 			return err
 		},
 	}
@@ -543,7 +554,8 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	// Relays health check related flags
 	cmdRPCConsumer.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
 	cmdRPCConsumer.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
-
+	cmdRPCConsumer.Flags().String(refererBackendAddressFlagName, "", "address to send referer to")
+	cmdRPCConsumer.Flags().String(refererMarkerFlagName, "lava-referer-", "the string marker to identify referer")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer

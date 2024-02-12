@@ -1,6 +1,7 @@
 package chainlib
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -24,6 +25,7 @@ const (
 	ContextUserValueKeyDappID = "dappID"
 	RetryListeningInterval    = 10 // seconds
 	debug                     = false
+	refererMatchString        = "refererMatch"
 )
 
 var InvalidResponses = []string{"null", "", "nil", "undefined"}
@@ -121,6 +123,26 @@ func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled f
 			c.Locals(metrics.UserAgentHeaderKey, c.Get(metrics.UserAgentHeaderKey, ""))
 			c.Locals(metrics.OriginHeaderKey, c.Get(metrics.OriginHeaderKey, ""))
 		}
+		return webSocketCallback(c) // uses external dappID
+	}
+	return handler
+}
+
+func constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
+	webSocketCallback := callbackToBeCalled
+	handler := func(c *fiber.Ctx) error {
+		// Extract dappID from headers
+		dappID := extractDappIDFromFiberContext(c)
+
+		// Store dappID in the local context
+		c.Locals("dapp-id", dappID)
+
+		if isMetricEnabled {
+			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
+			c.Locals(metrics.UserAgentHeaderKey, c.Get(metrics.UserAgentHeaderKey, ""))
+			c.Locals(metrics.OriginHeaderKey, c.Get(metrics.OriginHeaderKey, ""))
+		}
+		c.Locals(refererMatchString, c.Params(refererMatchString, ""))
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
@@ -348,5 +370,37 @@ func ValidateNilResponse(responseString string) error {
 	if slices.Contains(InvalidResponses, responseString) {
 		return fmt.Errorf("response returned an empty value: %s", responseString)
 	}
+	return nil
+}
+
+type RefererData struct {
+	Address string
+	Marker  string
+}
+
+func (rd *RefererData) SendReferer(refererMatchString string) error {
+	if rd == nil || rd.Address == "" {
+		return nil
+	}
+	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
+	payload := map[string]interface{}{}
+	payload["referer-id"] = refererMatchString
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return utils.LavaFormatError("failed marshaling payload for Referer", err)
+	}
+	req, err := http.NewRequest("POST", rd.Address, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return utils.LavaFormatError("failed building a request for referer", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Make the HTTP request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return utils.LavaFormatDebug("failed sending http request", utils.LogAttr("error", err))
+	}
+	defer resp.Body.Close()
 	return nil
 }
