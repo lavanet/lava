@@ -123,11 +123,11 @@ PROVIDER1_LISTENER="127.0.0.1:2221"
 PROVIDER2_LISTENER="127.0.0.1:2222"
 PROVIDER3_LISTENER="127.0.0.1:2223"
 wait_count_blocks 1 >/dev/null
-(trace lavad tx pairing stake-provider ETH1 $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 --provider-moniker "provider" $txoptions)>/dev/null
+(trace lavad tx pairing stake-provider ETH1 $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) --provider-moniker "provider" $txoptions)>/dev/null
 wait_count_blocks 1 >/dev/null
 
 CHAINS="GTH1,COS3,FTM250,CELO,LAV1,COS4,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN1,COS5,POLYGON1,EVMOS,OPTM,BASET,CANTO,SUIT,SOLANA,BSC,AXELAR,AVAX,FVM,NEAR"
-(trace lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 --provider-moniker "provider" $txoptions)>/dev/null
+(trace lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) --provider-moniker "provider" $txoptions)>/dev/null
 
 sleep_until_next_epoch >/dev/null
 (trace lavad tx pairing modify-provider ETH1 --provider-moniker "provider" --delegate-commission 20 --delegate-limit 1000ulava --amount $PROVIDERSTAKE --endpoints "127.0.0.2:2222,1" $txoptions)>/dev/null
