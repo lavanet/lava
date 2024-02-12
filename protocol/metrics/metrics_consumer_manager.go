@@ -125,7 +125,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
-	http.HandleFunc("/metrics/health-overall", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/metrics/overall-health", func(w http.ResponseWriter, r *http.Request) {
 		statusCode := http.StatusOK
 		if atomic.LoadUint64(&consumerMetricsManager.endpointsHealthChecksOk) == 0 {
 			statusCode = http.StatusServiceUnavailable
@@ -219,7 +219,7 @@ func (pme *ConsumerMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
 	pme.virtualEpochMetric.WithLabelValues("lava").Set(float64(virtualEpoch))
 }
 
-func (pme *ConsumerMetricsManager) SetEndpointsHealthChecksOkStatus(status bool) {
+func (pme *ConsumerMetricsManager) UpdateHealthCheckStatus(status bool) {
 	if pme == nil {
 		return
 	}

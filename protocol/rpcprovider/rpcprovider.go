@@ -51,6 +51,9 @@ const (
 var (
 	Yaml_config_properties     = []string{"network-address.address", "chain-id", "api-interface", "node-urls.url"}
 	DefaultRPCProviderFileName = "rpcprovider.yml"
+
+	RelaysHealthEnableFlagDefault  = true
+	RelayHealthIntervalFlagDefault = 5 * time.Minute
 )
 
 // used to call SetPolicy in base chain parser so we are allowed to run verifications on the addons and extensions
@@ -103,6 +106,13 @@ type rpcProviderStartOptions struct {
 	shardID                   uint
 	rewardsSnapshotThreshold  uint
 	rewardsSnapshotTimeoutSec uint
+	healthCheckMetricsOptions *rpcProviderHealthCheckMetricsOptions
+}
+
+type rpcProviderHealthCheckMetricsOptions struct {
+	relaysHealthEnableFlag   bool          // enables relay health check
+	relaysHealthIntervalFlag time.Duration // interval for relay health check
+	grpcHealthCheckEndpoint  string
 }
 
 type RPCProvider struct {
@@ -110,17 +120,21 @@ type RPCProvider struct {
 	rpcProviderListeners map[string]*ProviderListener
 	lock                 sync.Mutex
 	// all of the following members need to be concurrency proof
-	providerMetricsManager *metrics.ProviderMetricsManager
-	rewardServer           *rewardserver.RewardServer
-	privKey                *btcec.PrivateKey
-	lavaChainID            string
-	addr                   sdk.AccAddress
-	blockMemorySize        uint64
-	chainMutexes           map[string]*sync.Mutex
-	parallelConnections    uint
-	cache                  *performance.Cache
-	shardID                uint // shardID is a flag that allows setting up multiple provider databases of the same chain
-	chainTrackers          *ChainTrackers
+	providerMetricsManager    *metrics.ProviderMetricsManager
+	rewardServer              *rewardserver.RewardServer
+	privKey                   *btcec.PrivateKey
+	lavaChainID               string
+	addr                      sdk.AccAddress
+	blockMemorySize           uint64
+	chainMutexes              map[string]*sync.Mutex
+	parallelConnections       uint
+	cache                     *performance.Cache
+	shardID                   uint // shardID is a flag that allows setting up multiple provider databases of the same chain
+	chainTrackers             *ChainTrackers
+	relaysMonitorAggregator   *metrics.RelaysMonitorAggregator
+	relaysHealthCheckEnabled  bool
+	relaysHealthCheckInterval time.Duration
+	grpcHealthCheckEndpoint   string
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -138,6 +152,10 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.providerMetricsManager.SetVersion(upgrade.GetCurrentVersion().ProviderVersion)
 	rpcp.rpcProviderListeners = make(map[string]*ProviderListener)
 	rpcp.shardID = options.shardID
+	rpcp.relaysHealthCheckEnabled = options.healthCheckMetricsOptions.relaysHealthEnableFlag
+	rpcp.relaysHealthCheckInterval = options.healthCheckMetricsOptions.relaysHealthIntervalFlag
+	rpcp.relaysMonitorAggregator = metrics.NewRelaysMonitorAggregator(rpcp.relaysHealthCheckInterval, rpcp.providerMetricsManager)
+	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
@@ -198,6 +216,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 
 	specValidator := NewSpecValidator()
 	disabledEndpointsList := rpcp.SetupProviderEndpoints(options.rpcProviderEndpoints, specValidator, true)
+	rpcp.relaysMonitorAggregator.StartMonitoring(ctx)
 	specValidator.Start(ctx)
 	utils.LavaFormatInfo("RPCProvider done setting up endpoints, ready for service")
 	if len(disabledEndpointsList) > 0 {
@@ -310,21 +329,22 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 	chainID := rpcProviderEndpoint.ChainID
+	apiInterface := rpcProviderEndpoint.ApiInterface
 	providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, rpcp.blockMemorySize)
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
-	chainParser, err := chainlib.NewChainParser(rpcProviderEndpoint.ApiInterface)
+	chainParser, err := chainlib.NewChainParser(apiInterface)
 	if err != nil {
 		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 
-	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: rpcProviderEndpoint.ApiInterface}
+	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: apiInterface}
 	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	if err != nil {
 		return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 
 	// after registering for spec updates our chain parser contains the spec and we can add our addons and extensions to allow our provider to function properly
-	chainParser.SetPolicy(rpcp.getAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls), rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
+	chainParser.SetPolicy(rpcp.getAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls), rpcProviderEndpoint.ChainID, apiInterface)
 
 	chainRouter, err := chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)
 	if err != nil {
@@ -374,7 +394,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 					utils.Attribute{Key: "oldBlock", Value: oldBlock},
 					utils.Attribute{Key: "newBlock", Value: newBlock},
 					utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
-					utils.Attribute{Key: "apiInterface", Value: rpcProviderEndpoint.ApiInterface},
+					utils.Attribute{Key: "apiInterface", Value: apiInterface},
 				)
 			}
 			blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
@@ -411,7 +431,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		return err
 	}
 
-	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, rpcProviderEndpoint.ApiInterface)
+	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface)
 
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, rpcp.providerStateTracker, rpcp.addr.String(), chainRouter, chainParser)
 	rpcp.providerStateTracker.RegisterReliabilityManagerForVoteUpdates(ctx, reliabilityManager, rpcProviderEndpoint)
@@ -419,8 +439,15 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// add a database for this chainID if does not exist.
 	rpcp.rewardServer.AddDataBase(rpcProviderEndpoint.ChainID, rpcp.addr.String(), rpcp.shardID)
 
+	var relaysMonitor *metrics.RelaysMonitor = nil
+	if rpcp.relaysHealthCheckEnabled {
+		relaysMonitor = metrics.NewRelaysMonitor(rpcp.relaysHealthCheckInterval, chainID, apiInterface)
+		rpcp.relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.Key(), relaysMonitor)
+		rpcp.providerMetricsManager.RegisterRelaysMonitor(chainID, apiInterface, relaysMonitor)
+	}
+
 	rpcProviderServer := &RPCProviderServer{}
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -430,7 +457,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		listener, ok = rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address]
 		if !ok {
 			utils.LavaFormatDebug("creating new listener", utils.Attribute{Key: "NetworkAddress", Value: rpcProviderEndpoint.NetworkAddress})
-			listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress)
+			listener = NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, rpcp.grpcHealthCheckEndpoint)
 			specValidator.AddRPCProviderListener(rpcProviderEndpoint.NetworkAddress.Address, listener)
 			rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address] = listener
 		}
@@ -446,7 +473,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	// prevents these objects form being overrun later
 	chainParser.Activate()
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
-	rpcp.providerMetricsManager.SetEnabledChain(rpcProviderEndpoint.ChainID, rpcProviderEndpoint.ApiInterface)
+	rpcp.providerMetricsManager.SetEnabledChain(rpcProviderEndpoint.ChainID, apiInterface)
 	return nil
 }
 
@@ -629,22 +656,34 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			shardID := viper.GetUint(ShardIDFlagName)
 			rewardsSnapshotThreshold := viper.GetUint(rewardserver.RewardsSnapshotThresholdFlagName)
 			rewardsSnapshotTimeoutSec := viper.GetUint(rewardserver.RewardsSnapshotTimeoutSecFlagName)
+			enableRelaysHealth := viper.GetBool(common.RelaysHealthEnableFlag)
+			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
+			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
+
+			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
+				enableRelaysHealth,
+				relaysHealthInterval,
+				healthCheckURLPath,
+			}
+
+			rpcProviderStartOptions := rpcProviderStartOptions{
+				ctx,
+				txFactory,
+				clientCtx,
+				rpcProviderEndpoints,
+				cache,
+				numberOfNodeParallelConnections,
+				prometheusListenAddr,
+				rewardStoragePath,
+				rewardTTL,
+				shardID,
+				rewardsSnapshotThreshold,
+				rewardsSnapshotTimeoutSec,
+				&rpcProviderHealthCheckMetricsOptions,
+			}
+
 			rpcProvider := RPCProvider{}
-			err = rpcProvider.Start(
-				&rpcProviderStartOptions{
-					ctx,
-					txFactory,
-					clientCtx,
-					rpcProviderEndpoints,
-					cache,
-					numberOfNodeParallelConnections,
-					prometheusListenAddr,
-					rewardStoragePath,
-					rewardTTL,
-					shardID,
-					rewardsSnapshotThreshold,
-					rewardsSnapshotTimeoutSec,
-				})
+			err = rpcProvider.Start(&rpcProviderStartOptions)
 			return err
 		},
 	}
@@ -669,6 +708,9 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().Uint64Var(&chaintracker.PollingMultiplier, chaintracker.PollingMultiplierFlagName, 1, "when set, forces the chain tracker to poll more often, improving the sync at the cost of more queries")
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationInterval, SpecValidationIntervalFlagName, SpecValidationInterval, "determines the interval of which to run validation on the spec for all connected chains")
 	cmdRPCProvider.Flags().DurationVar(&SpecValidationIntervalDisabledChains, SpecValidationIntervalDisabledChainsFlagName, SpecValidationIntervalDisabledChains, "determines the interval of which to run validation on the spec for all disabled chains, determines recovery time")
+	cmdRPCProvider.Flags().Bool(common.RelaysHealthEnableFlag, true, "enables relays health check")
+	cmdRPCProvider.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
+	cmdRPCProvider.Flags().String(HealthCheckURLPathFlagName, HealthCheckURLPathFlagDefault, "the url path for the provider's grpc health check")
 
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
