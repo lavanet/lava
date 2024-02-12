@@ -1,0 +1,9 @@
+Policy:
+  selected_providers_mode: ALLOWED
+  chain_policies:
+    - chain_id: ETH1
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+            add_on: "debug"
