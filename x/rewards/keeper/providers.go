@@ -37,7 +37,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 
 	defer func() {
 		k.removeAllBasePay(ctx)
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed successfully")
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed")
 	}()
 	for _, spec := range specs {
 		// all providers basepays and the total basepay of the spec
