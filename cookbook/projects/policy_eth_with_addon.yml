@@ -7,3 +7,4 @@ Policy:
             api_interface: "jsonrpc"
             type: "POST"
             add_on: "debug"
+    - chain_id: "*"
