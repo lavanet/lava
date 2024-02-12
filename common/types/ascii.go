@@ -17,6 +17,7 @@ type charRestrictionEnum string
 const (
 	NAME_RESTRICTIONS        charRestrictionEnum = "name"
 	DESCRIPTION_RESTRICTIONS charRestrictionEnum = "description"
+	INDEX_RESTRICTIONS charRestrictionEnum = "index"
 )
 
 func isCharDisallowed(c rune, disallowedChars []rune) bool {
@@ -57,6 +58,10 @@ func ValidateString(s string, restrictType charRestrictionEnum, disallowedChars 
 				}
 			case DESCRIPTION_RESTRICTIONS:
 				if !unicode.IsLetter(r) && r != ' ' && r != '_' && !unicode.IsDigit(r) {
+					return false
+				}
+			case INDEX_RESTRICTIONS:
+				if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
 					return false
 				}
 			}
