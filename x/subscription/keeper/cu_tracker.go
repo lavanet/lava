@@ -247,7 +247,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		}
 
 		k.subsFS.ModifyEntry(ctx, latestSub.Consumer, latestEntryBlock, &latestSub)
-	} else if !rewardsRemainder.IsPositive() {
+	} else if rewardsRemainder.IsPositive() {
 		{
 			// sub expired (no need to update credit), send rewards remainder to the validators
 			pool := rewardstypes.ValidatorsRewardsDistributionPoolName
