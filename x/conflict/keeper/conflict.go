@@ -62,19 +62,11 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		return err
 	}
 
-	_, err = k.pairingKeeper.GetProjectData(ctx, clientAddr, chainID, uint64(block))
+	_, err = k.pairingKeeper.GetProjectData(ctx, clientAddr, chainID, epochStart)
 	if err != nil {
-		// support legacy
-		_, err = k.pairingKeeper.VerifyClientStake(ctx, chainID, clientAddr, uint64(block), epochStart)
-		if err != nil {
-			return err
-		}
-		// 2. validate signer
-		_, err := k.pairingKeeper.GetProjectData(ctx, clientAddr, chainID, epochStart)
-		if err != nil {
-			return fmt.Errorf("did not find a project for %s on epoch %d, chainID %s error: %s", clientAddr, epochStart, chainID, err.Error())
-		}
+		return fmt.Errorf("did not find a project for %s on epoch %d, chainID %s error: %s", clientAddr, epochStart, chainID, err.Error())
 	}
+
 	verifyClientAddrFromSignatureOnRequest := func(conflictRelayData types.ConflictRelayData) error {
 		pubKey, err := sigs.RecoverPubKey(*conflictRelayData.Request.RelaySession)
 		if err != nil {
