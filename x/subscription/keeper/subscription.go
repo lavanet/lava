@@ -622,8 +622,8 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 
 	newPlanPrice := plan.GetPrice()
 	newPlanPrice.Amount = newPlanPrice.Amount.MulRaw(int64(duration))
-	chargePrice := newPlanPrice
 	k.applyPlanDiscountIfEligible(duration, &plan, &newPlanPrice)
+	chargePrice := newPlanPrice
 
 	if sub.FutureSubscription != nil {
 		// Consumer already has a future subscription
