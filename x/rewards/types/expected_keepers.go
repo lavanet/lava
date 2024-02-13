@@ -22,6 +22,7 @@ type BankKeeper interface {
 	BurnCoins(ctx sdk.Context, name string, amt sdk.Coins) error
 	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	SendCoinsFromModuleToModule(ctx sdk.Context, senderPool, recipientPool string, amt sdk.Coins) error
+	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 	// Methods imported from bank should be defined here
 }
 
@@ -49,7 +50,7 @@ type StakingKeeper interface {
 }
 
 type DualStakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward math.Int, totalRewards math.Int, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward sdk.Coin, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coin, totalRewards sdk.Coin, err error)
 	// Methods imported from bank should be defined here
 }
 

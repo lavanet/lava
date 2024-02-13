@@ -113,6 +113,7 @@ if [ "$1" == "debug" ]; then
 else
     lavad add-genesis-account providers_rewards_allocation_pool 30000000000000ulava --module-account 
 fi
+lavad add-genesis-account iprpc_pool 0ulava --module-account
 lavad gentx alice 10000000000000ulava --chain-id $chainID
 lavad collect-gentxs
 lavad start --pruning=nothing

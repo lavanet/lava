@@ -16,10 +16,12 @@ func TestGenesis(t *testing.T) {
 
 		IprpcRewards: []types.IprpcReward{
 			{
-				Id: 0,
+				Id:        0,
+				SpecFunds: []types.Specfund{{Fund: []sdk.Coin{}}},
 			},
 			{
-				Id: 1,
+				Id:        1,
+				SpecFunds: []types.Specfund{{Fund: []sdk.Coin{}}},
 			},
 		},
 		IprpcRewardsCount: 2,

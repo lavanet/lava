@@ -265,6 +265,7 @@ var (
 		string(rewardsmoduletypes.ProviderRewardsDistributionPool):       {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ProvidersRewardsAllocationPool):        {authtypes.Minter, authtypes.Staking},
 		dualstakingmoduletypes.ModuleName:                                {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.IprpcPoolName):                         nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )

@@ -29,7 +29,7 @@ const (
 	IprpcRewardPrefix = "iprpc-reward"
 
 	// prefix for IPRPC rewards count
-	IprpcRewardsCountPrefix = "iprpc-rewards-count"
+	IprpcRewardsCountPrefix = "count-iprpc-rewards"
 )
 
 func KeyPrefix(p string) []byte {

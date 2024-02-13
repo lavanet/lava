@@ -22,7 +22,7 @@ func DefaultGenesis() *GenesisState {
 		BasePays:           []BasePayGenesis{},
 		IprpcSubscriptions: []string{},
 		MinIprpcCost:       sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
-		IprpcRewards:       []IprpcReward{{SpecFunds: []Specfund{}}},
+		IprpcRewards:       []IprpcReward{},
 	}
 }
 

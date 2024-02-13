@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"encoding/binary"
+	"sort"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -103,4 +104,28 @@ func GetIprpcRewardIDBytes(id uint64) []byte {
 // GetIprpcRewardIDFromBytes returns ID in uint64 format from a byte array
 func GetIprpcRewardIDFromBytes(bz []byte) uint64 {
 	return binary.BigEndian.Uint64(bz)
+}
+
+// PopIprpcReward gets the lowest id IprpcReward object and removes it
+func (k Keeper) PopIprpcReward(ctx sdk.Context) (types.IprpcReward, bool) {
+	// Get all IprpcReward
+	allRewards := k.GetAllIprpcReward(ctx)
+
+	// Check if there are any rewards
+	if len(allRewards) == 0 {
+		return types.IprpcReward{}, false
+	}
+
+	// Sort rewards by index
+	sort.SliceStable(allRewards, func(i, j int) bool {
+		return allRewards[i].Id < allRewards[j].Id
+	})
+
+	// Get the first reward
+	firstReward := allRewards[0]
+
+	// Remove the first reward
+	k.RemoveIprpcReward(ctx, firstReward.Id)
+
+	return firstReward, true
 }

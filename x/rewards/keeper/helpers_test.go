@@ -12,7 +12,6 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	rewardsTypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,10 +38,11 @@ func newTester(t *testing.T, addValidator bool) *tester {
 	}
 
 	ts.plan = common.CreateMockPlan()
-	monthlyProvidersPool := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardsTypes.ProviderRewardsDistributionPool, ts.BondDenom())
-	ts.plan.Price.Amount = monthlyProvidersPool.QuoRaw(5).AddRaw(5)
-	ts.plan.PlanPolicy.EpochCuLimit = monthlyProvidersPool.Uint64() * 5
-	ts.plan.PlanPolicy.TotalCuLimit = monthlyProvidersPool.Uint64() * 5
+	coins := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardsTypes.ProviderRewardsDistributionPool)
+	_, monthlyProvidersPool := coins.Find(ts.BondDenom())
+	ts.plan.Price.Amount = monthlyProvidersPool.Amount.QuoRaw(5).AddRaw(5)
+	ts.plan.PlanPolicy.EpochCuLimit = monthlyProvidersPool.Amount.Uint64() * 5
+	ts.plan.PlanPolicy.TotalCuLimit = monthlyProvidersPool.Amount.Uint64() * 5
 	ts.plan.PlanPolicy.MaxProvidersToPair = 5
 	ts.AddPlan(ts.plan.Index, ts.plan)
 	ts.spec = ts.AddSpec("mock", common.CreateMockSpec()).Spec("mock")
@@ -61,10 +61,15 @@ func (ts *tester) feeCollector() sdk.AccAddress {
 	return testkeeper.GetModuleAddress(feeCollectorName)
 }
 
+func (ts *tester) getPoolBalance(pool rewardsTypes.Pool, denom string) math.Int {
+	coins := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, pool)
+	return coins.AmountOf(denom)
+}
+
 // deductParticipationFees calculates the validators and community participation
 // fees and returns the providers reward after deducting them
 func (ts *tester) DeductParticipationFees(reward math.Int) (updatedReward math.Int, valParticipation math.Int, communityParticipation math.Int) {
-	valPerc, communityPerc, err := ts.Keepers.Rewards.CalculateContributionPercentages(ts.Ctx, reward, subscriptiontypes.ModuleName)
+	valPerc, communityPerc, err := ts.Keepers.Rewards.CalculateContributionPercentages(ts.Ctx, reward)
 	require.Nil(ts.T, err)
 	valParticipation = valPerc.MulInt(reward).TruncateInt()
 	communityParticipation = communityPerc.MulInt(reward).TruncateInt()

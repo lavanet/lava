@@ -20,8 +20,8 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
 
 	// get validator distribution pool balance
-	distributionPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName, k.stakingKeeper.BondDenom(ctx))
-
+	coins := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
+	distributionPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
 	if blocksToNextTimerExpiry == 0 {
 		utils.LavaFormatWarning("blocksToNextTimerExpiry is zero", fmt.Errorf("critical: Attempt to divide by zero"),
 			utils.LogAttr("blocksToNextTimerExpiry", blocksToNextTimerExpiry),
@@ -84,8 +84,10 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	nextMonth := utils.NextMonth(ctx.BlockTime()).UTC()
 	k.refillRewardsPoolTS.AddTimerByBlockTime(ctx, uint64(nextMonth.Unix()), []byte(types.RefillRewardsPoolTimerName), monthsLeftBytes)
 
-	valDistPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName, k.stakingKeeper.BondDenom(ctx)).Int64()
-	providerDistPoolBalance := k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool, k.stakingKeeper.BondDenom(ctx)).Int64()
+	coins := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
+	valDistPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx)).Int64()
+	coins = k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)
+	providerDistPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx)).Int64()
 	nextRefillBlock := k.blocksToNextTimerExpiry(ctx, nextMonth.Unix()-ctx.BlockTime().UTC().Unix()) + ctx.BlockHeight()
 	details := map[string]string{
 		"allocation_pool_remaining_lifetime":   strconv.FormatUint(monthsLeft, 10),
@@ -101,7 +103,9 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 
 func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate sdkmath.LegacyDec) {
 	// burn remaining tokens in the distribution pool
-	tokensToBurn := burnRate.MulInt(k.TotalPoolTokens(ctx, distributionPool, k.stakingKeeper.BondDenom(ctx))).TruncateInt()
+	coins := k.TotalPoolTokens(ctx, distributionPool)
+	distPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
+	tokensToBurn := burnRate.MulInt(distPoolBalance).TruncateInt()
 	err := k.BurnPoolTokens(ctx, distributionPool, tokensToBurn, k.stakingKeeper.BondDenom(ctx))
 	if err != nil {
 		utils.LavaFormatError("critical - could not burn distribution pool tokens", err,
@@ -111,7 +115,8 @@ func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, alloc
 	}
 
 	// transfer the new monthly quota (if allocation pool is expired, rewards=0)
-	allocPoolBalance := k.TotalPoolTokens(ctx, allocationPool, k.stakingKeeper.BondDenom(ctx))
+	coins = k.TotalPoolTokens(ctx, allocationPool)
+	allocPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
 	if monthsLeft != 0 && !allocPoolBalance.IsZero() {
 		monthlyQuota := sdk.Coin{Denom: k.stakingKeeper.BondDenom(ctx), Amount: allocPoolBalance.QuoRaw(int64(monthsLeft))}
 

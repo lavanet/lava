@@ -124,7 +124,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
-	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool, ts.BondDenom())
+	distBalance := ts.getPoolBalance(types.ProviderRewardsDistributionPool, ts.BondDenom())
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
@@ -172,7 +172,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
-	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool, ts.BondDenom())
+	distBalance := ts.getPoolBalance(types.ProviderRewardsDistributionPool, ts.BondDenom())
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
@@ -280,7 +280,7 @@ func Test2SpecsZeroShares(t *testing.T) {
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
-	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool, ts.BondDenom())
+	distBalance := ts.getPoolBalance(types.ProviderRewardsDistributionPool, ts.BondDenom())
 	ts.AdvanceEpoch()
 
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
@@ -414,7 +414,7 @@ func TestBonusRewards3Providers(t *testing.T) {
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
-	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool, ts.BondDenom())
+	distBalance := ts.getPoolBalance(types.ProviderRewardsDistributionPool, ts.BondDenom())
 	ts.AdvanceEpoch()
 
 	res1, err := ts.QueryDualstakingDelegatorRewards(providerAcc1.Addr.String(), "", "")
@@ -596,7 +596,7 @@ func TestBonusRewardsEquall5Providers(t *testing.T) {
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
-	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool, ts.BondDenom())
+	distBalance := ts.getPoolBalance(types.ProviderRewardsDistributionPool, ts.BondDenom())
 	ts.AdvanceEpoch()
 
 	for _, providerAcc := range providerAccs {
@@ -663,7 +663,7 @@ func TestBonusRewards5Providers(t *testing.T) {
 
 	// now the provider should get all of the provider allocation
 	ts.AdvanceMonths(1)
-	distBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ProviderRewardsDistributionPool, ts.BondDenom())
+	distBalance := ts.getPoolBalance(types.ProviderRewardsDistributionPool, ts.BondDenom())
 	ts.AdvanceEpoch()
 
 	// distribution pool divided between all providers (5) equally (they served the same amount of CU in total)

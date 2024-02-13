@@ -285,7 +285,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 		func(d dualstakingtypes.Delegation) bool {
 			return d.ChainID == ts.spec.Index && d.IsFirstMonthPassed(currentTimestamp)
 		})
-	totalReward := math.NewInt(int64(relayCuSum))
+	totalReward := sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(relayCuSum)))
 	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, totalReward, relevantDelegations)
 
 	require.True(t, totalReward.Equal(providerReward))
@@ -315,7 +315,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, 1, len(resRewards.Rewards))
 	dReward := resRewards.Rewards[0]
 	expectedDRewardForRelay := totalReward
-	require.Equal(t, expectedDRewardForRelay.Int64()/2, dReward.Amount.Amount.Int64())
+	require.Equal(t, expectedDRewardForRelay.Amount.Int64()/2, dReward.Amount.Amount.Int64())
 
 	// claim delegator rewards and verify balance
 	claimRewardsAndVerifyBalance(ts, delegator1Acc.Addr, provider, ts.spec.Index)
@@ -564,7 +564,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	// the delegation will already mature enough to be part of the reward process. To go around
 	// this, we'll call the reward calculation function directly with a fabricated reward just to
 	// verify that the delegator gets nothing from the total reward
-	fakeReward := sdk.NewInt(testStake)
+	fakeReward := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	providerReward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, providerAcc.Addr, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, true, true)
 	require.NoError(t, err)
@@ -628,7 +628,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	// this, we'll call the reward calculation function directly with a fabricated reward just to
 	// verify that the delegator gets nothing from the total reward from provider1 but does get
 	// reward from provider
-	fakeReward := sdk.NewInt(testStake)
+	fakeReward := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	provider1Reward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider1Acc.Addr, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, false, true)
 	require.NoError(t, err)

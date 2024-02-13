@@ -48,7 +48,10 @@ message QueryPoolsRequest {}
 
 message PoolInfo {
   string name = 1; // pool name
-  cosmos.base.v1beta1.Coin balance = 2 [(gogoproto.nullable) = false]; // pool balance
+  repeated cosmos.base.v1beta1.Coin balance = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (gogoproto.nullable)     = false
+  ]; // pool balance (all types of tokens)
 }
 
 // QueryPoolsResponse is response type for the Query/Pools RPC method.

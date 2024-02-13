@@ -49,9 +49,12 @@ const (
 // basis
 const (
 	IprpcPoolName              Pool   = "iprpc_pool"
-	IprpcPoolEmissionEventName string = "iprpc_pool_emmission"
+	IprpcPoolEmissionEventName string = "iprpc-pool-emmission"
+	SetIprpcDataEventName             = "set-iprpc-data"
 )
 
-const (
-	SetIprpcDataEventName = "set-iprpc-data"
-)
+// helper struct to track the serviced IPRPC CU for each spec+provider
+type SpecCuType struct {
+	ProvidersCu map[string]uint64 // provider -> cu
+	TotalCu     uint64
+}
