@@ -36,17 +36,17 @@ func (k Keeper) SetIprpcRewardCount(ctx sdk.Context, count uint64) {
 // AppendIprpcReward appends a IprpcReward in the store with a new id and update the count
 func (k Keeper) AppendIprpcReward(
 	ctx sdk.Context,
-	IprpcReward types.IprpcReward,
+	iprpcReward types.IprpcReward,
 ) uint64 {
 	// Create the IprpcReward
 	count := k.GetIprpcRewardCount(ctx)
 
 	// Set the ID of the appended value
-	IprpcReward.Id = count
+	iprpcReward.Id = count
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.IprpcRewardPrefix))
-	appendedValue := k.cdc.MustMarshal(&IprpcReward)
-	store.Set(GetIprpcRewardIDBytes(IprpcReward.Id), appendedValue)
+	appendedValue := k.cdc.MustMarshal(&iprpcReward)
+	store.Set(GetIprpcRewardIDBytes(iprpcReward.Id), appendedValue)
 
 	// Update IprpcReward count
 	k.SetIprpcRewardCount(ctx, count+1)
@@ -55,10 +55,10 @@ func (k Keeper) AppendIprpcReward(
 }
 
 // SetIprpcReward set a specific IprpcReward in the store
-func (k Keeper) SetIprpcReward(ctx sdk.Context, IprpcReward types.IprpcReward) {
+func (k Keeper) SetIprpcReward(ctx sdk.Context, iprpcReward types.IprpcReward) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.IprpcRewardPrefix))
-	b := k.cdc.MustMarshal(&IprpcReward)
-	store.Set(GetIprpcRewardIDBytes(IprpcReward.Id), b)
+	b := k.cdc.MustMarshal(&iprpcReward)
+	store.Set(GetIprpcRewardIDBytes(iprpcReward.Id), b)
 }
 
 // GetIprpcReward returns a IprpcReward from its id
