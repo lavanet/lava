@@ -24,7 +24,7 @@ func TestGenesis(t *testing.T) {
 				SpecFunds: []types.Specfund{{Fund: []sdk.Coin{}}},
 			},
 		},
-		IprpcRewardsCount: 2,
+		IprpcRewardsCurrent: 2,
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -39,6 +39,6 @@ func TestGenesis(t *testing.T) {
 	nullify.Fill(got)
 
 	require.ElementsMatch(t, genesisState.IprpcRewards, got.IprpcRewards)
-	require.Equal(t, genesisState.IprpcRewardsCount, got.IprpcRewardsCount)
+	require.Equal(t, genesisState.IprpcRewardsCurrent, got.IprpcRewardsCurrent)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

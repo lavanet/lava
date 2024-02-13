@@ -27,7 +27,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, iprpcReward := range genState.IprpcRewards {
 		k.SetIprpcReward(ctx, iprpcReward)
 	}
-	k.SetIprpcRewardCount(ctx, genState.IprpcRewardsCount)
+	k.SetIprpcRewardsCurrent(ctx, genState.IprpcRewardsCurrent)
 }
 
 // ExportGenesis returns the capability module's exported genesis.
@@ -39,7 +39,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.IprpcSubscriptions = k.GetAllIprpcSubscription(ctx)
 	genesis.MinIprpcCost = k.GetMinIprpcCost(ctx)
 	genesis.IprpcRewards = k.GetAllIprpcReward(ctx)
-	genesis.IprpcRewardsCount = k.GetIprpcRewardCount(ctx)
+	genesis.IprpcRewardsCurrent = k.GetIprpcRewardsCurrent(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis

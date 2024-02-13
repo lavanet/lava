@@ -2,20 +2,19 @@ package keeper
 
 import (
 	"encoding/binary"
-	"sort"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/rewards/types"
 )
 
-// GetIprpcRewardCount get the total number of IprpcReward
-func (k Keeper) GetIprpcRewardCount(ctx sdk.Context) uint64 {
+// GetIprpcRewardsCurrent get the total number of IprpcReward
+func (k Keeper) GetIprpcRewardsCurrent(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.IprpcRewardsCountPrefix)
+	byteKey := types.KeyPrefix(types.IprpcRewardsCurrentPrefix)
 	bz := store.Get(byteKey)
 
-	// Count doesn't exist: no element
+	// Current doesn't exist: no element
 	if bz == nil {
 		return 0
 	}
@@ -24,34 +23,13 @@ func (k Keeper) GetIprpcRewardCount(ctx sdk.Context) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
 
-// SetIprpcRewardCount set the total number of IprpcReward
-func (k Keeper) SetIprpcRewardCount(ctx sdk.Context, count uint64) {
+// SetIprpcRewardsCurrent set the total number of IprpcReward
+func (k Keeper) SetIprpcRewardsCurrent(ctx sdk.Context, current uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
-	byteKey := types.KeyPrefix(types.IprpcRewardsCountPrefix)
+	byteKey := types.KeyPrefix(types.IprpcRewardsCurrentPrefix)
 	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, count)
+	binary.BigEndian.PutUint64(bz, current)
 	store.Set(byteKey, bz)
-}
-
-// AppendIprpcReward appends a IprpcReward in the store with a new id and update the count
-func (k Keeper) AppendIprpcReward(
-	ctx sdk.Context,
-	iprpcReward types.IprpcReward,
-) uint64 {
-	// Create the IprpcReward
-	count := k.GetIprpcRewardCount(ctx)
-
-	// Set the ID of the appended value
-	iprpcReward.Id = count
-
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.IprpcRewardPrefix))
-	appendedValue := k.cdc.MustMarshal(&iprpcReward)
-	store.Set(GetIprpcRewardIDBytes(iprpcReward.Id), appendedValue)
-
-	// Update IprpcReward count
-	k.SetIprpcRewardCount(ctx, count+1)
-
-	return count
 }
 
 // SetIprpcReward set a specific IprpcReward in the store
@@ -108,24 +86,45 @@ func GetIprpcRewardIDFromBytes(bz []byte) uint64 {
 
 // PopIprpcReward gets the lowest id IprpcReward object and removes it
 func (k Keeper) PopIprpcReward(ctx sdk.Context) (types.IprpcReward, bool) {
-	// Get all IprpcReward
-	allRewards := k.GetAllIprpcReward(ctx)
-
-	// Check if there are any rewards
-	if len(allRewards) == 0 {
+	// Get current IprpcReward
+	iprpcReward, found := k.GetIprpcReward(ctx, k.GetIprpcRewardsCurrent(ctx))
+	if !found {
 		return types.IprpcReward{}, false
 	}
 
-	// Sort rewards by index
-	sort.SliceStable(allRewards, func(i, j int) bool {
-		return allRewards[i].Id < allRewards[j].Id
-	})
+	// Remove the reward
+	k.RemoveIprpcReward(ctx, iprpcReward.Id)
 
-	// Get the first reward
-	firstReward := allRewards[0]
+	return iprpcReward, true
+}
 
-	// Remove the first reward
-	k.RemoveIprpcReward(ctx, firstReward.Id)
+// AddSpecFunds adds funds for a specific spec for <duration> of months.
+// This function is used by the fund-iprpc TX.
+func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, duration uint64, fromNextMonth bool) {
+	startID := k.GetIprpcRewardsCurrent(ctx)
+	if fromNextMonth {
+		startID += 1
+	}
 
-	return firstReward, true
+	for i := startID; i < duration; i++ {
+		iprpcReward, found := k.GetIprpcReward(ctx, i)
+		if !found {
+			// found IPRPC reward
+			for i := 0; i < len(iprpcReward.SpecFunds); i++ {
+				if iprpcReward.SpecFunds[i].Spec == spec {
+					iprpcReward.SpecFunds[i].Fund = iprpcReward.SpecFunds[i].Fund.Add(fund...)
+					k.SetIprpcReward(ctx, iprpcReward)
+					return
+				}
+			}
+			// did not find spec in IPRPC reward -> create a new one
+			iprpcReward.SpecFunds = append(iprpcReward.SpecFunds, types.Specfund{Spec: spec, Fund: fund})
+		} else {
+			// did not find IPRPC reward -> create a new one
+			iprpcReward.Id = i
+			iprpcReward.SpecFunds = []types.Specfund{{Spec: spec, Fund: fund}}
+		}
+
+		k.SetIprpcReward(ctx, iprpcReward)
+	}
 }
