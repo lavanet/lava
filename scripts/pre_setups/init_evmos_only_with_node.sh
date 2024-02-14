@@ -61,7 +61,7 @@ sleep 2;
 
 screen -d -m -S consumers bash -c "source ~/.bashrc; lavap rpcconsumer \
 127.0.0.1:3360 EVMOS rest 127.0.0.1:3361 EVMOS tendermintrpc 127.0.0.1:3362 EVMOS grpc 127.0.0.1:3363 EVMOS jsonrpc \
-$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --cache-be 127.0.0.1:20100 --chain-id lava --allow-insecure-provider-dialing --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
+$EXTRA_PORTAL_FLAGS --geolocation 1 --log_level debug --from user1 --cache-be 127.0.0.1:20100 --chain-id lava --allow-insecure-provider-dialing --allow-providers-with-protected-ips --metrics-listen-address ":7779" 2>&1 | tee $LOGS_DIR/CONSUMERS.log" && sleep 0.25
 
 echo "--- setting up screens done ---"
 screen -ls

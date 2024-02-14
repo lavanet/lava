@@ -27,7 +27,10 @@ const (
 	CDNCacheDurationFlag    = "cdn-cache-duration"     // how long to cache the preflight response default 24 hours (in seconds) "86400"
 	RelaysHealthEnableFlag  = "relays-health-enable"   // enable relays health check, default true
 	RelayHealthIntervalFlag = "relays-health-interval" // interval between each relay health check, default 5m
-	SharedStateFlag         = "shared-state"
+	SharedStateFlag         = "shared-state"           // indicates whether to share state between the consumer and the cache server
+	// this allows the consumer to use providers with protected ips such as 127.0.0..., localhost etc..
+	// should be used for testing purposes only.
+	AllowUsageOfProtectedIps = "allow-providers-with-protected-ips"
 )
 
 const (
@@ -48,6 +51,7 @@ type ConsumerCmdFlags struct {
 	CDNCacheDuration         string        // how long to cache the preflight response defaults 24 hours (in seconds) "86400"
 	RelaysHealthEnableFlag   bool          // enables relay health check
 	RelaysHealthIntervalFlag time.Duration // interval for relay health check
+	AllowProtectedIps        bool          // whether to allow protected ips to be used by the providers
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.

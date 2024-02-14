@@ -6,6 +6,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/ips"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"golang.org/x/net/context"
@@ -25,10 +26,11 @@ type PairingUpdater struct {
 	nextBlockForUpdate         uint64
 	stateQuery                 *ConsumerStateQuery
 	pairingUpdatables          []*PairingUpdatable
+	allowProtectedIps          bool
 }
 
-func NewPairingUpdater(stateQuery *ConsumerStateQuery) *PairingUpdater {
-	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery}
+func NewPairingUpdater(stateQuery *ConsumerStateQuery, allowProtectedIps bool) *PairingUpdater {
+	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery, allowProtectedIps: allowProtectedIps}
 }
 
 func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {
@@ -154,6 +156,13 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 
 		relevantEndpoints := []epochstoragetypes.Endpoint{}
 		for _, endpoint := range providerEndpoints {
+			if !pu.allowProtectedIps { // check only if we indicate. (used for tests only)
+				if !ips.IsValidNetworkAddressProtocol(endpoint.IPPORT) {
+					utils.LavaFormatInfo("Found an invalid provider endpoint pointing to protected address, skipping provider", utils.LogAttr("info", endpoint))
+					// need to report this provider otherwise it will stay onchain for ever
+					continue
+				}
+			}
 			// only take into account endpoints that use the same api interface and the same geolocation
 			for _, endpointApiInterface := range endpoint.ApiInterfaces {
 				if endpointApiInterface == rpcEndpoint.ApiInterface { // we take all geolocations provided by the chain. the provider optimizer will prioritize the relevant ones

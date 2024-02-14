@@ -282,7 +282,7 @@ func runPaymentE2E(timeout time.Duration) {
 		lavadPath:    gopath + lavadPath,
 		protocolPath: gopath + lavapPath,
 		lavadArgs:    "--geolocation 1 --log_level debug",
-		consumerArgs: " --allow-insecure-provider-dialing",
+		consumerArgs: " --allow-insecure-provider-dialing --allow-providers-with-protected-ips",
 		logs:         make(map[string]*bytes.Buffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
