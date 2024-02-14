@@ -110,12 +110,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	k.SetIprpcRewardsCurrent(ctx, iprpcReward.Id+1)
 	for _, specFund := range iprpcReward.SpecFunds {
 		// collect details
-		details := map[string]string{"spec": specFund.Spec}
-		rewardsStr := []string{}
-		for _, reward := range specFund.Fund {
-			rewardsStr = append(rewardsStr, reward.String())
-		}
-		details["rewards"] = strings.Join(rewardsStr, ",")
+		details := map[string]string{"spec": specFund.Spec, "rewards": specFund.Fund.String()}
 
 		// verify specCuMap holds an entry for the relevant spec
 		specCu, ok := specCuMap[specFund.Spec]
@@ -142,6 +137,10 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 			if err != nil {
 				continue
 			}
+			if specCu.TotalCu == 0 {
+				// spec was not serviced by any provider, continue
+				continue
+			}
 			// calculate provider IPRPC reward
 			providerIprpcRewardPerc := math.LegacyNewDec(int64(specCu.ProvidersCu[provider])).QuoInt64(int64(specCu.TotalCu))
 
@@ -160,9 +159,11 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 
 		// handle leftovers
 		usedReward = specFund.Fund.Sub(usedReward...)
-		err := k.FundCommunityPoolFromModule(ctx, usedReward, string(types.IprpcPoolName))
-		if err != nil {
-			utils.LavaFormatError("could not send iprpc leftover to community pool", err)
+		if !usedReward.IsZero() {
+			err := k.FundCommunityPoolFromModule(ctx, usedReward, string(types.IprpcPoolName))
+			if err != nil {
+				utils.LavaFormatError("could not send iprpc leftover to community pool", err)
+			}
 		}
 
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, details, "IPRPC monthly rewards distributed successfully")

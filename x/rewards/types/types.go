@@ -51,6 +51,7 @@ const (
 	IprpcPoolName              Pool   = "iprpc_pool"
 	IprpcPoolEmissionEventName string = "iprpc-pool-emmission"
 	SetIprpcDataEventName             = "set-iprpc-data"
+	FundIprpcEventName                = "fund-iprpc"
 )
 
 // helper struct to track the serviced IPRPC CU for each spec+provider
