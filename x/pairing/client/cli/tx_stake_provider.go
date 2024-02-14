@@ -106,6 +106,7 @@ func CmdStakeProvider() *cobra.Command {
 	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
+	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
@@ -220,6 +221,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().Uint64(types.FlagCommission, 100, "The provider's commission from the delegators (default 100)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
+	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
