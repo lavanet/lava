@@ -599,6 +599,14 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		return err
 	}
 
+	if duration > types.MAX_SUBSCRIPTION_DURATION {
+		str := strconv.FormatInt(types.MAX_SUBSCRIPTION_DURATION, 10)
+		return utils.LavaFormatWarning("duration cannot exceed limit ("+str+" months)",
+			fmt.Errorf("future subscription failed"),
+			utils.Attribute{Key: "duration", Value: duration},
+		)
+	}
+
 	var sub types.Subscription
 	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
 	if err != nil {

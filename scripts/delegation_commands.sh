@@ -12,15 +12,15 @@ source $__dir/useful_commands.sh
 . ${__dir}/vars/variables.sh
 
 # Provider delegations (dualstaking module)
-lavad tx dualstaking delegate $(lavad keys show servicer1 -a) COS3 1000ulava -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
+lavad tx dualstaking delegate $(lavad keys show servicer1 -a) COS3 $(operator_address) 1000ulava -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
 wait_count_blocks 1
-lavad tx dualstaking delegate $(lavad keys show servicer3 -a) LAV1 1000ulava -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
+lavad tx dualstaking delegate $(lavad keys show servicer3 -a) LAV1 $(operator_address) 1000ulava -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
 wait_count_blocks 1
-lavad tx dualstaking delegate $(lavad keys show servicer2 -a) LAV1 100000ulava -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
+lavad tx dualstaking delegate $(lavad keys show servicer2 -a) LAV1 $(operator_address) 100000ulava -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
 wait_count_blocks 1
-lavad tx dualstaking delegate $(lavad keys show servicer1 -a) NEAR 100000ulava -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
+lavad tx dualstaking delegate $(lavad keys show servicer1 -a) NEAR $(operator_address) 100000ulava -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
 wait_count_blocks 1
-lavad tx dualstaking delegate $(lavad keys show servicer1 -a) FTM250 100000ulava -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
+lavad tx dualstaking delegate $(lavad keys show servicer1 -a) FTM250 $(operator_address) 100000ulava -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
 wait_count_blocks 1
 lavad tx dualstaking redelegate $(lavad keys show servicer1 -a) ETH1 $(lavad keys show -a servicer2) LAV1 100000ulava -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
 wait_count_blocks 1
@@ -30,14 +30,14 @@ lavad tx dualstaking unbond $(lavad keys show servicer2 -a) ETH1 37000ulava -y -
 wait_count_blocks 1
 
 # Validator delegations (staking module)
-val=$(lavad query staking validators | grep -oP 'operator_address: \K\S+' | head -n 1)   # gets the first validator address
-lavad tx staking delegate $val 500ulava --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava -y
+
+lavad tx staking delegate $(operator_address) 500ulava --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava -y
 wait_count_blocks 1
-lavad tx staking delegate $val 5000ulava --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava -y
+lavad tx staking delegate $(operator_address) 5000ulava --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava -y
 wait_count_blocks 1
-lavad tx staking delegate $val 50ulava --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava -y
+lavad tx staking delegate $(operator_address) 50ulava --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava -y
 wait_count_blocks 1
-lavad tx staking unbond $val 50ulava --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava -y
+lavad tx staking unbond $(operator_address) 50ulava --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava -y
 wait_count_blocks 1
-lavad tx staking unbond $val 500ulava --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava -y
+lavad tx staking unbond $(operator_address) 500ulava --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava -y
 wait_count_blocks 1
