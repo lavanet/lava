@@ -396,7 +396,9 @@ func (rd *RefererData) SendReferer(refererMatchString string) error {
 	req.Header.Set("Content-Type", "application/json")
 
 	// Make the HTTP request
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return utils.LavaFormatDebug("failed sending http request", utils.LogAttr("error", err))

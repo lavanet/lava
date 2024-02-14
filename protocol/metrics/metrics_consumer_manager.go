@@ -28,9 +28,10 @@ type ConsumerMetricsManager struct {
 	lock                          sync.Mutex
 	protocolVersionMetric         *prometheus.GaugeVec
 	providerRelays                map[string]uint64
+	Reporter
 }
 
-func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
+func NewConsumerMetricsManager(networkAddress string, reporter Reporter) *ConsumerMetricsManager {
 	if networkAddress == DisabledFlagOption {
 		utils.LavaFormatWarning("prometheus endpoint inactive, option is disabled", nil)
 		return nil
@@ -122,6 +123,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		endpointsHealthChecksOkMetric: endpointsHealthChecksOkMetric,
 		endpointsHealthChecksOk:       1,
 		protocolVersionMetric:         protocolVersionMetric,
+		Reporter:                      reporter,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
