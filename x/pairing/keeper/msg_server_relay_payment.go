@@ -12,6 +12,7 @@ import (
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -168,7 +169,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		isValidPairing, allowedCU, servicersToPair, err := k.Keeper.ValidatePairingForClient(
+		isValidPairing, allowedCU, providers, err := k.Keeper.ValidatePairingForClient(
 			ctx,
 			relay.SpecId,
 			providerAddr,
@@ -251,7 +252,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, cuAfterQos, servicersToPair, project.Index)
+		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, cuAfterQos, providers, project.Index)
 		if err != nil {
 			var reportedProviders []string
 			for _, p := range relay.UnresponsiveProviders {
@@ -296,19 +297,19 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	return &types.MsgRelayPaymentResponse{RejectedRelays: rejected_relays}, nil
 }
 
-func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum, servicersToPair uint64, projectID string) error {
+func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum uint64, providersToPair []epochstoragetypes.StakeEntry, projectID string) error {
 	// check that unresponsiveData exists
 	if len(unresponsiveProviders) == 0 {
 		return nil
 	}
 
 	// check that servicersToPair is bigger than 1
-	if servicersToPair <= 1 {
+	if len(providersToPair) <= 1 {
 		return nil
 	}
 
 	// the added complainer CU takes into account the number of providers the client complained on and the number
-	complainerCuToAdd := cuSum / (uint64(len(unresponsiveProviders)) * (servicersToPair - 1))
+	complainerCuToAdd := cuSum / (uint64(len(unresponsiveProviders)) * uint64(len(providersToPair)-1))
 
 	// iterate over the unresponsive providers list and update their complainers_total_cu
 	for _, unresponsiveProvider := range unresponsiveProviders {
@@ -316,6 +317,18 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(unresponsiveProvider.GetAddress())
 		if err != nil { // if bad data was given, we cant parse it so we ignote it and continue this protects from spamming wrong information.
 			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, utils.Attribute{Key: "unresponsive_provider_address", Value: unresponsiveProvider})
+			continue
+		}
+
+		found := false
+		for _, provider := range providersToPair {
+			if provider.Address == unresponsiveProvider.Address {
+				found = true
+				break
+			}
+		}
+		if !found {
+			utils.LavaFormatError("reported provider that is not in the pairing list of the client", err, utils.Attribute{Key: "unresponsive_provider_address", Value: unresponsiveProvider})
 			continue
 		}
 
