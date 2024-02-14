@@ -23,6 +23,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, sub := range genState.IprpcSubscriptions {
 		k.SetIprpcSubscription(ctx, sub)
 	}
+	k.SetIprpcData(ctx, genState.MinIprpcCost, genState.IprpcSubscriptions)
 }
 
 // ExportGenesis returns the capability module's exported genesis.

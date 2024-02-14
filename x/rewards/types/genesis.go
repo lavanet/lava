@@ -35,14 +35,20 @@ func (gs GenesisState) Validate() error {
 			at all times. amount of timers found: %v`, len(timeEntries))
 	}
 
+	unique := map[string]struct{}{}
 	for _, sub := range gs.IprpcSubscriptions {
 		_, err := sdk.AccAddressFromBech32(sub)
 		if err != nil {
 			return fmt.Errorf("invalid subscription address. err: %s", err.Error())
 		}
+		_, ok := unique[sub]
+		if ok {
+			return fmt.Errorf("iprpc subscription address is duplicated. address: %s", sub)
+		}
+		unique[sub] = struct{}{}
 	}
 
-	if gs.MinIprpcCost.Denom != DefaultGenesis().MinIprpcCost.Denom {
+	if gs.MinIprpcCost.Denom != "ulava" {
 		return fmt.Errorf("invalid min iprpc cost denom. MinIprpcCost: %s", gs.MinIprpcCost.String())
 	}
 
