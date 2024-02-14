@@ -18,18 +18,6 @@ const (
 
 	// prefix for the CU tracker timer store
 	MonthlyRewardsTSPrefix = "monthly-rewards-ts"
-
-	// prefix for IPRPC eligible subscriptions
-	IprpcSubscriptionPrefix = "iprpc-subscription"
-
-	// prefix for min IPRPC cost
-	MinIprpcCostPrefix = "min-iprpc-cost"
-
-	// prefix for IPRPC reward element
-	IprpcRewardPrefix = "iprpc-reward/"
-
-	// prefix for the current IPRPC reward index
-	IprpcRewardsCurrentPrefix = "iprpc-rewards-current/"
 )
 
 func KeyPrefix(p string) []byte {

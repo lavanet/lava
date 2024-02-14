@@ -28,6 +28,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 		k.SetIprpcReward(ctx, iprpcReward)
 	}
 	k.SetIprpcRewardsCurrent(ctx, genState.IprpcRewardsCurrent)
+	k.SetIprpcData(ctx, genState.MinIprpcCost, genState.IprpcSubscriptions)
 }
 
 // ExportGenesis returns the capability module's exported genesis.
