@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	reportName = "report"
+	reportName   = "report"
+	conflictName = "conflict"
 )
 
 type ConsumerReportsClient struct {
@@ -47,11 +48,25 @@ func (rr ReportsRequest) String() string {
 
 type Reporter interface {
 	AppendReport(report ReportsRequest)
+	AppendConflict(report ConflictRequest)
 }
 
 type ConflictContainer struct {
 	Request pairingtypes.RelayRequest `json:"request"`
 	Reply   pairingtypes.RelayReply   `json:"reply"`
+}
+
+func NewConflictRequest(request1 *pairingtypes.RelayRequest, result1 *pairingtypes.RelayReply, request2 *pairingtypes.RelayRequest, result2 *pairingtypes.RelayReply) ConflictRequest {
+	return ConflictRequest{
+		Name: conflictName,
+		Conflicts: []ConflictContainer{{
+			Request: *request1,
+			Reply:   *result1,
+		}, {
+			Request: *request2,
+			Reply:   *result2,
+		}},
+	}
 }
 
 type ConflictRequest struct {
@@ -60,7 +75,7 @@ type ConflictRequest struct {
 }
 
 func (rr ConflictRequest) String() string {
-	rr.Name = "conflict"
+	rr.Name = conflictName
 	bytes, err := json.Marshal(rr)
 	if err != nil {
 		return ""
@@ -83,6 +98,6 @@ func (cuc *ConsumerReportsClient) AppendReport(report ReportsRequest) {
 	cuc.appendQueue(report)
 }
 
-func (cuc *ConsumerReportsClient) AppendConflict(report ReportsRequest) {
+func (cuc *ConsumerReportsClient) AppendConflict(report ConflictRequest) {
 	cuc.appendQueue(report)
 }
