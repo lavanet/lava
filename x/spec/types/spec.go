@@ -9,6 +9,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -31,6 +32,11 @@ func (spec Spec) ValidateSpec(maxCU uint64) (map[string]string, error) {
 	availavleEncodings := map[string]struct{}{
 		EncodingBase64: {},
 		EncodingHex:    {},
+	}
+
+	ok := commontypes.ValidateString(spec.Index, commontypes.INDEX_RESTRICTIONS, nil)
+	if !ok {
+		return details, fmt.Errorf("spec index can be letters and numbers only %s", spec.Index)
 	}
 
 	for _, char := range spec.Name {
