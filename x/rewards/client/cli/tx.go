@@ -146,5 +146,6 @@ $ %s tx gov submit-legacy-proposal set-iprpc-data --min-cost 0ulava --add-subscr
 	cmd.Flags().StringSlice(addIprpcSubscriptionsFlagName, []string{}, "add iprpc eligible subscriptions")
 	cmd.Flags().StringSlice(removeIprpcSubscriptionsFlagName, []string{}, "remove iprpc eligible subscriptions")
 	cmd.Flags().Bool(expeditedFlagName, false, "set to true to make the spec proposal expedited")
+	cmd.MarkFlagRequired(minIprpcCostFlagName)
 	return cmd
 }
