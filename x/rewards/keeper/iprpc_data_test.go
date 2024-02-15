@@ -112,7 +112,7 @@ func TestIprpcDataValidation(t *testing.T) {
 			_, err := ts.TxRewardsSetIprpcDataProposal(ts.Ctx, tt.authority, tt.cost, tt.subs)
 			if tt.success {
 				require.NoError(t, err)
-				res, err := ts.QueryShowIprpcData()
+				res, err := ts.QueryRewardsShowIprpcData()
 				require.NoError(t, err)
 				require.True(t, tt.cost.IsEqual(res.MinCost))
 				require.Equal(t, tt.subs, res.IprpcSubscriptions)
