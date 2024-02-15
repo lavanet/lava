@@ -33,9 +33,14 @@ service Query {
     option (google.api.http).get = "/lavanet/lava/rewards/show_iprpc_data";
   }
 
-  // ShowIprpcData queries for the iprpc data
+  // IprpcProviderReward queries for a provider's current IPRPC reward (relative to its serviced CU)
   rpc IprpcProviderReward(QueryIprpcProviderRewardRequest) returns (QueryIprpcProviderRewardResponse) {
     option (google.api.http).get = "/lavanet/lava/rewards/iprpc_provider_reward/{provider}";
+  }
+
+  // IprpcSpecReward queries for a spec's IPRPC reward
+  rpc IprpcSpecReward(QueryIprpcSpecRewardRequest) returns (QueryIprpcSpecRewardResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/iprpc_spec_reward/{spec}";
   }
   // this line is used by starport scaffolding # 2
 }
@@ -94,6 +99,17 @@ message QueryIprpcProviderRewardRequest {
 // QueryIprpcProviderRewardResponse is response type for the Query/IprpcProviderReward RPC method.
 message QueryIprpcProviderRewardResponse {
   repeated Specfund spec_funds = 1 [(gogoproto.nullable) = false]; 
+}
+
+// QueryIprpcSpecRewardRequest is request type for the Query/IprpcSpecReward RPC method.
+message QueryIprpcSpecRewardRequest {
+  string spec = 1;
+}
+
+// QueryIprpcSpecRewardResponse is response type for the Query/IprpcSpecReward RPC method.
+message QueryIprpcSpecRewardResponse {
+  repeated IprpcReward iprpc_rewards = 1 [(gogoproto.nullable) = false];
+  uint64 current_month_id = 2;
 }
 
 // this line is used by starport scaffolding # 3

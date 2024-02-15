@@ -871,6 +871,13 @@ func (ts *Tester) QueryRewardsIprpcProviderReward(provider string) (*rewardstype
 	return ts.Keepers.Rewards.IprpcProviderReward(ts.GoCtx, msg)
 }
 
+func (ts *Tester) QueryRewardsIprpcSpecReward(spec string) (*rewardstypes.QueryIprpcSpecRewardResponse, error) {
+	msg := &rewardstypes.QueryIprpcSpecRewardRequest{
+		Spec: spec,
+	}
+	return ts.Keepers.Rewards.IprpcSpecReward(ts.GoCtx, msg)
+}
+
 // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
