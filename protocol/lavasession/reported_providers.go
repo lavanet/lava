@@ -16,7 +16,7 @@ const (
 type ReportedProviders struct {
 	addedToPurgeAndReport map[string]*ReportedProviderEntry // list of purged providers to report for QoS unavailability. (easier to search maps.)
 	lock                  sync.RWMutex
-	metrics.Reporter
+	reporter              metrics.Reporter
 }
 
 type ReportedProviderEntry struct {
@@ -114,8 +114,15 @@ func (rp *ReportedProviders) ReconnectProviders() {
 	}
 }
 
+func (rp *ReportedProviders) AppendReport(report metrics.ReportsRequest) {
+	if rp == nil || rp.reporter == nil {
+		return
+	}
+	rp.reporter.AppendReport(report)
+}
+
 func NewReportedProviders(reporter metrics.Reporter) *ReportedProviders {
-	rp := &ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}, Reporter: reporter}
+	rp := &ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}, reporter: reporter}
 	go func() {
 		ticker := time.NewTicker(ReconnectCandidateTime)
 		defer ticker.Stop()

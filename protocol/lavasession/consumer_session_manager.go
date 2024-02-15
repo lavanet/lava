@@ -701,7 +701,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		utils.LavaFormatDebug("Blocking consumer session", utils.LogAttr("ConsecutiveErrors", consumerSession.ConsecutiveErrors), utils.LogAttr("errorsCount", consumerSession.errorsCount), utils.Attribute{Key: "id", Value: consumerSession.SessionId})
 		consumerSession.BlockListed = true // block this session from future usages
 		// we will check the total number of cu for this provider and decide if we need to report it.
-		if consumerSession.Parent.atomicReadUsedComputeUnits() == 0 { // if we had 0 successful relays and we reached block session we need to report this provider
+		if consumerSession.Parent.atomicReadUsedComputeUnits() <= consumerSession.LatestRelayCu { // if we had 0 successful relays and we reached block session we need to report this provider
 			blockProvider = true
 			reportProvider = true
 		}

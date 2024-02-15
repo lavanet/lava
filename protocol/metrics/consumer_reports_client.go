@@ -21,6 +21,9 @@ type ConsumerReportsClient struct {
 func NewReportsRequest(provider string, errors []error, specId string) ReportsRequest {
 	errorsStrings := []string{}
 	for _, err := range errors {
+		if err == nil {
+			continue
+		}
 		errorsStrings = append(errorsStrings, err.Error())
 	}
 	return ReportsRequest{
