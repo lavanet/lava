@@ -47,6 +47,14 @@ func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAd
 // create new delegation period record
 // add description
 func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+	originalGas := ctx.GasMeter().GasConsumed()
+	defer func() {
+		endGas := ctx.GasMeter().GasConsumed()
+		if endGas > originalGas {
+			ctx.GasMeter().RefundGas(endGas-originalGas, "refund hooks gas")
+		}
+	}()
+
 	if h.k.GetDisableDualstakingHook(ctx) {
 		return nil
 	}
