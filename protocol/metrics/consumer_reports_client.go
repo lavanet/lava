@@ -52,11 +52,6 @@ type Reporter interface {
 	AppendConflict(report ConflictRequest)
 }
 
-type ConflictContainer struct {
-	Request pairingtypes.RelayRequest `json:"request"`
-	Reply   pairingtypes.RelayReply   `json:"reply"`
-}
-
 func NewConflictRequest(request1 *pairingtypes.RelayRequest, result1 *pairingtypes.RelayReply, request2 *pairingtypes.RelayRequest, result2 *pairingtypes.RelayReply) ConflictRequest {
 	return ConflictRequest{
 		Name: conflictName,
@@ -70,6 +65,10 @@ func NewConflictRequest(request1 *pairingtypes.RelayRequest, result1 *pairingtyp
 	}
 }
 
+type ConflictContainer struct {
+	Request pairingtypes.RelayRequest `json:"request"`
+	Reply   pairingtypes.RelayReply   `json:"reply"`
+}
 type ConflictRequest struct {
 	Name      string              `json:"name"`
 	Conflicts []ConflictContainer `json:"conflicts"`
@@ -91,7 +90,7 @@ func NewConsumerReportsClient(endpointAddress string, interval ...time.Duration)
 	}
 
 	cuc := &ConsumerReportsClient{
-		QueueSender: NewQueueSender(endpointAddress, "ConsumerReports", interval...),
+		QueueSender: NewQueueSender(endpointAddress, "ConsumerReports", nil, interval...),
 	}
 	return cuc
 }

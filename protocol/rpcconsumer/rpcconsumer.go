@@ -126,7 +126,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
-
+	options.refererData.ReferrerClient = metrics.NewConsumerReferrerClient(options.refererData.Address)
 	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddressess.ReportsAddressFlag)
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(options.analyticsServerAddressess.MetricsListenAddress)     // start up prometheus metrics
 	consumerUsageserveManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddressess.RelayServerAddress) // start up relay server reporting

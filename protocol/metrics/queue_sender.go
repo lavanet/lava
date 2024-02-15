@@ -14,16 +14,17 @@ import (
 )
 
 type QueueSender struct {
-	name               string
-	endpointAddress    string
-	addQueue           []fmt.Stringer
-	ticker             *time.Ticker
-	lock               sync.RWMutex
-	sendID             int
-	isSendQueueRunning bool
+	name                string
+	endpointAddress     string
+	addQueue            []fmt.Stringer
+	ticker              *time.Ticker
+	lock                sync.RWMutex
+	sendID              int
+	isSendQueueRunning  bool
+	aggregationFunction func([]fmt.Stringer) []fmt.Stringer
 }
 
-func NewQueueSender(endpointAddress string, name string, interval ...time.Duration) *QueueSender {
+func NewQueueSender(endpointAddress string, name string, aggregationFunction func([]fmt.Stringer) []fmt.Stringer, interval ...time.Duration) *QueueSender {
 	if endpointAddress == "" {
 		return nil
 	}
@@ -32,10 +33,11 @@ func NewQueueSender(endpointAddress string, name string, interval ...time.Durati
 		tickerTime = interval[0]
 	}
 	cuc := &QueueSender{
-		name:            name,
-		endpointAddress: endpointAddress,
-		ticker:          time.NewTicker(tickerTime),
-		addQueue:        make([]fmt.Stringer, 0),
+		name:                name,
+		endpointAddress:     endpointAddress,
+		ticker:              time.NewTicker(tickerTime),
+		addQueue:            make([]fmt.Stringer, 0),
+		aggregationFunction: aggregationFunction,
 	}
 
 	go cuc.sendQueueStart()
@@ -111,7 +113,7 @@ func (crc *QueueSender) send(sendQueue []fmt.Stringer, sendID int, endpointAddre
 
 	var resp *http.Response
 	for i := 0; i < 3; i++ {
-		resp, err = client.Post(endpointAddress+"/reports", "application/json", bytes.NewBuffer(jsonData))
+		resp, err = client.Post(endpointAddress, "application/json", bytes.NewBuffer(jsonData))
 		if err != nil {
 			utils.LavaFormatDebug(fmt.Sprintf("[QueueSender:%s] Failed to post request", crc.name), utils.LogAttr("Attempt", i+1), utils.LogAttr("err", err))
 			time.Sleep(2 * time.Second)
@@ -141,6 +143,9 @@ func (crc *QueueSender) handleSendResponse(resp *http.Response, sendID int) {
 func (cuc *QueueSender) sendData(sendQueue []fmt.Stringer, sendID int, cucEndpointAddress string) {
 	if cuc == nil {
 		return
+	}
+	if cuc.aggregationFunction != nil {
+		sendQueue = cuc.aggregationFunction(sendQueue)
 	}
 	resp, err := cuc.send(sendQueue, sendID, cucEndpointAddress)
 	if err != nil {
