@@ -77,15 +77,9 @@ func (k mockBankKeeper) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk
 }
 
 func (k mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
-	// TODO support multiple coins
 	moduleAcc := GetModuleAddress(recipientModule)
-	if amt.Len() > 1 {
-		return fmt.Errorf("mockbankkeeper dont support more than 1 coin")
-	}
-	coin := amt[0]
-
-	accountCoin := k.GetBalance(ctx, senderAddr, coin.Denom)
-	if coin.Amount.GT(accountCoin.Amount) {
+	accountCoins := k.GetAllBalances(ctx, senderAddr)
+	if !accountCoins.IsAllGTE(amt) {
 		return fmt.Errorf("not enough coins")
 	}
 
@@ -99,47 +93,14 @@ func (k mockBankKeeper) UndelegateCoinsFromModuleToAccount(ctx sdk.Context, send
 }
 
 func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-	// TODO support multiple coins
 	moduleAcc := GetModuleAddress(senderModule)
-
-	if amt.Len() > 1 {
-		return fmt.Errorf("mockbankkeeper doesn't support more than 1 coin")
-	}
-	coin := amt[0]
-
-	accountCoin := k.GetBalance(ctx, moduleAcc, coin.Denom)
-	if coin.Amount.GT(accountCoin.Amount) {
-		return fmt.Errorf("not enough coins")
-	}
-
-	k.SubFromBalance(moduleAcc, amt)
-
-	k.AddToBalance(recipientAddr, amt)
-
-	return nil
+	return k.SendCoinsFromAccountToModule(ctx, moduleAcc, recipientAddr.String(), amt)
 }
 
 func (k mockBankKeeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule string, recipientModule string, amt sdk.Coins) error {
-	// TODO support multiple coins
-
 	senderModuleAcc := GetModuleAddress(senderModule)
 	recipientModuleAcc := GetModuleAddress(recipientModule)
-
-	if amt.Len() > 1 {
-		return fmt.Errorf("mockbankkeeper doesn't support more than 1 coin")
-	}
-	coin := amt[0]
-
-	senderAccountCoin := k.GetBalance(ctx, senderModuleAcc, coin.Denom)
-	if coin.Amount.GT(senderAccountCoin.Amount) {
-		return fmt.Errorf("not enough coins")
-	}
-
-	k.SubFromBalance(senderModuleAcc, amt)
-
-	k.AddToBalance(recipientModuleAcc, amt)
-
-	return nil
+	return k.SendCoinsFromAccountToModule(ctx, senderModuleAcc, recipientModuleAcc.String(), amt)
 }
 
 func (k mockBankKeeper) DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
