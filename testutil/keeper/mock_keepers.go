@@ -99,8 +99,7 @@ func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModu
 
 func (k mockBankKeeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule string, recipientModule string, amt sdk.Coins) error {
 	senderModuleAcc := GetModuleAddress(senderModule)
-	recipientModuleAcc := GetModuleAddress(recipientModule)
-	return k.SendCoinsFromAccountToModule(ctx, senderModuleAcc, recipientModuleAcc.String(), amt)
+	return k.SendCoinsFromAccountToModule(ctx, senderModuleAcc, recipientModule, amt)
 }
 
 func (k mockBankKeeper) DelegateCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
