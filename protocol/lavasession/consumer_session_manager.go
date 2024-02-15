@@ -706,7 +706,8 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 			reportProvider = true
 		}
 		if reportProvider {
-			go csm.reportedProviders.AppendReport(metrics.NewReportsRequest(consumerSession.Parent.PublicLavaAddress, consumerSession.ConsecutiveErrors, csm.rpcEndpoint.ChainID))
+			providerAddr := consumerSession.Parent.PublicLavaAddress
+			go csm.reportedProviders.AppendReport(metrics.NewReportsRequest(providerAddr, consumerSession.ConsecutiveErrors, csm.rpcEndpoint.ChainID))
 		}
 	}
 	cuToDecrease := consumerSession.LatestRelayCu

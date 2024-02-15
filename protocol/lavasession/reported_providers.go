@@ -118,6 +118,7 @@ func (rp *ReportedProviders) AppendReport(report metrics.ReportsRequest) {
 	if rp == nil || rp.reporter == nil {
 		return
 	}
+	utils.LavaFormatDebug("sending report on provider", utils.LogAttr("provider", report.Provider))
 	rp.reporter.AppendReport(report)
 }
 
