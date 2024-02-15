@@ -339,9 +339,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 			}
 			refererMatch, ok := websockConn.Locals(refererMatchString).(string)
-			if ok && refererMatch != "" && apil.refererData != nil {
-				go apil.refererData.SendReferer(refererMatch)
-			}
 			ctx, cancel := context.WithCancel(context.Background())
 			guid := utils.GenerateUniqueIdentifier()
 			ctx = utils.WithUniqueIdentifier(ctx, guid)
@@ -350,6 +347,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			utils.LavaFormatDebug("ws in <<<", utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
+			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
+				go apil.refererData.SendReferer(refererMatch)
+			}
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
 			go apil.logger.AddMetricForWebSocket(metricsData, err, websockConn)
@@ -428,10 +428,10 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			utils.LogAttr("headers", headers),
 		)
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		if refererMatch != "" && apil.refererData != nil {
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, consumerIp, metricsData, headers)
+		if refererMatch != "" && apil.refererData != nil && err == nil {
 			go apil.refererData.SendReferer(refererMatch)
 		}
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, consumerIp, metricsData, headers)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 		if err != nil {
