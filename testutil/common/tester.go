@@ -610,9 +610,9 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
 }
 
-func (ts *Tester) TxRewardsSetIprpcDataProposal(ctx sdk.Context, authority string, cost sdk.Coin, subs []string) (*rewardstypes.MsgSetIprpcDataResponse, error) {
+func (ts *Tester) TxRewardsSetIprpcDataProposal(authority string, cost sdk.Coin, subs []string) (*rewardstypes.MsgSetIprpcDataResponse, error) {
 	msg := rewardstypes.NewMsgSetIprpcData(authority, cost, subs)
-	return ts.Servers.RewardsServer.SetIprpcData(sdk.WrapSDKContext(ctx), msg)
+	return ts.Servers.RewardsServer.SetIprpcData(ts.GoCtx, msg)
 }
 
 // TxCreateValidator: implement 'tx staking createvalidator' and bond its tokens
@@ -859,6 +859,7 @@ func (ts *Tester) QueryRewardsBlockReward() (*rewardstypes.QueryBlockRewardRespo
 	return ts.Keepers.Rewards.BlockReward(ts.GoCtx, msg)
 }
 
+// QueryRewardsShowIprpcData implements 'q rewards show-iprpc-data'
 func (ts *Tester) QueryRewardsShowIprpcData() (*rewardstypes.QueryShowIprpcDataResponse, error) {
 	msg := &rewardstypes.QueryShowIprpcDataRequest{}
 	return ts.Keepers.Rewards.ShowIprpcData(ts.GoCtx, msg)

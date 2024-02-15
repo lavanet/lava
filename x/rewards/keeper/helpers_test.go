@@ -6,6 +6,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
@@ -64,6 +65,10 @@ func (ts *tester) feeCollector() sdk.AccAddress {
 func (ts *tester) getPoolBalance(pool rewardsTypes.Pool, denom string) math.Int {
 	coins := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, pool)
 	return coins.AmountOf(denom)
+}
+
+func (ts *tester) iprpcAuthority() string {
+	return authtypes.NewModuleAddress(govtypes.ModuleName).String()
 }
 
 // deductParticipationFees calculates the validators and community participation

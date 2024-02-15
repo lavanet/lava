@@ -109,7 +109,7 @@ func TestIprpcDataValidation(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ts.TxRewardsSetIprpcDataProposal(ts.Ctx, tt.authority, tt.cost, tt.subs)
+			_, err := ts.TxRewardsSetIprpcDataProposal(tt.authority, tt.cost, tt.subs)
 			if tt.success {
 				require.NoError(t, err)
 				res, err := ts.QueryRewardsShowIprpcData()
