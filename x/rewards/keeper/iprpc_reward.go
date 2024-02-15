@@ -86,16 +86,9 @@ func GetIprpcRewardIDFromBytes(bz []byte) uint64 {
 
 // PopIprpcReward gets the lowest id IprpcReward object and removes it
 func (k Keeper) PopIprpcReward(ctx sdk.Context) (types.IprpcReward, bool) {
-	// Get current IprpcReward
-	iprpcReward, found := k.GetIprpcReward(ctx, k.GetIprpcRewardsCurrent(ctx))
-	if !found {
-		return types.IprpcReward{}, false
-	}
-
-	// Remove the reward
-	k.RemoveIprpcReward(ctx, iprpcReward.Id)
-
-	return iprpcReward, true
+	current := k.GetIprpcRewardsCurrent(ctx)
+	k.SetIprpcRewardsCurrent(ctx, current+1)
+	return k.GetIprpcReward(ctx, current)
 }
 
 // AddSpecFunds adds funds for a specific spec for <duration> of months.

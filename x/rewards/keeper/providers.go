@@ -107,7 +107,8 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 		utils.LavaFormatError("current month iprpc reward not found", fmt.Errorf("did not reward providers IPRPC bonus"))
 		return
 	}
-	k.SetIprpcRewardsCurrent(ctx, iprpcReward.Id+1)
+	k.RemoveIprpcReward(ctx, iprpcReward.Id)
+
 	for _, specFund := range iprpcReward.SpecFunds {
 		// collect details
 		details := map[string]string{"spec": specFund.Spec, "rewards": specFund.Fund.String()}
