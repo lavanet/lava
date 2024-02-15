@@ -17,6 +17,8 @@ type Hooks struct {
 	k Keeper
 }
 
+const PROVIDERS_NUM_GAS_REFUND = 50
+
 var _ stakingtypes.StakingHooks = Hooks{}
 
 // Create new dualstaking hooks
@@ -48,9 +50,10 @@ func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAd
 // add description
 func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
 	originalGas := ctx.GasMeter().GasConsumed()
+	providers := 0
 	defer func() {
 		endGas := ctx.GasMeter().GasConsumed()
-		if endGas > originalGas {
+		if endGas > originalGas && providers < PROVIDERS_NUM_GAS_REFUND {
 			ctx.GasMeter().RefundGas(endGas-originalGas, "refund hooks gas")
 		}
 	}()
@@ -59,7 +62,7 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		return nil
 	}
 
-	diff, err := h.k.VerifyDelegatorBalance(ctx, delAddr)
+	diff, providers, err := h.k.VerifyDelegatorBalance(ctx, delAddr)
 	if err != nil {
 		return err
 	}
@@ -82,7 +85,7 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		}
 	}
 
-	diff, err = h.k.VerifyDelegatorBalance(ctx, delAddr)
+	diff, _, err = h.k.VerifyDelegatorBalance(ctx, delAddr)
 	if err != nil {
 		return err
 	}

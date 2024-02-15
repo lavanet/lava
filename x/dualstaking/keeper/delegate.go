@@ -571,11 +571,11 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 }
 
 // returns the difference between validators delegations and provider delegation (validators-providers)
-func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) (math.Int, error) {
+func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) (math.Int, int, error) {
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 	providers, err := k.GetDelegatorProviders(ctx, delAddr.String(), nextEpoch)
 	if err != nil {
-		return math.ZeroInt(), err
+		return math.ZeroInt(), 0, err
 	}
 
 	sumProviderDelegations := sdk.ZeroInt()
@@ -595,5 +595,5 @@ func (k Keeper) VerifyDelegatorBalance(ctx sdk.Context, delAddr sdk.AccAddress) 
 		}
 	}
 
-	return sumValidatorDelegations.Sub(sumProviderDelegations), nil
+	return sumValidatorDelegations.Sub(sumProviderDelegations), len(providers), nil
 }
