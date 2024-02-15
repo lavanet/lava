@@ -223,7 +223,7 @@ func (m Migrator) VerifyDelegationsBalance(ctx sdk.Context) error {
 
 	// verify delegations balance for each delegator
 	for _, d := range delegators {
-		diff, err := m.keeper.VerifyDelegatorBalance(ctx, d)
+		diff, _, err := m.keeper.VerifyDelegatorBalance(ctx, d)
 		if err != nil {
 			return err
 		}
