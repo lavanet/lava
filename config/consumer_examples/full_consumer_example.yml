@@ -134,9 +134,6 @@ endpoints:
     - chain-id: AGR
       api-interface: grpc
       network-address: 127.0.0.1:3387
-    - chain-id: KOIIT
-      api-interface: jsonrpc
-      network-address: 127.0.0.1:3388
     - chain-id: AGR
       api-interface: tendermintrpc
       network-address: 127.0.0.1:3388
@@ -149,4 +146,9 @@ endpoints:
     - chain-id: AGRT
       api-interface: tendermintrpc
       network-address: 127.0.0.1:3391
+    - chain-id: KOIIT
+      api-interface: jsonrpc
+      network-address: 127.0.0.1:3392
 metrics-listen-address: ":7779"
+referer-be-address: "http://127.0.0.1:6500"
+reports-be-address: "http://127.0.0.1:6501"
