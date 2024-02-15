@@ -63,7 +63,6 @@ func TestReportsClientFlows(t *testing.T) {
 
 func TestReportsClientNull(t *testing.T) {
 	t.Run("null", func(t *testing.T) {
-
 		serverClient := NewConsumerReportsClient("")
 		require.Nil(t, serverClient)
 		serverClient.AppendReport(NewReportsRequest("lava@test", []error{fmt.Errorf("bad"), fmt.Errorf("very-bad")}, "LAV1"))

@@ -53,7 +53,6 @@ func TestReferrerClientFlows(t *testing.T) {
 
 func TestReferrerClientNull(t *testing.T) {
 	t.Run("null", func(t *testing.T) {
-
 		serverClient := NewConsumerReferrerClient("")
 		require.Nil(t, serverClient)
 		serverClient.AppendReferrer(NewReferrerRequest("banana"))
