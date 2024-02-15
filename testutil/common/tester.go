@@ -859,9 +859,16 @@ func (ts *Tester) QueryRewardsBlockReward() (*rewardstypes.QueryBlockRewardRespo
 	return ts.Keepers.Rewards.BlockReward(ts.GoCtx, msg)
 }
 
-func (ts *Tester) QueryShowIprpcData() (*rewardstypes.QueryShowIprpcDataResponse, error) {
+func (ts *Tester) QueryRewardsShowIprpcData() (*rewardstypes.QueryShowIprpcDataResponse, error) {
 	msg := &rewardstypes.QueryShowIprpcDataRequest{}
 	return ts.Keepers.Rewards.ShowIprpcData(ts.GoCtx, msg)
+}
+
+func (ts *Tester) QueryRewardsIprpcProviderReward(provider string) (*rewardstypes.QueryIprpcProviderRewardResponse, error) {
+	msg := &rewardstypes.QueryIprpcProviderRewardRequest{
+		Provider: provider,
+	}
+	return ts.Keepers.Rewards.IprpcProviderReward(ts.GoCtx, msg)
 }
 
 // block/epoch helpers
