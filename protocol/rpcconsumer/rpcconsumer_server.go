@@ -51,6 +51,7 @@ type RPCConsumerServer struct {
 	consumerConsistency    *ConsumerConsistency
 	sharedState            bool // using the cache backend to sync the latest seen block with other consumers
 	relaysMonitor          *metrics.RelaysMonitor
+	reporter               metrics.Reporter
 }
 
 type relayResponse struct {
@@ -80,6 +81,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	cmdFlags common.ConsumerCmdFlags,
 	sharedState bool,
 	refererData *chainlib.RefererData,
+	reporter metrics.Reporter,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
@@ -94,7 +96,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.consumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
 	rpccs.sharedState = sharedState
-
+	rpccs.reporter = reporter
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData)
 	if err != nil {
 		return err
@@ -865,7 +867,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 			if err != nil {
 				utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "conflict", Value: conflict})
 			}
-			rpccs.rpcConsumerLogs.Reporter().AppendConflict(metrics.NewConflictRequest(relayResult.Request, relayResult.Reply, relayResultDataReliability.Request, relayResultDataReliability.Reply))
+			rpccs.reporter.AppendConflict(metrics.NewConflictRequest(relayResult.Request, relayResult.Reply, relayResultDataReliability.Request, relayResultDataReliability.Reply))
 		}
 	}
 	return nil

@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	metrics "github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
@@ -15,6 +16,7 @@ const (
 type ReportedProviders struct {
 	addedToPurgeAndReport map[string]*ReportedProviderEntry // list of purged providers to report for QoS unavailability. (easier to search maps.)
 	lock                  sync.RWMutex
+	metrics.Reporter
 }
 
 type ReportedProviderEntry struct {
@@ -112,8 +114,8 @@ func (rp *ReportedProviders) ReconnectProviders() {
 	}
 }
 
-func NewReportedProviders() *ReportedProviders {
-	rp := &ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}}
+func NewReportedProviders(reporter metrics.Reporter) *ReportedProviders {
+	rp := &ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}, Reporter: reporter}
 	go func() {
 		ticker := time.NewTicker(ReconnectCandidateTime)
 		defer ticker.Stop()

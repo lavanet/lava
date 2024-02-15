@@ -66,6 +66,7 @@ lavad tx gov vote $(latest_vote) yes -y --from alice --gas-adjustment "1.5" --ga
 
 echo; echo "#### Sending proposal for plans del ####"
 lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) --enable-auto-renewal -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+wait_count_blocks 2
 lavad tx project set-policy $(lavad keys show user1 -a)-admin ./cookbook/projects/policy_all_chains_with_addon.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # MANTLE

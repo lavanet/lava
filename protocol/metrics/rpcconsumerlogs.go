@@ -90,10 +90,6 @@ func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
 }
 
-func (rpccl *RPCConsumerLogs) Reporter() Reporter {
-	return rpccl.consumerMetricsManager
-}
-
 // Input will be masked with a random GUID if returnMaskedErrors is set to true
 func (rpccl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error, msgSeed string) string {
 	type ErrorData struct {

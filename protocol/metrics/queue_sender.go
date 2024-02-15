@@ -23,15 +23,18 @@ type QueueSender struct {
 	isSendQueueRunning bool
 }
 
-func NewQueueSender(endpointAddress string, name string) *QueueSender {
+func NewQueueSender(endpointAddress string, name string, interval ...time.Duration) *QueueSender {
 	if endpointAddress == "" {
 		return nil
 	}
-
+	tickerTime := 30 * time.Second
+	if len(interval) > 0 {
+		tickerTime = interval[0]
+	}
 	cuc := &QueueSender{
 		name:            name,
 		endpointAddress: endpointAddress,
-		ticker:          time.NewTicker(30 * time.Second),
+		ticker:          time.NewTicker(tickerTime),
 		addQueue:        make([]fmt.Stringer, 0),
 	}
 
@@ -81,6 +84,9 @@ func (crc *QueueSender) sendQueueTick() {
 }
 
 func (cuc *QueueSender) appendQueue(request fmt.Stringer) {
+	if cuc == nil {
+		return
+	}
 	cuc.lock.Lock()
 	defer cuc.lock.Unlock()
 	cuc.addQueue = append(cuc.addQueue, request)

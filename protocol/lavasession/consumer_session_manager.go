@@ -706,7 +706,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 			reportProvider = true
 		}
 		if reportProvider {
-			go csm.consumerMetricsManager.AppendReport(metrics.NewReportsRequest(consumerSession.Parent.PublicLavaAddress, consumerSession.ConsecutiveErrors, csm.rpcEndpoint.ChainID))
+			go csm.reportedProviders.AppendReport(metrics.NewReportsRequest(consumerSession.Parent.PublicLavaAddress, consumerSession.ConsecutiveErrors, csm.rpcEndpoint.ChainID))
 		}
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
@@ -951,9 +951,9 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager) *ConsumerSessionManager {
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
-		reportedProviders:      *NewReportedProviders(),
+		reportedProviders:      *NewReportedProviders(reporter),
 		consumerMetricsManager: consumerMetricsManager,
 	}
 	csm.rpcEndpoint = rpcEndpoint

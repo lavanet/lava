@@ -3,6 +3,7 @@ package metrics
 import (
 	"encoding/json"
 	"strings"
+	"time"
 
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -83,21 +84,28 @@ func (rr ConflictRequest) String() string {
 	return string(bytes)
 }
 
-func NewConsumerReportsClient(endpointAddress string) *ConsumerReportsClient {
+func NewConsumerReportsClient(endpointAddress string, interval ...time.Duration) *ConsumerReportsClient {
 	if endpointAddress == "" {
 		utils.LavaFormatInfo("Running with Consumer Relay Server Disabled")
 		return nil
 	}
+
 	cuc := &ConsumerReportsClient{
-		QueueSender: NewQueueSender(endpointAddress, "ConsumerReports"),
+		QueueSender: NewQueueSender(endpointAddress, "ConsumerReports", interval...),
 	}
 	return cuc
 }
 
 func (cuc *ConsumerReportsClient) AppendReport(report ReportsRequest) {
+	if cuc == nil {
+		return
+	}
 	cuc.appendQueue(report)
 }
 
 func (cuc *ConsumerReportsClient) AppendConflict(report ConflictRequest) {
+	if cuc == nil {
+		return
+	}
 	cuc.appendQueue(report)
 }
