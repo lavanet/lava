@@ -150,5 +150,5 @@ endpoints:
       api-interface: jsonrpc
       network-address: 127.0.0.1:3392
 metrics-listen-address: ":7779"
-referer-be-address: "http://127.0.0.1:6500"
-reports-be-address: "http://127.0.0.1:6501"
+# referer-be-address: "http://127.0.0.1:6500"
+# reports-be-address: "http://127.0.0.1:6501"
