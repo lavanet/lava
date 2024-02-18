@@ -82,6 +82,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 					specCu.ProvidersCu[basepay.Provider] += basepay.IprpcCu
 				}
 				specCu.TotalCu += basepay.IprpcCu
+				specCuMap[spec.ChainID] = specCu
 			}
 
 			// calculate the providers bonus base on adjusted base pay
@@ -114,7 +115,21 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 		utils.LavaFormatError("current month iprpc reward not found", fmt.Errorf("did not reward providers IPRPC bonus"))
 		return
 	}
-	k.SetIprpcRewardsCurrent(ctx, iprpcReward.Id+1)
+	if len(specCuMap) == 0 {
+		// none of the providers will get the IPRPC reward this month, transfer the funds to the next month
+		nextMonthIprpcReward, found := k.PopIprpcReward(ctx)
+		nextMonthId := k.GetIprpcRewardsCurrent(ctx)
+		if !found {
+			nextMonthIprpcReward = types.IprpcReward{Id: nextMonthId, SpecFunds: iprpcReward.SpecFunds}
+		} else {
+			for _, specFund := range nextMonthIprpcReward.SpecFunds {
+				k.addSpecFunds(ctx, specFund.Spec, specFund.Fund, 1) // TODO: duration might be wrong
+			}
+		}
+	} else {
+		// providers will get this month's reward, remove the popped reward object
+		k.RemoveIprpcReward(ctx, iprpcReward.Id)
+	}
 	for _, specFund := range iprpcReward.SpecFunds {
 		// collect details
 		details := map[string]string{"spec": specFund.Spec, "rewards": specFund.Fund.String()}

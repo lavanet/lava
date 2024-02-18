@@ -86,42 +86,36 @@ func GetIprpcRewardIDFromBytes(bz []byte) uint64 {
 
 // PopIprpcReward gets the lowest id IprpcReward object and removes it
 func (k Keeper) PopIprpcReward(ctx sdk.Context) (types.IprpcReward, bool) {
-	// Get current IprpcReward
-	iprpcReward, found := k.GetIprpcReward(ctx, k.GetIprpcRewardsCurrent(ctx))
-	if !found {
-		return types.IprpcReward{}, false
-	}
-
-	// Remove the reward
-	k.RemoveIprpcReward(ctx, iprpcReward.Id)
-
-	return iprpcReward, true
+	current := k.GetIprpcRewardsCurrent(ctx)
+	k.SetIprpcRewardsCurrent(ctx, current+1)
+	return k.GetIprpcReward(ctx, current)
 }
 
 // AddSpecFunds adds funds for a specific spec for <duration> of months.
 // This function is used by the fund-iprpc TX.
 func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, duration uint64) {
-	startID := k.GetIprpcRewardsCurrent(ctx) + 1 // start funding from the next month
-
+	startID := k.GetIprpcRewardsCurrent(ctx) + 1 // fund IPRPC only from the next month
 	for i := startID; i < duration; i++ {
 		iprpcReward, found := k.GetIprpcReward(ctx, i)
 		if found {
-			// found IPRPC reward
+			// found IPRPC reward, find if spec exists
+			specIndex := -1
 			for i := 0; i < len(iprpcReward.SpecFunds); i++ {
 				if iprpcReward.SpecFunds[i].Spec == spec {
-					iprpcReward.SpecFunds[i].Fund = iprpcReward.SpecFunds[i].Fund.Add(fund...)
-					k.SetIprpcReward(ctx, iprpcReward)
-					return
+					specIndex = i
 				}
 			}
-			// did not find spec in IPRPC reward -> create a new one
-			iprpcReward.SpecFunds = append(iprpcReward.SpecFunds, types.Specfund{Spec: spec, Fund: fund})
-			k.SetIprpcReward(ctx, iprpcReward)
+			// update spec funds
+			if specIndex >= 0 {
+				iprpcReward.SpecFunds[specIndex].Fund = iprpcReward.SpecFunds[specIndex].Fund.Add(fund...)
+			} else {
+				iprpcReward.SpecFunds = append(iprpcReward.SpecFunds, types.Specfund{Spec: spec, Fund: fund})
+			}
 		} else {
 			// did not find IPRPC reward -> create a new one
 			iprpcReward.Id = i
 			iprpcReward.SpecFunds = []types.Specfund{{Spec: spec, Fund: fund}}
-			k.SetIprpcReward(ctx, iprpcReward)
 		}
+		k.SetIprpcReward(ctx, iprpcReward)
 	}
 }
