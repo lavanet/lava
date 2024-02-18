@@ -102,22 +102,24 @@ func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, durat
 	for i := startID; i < duration; i++ {
 		iprpcReward, found := k.GetIprpcReward(ctx, i)
 		if found {
-			// found IPRPC reward
+			// found IPRPC reward, find if spec exists
+			specIndex := -1
 			for i := 0; i < len(iprpcReward.SpecFunds); i++ {
 				if iprpcReward.SpecFunds[i].Spec == spec {
-					iprpcReward.SpecFunds[i].Fund = iprpcReward.SpecFunds[i].Fund.Add(fund...)
-					k.SetIprpcReward(ctx, iprpcReward)
-					return
+					specIndex = i
 				}
 			}
-			// did not find spec in IPRPC reward -> create a new one
-			iprpcReward.SpecFunds = append(iprpcReward.SpecFunds, types.Specfund{Spec: spec, Fund: fund})
-			k.SetIprpcReward(ctx, iprpcReward)
+			// update spec funds
+			if specIndex >= 0 {
+				iprpcReward.SpecFunds[specIndex].Fund = iprpcReward.SpecFunds[specIndex].Fund.Add(fund...)
+			} else {
+				iprpcReward.SpecFunds = append(iprpcReward.SpecFunds, types.Specfund{Spec: spec, Fund: fund})
+			}
 		} else {
 			// did not find IPRPC reward -> create a new one
 			iprpcReward.Id = i
 			iprpcReward.SpecFunds = []types.Specfund{{Spec: spec, Fund: fund}}
-			k.SetIprpcReward(ctx, iprpcReward)
 		}
+		k.SetIprpcReward(ctx, iprpcReward)
 	}
 }
