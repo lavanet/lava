@@ -9,7 +9,7 @@ import (
 )
 
 func TestReportedProvider(t *testing.T) {
-	reportedProviders := NewReportedProviders()
+	reportedProviders := NewReportedProviders(nil)
 	providers := []string{"p1", "p2", "p3"}
 	reportedProviders.ReportProvider(providers[0], 0, 0, nil)
 	require.True(t, reportedProviders.IsReported(providers[0]))
@@ -31,7 +31,7 @@ func TestReportedProvider(t *testing.T) {
 }
 
 func TestReportedErrors(t *testing.T) {
-	reportedProviders := NewReportedProviders()
+	reportedProviders := NewReportedProviders(nil)
 	providers := []string{"p1", "p2", "p3"}
 	reportedProviders.ReportProvider(providers[0], 5, 0, nil)
 	require.True(t, reportedProviders.IsReported(providers[0]))
@@ -63,7 +63,7 @@ func TestReportedReconnect(t *testing.T) {
 		reconnectAttempt++
 		return fmt.Errorf("nope")
 	}
-	reportedProviders := NewReportedProviders()
+	reportedProviders := NewReportedProviders(nil)
 	providers := []string{"p1", "p2", "p3", "p4"}
 	reportedProviders.ReportProvider(providers[0], 0, 5, reconnected)
 	require.True(t, reportedProviders.IsReported(providers[0]))

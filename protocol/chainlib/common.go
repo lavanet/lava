@@ -1,7 +1,6 @@
 package chainlib
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -374,33 +373,20 @@ func ValidateNilResponse(responseString string) error {
 }
 
 type RefererData struct {
-	Address string
-	Marker  string
+	Address        string
+	Marker         string
+	ReferrerClient *metrics.ConsumerReferrerClient
 }
 
 func (rd *RefererData) SendReferer(refererMatchString string) error {
 	if rd == nil || rd.Address == "" {
 		return nil
 	}
-	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
-	payload := map[string]interface{}{}
-	payload["referer-id"] = refererMatchString
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return utils.LavaFormatError("failed marshaling payload for Referer", err)
+	if rd.ReferrerClient == nil {
+		return nil
 	}
-	req, err := http.NewRequest("POST", rd.Address, bytes.NewBuffer(payloadBytes))
-	if err != nil {
-		return utils.LavaFormatError("failed building a request for referer", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
 
-	// Make the HTTP request
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return utils.LavaFormatDebug("failed sending http request", utils.LogAttr("error", err))
-	}
-	defer resp.Body.Close()
+	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
+	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString))
 	return nil
 }
