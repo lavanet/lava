@@ -107,19 +107,6 @@ func (sv *SpecValidator) VerifySpec(spec spectypes.Spec) {
 	sv.validateChain(context.Background(), chainId)
 }
 
-// runs only for chains that aren't active yet
-func (sv *SpecValidator) VerifyEndpoint(endpoint lavasession.RPCEndpoint) error {
-	sv.lock.Lock()
-	defer sv.lock.Unlock()
-
-	chainId := endpoint.ChainID
-	if _, found := sv.chainFetchers[chainId]; !found {
-		return utils.LavaFormatError("Could not find chainFetchers with given chainId", nil, utils.Attribute{Key: "chainId", Value: chainId})
-	}
-	utils.LavaFormatDebug("Running spec verification for chainId and api interface", utils.LogAttr("endpoint", endpoint.Key()))
-	return sv.validateEndpoint(context.Background(), endpoint)
-}
-
 func (sv *SpecValidator) Active() bool {
 	return true
 }
@@ -165,18 +152,6 @@ func (sv *SpecValidator) getDisabledChains(ctx context.Context) map[string]struc
 		}
 	}
 	return disabledChains
-}
-
-func (sv *SpecValidator) validateEndpoint(ctx context.Context, endpoint lavasession.RPCEndpoint) error {
-	// when there's required endpoints, check if the endpoint of the chain fetcher match requirement
-	for _, chainFetcher := range sv.chainFetchers[endpoint.ChainID] {
-		rpcEndpoint := sv.getRpcProviderEndpointFromChainFetcher(chainFetcher)
-		if endpoint.Key() != rpcEndpoint.Key() {
-			continue
-		}
-		return (*chainFetcher).Validate(ctx)
-	}
-	return utils.LavaFormatError("did not find endpoint to validate, no chain fetcher registered", nil, utils.LogAttr("endpoint", endpoint))
 }
 
 func (sv *SpecValidator) validateChain(ctx context.Context, chainId string) {

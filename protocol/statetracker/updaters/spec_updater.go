@@ -28,7 +28,6 @@ type SpecUpdatable interface {
 
 type SpecVerifier interface {
 	VerifySpec(spectypes.Spec)
-	VerifyEndpoint(lavasession.RPCEndpoint) error
 	GetUniqueName() string
 }
 
@@ -89,30 +88,30 @@ func (su *SpecUpdater) RegisterSpecUpdatable(ctx context.Context, specUpdatable 
 	return nil
 }
 
-func (su *SpecUpdater) RegisterSpecVerifier(ctx context.Context, specVerifier *SpecVerifier, endpoint lavasession.RPCEndpoint) error {
-	err := su.registerVerifier(endpoint, specVerifier)
+func (su *SpecUpdater) RegisterSpecVerifier(ctx context.Context, specVerifier *SpecVerifier, chainId string) error {
+	err := su.registerVerifier(chainId, specVerifier)
 	if err != nil {
 		return err
 	}
-	return (*specVerifier).VerifyEndpoint(endpoint)
+	return nil
 }
 
-func (su *SpecUpdater) registerVerifier(endpoint lavasession.RPCEndpoint, specVerifier *SpecVerifier) error {
+func (su *SpecUpdater) registerVerifier(chainId string, specVerifier *SpecVerifier) error {
 	su.lock.Lock()
 	defer su.lock.Unlock()
 
 	// validating
-	if su.chainId != endpoint.ChainID {
-		return utils.LavaFormatError("panic level error Trying to register spec for wrong chain id stored in spec_updater", nil, utils.Attribute{Key: "endpoint", Value: endpoint}, utils.Attribute{Key: "stored_spec", Value: su.chainId})
+	if su.chainId != chainId {
+		return utils.LavaFormatError("panic level error Trying to register spec for wrong chain id stored in spec_updater", nil, utils.Attribute{Key: "chainId", Value: chainId}, utils.Attribute{Key: "stored_spec", Value: su.chainId})
 	}
 
 	verifierUniqueName := (*specVerifier).GetUniqueName()
-	key := strings.Join([]string{verifierUniqueName, endpoint.Key()}, "_")
+	key := strings.Join([]string{verifierUniqueName, chainId}, "_")
 	existingSpecVerifier, found := su.specVerifiers[key]
 	if found {
 		return utils.LavaFormatError("panic level error Trying to register to spec verifications on already registered verifier unique name + chain + API interface", nil,
 			utils.Attribute{Key: "verifierUniqueName", Value: verifierUniqueName},
-			utils.Attribute{Key: "endpoint", Value: endpoint},
+			utils.Attribute{Key: "chainId", Value: chainId},
 			utils.Attribute{Key: "specVerifier", Value: existingSpecVerifier})
 	}
 

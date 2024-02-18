@@ -73,7 +73,7 @@ func (pp *ProviderPolicy) GetSupportedExtensions(specID string) (extensions []ep
 type ProviderStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
-	RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, endpoint lavasession.RPCEndpoint) error
+	RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, chainId string) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
@@ -359,33 +359,37 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, uint64(block))
 		}
 	}
+	var chainFetcher chainlib.ChainFetcherIf
+	if enabled, _ := chainParser.DataReliabilityParams(); enabled {
+		chainFetcher = chainlib.NewChainFetcher(
+			ctx,
+			&chainlib.ChainFetcherOptions{
+				ChainRouter: chainRouter,
+				ChainParser: chainParser,
+				Endpoint:    rpcProviderEndpoint,
+				Cache:       rpcp.cache,
+			},
+		)
+	} else {
+		chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
+	}
+
+	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
+	err = chainFetcher.Validate(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Add the chain fetcher to the spec validator
+	err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
+	if err != nil {
+		return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
+	}
 
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
 	chainCommonSetup := func() error {
 		rpcp.chainMutexes[chainID].Lock()
 		defer rpcp.chainMutexes[chainID].Unlock()
-
-		var chainFetcher chainlib.ChainFetcherIf
-		if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-			chainFetcher = chainlib.NewChainFetcher(
-				ctx,
-				&chainlib.ChainFetcherOptions{
-					ChainRouter: chainRouter,
-					ChainParser: chainParser,
-					Endpoint:    rpcProviderEndpoint,
-					Cache:       rpcp.cache,
-				},
-			)
-		} else {
-			chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
-		}
-
-		// Add the chain fetcher to the spec validator
-		err := specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
-		if err != nil {
-			return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
-		}
-
 		var found bool
 		chainTracker, found = rpcp.chainTrackers.GetTrackerPerChain(chainID)
 		if !found {
@@ -413,7 +417,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			}
 
 			utils.LavaFormatDebug("Registering for spec verifications for endpoint", utils.LogAttr("rpcEndpoint", rpcEndpoint))
-			err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint)
+			// we register for spec verifications only once, and this triggers all chainFetchers of that specId when it triggers
+			err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint.ChainID)
 			if err != nil {
 				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
