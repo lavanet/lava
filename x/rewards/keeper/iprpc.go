@@ -59,14 +59,8 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 		)
 	}
 
-	// check if to add funds from next month or to current month
-	fromNextMonth := false
-	if utils.IsMiddleOfMonthPassed(ctx.BlockTime()) {
-		fromNextMonth = true
-	}
-
-	// add spec funds to current/next month IPRPC reward object
-	k.addSpecFunds(ctx, spec, fund, duration, fromNextMonth)
+	// add spec funds to next month IPRPC reward object
+	k.addSpecFunds(ctx, spec, fund, duration)
 
 	return nil
 }
