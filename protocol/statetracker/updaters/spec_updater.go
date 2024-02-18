@@ -28,6 +28,7 @@ type SpecUpdatable interface {
 
 type SpecVerifier interface {
 	VerifySpec(spectypes.Spec)
+	VerifyEndpoint(lavasession.RPCEndpoint) error
 	GetUniqueName() string
 }
 
@@ -81,6 +82,7 @@ func (su *SpecUpdater) RegisterSpecUpdatable(ctx context.Context, specUpdatable 
 		if err != nil {
 			return utils.LavaFormatError("panic level error could not get chain spec failed registering", err, utils.Attribute{Key: "chainID", Value: su.chainId})
 		}
+		su.spec = spec
 	}
 	(*specUpdatable).SetSpec(*spec)
 	su.specUpdatables[key] = specUpdatable
@@ -88,6 +90,14 @@ func (su *SpecUpdater) RegisterSpecUpdatable(ctx context.Context, specUpdatable 
 }
 
 func (su *SpecUpdater) RegisterSpecVerifier(ctx context.Context, specVerifier *SpecVerifier, endpoint lavasession.RPCEndpoint) error {
+	err := su.registerVerifier(endpoint, specVerifier)
+	if err != nil {
+		return err
+	}
+	return (*specVerifier).VerifyEndpoint(endpoint)
+}
+
+func (su *SpecUpdater) registerVerifier(endpoint lavasession.RPCEndpoint, specVerifier *SpecVerifier) error {
 	su.lock.Lock()
 	defer su.lock.Unlock()
 
@@ -106,17 +116,6 @@ func (su *SpecUpdater) RegisterSpecVerifier(ctx context.Context, specVerifier *S
 			utils.Attribute{Key: "specVerifier", Value: existingSpecVerifier})
 	}
 
-	var spec *spectypes.Spec
-	if su.spec != nil {
-		spec = su.spec
-	} else { // we don't have spec stored so we need to fetch it
-		var err error
-		spec, err = su.specGetter.GetSpec(ctx, su.chainId)
-		if err != nil {
-			return utils.LavaFormatError("panic level error could not get chain spec failed registering", err, utils.LogAttr("chainID", su.chainId))
-		}
-	}
-	(*specVerifier).VerifySpec(*spec)
 	su.specVerifiers[key] = specVerifier
 	return nil
 }
@@ -147,7 +146,7 @@ func (su *SpecUpdater) updateInner(latestBlock int64) {
 		utils.LavaFormatDebug("SpecUpdater: updating spec for chainId",
 			utils.LogAttr("chainId", su.chainId),
 			utils.LogAttr("specVerifier", (*specVerifier).GetUniqueName()))
-		(*specVerifier).VerifySpec(*spec)
+		go (*specVerifier).VerifySpec(*spec)
 	}
 	su.shouldUpdate = false // update was successful
 }
