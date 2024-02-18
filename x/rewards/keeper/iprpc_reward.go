@@ -94,8 +94,8 @@ func (k Keeper) PopIprpcReward(ctx sdk.Context) (types.IprpcReward, bool) {
 // AddSpecFunds adds funds for a specific spec for <duration> of months.
 // This function is used by the fund-iprpc TX.
 func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, duration uint64) {
-	startID := k.GetIprpcRewardsCurrent(ctx) + 1 // fund IPRPC only from the next month
-	for i := startID; i < duration; i++ {
+	startID := k.GetIprpcRewardsCurrent(ctx) + 1 // fund IPRPC only from the next month for <duration> months
+	for i := startID; i < duration+1; i++ {
 		iprpcReward, found := k.GetIprpcReward(ctx, i)
 		if found {
 			// found IPRPC reward, find if spec exists
