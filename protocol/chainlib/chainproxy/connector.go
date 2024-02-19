@@ -472,8 +472,9 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, nodeUrl co
 					cancel()
 					if errNew == nil {
 						// this means our endpoint is TLS, and we support upgrading even if the config didn't explicitly say it
+						utils.LavaFormatDebug("upgraded TLS connection for grpc instead of insecure", utils.LogAttr("address", nodeUrl.String()))
 						connector.setCredentials(credentialsToConnect)
-						break
+						return rpcClient, nil
 					}
 				}
 			}
