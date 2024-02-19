@@ -684,32 +684,6 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted consumer session")
 	}
 
-	consumerSession.QoSInfo.TotalRelays++
-	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
-	consumerSession.errosCount += 1
-	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times or session went out of sync we block it.
-	var consumerSessionBlockListed bool
-	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession || IsSessionSyncLoss(errorReceived) {
-		utils.LavaFormatDebug("Blocking consumer session", utils.LogAttr("ConsecutiveNumberOfFailures", consumerSession.ConsecutiveNumberOfFailures), utils.LogAttr("errosCount", consumerSession.errosCount), utils.Attribute{Key: "id", Value: consumerSession.SessionId})
-		consumerSession.BlockListed = true // block this session from future usages
-		consumerSessionBlockListed = true
-	}
-	cuToDecrease := consumerSession.LatestRelayCu
-	// latency, isHangingApi, syncScore arent updated when there is a failure
-	go csm.providerOptimizer.AppendRelayFailure(consumerSession.Parent.PublicLavaAddress)
-	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
-
-	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
-	reportErrors := consumerSession.ConsecutiveNumberOfFailures
-	// finished with consumerSession here can unlock.
-	csm.updateMetricsManager(consumerSession)
-	consumerSession.lock.Unlock() // we unlock before we change anything in the parent ConsumerSessionsWithProvider
-
-	err := parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
-	if err != nil {
-		return err
-	}
-
 	// check if need to block & report
 	var blockProvider, reportProvider bool
 	if ReportAndBlockProviderError.Is(errorReceived) {
@@ -719,18 +693,41 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		blockProvider = true
 	}
 
-	// if BlockListed is true here meaning we had a ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession or out of sync
-	// we will check the total number of cu for this provider and decide if we need to report it.
-	if consumerSessionBlockListed {
-		if parentConsumerSessionsWithProvider.atomicReadUsedComputeUnits() == 0 { // if we had 0 successful relays and we reached block session we need to report this provider
+	consumerSession.QoSInfo.TotalRelays++
+	consumerSession.ConsecutiveErrors = append(consumerSession.ConsecutiveErrors, errorReceived)
+	consumerSession.errorsCount += 1
+	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times or session went out of sync we block it.
+	if len(consumerSession.ConsecutiveErrors) > MaximumNumberOfFailuresAllowedPerConsumerSession || IsSessionSyncLoss(errorReceived) {
+		utils.LavaFormatDebug("Blocking consumer session", utils.LogAttr("ConsecutiveErrors", consumerSession.ConsecutiveErrors), utils.LogAttr("errorsCount", consumerSession.errorsCount), utils.Attribute{Key: "id", Value: consumerSession.SessionId})
+		consumerSession.BlockListed = true // block this session from future usages
+		// we will check the total number of cu for this provider and decide if we need to report it.
+		if consumerSession.Parent.atomicReadUsedComputeUnits() <= consumerSession.LatestRelayCu { // if we had 0 successful relays and we reached block session we need to report this provider
 			blockProvider = true
 			reportProvider = true
 		}
+		if reportProvider {
+			providerAddr := consumerSession.Parent.PublicLavaAddress
+			go csm.reportedProviders.AppendReport(metrics.NewReportsRequest(providerAddr, consumerSession.ConsecutiveErrors, csm.rpcEndpoint.ChainID))
+		}
+	}
+	cuToDecrease := consumerSession.LatestRelayCu
+	// latency, isHangingApi, syncScore arent updated when there is a failure
+	go csm.providerOptimizer.AppendRelayFailure(consumerSession.Parent.PublicLavaAddress)
+	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
+	consecutiveErrors := uint64(len(consumerSession.ConsecutiveErrors))
+	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
+	csm.updateMetricsManager(consumerSession)
+	// finished with consumerSession here can unlock.
+	consumerSession.lock.Unlock() // we unlock before we change anything in the parent ConsumerSessionsWithProvider
+
+	err := parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
+	if err != nil {
+		return err
 	}
 
 	if blockProvider {
 		publicProviderAddress, pairingEpoch := parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch()
-		err = csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch, 0, reportErrors, nil)
+		err = csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch, 0, consecutiveErrors, nil)
 		if err != nil {
 			if EpochMismatchError.Is(err) {
 				return nil // no effects this epoch has been changed
@@ -755,8 +752,8 @@ func (csm *ConsumerSessionManager) OnDataReliabilitySessionDone(consumerSession 
 		return sdkerrors.Wrapf(err, "OnDataReliabilitySessionDone, consumerSession.lock must be locked before accessing this method")
 	}
 
-	defer consumerSession.lock.Unlock()               // we need to be locked here, if we didn't get it locked we try lock anyway
-	consumerSession.ConsecutiveNumberOfFailures = 0   // reset failures.
+	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
+	consumerSession.ConsecutiveErrors = []error{}
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
 	if expectedBH-latestServicedBlock > 1000 {
 		utils.LavaFormatWarning("identified block gap", nil,
@@ -790,8 +787,8 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	defer consumerSession.lock.Unlock()                    // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
-	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
-	consumerSession.LatestBlock = latestServicedBlock      // update latest serviced block
+	consumerSession.ConsecutiveErrors = []error{}
+	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
 	// calculate QoS
 	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
@@ -799,8 +796,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	return nil
 }
 
-// func ()
-
+// updates QoS metrics for a provider
 // consumerSession should still be locked when accessing this method as it fetches information from the session it self
 func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleConsumerSession) {
 	if csm.consumerMetricsManager == nil {
@@ -945,54 +941,7 @@ func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *
 	defer consumerSession.lock.Unlock()                    // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
-	consumerSession.ConsecutiveNumberOfFailures = 0        // reset failures.
-	return nil
-}
-
-// On a failed DataReliability session we don't decrease the cu unlike a normal session, we just unlock and verify if we need to block this session or provider.
-func (csm *ConsumerSessionManager) OnDataReliabilitySessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
-	// consumerSession must be locked when getting here.
-	if err := csm.verifyLock(consumerSession); err != nil {
-		return sdkerrors.Wrapf(err, "OnDataReliabilitySessionFailure consumerSession.lock must be locked before accessing this method")
-	}
-	// consumer Session should be locked here. so we can just apply the session failure here.
-	if consumerSession.BlockListed {
-		// if consumer session is already blocklisted return an error.
-		return sdkerrors.Wrapf(SessionIsAlreadyBlockListedError, "trying to report a session failure of a blocklisted client session")
-	}
-	consumerSession.QoSInfo.TotalRelays++
-	consumerSession.ConsecutiveNumberOfFailures += 1 // increase number of failures for this session
-	consumerSession.RelayNum -= 1                    // upon data reliability failure, decrease the relay number so we can try again.
-
-	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times we block list it.
-	if consumerSession.ConsecutiveNumberOfFailures > MaximumNumberOfFailuresAllowedPerConsumerSession {
-		consumerSession.BlockListed = true // block this session from future usages
-	} else if SessionOutOfSyncError.Is(errorReceived) { // this is an error that we must block the session due to.
-		consumerSession.BlockListed = true
-	}
-
-	var blockProvider, reportProvider bool
-	if ReportAndBlockProviderError.Is(errorReceived) {
-		blockProvider = true
-		reportProvider = true
-	} else if BlockProviderError.Is(errorReceived) {
-		blockProvider = true
-	}
-
-	parentConsumerSessionsWithProvider := consumerSession.Parent
-	consumerSession.lock.Unlock()
-
-	if blockProvider {
-		publicProviderAddress, pairingEpoch := parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch()
-		err := csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch, 0, 0, nil)
-		if err != nil {
-			if EpochMismatchError.Is(err) {
-				return nil // no effects this epoch has been changed
-			}
-			return err
-		}
-	}
-
+	consumerSession.ConsecutiveErrors = []error{}
 	return nil
 }
 
@@ -1003,9 +952,9 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager) *ConsumerSessionManager {
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
-		reportedProviders:      *NewReportedProviders(),
+		reportedProviders:      *NewReportedProviders(reporter),
 		consumerMetricsManager: consumerMetricsManager,
 	}
 	csm.rpcEndpoint = rpcEndpoint

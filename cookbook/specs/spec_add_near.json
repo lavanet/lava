@@ -258,7 +258,7 @@
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0,
-                                "timeout_ms": 3000
+                                "timeout_ms": 5000
                             },
                             {
                                 "name": "broadcast_tx_commit",
@@ -298,7 +298,7 @@
                                     "hanging_api": true
                                 },
                                 "extra_compute_units": 0,
-                                "timeout_ms": 3000
+                                "timeout_ms": 10000
                             },
                             {
                                 "name": "EXPERIMENTAL_tx_status",
