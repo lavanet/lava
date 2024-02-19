@@ -58,7 +58,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	specCuMap := map[string]types.SpecCuType{} // spec -> specCu
 	for _, spec := range specs {
 		// all providers basepays and the total basepay of the spec
-		basepays, totalbasepay := k.specProvidersBasePay(ctx, spec.ChainID)
+		basepays, totalbasepay := k.specProvidersBasePay(ctx, spec.ChainID, true)
 		if len(basepays) == 0 {
 			continue
 		}
@@ -250,8 +250,8 @@ func (k Keeper) specEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 	return emissions
 }
 
-func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string) ([]types.BasePayWithIndex, math.Int) {
-	basepays := k.popAllBasePayForChain(ctx, chainID)
+func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, removeAfterPop bool) ([]types.BasePayWithIndex, math.Int) {
+	basepays := k.popAllBasePayForChain(ctx, chainID, removeAfterPop)
 	totalBasePay := math.ZeroInt()
 	for _, basepay := range basepays {
 		totalBasePay = totalBasePay.Add(basepay.Total)
