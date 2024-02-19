@@ -119,7 +119,7 @@ func (lt *lavaTest) getRewards(addresses []string) ([]sdk.Coin, error) {
 		}
 		total := sdk.NewCoin(commonconsts.TestTokenDenom, sdk.ZeroInt())
 		for _, r := range res.Rewards {
-			total = total.Add(r.Amount)
+			total = total.AddAmount(r.Amount.AmountOf(commonconsts.TestTokenDenom))
 		}
 		rewards = append(rewards, total)
 	}

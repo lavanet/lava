@@ -75,7 +75,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
 	expectedReward, _, _ := ts.DeductParticipationFees(sdk.NewIntFromUint64(baserewards * subscription.LIMIT_TOKEN_PER_CU))
-	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.NoError(t, err)
 
@@ -86,7 +86,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, res.Rewards[0].Amount.Amount, sdk.NewIntFromUint64(baserewards*subscription.LIMIT_TOKEN_PER_CU))
+	require.Equal(t, res.Rewards[0].Amount.AmountOf(ts.BondDenom()), sdk.NewIntFromUint64(baserewards*subscription.LIMIT_TOKEN_PER_CU))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.NoError(t, err)
 }
@@ -118,7 +118,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
 	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
-	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.NoError(t, err)
 
@@ -130,7 +130,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, distBalance.QuoRaw(int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))), res.Rewards[0].Amount.Amount)
+	require.Equal(t, distBalance.QuoRaw(int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))), res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.NoError(t, err)
 }
@@ -166,7 +166,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 
 	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
 	expectedReward = expectedReward.MulRaw(7) // the participation fees are done separately on each of the 7 relays
-	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.NoError(t, err)
 
@@ -179,7 +179,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
 
-	require.Equal(t, sdk.NewDecWithPrec(15, 1).MulInt(distBalance).Sub(sdk.NewDecWithPrec(5, 1).MulInt(ts.plan.Price.Amount.MulRaw(7))).TruncateInt().QuoRaw(int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))), res.Rewards[0].Amount.Amount)
+	require.Equal(t, sdk.NewDecWithPrec(15, 1).MulInt(distBalance).Sub(sdk.NewDecWithPrec(5, 1).MulInt(ts.plan.Price.Amount.MulRaw(7))).TruncateInt().QuoRaw(int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))), res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.NoError(t, err)
 }
@@ -214,7 +214,7 @@ func TestProvidersEndRewards(t *testing.T) {
 	require.Len(t, res.Rewards, 1)
 	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
 	expectedReward = expectedReward.MulRaw(50) // the participation fees are done separately on each of the 50 relays
-	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.NoError(t, err)
 
@@ -273,8 +273,8 @@ func Test2SpecsZeroShares(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 2)
 	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
-	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
-	require.Equal(t, expectedReward, res.Rewards[1].Amount.Amount)
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
+	require.Equal(t, expectedReward, res.Rewards[1].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), "")
 	require.NoError(t, err)
 
@@ -286,7 +286,7 @@ func Test2SpecsZeroShares(t *testing.T) {
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
-	require.Equal(t, distBalance.QuoRaw(int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))), res.Rewards[0].Amount.Amount)
+	require.Equal(t, distBalance.QuoRaw(int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))), res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 	require.Equal(t, res.Rewards[0].ChainId, ts.spec.Index)
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.NoError(t, err)
@@ -337,8 +337,8 @@ func Test2SpecsDoubleShares(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 2)
 	expectedReward, _, _ := ts.DeductParticipationFees(ts.plan.Price.Amount)
-	require.Equal(t, expectedReward, res.Rewards[0].Amount.Amount)
-	require.Equal(t, expectedReward, res.Rewards[1].Amount.Amount)
+	require.Equal(t, expectedReward, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
+	require.Equal(t, expectedReward, res.Rewards[1].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), "")
 	require.NoError(t, err)
 
@@ -349,7 +349,7 @@ func Test2SpecsDoubleShares(t *testing.T) {
 	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), "")
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 2)
-	require.Equal(t, res.Rewards[0].Amount.Amount.QuoRaw(2), res.Rewards[1].Amount.Amount)
+	require.Equal(t, res.Rewards[0].Amount.AmountOf(ts.BondDenom()).QuoRaw(2), res.Rewards[1].Amount.AmountOf(ts.BondDenom()))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.NoError(t, err)
 }
@@ -421,7 +421,7 @@ func TestBonusRewards3Providers(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
 	// we sub 3 because of truncating
-	require.Equal(t, res1.Rewards[0].Amount.Amount, distBalance.QuoRaw(7*int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))).SubRaw(1))
+	require.Equal(t, res1.Rewards[0].Amount.AmountOf(ts.BondDenom()), distBalance.QuoRaw(7*int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))).SubRaw(1))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc1.Addr.String(), providerAcc1.Addr.String())
 	require.NoError(t, err)
 
@@ -429,7 +429,7 @@ func TestBonusRewards3Providers(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
 	// we sub 1 because of truncating
-	require.Equal(t, res2.Rewards[0].Amount.Amount, distBalance.QuoRaw(7*int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))).MulRaw(2))
+	require.Equal(t, res2.Rewards[0].Amount.AmountOf(ts.BondDenom()), distBalance.QuoRaw(7*int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))).MulRaw(2))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc2.Addr.String(), providerAcc2.Addr.String())
 	require.NoError(t, err)
 
@@ -437,7 +437,7 @@ func TestBonusRewards3Providers(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
 	// we add 6 because of truncating
-	require.Equal(t, res3.Rewards[0].Amount.Amount, distBalance.QuoRaw(7*int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))).MulRaw(4).AddRaw(1))
+	require.Equal(t, res3.Rewards[0].Amount.AmountOf(ts.BondDenom()), distBalance.QuoRaw(7*int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))).MulRaw(4).AddRaw(1))
 	_, err = ts.TxDualstakingClaimRewards(providerAcc3.Addr.String(), providerAcc3.Addr.String())
 	require.NoError(t, err)
 }
@@ -603,7 +603,7 @@ func TestBonusRewardsEquall5Providers(t *testing.T) {
 		res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), "", "")
 		require.NoError(t, err)
 		require.Len(t, res.Rewards, 1)
-		require.Equal(t, distBalance.QuoRaw(int64(count)), res.Rewards[0].Amount.Amount)
+		require.Equal(t, distBalance.QuoRaw(int64(count)), res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 		_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), "")
 		require.NoError(t, err)
 	}
@@ -680,7 +680,7 @@ func TestBonusRewards5Providers(t *testing.T) {
 		res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), "", "")
 		require.NoError(t, err)
 		require.Len(t, res.Rewards, 1)
-		require.Equal(t, expected, res.Rewards[0].Amount.Amount)
+		require.Equal(t, expected, res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
 		_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), "")
 		require.NoError(t, err)
 	}
