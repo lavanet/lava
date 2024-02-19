@@ -3,7 +3,7 @@ import json
 import os
 import re
 
-LAVA_PUBLIC_RPC = "public-rpc.lavanet.xyz:9090"
+LAVA_PUBLIC_RPC = "grpc-1.elgafar-1.stargaze-apis.com:26660"
 
 
 def parse_endpoints_from_spec(lava_spec_file: str) -> dict[str, list[str]]:
@@ -41,17 +41,21 @@ def parse_endpoints_from_grpcurl() -> dict[str, list[str]]:
     endpoints: dict[str, list[str]] = {"grpc": [], "rest": []}
     content = os.popen(f"grpcurl -plaintext {LAVA_PUBLIC_RPC} describe").read()
 
-    # Regex pattern to find services starting with 'lavanet', their corresponding rpc and rest paths
+    # Regex pattern to find services starting with their corresponding rpc and rest paths
     grpc_pattern = re.compile(
-        r"(lavanet\S+) is a service:(.*?)(?=^\S+ is a service:|\Z)",
+        r"(\S+) is a service:(.*?)(?=^\S+ is a service:|\Z)",
         re.DOTALL | re.MULTILINE,
     )
+
     rpc_pattern = re.compile(r"rpc (\w+) \(")
     rest_pattern = re.compile(r'option \(.*?\) = {.*?get: "(.*?)"', re.DOTALL)
 
     # Finding all services that start with 'lavanet'
     for service_match in grpc_pattern.finditer(content):
         service_name, service_content = service_match.groups()
+
+        if "cosmos" in service_content or "cosmwasm" in service_content or "ibc" in service_content:
+            continue
 
         # Extracting all grpc paths
         for rpc_match in rpc_pattern.finditer(service_content):
