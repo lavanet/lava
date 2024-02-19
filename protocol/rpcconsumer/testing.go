@@ -14,7 +14,6 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/common"
 	commonlib "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider"
@@ -138,7 +137,7 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 			modifiedProviderEndpoints := make([]*lavasession.RPCProviderEndpoint, len(rpcEndpoints))
 			for idx := range modifiedProviderEndpoints {
 				endpoint := rpcEndpoints[idx]
-				err := common.ValidateEndpoint(endpoint.NetworkAddress, endpoint.ApiInterface)
+				err := commonlib.ValidateEndpoint(endpoint.NetworkAddress, endpoint.ApiInterface)
 				if err != nil {
 					return err
 				}

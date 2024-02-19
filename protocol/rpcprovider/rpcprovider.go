@@ -314,12 +314,10 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 }
 
 func (rpcp *RPCProvider) getAllAddonsAndExtensionsFromNodeUrlSlice(nodeUrls []common.NodeUrl) *ProviderPolicy {
-	allNodeUrlAddonsAndExtensions := []string{}
 	policy := &ProviderPolicy{}
 	for _, nodeUrl := range nodeUrls {
 		policy.addons = append(policy.addons, nodeUrl.Addons...) // addons are added without validation while extensions are. so we add to the addons all.
 	}
-	utils.LavaFormatDebug("Adding supported addons and extensions to chain parser", utils.LogAttr("info", allNodeUrlAddonsAndExtensions))
 	return policy
 }
 
@@ -344,8 +342,12 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 
 	// after registering for spec updates our chain parser contains the spec and we can add our addons and extensions to allow our provider to function properly
-	chainParser.SetPolicy(rpcp.getAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls), rpcProviderEndpoint.ChainID, apiInterface)
-
+	providerPolicy := rpcp.getAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls)
+	utils.LavaFormatDebug("supported services for provider",
+		utils.LogAttr("specId", rpcProviderEndpoint.ChainID),
+		utils.LogAttr("apiInterface", apiInterface),
+		utils.LogAttr("supported-services", providerPolicy.addons))
+	chainParser.SetPolicy(providerPolicy, rpcProviderEndpoint.ChainID, apiInterface)
 	chainRouter, err := chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(rpcp.parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
