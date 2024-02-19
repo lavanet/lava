@@ -28,7 +28,7 @@ func (k Keeper) IprpcProviderReward(goCtx context.Context, req *types.QueryIprpc
 	providerSpecFunds := []types.Specfund{}
 	for _, specFund := range iprpcReward.SpecFunds {
 		// get all spec basepays and count IPRPC CU
-		bps, _ := k.specProvidersBasePay(ctx, specFund.Spec)
+		bps, _ := k.specProvidersBasePay(ctx, specFund.Spec, false)
 		providerIprpcCu := uint64(0)
 		totalIprpcCu := uint64(0)
 		providerBpIndex := types.BasePayIndex{Provider: req.Provider, ChainID: specFund.Spec}
