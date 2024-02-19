@@ -73,7 +73,7 @@ func (pp *ProviderPolicy) GetSupportedExtensions(specID string) (extensions []ep
 type ProviderStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
-	RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, endpoint lavasession.RPCEndpoint) error
+	RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, chainId string) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
@@ -314,19 +314,17 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 }
 
 func (rpcp *RPCProvider) getAllAddonsAndExtensionsFromNodeUrlSlice(nodeUrls []common.NodeUrl) *ProviderPolicy {
-	allNodeUrlAddonsAndExtensions := []string{}
 	policy := &ProviderPolicy{}
 	for _, nodeUrl := range nodeUrls {
 		policy.addons = append(policy.addons, nodeUrl.Addons...) // addons are added without validation while extensions are. so we add to the addons all.
 	}
-	utils.LavaFormatDebug("Adding supported addons and extensions to chain parser", utils.LogAttr("info", allNodeUrlAddonsAndExtensions))
 	return policy
 }
 
 func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) error {
 	err := rpcProviderEndpoint.Validate()
 	if err != nil {
-		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+		return utils.LavaFormatError("[PANIC] panic severity critical error, aborting support for chain api due to invalid node url definition, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 	chainID := rpcProviderEndpoint.ChainID
 	apiInterface := rpcProviderEndpoint.ApiInterface
@@ -334,21 +332,25 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, providerSessionManager)
 	chainParser, err := chainlib.NewChainParser(apiInterface)
 	if err != nil {
-		return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+		return utils.LavaFormatError("[PANIC] panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 
 	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: apiInterface}
 	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
 	if err != nil {
-		return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
+		return utils.LavaFormatError("[PANIC] failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
 
 	// after registering for spec updates our chain parser contains the spec and we can add our addons and extensions to allow our provider to function properly
-	chainParser.SetPolicy(rpcp.getAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls), rpcProviderEndpoint.ChainID, apiInterface)
-
+	providerPolicy := rpcp.getAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls)
+	utils.LavaFormatDebug("supported services for provider",
+		utils.LogAttr("specId", rpcProviderEndpoint.ChainID),
+		utils.LogAttr("apiInterface", apiInterface),
+		utils.LogAttr("supportedServices", providerPolicy.addons))
+	chainParser.SetPolicy(providerPolicy, rpcProviderEndpoint.ChainID, apiInterface)
 	chainRouter, err := chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)
 	if err != nil {
-		return utils.LavaFormatError("panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(rpcp.parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
+		return utils.LavaFormatError("[PANIC] panic severity critical error, failed creating chain proxy, continuing with others endpoints", err, utils.Attribute{Key: "parallelConnections", Value: uint64(rpcp.parallelConnections)}, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 	}
 
 	_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
@@ -359,33 +361,33 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			rpcp.providerMetricsManager.SetLatestBlock(chainID, uint64(block))
 		}
 	}
+	var chainFetcher chainlib.ChainFetcherIf
+	if enabled, _ := chainParser.DataReliabilityParams(); enabled {
+		chainFetcher = chainlib.NewChainFetcher(
+			ctx,
+			&chainlib.ChainFetcherOptions{
+				ChainRouter: chainRouter,
+				ChainParser: chainParser,
+				Endpoint:    rpcProviderEndpoint,
+				Cache:       rpcp.cache,
+			},
+		)
+	} else {
+		chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
+	}
+
+	// check the chain fetcher verification works, if it doesn't we disable the chain+apiInterface and this triggers a boot retry
+	err = chainFetcher.Validate(ctx)
+	if err != nil {
+		return utils.LavaFormatError("[PANIC] Failed starting due to chain fetcher validation failure", err,
+			utils.Attribute{Key: "Chain", Value: rpcProviderEndpoint.ChainID},
+			utils.Attribute{Key: "apiInterface", Value: apiInterface})
+	}
 
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
 	chainCommonSetup := func() error {
 		rpcp.chainMutexes[chainID].Lock()
 		defer rpcp.chainMutexes[chainID].Unlock()
-
-		var chainFetcher chainlib.ChainFetcherIf
-		if enabled, _ := chainParser.DataReliabilityParams(); enabled {
-			chainFetcher = chainlib.NewChainFetcher(
-				ctx,
-				&chainlib.ChainFetcherOptions{
-					ChainRouter: chainRouter,
-					ChainParser: chainParser,
-					Endpoint:    rpcProviderEndpoint,
-					Cache:       rpcp.cache,
-				},
-			)
-		} else {
-			chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
-		}
-
-		// Add the chain fetcher to the spec validator
-		err := specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
-		if err != nil {
-			return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
-		}
-
 		var found bool
 		chainTracker, found = rpcp.chainTrackers.GetTrackerPerChain(chainID)
 		if !found {
@@ -412,15 +414,15 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 				return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 			}
 
-			// Any validation needs to be before we store chain tracker for given chain id
-			rpcp.chainTrackers.SetTrackerForChain(rpcProviderEndpoint.ChainID, chainTracker)
-
-			err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint)
-			utils.LavaFormatDebug("Registering for spec verifications for endpoint",
-				utils.LogAttr("rpcEndpoint", rpcEndpoint))
+			utils.LavaFormatDebug("Registering for spec verifications for endpoint", utils.LogAttr("rpcEndpoint", rpcEndpoint))
+			// we register for spec verifications only once, and this triggers all chainFetchers of that specId when it triggers
+			err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint.ChainID)
 			if err != nil {
 				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
+
+			// Any validation needs to be before we store chain tracker for given chain id
+			rpcp.chainTrackers.SetTrackerForChain(rpcProviderEndpoint.ChainID, chainTracker)
 		} else {
 			utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
 		}
@@ -429,6 +431,12 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	err = chainCommonSetup()
 	if err != nil {
 		return err
+	}
+
+	// Add the chain fetcher to the spec validator
+	err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
+	if err != nil {
+		return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 	}
 
 	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface)

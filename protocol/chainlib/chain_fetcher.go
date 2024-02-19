@@ -218,6 +218,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		utils.Attribute{Key: "verification", Value: verification.Name},
 		utils.Attribute{Key: "value", Value: parser.CapStringLen(parsedResult)},
 		utils.Attribute{Key: "verificationKey", Value: verification.VerificationKey},
+		utils.Attribute{Key: "apiInterface", Value: cf.endpoint.ApiInterface},
 	)
 	return nil
 }

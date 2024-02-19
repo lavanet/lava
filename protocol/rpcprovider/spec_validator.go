@@ -154,7 +154,7 @@ func (sv *SpecValidator) getDisabledChains(ctx context.Context) map[string]struc
 	return disabledChains
 }
 
-func (sv *SpecValidator) validateChain(ctx context.Context, chainId string) error {
+func (sv *SpecValidator) validateChain(ctx context.Context, chainId string) {
 	errors := []error{}
 	for _, chainFetcher := range sv.chainFetchers[chainId] {
 		err := (*chainFetcher).Validate(ctx)
@@ -186,12 +186,10 @@ func (sv *SpecValidator) validateChain(ctx context.Context, chainId string) erro
 			utils.LavaFormatError("[+] Verification passed for disabled endpoint. Enabling endpoint.", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 		}
 	}
-
 	if len(errors) > 0 {
-		return utils.LavaFormatError("Validation chainId failed with errors", nil,
+		utils.LavaFormatError("Validation chainId failed with errors", nil,
 			utils.Attribute{Key: "chainId", Value: chainId},
 			utils.Attribute{Key: "errors", Value: errors},
 		)
 	}
-	return nil
 }
