@@ -1734,6 +1734,12 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_SameBlock(t *testing.T)
 
 		// Make sure the balance is updated
 		require.Equal(t, consumerBalance, ts.GetBalance(consumerAcc.Addr), testName)
+
+		// Make sure the credit is properly updated
+		sub, found := ts.getSubscription(consumerAddr)
+		require.True(t, found)
+		require.Equal(t, testCase.price, sub.FutureSubscription.Credit.Amount.Int64())
+
 	}
 }
 
