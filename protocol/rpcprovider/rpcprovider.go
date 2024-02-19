@@ -346,7 +346,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	utils.LavaFormatDebug("supported services for provider",
 		utils.LogAttr("specId", rpcProviderEndpoint.ChainID),
 		utils.LogAttr("apiInterface", apiInterface),
-		utils.LogAttr("supported-services", providerPolicy.addons))
+		utils.LogAttr("supportedServices", providerPolicy.addons))
 	chainParser.SetPolicy(providerPolicy, rpcProviderEndpoint.ChainID, apiInterface)
 	chainRouter, err := chainlib.GetChainRouter(ctx, rpcp.parallelConnections, rpcProviderEndpoint, chainParser)
 	if err != nil {
