@@ -631,6 +631,7 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 	newPlanPrice := plan.GetPrice()
 	newPlanPrice.Amount = newPlanPrice.Amount.MulRaw(int64(duration))
 	k.applyPlanDiscountIfEligible(duration, &plan, &newPlanPrice)
+	chargePrice := newPlanPrice
 
 	if sub.FutureSubscription != nil {
 		// Consumer already has a future subscription
@@ -643,13 +644,8 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 			)
 		}
 
-		consumerBoughDuration := sub.FutureSubscription.DurationBought
-		consumerPaid := currentPlan.GetPrice()
-		consumerPaid.Amount = consumerPaid.Amount.MulRaw(int64(consumerBoughDuration))
-		k.applyPlanDiscountIfEligible(consumerBoughDuration, &plan, &consumerPaid)
-
-		if newPlanPrice.Amount.GT(consumerPaid.Amount) {
-			newPlanPrice.Amount = newPlanPrice.Amount.Sub(consumerPaid.Amount)
+		if newPlanPrice.Amount.GT(sub.FutureSubscription.Credit.Amount) {
+			chargePrice.Amount = newPlanPrice.Amount.Sub(sub.FutureSubscription.Credit.Amount)
 
 			details := map[string]string{
 				"creator":      creator,
@@ -666,7 +662,7 @@ func (k Keeper) CreateFutureSubscription(ctx sdk.Context,
 		}
 	}
 
-	err = k.chargeFromCreatorAccountToModule(ctx, creatorAcct, newPlanPrice)
+	err = k.chargeFromCreatorAccountToModule(ctx, creatorAcct, chargePrice)
 	if err != nil {
 		return err
 	}
