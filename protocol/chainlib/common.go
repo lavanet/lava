@@ -25,6 +25,7 @@ const (
 	RetryListeningInterval    = 10 // seconds
 	debug                     = false
 	refererMatchString        = "refererMatch"
+	relayMsgLogMaxChars       = 200
 )
 
 var InvalidResponses = []string{"null", "", "nil", "undefined"}

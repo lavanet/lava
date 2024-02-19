@@ -344,10 +344,16 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			ctx = utils.WithUniqueIdentifier(ctx, guid)
 			msgSeed = strconv.FormatUint(guid, 10)
 			defer cancel() // incase there's a problem make sure to cancel the connection
+
+			logFormattedMsg := string(msg)
+			if !cmdFlags.DebugRelays {
+				logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
+			}
+
 			utils.LavaFormatDebug("ws in <<<",
 				utils.LogAttr("seed", msgSeed),
 				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("msg", msg),
+				utils.LogAttr("msg", logFormattedMsg),
 				utils.LogAttr("dappID", dappID),
 			)
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
@@ -425,15 +431,22 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		consumerIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
+
+		msg := string(fiberCtx.Body())
+		logFormattedMsg := msg
+		if !cmdFlags.DebugRelays {
+			logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
+		}
+
 		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("seed", msgSeed),
-			utils.LogAttr("msg", fiberCtx.Body()),
+			utils.LogAttr("msg", logFormattedMsg),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, consumerIp, metricsData, headers)
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, http.MethodPost, dappID, consumerIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
 			go apil.refererData.SendReferer(refererMatch)
 		}
@@ -444,7 +457,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), msg, errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -464,7 +477,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			false,
 			"POST",
 			fiberCtx.Request().URI().String(),
-			string(fiberCtx.Body()),
+			msg,
 			response,
 			msgSeed,
 			time.Since(startTime),
