@@ -448,7 +448,7 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, nodeUrl co
 		if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
 			err = utils.LavaFormatError("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
 				nil, utils.Attribute{Key: "Currently Connected", Value: currentNumberOfConnections})
-			break
+			return nil, err
 		}
 		if ctx.Err() != nil {
 			connector.Close()
@@ -457,33 +457,29 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, nodeUrl co
 		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
 		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), connector.getTransportCredentials())
 		cancel()
-		if err != nil {
-			// in case the provider didn't set TLS config and there are no active connections will do a retry with secure connection in case the endpoint is secure
-			if connector.getCredentials() == nil {
-				// check we don't have existing connections
-				if connector.numberOfFreeClients()+connector.numberOfUsedClients() == 0 {
-					if credentialsToConnect == nil {
-						tlsConf := getTlsConf(nodeUrl)
-						credentialsToConnect = credentials.NewTLS(tlsConf)
-					}
-					nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
-					var errNew error
-					rpcClient, errNew = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(credentialsToConnect))
-					cancel()
-					if errNew == nil {
-						// this means our endpoint is TLS, and we support upgrading even if the config didn't explicitly say it
-						utils.LavaFormatDebug("upgraded TLS connection for grpc instead of insecure", utils.LogAttr("address", nodeUrl.String()))
-						connector.setCredentials(credentialsToConnect)
-						return rpcClient, nil
-					}
-				}
-			}
-			utils.LavaFormatWarning("grpc could not connect to the node, retrying", err, []utils.Attribute{{
-				Key: "Current Number Of Connections", Value: currentNumberOfConnections,
-			}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}, {Key: "nodeUrl", Value: connector.nodeUrl.UrlStr()}}...)
-			continue
+		if err == nil {
+			return rpcClient, nil
 		}
-		break
+
+		// in case the provider didn't set TLS config and there are no active connections will do a retry with secure connection in case the endpoint is secure
+		if connector.getCredentials() == nil && connector.numberOfFreeClients()+connector.numberOfUsedClients() == 0 {
+			if credentialsToConnect == nil {
+				tlsConf := getTlsConf(nodeUrl)
+				credentialsToConnect = credentials.NewTLS(tlsConf)
+			}
+			nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
+			var errNew error
+			rpcClient, errNew = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(credentialsToConnect))
+			cancel()
+			if errNew == nil {
+				// this means our endpoint is TLS, and we support upgrading even if the config didn't explicitly say it
+				utils.LavaFormatDebug("upgraded TLS connection for grpc instead of insecure", utils.LogAttr("address", nodeUrl.String()))
+				connector.setCredentials(credentialsToConnect)
+				return rpcClient, nil
+			}
+		}
+		utils.LavaFormatWarning("grpc could not connect to the node, retrying", err, []utils.Attribute{{
+			Key: "Current Number Of Connections", Value: currentNumberOfConnections,
+		}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}, {Key: "nodeUrl", Value: connector.nodeUrl.UrlStr()}}...)
 	}
-	return rpcClient, err
 }

@@ -89,14 +89,6 @@ func (su *SpecUpdater) RegisterSpecUpdatable(ctx context.Context, specUpdatable 
 }
 
 func (su *SpecUpdater) RegisterSpecVerifier(ctx context.Context, specVerifier *SpecVerifier, chainId string) error {
-	err := su.registerVerifier(chainId, specVerifier)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (su *SpecUpdater) registerVerifier(chainId string, specVerifier *SpecVerifier) error {
 	su.lock.Lock()
 	defer su.lock.Unlock()
 
