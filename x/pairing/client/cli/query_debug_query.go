@@ -96,7 +96,7 @@ func CmdDebugQuery() *cobra.Command {
 			} else if len(resDelegatorRewards.Rewards) != 1 {
 				info.ProviderFullReward = 0
 			} else {
-				info.ProviderFullReward = resDelegatorRewards.Rewards[0].Amount.Amount.Uint64()
+				info.ProviderFullReward = resDelegatorRewards.Rewards[0].Amount.AmountOf(commontypes.TokenDenom).Uint64()
 			}
 
 			// provider rewards without bonuses
