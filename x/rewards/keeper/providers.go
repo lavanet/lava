@@ -59,53 +59,60 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	for _, spec := range specs {
 		// all providers basepays and the total basepay of the spec
 		basepays, totalbasepay := k.specProvidersBasePay(ctx, spec.ChainID)
-		if totalbasepay.IsZero() {
+		if len(basepays) == 0 {
 			continue
 		}
 
 		// calculate the maximum rewards for the spec
-		specTotalPayout := k.specTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
+		specTotalPayout := math.LegacyZeroDec()
+		if !totalbasepay.IsZero() {
+			specTotalPayout = k.specTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
+		}
 		// distribute the rewards to all providers
 		for _, basepay := range basepays {
+			if !specTotalPayout.IsZero() {
+				// calculate the providers bonus base on adjusted base pay
+				reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(totalbasepay).TruncateInt()
+				totalRewarded = totalRewarded.Add(reward)
+				if totalRewarded.GT(total) {
+					utils.LavaFormatError("provider rewards are larger than the distribution pool balance", nil,
+						utils.LogAttr("distribution_pool_balance", total.String()),
+						utils.LogAttr("provider_reward", totalRewarded.String()))
+					details["error"] = "provider rewards are larger than the distribution pool balance"
+					return
+				}
+				// now give the reward the provider contributor and delegators
+				providerAddr, err := sdk.AccAddressFromBech32(basepay.Provider)
+				if err != nil {
+					continue
+				}
+				_, _, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
+				if err != nil {
+					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
+				}
+
+				details[providerAddr.String()+" "+spec.ChainID] = reward.String()
+			}
+
 			// count iprpc cu
-			specCu, ok := specCuMap[spec.ChainID]
-			if !ok {
-				specCuMap[spec.ChainID] = types.SpecCuType{
-					ProvidersCu: map[string]uint64{basepay.Provider: basepay.IprpcCu},
-					TotalCu:     basepay.IprpcCu,
-				}
-			} else {
-				_, ok := specCu.ProvidersCu[basepay.Provider]
+			if basepay.IprpcCu != 0 {
+				specCu, ok := specCuMap[spec.ChainID]
 				if !ok {
-					specCu.ProvidersCu[basepay.Provider] = basepay.IprpcCu
+					specCuMap[spec.ChainID] = types.SpecCuType{
+						ProvidersCu: map[string]uint64{basepay.Provider: basepay.IprpcCu},
+						TotalCu:     basepay.IprpcCu,
+					}
 				} else {
-					specCu.ProvidersCu[basepay.Provider] += basepay.IprpcCu
+					_, ok := specCu.ProvidersCu[basepay.Provider]
+					if !ok {
+						specCu.ProvidersCu[basepay.Provider] = basepay.IprpcCu
+					} else {
+						specCu.ProvidersCu[basepay.Provider] += basepay.IprpcCu
+					}
+					specCu.TotalCu += basepay.IprpcCu
+					specCuMap[spec.ChainID] = specCu
 				}
-				specCu.TotalCu += basepay.IprpcCu
-				specCuMap[spec.ChainID] = specCu
 			}
-
-			// calculate the providers bonus base on adjusted base pay
-			reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(totalbasepay).TruncateInt()
-			totalRewarded = totalRewarded.Add(reward)
-			if totalRewarded.GT(total) {
-				utils.LavaFormatError("provider rewards are larger than the distribution pool balance", nil,
-					utils.LogAttr("distribution_pool_balance", total.String()),
-					utils.LogAttr("provider_reward", totalRewarded.String()))
-				details["error"] = "provider rewards are larger than the distribution pool balance"
-				return
-			}
-			// now give the reward the provider contributor and delegators
-			providerAddr, err := sdk.AccAddressFromBech32(basepay.Provider)
-			if err != nil {
-				continue
-			}
-			_, _, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward), string(types.ProviderRewardsDistributionPool), false, false, false)
-			if err != nil {
-				utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
-			}
-
-			details[providerAddr.String()+" "+spec.ChainID] = reward.String()
 		}
 	}
 
@@ -165,19 +172,15 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 				continue
 			}
 			// calculate provider IPRPC reward
-			providerIprpcRewardPerc := math.LegacyNewDec(int64(specCu.ProvidersCu[provider])).QuoInt64(int64(specCu.TotalCu))
+			providerIprpcReward := specFund.Fund.MulInt(sdk.NewIntFromUint64(specCu.ProvidersCu[provider])).QuoInt(sdk.NewIntFromUint64(specCu.TotalCu))
 
-			for _, reward := range specFund.Fund {
-				// reward the provider
-				providerIprpcRewardAmount := providerIprpcRewardPerc.MulInt(reward.Amount).TruncateInt()
-				providerIprpcReward := sdk.NewCoin(reward.Denom, providerIprpcRewardAmount)
-				_, _, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
-				if err != nil {
-					utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", provider))
-				}
-
-				usedReward = usedReward.Add(providerIprpcReward)
+			// reward the provider
+			_, _, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
+			if err != nil {
+				utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", provider))
 			}
+
+			usedReward = usedReward.Add(providerIprpcReward...)
 		}
 
 		// handle leftovers
