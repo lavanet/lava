@@ -52,6 +52,7 @@ type RPCConsumerServer struct {
 	sharedState            bool // using the cache backend to sync the latest seen block with other consumers
 	relaysMonitor          *metrics.RelaysMonitor
 	reporter               metrics.Reporter
+	debugRelays            bool
 }
 
 type relayResponse struct {
@@ -97,6 +98,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.consumerConsistency = consumerConsistency
 	rpccs.sharedState = sharedState
 	rpccs.reporter = reporter
+	rpccs.debugRelays = cmdFlags.DebugRelays
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData)
 	if err != nil {
 		return err
@@ -579,7 +581,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "finalizationConsensus", Value: rpccs.finalizationConsensus.String()},
 				)
 			}
-			if DebugRelaysFlag && singleConsumerSession.QoSInfo.LastQoSReport != nil &&
+			if rpccs.debugRelays && singleConsumerSession.QoSInfo.LastQoSReport != nil &&
 				singleConsumerSession.QoSInfo.LastQoSReport.Sync.BigInt() != nil &&
 				singleConsumerSession.QoSInfo.LastQoSReport.Sync.LT(sdk.MustNewDecFromStr("0.9")) {
 				utils.LavaFormatDebug("identified QoS mismatch",
@@ -736,7 +738,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			relayResult.StatusCode = codeNum
 		}
 		relayLatency = time.Since(relaySentTime)
-		if DebugRelaysFlag {
+		if rpccs.debugRelays {
 			utils.LavaFormatDebug("sending relay to provider",
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("addon", relayRequest.RelayData.Addon),
