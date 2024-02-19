@@ -380,12 +380,6 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		return err
 	}
 
-	// Add the chain fetcher to the spec validator
-	err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
-	if err != nil {
-		return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
-	}
-
 	// in order to utilize shared resources between chains we need go routines with the same chain to wait for one another here
 	chainCommonSetup := func() error {
 		rpcp.chainMutexes[chainID].Lock()
@@ -433,6 +427,12 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	err = chainCommonSetup()
 	if err != nil {
 		return err
+	}
+
+	// Add the chain fetcher to the spec validator
+	err = specValidator.AddChainFetcher(ctx, &chainFetcher, chainID)
+	if err != nil {
+		return utils.LavaFormatError("panic severity critical error, failed validating chain", err, utils.Attribute{Key: "rpcProviderEndpoint", Value: rpcProviderEndpoint})
 	}
 
 	providerMetrics := rpcp.providerMetricsManager.AddProviderMetrics(chainID, apiInterface)
