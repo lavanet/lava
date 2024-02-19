@@ -371,7 +371,12 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			guid := utils.GenerateUniqueIdentifier()
 			ctx = utils.WithUniqueIdentifier(ctx, guid)
 			defer cancel() // incase there's a problem make sure to cancel the connection
-			utils.LavaFormatInfo("ws in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
+			utils.LavaFormatDebug("ws in <<<",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("seed", msgSeed),
+				utils.LogAttr("msg", msg),
+				utils.LogAttr("dappID", dappID),
+			)
 			msgSeed = strconv.FormatUint(guid, 10)
 			refererMatch, ok := websocketConn.Locals(refererMatchString).(string)
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
@@ -443,7 +448,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		msgSeed := strconv.FormatUint(guid, 10)
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
-		utils.LavaFormatInfo("in <<<",
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("msg", fiberCtx.Body()),
@@ -504,7 +509,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
-		utils.LavaFormatInfo("urirpc in <<<",
+		utils.LavaFormatDebug("urirpc in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("msg", path),
 			utils.LogAttr("dappID", dappID),

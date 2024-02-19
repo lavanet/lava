@@ -344,7 +344,12 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			ctx = utils.WithUniqueIdentifier(ctx, guid)
 			msgSeed = strconv.FormatUint(guid, 10)
 			defer cancel() // incase there's a problem make sure to cancel the connection
-			utils.LavaFormatDebug("ws in <<<", utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
+			utils.LavaFormatDebug("ws in <<<",
+				utils.LogAttr("seed", msgSeed),
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("msg", msg),
+				utils.LogAttr("dappID", dappID),
+			)
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
 			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
@@ -420,7 +425,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		consumerIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
-		utils.LavaFormatInfo("in <<<",
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("msg", fiberCtx.Body()),
