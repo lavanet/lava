@@ -1739,7 +1739,6 @@ func TestSubscriptionAdvancePurchaseSuccessOnPricierPlan_SameBlock(t *testing.T)
 		sub, found := ts.getSubscription(consumerAddr)
 		require.True(t, found)
 		require.Equal(t, testCase.price, sub.FutureSubscription.Credit.Amount.Int64())
-
 	}
 }
 
