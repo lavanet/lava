@@ -319,8 +319,10 @@ func FormatStringerList[T fmt.Stringer](description string, listToPrint []T, sep
 }
 
 func FormatLongString(msg string, maxCharacters int) string {
-	if len(msg) > maxCharacters {
-		return msg[:maxCharacters] + "..."
+	if maxCharacters != 0 && len(msg) > maxCharacters {
+		postfixLen := maxCharacters / 3
+		prefixLen := maxCharacters - postfixLen
+		return msg[:prefixLen] + "...truncated..." + msg[len(msg)-postfixLen:]
 	}
 	return msg
 }
