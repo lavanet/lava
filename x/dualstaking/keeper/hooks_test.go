@@ -564,7 +564,7 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	// provider completely unbond from validator, delegation is removed, but stakeentry still exists
+	// provider completely unbond from validator, delegation is removed
 	_, err = ts.TxUnbondValidator(providerAcct, validator, sdk.NewInt(9999))
 	require.NoError(t, err)
 
@@ -581,9 +581,8 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 	_, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
 	require.False(t, found)
 
-	res2, err := ts.QueryDualstakingProviderDelegators(provider, true)
+	_, err = ts.QueryDualstakingProviderDelegators(provider, true)
 	require.NoError(t, err)
-	fmt.Println("Delegation of Provider before provider is removed", res2)
 }
 
 // TestUndelegateProvider checks for a bug that when a provider unstakes, its delegations are not
