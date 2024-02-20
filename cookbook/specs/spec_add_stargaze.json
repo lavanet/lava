@@ -453,7 +453,7 @@
                 ]
             },
             {
-                "index": "STRGZ",
+                "index": "STRGZT",
                 "name": "stargaze testnet",
                 "enabled": true,
                 "imports": [
