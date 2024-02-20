@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/client/cli"
@@ -721,4 +722,35 @@ func TestStakeEndpoints(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStakeProviderFrozen(t *testing.T) {
+	ts := newTester(t)
+	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
+	ts.spec.MinStakeProvider = minSelfDelegation.AddAmount(math.NewInt(100))
+	ts.Keepers.Spec.SetSpec(ts.Ctx, ts.spec)
+	ts.AdvanceEpoch()
+
+	amount := minSelfDelegation.Amount.Int64() + 1
+	providerAcct, addr := ts.AddAccount(common.PROVIDER, 1, amount)
+	err := ts.StakeProviderExtra(addr, ts.spec, amount-2, nil, 0, "")
+	require.Error(t, err)
+
+	ts.AdvanceEpoch()
+
+	// Get the stake entry and check the provider is staked
+	stakeEntry, foundProvider, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	require.False(t, foundProvider)
+
+	amount = minSelfDelegation.Amount.Int64() + 1
+	// providerAcct, addr := ts.AddAccount(common.PROVIDER, 1, amount)
+	err = ts.StakeProviderExtra(addr, ts.spec, amount, nil, 0, "")
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch()
+
+	// Get the stake entry and check the provider is staked
+	stakeEntry, foundProvider, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	require.True(t, foundProvider)
+	require.True(t, stakeEntry.IsFrozen())
 }
