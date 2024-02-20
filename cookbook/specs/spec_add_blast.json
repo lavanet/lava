@@ -45,7 +45,7 @@
                 "name": "pruning",
                 "values": [
                   {
-                    "latest_distance": 1024
+                    "latest_distance": 5760
                   },
                   {
                     "extension": "archive",
