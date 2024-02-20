@@ -25,6 +25,53 @@ screen -d -m -S cache-consumer bash -c "source ~/.bashrc; lavap cache 127.0.0.1:
 
 echo; echo "#### Starting provider 1 ####"
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
+$PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
+$PROVIDER1_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
+$PROVIDER1_LISTENER FTM250 jsonrpc '$FTM_RPC_HTTP' \
+$PROVIDER1_LISTENER CELO jsonrpc '$CELO_HTTP' \
+$PROVIDER1_LISTENER ALFAJORES jsonrpc '$CELO_ALFAJORES_HTTP' \
+$PROVIDER1_LISTENER ARB1 jsonrpc '$ARB1_HTTP' \
+$PROVIDER1_LISTENER APT1 rest '$APTOS_REST' \
+$PROVIDER1_LISTENER STRK jsonrpc '$STARKNET_RPC' \
+$PROVIDER1_LISTENER POLYGON1 jsonrpc '$POLYGON_MAINNET_RPC' \
+$PROVIDER1_LISTENER OPTM jsonrpc '$OPTIMISM_RPC' \
+$PROVIDER1_LISTENER BASET jsonrpc '$BASE_GOERLI_RPC' \
+$PROVIDER1_LISTENER BSC jsonrpc '$BSC_RPC' \
+$PROVIDER1_LISTENER SOLANA jsonrpc '$SOLANA_RPC' \
+$PROVIDER1_LISTENER SUIT jsonrpc '$SUI_RPC' \
+$PROVIDER1_LISTENER COS3 rest '$OSMO_REST' \
+$PROVIDER1_LISTENER COS3 tendermintrpc '$OSMO_RPC,$OSMO_RPC' \
+$PROVIDER1_LISTENER COS3 grpc '$OSMO_GRPC' \
+$PROVIDER1_LISTENER LAV1 rest '$LAVA_REST' \
+$PROVIDER1_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
+$PROVIDER1_LISTENER LAV1 grpc '$LAVA_GRPC' \
+$PROVIDER1_LISTENER COS5 rest '$GAIA_REST' \
+$PROVIDER1_LISTENER COS5 tendermintrpc '$GAIA_RPC,$GAIA_RPC' \
+$PROVIDER1_LISTENER COS5 grpc '$GAIA_GRPC' \
+$PROVIDER1_LISTENER JUN1 rest '$JUNO_REST' \
+$PROVIDER1_LISTENER JUN1 tendermintrpc '$JUNO_RPC,$JUNO_RPC' \
+$PROVIDER1_LISTENER JUN1 grpc '$JUNO_GRPC' \
+$PROVIDER1_LISTENER EVMOS jsonrpc '$EVMOS_RPC' \
+$PROVIDER1_LISTENER EVMOS tendermintrpc '$EVMOS_TENDERMINTRPC,$EVMOS_TENDERMINTRPC' \
+$PROVIDER1_LISTENER EVMOS rest '$EVMOS_REST' \
+$PROVIDER1_LISTENER EVMOS grpc '$EVMOS_GRPC' \
+$PROVIDER1_LISTENER CANTO jsonrpc '$CANTO_RPC' \
+$PROVIDER1_LISTENER CANTO tendermintrpc '$CANTO_TENDERMINT,$CANTO_TENDERMINT' \
+$PROVIDER1_LISTENER CANTO rest '$CANTO_REST' \
+$PROVIDER1_LISTENER CANTO grpc '$CANTO_GRPC' \
+$PROVIDER1_LISTENER AXELAR tendermintrpc '$AXELAR_RPC_HTTP,$AXELAR_RPC_HTTP' \
+$PROVIDER1_LISTENER AXELAR rest '$AXELAR_REST' \
+$PROVIDER1_LISTENER AXELAR grpc '$AXELAR_GRPC' \
+$PROVIDER1_LISTENER AVAX jsonrpc '$AVALANCH_PJRPC' \
+$PROVIDER1_LISTENER FVM jsonrpc '$FVM_JRPC' \
+$PROVIDER1_LISTENER NEAR jsonrpc '$NEAR_JRPC' \
+$PROVIDER1_LISTENER AGR rest '$AGORIC_REST' \
+$PROVIDER1_LISTENER AGR grpc '$AGORIC_GRPC' \
+$PROVIDER1_LISTENER KOIIT jsonrpc '$KOIITRPC' \
+$PROVIDER1_LISTENER AGR tendermintrpc '$AGORIC_RPC,$AGORIC_RPC' \
+$PROVIDER1_LISTENER AGRT rest '$AGORIC_TEST_REST' \
+$PROVIDER1_LISTENER AGRT grpc '$AGORIC_TEST_GRPC' \
+$PROVIDER1_LISTENER AGRT tendermintrpc '$AGORIC_TEST_RPC,$AGORIC_TEST_RPC' \
 $PROVIDER1_LISTENER STRGZ tendermintrpc '$STARGAZE_RPC_HTTP,$STARGAZE_RPC_HTTP' \
 $PROVIDER1_LISTENER STRGZ rest '$STARGAZE_REST' \
 $PROVIDER1_LISTENER STRGZ grpc '$STARGAZE_GRPC' \
@@ -51,8 +98,8 @@ $EXTRA_PROVIDER_FLAGS --geolocation "$GEOLOCATION" --log_level debug --from serv
 
 echo; echo "#### Starting consumer ####"
 # Setup Portal
-# screen -d -m -S portals bash -c "source ~/.bashrc; lavap rpcconsumer consumer_examples/full_consumer_example.yml\
-# $EXTRA_PORTAL_FLAGS --cache-be "127.0.0.1:7778" --geolocation "$GEOLOCATION" --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --strategy distributed 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
+screen -d -m -S portals bash -c "source ~/.bashrc; lavap rpcconsumer consumer_examples/full_consumer_example.yml\
+$EXTRA_PORTAL_FLAGS --cache-be "127.0.0.1:7778" --geolocation "$GEOLOCATION" --debug-relays --log_level debug --from user1 --chain-id lava --allow-insecure-provider-dialing --strategy distributed 2>&1 | tee $LOGS_DIR/PORTAL.log" && sleep 0.25
 # 127.0.0.1:3385 MANTLE jsonrpc \
 
 echo "--- setting up screens done ---"
