@@ -501,7 +501,7 @@ func TestAddonPairing(t *testing.T) {
 			defaultPolicy := func() planstypes.Policy {
 				return planstypes.Policy{
 					ChainPolicies:      []planstypes.ChainPolicy{},
-					GeolocationProfile: math.MaxInt32,
+					GeolocationProfile: int32(planstypes.Geolocation_GL),
 					MaxProvidersToPair: 100,
 					TotalCuLimit:       math.MaxUint64,
 					EpochCuLimit:       math.MaxUint64,
