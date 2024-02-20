@@ -48,9 +48,11 @@ const (
 // provide service on specific specs. The rewards from this pool are distributed on a monthly
 // basis
 const (
-	IprpcPoolName              Pool   = "iprpc_pool"
-	IprpcPoolEmissionEventName string = "iprpc-pool-emmission"
-	SetIprpcDataEventName             = "set-iprpc-data"
+	IprpcPoolName                  Pool   = "iprpc_pool"
+	IprpcPoolEmissionEventName     string = "iprpc-pool-emmission"
+	SetIprpcDataEventName                 = "set-iprpc-data"
+	FundIprpcEventName                    = "fund-iprpc"
+	TransferIprpcRewardToNextMonth        = "transfer-iprpc-reward-to-next-month"
 )
 
 // helper struct to track the serviced IPRPC CU for each spec+provider
