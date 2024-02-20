@@ -231,7 +231,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 		}
 	}
 
-	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	diff, _, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.NoError(t, err)
 	require.True(t, diff.IsZero())
 }
@@ -271,7 +271,7 @@ func TestValidatorSlash(t *testing.T) {
 	require.Equal(t, amount.Sub(expectedTokensToBurn), res.Delegations[0].Amount.Amount)
 
 	// sanity check: verify that provider-validator delegations are equal
-	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, valAcc.Addr)
+	diff, _, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, valAcc.Addr)
 	require.NoError(t, err)
 	require.True(t, diff.IsZero())
 }
@@ -359,7 +359,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegator, providers[0], providers[1], ts.spec.Index, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), consensusPowerTokens.MulRaw(5)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply redelegation
-	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	diff, _, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.NoError(t, err)
 	require.True(t, diff.IsZero())
 
@@ -367,7 +367,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	_, err = ts.TxDualstakingUnbond(delegator, providers[2], ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), consensusPowerTokens.MulRaw(5)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply unbond
-	diff, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	diff, _, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.NoError(t, err)
 	require.True(t, diff.IsZero())
 	expectedValidatorTokens = expectedValidatorTokens.Sub(consensusPowerTokens.MulRaw(5))
@@ -415,7 +415,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(consensusPowerTokens.MulRaw(245)).TruncateInt(), totalDelegations)
 
 	// verify once again that the delegator's delegations balance is preserved
-	diff, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	diff, _, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.NoError(t, err)
 	require.Equal(t, sdk.OneInt(), diff)
 }
@@ -451,7 +451,7 @@ func TestCancelUnbond(t *testing.T) {
 	_, err = ts.TxCancelUnbondValidator(delegator, validator, unbondBlock, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(50)))
 	require.NoError(t, err)
 
-	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegator.Addr)
+	diff, _, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegator.Addr)
 	require.NoError(t, err)
 	require.True(t, diff.IsZero())
 }
