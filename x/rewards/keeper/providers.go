@@ -117,26 +117,32 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	}
 
 	// Get current month IprpcReward and use it to distribute rewards
-	iprpcReward, found := k.PopIprpcReward(ctx)
+	iprpcReward, found := k.PopIprpcReward(ctx, true)
 	if !found {
 		utils.LavaFormatError("current month iprpc reward not found", fmt.Errorf("did not reward providers IPRPC bonus"))
 		return
 	}
+	k.RemoveIprpcReward(ctx, iprpcReward.Id)
+
+	// none of the providers will get the IPRPC reward this month, transfer the funds to the next month
 	if len(specCuMap) == 0 {
-		// none of the providers will get the IPRPC reward this month, transfer the funds to the next month
-		nextMonthIprpcReward, found := k.PopIprpcReward(ctx)
+		nextMonthIprpcReward, found := k.PopIprpcReward(ctx, false)
 		nextMonthId := k.GetIprpcRewardsCurrent(ctx)
 		if !found {
 			nextMonthIprpcReward = types.IprpcReward{Id: nextMonthId, SpecFunds: iprpcReward.SpecFunds}
 		} else {
-			for _, specFund := range nextMonthIprpcReward.SpecFunds {
-				k.addSpecFunds(ctx, specFund.Spec, specFund.Fund, 1) // TODO: duration might be wrong
-			}
+			nextMonthIprpcReward.SpecFunds = k.transferSpecFundsToNextMonth(iprpcReward.SpecFunds, nextMonthIprpcReward.SpecFunds)
 		}
-	} else {
-		// providers will get this month's reward, remove the popped reward object
-		k.RemoveIprpcReward(ctx, iprpcReward.Id)
+		k.SetIprpcReward(ctx, nextMonthIprpcReward)
+		details := map[string]string{
+			"transfered_funds":         iprpcReward.String(),
+			"next_month_updated_funds": nextMonthIprpcReward.String(),
+		}
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.TransferIprpcRewardToNextMonth, details,
+			"No provider serviced an IPRPC eligible subscription, transferring current month IPRPC funds to next month")
+		return
 	}
+
 	for _, specFund := range iprpcReward.SpecFunds {
 		// collect details
 		details := map[string]string{"spec": specFund.Spec, "rewards": specFund.Fund.String()}
