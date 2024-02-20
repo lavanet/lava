@@ -182,13 +182,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		DelegateCommission: delegationCommission,
 	}
 
-	if stakeEntry.EffectiveStake().LT(spec.MinStakeProvider.Amount) {
-		details = append(details, utils.Attribute{Key: "frozen", Value: true})
-		stakeEntry.Freeze()
-	} else {
-		details = append(details, utils.Attribute{Key: "frozen", Value: false})
-	}
-
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
 
 	err = k.dualstakingKeeper.DelegateFull(ctx, senderAddr.String(), validator, senderAddr.String(), chainID, amount)
