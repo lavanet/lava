@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -62,7 +63,9 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		return nil
 	}
 
-	diff, providers, err := h.k.VerifyDelegatorBalance(ctx, delAddr)
+	var diff math.Int
+	var err error
+	diff, providers, err = h.k.VerifyDelegatorBalance(ctx, delAddr)
 	if err != nil {
 		return err
 	}
