@@ -46,8 +46,10 @@ func (msg *MsgSetSubscriptionPolicy) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	if _, ok := planstypes.Geolocation_name[msg.Policy.GeolocationProfile]; !ok {
-		return sdkerrors.Wrapf(legacyerrors.ErrInvalidType, "invalid geolocationprofile")
+	if msg.Policy != nil {
+		if err := msg.Policy.ValidateBasicPolicy(false); err != nil {
+			return sdkerrors.Wrapf(err, "invalid policy")
+		}
 	}
 
 	return nil
