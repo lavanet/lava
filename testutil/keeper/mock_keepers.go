@@ -94,7 +94,14 @@ func (k mockBankKeeper) UndelegateCoinsFromModuleToAccount(ctx sdk.Context, send
 
 func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	moduleAcc := GetModuleAddress(senderModule)
-	return k.SendCoinsFromAccountToModule(ctx, moduleAcc, recipientAddr.String(), amt)
+	accountCoins := k.GetAllBalances(ctx, moduleAcc)
+	if !accountCoins.IsAllGTE(amt) {
+		return fmt.Errorf("not enough coins")
+	}
+
+	k.SubFromBalance(moduleAcc, amt)
+	k.AddToBalance(recipientAddr, amt)
+	return nil
 }
 
 func (k mockBankKeeper) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule string, recipientModule string, amt sdk.Coins) error {
