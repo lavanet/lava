@@ -135,7 +135,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 		}
 		k.SetIprpcReward(ctx, nextMonthIprpcReward)
 		details := map[string]string{
-			"transfered_funds":         iprpcReward.String(),
+			"transferred_funds":        iprpcReward.String(),
 			"next_month_updated_funds": nextMonthIprpcReward.String(),
 		}
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.TransferIprpcRewardToNextMonth, details,
