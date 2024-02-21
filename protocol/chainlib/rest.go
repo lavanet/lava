@@ -293,7 +293,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		utils.LavaFormatInfo("in <<<",
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("dappID", dappID),
@@ -359,7 +359,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			msgSeed = strconv.FormatUint(guid, 10)
 		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
-		utils.LavaFormatInfo("in <<<",
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("dappID", dappID),

@@ -47,7 +47,6 @@ const (
 
 var (
 	Yaml_config_properties         = []string{"network-address", "chain-id", "api-interface"}
-	DebugRelaysFlag                = false
 	RelaysHealthEnableFlagDefault  = true
 	RelayHealthIntervalFlagDefault = 5 * time.Minute
 )
@@ -524,6 +523,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				CDNCacheDuration:         viper.GetString(common.CDNCacheDurationFlag),
 				RelaysHealthEnableFlag:   viper.GetBool(common.RelaysHealthEnableFlag),
 				RelaysHealthIntervalFlag: viper.GetDuration(common.RelayHealthIntervalFlag),
+				DebugRelays:              viper.GetBool(DebugRelaysFlagName),
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
@@ -546,7 +546,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdRPCConsumer.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
-	cmdRPCConsumer.Flags().BoolVar(&DebugRelaysFlag, DebugRelaysFlagName, false, "adding debug information to relays")
+	cmdRPCConsumer.Flags().Bool(DebugRelaysFlagName, false, "adding debug information to relays")
 	// CORS related flags
 	cmdRPCConsumer.Flags().String(common.CorsCredentialsFlag, "true", "Set up CORS allowed credentials,default \"true\"")
 	cmdRPCConsumer.Flags().String(common.CorsHeadersFlag, "", "Set up CORS allowed headers, * for all, default simple cors specification headers")

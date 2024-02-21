@@ -299,7 +299,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		dappID := extractDappIDFromGrpcHeader(metadataValues)
 
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
-		utils.LavaFormatInfo("in <<< GRPC Relay ",
+		utils.LavaFormatDebug("in <<< GRPC Relay ",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("method", method),
 			utils.LogAttr("headers", grpcHeaders),
