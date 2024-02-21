@@ -48,6 +48,7 @@ type ConsumerCmdFlags struct {
 	CDNCacheDuration         string        // how long to cache the preflight response defaults 24 hours (in seconds) "86400"
 	RelaysHealthEnableFlag   bool          // enables relay health check
 	RelaysHealthIntervalFlag time.Duration // interval for relay health check
+	DebugRelays              bool          // enables debug mode for relays
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.

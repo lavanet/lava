@@ -371,7 +371,18 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			guid := utils.GenerateUniqueIdentifier()
 			ctx = utils.WithUniqueIdentifier(ctx, guid)
 			defer cancel() // incase there's a problem make sure to cancel the connection
-			utils.LavaFormatInfo("ws in <<<", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
+
+			logFormattedMsg := string(msg)
+			if !cmdFlags.DebugRelays {
+				logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
+			}
+
+			utils.LavaFormatDebug("ws in <<<",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("seed", msgSeed),
+				utils.LogAttr("msg", logFormattedMsg),
+				utils.LogAttr("dappID", dappID),
+			)
 			msgSeed = strconv.FormatUint(guid, 10)
 			refererMatch, ok := websocketConn.Locals(refererMatchString).(string)
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
@@ -443,15 +454,22 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		msgSeed := strconv.FormatUint(guid, 10)
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
-		utils.LavaFormatInfo("in <<<",
+
+		msg := string(fiberCtx.Body())
+		logFormattedMsg := msg
+		if !cmdFlags.DebugRelays {
+			logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
+		}
+
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("seed", msgSeed),
-			utils.LogAttr("msg", fiberCtx.Body()),
+			utils.LogAttr("msg", logFormattedMsg),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, headers)
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
 			go apil.refererData.SendReferer(refererMatch)
 		}
@@ -463,7 +481,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("tendermint http in/out", true, "POST", fiberCtx.Request().URI().String(), msg, errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -478,7 +496,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
 		}
 		// Log request and response
-		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), string(reply.Data), msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("tendermint http in/out", false, "POST", fiberCtx.Request().URI().String(), msg, string(reply.Data), msgSeed, time.Since(startTime), nil)
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
@@ -504,7 +522,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
-		utils.LavaFormatInfo("urirpc in <<<",
+		utils.LavaFormatDebug("urirpc in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("msg", path),
 			utils.LogAttr("dappID", dappID),
