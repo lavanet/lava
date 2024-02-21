@@ -3,7 +3,7 @@ import json
 import os
 import re
 
-LAVA_PUBLIC_RPC = "grpc-1.elgafar-1.stargaze-apis.com:26660"
+LAVA_PUBLIC_RPC = ""
 
 
 def parse_endpoints_from_spec(lava_spec_file: str) -> dict[str, list[str]]:
