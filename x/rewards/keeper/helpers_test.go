@@ -2,16 +2,18 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	planstypes "github.com/lavanet/lava/x/plans/types"
-	rewardsTypes "github.com/lavanet/lava/x/rewards/types"
+	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -23,10 +25,20 @@ const (
 	feeCollectorName            = authtypes.FeeCollectorName
 )
 
+var (
+	ibcDenom     string    = "uibc"
+	minIprpcCost sdk.Coin  = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(100))
+	iprpcFunds   sdk.Coins = sdk.NewCoins(
+		sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1100)),
+		sdk.NewCoin(ibcDenom, sdk.NewInt(500)),
+	)
+	mockSpec2 string = "mock2"
+)
+
 type tester struct {
 	common.Tester
-	plan planstypes.Plan
-	spec spectypes.Spec
+	plan  planstypes.Plan
+	specs []spectypes.Spec
 }
 
 func newTester(t *testing.T, addValidator bool) *tester {
@@ -39,14 +51,14 @@ func newTester(t *testing.T, addValidator bool) *tester {
 	}
 
 	ts.plan = common.CreateMockPlan()
-	coins := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardsTypes.ProviderRewardsDistributionPool)
+	coins := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.ProviderRewardsDistributionPool)
 	_, monthlyProvidersPool := coins.Find(ts.BondDenom())
 	ts.plan.Price.Amount = monthlyProvidersPool.Amount.QuoRaw(5).AddRaw(5)
 	ts.plan.PlanPolicy.EpochCuLimit = monthlyProvidersPool.Amount.Uint64() * 5
 	ts.plan.PlanPolicy.TotalCuLimit = monthlyProvidersPool.Amount.Uint64() * 5
 	ts.plan.PlanPolicy.MaxProvidersToPair = 5
 	ts.AddPlan(ts.plan.Index, ts.plan)
-	ts.spec = ts.AddSpec("mock", common.CreateMockSpec()).Spec("mock")
+	ts.specs = []spectypes.Spec{ts.AddSpec("mock", common.CreateMockSpec()).Spec("mock")}
 
 	return ts
 }
@@ -62,13 +74,65 @@ func (ts *tester) feeCollector() sdk.AccAddress {
 	return testkeeper.GetModuleAddress(feeCollectorName)
 }
 
-func (ts *tester) getPoolBalance(pool rewardsTypes.Pool, denom string) math.Int {
+func (ts *tester) getPoolBalance(pool rewardstypes.Pool, denom string) math.Int {
 	coins := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, pool)
 	return coins.AmountOf(denom)
 }
 
 func (ts *tester) iprpcAuthority() string {
 	return authtypes.NewModuleAddress(govtypes.ModuleName).String()
+}
+
+// setupForIprpcTests performs the following to set a proper env for iprpc tests:
+// 0. it assumes that ts.newTester(t) was already executed
+// 1. setting IPRPC data
+// 2. fund the iprpc pool (optional, can specify if to fund from the next month)
+func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
+	// add two consumers and buy subscriptions
+	consumerAcc, consumer := ts.AddAccount(common.CONSUMER, 0, testBalance*10000)
+	_, consumer2 := ts.AddAccount(common.CONSUMER, 1, testBalance*10000)
+	_, err := ts.TxSubscriptionBuy(consumer, consumer, ts.plan.Index, 5, true, false)
+	require.NoError(ts.T, err)
+	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, ts.plan.Index, 5, true, false)
+	require.NoError(ts.T, err)
+
+	// set iprpc data (only consumer is IPRPC eligible)
+	_, err = ts.TxRewardsSetIprpcDataProposal(ts.iprpcAuthority(), minIprpcCost, []string{consumer})
+	require.NoError(ts.T, err)
+
+	// create a new spec
+	spec2 := common.CreateMockSpec()
+	spec2.Index = mockSpec2
+	spec2.Name = mockSpec2
+	ts.specs = append(ts.specs, ts.AddSpec(mockSpec2, spec2).Spec(mockSpec2))
+
+	// add two providers and stake them both on the two specs
+	_, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	_, provider2 := ts.AddAccount(common.PROVIDER, 1, testBalance)
+	err = ts.StakeProvider(provider, ts.specs[0], testStake)
+	require.NoError(ts.T, err)
+	err = ts.StakeProvider(provider, ts.specs[1], testStake)
+	require.NoError(ts.T, err)
+	err = ts.StakeProvider(provider2, ts.specs[0], testStake)
+	require.NoError(ts.T, err)
+	err = ts.StakeProvider(provider2, ts.specs[1], testStake)
+	require.NoError(ts.T, err)
+
+	ts.AdvanceEpoch() // apply pairing
+
+	// reset time to the start of the month
+	startOfMonth := time.Date(ts.Ctx.BlockTime().Year(), ts.Ctx.BlockTime().Month(), 1, 0, 0, 0, 0, ts.Ctx.BlockTime().Location())
+	ts.Ctx = ts.Ctx.WithBlockTime(startOfMonth)
+	ts.GoCtx = sdk.WrapSDKContext(ts.Ctx)
+
+	if fundIprpcPool {
+		duration := uint64(1)
+		err = ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(sdk.NewIntFromUint64(duration)))
+		require.NoError(ts.T, err)
+		_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, duration, iprpcFunds)
+		require.NoError(ts.T, err)
+		ts.AdvanceMonths(1).AdvanceEpoch() // fund only fund for next month, so advance a month
+	}
 }
 
 // deductParticipationFees calculates the validators and community participation
