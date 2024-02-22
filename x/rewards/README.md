@@ -35,7 +35,7 @@ The rewards module is responsible on distributing rewards for validators that cr
 
 To manage the rewards, the module uses two rewards pools: allocation pools and distribution pools. Note that there are two allocation pools and two distribution pools to manage the validators and providers rewards independently.
 
-The allocation pools get some of the treasury account's tokens and hold onto it. Once a month, the allocation pools transfer a fixed amount of funds to the distribution pools. This monthly transfer will last for 4 years, after which the alocation pools' funds will be depleted (the allocation pools lifetime (4 years) is a pre-defined constant in the module's code). Note that before the allocation pools transfer the funds, the distribution pools' tokens are burned according to the `LeftOverBurnRate` parameter (see [below](#leftoverburnrate)).
+The allocation pools get some of the treasury account's tokens and hold onto it. Once a month, the allocation pools transfer a fixed amount of funds to the distribution pools. This monthly transfer will last for 4 years, after which the allocation pools' funds will be depleted (the allocation pools lifetime (4 years) is a pre-defined constant in the module's code). Note that before the allocation pools transfer the funds, the distribution pools' tokens are burned according to the `LeftOverBurnRate` parameter (see [below](#leftoverburnrate)).
 
 The distribution pools use the monthly quota of funds to distribute rewards for validators and providers.
 
@@ -63,7 +63,7 @@ Where:
 
 Providers get rewards for their services from the funds used to buy subscriptions (see subscription module readme).
 
-Besides these rewards, the provider also get monthly bonus rewards from a pre-allocated rewards pools. To manage this, like the validators, the providers have an allocation and distribution rewards pools. The bonus rewards exist to provide additional rewards when there is no much demand (few subscriptions).
+Besides these rewards, the provider also get monthly bonus rewards from a pre-allocated rewards pools. To manage this, like the validators, the providers have an allocation and distribution rewards pools. The bonus rewards exist to provide additional rewards when there is not much demand (few subscriptions).
 
 The total monthly bonus rewards ("total spec payout") are calculated per spec by the following formula:
 
@@ -78,7 +78,7 @@ Where:
 * SpecStake = Total effective stake of providers in this spec.
 * SpecShares = Weight factor for the spec (determined in each spec)
 
-The total spec payout is distributed between providers proportional to the rewards they collected from subscriptions throughtout the month. Each provider will get bonus rewards according to the following formula:
+The total spec payout is distributed between providers proportional to the rewards they collected from subscriptions throughout the month. Each provider will get bonus rewards according to the following formula:
 
 ```math
 Provider Bonus Rewards = Total Spec Payout \cdot \frac{\sum_{\text{payment} \; i} (\text{{provider base rewards}}_{i,j} \times \text{{adjustment}}_{i,j})}{\sum_{\text{provider}\;j'}\sum_{\text{payment} \; i}  (\text{{provider base rewards}}_{i,j'}  )}
