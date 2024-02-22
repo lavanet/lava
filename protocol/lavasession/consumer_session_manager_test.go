@@ -767,6 +767,18 @@ func TestNoPairingsError(t *testing.T) {
 	require.True(t, PairingListEmptyError.Is(err))
 }
 
+type mockProcessor struct {
+	usedProviders *UsedProviders
+}
+
+func (mp mockProcessor) GetUsedProviders() *UsedProviders {
+	return mp.usedProviders
+}
+
+func (mp mockProcessor) RemoveUsed(provider string, err error) {
+	mp.usedProviders.RemoveUsed(provider, err)
+}
+
 func TestPairingWithStateful(t *testing.T) {
 	ctx := context.Background()
 	t.Run("stateful", func(t *testing.T) {
@@ -788,8 +800,10 @@ func TestPairingWithStateful(t *testing.T) {
 			err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 			require.NoError(t, err)
 		}
-		unwantedProvider := map[string]struct{}{providerAddresses[0]: {}}
-		css, err = csm.GetSessions(ctx, cuForFirstRequest, unwantedProvider, servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALLPROVIDERS, 0) // get a session
+		usedProviders := NewUsedProviders(nil)
+		usedProviders.SetUnwanted(providerAddresses[0])
+		processor := mockProcessor{usedProviders: usedProviders}
+		css, err = csm.GetSessions(ctx, cuForFirstRequest, processor, servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALLPROVIDERS, 0) // get a session
 		require.NoError(t, err)
 		require.Equal(t, allProviders-1, len(css))
 	})

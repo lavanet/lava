@@ -314,9 +314,13 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, ext
 
 // GetSessions will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
-func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, initUnwantedProviders map[string]struct{}, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32, virtualEpoch uint64) (
+func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, relayProcessor RelayProcessorInf, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32, virtualEpoch uint64) (
 	consumerSessionMap ConsumerSessionsMap, errRet error,
 ) {
+	// set usedProviders if they were chosen for this relay
+	initUnwantedProviders := relayProcessor.GetUsedProviders().GetUnwantedProvidersToSend()
+	defer func() { relayProcessor.GetUsedProviders().AddUsed(consumerSessionMap) }()
+
 	extensionNames := common.GetExtensionNames(extensions)
 	// if pairing list is empty we reset the state.
 	numberOfResets := csm.validatePairingListNotEmpty(addon, extensionNames)
@@ -407,15 +411,14 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				if MaxComputeUnitsExceededError.Is(err) {
 					tempIgnoredProviders.providers[providerAddress] = struct{}{}
 					// We must unlock the consumer session before continuing.
-					consumerSession.lock.Unlock()
+					consumerSession.Free(nil)
 					continue
 				} else {
 					utils.LavaFormatFatal("Unsupported Error", err)
 				}
 			} else {
 				// consumer session is locked and valid, we need to set the relayNumber and the relay cu. before returning.
-				consumerSession.LatestRelayCu = cuNeededForSession // set latestRelayCu
-				consumerSession.RelayNum += RelayNumberIncrement   // increase relayNum
+
 				// Successfully created/got a consumerSession.
 				if debug {
 					utils.LavaFormatDebug("Consumer get session",
@@ -440,10 +443,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				sessionInfo.QoSSummeryResult = consumerSession.getQosComputedResultOrZero()
 				sessions[providerAddress] = sessionInfo
 
-				if consumerSession.RelayNum > 1 {
-					// we only set excellence for sessions with more than one successful relays, this guarantees data within the epoch exists
-					consumerSession.QoSInfo.LastExcellenceQoSReport = csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress)
-				}
+				consumerSession.SetUsageForSession(cuNeededForSession, csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress), relayProcessor)
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 
@@ -640,41 +640,10 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	return nil
 }
 
-// Verify the consumerSession is locked when getting to this function, if its not locked throw an error
-func (csm *ConsumerSessionManager) verifyLock(consumerSession *SingleConsumerSession) error {
-	if consumerSession.lock.TryLock() { // verify.
-		// if we managed to lock throw an error for misuse.
-		defer consumerSession.lock.Unlock()
-		// if failed to lock we should block session as it seems like a very rare case.
-		consumerSession.BlockListed = true // block this session from future usages
-		utils.LavaFormatError("Verify Lock failed on session Failure, blocking session", nil, utils.LogAttr("consumerSession", consumerSession))
-		return LockMisUseDetectedError
-	}
-	return nil
-}
-
-// A Session can be created but unused if consumer found the response in the cache.
-// So we need to unlock the session and decrease the cu that were applied
-func (csm *ConsumerSessionManager) OnSessionUnUsed(consumerSession *SingleConsumerSession) error {
-	if err := csm.verifyLock(consumerSession); err != nil {
-		return sdkerrors.Wrapf(err, "OnSessionUnUsed, consumerSession.lock must be locked before accessing this method, additional info:")
-	}
-	cuToDecrease := consumerSession.LatestRelayCu
-	consumerSession.LatestRelayCu = 0                            // making sure no one uses it in a wrong way
-	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
-	// finished with consumerSession here can unlock.
-	consumerSession.lock.Unlock()                                                    // we unlock before we change anything in the parent ConsumerSessionsWithProvider
-	err := parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // Report session failure, mark it as blocked from future usages, report if timeout happened.
 func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsumerSession, errorReceived error) error {
 	// consumerSession must be locked when getting here.
-	if err := csm.verifyLock(consumerSession); err != nil {
+	if err := consumerSession.VerifyLock(); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionFailure, consumerSession.lock must be locked before accessing this method, additional info:")
 	}
 
@@ -718,7 +687,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
 	csm.updateMetricsManager(consumerSession)
 	// finished with consumerSession here can unlock.
-	consumerSession.lock.Unlock() // we unlock before we change anything in the parent ConsumerSessionsWithProvider
+	consumerSession.Free(errorReceived) // we unlock before we change anything in the parent ConsumerSessionsWithProvider
 
 	err := parentConsumerSessionsWithProvider.decreaseUsedComputeUnits(cuToDecrease) // change the cu in parent
 	if err != nil {
@@ -738,35 +707,6 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	return nil
 }
 
-// On a successful DataReliability session we don't need to increase and update any field, we just need to unlock the session.
-func (csm *ConsumerSessionManager) OnDataReliabilitySessionDone(consumerSession *SingleConsumerSession,
-	latestServicedBlock int64,
-	specComputeUnits uint64,
-	currentLatency time.Duration,
-	expectedLatency time.Duration,
-	expectedBH int64,
-	numOfProviders int,
-	providersCount uint64,
-) error {
-	if err := csm.verifyLock(consumerSession); err != nil {
-		return sdkerrors.Wrapf(err, "OnDataReliabilitySessionDone, consumerSession.lock must be locked before accessing this method")
-	}
-
-	defer consumerSession.lock.Unlock() // we need to be locked here, if we didn't get it locked we try lock anyway
-	consumerSession.ConsecutiveErrors = []error{}
-	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
-	if expectedBH-latestServicedBlock > 1000 {
-		utils.LavaFormatWarning("identified block gap", nil,
-			utils.Attribute{Key: "expectedBH", Value: expectedBH},
-			utils.Attribute{Key: "latestServicedBlock", Value: latestServicedBlock},
-			utils.Attribute{Key: "session_id", Value: consumerSession.SessionId},
-			utils.Attribute{Key: "provider_address", Value: consumerSession.Parent.PublicLavaAddress},
-		)
-	}
-	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
-	return nil
-}
-
 // On a successful session this function will update all necessary fields in the consumerSession. and unlock it when it finishes
 func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession *SingleConsumerSession,
@@ -780,11 +720,11 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	isHangingApi bool,
 ) error {
 	// release locks, update CU, relaynum etc..
-	if err := csm.verifyLock(consumerSession); err != nil {
+	if err := consumerSession.VerifyLock(); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionDone, consumerSession.lock must be locked before accessing this method")
 	}
 
-	defer consumerSession.lock.Unlock()                    // we need to be locked here, if we didn't get it locked we try lock anyway
+	defer consumerSession.Free(nil)                        // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
 	consumerSession.ConsecutiveErrors = []error{}
@@ -835,110 +775,18 @@ func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) []*pairing
 	return csm.reportedProviders.GetReportedProviders()
 }
 
-// Data Reliability Section:
-
 // Atomically read csm.pairingAddressesLength for data reliability.
 func (csm *ConsumerSessionManager) GetAtomicPairingAddressesLength() uint64 {
 	return atomic.LoadUint64(&csm.pairingAddressesLength)
 }
 
-func (csm *ConsumerSessionManager) getDataReliabilityProviderIndex(unAllowedAddress string, index uint64) (cswp *ConsumerSessionsWithProvider, providerAddress string, epoch uint64, err error) {
-	csm.lock.RLock()
-	defer csm.lock.RUnlock()
-	currentEpoch := csm.atomicReadCurrentEpoch()
-	pairingAddressesLength := csm.GetAtomicPairingAddressesLength()
-	if index >= pairingAddressesLength {
-		utils.LavaFormatInfo(DataReliabilityIndexOutOfRangeError.Error(), utils.Attribute{Key: "index", Value: index}, utils.Attribute{Key: "pairingAddressesLength", Value: pairingAddressesLength})
-		return nil, "", currentEpoch, DataReliabilityIndexOutOfRangeError
-	}
-	providerAddress = csm.pairingAddresses[index]
-	if providerAddress == unAllowedAddress {
-		return nil, "", currentEpoch, DataReliabilityIndexRequestedIsOriginalProviderError
-	}
-	// if address is valid return the ConsumerSessionsWithProvider
-	return csm.pairing[providerAddress], providerAddress, currentEpoch, nil
-}
-
-func (csm *ConsumerSessionManager) fetchEndpointFromConsumerSessionsWithProviderWithRetry(ctx context.Context, consumerSessionsWithProvider *ConsumerSessionsWithProvider, sessionEpoch uint64) (endpoint *Endpoint, err error) {
-	var connected bool
-	var providerAddress string
-	for idx := 0; idx < MaxConsecutiveConnectionAttempts; idx++ { // try to connect to the endpoint 3 times
-		connected, endpoint, providerAddress, err = consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx)
-		if err != nil {
-			// verify err is AllProviderEndpointsDisabled and report.
-			if AllProviderEndpointsDisabledError.Is(err) {
-				err = csm.blockProvider(providerAddress, true, sessionEpoch, MaxConsecutiveConnectionAttempts, 0, csm.GenerateReconnectCallback(consumerSessionsWithProvider)) // reporting and blocking provider this epoch
-				if err != nil {
-					if !EpochMismatchError.Is(err) {
-						// only acceptable error is EpochMismatchError so if different, throw fatal
-						utils.LavaFormatFatal("Unsupported Error", err)
-					}
-				}
-				break // all endpoints are disabled, no reason to continue with this provider.
-			} else {
-				utils.LavaFormatFatal("Unsupported Error", err)
-			}
-		}
-		if connected {
-			// if we are connected we can stop trying and return the endpoint
-			break
-		} else {
-			continue
-		}
-	}
-	if !connected { // if we are not connected at the end
-		// failed to get an endpoint connection from that provider. return an error.
-		return nil, utils.LavaFormatError("Not Connected", FailedToConnectToEndPointForDataReliabilityError, utils.Attribute{Key: "provider", Value: providerAddress})
-	}
-	return endpoint, nil
-}
-
-// Get a Data Reliability Session
-func (csm *ConsumerSessionManager) GetDataReliabilitySession(ctx context.Context, originalProviderAddress string, index int64, sessionEpoch uint64) (singleConsumerSession *SingleConsumerSession, providerAddress string, epoch uint64, err error) {
-	consumerSessionWithProvider, providerAddress, currentEpoch, err := csm.getDataReliabilityProviderIndex(originalProviderAddress, uint64(index))
-	if err != nil {
-		return nil, "", 0, err
-	}
-	if sessionEpoch != currentEpoch { // validate we are in the same epoch.
-		return nil, "", currentEpoch, DataReliabilityEpochMismatchError
-	}
-
-	// after choosing a provider, try to see if it already has an existing data reliability session.
-	consumerSession, pairingEpoch, err := consumerSessionWithProvider.verifyDataReliabilitySessionWasNotAlreadyCreated()
-	if NoDataReliabilitySessionWasCreatedError.Is(err) { // need to create a new data reliability session
-		// We can get an endpoint now and create a data reliability session.
-		endpoint, err := csm.fetchEndpointFromConsumerSessionsWithProviderWithRetry(ctx, consumerSessionWithProvider, currentEpoch)
-		if err != nil {
-			return nil, "", currentEpoch, err
-		}
-
-		// get data reliability session from endpoint
-		consumerSession, pairingEpoch, err = consumerSessionWithProvider.getDataReliabilitySingleConsumerSession(endpoint)
-		if err != nil {
-			return nil, "", currentEpoch, err
-		}
-	} else if err != nil {
-		return nil, "", currentEpoch, err
-	}
-
-	if currentEpoch != pairingEpoch { // validate they are the same, if not print an error and set currentEpoch to pairingEpoch.
-		utils.LavaFormatError("currentEpoch and pairingEpoch mismatch", nil, utils.Attribute{Key: "sessionEpoch", Value: currentEpoch}, utils.Attribute{Key: "pairingEpoch", Value: pairingEpoch})
-		currentEpoch = pairingEpoch
-	}
-
-	// DR consumer session is locked, we can increment data reliability relay number.
-	consumerSession.RelayNum += 1
-
-	return consumerSession, providerAddress, currentEpoch, nil
-}
-
 // On a successful Subscribe relay
 func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *SingleConsumerSession) error {
-	if err := csm.verifyLock(consumerSession); err != nil {
+	if err := consumerSession.VerifyLock(); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionDoneIncreaseRelayAndCu consumerSession.lock must be locked before accessing this method")
 	}
 
-	defer consumerSession.lock.Unlock()                    // we need to be locked here, if we didn't get it locked we try lock anyway
+	defer consumerSession.Free(nil)                        // we need to be locked here, if we didn't get it locked we try lock anyway
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
 	consumerSession.ConsecutiveErrors = []error{}

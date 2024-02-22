@@ -297,7 +297,7 @@ func CompareRequestedBlockInBatch(firstRequestedBlock int64, second int64) (late
 	return returnBigger(firstRequestedBlock, second)
 }
 
-func GetRelayTimeout(chainMessage ChainMessage, chainParser ChainParser, timeouts int) time.Duration {
+func GetRelayTimeout(chainMessage ChainMessage, chainParser ChainParser) time.Duration {
 	if chainMessage.TimeoutOverride() != 0 {
 		return chainMessage.TimeoutOverride()
 	}
@@ -311,7 +311,7 @@ func GetRelayTimeout(chainMessage ChainMessage, chainParser ChainParser, timeout
 		relayTimeAddition = time.Millisecond * time.Duration(chainMessage.GetApi().TimeoutMs)
 	}
 	// Set relay timout, increase it every time we fail a relay on timeout
-	return extraRelayTimeout + time.Duration(timeouts+1)*relayTimeAddition + common.AverageWorldLatency
+	return extraRelayTimeout + relayTimeAddition + common.AverageWorldLatency
 }
 
 // setup a common preflight and cors configuration allowing wild cards and preflight caching.
