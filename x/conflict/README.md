@@ -37,7 +37,7 @@ N/A
 ### Commit Period
 
 This is the voting period of the conflict, providers that are selected as jury are required to submit their hashed vote.
-The hash consisnt of nonce + response hash + provider address.
+The hash consist of nonce + response hash + provider address.
 
 ```go
 type MsgConflictVoteCommit struct {
@@ -71,7 +71,7 @@ Providers in the jury that did not vote are punished by jail and slashing, their
 For the conflict resolution there needs to be a majority met of votes for Provider A, Provider B or None of them. 
 If a majority was not met, conflict reward pool is given to the consumer that reported the conflict.
 Once a majority is met providers that voted to the wrong side of the conflict are slashed and frozen, the slashed amount is added to the conflict reward pool.
-Now the reward pool is distributed between the comsumer and the providers that voted for the correct provider.
+Now the reward pool is distributed between the consumer and the providers that voted for the correct provider.
 
 ## Parameters
 
@@ -122,8 +122,8 @@ The conflict module has the following events:
 | ----------        | --------------- |
 | `response_conflict_detection`        | A new conflict has been opened, which involves all of the jury providers. It is now entering the commit stage  |
 | `conflict_vote_reveal_started`        | conflict has transitioned to reveal state  |
-| `conflict_vote_got_commit`        | provider commited his vote  |
+| `conflict_vote_got_commit`        | provider committed his vote  |
 | `conflict_vote_got_reveal`        | provider revealed his vote  |
 | `conflict_unstake_fraud_voter`        | provider was unstaked due to conflict  |
-| `conflict_detection_vote_resolved`        | conflict was succesfully resolved  |
+| `conflict_detection_vote_resolved`        | conflict was successfully resolved  |
 | `conflict_detection_vote_unresolved`        | conflict was not resolved (did not reach majority)  |

@@ -40,7 +40,7 @@ When a provider stakes tokens, they create a self-delegation entry. Whenever a p
 
 The empty provider is a place holder for provider delegations that are issued by the staking module. 
 To support the functionality of the legacy Staking module, when a user delegates to a validator (it can't define the provider to delegate to in the legacy message), the dual staking module will delegate the same ammount to the empty provider.
-The user can than choose to redelegate from the empty provider to an actual provider.
+The user can then choose to redelegate from the empty provider to an actual provider.
 
 ### Dualstaking
 
