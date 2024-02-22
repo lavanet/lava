@@ -7,109 +7,40 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/spf13/cobra"
 )
 
-type RelaySession struct {
-	Sig  []byte
-	Data []byte
-}
-
-func (rs RelaySession) GetSignature() []byte {
-	return rs.Sig
-}
-
-func (rs RelaySession) DataToSign() []byte {
-	return rs.Data
-}
-
-func (rs RelaySession) HashRounds() int {
-	return 1
-}
-
-var nonce = "SomeRandomNonce" // Global nonce value
-
 func main() {
-	app := fiber.New()
+	var pubkeyType, pubkeyValue, signature, nonce string
 
-	// CORS middleware
-	app.Use(func(c *fiber.Ctx) error {
-		// Set the request origin as the allowed origin
-		c.Set("Access-Control-Allow-Origin", c.Get("Origin"))
+	var rootCmd = &cobra.Command{
+		Use:   "./points_be --nonce \"SomeRandomNonce\" --pubkey_type \"tendermint/PubKeySecp256k1\" --pubkey_value \"A4lWTKNYKEpXkkqsTtvy/2JogKr3BPcIvKRmuhaaMxcY\" --signature \"CPNPl/0dQR8IeVzMJ8ynB152FrpUa1878pTsUoKiYv5XDQhVnkW32O1jwcnnME1CLKnSR/fuBx5dhgCj/ngaUw==\"",
+		Short: "CLI tool for signature verification",
+		Long: `This CLI tool allows you to verify signatures using various public key types.
+The signature is verified against the provided public key and nonce.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if pubkeyType == "" || pubkeyValue == "" || signature == "" || nonce == "" {
+				fmt.Println("Error: pubkey_type, pubkey_value, signature, and nonce flags are required for verification.")
+				os.Exit(1)
+			}
+			err := verifySignatureAndCompare(pubkeyType, pubkeyValue, signature, nonce)
+			if err != nil {
+				fmt.Println("Error:", err)
+				os.Exit(1)
+			}
+		},
+	}
 
-		// Handle preflight requests directly
-		if c.Method() == "OPTIONS" {
-			// Set up all allowed methods
-			c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
-			// Allow headers
-			c.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			// Allow credentials
-			c.Set("Access-Control-Allow-Credentials", "true")
-			// Cache preflight request for 24 hours (in seconds)
-			c.Set("Access-Control-Max-Age", "86400")
-			return c.SendStatus(fiber.StatusNoContent)
-		}
+	rootCmd.Flags().StringVar(&pubkeyType, "pubkey_type", "", "Type of the public key (e.g., secp256k1)")
+	rootCmd.Flags().StringVar(&pubkeyValue, "pubkey_value", "", "Public key value of the signer")
+	rootCmd.Flags().StringVar(&signature, "signature", "", "Signature to be verified")
+	rootCmd.Flags().StringVar(&nonce, "nonce", "", "Nonce that was signed")
 
-		if c.Method() == "DELETE" {
-			return c.SendStatus(fiber.StatusNoContent)
-		}
-
-		return c.Next()
-	})
-
-	// Route definition
-	app.Post("*", loginHandler)
-	app.Post("/accounts/cosmos/login/", loginHandler)
-
-	// Start the server
-	port := 8080
-	fmt.Println("Server listening on port %d...\n", port)
-	if err := app.Listen(fmt.Sprintf(":%d", port)); err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		fmt.Println("Error:", err)
-	}
-}
-
-func loginHandler(c *fiber.Ctx) error {
-	c.Set("Access-Control-Allow-Origin", c.Get("Origin"))
-	// Set up all allowed methods
-	c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
-	// Allow headers
-	c.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	// Allow credentials
-	c.Set("Access-Control-Allow-Credentials", "true")
-	// Cache preflight request for 24 hours (in seconds)
-	c.Set("Access-Control-Max-Age", "86400")
-
-	fmt.Println("GOT CALL")
-	var data map[string]string
-	if err := c.BodyParser(&data); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
-	}
-
-	process := data["process"]
-	switch process {
-	case "token":
-		fmt.Println("GOT CALL Token")
-		// Return the nonce
-		// var nonce = []byte("SomeRandomNonce") // Global nonce value
-		response := fiber.Map{"data": nonce}
-		return c.JSON(response)
-	case "verify":
-		fmt.Println("GOT CALL Verify")
-		pubKeyType := data["pubkey_type"]
-		pubKeyValue := data["pubkey_value"]
-		signedToken := data["login_token"]
-		// inviteCode := data["invite_code"]
-
-		if err := verifySignatureAndCompare(pubKeyType, pubKeyValue, signedToken); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
-		}
-
-		// Verification successful
-		return c.JSON(fiber.Map{"message": "Signature verified successfully."})
-	default:
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid process"})
+		os.Exit(1)
 	}
 }
 
@@ -148,7 +79,7 @@ func makeADR36SignDoc(data []byte, signerAddress string) []byte {
 	return []byte(fmt.Sprintf(template, string(dataJSON), string(signerJSON)))
 }
 
-func verifySignatureAndCompare(pubkeyType, pubkeyValue, signedToken string) error {
+func verifySignatureAndCompare(pubkeyType, pubkeyValue, signedToken, nonce string) error {
 	// Decode the base64 signature
 	// Decode base64-encoded signature
 	fmt.Println("Got Signature to validate")
@@ -179,7 +110,11 @@ func verifySignatureAndCompare(pubkeyType, pubkeyValue, signedToken string) erro
 
 	fmt.Println("result:", result)
 	if result {
-		fmt.Println("SUCCEESSSSSSSS")
+		fmt.Println("Signature valid")
+		os.Exit(0)
+	} else {
+		fmt.Println("Signature invalid")
+		os.Exit(1)
 	}
 	return nil
 }
