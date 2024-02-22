@@ -59,7 +59,7 @@
                 "name": "archive",
                 "cu_multiplier": 3,
                 "rule": {
-                  "block": 2048
+                  "block": 1986
                 }
               }
             ]
