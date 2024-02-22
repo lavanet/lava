@@ -137,7 +137,7 @@ func (rp *RelayProcessor) HasResponses() bool {
 	return resultsCount+nodeErrors+protocolErrors > 0
 }
 
-func (rp *RelayProcessor) GetRelayResult(ctx context.Context) ([]common.RelayResult, error) {
+func (rp *RelayProcessor) ProcessResults(ctx context.Context) ([]common.RelayResult, error) {
 	responsesCount := 0
 	for {
 		select {
