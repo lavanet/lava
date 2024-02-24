@@ -17,6 +17,8 @@ import (
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
+const DisableConflictTransactions = true
+
 type ConsumerTxSenderInf interface {
 	TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
 }
@@ -90,6 +92,10 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 }
 
 func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error {
+	if DisableConflictTransactions {
+		utils.LavaFormatWarning("Conflict Transaction Disabled", nil)
+		return nil
+	}
 	if conflictHandler.ConflictAlreadyReported() {
 		return nil // already reported
 	}
