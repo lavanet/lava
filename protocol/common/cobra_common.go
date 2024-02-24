@@ -49,6 +49,7 @@ type ConsumerCmdFlags struct {
 	RelaysHealthEnableFlag   bool          // enables relay health check
 	RelaysHealthIntervalFlag time.Duration // interval for relay health check
 	DebugRelays              bool          // enables debug mode for relays
+	EnableDRTransactions     bool          // enables DR transactions, this is a temp flag. remove after conflicts are stable.
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.
