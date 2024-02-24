@@ -37,12 +37,13 @@ import (
 )
 
 const (
-	DefaultRPCConsumerFileName    = "rpcconsumer.yml"
-	DebugRelaysFlagName           = "debug-relays"
-	DebugProbesFlagName           = "debug-probes"
-	refererBackendAddressFlagName = "referer-be-address"
-	refererMarkerFlagName         = "referer-marker"
-	reportsSendBEAddress          = "reports-be-address"
+	DefaultRPCConsumerFileName            = "rpcconsumer.yml"
+	DebugRelaysFlagName                   = "debug-relays"
+	EnableDataReliabilityTransactionsFlag = "enable-dr-transactions"
+	DebugProbesFlagName                   = "debug-probes"
+	refererBackendAddressFlagName         = "referer-be-address"
+	refererMarkerFlagName                 = "referer-marker"
+	reportsSendBEAddress                  = "reports-be-address"
 )
 
 var (
@@ -137,7 +138,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	// spawn up ConsumerStateTracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
-	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, consumerMetricsManager)
+	consumerStateTracker, err := statetracker.NewConsumerStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, consumerMetricsManager, options.cmdFlags.EnableDRTransactions)
 	if err != nil {
 		utils.LavaFormatFatal("failed to create a NewConsumerStateTracker", err)
 	}
@@ -524,6 +525,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				RelaysHealthEnableFlag:   viper.GetBool(common.RelaysHealthEnableFlag),
 				RelaysHealthIntervalFlag: viper.GetDuration(common.RelayHealthIntervalFlag),
 				DebugRelays:              viper.GetBool(DebugRelaysFlagName),
+				EnableDRTransactions:     viper.GetBool(EnableDataReliabilityTransactionsFlag),
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
@@ -560,6 +562,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(refererBackendAddressFlagName, "", "address to send referer to")
 	cmdRPCConsumer.Flags().String(refererMarkerFlagName, "lava-referer-", "the string marker to identify referer")
 	cmdRPCConsumer.Flags().String(reportsSendBEAddress, "", "address to send reports to")
+	cmdRPCConsumer.Flags().Bool(EnableDataReliabilityTransactionsFlag, false, "enables the dr transaction")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
