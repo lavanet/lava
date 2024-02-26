@@ -31,7 +31,7 @@ func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chain
 // Also, it counts the IPRPC CU if the subscription is IPRPC eligible
 func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cuToAdd uint64, block uint64) error {
 	if k.rewardsKeeper.IsIprpcSubscription(ctx, sub) {
-		k.rewardsKeeper.AddIprpcCu(ctx, provider, chainID, cuToAdd)
+		k.rewardsKeeper.AggregateCU(ctx, provider, chainID, cuToAdd)
 	}
 
 	cu, found, key := k.GetTrackedCu(ctx, sub, provider, chainID, block)
@@ -194,7 +194,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyRewardAmount)
 
 		// aggregate the reward for the provider
-		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, providerAdjustment, totalMonthlyRewardAmount, sub, trackedCu)
+		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, providerAdjustment, totalMonthlyRewardAmount)
 
 		// Transfer some of the total monthly reward to validators contribution and community pool
 		creditToSub, err = k.rewardsKeeper.ContributeToValidatorsAndCommunityPool(ctx, creditToSub, types.ModuleName)
