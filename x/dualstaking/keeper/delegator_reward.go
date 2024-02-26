@@ -83,12 +83,12 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 // providerReward = totalReward * ((effectiveDelegations*commission + providerStake) / effectiveStake)
 // delegatorsReward = totalReward - providerReward
 func (k Keeper) CalcRewards(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, totalReward sdk.Coins, delegations []types.Delegation) (providerReward sdk.Coins, delegatorsReward sdk.Coins) {
-	zeroCoin := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()))
+	zeroCoins := sdk.NewCoins()
 	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry, delegations)
 
 	// Sanity check - effectiveStake != 0
 	if effectiveStake.IsZero() {
-		return zeroCoin, zeroCoin
+		return zeroCoins, zeroCoins
 	}
 	providerReward = totalReward.MulInt(stakeEntry.Stake.Amount).QuoInt(effectiveStake)
 	if !effectiveDelegations.IsZero() && stakeEntry.DelegateCommission != 0 {
@@ -119,7 +119,7 @@ func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.St
 func (k Keeper) CalcDelegatorReward(ctx sdk.Context, delegatorsReward sdk.Coins, totalDelegations math.Int, delegation types.Delegation) sdk.Coins {
 	// Sanity check - totalDelegations != 0
 	if totalDelegations.IsZero() {
-		return sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()))
+		return sdk.NewCoins()
 	}
 	return delegatorsReward.MulInt(delegation.Amount.Amount).QuoInt(totalDelegations)
 }
@@ -166,21 +166,21 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
 func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
 	block := uint64(ctx.BlockHeight())
-	zeroCoin := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt()))
+	zeroCoins := sdk.NewCoins()
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
 	if err != nil {
-		return zeroCoin, zeroCoin, utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
+		return zeroCoins, zeroCoins, utils.LavaFormatError(types.ErrCalculatingProviderReward.Error(), err,
 			utils.Attribute{Key: "block", Value: block},
 		)
 	}
 	stakeEntry, err := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddr, epoch)
 	if err != nil {
-		return zeroCoin, zeroCoin, err
+		return zeroCoins, zeroCoins, err
 	}
 
 	delegations, err := k.GetProviderDelegators(ctx, providerAddr.String(), epoch)
 	if err != nil {
-		return zeroCoin, zeroCoin, utils.LavaFormatError("cannot get provider's delegators", err)
+		return zeroCoins, zeroCoins, utils.LavaFormatError("cannot get provider's delegators", err)
 	}
 	claimableRewards = totalReward
 	// make sure this is post boost when rewards pool is introduced
@@ -194,7 +194,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 		if !calcOnlyContributer {
 			err = k.PayContributors(ctx, senderModule, contributorAddresses, contributorReward, chainID)
 			if err != nil {
-				return zeroCoin, zeroCoin, err
+				return zeroCoins, zeroCoins, err
 			}
 		}
 	}
