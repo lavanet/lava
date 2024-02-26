@@ -126,7 +126,7 @@ func (session *SingleConsumerSession) TryUseSession() (blocked bool, ok bool) {
 			return true, false
 		}
 		if session.relayProcessor != nil {
-			utils.LavaFormatError("session misuse detected, usedProviders isn't nil, blocking", nil, utils.LogAttr("session", session.SessionId))
+			utils.LavaFormatError("session misuse detected, usedProviders isn't nil, missing Free call, blocking", nil, utils.LogAttr("session", session.SessionId))
 			session.BlockListed = true
 			session.lock.Unlock()
 			return true, false

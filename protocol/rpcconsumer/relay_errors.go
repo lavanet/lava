@@ -97,6 +97,7 @@ func (r *RelayErrors) mergeAllErrors() error {
 	return fmt.Errorf(mergedMessage)
 }
 
+// TODO: there's no need to save error twice and provider info twice, this can just be a relayResponse
 type RelayError struct {
 	err          error
 	ProviderInfo common.ProviderInfo

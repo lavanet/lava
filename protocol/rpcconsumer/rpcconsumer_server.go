@@ -3,7 +3,6 @@ package rpcconsumer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -195,18 +194,23 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 		} else {
-			relayResults, err := relayProcessor.ProcessResults(ctx)
-			if err != nil || len(relayResults) == 0 {
+			err := relayProcessor.WaitForResults(ctx)
+			if err != nil {
 				utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 			} else {
-				relayResult := relayResults[0] // will return only 1 since we have set the processor with 1
-				utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderInfo.ProviderAddress}}...)
-				rpccs.relaysMonitor.LogRelay()
-				success = true
-				// If this is the first time we send relays, we want to send all of them, instead of break on first successful relay
-				// That way, we populate the providers with the latest blocks with successful relays
-				if !initialRelays {
-					break
+				relayResults, err := relayProcessor.ProcessingResult()
+				relayResult := relayResults[0]
+				if err == nil {
+					utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderInfo.ProviderAddress}}...)
+					rpccs.relaysMonitor.LogRelay()
+					success = true
+					// If this is the first time we send relays, we want to send all of them, instead of break on first successful relay
+					// That way, we populate the providers with the latest blocks with successful relays
+					if !initialRelays {
+						break
+					}
+				} else {
+					utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 				}
 			}
 		}
@@ -327,14 +331,17 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 		// we failed to send a batch of relays, if there are no active sends we can terminate
 		return relayProcessor, err
 	}
+	relayTimeout := chainlib.GetRelayTimeout(chainMessage, rpccs.chainParser)
 	gotResults := make(chan bool)
 	go func() {
-		// TODO: set timeout for ProcessResults via ctx
+		processingTimeout := GetTimeoutForProcessing(relayTimeout, chainMessage)
+		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
+		defer cancel()
 		// ProcessResults is reading responses while blocking until the conditions are met
-		relayProcessor.ProcessResults(ctx)
+		relayProcessor.WaitForResults(processingCtx)
 		gotResults <- true
 	}()
-	relayTimeout := chainlib.GetRelayTimeout(chainMessage, rpccs.chainParser)
+
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
 	for {
@@ -583,79 +590,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	return nil
 }
 
-func (rpccs *RPCConsumerServer) getBestResult(timeout time.Duration, responses chan *relayResponse, numberOfSessions int, chainMessage chainlib.ChainMessage) *relayResponse {
-	responsesReceived := 0
-	nodeResponseErrors := &RelayErrors{relayErrors: []RelayError{}}
-	protocolResponseErrors := &RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true}
-	// a helper function to fetch the best response (prioritize node over protocol)
-	getBestResponseBetweenNodeAndProtocolErrors := func() (*relayResponse, error) {
-		if len(nodeResponseErrors.relayErrors) > 0 { // if we have node errors, we prefer returning them over protocol errors.
-			bestErrorMessage := nodeResponseErrors.GetBestErrorMessageForUser()
-			return bestErrorMessage.response, nil
-		}
-		if len(protocolResponseErrors.relayErrors) > 0 { // if we have protocol errors at this point return the best one
-			protocolsBestErrorMessage := protocolResponseErrors.GetBestErrorMessageForUser()
-			return protocolsBestErrorMessage.response, nil
-		}
-		return nil, fmt.Errorf("failed getting best response")
-	}
-	startTime := time.Now()
-	for {
-		select {
-		case response := <-responses:
-			// increase responses received
-			responsesReceived++
-			if response.err == nil {
-				// validate if its a error response (from the node not the provider)
-				foundError, errorMessage := chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
-				// print debug only when we have multiple responses
-				if numberOfSessions > 1 {
-					utils.LavaFormatDebug("Got Response", utils.LogAttr("responsesReceived", responsesReceived), utils.LogAttr("out_of", numberOfSessions), utils.LogAttr("foundError", foundError), utils.LogAttr("errorMessage", errorMessage), utils.LogAttr("Status code", response.relayResult.StatusCode))
-				}
-				if foundError {
-					// this is a node error, meaning we still didn't get a good response.
-					// we will choose to wait until there will be a response or timeout happens
-					// if timeout happens we will take the majority of response messages
-					nodeResponseErrors.relayErrors = append(nodeResponseErrors.relayErrors, RelayError{err: fmt.Errorf(errorMessage), ProviderInfo: response.relayResult.ProviderInfo, response: response})
-				} else {
-					// Return the first successful response
-					return response // returning response
-				}
-			} else {
-				// we want to keep the error message in a separate response error structure
-				// in case we got only errors and we want to return the best one
-				protocolResponseErrors.relayErrors = append(protocolResponseErrors.relayErrors, RelayError{err: response.err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
-			}
-
-			// check if this is the last response we are going to receive
-			// we get here only if all other responses including this one are not valid responses
-			// (whether its a node error or protocol errors)
-			if responsesReceived == numberOfSessions {
-				bestRelayResult, err := getBestResponseBetweenNodeAndProtocolErrors()
-				if err == nil { // successfully sent the channel response
-					return bestRelayResult
-				}
-				// if we got here, we for some reason failed to fetch both the best node error and the protocol error
-				// it indicates mostly an unwanted behavior.
-				utils.LavaFormatWarning("failed getting best error message for both node and protocol", nil,
-					utils.LogAttr("nodeResponseErrors", nodeResponseErrors),
-					utils.LogAttr("protocolsBestErrorMessage", protocolResponseErrors),
-					utils.LogAttr("numberOfSessions", numberOfSessions),
-				)
-				return response
-			}
-		case <-time.After(timeout + 3*time.Second - time.Since(startTime)):
-			// Timeout occurred, try fetching the best result we have, prefer node errors over protocol errors
-			bestRelayResponse, err := getBestResponseBetweenNodeAndProtocolErrors()
-			if err == nil { // successfully sent the channel response
-				return bestRelayResponse
-			}
-			// failed fetching any error, getting here indicates a real context timeout happened.
-			return &relayResponse{common.RelayResult{}, NoResponseTimeout}
-		}
-	}
-}
-
 func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string) (relayResultRet *common.RelayResult, relayLatency time.Duration, err error, needsBackoff bool) {
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
 	endpointClient := *singleConsumerSession.Endpoint.Client
@@ -783,7 +717,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	}
 	// only need to send another relay if we don't have enough replies
 	results := []common.RelayResult{}
-	for _, result := range relayProcessor.ComparableResults() {
+	for _, result := range relayProcessor.NodeResults() {
 		if result.Finalized {
 			results = append(results, result)
 		}
@@ -801,7 +735,15 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
-		relayResultsDataReliability, err := relayProcessorDataReliability.ProcessResults(ctx)
+		relayTimeout := chainlib.GetRelayTimeout(chainMessage, rpccs.chainParser)
+		processingTimeout := GetTimeoutForProcessing(relayTimeout, chainMessage)
+		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
+		defer cancel()
+		err = relayProcessorDataReliability.WaitForResults(processingCtx)
+		if err != nil {
+			return utils.LavaFormatWarning("failed sending data reliability relays", err, utils.Attribute{Key: "relayProcessorDataReliability", Value: relayProcessorDataReliability})
+		}
+		relayResultsDataReliability := relayProcessorDataReliability.NodeResults()
 		resultsDataReliability := []common.RelayResult{}
 		for _, result := range relayResultsDataReliability {
 			if result.Finalized {

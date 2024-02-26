@@ -1,8 +1,10 @@
 package lavasession
 
 import (
+	"context"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
@@ -36,6 +38,26 @@ func (up *UsedProviders) CurrentlyUsed() int {
 	return len(up.providers)
 }
 
+func (up *UsedProviders) CurrentlyUsedAddresses() []string {
+	up.lock.RLock()
+	defer up.lock.RUnlock()
+	addresses := []string{}
+	for addr := range up.providers {
+		addresses = append(addresses, addr)
+	}
+	return addresses
+}
+
+func (up *UsedProviders) UnwantedAddresses() []string {
+	up.lock.RLock()
+	defer up.lock.RUnlock()
+	addresses := []string{}
+	for addr := range up.unwantedProviders {
+		addresses = append(addresses, addr)
+	}
+	return addresses
+}
+
 func (up *UsedProviders) RemoveUsed(provider string, err error) {
 	if up == nil {
 		return
@@ -43,10 +65,14 @@ func (up *UsedProviders) RemoveUsed(provider string, err error) {
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	if err != nil {
-		_, ok := up.blockOnSyncLoss[provider]
-		if !ok && IsSessionSyncLoss(err) {
-			up.blockOnSyncLoss[provider] = struct{}{}
-			utils.LavaFormatWarning("Identified SyncLoss in provider, not removing it from list for another attempt", err, utils.Attribute{Key: "address", Value: provider})
+		if ShouldRetryWithThisError(err) {
+			_, ok := up.blockOnSyncLoss[provider]
+			if !ok && IsSessionSyncLoss(err) {
+				up.blockOnSyncLoss[provider] = struct{}{}
+				utils.LavaFormatWarning("Identified SyncLoss in provider, allowing retry", err, utils.Attribute{Key: "address", Value: provider})
+			} else {
+				up.SetUnwanted(provider)
+			}
 		} else {
 			up.SetUnwanted(provider)
 		}
@@ -63,7 +89,7 @@ func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap) {
 	}
 	up.lock.Lock()
 	defer up.lock.Unlock()
-	// this is argument nil safe
+	// this is nil safe
 	for provider := range sessions { // the key for ConsumerSessionsMap is the provider public address
 		up.providers[provider] = struct{}{}
 	}
@@ -79,10 +105,25 @@ func (up *UsedProviders) SetUnwanted(provider string) {
 	up.unwantedProviders[provider] = struct{}{}
 }
 
-func (up *UsedProviders) TryLockSelection() bool {
+func (up *UsedProviders) TryLockSelection(ctx context.Context) bool {
 	if up == nil {
 		return true
 	}
+	for {
+		select {
+		case <-ctx.Done():
+			return false
+		default:
+			canSelect := up.tryLockSelection()
+			if canSelect {
+				return true
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+}
+
+func (up *UsedProviders) tryLockSelection() bool {
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	if !up.selecting {
@@ -108,11 +149,17 @@ func (up *UsedProviders) GetUnwantedProvidersToSend() map[string]struct{} {
 	up.lock.RLock()
 	defer up.lock.RUnlock()
 	unwantedProvidersToSend := map[string]struct{}{}
+	// block the currently used providers
 	for provider := range up.providers {
 		unwantedProvidersToSend[provider] = struct{}{}
 	}
+	// block providers that we have a response for
 	for provider := range up.unwantedProviders {
 		unwantedProvidersToSend[provider] = struct{}{}
 	}
 	return unwantedProvidersToSend
+}
+
+func ShouldRetryWithThisError(err error) bool {
+	return IsSessionSyncLoss(err)
 }

@@ -318,17 +318,19 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	consumerSessionMap ConsumerSessionsMap, errRet error,
 ) {
 	// set usedProviders if they were chosen for this relay
-	initUnwantedProviders := relayProcessor.GetUsedProviders().GetUnwantedProvidersToSend()
+	usedProviders := relayProcessor.GetUsedProviders()
+	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+	canSelect := usedProviders.TryLockSelection(timeoutCtx)
+	if !canSelect {
+		return nil, utils.LavaFormatError("failed getting sessions from used Providers", nil, utils.LogAttr("usedProviders", usedProviders), utils.LogAttr("endpoint", csm.rpcEndpoint))
+	}
 	defer func() { relayProcessor.GetUsedProviders().AddUsed(consumerSessionMap) }()
+	initUnwantedProviders := usedProviders.GetUnwantedProvidersToSend()
 
 	extensionNames := common.GetExtensionNames(extensions)
 	// if pairing list is empty we reset the state.
 	numberOfResets := csm.validatePairingListNotEmpty(addon, extensionNames)
-
-	// verify initUnwantedProviders is not nil
-	if initUnwantedProviders == nil {
-		initUnwantedProviders = make(map[string]struct{})
-	}
 
 	// providers that we don't try to connect this iteration.
 	tempIgnoredProviders := &ignoredProviders{

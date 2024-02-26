@@ -3,7 +3,9 @@ package rpcconsumer
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/common"
@@ -13,7 +15,9 @@ import (
 )
 
 const (
-	MaxCallsPerRelay = 50
+	MaxCallsPerRelay   = 50
+	DefaultTimeout     = 20 * time.Second
+	DefaultTimeoutLong = 3 * time.Minute
 )
 
 func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage) *RelayProcessor {
@@ -22,8 +26,8 @@ func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProvi
 		usedProviders:          usedProviders,
 		requiredResults:        requiredSuccesses,
 		responses:              make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
-		nodeResponseErrors:     &RelayErrors{relayErrors: []RelayError{}},
-		protocolResponseErrors: &RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true},
+		nodeResponseErrors:     RelayErrors{relayErrors: []RelayError{}},
+		protocolResponseErrors: RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true},
 		chainMessage:           chainMessage,
 		guid:                   guid,
 		// TODO: handle required errors
@@ -35,34 +39,49 @@ type RelayProcessor struct {
 	usedProviders          *lavasession.UsedProviders
 	responses              chan *relayResponse
 	requiredResults        int
-	nodeResponseErrors     *RelayErrors
-	protocolResponseErrors *RelayErrors
+	nodeResponseErrors     RelayErrors
+	protocolResponseErrors RelayErrors
 	results                []common.RelayResult
 	lock                   sync.RWMutex
 	chainMessage           chainlib.ChainMessage
-	errorRelayResult       common.RelayResult
 	guid                   uint64
 	requiredErrors         int
 }
 
 func (rp *RelayProcessor) String() string {
-	// TODO:
-	return ""
+	rp.lock.RLock()
+	nodeErrors := len(rp.nodeResponseErrors.relayErrors)
+	protocolErrors := len(rp.protocolResponseErrors.relayErrors)
+	results := len(rp.results)
+	usedProviders := rp.usedProviders
+	rp.lock.RUnlock()
+
+	currentlyUsedAddresses := usedProviders.CurrentlyUsedAddresses()
+	unwantedAddresses := usedProviders.UnwantedAddresses()
+	return fmt.Sprintf("relayProcessor {results:%d, nodeErrors:%d, protocolErrors:%d,unwantedAddresses: %s,currentlyUsedAddresses:%s}",
+		results, nodeErrors, protocolErrors, strings.Join(unwantedAddresses, ";"), strings.Join(currentlyUsedAddresses, ";"))
 }
 
+// RemoveUsed will set the provider as being currently used, if the error is one that allows a retry with the same provider, it will only be removed from currently used
+// if it's not, then it will be added to unwanted providers since the same relay shouldn't send to it again
 func (rp *RelayProcessor) RemoveUsed(providerAddress string, err error) {
-	// TODO:
+	rp.usedProviders.RemoveUsed(providerAddress, err)
 }
 
 func (rp *RelayProcessor) GetUsedProviders() *lavasession.UsedProviders {
 	return rp.usedProviders
 }
 
-func (rp *RelayProcessor) ComparableResults() []common.RelayResult {
+// this function returns all results that came from a node, meaning success, and node errors
+func (rp *RelayProcessor) NodeResults() []common.RelayResult {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	// TODO: add nodeResponseErrors
-	return rp.results
+	// start with results and add to them node results
+	nodeResults := rp.results
+	for _, relayError := range rp.nodeResponseErrors.relayErrors {
+		nodeResults = append(nodeResults, relayError.response.relayResult)
+	}
+	return nodeResults
 }
 
 func (rp *RelayProcessor) ProtocolErrors() uint64 {
@@ -100,7 +119,6 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		}
 	}
 	rp.results = append(rp.results, response.relayResult)
-	return
 }
 
 func (rp *RelayProcessor) setErrorResponse(response *relayResponse) {
@@ -119,10 +137,7 @@ func (rp *RelayProcessor) CheckEndProcessing() bool {
 	}
 	nodeErrors := len(rp.nodeResponseErrors.relayErrors)
 	protocolErrors := len(rp.protocolResponseErrors.relayErrors)
-	if resultsCount+nodeErrors+protocolErrors >= rp.requiredErrors {
-		return true
-	}
-	return false
+	return resultsCount+nodeErrors+protocolErrors >= rp.requiredErrors
 }
 
 func (rp *RelayProcessor) HasResponses() bool {
@@ -137,7 +152,9 @@ func (rp *RelayProcessor) HasResponses() bool {
 	return resultsCount+nodeErrors+protocolErrors > 0
 }
 
-func (rp *RelayProcessor) ProcessResults(ctx context.Context) ([]common.RelayResult, error) {
+// this function waits for the processing results, they are written by multiple go routines and read by this go routine
+// it then updates the responses in their respective place, node errors, protocol errors or success results
+func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	responsesCount := 0
 	for {
 		select {
@@ -150,15 +167,16 @@ func (rp *RelayProcessor) ProcessResults(ctx context.Context) ([]common.RelayRes
 			}
 			if rp.CheckEndProcessing() {
 				// we can finish processing
-				return rp.ProcessingResult()
+				return nil
 			}
 		case <-ctx.Done():
-			utils.LavaFormatWarning("cancelled relay processor", nil, utils.LogAttr("total responses", responsesCount))
-			return rp.ProcessingResult()
+			return utils.LavaFormatWarning("cancelled relay processor", nil, utils.LogAttr("total responses", responsesCount))
 		}
 	}
 }
 
+// this function returns the results according to the defined strategy
+// results were stored in WaitForResults and now there's logic to select which results are returned to the user
 func (rp *RelayProcessor) ProcessingResult() ([]common.RelayResult, error) {
 	// when getting an error from all the results
 	// rp.errorRelayResult.ProviderInfo.ProviderAddress += relayResult.ProviderInfo.ProviderAddress
@@ -180,4 +198,88 @@ func (rp *RelayProcessor) ProcessingResult() ([]common.RelayResult, error) {
 	// 	utils.LavaFormatDebug("relay succeeded but had some errors", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors})
 	// }
 	return nil, fmt.Errorf("TODO")
+}
+
+// func (rpccs *RPCConsumerServer) getBestResult(timeout time.Duration, responses chan *relayResponse, numberOfSessions int, chainMessage chainlib.ChainMessage) *relayResponse {
+// 	responsesReceived := 0
+// 	nodeResponseErrors := &RelayErrors{relayErrors: []RelayError{}}
+// 	protocolResponseErrors := &RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true}
+// 	// a helper function to fetch the best response (prioritize node over protocol)
+// 	getBestResponseBetweenNodeAndProtocolErrors := func() (*relayResponse, error) {
+// 		if len(nodeResponseErrors.relayErrors) > 0 { // if we have node errors, we prefer returning them over protocol errors.
+// 			bestErrorMessage := nodeResponseErrors.GetBestErrorMessageForUser()
+// 			return bestErrorMessage.response, nil
+// 		}
+// 		if len(protocolResponseErrors.relayErrors) > 0 { // if we have protocol errors at this point return the best one
+// 			protocolsBestErrorMessage := protocolResponseErrors.GetBestErrorMessageForUser()
+// 			return protocolsBestErrorMessage.response, nil
+// 		}
+// 		return nil, fmt.Errorf("failed getting best response")
+// 	}
+// 	startTime := time.Now()
+// 	for {
+// 		select {
+// 		case response := <-responses:
+// 			// increase responses received
+// 			responsesReceived++
+// 			if response.err == nil {
+// 				// validate if its a error response (from the node not the provider)
+// 				foundError, errorMessage := chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
+// 				// print debug only when we have multiple responses
+// 				if numberOfSessions > 1 {
+// 					utils.LavaFormatDebug("Got Response", utils.LogAttr("responsesReceived", responsesReceived), utils.LogAttr("out_of", numberOfSessions), utils.LogAttr("foundError", foundError), utils.LogAttr("errorMessage", errorMessage), utils.LogAttr("Status code", response.relayResult.StatusCode))
+// 				}
+// 				if foundError {
+// 					// this is a node error, meaning we still didn't get a good response.
+// 					// we will choose to wait until there will be a response or timeout happens
+// 					// if timeout happens we will take the majority of response messages
+// 					nodeResponseErrors.relayErrors = append(nodeResponseErrors.relayErrors, RelayError{err: fmt.Errorf(errorMessage), ProviderInfo: response.relayResult.ProviderInfo, response: response})
+// 				} else {
+// 					// Return the first successful response
+// 					return response // returning response
+// 				}
+// 			} else {
+// 				// we want to keep the error message in a separate response error structure
+// 				// in case we got only errors and we want to return the best one
+// 				protocolResponseErrors.relayErrors = append(protocolResponseErrors.relayErrors, RelayError{err: response.err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
+// 			}
+
+// 			// check if this is the last response we are going to receive
+// 			// we get here only if all other responses including this one are not valid responses
+// 			// (whether its a node error or protocol errors)
+// 			if responsesReceived == numberOfSessions {
+// 				bestRelayResult, err := getBestResponseBetweenNodeAndProtocolErrors()
+// 				if err == nil { // successfully sent the channel response
+// 					return bestRelayResult
+// 				}
+// 				// if we got here, we for some reason failed to fetch both the best node error and the protocol error
+// 				// it indicates mostly an unwanted behavior.
+// 				utils.LavaFormatWarning("failed getting best error message for both node and protocol", nil,
+// 					utils.LogAttr("nodeResponseErrors", nodeResponseErrors),
+// 					utils.LogAttr("protocolsBestErrorMessage", protocolResponseErrors),
+// 					utils.LogAttr("numberOfSessions", numberOfSessions),
+// 				)
+// 				return response
+// 			}
+// 		case <-time.After(timeout + 3*time.Second - time.Since(startTime)):
+// 			// Timeout occurred, try fetching the best result we have, prefer node errors over protocol errors
+// 			bestRelayResponse, err := getBestResponseBetweenNodeAndProtocolErrors()
+// 			if err == nil { // successfully sent the channel response
+// 				return bestRelayResponse
+// 			}
+// 			// failed fetching any error, getting here indicates a real context timeout happened.
+// 			return &relayResponse{common.RelayResult{}, NoResponseTimeout}
+// 		}
+// 	}
+// }
+
+func GetTimeoutForProcessing(relayTimeout time.Duration, chainMessage chainlib.ChainMessage) time.Duration {
+	ctxTimeout := DefaultTimeout
+	if chainlib.IsHangingApi(chainMessage) || chainMessage.GetApi().ComputeUnits > 100 || chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALLPROVIDERS {
+		ctxTimeout = DefaultTimeoutLong
+	}
+	if relayTimeout > ctxTimeout {
+		ctxTimeout = relayTimeout
+	}
+	return ctxTimeout
 }
