@@ -51,6 +51,9 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	errorCount, index := r.findMaxAppearances(errorMap)
 	if index >= 0 && errorCount >= (len(r.relayErrors)/2) {
 		// we have majority of errors we can return this error.
+		if r.relayErrors[index].response != nil {
+			r.relayErrors[index].response.relayResult.Quorum = errorCount
+		}
 		return r.relayErrors[index]
 	}
 

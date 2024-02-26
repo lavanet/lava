@@ -221,6 +221,7 @@ type RelayResult struct {
 	Finalized       bool
 	ConflictHandler ConflictHandlerInterface
 	StatusCode      int
+	Quorum          int
 }
 
 func (rr *RelayResult) GetReplyServer() *pairingtypes.Relayer_RelaySubscribeClient {
