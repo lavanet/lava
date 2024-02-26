@@ -864,11 +864,11 @@ func (ts *Tester) QueryRewardsShowIprpcData() (*rewardstypes.QueryShowIprpcDataR
 	return ts.Keepers.Rewards.ShowIprpcData(ts.GoCtx, msg)
 }
 
-func (ts *Tester) QueryRewardsIprpcProviderReward(provider string) (*rewardstypes.QueryIprpcProviderRewardResponse, error) {
-	msg := &rewardstypes.QueryIprpcProviderRewardRequest{
+func (ts *Tester) QueryRewardsIprpcProviderRewardEstimation(provider string) (*rewardstypes.QueryIprpcProviderRewardEstimationResponse, error) {
+	msg := &rewardstypes.QueryIprpcProviderRewardEstimationRequest{
 		Provider: provider,
 	}
-	return ts.Keepers.Rewards.IprpcProviderReward(ts.GoCtx, msg)
+	return ts.Keepers.Rewards.IprpcProviderRewardEstimation(ts.GoCtx, msg)
 }
 
 func (ts *Tester) QueryRewardsIprpcSpecReward(spec string) (*rewardstypes.QueryIprpcSpecRewardResponse, error) {
