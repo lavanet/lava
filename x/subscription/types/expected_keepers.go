@@ -64,12 +64,12 @@ type DualStakingKeeper interface {
 }
 
 type RewardsKeeper interface {
-	AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int, sub string, cu uint64)
+	AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int)
 	MaxRewardBoost(ctx sdk.Context) (res uint64)
 	ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward sdk.Coin, senderModule string) (updatedReward sdk.Coin, err error)
 	FundCommunityPoolFromModule(ctx sdk.Context, amount sdk.Coins, senderModule string) error
 	IsIprpcSubscription(ctx sdk.Context, address string) bool
-	AddIprpcCu(ctx sdk.Context, provider string, chainID string, cu uint64)
+	AggregateCU(ctx sdk.Context, provider string, chainID string, cu uint64)
 }
 
 type StakingKeeper interface {

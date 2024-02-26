@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) IprpcProviderReward(goCtx context.Context, req *types.QueryIprpcProviderRewardRequest) (*types.QueryIprpcProviderRewardResponse, error) {
+func (k Keeper) IprpcProviderRewardEstimation(goCtx context.Context, req *types.QueryIprpcProviderRewardEstimationRequest) (*types.QueryIprpcProviderRewardEstimationResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
@@ -53,5 +53,5 @@ func (k Keeper) IprpcProviderReward(goCtx context.Context, req *types.QueryIprpc
 		providerSpecFunds = append(providerSpecFunds, types.Specfund{Spec: specFund.Spec, Fund: providerFund})
 	}
 
-	return &types.QueryIprpcProviderRewardResponse{SpecFunds: providerSpecFunds}, nil
+	return &types.QueryIprpcProviderRewardEstimationResponse{SpecFunds: providerSpecFunds}, nil
 }

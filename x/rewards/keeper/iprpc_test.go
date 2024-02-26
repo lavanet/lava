@@ -187,7 +187,7 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 		{provider: p2, fund: iprpcFunds.Sub(minIprpcCost).MulInt(sdk.NewInt(4)).QuoInt(sdk.NewInt(5))},
 	}
 	for _, expectedProviderReward := range expectedProviderRewards {
-		res, err := ts.QueryRewardsIprpcProviderReward(expectedProviderReward.provider)
+		res, err := ts.QueryRewardsIprpcProviderRewardEstimation(expectedProviderReward.provider)
 		require.NoError(t, err)
 		require.ElementsMatch(t, expectedProviderReward.fund, res.SpecFunds[0].Fund) // taking 0 index because there's a single spec
 	}
@@ -482,9 +482,9 @@ func TestIprpcEligibleSubscriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	// check expected reward for each provider, it should be equal (the service for c1 was equal)
-	res1, err := ts.QueryRewardsIprpcProviderReward(p1)
+	res1, err := ts.QueryRewardsIprpcProviderRewardEstimation(p1)
 	require.NoError(t, err)
-	res2, err := ts.QueryRewardsIprpcProviderReward(p2)
+	res2, err := ts.QueryRewardsIprpcProviderRewardEstimation(p2)
 	require.NoError(t, err)
 	require.True(t, res1.SpecFunds[0].Fund.IsEqual(res2.SpecFunds[0].Fund))
 	require.True(t, iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(2)).IsEqual(res1.SpecFunds[0].Fund))
@@ -504,9 +504,9 @@ func TestIprpcEligibleSubscriptions(t *testing.T) {
 	require.NoError(t, err)
 
 	// check none of the providers should get rewards
-	res1, err = ts.QueryRewardsIprpcProviderReward(p1)
+	res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
 	require.NoError(t, err)
-	res2, err = ts.QueryRewardsIprpcProviderReward(p2)
+	res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
 	require.NoError(t, err)
 	require.Len(t, res1.SpecFunds, 0)
 	require.Len(t, res2.SpecFunds, 0)
@@ -576,12 +576,12 @@ func TestMultipleIprpcSpec(t *testing.T) {
 
 	// p1 total CU: 600, p2 total CU: 1200 -> if the rewards were divided by total CU (wrong) the rewards ratio should've been 1:2
 	// p1 total iprpc CU: 500, p2 total iprpc CU: 500 -> if the rewards were divided by total iprpc CU the rewards should be equal
-	res1, err := ts.QueryRewardsIprpcProviderReward(p1)
+	res1, err := ts.QueryRewardsIprpcProviderRewardEstimation(p1)
 	require.NoError(t, err)
-	res2, err := ts.QueryRewardsIprpcProviderReward(p2)
+	res2, err := ts.QueryRewardsIprpcProviderRewardEstimation(p2)
 	require.NoError(t, err)
 	require.Equal(t, len(res1.SpecFunds), len(res2.SpecFunds))
-	responses := []*rewardstypes.QueryIprpcProviderRewardResponse{res1, res2}
+	responses := []*rewardstypes.QueryIprpcProviderRewardEstimationResponse{res1, res2}
 	for _, res := range responses {
 		for _, sf := range res.SpecFunds {
 			switch sf.Spec {
