@@ -198,8 +198,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 			if err != nil {
 				utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 			} else {
-				relayResults, err := relayProcessor.ProcessingResult()
-				relayResult := relayResults[0]
+				relayResult, err := relayProcessor.ProcessingResult()
 				if err == nil {
 					utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderInfo.ProviderAddress}}...)
 					rpccs.relaysMonitor.LogRelay()
@@ -286,7 +285,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), common.GetExtensionNames(chainMessage.GetExtensions()))
 
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, directiveHeaders, chainMessage, relayRequestData, dappID, consumerIp)
-	if err != nil && !relayProcessor.HasResponses() {
+	if err != nil && !relayProcessor.HasResults() {
+		// we can't send anymore, and we don't have any responses
 		return nil, err
 	}
 	// Handle Data Reliability
@@ -302,13 +302,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, dappID, consumerIp, chainMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
 	}
 
-	// TODO: implement majority selection option
-	results, err := relayProcessor.ProcessingResult()
-	// even on error we are going to have returnedResult
-	if len(results) == 0 {
-		return nil, utils.LavaFormatError("invalid relayProcessor result, results are empty", err, utils.LogAttr("relayProcessor", relayProcessor))
-	}
-	returnedResult := &results[0]
+	returnedResult, err := relayProcessor.ProcessingResult()
+	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors())
 	if err != nil {
 		return returnedResult, err
 	}
@@ -317,10 +312,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		analytics.Latency = currentLatency.Milliseconds()
 		analytics.ComputeUnits = chainMessage.GetApi().ComputeUnits
 	}
-	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors())
-
 	rpccs.relaysMonitor.LogRelay()
-
 	return returnedResult, nil
 }
 
@@ -332,6 +324,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 		return relayProcessor, err
 	}
 	relayTimeout := chainlib.GetRelayTimeout(chainMessage, rpccs.chainParser)
+	// a channel to be notified processing was done, true means we have results and can return
 	gotResults := make(chan bool)
 	go func() {
 		processingTimeout := GetTimeoutForProcessing(relayTimeout, chainMessage)
@@ -339,15 +332,27 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 		defer cancel()
 		// ProcessResults is reading responses while blocking until the conditions are met
 		relayProcessor.WaitForResults(processingCtx)
-		gotResults <- true
+		// decide if we need to resend or not
+		if relayProcessor.HasRequiredNodeResults() {
+			gotResults <- true
+		} else {
+			gotResults <- false
+		}
 	}()
 
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
 	for {
 		select {
-		case <-gotResults:
-			return relayProcessor, nil
+		case success := <-gotResults:
+			if success {
+				return relayProcessor, nil
+			}
+			err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
+			if err != nil && relayProcessor.usedProviders.CurrentlyUsed() == 0 {
+				// we failed to send a batch of relays, if there are no active sends we can terminate
+				return relayProcessor, err
+			}
 		case <-startNewBatchTicker.C:
 			err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 			if err != nil && relayProcessor.usedProviders.CurrentlyUsed() == 0 {
@@ -830,7 +835,7 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 	chainMessage.SetForceCacheRefresh(ok)
 }
 
-func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, retries uint64) {
+func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64) {
 	if relayResult == nil {
 		return
 	}
@@ -844,11 +849,11 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			})
 	}
 	// add the relay retried count
-	if retries > 0 {
+	if protocolErrors > 0 {
 		metadataReply = append(metadataReply,
 			pairingtypes.Metadata{
 				Name:  common.RETRY_COUNT_HEADER_NAME,
-				Value: strconv.FormatUint(retries, 10),
+				Value: strconv.FormatUint(protocolErrors, 10),
 			})
 	}
 	guid, found := utils.GetUniqueIdentifier(ctx)

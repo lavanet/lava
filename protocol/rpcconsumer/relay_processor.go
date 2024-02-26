@@ -20,39 +20,49 @@ const (
 	DefaultTimeoutLong = 3 * time.Minute
 )
 
+type Selection int
+
+const (
+	Quorum     Selection = iota // get the majority out of requiredSuccesses
+	BestResult                  // get the best result, even if it means waiting
+)
+
 func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
+	selection := Quorum // select the majority of node responses
+	if chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALLPROVIDERS {
+		selection = BestResult // select the majority of node successes
+	}
 	return &RelayProcessor{
 		usedProviders:          usedProviders,
-		requiredResults:        requiredSuccesses,
+		requiredSuccesses:      requiredSuccesses,
 		responses:              make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
 		nodeResponseErrors:     RelayErrors{relayErrors: []RelayError{}},
 		protocolResponseErrors: RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true},
 		chainMessage:           chainMessage,
 		guid:                   guid,
-		// TODO: handle required errors
-		requiredErrors: requiredSuccesses,
+		selection:              selection,
 	}
 }
 
 type RelayProcessor struct {
 	usedProviders          *lavasession.UsedProviders
 	responses              chan *relayResponse
-	requiredResults        int
+	requiredSuccesses      int
 	nodeResponseErrors     RelayErrors
 	protocolResponseErrors RelayErrors
-	results                []common.RelayResult
+	successResults         []common.RelayResult
 	lock                   sync.RWMutex
 	chainMessage           chainlib.ChainMessage
 	guid                   uint64
-	requiredErrors         int
+	selection              Selection
 }
 
 func (rp *RelayProcessor) String() string {
 	rp.lock.RLock()
 	nodeErrors := len(rp.nodeResponseErrors.relayErrors)
 	protocolErrors := len(rp.protocolResponseErrors.relayErrors)
-	results := len(rp.results)
+	results := len(rp.successResults)
 	usedProviders := rp.usedProviders
 	rp.lock.RUnlock()
 
@@ -76,8 +86,12 @@ func (rp *RelayProcessor) GetUsedProviders() *lavasession.UsedProviders {
 func (rp *RelayProcessor) NodeResults() []common.RelayResult {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
+	return rp.nodeResultsInner()
+}
+
+func (rp *RelayProcessor) nodeResultsInner() []common.RelayResult {
 	// start with results and add to them node results
-	nodeResults := rp.results
+	nodeResults := rp.successResults
 	for _, relayError := range rp.nodeResponseErrors.relayErrors {
 		nodeResults = append(nodeResults, relayError.response.relayResult)
 	}
@@ -118,7 +132,7 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 			response.relayResult.Finalized = false // shut down data reliability
 		}
 	}
-	rp.results = append(rp.results, response.relayResult)
+	rp.successResults = append(rp.successResults, response.relayResult)
 }
 
 func (rp *RelayProcessor) setErrorResponse(response *relayResponse) {
@@ -128,28 +142,63 @@ func (rp *RelayProcessor) setErrorResponse(response *relayResponse) {
 	rp.protocolResponseErrors.relayErrors = append(rp.protocolResponseErrors.relayErrors, RelayError{err: response.err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
 }
 
-func (rp *RelayProcessor) CheckEndProcessing() bool {
+func (rp *RelayProcessor) checkEndProcessing() bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	resultsCount := len(rp.results)
-	if resultsCount >= rp.requiredResults {
+	resultsCount := len(rp.successResults)
+	if resultsCount >= rp.requiredSuccesses {
+		// we have enough successes, we can return
 		return true
 	}
-	nodeErrors := len(rp.nodeResponseErrors.relayErrors)
-	protocolErrors := len(rp.protocolResponseErrors.relayErrors)
-	return resultsCount+nodeErrors+protocolErrors >= rp.requiredErrors
+	if rp.selection == Quorum {
+		// we need a quorum of all node results
+		nodeErrors := len(rp.nodeResponseErrors.relayErrors)
+		if nodeErrors+resultsCount >= rp.requiredSuccesses {
+			// we have enough node results for our quorum
+			return true
+		}
+	}
+	if rp.usedProviders.CurrentlyUsed() == 0 {
+		// no active sessions, we can return
+		return true
+	}
+
+	return false
 }
 
-func (rp *RelayProcessor) HasResponses() bool {
+// this function defines if we should use the processor to return the result (meaning it has some insight and responses) or just return to the user
+func (rp *RelayProcessor) HasResults() bool {
 	if rp == nil {
 		return false
 	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	resultsCount := len(rp.results)
+	resultsCount := len(rp.successResults)
 	nodeErrors := len(rp.nodeResponseErrors.relayErrors)
 	protocolErrors := len(rp.protocolResponseErrors.relayErrors)
 	return resultsCount+nodeErrors+protocolErrors > 0
+}
+
+func (rp *RelayProcessor) HasRequiredNodeResults() bool {
+	if rp == nil {
+		return false
+	}
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	resultsCount := len(rp.successResults)
+	if resultsCount >= rp.requiredSuccesses {
+		return true
+	}
+	if rp.selection == Quorum {
+		// we need a quorum of all node results
+		nodeErrors := len(rp.nodeResponseErrors.relayErrors)
+		if nodeErrors+resultsCount >= rp.requiredSuccesses {
+			// we have enough node results for our quorum
+			return true
+		}
+	}
+	// on BestResult we want to retry if there is no success
+	return false
 }
 
 // this function waits for the processing results, they are written by multiple go routines and read by this go routine
@@ -165,7 +214,7 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 			} else {
 				rp.setValidResponse(response)
 			}
-			if rp.CheckEndProcessing() {
+			if rp.checkEndProcessing() {
 				// we can finish processing
 				return nil
 			}
@@ -175,9 +224,45 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	}
 }
 
+func (rp *RelayProcessor) processingError() (returnedResult *common.RelayResult, processingError error) {
+	// TODO:
+	return nil, fmt.Errorf("not implmented")
+}
+
 // this function returns the results according to the defined strategy
 // results were stored in WaitForResults and now there's logic to select which results are returned to the user
-func (rp *RelayProcessor) ProcessingResult() ([]common.RelayResult, error) {
+// will return an error if we did not meet quota of replies, if we did we follow the strategies:
+// if return strategy == get_first: return the first success, if none: get best node error
+// if strategy == quorum get majority of node responses
+// on error: we will return a placeholder relayResult, with a provider address and a status code
+func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult, processingError error) {
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	// there are enough successes
+	if len(rp.successResults) > rp.requiredSuccesses {
+		return rp.responsesQuorum(rp.successResults, rp.requiredSuccesses)
+	}
+	nodeResults := rp.nodeResultsInner()
+	// there are not enough successes, let's check if there are enough node errors
+
+	if len(nodeResults) > rp.requiredSuccesses {
+		if rp.selection == Quorum {
+			return rp.responsesQuorum(nodeResults, rp.requiredSuccesses)
+		} else if rp.selection == BestResult && len(rp.successResults) > len(rp.nodeResponseErrors.relayErrors) {
+			// we have more than half succeeded, quorum will be
+			return rp.responsesQuorum(rp.successResults, (rp.requiredSuccesses+1)/2)
+		}
+	}
+	var bestErrorMessage RelayError
+	// we don't have enough for a quorum, prefer a node error on protocol errors
+	if len(rp.nodeResponseErrors.relayErrors) > 0 { // if we have node errors, we prefer returning them over protocol errors.
+		bestErrorMessage = rp.nodeResponseErrors.GetBestErrorMessageForUser()
+	} else if len(rp.protocolResponseErrors.relayErrors) > 0 { // if we have protocol errors at this point return the best one
+		bestErrorMessage = rp.protocolResponseErrors.GetBestErrorMessageForUser()
+	}
+
+	returnedResult = &common.RelayResult{}
+
 	// when getting an error from all the results
 	// rp.errorRelayResult.ProviderInfo.ProviderAddress += relayResult.ProviderInfo.ProviderAddress
 	// if relayResult.GetStatusCode() != 0 {
