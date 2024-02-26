@@ -14,7 +14,7 @@ import (
 
 const DAY_SECONDS = 60 * 60 * 24
 
-func (k Keeper) AddIprpcCu(ctx sdk.Context, provider string, chainID string, cu uint64) {
+func (k Keeper) AggregateCU(ctx sdk.Context, provider string, chainID string, cu uint64) {
 	index := types.BasePayIndex{Provider: provider, ChainID: chainID}
 	basepay, found := k.getBasePay(ctx, index)
 	if !found {
@@ -25,7 +25,7 @@ func (k Keeper) AddIprpcCu(ctx sdk.Context, provider string, chainID string, cu 
 	k.setBasePay(ctx, index, basepay)
 }
 
-func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int, sub string, cu uint64) {
+func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int) {
 	index := types.BasePayIndex{Provider: provider, ChainID: chainid}
 	basepay, found := k.getBasePay(ctx, index)
 	adjustedPay := adjustment.MulInt(rewards)
