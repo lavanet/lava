@@ -67,8 +67,8 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 			specTotalPayout = k.specTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
 		}
 		// distribute the rewards to all providers
-		if !specTotalPayout.IsZero() {
-			for _, basepay := range basepays {
+		for _, basepay := range basepays {
+			if !specTotalPayout.IsZero() {
 				// calculate the providers bonus base on adjusted base pay
 				reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(totalbasepay).TruncateInt()
 				totalRewarded = totalRewarded.Add(reward)
@@ -90,10 +90,10 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 				}
 
 				details[providerAddr.String()+" "+spec.ChainID] = reward.String()
-
-				// count iprpc cu
-				k.countIprpcCu(specCuMap, basepay.IprpcCu, spec.ChainID, basepay.Provider)
 			}
+
+			// count iprpc cu
+			k.countIprpcCu(specCuMap, basepay.IprpcCu, spec.ChainID, basepay.Provider)
 		}
 	}
 
