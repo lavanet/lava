@@ -81,27 +81,34 @@ func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, durat
 // this function is used when there are no providers that should get the monthly IPRPC reward,
 // so the reward transfers to the next month
 func (k Keeper) transferSpecFundsToNextMonth(specFunds []types.Specfund, nextMonthSpecFunds []types.Specfund) []types.Specfund {
-	mergedMap := make(map[string]sdk.Coins)
+	// Create a slice to store merged spec funds
+	var mergedList []types.Specfund
 
-	// populate map with current spec funds
-	for i, obj := range specFunds {
-		mergedMap[obj.Spec] = specFunds[i].Fund
-	}
+	// Loop through current spec funds
+	for _, current := range specFunds {
+		found := false
 
-	// update the merged map with the next month spec funds
-	for i, obj := range nextMonthSpecFunds {
-		if fund, ok := mergedMap[obj.Spec]; ok {
-			mergedMap[obj.Spec] = fund.Add(nextMonthSpecFunds[i].Fund...)
-		} else {
-			mergedMap[obj.Spec] = obj.Fund
+		// Loop through next month spec funds
+		for i, next := range nextMonthSpecFunds {
+			// If the spec is found in next month spec funds, merge the funds
+			if current.Spec == next.Spec {
+				// Add current month's fund to next month's fund
+				nextMonthSpecFunds[i].Fund = nextMonthSpecFunds[i].Fund.Add(current.Fund...)
+				found = true
+				break
+			}
+		}
+
+		// If spec is not found in next month spec funds, add it to the merged list
+		if !found {
+			mergedList = append(mergedList, current)
 		}
 	}
 
-	// Convert map back to list and sort
-	var mergedList []types.Specfund
-	for spec, fund := range mergedMap {
-		mergedList = append(mergedList, types.Specfund{Spec: spec, Fund: fund})
-	}
+	// Append any remaining spec funds from next month that were not merged
+	mergedList = append(mergedList, nextMonthSpecFunds...)
+
+	// Sort the merged list by spec
 	sort.Slice(mergedList, func(i, j int) bool { return mergedList[i].Spec < mergedList[j].Spec })
 
 	return mergedList
