@@ -19,10 +19,6 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	if len(genState.RefillRewardsTS.TimeEntries) == 0 {
 		k.RefillRewardsPools(ctx, nil, nil)
 	}
-
-	for _, sub := range genState.IprpcSubscriptions {
-		k.SetIprpcSubscription(ctx, sub)
-	}
 	k.SetIprpcData(ctx, genState.MinIprpcCost, genState.IprpcSubscriptions)
 }
 
