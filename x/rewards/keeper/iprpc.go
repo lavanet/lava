@@ -121,6 +121,7 @@ func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, durat
 				if iprpcReward.SpecFunds[i].Spec == spec {
 					specFound = true
 					iprpcReward.SpecFunds[i].Fund = iprpcReward.SpecFunds[i].Fund.Add(fund...)
+					break
 				}
 			}
 			if !specFound {
