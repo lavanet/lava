@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"encoding/binary"
-	"sort"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -92,63 +91,4 @@ func (k Keeper) PopIprpcReward(ctx sdk.Context, advanceCurrent bool) (types.Iprp
 		k.SetIprpcRewardsCurrent(ctx, current+1)
 	}
 	return k.GetIprpcReward(ctx, current)
-}
-
-// AddSpecFunds adds funds for a specific spec for <duration> of months.
-// This function is used by the fund-iprpc TX.
-func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, duration uint64) {
-	startID := k.GetIprpcRewardsCurrent(ctx) + 1 // fund IPRPC only from the next month for <duration> months
-	for i := startID; i < startID+duration; i++ {
-		iprpcReward, found := k.GetIprpcReward(ctx, i)
-		if found {
-			// found IPRPC reward, find if spec exists
-			specIndex := -1
-			for i := 0; i < len(iprpcReward.SpecFunds); i++ {
-				if iprpcReward.SpecFunds[i].Spec == spec {
-					specIndex = i
-				}
-			}
-			// update spec funds
-			if specIndex >= 0 {
-				iprpcReward.SpecFunds[specIndex].Fund = iprpcReward.SpecFunds[specIndex].Fund.Add(fund...)
-			} else {
-				iprpcReward.SpecFunds = append(iprpcReward.SpecFunds, types.Specfund{Spec: spec, Fund: fund})
-			}
-		} else {
-			// did not find IPRPC reward -> create a new one
-			iprpcReward.Id = i
-			iprpcReward.SpecFunds = []types.Specfund{{Spec: spec, Fund: fund}}
-		}
-		k.SetIprpcReward(ctx, iprpcReward)
-	}
-}
-
-// transferSpecFundsToNextMonth transfer the specFunds to the next month's IPRPC funds
-// this function is used when there are no providers that should get the monthly IPRPC reward,
-// so the reward transfers to the next month
-func (k Keeper) transferSpecFundsToNextMonth(specFunds []types.Specfund, nextMonthSpecFunds []types.Specfund) []types.Specfund {
-	mergedMap := make(map[string]sdk.Coins)
-
-	// populate map with current spec funds
-	for i, obj := range specFunds {
-		mergedMap[obj.Spec] = specFunds[i].Fund
-	}
-
-	// update the merged map with the next month spec funds
-	for i, obj := range nextMonthSpecFunds {
-		if fund, ok := mergedMap[obj.Spec]; ok {
-			mergedMap[obj.Spec] = fund.Add(nextMonthSpecFunds[i].Fund...)
-		} else {
-			mergedMap[obj.Spec] = obj.Fund
-		}
-	}
-
-	// Convert map back to list and sort
-	var mergedList []types.Specfund
-	for spec, fund := range mergedMap {
-		mergedList = append(mergedList, types.Specfund{Spec: spec, Fund: fund})
-	}
-	sort.Slice(mergedList, func(i, j int) bool { return mergedList[i].Spec < mergedList[j].Spec })
-
-	return mergedList
 }

@@ -2,8 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"sort"
-	"strings"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -95,24 +93,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 			}
 
 			// count iprpc cu
-			if basepay.IprpcCu != 0 {
-				specCu, ok := specCuMap[spec.ChainID]
-				if !ok {
-					specCuMap[spec.ChainID] = types.SpecCuType{
-						ProvidersCu: map[string]uint64{basepay.Provider: basepay.IprpcCu},
-						TotalCu:     basepay.IprpcCu,
-					}
-				} else {
-					_, ok := specCu.ProvidersCu[basepay.Provider]
-					if !ok {
-						specCu.ProvidersCu[basepay.Provider] = basepay.IprpcCu
-					} else {
-						specCu.ProvidersCu[basepay.Provider] += basepay.IprpcCu
-					}
-					specCu.TotalCu += basepay.IprpcCu
-					specCuMap[spec.ChainID] = specCu
-				}
-			}
+			k.countIprpcCu(specCuMap, basepay.IprpcCu, spec.ChainID, basepay.Provider)
 		}
 	}
 
@@ -126,78 +107,12 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 
 	// none of the providers will get the IPRPC reward this month, transfer the funds to the next month
 	if len(specCuMap) == 0 {
-		nextMonthIprpcReward, found := k.PopIprpcReward(ctx, false)
-		nextMonthId := k.GetIprpcRewardsCurrent(ctx)
-		if !found {
-			nextMonthIprpcReward = types.IprpcReward{Id: nextMonthId, SpecFunds: iprpcReward.SpecFunds}
-		} else {
-			nextMonthIprpcReward.SpecFunds = k.transferSpecFundsToNextMonth(iprpcReward.SpecFunds, nextMonthIprpcReward.SpecFunds)
-		}
-		k.SetIprpcReward(ctx, nextMonthIprpcReward)
-		details := map[string]string{
-			"transferred_funds":        iprpcReward.String(),
-			"next_month_updated_funds": nextMonthIprpcReward.String(),
-		}
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.TransferIprpcRewardToNextMonth, details,
-			"No provider serviced an IPRPC eligible subscription, transferring current month IPRPC funds to next month")
+		k.handleNoIprpcRewardToProviders(ctx, iprpcReward)
 		return
 	}
 
-	for _, specFund := range iprpcReward.SpecFunds {
-		// collect details
-		details := map[string]string{"spec": specFund.Spec}
-		rewardsStr := []string{}
-		for _, reward := range specFund.Fund {
-			rewardsStr = append(rewardsStr, reward.String())
-		}
-		details["rewards"] = strings.Join(rewardsStr, ",")
-
-		// verify specCuMap holds an entry for the relevant spec
-		specCu, ok := specCuMap[specFund.Spec]
-		if !ok {
-			utils.LavaFormatError("did not distribute iprpc rewards to providers in spec", fmt.Errorf("specCU not found"),
-				utils.LogAttr("spec", details["spec"]),
-				utils.LogAttr("rewards", details["rewards"]),
-			)
-			continue
-		}
-
-		// collect providers details
-		providers := []string{}
-		for provider := range specCu.ProvidersCu {
-			providers = append(providers, provider)
-		}
-		sort.Strings(providers)
-		details["providers"] = strings.Join(providers, ",")
-
-		// distribute IPRPC reward for spec
-		usedReward := sdk.NewCoins()
-		for _, provider := range providers {
-			providerAddr, err := sdk.AccAddressFromBech32(provider)
-			if err != nil {
-				continue
-			}
-			// calculate provider IPRPC reward
-			providerIprpcReward := specFund.Fund.MulInt(sdk.NewIntFromUint64(specCu.ProvidersCu[provider])).QuoInt(sdk.NewIntFromUint64(specCu.TotalCu))
-
-			// reward the provider
-			_, _, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
-			if err != nil {
-				utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", provider))
-			}
-
-			usedReward = usedReward.Add(providerIprpcReward...)
-		}
-
-		// handle leftovers
-		usedReward = specFund.Fund.Sub(usedReward...)
-		err := k.FundCommunityPoolFromModule(ctx, usedReward, string(types.IprpcPoolName))
-		if err != nil {
-			utils.LavaFormatError("could not send iprpc leftover to community pool", err)
-		}
-
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, details, "IPRPC monthly rewards distributed successfully")
-	}
+	// distribute IPRPC rewards
+	k.distributeIprpcRewards(ctx, iprpcReward, specCuMap)
 }
 
 // specTotalPayout calculates the total bonus for a specific spec
