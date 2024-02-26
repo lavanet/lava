@@ -3,7 +3,6 @@ package keeper
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -59,16 +58,14 @@ func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, durat
 		iprpcReward, found := k.GetIprpcReward(ctx, i)
 		if found {
 			// found IPRPC reward, find if spec exists
-			specIndex := -1
+			specFound := false
 			for i := 0; i < len(iprpcReward.SpecFunds); i++ {
 				if iprpcReward.SpecFunds[i].Spec == spec {
-					specIndex = i
+					specFound = true
+					iprpcReward.SpecFunds[i].Fund = iprpcReward.SpecFunds[i].Fund.Add(fund...)
 				}
 			}
-			// update spec funds
-			if specIndex >= 0 {
-				iprpcReward.SpecFunds[specIndex].Fund = iprpcReward.SpecFunds[specIndex].Fund.Add(fund...)
-			} else {
+			if !specFound {
 				iprpcReward.SpecFunds = append(iprpcReward.SpecFunds, types.Specfund{Spec: spec, Fund: fund})
 			}
 		} else {
@@ -112,21 +109,14 @@ func (k Keeper) transferSpecFundsToNextMonth(specFunds []types.Specfund, nextMon
 
 // distributeIprpcRewards is distributing the IPRPC rewards for providers according to their serviced CU
 func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcReward, specCuMap map[string]types.SpecCuType) {
+	usedReward := sdk.NewCoins()
 	for _, specFund := range iprpcReward.SpecFunds {
-		// collect details
-		details := map[string]string{"spec": specFund.Spec}
-		rewardsStr := []string{}
-		for _, reward := range specFund.Fund {
-			rewardsStr = append(rewardsStr, reward.String())
-		}
-		details["rewards"] = strings.Join(rewardsStr, ",")
-
 		// verify specCuMap holds an entry for the relevant spec
 		specCu, ok := specCuMap[specFund.Spec]
 		if !ok {
 			utils.LavaFormatError("did not distribute iprpc rewards to providers in spec", fmt.Errorf("specCU not found"),
-				utils.LogAttr("spec", details["spec"]),
-				utils.LogAttr("rewards", details["rewards"]),
+				utils.LogAttr("spec", specFund.Spec),
+				utils.LogAttr("rewards", specFund.Fund.String()),
 			)
 			continue
 		}
@@ -137,10 +127,8 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			providers = append(providers, provider)
 		}
 		sort.Strings(providers)
-		details["providers"] = strings.Join(providers, ",")
 
 		// distribute IPRPC reward for spec
-		usedReward := sdk.NewCoins()
 		for _, provider := range providers {
 			providerAddr, err := sdk.AccAddressFromBech32(provider)
 			if err != nil {
@@ -158,13 +146,15 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			usedReward = usedReward.Add(providerIprpcReward...)
 		}
 
-		// handle leftovers
+		// count used rewards
 		usedReward = specFund.Fund.Sub(usedReward...)
-		err := k.FundCommunityPoolFromModule(ctx, usedReward, string(types.IprpcPoolName))
-		if err != nil {
-			utils.LavaFormatError("could not send iprpc leftover to community pool", err)
-		}
-
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, details, "IPRPC monthly rewards distributed successfully")
 	}
+
+	// handle leftovers
+	err := k.FundCommunityPoolFromModule(ctx, usedReward, string(types.IprpcPoolName))
+	if err != nil {
+		utils.LavaFormatError("could not send iprpc leftover to community pool", err)
+	}
+
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, map[string]string{"iprpc_rewards_leftovers": usedReward.String()}, "IPRPC monthly rewards distributed successfully")
 }
