@@ -28,9 +28,10 @@ type ConsumerStateTracker struct {
 	ConsumerTxSenderInf
 	*StateTracker
 	ConsumerEmergencyTrackerInf
+	disableConflictTransactions bool
 }
 
-func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager) (ret *ConsumerStateTracker, err error) {
+func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, metrics *metrics.ConsumerMetricsManager, disableConflictTransactions bool) (ret *ConsumerStateTracker, err error) {
 	emergencyTracker, blockNotFoundCallback := NewEmergencyTracker(metrics)
 	stateTrackerBase, err := NewStateTracker(ctx, txFactory, clientCtx, chainFetcher, blockNotFoundCallback)
 	if err != nil {
@@ -45,6 +46,7 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 		stateQuery:                  updaters.NewConsumerStateQuery(ctx, clientCtx),
 		ConsumerTxSenderInf:         txSender,
 		ConsumerEmergencyTrackerInf: emergencyTracker,
+		disableConflictTransactions: disableConflictTransactions,
 	}
 
 	cst.RegisterForPairingUpdates(ctx, emergencyTracker)
@@ -90,6 +92,10 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 }
 
 func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error {
+	if cst.disableConflictTransactions {
+		utils.LavaFormatInfo("found Conflict, but transactions are disabled, returning")
+		return nil
+	}
 	if conflictHandler.ConflictAlreadyReported() {
 		return nil // already reported
 	}
