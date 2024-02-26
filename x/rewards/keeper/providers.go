@@ -105,12 +105,6 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	}
 	k.RemoveIprpcReward(ctx, iprpcReward.Id)
 
-	// none of the providers will get the IPRPC reward this month, transfer the funds to the next month
-	if len(specCuMap) == 0 {
-		k.handleNoIprpcRewardToProviders(ctx, iprpcReward)
-		return
-	}
-
 	// distribute IPRPC rewards
 	k.distributeIprpcRewards(ctx, iprpcReward, specCuMap)
 }

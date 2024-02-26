@@ -82,8 +82,8 @@ func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, durat
 // this function is used when there are no providers that should get the monthly IPRPC reward,
 // so the reward transfers to the next month
 func (k Keeper) transferSpecFundsToNextMonth(specFunds []types.Specfund, nextMonthSpecFunds []types.Specfund) []types.Specfund {
-	// Create a slice to store merged spec funds
-	var mergedList []types.Specfund
+	// Create a slice to store leftover spec funds
+	var leftoverList []types.Specfund
 
 	// Loop through current spec funds
 	for _, current := range specFunds {
@@ -102,21 +102,22 @@ func (k Keeper) transferSpecFundsToNextMonth(specFunds []types.Specfund, nextMon
 
 		// If spec is not found in next month spec funds, add it to the merged list
 		if !found {
-			mergedList = append(mergedList, current)
+			leftoverList = append(leftoverList, current)
 		}
 	}
 
 	// Append any remaining spec funds from next month that were not merged
-	mergedList = append(mergedList, nextMonthSpecFunds...)
-
-	// Sort the merged list by spec
-	sort.Slice(mergedList, func(i, j int) bool { return mergedList[i].Spec < mergedList[j].Spec })
-
-	return mergedList
+	return append(nextMonthSpecFunds, leftoverList...)
 }
 
 // distributeIprpcRewards is distributing the IPRPC rewards for providers according to their serviced CU
 func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcReward, specCuMap map[string]types.SpecCuType) {
+	// none of the providers will get the IPRPC reward this month, transfer the funds to the next month
+	if len(specCuMap) == 0 {
+		k.handleNoIprpcRewardToProviders(ctx, iprpcReward)
+		return
+	}
+
 	usedReward := sdk.NewCoins()
 	for _, specFund := range iprpcReward.SpecFunds {
 		// verify specCuMap holds an entry for the relevant spec
