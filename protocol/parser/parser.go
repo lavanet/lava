@@ -276,16 +276,34 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		}
 		blockContainer := unmarshaledDataTyped[param_index]
 		for _, key := range input[1:] {
+			// We have a key but we can't use it on string, so ValueNotSetError is returned
+			// TODO: Should handle this cases
+			if _, ok := blockContainer.(string); ok {
+				return nil, ValueNotSetError
+			}
+
 			// type assertion for blockcontainer
-			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is not map[string]interface{}", ValueNotSetError, utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)), utils.LogAttr("key", key), utils.LogAttr("unmarshaledDataTyped", unmarshaledDataTyped))
+			if _, ok := blockContainer.(map[string]interface{}); !ok {
+				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is not map[string]interface{}", ValueNotSetError,
+					utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
+					utils.LogAttr("key", key),
+					utils.LogAttr("unmarshaledDataTyped", unmarshaledDataTyped),
+					utils.LogAttr("paramIndex", param_index),
+					utils.LogAttr("dataSource", dataSource),
+				)
 			}
 
 			// assertion for key
 			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
 				blockContainer = container
 			} else {
-				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError, utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)), utils.LogAttr("key", key), utils.LogAttr("unmarshaledDataTyped", unmarshaledDataTyped))
+				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError,
+					utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
+					utils.LogAttr("key", key),
+					utils.LogAttr("unmarshaledDataTyped", unmarshaledDataTyped),
+					utils.LogAttr("paramIndex", param_index),
+					utils.LogAttr("dataSource", dataSource),
+				)
 			}
 		}
 		retArr := make([]interface{}, 0)
