@@ -166,6 +166,11 @@ func (ts *TxSender) simulateTxWithRetry(clientCtx client.Context, txfactory tx.F
 					return txfactory, 0, err
 				}
 				continue // if we got a new factory successfully continue to next attempt in simulation
+			} else if strings.Contains(errString, "insufficient fees; got:") {
+				err := parseInsufficientFeesError(errString, gasUsed)
+				if err == nil {
+					return txfactory, 0, utils.LavaFormatError("failed simulation, gas fees.", err)
+				}
 			} else {
 				return txfactory, 0, err
 			}
