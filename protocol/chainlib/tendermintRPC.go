@@ -153,7 +153,12 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 			// Fetch requested block, it is used for data reliability
 			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
 			if err != nil {
-				utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+				utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
+					utils.LogAttr("chain", apip.spec.Name),
+					utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
+					utils.LogAttr("apiName", apiCont.api.Name),
+					utils.LogAttr("connectionType", "tendermintRPC"),
+				)
 				requestedBlockForMessage = spectypes.NOT_APPLICABLE
 			}
 		} else {
