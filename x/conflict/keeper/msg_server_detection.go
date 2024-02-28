@@ -135,6 +135,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 		return &types.MsgDetectionResponse{}, nil
 	}
 
+	ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "detection completedm refund gas")
 	eventData := map[string]string{"client": msg.Creator}
 	utils.LogLavaEvent(ctx, logger, types.ConflictDetectionRecievedEventName, eventData, "Simulation: Got a new valid conflict detection from consumer")
 	return &types.MsgDetectionResponse{}, nil
