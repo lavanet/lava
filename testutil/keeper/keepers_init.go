@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -210,6 +211,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	paramsKeeper.Subspace(downtimemoduletypes.ModuleName)
 	paramsKeeper.Subspace(rewardstypes.ModuleName)
 	paramsKeeper.Subspace(distributiontypes.ModuleName)
+	paramsKeeper.Subspace(dualstakingtypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
 	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
@@ -285,6 +287,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 	ks.Downtime.SetParams(ctx, downtimev1.DefaultParams())
 	ks.Rewards.SetParams(ctx, rewardstypes.DefaultParams())
+	dualStakingParams := dualstakingtypes.DefaultParams()
+	dualStakingParams.MinSelfDelegation.Amount = math.NewInt(100)
+	ks.Dualstaking.SetParams(ctx, dualStakingParams)
 
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
 

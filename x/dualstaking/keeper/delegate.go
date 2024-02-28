@@ -74,7 +74,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 
 	if provider != types.EMPTY_PROVIDER {
 		// update the stake entry
-		return k.increaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount)
+		return k.modifyStakeEntryDelegation(ctx, delegator, provider, chainID, amount, true)
 	}
 
 	return nil
@@ -165,85 +165,84 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	}
 
 	if provider != types.EMPTY_PROVIDER {
-		return k.decreaseStakeEntryDelegation(ctx, delegator, provider, chainID, amount)
+		return k.modifyStakeEntryDelegation(ctx, delegator, provider, chainID, amount, false)
 	}
 
 	return nil
 }
 
-// increaseStakeEntryDelegation increases the (epochstorage) stake-entry of the provider for a chain.
-func (k Keeper) increaseStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
+// modifyStakeEntryDelegation modifies the (epochstorage) stake-entry of the provider for a chain based on the action (increase or decrease).
+func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, increase bool) error {
 	providerAddr, err := sdk.AccAddressFromBech32(provider)
 	if err != nil {
-		// panic:ok: this call was alreadys successful by the caller
-		utils.LavaFormatPanic("increaseStakeEntry: invalid provider address", err,
+		utils.LavaFormatPanic("modifyStakeEntryDelegation: invalid provider address", err,
 			utils.Attribute{Key: "provider", Value: provider},
 		)
 	}
 
 	stakeEntry, exists, index := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
 	if !exists {
-		return epochstoragetypes.ErrProviderNotStaked
-	}
-
-	// sanity check
-	if stakeEntry.Address != provider {
-		return utils.LavaFormatError("critical: delegate to provider with address mismatch", sdkerrors.ErrInvalidAddress,
-			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "address", Value: stakeEntry.Address},
-		)
-	}
-
-	if delegator == provider {
-		stakeEntry.Stake = stakeEntry.Stake.Add(amount)
-		if stakeEntry.Stake.IsGTE(k.specKeeper.GetMinStake(ctx, chainID)) && stakeEntry.IsFrozen() {
-			stakeEntry.UnFreeze(uint64(ctx.BlockHeight()))
+		if increase {
+			return epochstoragetypes.ErrProviderNotStaked
 		}
-	} else {
-		stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
-	}
-
-	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)
-
-	return nil
-}
-
-// decreaseStakeEntryDelegation decreases the (epochstorage) stake-entry of the provider for a chain.
-func (k Keeper) decreaseStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
-	providerAddr, err := sdk.AccAddressFromBech32(provider)
-	if err != nil {
-		// panic:ok: this call was alreadys successful by the caller
-		utils.LavaFormatPanic("decreaseStakeEntryDelegation: invalid provider address", err,
-			utils.Attribute{Key: "provider", Value: provider},
-		)
-	}
-
-	stakeEntry, exists, index := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
-	if !exists {
+		// For decrease, if the provider doesn't exist, return without error
 		return nil
 	}
 
-	// sanity check
+	// Sanity check
 	if stakeEntry.Address != provider {
-		return utils.LavaFormatError("critical: un-delegate from provider with address mismatch", sdkerrors.ErrInvalidAddress,
+		return utils.LavaFormatError("critical: delegate/un-delegate with provider address mismatch", sdkerrors.ErrInvalidAddress,
 			utils.Attribute{Key: "provider", Value: provider},
 			utils.Attribute{Key: "address", Value: stakeEntry.Address},
 		)
 	}
 
 	if delegator == provider {
-		stakeEntry.Stake, err = stakeEntry.Stake.SafeSub(amount)
-		if err != nil {
-			return fmt.Errorf("invalid or insufficient funds: %w", err)
-		}
-		if stakeEntry.Stake.IsLT(k.specKeeper.GetMinStake(ctx, chainID)) {
-			stakeEntry.Freeze()
+		if increase {
+			stakeEntry.Stake = stakeEntry.Stake.Add(amount)
+		} else {
+			stakeEntry.Stake, err = stakeEntry.Stake.SafeSub(amount)
+			if err != nil {
+				return fmt.Errorf("invalid or insufficient funds: %w", err)
+			}
 		}
 	} else {
-		stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
-		if err != nil {
-			return fmt.Errorf("invalid or insufficient funds: %w", err)
+		if increase {
+			stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
+		} else {
+			stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
+			if err != nil {
+				return fmt.Errorf("invalid or insufficient funds: %w", err)
+			}
 		}
+	}
+
+	details := map[string]string{
+		"provider":        stakeEntry.Address,
+		"chain_id":        stakeEntry.Chain,
+		"moniker":         stakeEntry.Moniker,
+		"stake":           stakeEntry.Stake.String(),
+		"effective_stake": stakeEntry.EffectiveStake().String() + stakeEntry.Stake.Denom,
+	}
+
+	if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
+		err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, index)
+		if err != nil {
+			return utils.LavaFormatError("can't remove stake Entry after decreasing provider self delegation", err,
+				utils.Attribute{Key: "index", Value: index},
+				utils.Attribute{Key: "spec", Value: chainID},
+			)
+		}
+		details["min_self_delegation"] = k.GetParams(ctx).MinSelfDelegation.String()
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeFromUnbond, details, "unstaking provider due to unbond that lowered its stake below min self delegation")
+		unstakeHoldBlocks := k.epochstorageKeeper.GetUnstakeHoldBlocks(ctx, stakeEntry.Chain)
+		return k.epochstorageKeeper.AppendUnstakeEntry(ctx, stakeEntry, unstakeHoldBlocks)
+	} else if stakeEntry.EffectiveStake().LT(k.specKeeper.GetMinStake(ctx, chainID).Amount) {
+		details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, chainID).String()
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
+		stakeEntry.Freeze()
+	} else if delegator == provider && stakeEntry.IsFrozen() {
+		stakeEntry.UnFreeze(uint64(ctx.BlockHeight()))
 	}
 
 	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)

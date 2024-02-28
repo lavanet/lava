@@ -24,12 +24,12 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	// if we get here, the spec is active and supported
-	if amount.IsLT(spec.MinStakeProvider) { // we count on this to also check the denom
-		return utils.LavaFormatWarning("insufficient stake amount", fmt.Errorf("stake amount smaller than minStake"),
+	if amount.IsLT(k.dualstakingKeeper.MinSelfDelegation(ctx)) { // we count on this to also check the denom
+		return utils.LavaFormatWarning("insufficient stake amount", fmt.Errorf("stake amount smaller than MinSelfDelegation"),
 			utils.Attribute{Key: "spec", Value: specChainID},
 			utils.Attribute{Key: "provider", Value: creator},
 			utils.Attribute{Key: "stake", Value: amount},
-			utils.Attribute{Key: "minStake", Value: spec.MinStakeProvider.String()},
+			utils.Attribute{Key: "minSelfDelegation", Value: k.dualstakingKeeper.MinSelfDelegation(ctx).String()},
 		)
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
