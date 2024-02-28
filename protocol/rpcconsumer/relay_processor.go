@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -33,6 +34,9 @@ func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProvi
 	selection := Quorum // select the majority of node responses
 	if chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALLPROVIDERS {
 		selection = BestResult // select the majority of node successes
+	}
+	if requiredSuccesses <= 0 {
+		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", requiredSuccesses))
 	}
 	return &RelayProcessor{
 		usedProviders:          usedProviders,
@@ -167,7 +171,7 @@ func (rp *RelayProcessor) setErrorResponse(response *relayResponse) {
 	rp.protocolResponseErrors.relayErrors = append(rp.protocolResponseErrors.relayErrors, RelayError{err: response.err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
 }
 
-func (rp *RelayProcessor) checkEndProcessing() bool {
+func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	resultsCount := len(rp.successResults)
@@ -183,8 +187,9 @@ func (rp *RelayProcessor) checkEndProcessing() bool {
 			return true
 		}
 	}
-	if rp.usedProviders.CurrentlyUsed() == 0 {
-		// no active sessions, we can return
+	// check if we got all of the responses
+	if rp.usedProviders.CurrentlyUsed() == 0 && responsesCount >= rp.usedProviders.TotalSessions() {
+		// no active sessions, and we read all the responses, we can return
 		return true
 	}
 
@@ -239,7 +244,7 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 			} else {
 				rp.setValidResponse(response)
 			}
-			if rp.checkEndProcessing() {
+			if rp.checkEndProcessing(responsesCount) {
 				// we can finish processing
 				return nil
 			}
@@ -249,9 +254,34 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	}
 }
 
-func (rp *RelayProcessor) processingError() (returnedResult *common.RelayResult, processingError error) {
-	// TODO:
-	return nil, fmt.Errorf("not implmented")
+func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSize int) (returnedResult *common.RelayResult, processingError error) {
+	if quorumSize <= 0 {
+		return nil, errors.New("quorumSize must be greater than zero")
+	}
+	countMap := make(map[string]int) // Map to store the count of each unique result.Reply.Data
+	for _, result := range results {
+		if result.Reply != nil && result.Reply.Data != nil {
+			countMap[string(result.Reply.Data)]++
+		}
+	}
+	var mostCommonResult *common.RelayResult
+	var maxCount int
+	for _, result := range results {
+		if result.Reply != nil && result.Reply.Data != nil {
+			count := countMap[string(result.Reply.Data)]
+			if count > maxCount {
+				maxCount = count
+				mostCommonResult = &result
+			}
+		}
+	}
+
+	// Check if the majority count is less than quorumSize
+	if mostCommonResult == nil || maxCount < quorumSize {
+		return nil, errors.New("majority count is less than quorumSize")
+	}
+	mostCommonResult.Quorum = maxCount
+	return mostCommonResult, nil
 }
 
 // this function returns the results according to the defined strategy
@@ -261,11 +291,14 @@ func (rp *RelayProcessor) processingError() (returnedResult *common.RelayResult,
 // if strategy == quorum get majority of node responses
 // on error: we will return a placeholder relayResult, with a provider address and a status code
 func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult, processingError error) {
+	// this must be here before the lock because this function locks
 	allProvidersAddresses := rp.GetUsedProviders().UnwantedAddresses()
+
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	// there are enough successes
-	if len(rp.successResults) >= rp.requiredSuccesses {
+	successResultsCount := len(rp.successResults)
+	if successResultsCount >= rp.requiredSuccesses {
 		return rp.responsesQuorum(rp.successResults, rp.requiredSuccesses)
 	}
 	nodeResults := rp.nodeResultsInner()
@@ -274,7 +307,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	if len(nodeResults) >= rp.requiredSuccesses {
 		if rp.selection == Quorum {
 			return rp.responsesQuorum(nodeResults, rp.requiredSuccesses)
-		} else if rp.selection == BestResult && len(rp.successResults) > len(rp.nodeResponseErrors.relayErrors) {
+		} else if rp.selection == BestResult && successResultsCount > len(rp.nodeResponseErrors.relayErrors) {
 			// we have more than half succeeded, and we are success oriented
 			return rp.responsesQuorum(rp.successResults, (rp.requiredSuccesses+1)/2)
 		}
@@ -282,10 +315,11 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	// we don't have enough for a quorum, prefer a node error on protocol errors
 	if len(rp.nodeResponseErrors.relayErrors) >= rp.requiredSuccesses { // if we have node errors, we prefer returning them over protocol errors.
 		nodeErr := rp.nodeResponseErrors.GetBestErrorMessageForUser()
-		return rp.responsesQuorum(rp.nodeErrors(), rp.requiredSuccesses)
+		return &nodeErr.response.relayResult, nil
 	}
 
 	// if we got here we trigger a protocol error
+	returnedResult = &common.RelayResult{StatusCode: http.StatusInternalServerError}
 	if len(rp.nodeResponseErrors.relayErrors) > 0 { // if we have node errors, we prefer returning them over protocol errors, even if it's just the one
 		nodeErr := rp.nodeResponseErrors.GetBestErrorMessageForUser()
 		processingError = nodeErr.err
@@ -300,8 +334,6 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 		if errorResponse != nil {
 			returnedResult = &errorResponse.relayResult
 		}
-	} else {
-		returnedResult = &common.RelayResult{StatusCode: http.StatusInternalServerError}
 	}
 	returnedResult.ProviderInfo.ProviderAddress = strings.Join(allProvidersAddresses, ",")
 	return returnedResult, utils.LavaFormatError("failed relay, insufficient results", processingError)

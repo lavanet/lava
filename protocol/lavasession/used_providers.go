@@ -25,17 +25,24 @@ func NewUsedProviders(directiveHeaders map[string]string) *UsedProviders {
 }
 
 type UsedProviders struct {
-	lock              sync.RWMutex
-	providers         map[string]struct{}
-	selecting         bool
-	unwantedProviders map[string]struct{}
-	blockOnSyncLoss   map[string]struct{}
+	lock                sync.RWMutex
+	providers           map[string]struct{}
+	selecting           bool
+	unwantedProviders   map[string]struct{}
+	blockOnSyncLoss     map[string]struct{}
+	sessionsLatestBatch int
 }
 
 func (up *UsedProviders) CurrentlyUsed() int {
 	up.lock.RLock()
 	defer up.lock.RUnlock()
 	return len(up.providers)
+}
+
+func (up *UsedProviders) TotalSessions() int {
+	up.lock.RLock()
+	defer up.lock.RUnlock()
+	return up.sessionsLatestBatch
 }
 
 func (up *UsedProviders) CurrentlyUsedAddresses() []string {
@@ -90,8 +97,10 @@ func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap) {
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	// this is nil safe
+	up.sessionsLatestBatch = 0
 	for provider := range sessions { // the key for ConsumerSessionsMap is the provider public address
 		up.providers[provider] = struct{}{}
+		up.sessionsLatestBatch++
 	}
 	up.selecting = false
 }
