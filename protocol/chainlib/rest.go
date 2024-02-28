@@ -198,7 +198,7 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceRest)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)

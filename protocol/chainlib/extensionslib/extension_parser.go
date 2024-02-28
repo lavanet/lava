@@ -42,6 +42,10 @@ func (ep *ExtensionParser) GetExtension(extension ExtensionKey) *spectypes.Exten
 	return nil
 }
 
+func (ep *ExtensionParser) GetConfiguredExtensions() map[ExtensionKey]*spectypes.Extension {
+	return ep.configuredExtensions
+}
+
 func (ep *ExtensionParser) AllowedExtension(extension string) bool {
 	if extension == "" {
 		return true

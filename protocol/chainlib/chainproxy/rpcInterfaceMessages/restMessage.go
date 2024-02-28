@@ -29,7 +29,7 @@ func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 	}
 	// make sure we have both message and code for an error message.
 	if errMsg, okMessage := result["message"].(string); okMessage {
-		if _, okCode := result["code"].(string); okCode {
+		if _, okCode := result["code"]; okCode {
 			return true, errMsg
 		}
 		utils.LavaFormatWarning("found only message without code in returned result", nil, utils.LogAttr("result", result))

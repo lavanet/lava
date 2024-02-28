@@ -225,7 +225,10 @@ func (bcp *BaseChainParser) GetVerifications(supported []string) (retVerificatio
 	return
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header, verifications map[VerificationKey][]VerificationContainer) {
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
+	serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header,
+	verifications map[VerificationKey][]VerificationContainer, extensionParser extensionslib.ExtensionParser,
+) {
 	bcp.spec = spec
 	bcp.serverApis = serverApis
 	bcp.taggedApis = taggedApis
@@ -241,7 +244,9 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[specty
 		allowedAddons[apoCollection.CollectionData.AddOn] = false
 	}
 	bcp.allowedAddons = allowedAddons
+
 	bcp.extensionParser = extensionslib.ExtensionParser{AllowedExtensions: allowedExtensions}
+	bcp.extensionParser.SetConfiguredExtensions(extensionParser.GetConfiguredExtensions())
 }
 
 func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
