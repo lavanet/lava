@@ -48,7 +48,7 @@ func (gs GenesisState) Validate() error {
 		unique[sub] = struct{}{}
 	}
 
-	if commontypes.TokenDenom != "ulava" {
+	if gs.MinIprpcCost.Denom != commontypes.TokenDenom {
 		return fmt.Errorf("invalid min iprpc cost denom. MinIprpcCost: %s", gs.MinIprpcCost.String())
 	}
 
