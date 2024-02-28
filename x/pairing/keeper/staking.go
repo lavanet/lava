@@ -103,7 +103,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			}
 
 			if int64(delegationCommission)-int64(existingEntry.DelegateCommission) > MAX_CHANGE_RATE {
-				return utils.LavaFormatWarning("stake entry commission increase too high", fmt.Errorf("commision change cannot increase by more than %d at a time", MAX_CHANGE_RATE))
+				return utils.LavaFormatWarning("stake entry commission increase too high", fmt.Errorf("commission change cannot increase by more than %d at a time", MAX_CHANGE_RATE))
 			}
 
 			if delegationLimit.IsLT(existingEntry.DelegateLimit) && delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount).LTE(sdk.NewInt(100-MAX_CHANGE_RATE)) {
