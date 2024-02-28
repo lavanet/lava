@@ -42,6 +42,15 @@
                                         "expected_value": "juno-1"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 24686,
+                                        "severity": "Warning"
+                                    }
+                                ]
                             }
                         ],
                         "extensions": [
@@ -127,6 +136,15 @@
                                 "values": [
                                     {
                                         "expected_value": "juno-1"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 24686,
+                                        "severity": "Warning"
                                     }
                                 ]
                             }

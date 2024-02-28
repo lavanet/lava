@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -23,7 +24,11 @@ const (
 	ContextUserValueKeyDappID = "dappID"
 	RetryListeningInterval    = 10 // seconds
 	debug                     = false
+	refererMatchString        = "refererMatch"
+	relayMsgLogMaxChars       = 200
 )
+
+var InvalidResponses = []string{"null", "", "nil", "undefined"}
 
 type VerificationKey struct {
 	Extension string
@@ -118,6 +123,26 @@ func constructFiberCallbackWithHeaderAndParameterExtraction(callbackToBeCalled f
 			c.Locals(metrics.UserAgentHeaderKey, c.Get(metrics.UserAgentHeaderKey, ""))
 			c.Locals(metrics.OriginHeaderKey, c.Get(metrics.OriginHeaderKey, ""))
 		}
+		return webSocketCallback(c) // uses external dappID
+	}
+	return handler
+}
+
+func constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(callbackToBeCalled fiber.Handler, isMetricEnabled bool) fiber.Handler {
+	webSocketCallback := callbackToBeCalled
+	handler := func(c *fiber.Ctx) error {
+		// Extract dappID from headers
+		dappID := extractDappIDFromFiberContext(c)
+
+		// Store dappID in the local context
+		c.Locals("dapp-id", dappID)
+
+		if isMetricEnabled {
+			c.Locals(metrics.RefererHeaderKey, c.Get(metrics.RefererHeaderKey, ""))
+			c.Locals(metrics.UserAgentHeaderKey, c.Get(metrics.UserAgentHeaderKey, ""))
+			c.Locals(metrics.OriginHeaderKey, c.Get(metrics.OriginHeaderKey, ""))
+		}
+		c.Locals(refererMatchString, c.Params(refererMatchString, ""))
 		return webSocketCallback(c) // uses external dappID
 	}
 	return handler
@@ -338,4 +363,31 @@ func truncateAndPadString(s string, maxLength int) string {
 	s = fmt.Sprintf("%-*s", maxLength, s)
 
 	return s
+}
+
+// return if response is valid or not - true
+func ValidateNilResponse(responseString string) error {
+	if slices.Contains(InvalidResponses, responseString) {
+		return fmt.Errorf("response returned an empty value: %s", responseString)
+	}
+	return nil
+}
+
+type RefererData struct {
+	Address        string
+	Marker         string
+	ReferrerClient *metrics.ConsumerReferrerClient
+}
+
+func (rd *RefererData) SendReferer(refererMatchString string) error {
+	if rd == nil || rd.Address == "" {
+		return nil
+	}
+	if rd.ReferrerClient == nil {
+		return nil
+	}
+
+	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
+	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString))
+	return nil
 }

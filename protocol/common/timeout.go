@@ -45,7 +45,7 @@ func GetRemainingTimeoutFromContext(ctx context.Context) (timeRemaining time.Dur
 	return time.Duration(math.MaxInt64)
 }
 
-func LowerContextTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+func CapContextTimeout(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	if GetRemainingTimeoutFromContext(ctx) > timeout {
 		return context.WithTimeout(ctx, timeout)
 	}

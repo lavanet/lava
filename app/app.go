@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -14,6 +15,7 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	icatypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/fixationstore"
 	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
@@ -135,6 +137,7 @@ import (
 	projectsmodulekeeper "github.com/lavanet/lava/x/projects/keeper"
 	projectsmoduletypes "github.com/lavanet/lava/x/projects/types"
 	protocolmodule "github.com/lavanet/lava/x/protocol"
+	protocolmoduleclient "github.com/lavanet/lava/x/protocol/client/cli"
 	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
 	protocolmoduletypes "github.com/lavanet/lava/x/protocol/types"
 	rewardsmodule "github.com/lavanet/lava/x/rewards"
@@ -181,6 +184,7 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_32_3,
 	upgrades.Upgrade_0_33_0,
 	upgrades.Upgrade_0_34_0,
+	upgrades.Upgrade_0_35_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -200,6 +204,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		plansmoduleclient.PlansDelProposalHandler,
 		pairingmoduleclient.PairingUnstakeProposal,
 		rewardsmoduleclient.SetIprpcDataProposalHandler,
+		protocolmoduleclient.SetProtocolVersionProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
 
@@ -330,6 +335,9 @@ func New(
 	appCodec := encodingConfig.Marshaler
 	cdc := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
+
+	level := appOpts.Get(flags.FlagLogLevel)
+	utils.SetGlobalLoggingLevel(cast.ToString(level))
 
 	bApp := baseapp.NewBaseApp(Name, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
@@ -657,6 +665,7 @@ func New(
 		keys[protocolmoduletypes.StoreKey],
 		keys[protocolmoduletypes.MemStoreKey],
 		app.GetSubspace(protocolmoduletypes.ModuleName),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	protocolModule := protocolmodule.NewAppModule(appCodec, app.ProtocolKeeper)
 

@@ -501,7 +501,7 @@ func TestAddonPairing(t *testing.T) {
 			defaultPolicy := func() planstypes.Policy {
 				return planstypes.Policy{
 					ChainPolicies:      []planstypes.ChainPolicy{},
-					GeolocationProfile: math.MaxInt32,
+					GeolocationProfile: int32(planstypes.Geolocation_GL),
 					MaxProvidersToPair: 100,
 					TotalCuLimit:       math.MaxUint64,
 					EpochCuLimit:       math.MaxUint64,
@@ -604,7 +604,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	require.NoError(t, err)
 
 	policy := &planstypes.Policy{
-		GeolocationProfile: math.MaxInt32,
+		GeolocationProfile: int32(planstypes.Geolocation_GL),
 		MaxProvidersToPair: 3,
 	}
 
@@ -1927,7 +1927,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 			defaultPolicy := func() planstypes.Policy {
 				return planstypes.Policy{
 					ChainPolicies:      []planstypes.ChainPolicy{},
-					GeolocationProfile: math.MaxInt32,
+					GeolocationProfile: int32(planstypes.Geolocation_GL),
 					MaxProvidersToPair: 100,
 					TotalCuLimit:       math.MaxUint64,
 					EpochCuLimit:       math.MaxUint64,
@@ -2090,7 +2090,7 @@ func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 		defaultPolicy := func() planstypes.Policy {
 			return planstypes.Policy{
 				ChainPolicies:      []planstypes.ChainPolicy{},
-				GeolocationProfile: math.MaxInt32,
+				GeolocationProfile: int32(planstypes.Geolocation_GL),
 				MaxProvidersToPair: 30,
 				TotalCuLimit:       math.MaxUint64,
 				EpochCuLimit:       math.MaxUint64,
