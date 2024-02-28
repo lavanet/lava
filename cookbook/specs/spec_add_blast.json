@@ -4,7 +4,7 @@
       "description": "Adding new specification support for relaying data on Blast Sepolia Testnet",
       "specs": [
         {
-          "index": "BLSTSP",
+          "index": "BLASTSP",
           "name": "Blast Sepolia testnet",
           "enabled": true,
           "imports": ["ETH1"],
