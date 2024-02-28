@@ -39,7 +39,7 @@ func (up *UsedProviders) CurrentlyUsed() int {
 	return len(up.providers)
 }
 
-func (up *UsedProviders) TotalSessions() int {
+func (up *UsedProviders) SessionsLatestBatch() int {
 	up.lock.RLock()
 	defer up.lock.RUnlock()
 	return up.sessionsLatestBatch
@@ -72,7 +72,7 @@ func (up *UsedProviders) RemoveUsed(provider string, err error) {
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	if err != nil {
-		if ShouldRetryWithThisError(err) {
+		if shouldRetryWithThisError(err) {
 			_, ok := up.blockOnSyncLoss[provider]
 			if !ok && IsSessionSyncLoss(err) {
 				up.blockOnSyncLoss[provider] = struct{}{}
@@ -142,15 +142,6 @@ func (up *UsedProviders) tryLockSelection() bool {
 	return false
 }
 
-func (up *UsedProviders) GetSelecting() bool {
-	if up == nil {
-		return false
-	}
-	up.lock.RLock()
-	defer up.lock.RUnlock()
-	return up.selecting
-}
-
 func (up *UsedProviders) GetUnwantedProvidersToSend() map[string]struct{} {
 	if up == nil {
 		return map[string]struct{}{}
@@ -169,6 +160,6 @@ func (up *UsedProviders) GetUnwantedProvidersToSend() map[string]struct{} {
 	return unwantedProvidersToSend
 }
 
-func ShouldRetryWithThisError(err error) bool {
+func shouldRetryWithThisError(err error) bool {
 	return IsSessionSyncLoss(err)
 }

@@ -16,6 +16,8 @@ const (
 	DataReliabilityTimeoutIncrease      = 5 * time.Second
 	AverageWorldLatency                 = 300 * time.Millisecond
 	CommunicateWithLocalLavaNodeTimeout = (3 * time.Second) + AverageWorldLatency
+	DefaultTimeout                      = 20 * time.Second
+	DefaultTimeoutLong                  = 3 * time.Minute
 )
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {
@@ -59,4 +61,21 @@ func IsTimeout(errArg error) bool {
 		}
 	}
 	return false
+}
+
+type TimeoutInfo struct {
+	CU       uint64
+	Hanging  bool
+	Stateful uint32
+}
+
+func GetTimeoutForProcessing(relayTimeout time.Duration, timeoutInfo TimeoutInfo) time.Duration {
+	ctxTimeout := DefaultTimeout
+	if timeoutInfo.Hanging || timeoutInfo.CU > 100 || timeoutInfo.Stateful == CONSISTENCY_SELECT_ALLPROVIDERS {
+		ctxTimeout = DefaultTimeoutLong
+	}
+	if relayTimeout > ctxTimeout {
+		ctxTimeout = relayTimeout
+	}
+	return ctxTimeout
 }

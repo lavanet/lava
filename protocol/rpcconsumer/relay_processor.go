@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/common"
@@ -17,9 +16,7 @@ import (
 )
 
 const (
-	MaxCallsPerRelay   = 50
-	DefaultTimeout     = 20 * time.Second
-	DefaultTimeoutLong = 3 * time.Minute
+	MaxCallsPerRelay = 50
 )
 
 type Selection int
@@ -188,7 +185,7 @@ func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 		}
 	}
 	// check if we got all of the responses
-	if rp.usedProviders.CurrentlyUsed() == 0 && responsesCount >= rp.usedProviders.TotalSessions() {
+	if rp.usedProviders.CurrentlyUsed() == 0 && responsesCount >= rp.usedProviders.SessionsLatestBatch() {
 		// no active sessions, and we read all the responses, we can return
 		return true
 	}
@@ -337,15 +334,4 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 	returnedResult.ProviderInfo.ProviderAddress = strings.Join(allProvidersAddresses, ",")
 	return returnedResult, utils.LavaFormatError("failed relay, insufficient results", processingError)
-}
-
-func GetTimeoutForProcessing(relayTimeout time.Duration, chainMessage chainlib.ChainMessage) time.Duration {
-	ctxTimeout := DefaultTimeout
-	if chainlib.IsHangingApi(chainMessage) || chainMessage.GetApi().ComputeUnits > 100 || chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALLPROVIDERS {
-		ctxTimeout = DefaultTimeoutLong
-	}
-	if relayTimeout > ctxTimeout {
-		ctxTimeout = relayTimeout
-	}
-	return ctxTimeout
 }

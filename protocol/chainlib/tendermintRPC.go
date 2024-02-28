@@ -651,7 +651,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path
 
 	// set context with timeout
-	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
+	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
 	defer cancel()
 
 	// create a new http request
@@ -753,7 +753,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
 		// set context with timeout
-		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
+		connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
 		defer cancel()
 
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)

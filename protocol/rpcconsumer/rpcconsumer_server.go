@@ -323,11 +323,10 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 		// we failed to send a batch of relays, if there are no active sends we can terminate
 		return relayProcessor, err
 	}
-	relayTimeout := chainlib.GetRelayTimeout(chainMessage, rpccs.chainParser)
 	// a channel to be notified processing was done, true means we have results and can return
 	gotResults := make(chan bool)
+	processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
 	go func() {
-		processingTimeout := GetTimeoutForProcessing(relayTimeout, chainMessage)
 		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
 		defer cancel()
 		// ProcessResults is reading responses while blocking until the conditions are met
@@ -461,7 +460,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 		return err
 	}
 
-	relayTimeout := chainlib.GetRelayTimeout(chainMessage, rpccs.chainParser)
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
 		// Launch a separate goroutine for each session
@@ -514,7 +512,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			// unique per dappId and ip
 			consumerToken := common.GetUniqueToken(dappID, consumerIp)
-			localRelayResult, relayLatency, errResponse, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, relayTimeout, chainMessage, consumerToken)
+			processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
+			localRelayResult, relayLatency, errResponse, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, chainMessage, consumerToken)
 			if errResponse != nil {
 				failRelaySession := func(origErr error, backoff_ bool) {
 					backOffDuration := 0 * time.Second
@@ -560,6 +559,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "finalizationConsensus", Value: rpccs.finalizationConsensus.String()},
 				)
 			}
+
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(chainMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
@@ -740,8 +740,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
-		relayTimeout := chainlib.GetRelayTimeout(chainMessage, rpccs.chainParser)
-		processingTimeout := GetTimeoutForProcessing(relayTimeout, chainMessage)
+		processingTimeout, _ := rpccs.getProcessingTimeout(chainMessage)
 		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
 		defer cancel()
 		err = relayProcessorDataReliability.WaitForResults(processingCtx)
@@ -782,6 +781,13 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		}
 	}
 	return nil
+}
+
+func (rpccs *RPCConsumerServer) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
+	_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+	relayTimeout = chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
+	processingTimeout = common.GetTimeoutForProcessing(relayTimeout, chainlib.GetTimeoutInfo(chainMessage))
+	return processingTimeout, relayTimeout
 }
 
 func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Metadata) ([]pairingtypes.Metadata, map[string]string) {
