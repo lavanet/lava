@@ -701,7 +701,6 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endp
 }
 
 func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, dappID string, consumerIp string, chainMessage chainlib.ChainMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
-
 	specCategory := chainMessage.GetApi().Category
 	if !specCategory.Deterministic {
 		return nil // disabled for this spec and requested block so no data reliability messages

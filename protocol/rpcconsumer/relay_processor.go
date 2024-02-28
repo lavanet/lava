@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -256,29 +257,47 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 		return nil, errors.New("quorumSize must be greater than zero")
 	}
 	countMap := make(map[string]int) // Map to store the count of each unique result.Reply.Data
+	deterministic := rp.chainMessage.GetApi().Category.Deterministic
+	var bestQosResult common.RelayResult
+	bestQos := sdktypes.ZeroDec()
 	for _, result := range results {
 		if result.Reply != nil && result.Reply.Data != nil {
 			countMap[string(result.Reply.Data)]++
+			if !deterministic {
+				if result.ProviderInfo.ProviderQoSExcellenceSummery.IsNil() || result.ProviderInfo.ProviderStake.Amount.IsNil() {
+					continue
+				}
+				currentResult := result.ProviderInfo.ProviderQoSExcellenceSummery.MulInt(result.ProviderInfo.ProviderStake.Amount)
+				if currentResult.GTE(bestQos) {
+					bestQos.Set(currentResult)
+					bestQosResult = result
+				}
+			}
 		}
 	}
-	var mostCommonResult *common.RelayResult
+	var mostCommonResult common.RelayResult
 	var maxCount int
 	for _, result := range results {
 		if result.Reply != nil && result.Reply.Data != nil {
 			count := countMap[string(result.Reply.Data)]
 			if count > maxCount {
 				maxCount = count
-				mostCommonResult = &result
+				mostCommonResult = result
 			}
 		}
 	}
 
 	// Check if the majority count is less than quorumSize
-	if mostCommonResult == nil || maxCount < quorumSize {
+	if mostCommonResult.Reply == nil || maxCount < quorumSize {
+		if !deterministic {
+			// non deterministic apis might not have a quorum
+			// instead of failing get the best one
+			return &bestQosResult, nil
+		}
 		return nil, errors.New("majority count is less than quorumSize")
 	}
 	mostCommonResult.Quorum = maxCount
-	return mostCommonResult, nil
+	return &mostCommonResult, nil
 }
 
 // this function returns the results according to the defined strategy
