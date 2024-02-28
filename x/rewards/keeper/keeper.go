@@ -37,6 +37,10 @@ type (
 		// the timer subkey holds the block in which the timer will expire (not exact)
 		// the timer data holds the number of months left for the allocation pools (until all funds are gone)
 		refillRewardsPoolTS timerstoretypes.TimerStore
+
+		// the address capable of executing a MsgSetIprpcData message. Typically, this
+		// should be the x/gov module account.
+		authority string
 	}
 )
 
@@ -55,6 +59,7 @@ func NewKeeper(
 	distributionKeeper types.DistributionKeeper,
 	feeCollectorName string,
 	timerStoreKeeper types.TimerStoreKeeper,
+	authority string,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -77,6 +82,7 @@ func NewKeeper(
 		distributionKeeper: distributionKeeper,
 
 		feeCollectorName: feeCollectorName,
+		authority:        authority,
 	}
 
 	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, data []byte) {

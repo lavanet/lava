@@ -610,6 +610,11 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
 }
 
+func (ts *Tester) TxRewardsSetIprpcDataProposal(ctx sdk.Context, authority string, cost sdk.Coin, subs []string) (*rewardstypes.MsgSetIprpcDataResponse, error) {
+	msg := rewardstypes.NewMsgSetIprpcData(authority, cost, subs)
+	return ts.Servers.RewardsServer.SetIprpcData(sdk.WrapSDKContext(ctx), msg)
+}
+
 // TxCreateValidator: implement 'tx staking createvalidator' and bond its tokens
 func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, 1)
@@ -854,6 +859,12 @@ func (ts *Tester) QueryRewardsBlockReward() (*rewardstypes.QueryBlockRewardRespo
 	return ts.Keepers.Rewards.BlockReward(ts.GoCtx, msg)
 }
 
+func (ts *Tester) QueryShowIprpcData() (*rewardstypes.QueryShowIprpcDataResponse, error) {
+	msg := &rewardstypes.QueryShowIprpcDataRequest{}
+	return ts.Keepers.Rewards.ShowIprpcData(ts.GoCtx, msg)
+}
+
+// block/epoch helpers
 // QueryRewardsProviderReward implements 'q rewards provider-reward'
 func (ts *Tester) QueryRewardsProviderReward(chainID string, provider string) (*rewardstypes.QueryProviderRewardResponse, error) {
 	msg := &rewardstypes.QueryProviderRewardRequest{ChainId: chainID, Provider: provider}

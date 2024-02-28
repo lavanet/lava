@@ -141,6 +141,7 @@ import (
 	protocolmodulekeeper "github.com/lavanet/lava/x/protocol/keeper"
 	protocolmoduletypes "github.com/lavanet/lava/x/protocol/types"
 	rewardsmodule "github.com/lavanet/lava/x/rewards"
+	rewardsmoduleclient "github.com/lavanet/lava/x/rewards/client/cli"
 	rewardsmodulekeeper "github.com/lavanet/lava/x/rewards/keeper"
 	rewardsmoduletypes "github.com/lavanet/lava/x/rewards/types"
 	specmodule "github.com/lavanet/lava/x/spec"
@@ -202,6 +203,7 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		plansmoduleclient.PlansAddProposalHandler,
 		plansmoduleclient.PlansDelProposalHandler,
 		pairingmoduleclient.PairingUnstakeProposal,
+		rewardsmoduleclient.SetIprpcDataProposalHandler,
 		protocolmoduleclient.SetProtocolVersionProposalHandler,
 		// this line is used by starport scaffolding # stargate/app/govProposalHandler
 	)
@@ -532,6 +534,7 @@ func New(
 		app.DistrKeeper,
 		authtypes.FeeCollectorName,
 		app.TimerStoreKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
 

@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	// StakeStorageKeyPrefix is the prefix to retrieve all StakeStorage
+	// BasePayPrefix is the prefix to retrieve all BasePay
 	BasePayPrefix = "BasePay/"
 )
 
