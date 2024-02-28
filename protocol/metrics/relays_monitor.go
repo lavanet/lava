@@ -5,6 +5,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/lavanet/lava/utils"
 )
 
 type RelaysMonitor struct {
@@ -61,6 +63,11 @@ func (sem *RelaysMonitor) startInner(ctx context.Context) {
 		select {
 		case <-sem.ticker.C:
 			success, _ := sem.relaySender()
+			utils.LavaFormatInfo("Health Check Interval Check",
+				utils.LogAttr("chain", sem.chainID),
+				utils.LogAttr("apiInterface", sem.apiInterface),
+				utils.LogAttr("health result", success),
+			)
 			sem.storeHealthStatus(success)
 		case <-ctx.Done():
 			sem.ticker.Stop()

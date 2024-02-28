@@ -106,7 +106,7 @@ func (connector *Connector) createConnection(ctx context.Context, nodeUrl common
 			return nil, ctx.Err()
 		}
 		timeout := common.AverageWorldLatency * (1 + time.Duration(numberOfConnectionAttempts))
-		nctx, cancel := nodeUrl.LowerContextTimeout(ctx, timeout)
+		nctx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, timeout)
 		// add auth path
 		rpcClient, err = rpcclient.DialContext(nctx, nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url))
 		if err != nil {
@@ -159,7 +159,7 @@ func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberO
 	var rpcClient *rpcclient.Client
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
-		nctx, cancel := connector.nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
+		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
 		rpcClient, err = rpcclient.DialContext(nctx, connector.nodeUrl.Url)
 		if err != nil {
 			utils.LavaFormatDebug(
@@ -239,52 +239,63 @@ func NewGRPCConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) 
 		nodeUrl:     nodeUrl,
 	}
 
-	// in the case the grpc server needs to connect using tls.
-	if nodeUrl.AuthConfig.GetUseTls() {
-		var tlsConf tls.Config
-		utils.LavaFormatDebug("using tls")
-		cacert := nodeUrl.AuthConfig.GetCaCertificateParams()
-		if cacert != "" {
-			utils.LavaFormatDebug("Loading ca certificate from local path", utils.Attribute{Key: "cacert", Value: cacert})
-			caCert, err := os.ReadFile(cacert)
-			if err == nil {
-				caCertPool := x509.NewCertPool()
-				caCertPool.AppendCertsFromPEM(caCert)
-				tlsConf.RootCAs = caCertPool
-				tlsConf.InsecureSkipVerify = true
-			} else {
-				utils.LavaFormatError("Failed loading CA certificate, continuing with a default certificate", err)
-			}
-		} else {
-			keyPem, certPem := nodeUrl.AuthConfig.GetLoadingCertificateParams()
-			if keyPem != "" && certPem != "" {
-				utils.LavaFormatDebug("Loading certificate from local path", utils.Attribute{Key: "certPem", Value: certPem}, utils.Attribute{Key: "keyPem", Value: keyPem})
-				cert, err := tls.LoadX509KeyPair(certPem, keyPem)
-				if err != nil {
-					utils.LavaFormatError("Failed setting up tls certificate from local path, continuing with dynamic certificates", err)
-				} else {
-					tlsConf.Certificates = []tls.Certificate{cert}
-				}
-			}
-		}
-		if nodeUrl.AuthConfig.AllowInsecure {
-			tlsConf.InsecureSkipVerify = true // this will allow us to use self signed certificates in development.
-		}
-		connector.credentials = credentials.NewTLS(&tlsConf)
-	}
-
-	rpcClient, err := connector.createConnection(ctx, nodeUrl.Url, connector.numberOfFreeClients())
+	rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
 	if err != nil {
-		return nil, utils.LavaFormatError("Failed to create the first connection", err, utils.Attribute{Key: "address", Value: nodeUrl.UrlStr()})
+		return nil, utils.LavaFormatError("grpc failed to create the first connection", err, utils.Attribute{Key: "address", Value: nodeUrl.UrlStr()})
 	}
 	connector.addClient(rpcClient)
-	go addClientsAsynchronouslyGrpc(ctx, connector, nConns-1, nodeUrl.Url)
+	go addClientsAsynchronouslyGrpc(ctx, connector, nConns-1, nodeUrl)
 	return connector, nil
 }
 
+func getTlsConf(nodeUrl common.NodeUrl) *tls.Config {
+	var tlsConf tls.Config
+	cacert := nodeUrl.AuthConfig.GetCaCertificateParams()
+	if cacert != "" {
+		utils.LavaFormatDebug("Loading ca certificate from local path", utils.Attribute{Key: "cacert", Value: cacert})
+		caCert, err := os.ReadFile(cacert)
+		if err == nil {
+			caCertPool := x509.NewCertPool()
+			caCertPool.AppendCertsFromPEM(caCert)
+			tlsConf.RootCAs = caCertPool
+			tlsConf.InsecureSkipVerify = true
+		} else {
+			utils.LavaFormatError("Failed loading CA certificate, continuing with a default certificate", err)
+		}
+	} else {
+		keyPem, certPem := nodeUrl.AuthConfig.GetLoadingCertificateParams()
+		if keyPem != "" && certPem != "" {
+			utils.LavaFormatDebug("Loading certificate from local path", utils.Attribute{Key: "certPem", Value: certPem}, utils.Attribute{Key: "keyPem", Value: keyPem})
+			cert, err := tls.LoadX509KeyPair(certPem, keyPem)
+			if err != nil {
+				utils.LavaFormatError("Failed setting up tls certificate from local path, continuing with dynamic certificates", err)
+			} else {
+				tlsConf.Certificates = []tls.Certificate{cert}
+			}
+		}
+	}
+	if nodeUrl.AuthConfig.AllowInsecure {
+		tlsConf.InsecureSkipVerify = true
+	}
+	return &tlsConf
+}
+
+func (connector *GRPCConnector) setCredentials(credentials credentials.TransportCredentials) {
+	connector.lock.Lock() // add connection to free list.
+	defer connector.lock.Unlock()
+	connector.credentials = credentials
+}
+
+func (connector *GRPCConnector) getCredentials() credentials.TransportCredentials {
+	connector.lock.RLock() // add connection to free list.
+	defer connector.lock.RUnlock()
+	return connector.credentials
+}
+
 func (connector *GRPCConnector) getTransportCredentials() grpc.DialOption {
-	if connector.credentials != nil {
-		return grpc.WithTransportCredentials(connector.credentials)
+	creds := connector.getCredentials()
+	if creds != nil {
+		return grpc.WithTransportCredentials(creds)
 	}
 	return grpc.WithTransportCredentials(insecure.NewCredentials())
 }
@@ -295,7 +306,7 @@ func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context, num
 	var grpcClient *grpc.ClientConn
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
-		nctx, cancel := connector.nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
+		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
 		grpcClient, err = grpc.DialContext(nctx, connector.nodeUrl.Url, grpc.WithBlock(), connector.getTransportCredentials())
 		if err != nil {
 			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", []utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}, {Key: "nodeUrl", Value: connector.nodeUrl.UrlStr()}}...)
@@ -386,16 +397,16 @@ func (connector *GRPCConnector) Close() {
 	}
 }
 
-func addClientsAsynchronouslyGrpc(ctx context.Context, connector *GRPCConnector, nConns uint, addr string) {
+func addClientsAsynchronouslyGrpc(ctx context.Context, connector *GRPCConnector, nConns uint, nodeUrl common.NodeUrl) {
 	for i := uint(0); i < nConns; i++ {
-		rpcClient, err := connector.createConnection(ctx, addr, connector.numberOfFreeClients())
+		rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
 		if err != nil {
 			break
 		}
 		connector.addClient(rpcClient)
 	}
 	if (connector.numberOfFreeClients() + connector.numberOfUsedClients()) == 0 {
-		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, utils.Attribute{Key: "address", Value: addr})
+		utils.LavaFormatFatal("Could not create any connections to the node check address", nil, utils.Attribute{Key: "address", Value: nodeUrl.UrlStr()})
 	}
 	utils.LavaFormatInfo("Finished adding Clients Asynchronously" + strconv.Itoa(len(connector.freeClients)))
 	utils.LavaFormatInfo("Number of parallel connections created: " + strconv.Itoa(len(connector.freeClients)))
@@ -418,32 +429,57 @@ func (connector *GRPCConnector) numberOfUsedClients() int {
 	return int(atomic.LoadInt64(&connector.usedClients))
 }
 
-func (connector *GRPCConnector) createConnection(ctx context.Context, addr string, currentNumberOfConnections int) (*grpc.ClientConn, error) {
+func (connector *GRPCConnector) createConnection(ctx context.Context, nodeUrl common.NodeUrl, currentNumberOfConnections int) (*grpc.ClientConn, error) {
+	addr := nodeUrl.Url
 	var rpcClient *grpc.ClientConn
 	var err error
 	numberOfConnectionAttempts := 0
+
+	var credentialsToConnect credentials.TransportCredentials = nil
+	// in the case the grpc server needs to connect using tls, but we haven't set credentials yet, should only happen once
+	if nodeUrl.AuthConfig.GetUseTls() && connector.getCredentials() == nil {
+		// this will allow us to use self signed certificates in development.
+		tlsConf := getTlsConf(nodeUrl)
+		connector.setCredentials(credentials.NewTLS(tlsConf))
+	}
+
 	for {
 		numberOfConnectionAttempts += 1
 		if numberOfConnectionAttempts > MaximumNumberOfParallelConnectionsAttempts {
 			err = utils.LavaFormatError("Reached maximum number of parallel connections attempts, consider decreasing number of connections",
 				nil, utils.Attribute{Key: "Currently Connected", Value: currentNumberOfConnections})
-			break
+			return nil, err
 		}
 		if ctx.Err() != nil {
 			connector.Close()
 			return nil, ctx.Err()
 		}
-		nctx, cancel := connector.nodeUrl.LowerContextTimeout(ctx, common.AverageWorldLatency*2)
+		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
 		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), connector.getTransportCredentials())
-		if err != nil {
-			utils.LavaFormatWarning("grpc could not connect to the node, retrying", err, []utils.Attribute{{
-				Key: "Current Number Of Connections", Value: currentNumberOfConnections,
-			}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}, {Key: "nodeUrl", Value: connector.nodeUrl.UrlStr()}}...)
-			cancel()
-			continue
-		}
 		cancel()
-		break
+		if err == nil {
+			return rpcClient, nil
+		}
+
+		// in case the provider didn't set TLS config and there are no active connections will do a retry with secure connection in case the endpoint is secure
+		if connector.getCredentials() == nil && connector.numberOfFreeClients()+connector.numberOfUsedClients() == 0 {
+			if credentialsToConnect == nil {
+				tlsConf := getTlsConf(nodeUrl)
+				credentialsToConnect = credentials.NewTLS(tlsConf)
+			}
+			nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
+			var errNew error
+			rpcClient, errNew = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(credentialsToConnect))
+			cancel()
+			if errNew == nil {
+				// this means our endpoint is TLS, and we support upgrading even if the config didn't explicitly say it
+				utils.LavaFormatDebug("upgraded TLS connection for grpc instead of insecure", utils.LogAttr("address", nodeUrl.String()))
+				connector.setCredentials(credentialsToConnect)
+				return rpcClient, nil
+			}
+		}
+		utils.LavaFormatWarning("grpc could not connect to the node, retrying", err, []utils.Attribute{{
+			Key: "Current Number Of Connections", Value: currentNumberOfConnections,
+		}, {Key: "Number Of Attempts Remaining", Value: numberOfConnectionAttempts}, {Key: "nodeUrl", Value: connector.nodeUrl.UrlStr()}}...)
 	}
-	return rpcClient, err
 }

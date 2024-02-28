@@ -31,6 +31,11 @@ service Query {
   rpc ShowIprpcData(QueryShowIprpcDataRequest) returns (QueryShowIprpcDataResponse) {
     option (google.api.http).get = "/lavanet/lava/rewards/show_iprpc_data";
   }
+  // ProviderReward queries for the providers reward for their services
+  rpc ProviderReward(QueryProviderRewardRequest) returns (QueryProviderRewardResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/provider_reward";
+  }
+
   // this line is used by starport scaffolding # 2
 }
 
@@ -78,6 +83,23 @@ message QueryShowIprpcDataRequest {}
 message QueryShowIprpcDataResponse {
   cosmos.base.v1beta1.Coin min_cost = 1 [(gogoproto.nullable) = false];
   repeated string iprpc_subscriptions = 2;
+}
+
+// QueryProviderRewardRequest is request type for the Query/ProviderReward RPC method.
+message QueryProviderRewardRequest {
+  string chain_id  = 1;
+  string provider = 2;
+}
+
+message RewardInfo {
+  string chain_id = 1;
+  string provider = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+}
+
+// QueryProviderRewardResponse is response type for the Query/ProviderReward RPC method.
+message QueryProviderRewardResponse {
+  repeated RewardInfo rewards = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

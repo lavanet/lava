@@ -81,42 +81,32 @@ func (su *SpecUpdater) RegisterSpecUpdatable(ctx context.Context, specUpdatable 
 		if err != nil {
 			return utils.LavaFormatError("panic level error could not get chain spec failed registering", err, utils.Attribute{Key: "chainID", Value: su.chainId})
 		}
+		su.spec = spec
 	}
 	(*specUpdatable).SetSpec(*spec)
 	su.specUpdatables[key] = specUpdatable
 	return nil
 }
 
-func (su *SpecUpdater) RegisterSpecVerifier(ctx context.Context, specVerifier *SpecVerifier, endpoint lavasession.RPCEndpoint) error {
+func (su *SpecUpdater) RegisterSpecVerifier(ctx context.Context, specVerifier *SpecVerifier, chainId string) error {
 	su.lock.Lock()
 	defer su.lock.Unlock()
 
 	// validating
-	if su.chainId != endpoint.ChainID {
-		return utils.LavaFormatError("panic level error Trying to register spec for wrong chain id stored in spec_updater", nil, utils.Attribute{Key: "endpoint", Value: endpoint}, utils.Attribute{Key: "stored_spec", Value: su.chainId})
+	if su.chainId != chainId {
+		return utils.LavaFormatError("panic level error Trying to register spec for wrong chain id stored in spec_updater", nil, utils.Attribute{Key: "chainId", Value: chainId}, utils.Attribute{Key: "stored_spec", Value: su.chainId})
 	}
 
 	verifierUniqueName := (*specVerifier).GetUniqueName()
-	key := strings.Join([]string{verifierUniqueName, endpoint.Key()}, "_")
+	key := strings.Join([]string{verifierUniqueName, chainId}, "_")
 	existingSpecVerifier, found := su.specVerifiers[key]
 	if found {
 		return utils.LavaFormatError("panic level error Trying to register to spec verifications on already registered verifier unique name + chain + API interface", nil,
 			utils.Attribute{Key: "verifierUniqueName", Value: verifierUniqueName},
-			utils.Attribute{Key: "endpoint", Value: endpoint},
+			utils.Attribute{Key: "chainId", Value: chainId},
 			utils.Attribute{Key: "specVerifier", Value: existingSpecVerifier})
 	}
 
-	var spec *spectypes.Spec
-	if su.spec != nil {
-		spec = su.spec
-	} else { // we don't have spec stored so we need to fetch it
-		var err error
-		spec, err = su.specGetter.GetSpec(ctx, su.chainId)
-		if err != nil {
-			return utils.LavaFormatError("panic level error could not get chain spec failed registering", err, utils.LogAttr("chainID", su.chainId))
-		}
-	}
-	(*specVerifier).VerifySpec(*spec)
 	su.specVerifiers[key] = specVerifier
 	return nil
 }
@@ -147,7 +137,7 @@ func (su *SpecUpdater) updateInner(latestBlock int64) {
 		utils.LavaFormatDebug("SpecUpdater: updating spec for chainId",
 			utils.LogAttr("chainId", su.chainId),
 			utils.LogAttr("specVerifier", (*specVerifier).GetUniqueName()))
-		(*specVerifier).VerifySpec(*spec)
+		go (*specVerifier).VerifySpec(*spec)
 	}
 	su.shouldUpdate = false // update was successful
 }

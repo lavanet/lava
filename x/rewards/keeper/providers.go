@@ -49,7 +49,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 
 	defer func() {
 		k.removeAllBasePay(ctx)
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed successfully")
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed")
 	}()
 
 	// Get serviced CU for each provider + spec

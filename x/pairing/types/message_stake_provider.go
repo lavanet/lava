@@ -48,7 +48,7 @@ func (msg *MsgStakeProvider) GetSignBytes() []byte {
 
 func (msg *MsgStakeProvider) ValidateBasic() error {
 	if _, err := sdk.ValAddressFromBech32(msg.Validator); err != nil {
-		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "Invalid validator address (%s)", err.Error())
+		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "Invalid validator address (%s) %s", err.Error(), msg.Validator)
 	}
 
 	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
@@ -65,10 +65,6 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 
 	if err := msg.DelegateLimit.Validate(); err != nil {
 		return sdkerrors.Wrapf(DelegateLimitError, "Invalid coin (%s)", err.Error())
-	}
-
-	if _, err := sdk.ValAddressFromBech32(msg.Validator); err != nil {
-		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid validator address (%s)", err)
 	}
 
 	if !msg.Amount.IsValid() {

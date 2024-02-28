@@ -36,16 +36,17 @@ func NewChainListener(
 	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
+	refererData *RefererData,
 ) (ChainListener, error) {
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
+		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
+		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData), nil
 	case spectypes.APIInterfaceRest:
-		return NewRestChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs), nil
+		return NewRestChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData), nil
 	case spectypes.APIInterfaceGrpc:
-		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, chainParser), nil
+		return NewGrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, chainParser, refererData), nil
 	}
 	return nil, fmt.Errorf("chainListener for apiInterface (%s) not found", listenEndpoint.ApiInterface)
 }
@@ -78,6 +79,7 @@ type ChainMessage interface {
 	TimeoutOverride(...time.Duration) time.Duration
 	GetForceCacheRefresh() bool
 	SetForceCacheRefresh(force bool) bool
+	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 
 	ChainMessageForSend
 }

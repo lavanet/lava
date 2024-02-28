@@ -20,6 +20,11 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
+const (
+	HealthCheckURLPathFlagName    = "health-check-url-path"
+	HealthCheckURLPathFlagDefault = "/lava/health"
+)
+
 type ProviderListener struct {
 	networkAddress string
 	relayServer    *relayServer
@@ -40,7 +45,7 @@ func (pl *ProviderListener) RegisterReceiver(existingReceiver RelayReceiver, end
 		return utils.LavaFormatError("double_receiver_setup receiver already defined on this address with the same chainID and apiInterface", nil, utils.Attribute{Key: "chainID", Value: endpoint.ChainID}, utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface})
 	}
 	pl.relayServer.relayReceivers[listen_endpoint.Key()] = &relayReceiverWrapper{relayReceiver: &existingReceiver, enabled: true}
-	utils.LavaFormatInfo("Provider Listening on Address", utils.Attribute{Key: "chainID", Value: endpoint.ChainID}, utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface}, utils.Attribute{Key: "Address", Value: endpoint.NetworkAddress})
+	utils.LavaFormatInfo("[++] Provider Listening on Address", utils.Attribute{Key: "chainID", Value: endpoint.ChainID}, utils.Attribute{Key: "apiInterface", Value: endpoint.ApiInterface}, utils.Attribute{Key: "Address", Value: endpoint.NetworkAddress})
 	return nil
 }
 
@@ -51,7 +56,7 @@ func (pl *ProviderListener) Shutdown(shutdownCtx context.Context) error {
 	return nil
 }
 
-func NewProviderListener(ctx context.Context, networkAddress lavasession.NetworkAddressData) *ProviderListener {
+func NewProviderListener(ctx context.Context, networkAddress lavasession.NetworkAddressData, healthCheckPath string) *ProviderListener {
 	pl := &ProviderListener{networkAddress: networkAddress.Address}
 
 	// GRPC
@@ -64,6 +69,12 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
 		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web, lava-sdk-relay-timeout")
+
+		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
+			resp.WriteHeader(http.StatusOK)
+			resp.Write([]byte("Healthy"))
+			return
+		}
 
 		wrappedServer.ServeHTTP(resp, req)
 	}

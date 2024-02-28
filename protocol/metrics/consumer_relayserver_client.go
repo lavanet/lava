@@ -84,7 +84,7 @@ func (cuc *ConsumerRelayServerClient) relayDataSendQueueTick() {
 			cuc.lock.Unlock()
 		}()
 	} else {
-		utils.LavaFormatDebug("[CUC] server is busy skipping send", utils.LogAttr("id", cuc.sendID))
+		utils.LavaFormatDebug("[CUC] server is busy/empty skipping send", utils.LogAttr("id", cuc.sendID))
 	}
 }
 

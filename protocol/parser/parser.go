@@ -278,14 +278,14 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		for _, key := range input[1:] {
 			// type assertion for blockcontainer
 			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-				return nil, fmt.Errorf("invalid parser input format, blockContainer is %v and not map[string]interface{} and tried to get a field inside: %s, unmarshaledDataTyped: %s", blockContainer, key, unmarshaledDataTyped)
+				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is not map[string]interface{}", ValueNotSetError, utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)), utils.LogAttr("key", key), utils.LogAttr("unmarshaledDataTyped", unmarshaledDataTyped))
 			}
 
 			// assertion for key
 			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
 				blockContainer = container
 			} else {
-				return nil, fmt.Errorf("invalid input format, blockContainer %s does not have field inside: %s, unmarshaledDataTyped: %s", blockContainer, key, unmarshaledDataTyped)
+				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError, utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)), utils.LogAttr("key", key), utils.LogAttr("unmarshaledDataTyped", unmarshaledDataTyped))
 			}
 		}
 		retArr := make([]interface{}, 0)
@@ -445,6 +445,11 @@ func parseArrayOfInterfaces(data []interface{}, propName, innerSeparator string)
 			} else {
 				// if yes return the value
 				return appendInterfaceToInterfaceArray(valueArr[1])
+			}
+		}
+		if m, ok := val.(map[string]interface{}); ok {
+			if propValue, foundProp := m[propName]; foundProp {
+				return appendInterfaceToInterfaceArray(blockInterfaceToString(propValue))
 			}
 		}
 	}

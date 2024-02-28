@@ -59,7 +59,7 @@ else
         | jq '.app_state.downtime.params.downtime_duration = "6s"' \
         | jq '.app_state.downtime.params.epoch_duration = "10s"' \
         | jq '.app_state.epochstorage.params.epochsToSave = "8"' \
-        | jq '.app_state.epochstorage.params.epochBlocks = "10"' \
+        | jq '.app_state.epochstorage.params.epochBlocks = "20"' \
         | jq '.app_state.pairing.params.recommendedEpochNumToCollectPayment = "2"' \
     )
 fi

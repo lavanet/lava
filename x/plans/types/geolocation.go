@@ -30,12 +30,20 @@ func init() {
 	}
 }
 
-// IsValidGeoEnum tests the validity of a given geolocation
-func IsValidGeoEnum(geoloc int32) bool {
+// IsValidProviderGeoEnum tests the validity of a given geolocation
+func IsValidProviderGeoEnum(geoloc int32) bool {
 	if geoloc == int32(Geolocation_GL) {
 		return true
 	}
 	return geoloc != int32(Geolocation_GLS) && (geoloc & ^allGeoEnumRegions) == 0
+}
+
+// IsValidProviderGeoEnum tests the validity of a given geolocation
+func IsValidGeoEnum(geoloc int32) bool {
+	if geoloc == int32(Geolocation_GL) {
+		return true
+	}
+	return (geoloc & ^allGeoEnumRegions) == 0
 }
 
 // IsGeoEnumSingleBit returns true if at most one bit is set
@@ -49,7 +57,7 @@ func ParseGeoEnum(arg string) (geoloc int32, err error) {
 	geoloc64, err := strconv.ParseUint(arg, 10, 32)
 	geoloc = int32(geoloc64)
 	if err == nil {
-		if !IsValidGeoEnum(geoloc) {
+		if !IsValidProviderGeoEnum(geoloc) {
 			return 0, fmt.Errorf("invalid geolocation value: %s", arg)
 		}
 

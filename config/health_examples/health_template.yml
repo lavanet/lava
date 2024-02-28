@@ -15,8 +15,6 @@ consumer_endpoints:
   - chain-id: ETH1
     api-interface: jsonrpc
     network-address: http://127.0.0.1:3333
-    addons:
-      - debug
   - chain-id: LAV1
     api-interface: rest
     network-address: http://127.0.0.1:3360

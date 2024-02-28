@@ -125,14 +125,22 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
-	http.HandleFunc("/metrics/health-overall", func(w http.ResponseWriter, r *http.Request) {
+
+	overallHealthHandler := func(w http.ResponseWriter, r *http.Request) {
 		statusCode := http.StatusOK
+		message := "Healthy"
 		if atomic.LoadUint64(&consumerMetricsManager.endpointsHealthChecksOk) == 0 {
 			statusCode = http.StatusServiceUnavailable
+			message = "Unhealthy"
 		}
 
 		w.WriteHeader(statusCode)
-	})
+		w.Write([]byte(message))
+	}
+
+	// Backward compatibility - old path for health check alongside new path
+	http.HandleFunc("/metrics/overall-health", overallHealthHandler) // New
+	http.HandleFunc("/metrics/health-overall", overallHealthHandler) // Old
 
 	go func() {
 		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
@@ -219,7 +227,7 @@ func (pme *ConsumerMetricsManager) SetVirtualEpoch(virtualEpoch uint64) {
 	pme.virtualEpochMetric.WithLabelValues("lava").Set(float64(virtualEpoch))
 }
 
-func (pme *ConsumerMetricsManager) SetEndpointsHealthChecksOkStatus(status bool) {
+func (pme *ConsumerMetricsManager) UpdateHealthCheckStatus(status bool) {
 	if pme == nil {
 		return
 	}
