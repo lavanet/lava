@@ -39,7 +39,7 @@ func newTester(t *testing.T, addValidator bool) *tester {
 	}
 
 	ts.plan = common.CreateMockPlan()
-	monthlyProvidersPool := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardsTypes.ProviderRewardsDistributionPool)
+	monthlyProvidersPool := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardsTypes.ProviderRewardsDistributionPool, ts.BondDenom())
 	ts.plan.Price.Amount = monthlyProvidersPool.QuoRaw(5).AddRaw(5)
 	ts.plan.PlanPolicy.EpochCuLimit = monthlyProvidersPool.Uint64() * 5
 	ts.plan.PlanPolicy.TotalCuLimit = monthlyProvidersPool.Uint64() * 5
