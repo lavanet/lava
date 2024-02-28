@@ -365,5 +365,4 @@ func parseInsufficientFeesError(msg string, gasUsed uint64) error {
 		utils.Attribute{Key: "Required Minimum Gas Prices", Value: defaultGasPrice},
 		utils.Attribute{Key: "Current (estimated) Minimum Gas Prices", Value: strconv.FormatFloat(minimumGasPricesGot, 'f', -1, 64) + commontypes.TokenDenom},
 	)
-
 }
