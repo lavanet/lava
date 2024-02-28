@@ -23,7 +23,7 @@ func (k Keeper) BlockReward(goCtx context.Context, req *types.QueryBlockRewardRe
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
 
 	// get validator block pool balance
-	blockPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
+	blockPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName, k.stakingKeeper.BondDenom(ctx))
 	if blocksToNextTimerExpiry == 0 {
 		return nil, utils.LavaFormatWarning("blocksToNextTimerExpiry is zero", fmt.Errorf("critical: Attempt to divide by zero"),
 			utils.LogAttr("blocksToNextTimerExpiry", blocksToNextTimerExpiry),
