@@ -57,7 +57,7 @@
               "extensions": [
                 {
                   "name": "archive",
-                  "cu_multiplier": 3,
+                  "cu_multiplier": 5,
                   "rule": {
                     "block": 4300
                   }
