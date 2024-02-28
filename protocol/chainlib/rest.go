@@ -118,7 +118,12 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 		// Fetch requested block, it is used for data reliability
 		requestedBlock, err = parser.ParseBlockFromParams(restMessage, blockParser)
 		if err != nil {
-			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
+				utils.LogAttr("chain", apip.spec.Name),
+				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
+				utils.LogAttr("apiName", apiCont.api.Name),
+				utils.LogAttr("connectionType", "rest"),
+			)
 			requestedBlock = spectypes.NOT_APPLICABLE
 		}
 	} else {
