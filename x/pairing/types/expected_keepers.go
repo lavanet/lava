@@ -53,6 +53,7 @@ type EpochstorageKeeper interface {
 	GetEpochStakeEntries(ctx sdk.Context, block uint64, chainID string) (entries []epochstoragetypes.StakeEntry, found bool, epochHash []byte)
 	GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage epochstoragetypes.StakeStorage, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
+	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
 	GetDeletedEpochs(ctx sdk.Context) []uint64
 	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
