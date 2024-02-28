@@ -312,21 +312,7 @@ func GetRelayTimeout(chainMessage ChainMessageForSend, averageBlockTime time.Dur
 	// Calculate extra RelayTimeout
 	extraRelayTimeout := time.Duration(0)
 	if IsHangingApi(chainMessage) {
-		extraRelayTimeout = averageBlockTime
-	}
-	relayTimeAddition := common.GetTimePerCu(GetComputeUnits(chainMessage))
-	if chainMessage.GetApi().TimeoutMs > 0 {
-		relayTimeAddition = time.Millisecond * time.Duration(chainMessage.GetApi().TimeoutMs)
-	}
-	// Set relay timout, increase it every time we fail a relay on timeout
-	return extraRelayTimeout + relayTimeAddition + common.AverageWorldLatency
-}
-
-func GetRelayTimeoutForSend(chainMessage ChainMessageForSend, averageBlockTime time.Duration) time.Duration {
-	// Calculate extra RelayTimeout
-	extraRelayTimeout := time.Duration(0)
-	if IsHangingApi(chainMessage) {
-		extraRelayTimeout = averageBlockTime
+		extraRelayTimeout = averageBlockTime * 2
 	}
 	relayTimeAddition := common.GetTimePerCu(GetComputeUnits(chainMessage))
 	if chainMessage.GetApi().TimeoutMs > 0 {
