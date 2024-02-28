@@ -371,6 +371,9 @@ func TestRefillPoolsTimerStore(t *testing.T) {
 		if i < int(lifetime) {
 			expectedMonthsLeft = lifetime - int64(i) - 1 // setup progressed one month so we check with -1
 		}
+		if expectedMonthsLeft == 0 {
+			expectedMonthsLeft = 1
+		}
 		monthsLeft := ts.Keepers.Rewards.AllocationPoolMonthsLeft(ts.Ctx)
 		require.Equal(t, expectedMonthsLeft, monthsLeft)
 
