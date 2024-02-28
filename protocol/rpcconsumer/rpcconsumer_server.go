@@ -295,7 +295,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
 		// as data reliability happens in a go routine it will continue while the response returns.
 		guid, found := utils.GetUniqueIdentifier(ctx)
-		dataReliabilityContext, _ := context.WithTimeout(context.Background(), 30*time.Second)
+		dataReliabilityContext := context.Background()
 		if found {
 			dataReliabilityContext = utils.WithUniqueIdentifier(dataReliabilityContext, guid)
 		}
@@ -701,6 +701,8 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endp
 }
 
 func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, dappID string, consumerIp string, chainMessage chainlib.ChainMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 	specCategory := chainMessage.GetApi().Category
 	if !specCategory.Deterministic {
 		return nil // disabled for this spec and requested block so no data reliability messages
