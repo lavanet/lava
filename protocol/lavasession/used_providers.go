@@ -78,14 +78,14 @@ func (up *UsedProviders) RemoveUsed(provider string, err error) {
 				up.blockOnSyncLoss[provider] = struct{}{}
 				utils.LavaFormatWarning("Identified SyncLoss in provider, allowing retry", err, utils.Attribute{Key: "address", Value: provider})
 			} else {
-				up.SetUnwanted(provider)
+				up.setUnwanted(provider)
 			}
 		} else {
-			up.SetUnwanted(provider)
+			up.setUnwanted(provider)
 		}
 	} else {
 		// we got a valid response from this provider, no reason to keep using it
-		up.SetUnwanted(provider)
+		up.setUnwanted(provider)
 	}
 	delete(up.providers, provider)
 }
@@ -105,12 +105,10 @@ func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap) {
 	up.selecting = false
 }
 
-func (up *UsedProviders) SetUnwanted(provider string) {
+func (up *UsedProviders) setUnwanted(provider string) {
 	if up == nil {
 		return
 	}
-	up.lock.Lock()
-	defer up.lock.Unlock()
 	up.unwantedProviders[provider] = struct{}{}
 }
 

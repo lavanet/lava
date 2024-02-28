@@ -805,7 +805,7 @@ func TestPairingWithStateful(t *testing.T) {
 			require.NoError(t, err)
 		}
 		usedProviders := NewUsedProviders(nil)
-		usedProviders.SetUnwanted(providerAddresses[0])
+		usedProviders.RemoveUsed(providerAddresses[0], nil)
 		processor := mockProcessor{usedProviders: usedProviders}
 		css, err = csm.GetSessions(ctx, cuForFirstRequest, processor, servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALLPROVIDERS, 0) // get a session
 		require.NoError(t, err)
