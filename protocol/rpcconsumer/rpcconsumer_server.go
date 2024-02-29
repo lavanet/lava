@@ -358,10 +358,13 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			}
 			go readResultsFromProcessor()
 		case <-startNewBatchTicker.C:
-			err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
-			if err != nil && relayProcessor.usedProviders.CurrentlyUsed() == 0 {
-				// we failed to send a batch of relays, if there are no active sends we can terminate
-				return relayProcessor, err
+			// only trigger another batch for non BestResult relays
+			if relayProcessor.selection != BestResult {
+				err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
+				if err != nil && relayProcessor.usedProviders.CurrentlyUsed() == 0 {
+					// we failed to send a batch of relays, if there are no active sends we can terminate
+					return relayProcessor, err
+				}
 			}
 		}
 	}
