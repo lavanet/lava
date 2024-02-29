@@ -21,9 +21,11 @@ const AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
 
 var AllowInsecureConnectionToProviders = false
 
-type RelayProcessorInf interface {
-	GetUsedProviders() *UsedProviders
+type UsedProvidersInf interface {
 	RemoveUsed(providerAddress string, err error)
+	TryLockSelection(context.Context) bool
+	AddUsed(ConsumerSessionsMap)
+	GetUnwantedProvidersToSend() map[string]struct{}
 }
 
 type SessionInfo struct {

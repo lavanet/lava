@@ -317,6 +317,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 }
 
 func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveHeaders map[string]string, chainMessage chainlib.ChainMessage, relayRequestData *pairingtypes.RelayPrivateData, dappID string, consumerIp string) (*RelayProcessor, error) {
+	// make sure all of the child contexts are cancelled when we exit
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(directiveHeaders), rpccs.requiredResponses, chainMessage)
 	err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 	if err != nil && relayProcessor.usedProviders.CurrentlyUsed() == 0 {
@@ -326,7 +329,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	// a channel to be notified processing was done, true means we have results and can return
 	gotResults := make(chan bool)
 	processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
-	go func() {
+
+	readResultsFromProcessor := func() {
 		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
 		defer cancel()
 		// ProcessResults is reading responses while blocking until the conditions are met
@@ -337,8 +341,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 		} else {
 			gotResults <- false
 		}
-	}()
-
+	}
+	go readResultsFromProcessor()
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
 	for {
@@ -352,6 +356,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 				// we failed to send a batch of relays, if there are no active sends we can terminate
 				return relayProcessor, err
 			}
+			go readResultsFromProcessor()
 		case <-startNewBatchTicker.C:
 			err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 			if err != nil && relayProcessor.usedProviders.CurrentlyUsed() == 0 {
@@ -360,6 +365,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			}
 		}
 	}
+
 }
 
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
@@ -451,7 +457,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	addon := chainlib.GetAddon(chainMessage)
 	extensions := chainMessage.GetExtensions()
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), relayProcessor, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), relayProcessor.GetUsedProviders(), reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
 			// if we have no providers for a specific addon or extension, return an indicative error
@@ -563,6 +569,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(chainMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
+				// TODO: we set every valid response in cache, without checking quorum or data reliability
 				// copy private data so if it changes it doesn't panic mid async send
 				copyPrivateData := &pairingtypes.RelayPrivateData{}
 				copyRequestErr := protocopy.DeepCopyProtoObject(localRelayResult.Request.RelayData, copyPrivateData)

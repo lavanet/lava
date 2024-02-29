@@ -314,11 +314,10 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, ext
 
 // GetSessions will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
-func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, relayProcessor RelayProcessorInf, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32, virtualEpoch uint64) (
+func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, usedProviders UsedProvidersInf, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32, virtualEpoch uint64) (
 	consumerSessionMap ConsumerSessionsMap, errRet error,
 ) {
 	// set usedProviders if they were chosen for this relay
-	usedProviders := relayProcessor.GetUsedProviders()
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	canSelect := usedProviders.TryLockSelection(timeoutCtx)
@@ -445,7 +444,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				sessionInfo.QoSSummeryResult = consumerSession.getQosComputedResultOrZero()
 				sessions[providerAddress] = sessionInfo
 
-				consumerSession.SetUsageForSession(cuNeededForSession, csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress), relayProcessor)
+				consumerSession.SetUsageForSession(cuNeededForSession, csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress), usedProviders)
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 

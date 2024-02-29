@@ -24,7 +24,7 @@ type SingleConsumerSession struct {
 	BlockListed       bool // if session lost sync we blacklist it.
 	ConsecutiveErrors []error
 	errorsCount       uint64
-	relayProcessor    RelayProcessorInf
+	relayProcessor    UsedProvidersInf
 }
 
 // returns the expected latency to a threshold.
@@ -100,14 +100,14 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 	}
 }
 
-func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, relayProcessor RelayProcessorInf) error {
+func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu
 	scs.RelayNum += RelayNumberIncrement   // increase relayNum
 	if scs.RelayNum > 1 {
 		// we only set excellence for sessions with more than one successful relays, this guarantees data within the epoch exists
 		scs.QoSInfo.LastExcellenceQoSReport = qoSExcellenceReport
 	}
-	scs.relayProcessor = relayProcessor
+	scs.relayProcessor = usedProviders
 	return nil
 }
 

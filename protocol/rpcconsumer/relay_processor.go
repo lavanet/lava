@@ -78,18 +78,6 @@ func (rp *RelayProcessor) String() string {
 		results, nodeErrors, protocolErrors, strings.Join(unwantedAddresses, ";"), strings.Join(currentlyUsedAddresses, ";"))
 }
 
-// RemoveUsed will set the provider as being currently used, if the error is one that allows a retry with the same provider, it will only be removed from currently used
-// if it's not, then it will be added to unwanted providers since the same relay shouldn't send to it again
-func (rp *RelayProcessor) RemoveUsed(providerAddress string, err error) {
-	if rp == nil {
-		return
-	}
-	rp.lock.RLock()
-	usedProviders := rp.usedProviders
-	rp.lock.RUnlock()
-	usedProviders.RemoveUsed(providerAddress, err)
-}
-
 func (rp *RelayProcessor) GetUsedProviders() *lavasession.UsedProviders {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
@@ -98,6 +86,10 @@ func (rp *RelayProcessor) GetUsedProviders() *lavasession.UsedProviders {
 
 // this function returns all results that came from a node, meaning success, and node errors
 func (rp *RelayProcessor) NodeResults() []common.RelayResult {
+	if rp == nil {
+		return nil
+	}
+	rp.readExistingResponses()
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	return rp.nodeResultsInner()
@@ -229,6 +221,29 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 	return false
 }
 
+func (rp *RelayProcessor) handleResponse(response *relayResponse) {
+	if response == nil {
+		return
+	}
+	if response.err != nil {
+		rp.setErrorResponse(response)
+	} else {
+		rp.setValidResponse(response)
+	}
+}
+
+func (rp *RelayProcessor) readExistingResponses() {
+	for {
+		select {
+		case response := <-rp.responses:
+			rp.handleResponse(response)
+		default:
+			// No more responses immediately available, exit the loop
+			return
+		}
+	}
+}
+
 // this function waits for the processing results, they are written by multiple go routines and read by this go routine
 // it then updates the responses in their respective place, node errors, protocol errors or success results
 func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
@@ -237,11 +252,7 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 		select {
 		case response := <-rp.responses:
 			responsesCount++
-			if response.err != nil {
-				rp.setErrorResponse(response)
-			} else {
-				rp.setValidResponse(response)
-			}
+			rp.handleResponse(response)
 			if rp.checkEndProcessing(responsesCount) {
 				// we can finish processing
 				return nil
