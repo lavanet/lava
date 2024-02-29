@@ -567,6 +567,55 @@ func (ts *Tester) TxPairingStakeProvider(
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
 
+// TxPairingStakeProvider: implement 'tx pairing stake-provider'
+func (ts *Tester) TxPairingStakeProviderFull(
+	addr string,
+	chainID string,
+	amount sdk.Coin,
+	endpoints []epochstoragetypes.Endpoint,
+	geoloc int32,
+	moniker string,
+	commission uint64,
+	delegateLimit uint64,
+) (*pairingtypes.MsgStakeProviderResponse, error) {
+	val, _ := ts.GetAccount(VALIDATOR, 0)
+	// if geoloc left zero, use default 1
+	if geoloc == 0 {
+		geoloc = 1
+	}
+
+	// if necessary, generate mock endpoints
+	if endpoints == nil {
+		apiInterfaces := []string{}
+		for _, apiCollection := range ts.specs[chainID].ApiCollections {
+			apiInterfaces = append(apiInterfaces, apiCollection.CollectionData.ApiInterface)
+		}
+		geolocations := planstypes.GetGeolocationsFromUint(geoloc)
+
+		for _, geo := range geolocations {
+			endpoint := epochstoragetypes.Endpoint{
+				IPPORT:        "123",
+				ApiInterfaces: apiInterfaces,
+				Geolocation:   int32(geo),
+			}
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+
+	msg := &pairingtypes.MsgStakeProvider{
+		Creator:            addr,
+		Validator:          sdk.ValAddress(val.Addr).String(),
+		ChainID:            chainID,
+		Amount:             amount,
+		Geolocation:        geoloc,
+		Endpoints:          endpoints,
+		Moniker:            moniker,
+		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.NewIntFromUint64(delegateLimit)),
+		DelegateCommission: commission,
+	}
+	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
+}
+
 // TxPairingUnstakeProvider: implement 'tx pairing unstake-provider'
 func (ts *Tester) TxPairingUnstakeProvider(
 	addr string,

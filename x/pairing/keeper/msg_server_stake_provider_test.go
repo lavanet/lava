@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
 	"github.com/lavanet/lava/testutil/common"
@@ -811,4 +812,48 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	// try to unfreeze -> should succeed
 	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
 	require.NoError(t, err)
+}
+
+func TestCommisionChange(t *testing.T) {
+	// set MinSelfDelegation = 100, MinStakeProvider = 200
+	ts := newTester(t)
+	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
+	ts.spec.MinStakeProvider = minSelfDelegation.AddAmount(math.NewInt(100))
+	ts.Keepers.Spec.SetSpec(ts.Ctx, ts.spec)
+	ts.AdvanceEpoch()
+
+	_, provider := ts.AddAccount(common.PROVIDER, 1, ts.spec.MinStakeProvider.Amount.Int64())
+	_, err := ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 50, 100)
+	require.NoError(t, err)
+
+	// there are no delegations, can change as much as we want
+	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 55, 120)
+	require.NoError(t, err)
+
+	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 60, 140)
+	require.NoError(t, err)
+
+	// add delegator and delegate to provider
+	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
+	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.Index, ts.spec.MinStakeProvider)
+	require.NoError(t, err)
+	ts.AdvanceEpoch() // apply delegation
+	ts.AdvanceBlock(time.Hour * 25)
+
+	// now changes are limited
+	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 61, 139)
+	require.NoError(t, err)
+
+	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 62, 138)
+	require.Error(t, err)
+
+	ts.AdvanceBlock(time.Hour * 25)
+
+	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 62, 138)
+	require.NoError(t, err)
+
+	ts.AdvanceBlock(time.Hour * 25)
+
+	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 68, 100)
+	require.Error(t, err)
 }

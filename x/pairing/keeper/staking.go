@@ -96,7 +96,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 
 		if !existingEntry.DelegateTotal.IsZero() {
-			if uint64(ctx.BlockTime().UTC().Unix())-existingEntry.LastChange > uint64((time.Hour * 24).Seconds()) {
+			diff := ctx.BlockTime().UTC().Unix() - int64(existingEntry.LastChange)
+			_ = diff
+			if ctx.BlockTime().UTC().Unix()-int64(existingEntry.LastChange) < int64((time.Hour * 24).Seconds()) {
 				if delegationCommission != existingEntry.DelegateCommission || existingEntry.DelegateLimit != delegationLimit {
 					return utils.LavaFormatWarning("stake entry commmision or delegate limit can only be changes once in 24H", nil)
 				}
@@ -106,7 +108,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 				return utils.LavaFormatWarning("stake entry commission increase too high", fmt.Errorf("commission change cannot increase by more than %d at a time", MAX_CHANGE_RATE))
 			}
 
-			if delegationLimit.IsLT(existingEntry.DelegateLimit) && delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount).LTE(sdk.NewInt(100-MAX_CHANGE_RATE)) {
+			if delegationLimit.IsLT(existingEntry.DelegateLimit) && delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount).LT(sdk.NewInt(100-MAX_CHANGE_RATE)) {
 				return utils.LavaFormatWarning("stake entry DelegateLimit decrease too high", fmt.Errorf("DelegateLimit change cannot decrease by more than %d at a time", MAX_CHANGE_RATE))
 			}
 		}
