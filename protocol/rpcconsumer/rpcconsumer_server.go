@@ -370,7 +370,6 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			}
 		}
 	}
-
 }
 
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
