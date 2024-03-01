@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -24,6 +25,36 @@ func sendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time
 			Reply:        &pairingtypes.RelayReply{Data: []byte("ok")},
 			ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
 			StatusCode:   http.StatusOK,
+		},
+		err: nil,
+	}
+	relayProcessor.SetResponse(response)
+}
+
+func sendProtocolError(relayProcessor *RelayProcessor, provider string, delay time.Duration, err error) {
+	time.Sleep(delay)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, err)
+	response := &relayResponse{
+		relayResult: common.RelayResult{
+			Request:      &pairingtypes.RelayRequest{},
+			Reply:        &pairingtypes.RelayReply{Data: []byte(`{"message":"bad","code":123}`)},
+			ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
+			StatusCode:   0,
+		},
+		err: err,
+	}
+	relayProcessor.SetResponse(response)
+}
+
+func sendNodeError(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
+	time.Sleep(delay)
+	relayProcessor.GetUsedProviders().RemoveUsed(provider, nil)
+	response := &relayResponse{
+		relayResult: common.RelayResult{
+			Request:      &pairingtypes.RelayRequest{},
+			Reply:        &pairingtypes.RelayReply{Data: []byte(`{"message":"bad","code":123}`)},
+			ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
+			StatusCode:   http.StatusInternalServerError,
 		},
 		err: nil,
 	}
@@ -72,8 +103,8 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 	})
 }
 
-func TestRelayProcessorRetry(t *testing.T) {
-	t.Run("retry", func(t *testing.T) {
+func TestRelayProcessorTimeout(t *testing.T) {
+	t.Run("timeout", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Handle the incoming request and provide the desired response
@@ -109,7 +140,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 			consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test3": &lavasession.SessionInfo{}, "lava@test4": &lavasession.SessionInfo{}}
 			usedProviders.AddUsed(consumerSessionsMap)
 		}()
-		sendSuccessResp(relayProcessor, "lava@test", time.Millisecond*20)
+		go sendSuccessResp(relayProcessor, "lava@test", time.Millisecond*20)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
 		defer cancel()
 		err = relayProcessor.WaitForResults(ctx)
@@ -121,5 +152,94 @@ func TestRelayProcessorRetry(t *testing.T) {
 		returnedResult, err := relayProcessor.ProcessingResult()
 		require.NoError(t, err)
 		require.Equal(t, string(returnedResult.Reply.Data), "ok")
+	})
+}
+
+func TestRelayProcessorRetry(t *testing.T) {
+	t.Run("retry", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Handle the incoming request and provide the desired response
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg)
+
+		usedProviders := relayProcessor.GetUsedProviders()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.True(t, canUse)
+		require.Zero(t, usedProviders.CurrentlyUsed())
+		require.Zero(t, usedProviders.SessionsLatestBatch())
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+		usedProviders.AddUsed(consumerSessionsMap)
+
+		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
+		go sendSuccessResp(relayProcessor, "lava@test2", time.Millisecond*20)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
+		defer cancel()
+		err = relayProcessor.WaitForResults(ctx)
+		require.NoError(t, err)
+		resultsOk := relayProcessor.HasResults()
+		require.True(t, resultsOk)
+		protocolErrors := relayProcessor.ProtocolErrors()
+		require.Equal(t, uint64(1), protocolErrors)
+		returnedResult, err := relayProcessor.ProcessingResult()
+		require.NoError(t, err)
+		require.Equal(t, string(returnedResult.Reply.Data), "ok")
+	})
+}
+
+func TestRelayProcessorRetryNodeError(t *testing.T) {
+	t.Run("retry", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Handle the incoming request and provide the desired response
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg)
+
+		usedProviders := relayProcessor.GetUsedProviders()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.True(t, canUse)
+		require.Zero(t, usedProviders.CurrentlyUsed())
+		require.Zero(t, usedProviders.SessionsLatestBatch())
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+		usedProviders.AddUsed(consumerSessionsMap)
+
+		go sendProtocolError(relayProcessor, "lava@test", time.Millisecond*5, fmt.Errorf("bad"))
+		go sendNodeError(relayProcessor, "lava@test2", time.Millisecond*20)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
+		defer cancel()
+		err = relayProcessor.WaitForResults(ctx)
+		require.NoError(t, err)
+		resultsOk := relayProcessor.HasResults()
+		require.True(t, resultsOk)
+		protocolErrors := relayProcessor.ProtocolErrors()
+		require.Equal(t, uint64(1), protocolErrors)
+		returnedResult, err := relayProcessor.ProcessingResult()
+		require.NoError(t, err)
+		require.Equal(t, string(returnedResult.Reply.Data), `{"message":"bad","code":123}`)
+		require.Equal(t, returnedResult.StatusCode, http.StatusInternalServerError)
 	})
 }
