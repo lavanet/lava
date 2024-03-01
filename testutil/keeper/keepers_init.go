@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	tmdb "github.com/cometbft/cometbft-db"
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -210,6 +211,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	paramsKeeper.Subspace(downtimemoduletypes.ModuleName)
 	paramsKeeper.Subspace(rewardstypes.ModuleName)
 	paramsKeeper.Subspace(distributiontypes.ModuleName)
+	paramsKeeper.Subspace(dualstakingtypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
 	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
@@ -257,7 +259,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage, ks.FixationStoreKeeper)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Downtime = downtimekeeper.NewKeeper(cdc, downtimeKey, downtimeParamsSubspace, ks.Epochstorage)
-	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Spec, ks.Epochstorage, ks.Downtime, ks.StakingKeeper, ks.Dualstaking, ks.Distribution, authtypes.FeeCollectorName, ks.TimerStoreKeeper)
+	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Spec, ks.Epochstorage, ks.Downtime, ks.StakingKeeper, ks.Dualstaking, ks.Distribution, authtypes.FeeCollectorName, ks.TimerStoreKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans, ks.Dualstaking, ks.Rewards, ks.FixationStoreKeeper, ks.TimerStoreKeeper, ks.StakingKeeper)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime, ks.Dualstaking, &ks.StakingKeeper, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
 	ks.ParamsKeeper = paramsKeeper
@@ -285,6 +287,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Plans.SetParams(ctx, planstypes.DefaultParams())
 	ks.Downtime.SetParams(ctx, downtimev1.DefaultParams())
 	ks.Rewards.SetParams(ctx, rewardstypes.DefaultParams())
+	dualStakingParams := dualstakingtypes.DefaultParams()
+	dualStakingParams.MinSelfDelegation.Amount = math.NewInt(100)
+	ks.Dualstaking.SetParams(ctx, dualStakingParams)
 
 	ks.Epochstorage.PushFixatedParams(ctx, 0, 0)
 

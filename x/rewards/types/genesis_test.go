@@ -18,6 +18,17 @@ func TestGenesisState_Validate(t *testing.T) {
 			genState: types.DefaultGenesis(),
 			valid:    true,
 		},
+		{
+			desc: "invalid iprpc subscriptions",
+			genState: &types.GenesisState{
+				Params:             types.DefaultParams(),
+				RefillRewardsTS:    types.DefaultGenesis().RefillRewardsTS,
+				BasePays:           types.DefaultGenesis().BasePays,
+				IprpcSubscriptions: []string{"invalidAddress"},
+				MinIprpcCost:       types.DefaultGenesis().MinIprpcCost,
+			},
+			valid: false,
+		},
 		// this line is used by starport scaffolding # types/genesis/testcase
 	} {
 		t.Run(tc.desc, func(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 // SetStakeStorage set a specific stakeStorage in the store from its index
@@ -451,4 +452,25 @@ func (k Keeper) GetEpochStakeEntries(ctx sdk.Context, block uint64, chainID stri
 		return nil, false, nil
 	}
 	return stakeStorage.StakeEntries, true, stakeStorage.EpochBlockHash
+}
+
+func (k Keeper) GetUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64 {
+	_, found, providerType := k.specKeeper.IsSpecFoundAndActive(ctx, chainID)
+	if !found {
+		utils.LavaFormatError("critical: failed to get spec for chainID",
+			fmt.Errorf("unknown chainID"),
+			utils.Attribute{Key: "chainID", Value: chainID},
+		)
+	}
+
+	// note: if spec was not found, the default choice is Spec_dynamic == 0
+
+	block := uint64(ctx.BlockHeight())
+	if providerType == spectypes.Spec_static {
+		return k.UnstakeHoldBlocksStatic(ctx, block)
+	} else {
+		return k.UnstakeHoldBlocks(ctx, block)
+	}
+
+	// NOT REACHED
 }

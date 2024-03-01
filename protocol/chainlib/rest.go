@@ -118,7 +118,12 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 		// Fetch requested block, it is used for data reliability
 		requestedBlock, err = parser.ParseBlockFromParams(restMessage, blockParser)
 		if err != nil {
-			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
+				utils.LogAttr("chain", apip.spec.Name),
+				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
+				utils.LogAttr("apiName", apiCont.api.Name),
+				utils.LogAttr("connectionType", "rest"),
+			)
 			requestedBlock = spectypes.NOT_APPLICABLE
 		}
 	} else {
@@ -193,7 +198,7 @@ func (apip *RestChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceRest)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -293,7 +298,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		utils.LavaFormatInfo("in <<<",
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("dappID", dappID),
@@ -359,7 +364,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			msgSeed = strconv.FormatUint(guid, 10)
 		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
-		utils.LavaFormatInfo("in <<<",
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("dappID", dappID),

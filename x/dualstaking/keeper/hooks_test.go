@@ -532,6 +532,59 @@ func TestNotRoundedShares(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
+	ts := newTester(t)
+	ts.addValidators(2)
+	err := ts.addProviders(5)
+	require.NoError(t, err)
+	ts.addClients(2)
+
+	// create validator and providers
+	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
+	amount := sdk.NewIntFromUint64(9999)
+	ts.TxCreateValidator(validator, amount)
+
+	validator2, _ := ts.GetAccount(common.VALIDATOR, 1)
+	amount2 := sdk.NewIntFromUint64(9998)
+	ts.TxCreateValidator(validator2, amount2)
+
+	delegatorAcc1, _ := ts.GetAccount(common.CONSUMER, 0)
+	_, err = ts.TxDelegateValidator(delegatorAcc1, validator, sdk.NewInt(9999))
+	require.NoError(t, err)
+
+	delegatorAcc2, _ := ts.GetAccount(common.CONSUMER, 0)
+	_, err = ts.TxDelegateValidator(delegatorAcc2, validator, sdk.NewInt(9998))
+	require.NoError(t, err)
+
+	for i := 0; i < 5; i++ {
+		provider, _ := ts.GetAccount(common.PROVIDER, i)
+		err := ts.StakeProvider(provider.Addr.String(), ts.spec, sdk.NewIntFromUint64(9999).Int64())
+		require.NoError(t, err)
+	}
+
+	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
+
+	// provider completely unbond from validator, delegation is removed
+	_, err = ts.TxUnbondValidator(providerAcct, validator, sdk.NewInt(9999))
+	require.NoError(t, err)
+
+	// other delegator should not be able to delegate to the provider
+	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
+		dualstakingtypes.EMPTY_PROVIDER,
+		provider,
+		dualstakingtypes.EMPTY_PROVIDER_CHAINID,
+		ts.spec.Index,
+		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
+	require.Error(t, err)
+
+	// checking that provider is not found
+	_, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	require.False(t, found)
+
+	_, err = ts.QueryDualstakingProviderDelegators(provider, true)
+	require.NoError(t, err)
+}
+
 // TestUndelegateProvider checks for a bug that when a provider unstakes, its delegations are not
 // transferred to the empty provider. If the bug persists, this unit test fails
 func TestUndelegateProvider(t *testing.T) {

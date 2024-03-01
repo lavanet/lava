@@ -122,7 +122,12 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 			// Fetch requested block, it is used for data reliability
 			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
 			if err != nil {
-				utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+				utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
+					utils.LogAttr("chain", apip.spec.Name),
+					utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
+					utils.LogAttr("apiName", apiCont.api.Name),
+					utils.LogAttr("connectionType", "jsonrpc"),
+				)
 				requestedBlockForMessage = spectypes.NOT_APPLICABLE
 			}
 		} else {
@@ -227,7 +232,7 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
 }
 
 func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
@@ -344,7 +349,18 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			ctx = utils.WithUniqueIdentifier(ctx, guid)
 			msgSeed = strconv.FormatUint(guid, 10)
 			defer cancel() // incase there's a problem make sure to cancel the connection
-			utils.LavaFormatDebug("ws in <<<", utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
+
+			logFormattedMsg := string(msg)
+			if !cmdFlags.DebugRelays {
+				logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
+			}
+
+			utils.LavaFormatDebug("ws in <<<",
+				utils.LogAttr("seed", msgSeed),
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("msg", logFormattedMsg),
+				utils.LogAttr("dappID", dappID),
+			)
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
 			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
@@ -420,15 +436,22 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		consumerIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
-		utils.LavaFormatInfo("in <<<",
+
+		msg := string(fiberCtx.Body())
+		logFormattedMsg := msg
+		if !cmdFlags.DebugRelays {
+			logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
+		}
+
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("seed", msgSeed),
-			utils.LogAttr("msg", fiberCtx.Body()),
+			utils.LogAttr("msg", logFormattedMsg),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, consumerIp, metricsData, headers)
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, http.MethodPost, dappID, consumerIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
 			go apil.refererData.SendReferer(refererMatch)
 		}
@@ -439,7 +462,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), msg, errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -459,7 +482,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			false,
 			"POST",
 			fiberCtx.Request().URI().String(),
-			string(fiberCtx.Body()),
+			msg,
 			response,
 			msgSeed,
 			time.Since(startTime),

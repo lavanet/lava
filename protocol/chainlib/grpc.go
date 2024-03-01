@@ -173,7 +173,12 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	if overwriteReqBlock == "" {
 		requestedBlock, err = parser.ParseBlockFromParams(grpcMessage, blockParser)
 		if err != nil {
-			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "blockParsing", Value: apiCont.api.BlockParsing})
+			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
+				utils.LogAttr("chain", apip.spec.Name),
+				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
+				utils.LogAttr("apiName", apiCont.api.Name),
+				utils.LogAttr("connectionType", "grpc"),
+			)
 			requestedBlock = spectypes.NOT_APPLICABLE
 		}
 	} else {
@@ -213,7 +218,7 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 
 	// extract server and tagged apis from spec
 	serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceGrpc)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications)
+	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -290,6 +295,10 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error) {
+		if method == "grpc.reflection.v1.ServerReflection/ServerReflectionInfo" {
+			return nil, nil, status.Error(codes.Unimplemented, "v1 reflection currently not supported by cosmos-sdk")
+		}
+
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
 		msgSeed := strconv.FormatUint(guid, 10)
@@ -299,7 +308,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		dappID := extractDappIDFromGrpcHeader(metadataValues)
 
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
-		utils.LavaFormatInfo("in <<< GRPC Relay ",
+		utils.LavaFormatDebug("in <<< GRPC Relay ",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("method", method),
 			utils.LogAttr("headers", grpcHeaders),

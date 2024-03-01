@@ -90,6 +90,9 @@ func (k Keeper) CreateSubscription(
 		// If the plan index is different - upgrade if the price is higher
 		// If the plan index is the same but the plan block is different - advice using the "--advance-purchase" flag
 		if plan.Index != sub.PlanIndex {
+			if sub.Creator != creator && sub.Consumer != creator {
+				return utils.LavaFormatWarning("only the consumer or buyer can overwrite the subscription plan.", nil)
+			}
 			err := k.upgradeSubscriptionPlan(ctx, &sub, &plan)
 			if err != nil {
 				return err

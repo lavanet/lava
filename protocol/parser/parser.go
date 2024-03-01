@@ -43,6 +43,15 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 	default:
 		// try to parse a number
 	}
+
+	hashNoPrefix, found := strings.CutPrefix(block, "0x")
+	if len(block) >= 64 && found {
+		if len(hashNoPrefix)%64 == 0 {
+			// this is a hash, and we can parse it
+			return spectypes.LATEST_BLOCK, nil
+		}
+	}
+
 	blockNum, err := strconv.ParseInt(block, 0, 64)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, fmt.Errorf("invalid block value, could not parse block %s, error: %s", block, err)

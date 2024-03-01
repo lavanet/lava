@@ -139,6 +139,10 @@ func (policy Policy) ValidateBasicPolicy(isPlanPolicy bool) error {
 		return sdkerrors.Wrap(ErrPolicyGeolocation, `cannot configure geolocation = GLS (0)`)
 	}
 
+	if !IsValidGeoEnum(policy.GeolocationProfile) {
+		return sdkerrors.Wrap(ErrPolicyGeolocation, `invalid geolocation enum`)
+	}
+
 	seen := map[string]bool{}
 	for _, addr := range policy.SelectedProviders {
 		_, err := sdk.AccAddressFromBech32(addr)
