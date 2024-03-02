@@ -114,7 +114,7 @@ func TestQueryWithPendingDelegations(t *testing.T) {
 	_, err = ts.TxDualstakingDelegate(delegator2, provider, spec.Index, amount)
 	require.NoError(t, err)
 
-	// delegator2 should show when quering with showPending=true and not show when showPending=false
+	// delegator2 should show when querying with showPending=true and not show when showPending=false
 	res, err = ts.QueryDualstakingDelegatorProviders(delegator2, true)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(res.Delegations))

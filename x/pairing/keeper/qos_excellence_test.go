@@ -23,7 +23,7 @@ func TestQosScoreCluster(t *testing.T) {
 }
 
 // TestQosScore checks that the qos score component is as expected (score == ComputeQos(), new users (sub usage less
-// than a month) are not infuenced by Qos score, invalid Qos score == 1)
+// than a month) are not influenced by Qos score, invalid Qos score == 1)
 func TestQosScore(t *testing.T) {
 }
 

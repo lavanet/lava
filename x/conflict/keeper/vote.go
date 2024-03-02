@@ -45,7 +45,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 	eventData := []utils.Attribute{{Key: "voteID", Value: conflictVote.Index}}
 	var eventName string
 	// all wrong voters are punished
-	// add stake as wieght
+	// add stake as weight
 	// valid only if one of the votes is bigger than 50% from total
 	// punish providers that didnt vote - discipline/jail + bail = 20%stake + slash 5%stake
 	// (dont add jailed providers to voters)

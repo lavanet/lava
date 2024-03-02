@@ -50,7 +50,7 @@ func TestRewardsModuleSetup(t *testing.T) {
 
 	// in the end of the setup, there is an advancement of one block, so validator
 	// rewards were distributed once. Since the block rewards depends on the distribution
-	// pool balance (and it's not negligble), we'll calculate it manually
+	// pool balance (and it's not negligible), we'll calculate it manually
 	expectedDistPoolBalanceBeforeReward := allocationPoolBalance / lifetime
 	expectedBlocksToNextExpiry := ts.Keepers.Rewards.BlocksToNextTimerExpiry(ts.Ctx)
 	require.NotEqual(t, int64(0), expectedBlocksToNextExpiry)
@@ -155,7 +155,7 @@ func TestAllocationPoolMonthlyQuota(t *testing.T) {
 	// in the last month, the allocation pool's balance should be equal to the monthly quota
 	require.Equal(t, expectedMonthlyQuota, currentAllocPoolBalance.Int64())
 
-	// advance month to deplet the allocation pool funds
+	// advance month to deplete the allocation pool funds
 	// advance 2 blocks to transfer the last quota and send it to the fee collector
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlock()

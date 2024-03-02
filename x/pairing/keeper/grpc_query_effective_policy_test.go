@@ -48,7 +48,7 @@ func TestEffectivePolicy(t *testing.T) {
 	_, err = ts.TxProjectSetSubscriptionPolicy(project.ProjectID, clientAddr, &subPolicy)
 	require.NoError(t, err)
 
-	// the effective policy function calcaulates the effective chain policy within it
+	// the effective policy function calculates the effective chain policy within it
 	// if there is no chain policy in any of the policies, it makes one using this function
 	chainPolicy, allowed := planstypes.GetStrictestChainPolicyForSpec(ts.spec.Index, []*planstypes.Policy{&adminPolicy, &subPolicy, &ts.plan.PlanPolicy})
 	require.True(t, allowed)

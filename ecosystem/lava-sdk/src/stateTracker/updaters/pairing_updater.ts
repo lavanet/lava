@@ -88,7 +88,7 @@ export class PairingUpdater {
     }
   }
 
-  // updateConsummerSessionManager filters pairing list and update consuemr session manager
+  // updateConsumerSessionManager filters pairing list and update consumer session manager
   private async updateConsumerSessionManager(
     pairing: PairingResponse | undefined,
     consumerSessionManager: ConsumerSessionManager

@@ -23,7 +23,7 @@ lava_config_git_url_default='https://github.com/lavanet/lava-config.git'
 lava_cosmovisor_url_default='https://lava-binary-upgrades.s3.amazonaws.com/testnet/cosmovisor-upgrades/cosmovisor-upgrades.zip'
 
 # expect the following env vars:
-#   LAVA_MONIKER        - lava node moniker (deafult: ${lava_moniker_default})
+#   LAVA_MONIKER        - lava node moniker (default: ${lava_moniker_default})
 #   LAVA_CHAIN_ID       - lava chain identifier (default: ${lava_chain_id_default})
 #   LAVA_CONFIG_GIT_URL - url to lavanet config assets (default: ${lava_config_git_url_default})
 #   LAVA_COSMOVISOR_URL - url to lavanet cosmovisor zip (default: ${lava_cosmovisor_url_default})

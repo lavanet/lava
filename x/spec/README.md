@@ -102,7 +102,7 @@ The `AddOn` field lets you use additional optional APIs like debug, trace etc.
 
 ### Extension
 
-this field defines an extansion for the api collection.
+this field defines an extension for the api collection.
 
 ```go
 type Extension struct {
@@ -229,7 +229,7 @@ type Verification struct {
 
 ### Headers
 
-Thie struct defines for the provider what action to take on the headers of the relayed message.
+The struct defines for the provider what action to take on the headers of the relayed message.
 
 ```go
 type Header struct {

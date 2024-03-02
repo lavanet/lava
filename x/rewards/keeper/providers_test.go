@@ -66,7 +66,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
-	// first months there are no bonus rewards, just payment ffrom the subscription
+	// first months there are no bonus rewards, just payment from the subscription
 	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
@@ -462,7 +462,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
 	require.Nil(ts.T, err)
 
-	// create provider+comsumer, send relay and send relay payment TX
+	// create provider+consumer, send relay and send relay payment TX
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err = ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
 	require.NoError(t, err)
@@ -491,7 +491,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 	deductedReward, validatorsParticipation, communityParticipation := ts.DeductParticipationFees(expectedReward)
 	require.True(t, expectedReward.Equal(deductedReward.Add(validatorsParticipation).Add(communityParticipation)))
 
-	// check participation percentages values accoding to hard-coded values
+	// check participation percentages values according to hard-coded values
 	// validators participation percentage = (validatorsSubscriptionParticipation / (1 - communityTax)) = (10% / 100% - 50%) = 0.2
 	// community participation percentage = (validatorsSubscriptionParticipation + communityTax) - validators participation percentage = (10% + 50%) - 0.2 = 0.4
 	validatorsPerc := validatorsParticipation.MulRaw(100).Quo(expectedReward)
@@ -499,7 +499,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 	require.Equal(t, int64(20), validatorsPerc.Int64())
 	require.Equal(t, int64(40), communityPerc.Int64())
 
-	// check actual balance of the commuinty pool
+	// check actual balance of the community pool
 	// community pool should have 40% of expected reward
 	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
 	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()

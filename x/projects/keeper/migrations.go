@@ -24,7 +24,7 @@ func (m Migrator) migrateFixationsVersion(ctx sdk.Context) error {
 }
 
 // Migrate2to3 implements store migration from v2 to v3:
-//   - Trigger version upgrade of the projectsFS, develooperKeysFS fixation stores
+//   - Trigger version upgrade of the projectsFS, developerKeysFS fixation stores
 //   - Update keys contents
 func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 	if err := m.migrateFixationsVersion(ctx); err != nil {

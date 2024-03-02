@@ -171,4 +171,4 @@ The plans module has the following events:
 | `new_epoch`               | a new epoch has started |
 | `earliest_epoch`          | new earliest epoch block   |
 | `fixated_params_change`   | a new fixated param has changes|
-| `fixated_params_clean`    | a fixated param is ooutdated and deleted|
+| `fixated_params_clean`    | a fixated param is outdated and deleted|

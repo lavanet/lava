@@ -36,7 +36,7 @@ const (
 
 type AlertingOptions struct {
 	Url                           string // where to send the alerts
-	Logging                       bool   // wether to log alerts to stdout
+	Logging                       bool   // whether to log alerts to stdout
 	Identifier                    string // a unique identifier added to all alerts
 	SubscriptionCUPercentageAlert float64
 	SubscriptionLeftTimeAlert     time.Duration

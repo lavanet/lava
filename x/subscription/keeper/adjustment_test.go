@@ -126,7 +126,7 @@ func TestAdjustment(t *testing.T) {
 	require.Len(t, allAdjustments, 0)
 
 	// check adjustment values:
-	// consuemr 1
+	// consumer 1
 	require.True(t, providersFactors[provider1].Equal(math.LegacyMustNewDecFromStr("0.2")), providersFactors[provider1].String())
 	require.True(t, providersFactors[provider2].Equal(math.LegacyMustNewDecFromStr("1")), providersFactors[provider2].String())
 	// consumer2
