@@ -294,7 +294,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, directiveHeaders, chainMessage, relayRequestData, dappID, consumerIp)
 	if err != nil && !relayProcessor.HasResults() {
 		// we can't send anymore, and we don't have any responses
-		return nil, err
+		return nil, utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
 	}
 	// Handle Data Reliability
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
@@ -312,7 +312,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	returnedResult, err := relayProcessor.ProcessingResult()
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors())
 	if err != nil {
-		return returnedResult, err
+		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
 	}
 	if analytics != nil {
 		currentLatency := time.Since(relaySentTime)
