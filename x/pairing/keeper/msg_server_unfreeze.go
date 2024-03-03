@@ -16,7 +16,7 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 	if err != nil {
 		return nil, utils.LavaFormatError("Unfreeze_get_provider_address", err, utils.Attribute{Key: "providerAddress", Value: msg.GetCreator()})
 	}
-	unfreezeBlock := k.epochStorageKeeper.GetCurrentNextEpoch(ctx)
+	unfreezeBlock := k.epochStorageKeeper.GetCurrentNextEpoch(ctx) + 1
 	unfrozen_chains := []string{}
 	for _, chainId := range msg.GetChainIds() {
 		stakeEntry, found, index := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainId, providerAddr)
