@@ -878,6 +878,13 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 				Value: strconv.FormatUint(protocolErrors, 10),
 			})
 	}
+	if relayResult.Reply.LatestBlock > 0 {
+		metadataReply = append(metadataReply,
+			pairingtypes.Metadata{
+				Name:  common.PROVIDER_LATEST_BLOCK_HEADER_NAME,
+				Value: strconv.FormatInt(relayResult.Reply.LatestBlock, 10),
+			})
+	}
 	guid, found := utils.GetUniqueIdentifier(ctx)
 	if found && guid != 0 {
 		guidStr := strconv.FormatUint(guid, 10)

@@ -133,6 +133,18 @@ func (rp *RelayProcessor) SetResponse(response *relayResponse) {
 func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
+
+	// future relay requests and data reliability requests need to ask for the same specific block height to get consensus on the reply
+	// we do not modify the chain message data on the consumer, only it's requested block, so we let the provider know it can't put any block height it wants by setting a specific block height
+	reqBlock, _ := rp.chainMessage.RequestedBlock()
+	if reqBlock == spectypes.LATEST_BLOCK {
+		// TODO: when we turn on dataReliability on latest call UpdateLatest, until then we turn it off always
+		// modifiedOnLatestReq := rp.chainMessage.UpdateLatestBlockInMessage(response.relayResult.Reply.LatestBlock, false)
+		// if !modifiedOnLatestReq {
+		response.relayResult.Finalized = false // shut down data reliability
+		// }
+	}
+
 	foundError, errorMessage := rp.chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
 	if foundError {
 		// this is a node error, meaning we still didn't get a good response.
@@ -142,15 +154,7 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		rp.nodeResponseErrors.relayErrors = append(rp.nodeResponseErrors.relayErrors, RelayError{err: err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
 		return
 	}
-	// future relay requests and data reliability requests need to ask for the same specific block height to get consensus on the reply
-	// we do not modify the chain message data on the consumer, only it's requested block, so we let the provider know it can't put any block height it wants by setting a specific block height
-	reqBlock, _ := rp.chainMessage.RequestedBlock()
-	if reqBlock == spectypes.LATEST_BLOCK {
-		modifiedOnLatestReq := rp.chainMessage.UpdateLatestBlockInMessage(response.relayResult.Reply.LatestBlock, false)
-		if !modifiedOnLatestReq {
-			response.relayResult.Finalized = false // shut down data reliability
-		}
-	}
+
 	rp.successResults = append(rp.successResults, response.relayResult)
 }
 

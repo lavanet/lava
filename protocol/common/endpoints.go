@@ -22,6 +22,7 @@ const (
 	IP_FORWARDING_HEADER_NAME                       = "X-Forwarded-For"
 	PROVIDER_ADDRESS_HEADER_NAME                    = "Lava-Provider-Address"
 	RETRY_COUNT_HEADER_NAME                         = "Lava-Retries"
+	PROVIDER_LATEST_BLOCK_HEADER_NAME               = "Provider-Latest-Block"
 	GUID_HEADER_NAME                                = "Lava-Guid"
 	// these headers need to be lowercase
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
