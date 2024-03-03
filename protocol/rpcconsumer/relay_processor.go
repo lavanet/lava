@@ -146,7 +146,7 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 	// we do not modify the chain message data on the consumer, only it's requested block, so we let the provider know it can't put any block height it wants by setting a specific block height
 	reqBlock, _ := rp.chainMessage.RequestedBlock()
 	if reqBlock == spectypes.LATEST_BLOCK {
-		modifiedOnLatestReq := rp.chainMessage.UpdateLatestBlockInMessage(response.relayResult.Request.RelayData.RequestBlock, false)
+		modifiedOnLatestReq := rp.chainMessage.UpdateLatestBlockInMessage(response.relayResult.Reply.LatestBlock, false)
 		if !modifiedOnLatestReq {
 			response.relayResult.Finalized = false // shut down data reliability
 		}
