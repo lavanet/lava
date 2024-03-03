@@ -90,6 +90,16 @@ func (up *UsedProviders) RemoveUsed(provider string, err error) {
 	delete(up.providers, provider)
 }
 
+func (up *UsedProviders) ClearUnwanted() {
+	if up == nil {
+		return
+	}
+	up.lock.Lock()
+	defer up.lock.Unlock()
+	// this is nil safe
+	up.unwantedProviders = map[string]struct{}{}
+}
+
 func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap) {
 	if up == nil {
 		return
