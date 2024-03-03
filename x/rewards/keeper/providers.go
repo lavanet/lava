@@ -12,7 +12,11 @@ import (
 
 const DAY_SECONDS = 60 * 60 * 24
 
-func (k Keeper) AggregateCU(ctx sdk.Context, provider string, chainID string, cu uint64) {
+func (k Keeper) AggregateCU(ctx sdk.Context, subscription, provider string, chainID string, cu uint64) {
+	if !k.IsIprpcSubscription(ctx, subscription) {
+		return
+	}
+
 	index := types.BasePayIndex{Provider: provider, ChainID: chainID}
 	basepay, found := k.getBasePay(ctx, index)
 	if !found {
@@ -98,12 +102,11 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	}
 
 	// Get current month IprpcReward and use it to distribute rewards
-	iprpcReward, found := k.PopIprpcReward(ctx, true)
+	iprpcReward, found := k.PopIprpcReward(ctx)
 	if !found {
 		utils.LavaFormatError("current month iprpc reward not found", fmt.Errorf("did not reward providers IPRPC bonus"))
 		return
 	}
-	k.RemoveIprpcReward(ctx, iprpcReward.Id)
 
 	// distribute IPRPC rewards
 	k.distributeIprpcRewards(ctx, iprpcReward, specCuMap)

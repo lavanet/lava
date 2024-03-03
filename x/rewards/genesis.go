@@ -22,7 +22,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, iprpcReward := range genState.IprpcRewards {
 		k.SetIprpcReward(ctx, iprpcReward)
 	}
-	k.SetIprpcRewardsCurrent(ctx, genState.IprpcRewardsCurrent)
+	k.SetIprpcRewardsCurrentId(ctx, genState.IprpcRewardsCurrent)
 	k.SetIprpcData(ctx, genState.MinIprpcCost, genState.IprpcSubscriptions)
 }
 
@@ -35,7 +35,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.IprpcSubscriptions = k.GetAllIprpcSubscription(ctx)
 	genesis.MinIprpcCost = k.GetMinIprpcCost(ctx)
 	genesis.IprpcRewards = k.GetAllIprpcReward(ctx)
-	genesis.IprpcRewardsCurrent = k.GetIprpcRewardsCurrent(ctx)
+	genesis.IprpcRewardsCurrent = k.GetIprpcRewardsCurrentId(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis

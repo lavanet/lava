@@ -5,9 +5,9 @@ option go_package = "github.com/lavanet/lava/x/rewards/types";
 import "gogoproto/gogo.proto"; 
 import "cosmos/base/v1beta1/coin.proto"; 
 
-// list object that holds the 
+// object that holds the list for iprpc funcs for a specific month id
 message IprpcReward {
-    uint64 id = 1;
+    uint64 id = 1; // month id
     repeated Specfund spec_funds = 2 [(gogoproto.nullable) = false]; 
 }
 
