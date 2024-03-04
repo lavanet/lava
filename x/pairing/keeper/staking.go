@@ -13,7 +13,10 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-const MAX_CHANGE_RATE = 1
+const (
+	MAX_CHANGE_RATE = 1
+	CHANGE_WINDOW   = time.Hour * 24
+)
 
 func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64) error {
 	logger := k.Logger(ctx)
@@ -95,19 +98,21 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		}
 		details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 
+		// if the provider has no delegations then we dont limit the changes
 		if !existingEntry.DelegateTotal.IsZero() {
-			diff := ctx.BlockTime().UTC().Unix() - int64(existingEntry.LastChange)
-			_ = diff
-			if ctx.BlockTime().UTC().Unix()-int64(existingEntry.LastChange) < int64((time.Hour * 24).Seconds()) {
+			// if there was a change in the last 24h than we dont allow changes
+			if ctx.BlockTime().UTC().Unix()-int64(existingEntry.LastChange) < int64(CHANGE_WINDOW.Seconds()) {
 				if delegationCommission != existingEntry.DelegateCommission || existingEntry.DelegateLimit != delegationLimit {
-					return utils.LavaFormatWarning("stake entry commmision or delegate limit can only be changes once in 24H", nil)
+					return utils.LavaFormatWarning(fmt.Sprintf("stake entry commmision or delegate limit can only be changes once in %s", CHANGE_WINDOW), nil)
 				}
 			}
 
+			// check that the change is not mode than MAX_CHANGE_RATE
 			if int64(delegationCommission)-int64(existingEntry.DelegateCommission) > MAX_CHANGE_RATE {
 				return utils.LavaFormatWarning("stake entry commission increase too high", fmt.Errorf("commission change cannot increase by more than %d at a time", MAX_CHANGE_RATE))
 			}
 
+			// check that the change in delegation limit is decreasing and that new_limit*100/old_limit < (100-MAX_CHANGE_RATE)
 			if delegationLimit.IsLT(existingEntry.DelegateLimit) && delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount).LT(sdk.NewInt(100-MAX_CHANGE_RATE)) {
 				return utils.LavaFormatWarning("stake entry DelegateLimit decrease too high", fmt.Errorf("DelegateLimit change cannot decrease by more than %d at a time", MAX_CHANGE_RATE))
 			}

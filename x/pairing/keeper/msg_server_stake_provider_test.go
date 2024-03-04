@@ -814,6 +814,12 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// tests the commission and delegation limit changes
+// - changes without delegations (no limitations)
+// - first change within the 1% limitation
+// - try to change before 24H
+// - change after 24H within the expected values
+// - change after 24H outside of allowed values
 func TestCommisionChange(t *testing.T) {
 	// set MinSelfDelegation = 100, MinStakeProvider = 200
 	ts := newTester(t)
@@ -837,8 +843,8 @@ func TestCommisionChange(t *testing.T) {
 	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
 	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.Index, ts.spec.MinStakeProvider)
 	require.NoError(t, err)
-	ts.AdvanceEpoch() // apply delegation
-	ts.AdvanceBlock(time.Hour * 25)
+	ts.AdvanceEpoch()               // apply delegation
+	ts.AdvanceBlock(time.Hour * 25) // advance time to allow changes
 
 	// now changes are limited
 	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 61, 139)
