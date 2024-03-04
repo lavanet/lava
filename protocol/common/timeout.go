@@ -18,6 +18,7 @@ const (
 	CommunicateWithLocalLavaNodeTimeout = (3 * time.Second) + AverageWorldLatency
 	DefaultTimeout                      = 20 * time.Second
 	DefaultTimeoutLong                  = 3 * time.Minute
+	CacheTimeout                        = 50 * time.Millisecond
 )
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {
