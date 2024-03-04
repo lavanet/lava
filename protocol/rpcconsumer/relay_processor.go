@@ -275,6 +275,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 	deterministic := rp.chainMessage.GetApi().Category.Deterministic
 	var bestQosResult common.RelayResult
 	bestQos := sdktypes.ZeroDec()
+	nilReplies := 0
 	for _, result := range results {
 		if result.Reply != nil && result.Reply.Data != nil {
 			countMap[string(result.Reply.Data)]++
@@ -288,6 +289,8 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 					bestQosResult = result
 				}
 			}
+		} else {
+			nilReplies++
 		}
 	}
 	var mostCommonResult common.RelayResult
@@ -309,7 +312,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 			// instead of failing get the best one
 			return &bestQosResult, nil
 		}
-		return nil, errors.New("majority count is less than quorumSize")
+		return nil, utils.LavaFormatInfo("majority count is less than quorumSize", utils.LogAttr("nilReplies", nilReplies), utils.LogAttr("results", len(results)), utils.LogAttr("maxCount", maxCount), utils.LogAttr("quorumSize", quorumSize))
 	}
 	mostCommonResult.Quorum = maxCount
 	return &mostCommonResult, nil
