@@ -440,7 +440,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	var cacheError error
 	if reqBlock != spectypes.NOT_APPLICABLE || !chainMessage.GetForceCacheRefresh() {
 		var cacheReply *pairingtypes.CacheRelayReply
-		cacheReply, cacheError = rpccs.cache.GetEntry(ctx, &pairingtypes.RelayCacheGet{Request: relayRequestData, BlockHash: nil, ChainID: chainID, Finalized: false, SharedStateId: sharedStateId}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+		cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
+		cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{Request: relayRequestData, BlockHash: nil, ChainID: chainID, Finalized: false, SharedStateId: sharedStateId}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+		cancel()
 		reply := cacheReply.GetReply()
 		// read seen block from cache even if we had a miss we still want to get the seen block so we can use it to get the right provider.
 		cacheSeenBlock := cacheReply.GetSeenBlock()
