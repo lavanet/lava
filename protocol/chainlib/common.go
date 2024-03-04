@@ -16,7 +16,6 @@ import (
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
-	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -367,10 +366,15 @@ func truncateAndPadString(s string, maxLength int) string {
 
 // return if response is valid or not - true
 func ValidateNilResponse(responseString string) error {
-	if slices.Contains(InvalidResponses, responseString) {
-		return fmt.Errorf("response returned an empty value: %s", responseString)
-	}
-	return nil
+	return nil // this feature was disabled in version 0.35.8 due to some nodes request this response.
+	// after the timeout features we can add support for this filtering as it would be parsed and
+	// returned to the user if multiple providers returned the same type of response
+
+	// Removed on 0.35.8
+	// if slices.Contains(InvalidResponses, responseString) {
+	// 	return fmt.Errorf("response returned an empty value: %s", responseString)
+	// }
+	// return nil
 }
 
 type RefererData struct {
