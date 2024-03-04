@@ -306,7 +306,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 	}
 
 	// Check if the majority count is less than quorumSize
-	if mostCommonResult.Reply == nil || maxCount < quorumSize {
+	if maxCount < quorumSize {
 		if !deterministic {
 			// non deterministic apis might not have a quorum
 			// instead of failing get the best one
