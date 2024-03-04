@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -28,7 +29,48 @@ func Seed(rng *rand.Rand, data []byte) {
 
 // rand wrapper for protocol structs which hosts the same seed for deterministic unified random distribution
 // we set the seed once for the entire process.
-var protocolRand *rand.Rand
+type threadSafeRand struct {
+	lock sync.Mutex // we have no reads, just writes, so using a sync.Mutex.
+	rand *rand.Rand
+}
+
+func (t *threadSafeRand) Intn(n int) int {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	return t.rand.Intn(n)
+}
+func (t *threadSafeRand) Float64() float64 {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	return t.rand.Float64()
+}
+func (t *threadSafeRand) Uint32() uint32 {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	return t.rand.Uint32()
+}
+func (t *threadSafeRand) Uint64() uint64 {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	return t.rand.Uint64()
+}
+func (t *threadSafeRand) Int63() int64 {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	return t.rand.Int63()
+}
+func (t *threadSafeRand) Int63n(n int64) int64 {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	return t.rand.Int63n(n)
+}
+func (t *threadSafeRand) NormFloat64() float64 {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	return t.rand.NormFloat64()
+}
+
+var protocolRand *threadSafeRand
 
 func Initialized() bool {
 	return protocolRand != nil
@@ -36,11 +78,11 @@ func Initialized() bool {
 
 func InitRandomSeed() {
 	seed := time.Now().UnixNano()
-	protocolRand = rand.New(rand.NewSource(seed))
+	protocolRand = &threadSafeRand{rand: rand.New(rand.NewSource(seed))}
 }
 
 func SetSpecificSeed(seed int64) {
-	protocolRand = rand.New(rand.NewSource(seed))
+	protocolRand = &threadSafeRand{rand: rand.New(rand.NewSource(seed))}
 }
 
 func Intn(n int) int {
