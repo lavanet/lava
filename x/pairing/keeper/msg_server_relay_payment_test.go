@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -869,4 +870,88 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 		require.True(t, found)
 		require.Equal(t, cuSum, badgeUsedCuMapEntry.UsedCu)
 	}
+}
+
+func TestIntOverflow(t *testing.T) {
+	// This test came from a bug that the audit team found, it's description is as follows:
+	// The chain may halt if a consumer uses a large amount of CUs in an epoch,
+	// 	displaying a message such as ERR CONSENSUS FAILURE!!! err="negative coin amount: -90".
+	// Here is how the bug occurs:
+	// 1. An integer overflow occurs in EnforceClientCUsUsageInEpoch when a user consumes a lot of CUs,
+	//	resulting in a return value close to the maximum value of uint64 (e.g., 18446744073709551576) here.
+	// 2. In RelayPayment, the return value from EnforceClientCUsUsageInEpoch becomes rewardedCU here, which is cast to int64 in rewardedCUDec here,
+	// 	turning into a negative value (e.g., -40). This value remains negative after re-calculation based on QoS.
+	// 3. rewardedCUDec is cast back to uint64 and assigned to cuAfterQos here. cuAfterQos is used to call chargeCuToSubscriptionAndCreditProvider.
+	// 	Within the function, AddTrackedCu in cu_tracker.go is called here. This results in a negative value being saved in cuTrackerFS here if an integer overflow does not occur in the cu + cuToAdd calculation.
+	// 4. When a user upgrades their subscription or advanceMonth is executed, RewardAndResetCuTracker triggers on the set timer.
+	// 	Within the function, GetSubTrackedCuInfo is called here, retrieving totalCuTracked. The totalCuTracked includes the previously saved invalid value, close to the maximum value of uint64 here.
+	// 5. RewardAndResetCuTracker uses totalCuTracked to calculate totalMonthlyReward with CalcTotalMonthlyReward here.
+	// 	Since CalcTotalMonthlyReward casts totalCuUsedBySub (i.e., totalCuTracked) to int64, it turns into a negative value here
+	// 6. If the provider serves for “multiple” chains, trackedCuList will contain several elements.
+	// 	Since some chains may have normal trackedCu (e.g., 50) and totalCuTracked is very large, in CalcTotalMonthlyReward, a calculation of totalAmount * int64(trackedCu) / int64(totalCuTracked) = (positive) * (positive) / (negative) occurs, resulting in a negative totalMonthlyReward.
+	// 7. Finally, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward) is executed here. The negative coin amount triggers a panic, leading to the chain halting.
+
+	ts := newTester(t)
+	ts.setupForPayments(2, 1, 0) // 2 provider, 1 client, default providers-to-pair
+	consumerAcct, consumerAddr := ts.GetAccount(common.CONSUMER, 0)
+	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+	_, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
+
+	var consumedCu uint64 = 18446744073709551575
+
+	// The TotalCuLimit needs to be higher than the CU used
+	// The EpochCuLimit needs to be smaller than the CU used
+	whalePolicy := planstypes.Policy{
+		TotalCuLimit:       consumedCu + 1,
+		EpochCuLimit:       consumedCu - 1,
+		MaxProvidersToPair: 3,
+		GeolocationProfile: 1,
+	}
+
+	whalePlan := planstypes.Plan{
+		Index:                    "whale",
+		Description:              "whale",
+		Type:                     "rpc",
+		Block:                    100,
+		Price:                    sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(1000)),
+		AllowOveruse:             true,
+		OveruseRate:              10,
+		AnnualDiscountPercentage: 20,
+		PlanPolicy:               whalePolicy,
+		ProjectsLimit:            10,
+	}
+
+	whalePlan = ts.AddPlan("whale", whalePlan).Plan("whale")
+	ts.AdvanceBlock()
+
+	// Buy the whale plan
+	_, err := ts.TxSubscriptionBuy(consumerAddr, consumerAddr, whalePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	ts.AdvanceEpoch(1)
+
+	relaySession := ts.newRelaySession(provider1Addr, 0, consumedCu/2, ts.BlockHeight(), 0)
+	sig, err := sigs.Sign(consumerAcct.SK, *relaySession)
+	relaySession.Sig = sig
+	require.NoError(t, err)
+
+	// Add relay payment 1 for a lot of CU
+	_, err = ts.TxPairingRelayPayment(provider1Addr, relaySession)
+	require.NoError(t, err)
+
+	relaySession = ts.newRelaySession(provider2Addr, 0, consumedCu/2, ts.BlockHeight(), 0)
+	sig, err = sigs.Sign(consumerAcct.SK, *relaySession)
+	relaySession.Sig = sig
+	require.NoError(t, err)
+
+	// Add relay payment 2 for a lot of CU
+	_, err = ts.TxPairingRelayPayment(provider2Addr, relaySession)
+	require.NoError(t, err)
+
+	nextEpoch, err := ts.Keepers.Epochstorage.GetNextEpoch(ts.Ctx, ts.BlockHeight())
+	require.NoError(t, err)
+	blocksToSave, err := ts.Keepers.Epochstorage.BlocksToSave(ts.Ctx, ts.BlockHeight())
+	require.NoError(t, err)
+
+	ts.AdvanceMonths(1).AdvanceBlock()
+	ts.AdvanceBlocks(nextEpoch + blocksToSave)
 }
