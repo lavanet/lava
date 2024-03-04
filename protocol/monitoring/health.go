@@ -35,7 +35,7 @@ var QueryRetries = uint64(3)
 const (
 	BasicQueryRetries = 3
 	QuerySleepTime    = 100 * time.Millisecond
-	NiceOutputLength  = 40
+	NiceOutputLength  = 100
 )
 
 type LavaEntity struct {
