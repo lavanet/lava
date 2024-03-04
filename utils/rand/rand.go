@@ -39,31 +39,37 @@ func (t *threadSafeRand) Intn(n int) int {
 	defer t.lock.Unlock()
 	return t.rand.Intn(n)
 }
+
 func (t *threadSafeRand) Float64() float64 {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	return t.rand.Float64()
 }
+
 func (t *threadSafeRand) Uint32() uint32 {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	return t.rand.Uint32()
 }
+
 func (t *threadSafeRand) Uint64() uint64 {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	return t.rand.Uint64()
 }
+
 func (t *threadSafeRand) Int63() int64 {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	return t.rand.Int63()
 }
+
 func (t *threadSafeRand) Int63n(n int64) int64 {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	return t.rand.Int63n(n)
 }
+
 func (t *threadSafeRand) NormFloat64() float64 {
 	t.lock.Lock()
 	defer t.lock.Unlock()
