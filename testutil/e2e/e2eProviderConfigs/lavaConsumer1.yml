@@ -8,3 +8,4 @@ endpoints:
   - chain-id: LAV1
     api-interface: grpc
     network-address: 127.0.0.1:3342
+debug-relays: true

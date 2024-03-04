@@ -27,7 +27,7 @@ const (
 	BestResult                  // get the best result, even if it means waiting
 )
 
-func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage) *RelayProcessor {
+func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage, consumerConsistency *ConsumerConsistency, dappID string, consumerIp string) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
 	if chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALLPROVIDERS {
@@ -45,6 +45,9 @@ func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProvi
 		chainMessage:           chainMessage,
 		guid:                   guid,
 		selection:              selection,
+		consumerConsistency:    consumerConsistency,
+		dappID:                 dappID,
+		consumerIp:             consumerIp,
 	}
 }
 
@@ -59,6 +62,9 @@ type RelayProcessor struct {
 	chainMessage           chainlib.ChainMessage
 	guid                   uint64
 	selection              Selection
+	consumerConsistency    *ConsumerConsistency
+	dappID                 string
+	consumerIp             string
 }
 
 func (rp *RelayProcessor) String() string {
@@ -144,7 +150,12 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		response.relayResult.Finalized = false // shut down data reliability
 		// }
 	}
-
+	if response.err == nil && response.relayResult.Reply != nil {
+		// no error, update the seen block
+		blockSeen := response.relayResult.Reply.LatestBlock
+		// nil safe
+		rp.consumerConsistency.SetSeenBlock(blockSeen, rp.dappID, rp.consumerIp)
+	}
 	foundError, errorMessage := rp.chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
 	if foundError {
 		// this is a node error, meaning we still didn't get a good response.
