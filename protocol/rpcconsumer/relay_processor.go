@@ -287,7 +287,8 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 	var bestQosResult common.RelayResult
 	bestQos := sdktypes.ZeroDec()
 	nilReplies := 0
-	for _, result := range results {
+	nilReplyIdx := -1
+	for idx, result := range results {
 		if result.Reply != nil && result.Reply.Data != nil {
 			countMap[string(result.Reply.Data)]++
 			if !deterministic {
@@ -302,6 +303,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 			}
 		} else {
 			nilReplies++
+			nilReplyIdx = idx
 		}
 	}
 	var mostCommonResult common.RelayResult
@@ -316,11 +318,17 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 		}
 	}
 
+	if nilReplies >= quorumSize && maxCount < quorumSize {
+		// we don't have a quorum with a valid response, but we have a quorum with an empty one
+		maxCount = nilReplies
+		mostCommonResult = results[nilReplyIdx]
+	}
 	// Check if the majority count is less than quorumSize
 	if maxCount < quorumSize {
 		if !deterministic {
 			// non deterministic apis might not have a quorum
 			// instead of failing get the best one
+			bestQosResult.Quorum = 1
 			return &bestQosResult, nil
 		}
 		return nil, utils.LavaFormatInfo("majority count is less than quorumSize", utils.LogAttr("nilReplies", nilReplies), utils.LogAttr("results", len(results)), utils.LogAttr("maxCount", maxCount), utils.LogAttr("quorumSize", quorumSize))
