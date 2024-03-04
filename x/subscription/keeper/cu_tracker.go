@@ -180,7 +180,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 				)
 				return
 			}
-			providerAdjustment = sdk.OneDec().QuoInt64(int64(maxRewardBoost))
+			providerAdjustment = sdk.OneDec().Quo(sdk.NewDecFromInt(sdk.NewIntFromUint64(maxRewardBoost)))
 		}
 
 		// calculate the provider reward (smaller than totalMonthlyReward
@@ -270,6 +270,7 @@ func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, tr
 	if totalCuUsedBySub == 0 {
 		return math.ZeroInt()
 	}
-	totalMonthlyReward := totalAmount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
+
+	totalMonthlyReward := totalAmount.Mul(sdk.NewIntFromUint64(trackedCu)).Quo(sdk.NewIntFromUint64(totalCuUsedBySub))
 	return totalMonthlyReward
 }
