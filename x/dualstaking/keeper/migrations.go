@@ -223,7 +223,7 @@ func (m Migrator) VerifyDelegationsBalance(ctx sdk.Context) error {
 
 	// verify delegations balance for each delegator
 	for _, d := range delegators {
-		diff, err := m.keeper.VerifyDelegatorBalance(ctx, d)
+		diff, _, err := m.keeper.VerifyDelegatorBalance(ctx, d)
 		if err != nil {
 			return err
 		}
@@ -373,5 +373,12 @@ func GetStakeStorages(lavaChainID string) map[string]epochstoragetypes.StakeStor
 // MigrateVersion3To4 sets the DisableDualstakingHook flag to false
 func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
 	m.keeper.SetDisableDualstakingHook(ctx, false)
+	return nil
+}
+
+// MigrateVersion4To5 sets the MinSelfDelegation param with a default value
+func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
+	params := dualstakingtypes.DefaultParams()
+	m.keeper.SetParams(ctx, params)
 	return nil
 }

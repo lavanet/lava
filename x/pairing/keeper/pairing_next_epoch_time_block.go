@@ -78,7 +78,7 @@ func (k Keeper) calculateAverageBlockTime(ctx sdk.Context, epoch uint64) (uint64
 	}
 
 	// Calculate the average block time from prevEpochTimestampAndHeightList
-	averageBlockTime, err := calculateAverageBlockTimeFromList(ctx, prevEpochTimestampAndHeightList, sampleStep)
+	averageBlockTime, err := calculateAverageBlockTimeFromList(prevEpochTimestampAndHeightList, sampleStep)
 	if pairingtypes.NotEnoughBlocksToCalculateAverageBlockTimeError.Is(err) || pairingtypes.AverageBlockTimeIsLessOrEqualToZeroError.Is(err) {
 		// we shouldn't fail the get-pairing query because the average block time calculation failed (to indicate the fail, we return 0)
 		return 0, nil
@@ -126,7 +126,7 @@ func (k Keeper) getPreviousEpochTimestampsByHeight(ctx sdk.Context, epoch, sampl
 	return prevEpochTimestampAndHeightList, nil
 }
 
-func calculateAverageBlockTimeFromList(ctx sdk.Context, blockHeightAndTimeList []blockHeightAndTime, sampleStep uint64) (uint64, error) {
+func calculateAverageBlockTimeFromList(blockHeightAndTimeList []blockHeightAndTime, sampleStep uint64) (uint64, error) {
 	if len(blockHeightAndTimeList) <= 1 {
 		return 0, utils.LavaFormatError("There isn't enough blockHeight structs in the previous epoch to calculate average block time", pairingtypes.NotEnoughBlocksToCalculateAverageBlockTimeError)
 	}

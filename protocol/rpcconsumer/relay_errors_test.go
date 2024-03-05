@@ -18,6 +18,7 @@ func TestRelayError(t *testing.T) {
 		{
 			name: "test stake majority error reply",
 			relayErrors: RelayErrors{
+				onFailureMergeAll: true,
 				relayErrors: []RelayError{
 					{
 						err: fmt.Errorf("test1"),
@@ -60,6 +61,7 @@ func TestRelayError(t *testing.T) {
 		{
 			name: "test qos majority error reply",
 			relayErrors: RelayErrors{
+				onFailureMergeAll: true,
 				relayErrors: []RelayError{
 					{
 						err: fmt.Errorf("test1"),
@@ -116,6 +118,7 @@ func TestRelayError(t *testing.T) {
 		{
 			name: "test text majority over score majority",
 			relayErrors: RelayErrors{
+				onFailureMergeAll: true,
 				relayErrors: []RelayError{
 					{
 						err: fmt.Errorf("test1"),
@@ -158,6 +161,7 @@ func TestRelayError(t *testing.T) {
 		{
 			name: "test majority of error body",
 			relayErrors: RelayErrors{
+				onFailureMergeAll: true,
 				relayErrors: []RelayError{
 					{
 						err: fmt.Errorf(expectedValue),
@@ -200,6 +204,7 @@ func TestRelayError(t *testing.T) {
 		{
 			name: "test no majority and no dec",
 			relayErrors: RelayErrors{
+				onFailureMergeAll: true,
 				relayErrors: []RelayError{
 					{
 						err: fmt.Errorf(expectedValue),
@@ -243,7 +248,7 @@ func TestRelayError(t *testing.T) {
 	for _, te := range testStruct {
 		t.Run(te.name, func(t *testing.T) {
 			result := te.relayErrors.GetBestErrorMessageForUser()
-			require.Equal(t, result.Value, expectedValue)
+			require.Equal(t, result.err.Error(), expectedValue)
 		})
 	}
 }

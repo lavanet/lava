@@ -136,10 +136,11 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 
 func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
-		api:                  serviceApi,
-		apiCollection:        apiCollection,
-		msg:                  restMessage,
-		latestRequestedBlock: requestBlock,
+		api:                      serviceApi,
+		apiCollection:            apiCollection,
+		msg:                      restMessage,
+		latestRequestedBlock:     requestBlock,
+		resultErrorParsingMethod: restMessage.CheckResponseError,
 	}
 	return nodeMsg
 }
@@ -234,12 +235,14 @@ type RestChainListener struct {
 	relaySender    RelaySender
 	healthReporter HealthReporter
 	logger         *metrics.RPCConsumerLogs
+	refererData    *RefererData
 }
 
 // NewRestChainListener creates a new instance of RestChainListener
 func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
+	refererData *RefererData,
 ) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
@@ -247,6 +250,7 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 		relaySender,
 		healthReporter,
 		rpcConsumerLogs,
+		refererData,
 	}
 
 	return chainListener
@@ -265,7 +269,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
 	// Catch Post
-	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
+	handlerPost := func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
@@ -289,15 +293,19 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		// contentType := string(c.Context().Request.Header.ContentType())
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		utils.LavaFormatInfo("in <<<",
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("msgSeed", msgSeed),
 			utils.LogAttr("headers", restHeaders),
 		)
+		refererMatch := fiberCtx.Params(refererMatchString, "")
 		requestBody := string(fiberCtx.Body())
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
+		if refererMatch != "" && apil.refererData != nil && err == nil {
+			go apil.refererData.SendReferer(refererMatch)
+		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
@@ -327,10 +335,9 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		}
 		// Return json response
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
-	})
+	}
 
-	// Catch the others
-	app.Use("/*", func(fiberCtx *fiber.Ctx) error {
+	handlerUse := func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
@@ -352,14 +359,18 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			msgSeed = strconv.FormatUint(guid, 10)
 		}
 		defer cancel() // incase there's a problem make sure to cancel the connection
-		utils.LavaFormatInfo("in <<<",
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("path", path),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("msgSeed", msgSeed),
 			utils.LogAttr("headers", restHeaders),
 		)
+		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
+		if refererMatch != "" && apil.refererData != nil && err == nil {
+			go apil.refererData.SendReferer(refererMatch)
+		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
@@ -390,7 +401,16 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 		// Return json response
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
-	})
+	}
+
+	if apil.refererData != nil && apil.refererData.Marker != "" {
+		app.Post("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerPost)
+		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerUse)
+	}
+
+	app.Post("/*", handlerPost)
+	// Catch the others
+	app.Use("/*", handlerUse)
 
 	// Go
 	ListenWithRetry(app, apil.endpoint.NetworkAddress)
@@ -447,13 +467,8 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	msgBuffer := bytes.NewBuffer(nodeMessage.Msg)
 	urlPath := rcp.NodeUrl.Url + nodeMessage.Path
 
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetApi().Category.HangingApi {
-		relayTimeout += rcp.averageBlockTime
-	}
-
-	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+	// set context with timeout
+	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, chainMessage, rcp.averageBlockTime)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(urlPath), msgBuffer)

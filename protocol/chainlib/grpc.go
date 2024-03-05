@@ -191,10 +191,11 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
-		api:                  api,
-		msg:                  grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
-		latestRequestedBlock: requestedBlock,
-		apiCollection:        apiCollection,
+		api:                      api,
+		msg:                      grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
+		latestRequestedBlock:     requestedBlock,
+		apiCollection:            apiCollection,
+		resultErrorParsingMethod: grpcMessage.CheckResponseError,
 	}
 	return nodeMsg
 }
@@ -255,6 +256,7 @@ type GrpcChainListener struct {
 	logger         *metrics.RPCConsumerLogs
 	chainParser    *GrpcChainParser
 	healthReporter HealthReporter
+	refererData    *RefererData
 }
 
 func NewGrpcChainListener(
@@ -264,6 +266,7 @@ func NewGrpcChainListener(
 	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
+	refererData *RefererData,
 ) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
@@ -272,6 +275,7 @@ func NewGrpcChainListener(
 		rpcConsumerLogs,
 		chainParser.(*GrpcChainParser),
 		healthReporter,
+		refererData,
 	}
 	return chainListener
 }
@@ -295,7 +299,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		dappID := extractDappIDFromGrpcHeader(metadataValues)
 
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
-		utils.LavaFormatInfo("in <<< GRPC Relay ",
+		utils.LavaFormatDebug("in <<< GRPC Relay ",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("method", method),
 			utils.LogAttr("headers", grpcHeaders),
@@ -382,12 +386,12 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	if err != nil {
 		return nil, err
 	}
-	return newGrpcChainProxy(ctx, nodeUrl.Url, averageBlockTime, parser, conn)
+	return newGrpcChainProxy(ctx, nodeUrl.Url, averageBlockTime, parser, conn, rpcProviderEndpoint)
 }
 
-func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface) (ChainProxy, error) {
+func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface, rpcProviderEndpoint lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
-		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}},
+		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
 		descriptorsCache: &grpcDescriptorCache{},
 	}
 	cp.conn = conn
@@ -437,12 +441,6 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if len(metadataMap) > 0 {
 		md := metadata.New(metadataMap)
 		ctx = metadata.NewOutgoingContext(ctx, md)
-	}
-
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetApi().Category.HangingApi {
-		relayTimeout += cp.averageBlockTime
 	}
 
 	cl := grpcreflect.NewClient(ctx, reflectionpbo.NewServerReflectionClient(conn))
@@ -520,7 +518,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
-	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
 	defer cancel()
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
 	if err != nil {

@@ -52,45 +52,6 @@ func (k Keeper) VerifyPairingData(ctx sdk.Context, chainID string, block uint64)
 	return requestedEpochStart, providersType, nil
 }
 
-func (k Keeper) VerifyClientStake(ctx sdk.Context, chainID string, clientAddress sdk.Address, block, epoch uint64) (clientStakeEntryRet *epochstoragetypes.StakeEntry, errorRet error) {
-	verifiedUser := false
-
-	// we get the user stakeEntries at the time of check. for unstaking users, we make sure users can't unstake sooner than blocksToSave so we can charge them if the pairing is valid
-	userStakedEntries, found, _ := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
-	if !found {
-		return nil, utils.LavaFormatWarning("no EpochStakeEntries entries at all for this spec", fmt.Errorf("user stake entries not found"),
-			utils.Attribute{Key: "chainID", Value: chainID},
-			utils.Attribute{Key: "query Epoch", Value: epoch},
-			utils.Attribute{Key: "query block", Value: block},
-		)
-	}
-	for i, clientStakeEntry := range userStakedEntries {
-		clientAddr, err := sdk.AccAddressFromBech32(clientStakeEntry.Address)
-		if err != nil {
-			// this should not happen; to avoid panic we simply skip this one (thus
-			// freeze the situation so it can be investigated and orderly resolved).
-			utils.LavaFormatError("critical: invalid account address inside StakeStorage", err,
-				utils.LogAttr("address", clientStakeEntry.Address),
-				utils.LogAttr("chainID", clientStakeEntry.Chain),
-			)
-			continue
-		}
-		if clientAddr.Equals(clientAddress) {
-			if clientStakeEntry.StakeAppliedBlock > block {
-				// client is not valid for new pairings yet, or was jailed
-				return nil, fmt.Errorf("found staked user %+v, but his stakeAppliedBlock %d, was bigger than checked block: %d", clientStakeEntry, clientStakeEntry.StakeAppliedBlock, block)
-			}
-			verifiedUser = true
-			clientStakeEntryRet = &userStakedEntries[i]
-			break
-		}
-	}
-	if !verifiedUser {
-		return nil, fmt.Errorf("client: %s isn't staked for spec %s at block %d", clientAddress, chainID, block)
-	}
-	return clientStakeEntryRet, nil
-}
-
 func (k Keeper) GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, chainID string, blockHeight uint64) (proj projectstypes.Project, errRet error) {
 	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, developerKey.String(), blockHeight)
 	if err != nil {
@@ -303,22 +264,22 @@ func (k Keeper) CalculateEffectiveAllowedCuPerEpochFromPolicies(policies []*plan
 	return slices.Min(slice), effectiveTotalCuOfProject
 }
 
-func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, providerAddress sdk.AccAddress, reqEpoch uint64, project projectstypes.Project) (isValidPairing bool, allowedCU, pairedProviders uint64, errorRet error) {
+func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, providerAddress sdk.AccAddress, reqEpoch uint64, project projectstypes.Project) (isValidPairing bool, allowedCU uint64, pairedProviders []epochstoragetypes.StakeEntry, errorRet error) {
 	epoch, _, err := k.epochStorageKeeper.GetEpochStartForBlock(ctx, reqEpoch)
 	if err != nil {
-		return false, allowedCU, 0, err
+		return false, allowedCU, []epochstoragetypes.StakeEntry{}, err
 	}
 	if epoch != reqEpoch {
-		return false, allowedCU, 0, utils.LavaFormatError("requested block is not an epoch start", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "requested", Value: reqEpoch})
+		return false, allowedCU, []epochstoragetypes.StakeEntry{}, utils.LavaFormatError("requested block is not an epoch start", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "requested", Value: reqEpoch})
 	}
 	clientAddr, err := sdk.AccAddressFromBech32(project.Subscription)
 	if err != nil {
-		return false, allowedCU, 0, err
+		return false, allowedCU, []epochstoragetypes.StakeEntry{}, err
 	}
 
 	validAddresses, allowedCU, err := k.getPairingForClient(ctx, chainID, epoch, project)
 	if err != nil {
-		return false, allowedCU, 0, err
+		return false, allowedCU, []epochstoragetypes.StakeEntry{}, err
 	}
 
 	for _, possibleAddr := range validAddresses {
@@ -334,9 +295,9 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, provid
 		}
 
 		if providerAccAddr.Equals(providerAddress) {
-			return true, allowedCU, uint64(len(validAddresses)), nil
+			return true, allowedCU, validAddresses, nil
 		}
 	}
 
-	return false, allowedCU, 0, nil
+	return false, allowedCU, []epochstoragetypes.StakeEntry{}, nil
 }

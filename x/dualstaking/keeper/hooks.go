@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -16,6 +17,8 @@ import (
 type Hooks struct {
 	k Keeper
 }
+
+const PROVIDERS_NUM_GAS_REFUND = 50
 
 var _ stakingtypes.StakingHooks = Hooks{}
 
@@ -47,11 +50,22 @@ func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAd
 // create new delegation period record
 // add description
 func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
+	originalGas := ctx.GasMeter().GasConsumed()
+	providers := 0
+	defer func() {
+		endGas := ctx.GasMeter().GasConsumed()
+		if endGas > originalGas && providers < PROVIDERS_NUM_GAS_REFUND {
+			ctx.GasMeter().RefundGas(endGas-originalGas, "refund hooks gas")
+		}
+	}()
+
 	if h.k.GetDisableDualstakingHook(ctx) {
 		return nil
 	}
 
-	diff, err := h.k.VerifyDelegatorBalance(ctx, delAddr)
+	var diff math.Int
+	var err error
+	diff, providers, err = h.k.VerifyDelegatorBalance(ctx, delAddr)
 	if err != nil {
 		return err
 	}
@@ -74,7 +88,7 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		}
 	}
 
-	diff, err = h.k.VerifyDelegatorBalance(ctx, delAddr)
+	diff, _, err = h.k.VerifyDelegatorBalance(ctx, delAddr)
 	if err != nil {
 		return err
 	}

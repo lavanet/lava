@@ -2,10 +2,12 @@ syntax = "proto3";
 package lavanet.lava.dualstaking;
 
 import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto";
 
 option go_package = "github.com/lavanet/lava/x/dualstaking/types";
 
 // Params defines the parameters for the module.
 message Params {
   option (gogoproto.goproto_stringer) = false;
+  cosmos.base.v1beta1.Coin min_self_delegation = 1 [(gogoproto.nullable) = false]; // min self delegation for provider
 }

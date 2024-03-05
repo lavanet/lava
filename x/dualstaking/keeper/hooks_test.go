@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -230,7 +231,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 		}
 	}
 
-	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	diff, _, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.NoError(t, err)
 	require.True(t, diff.IsZero())
 }
@@ -270,7 +271,7 @@ func TestValidatorSlash(t *testing.T) {
 	require.Equal(t, amount.Sub(expectedTokensToBurn), res.Delegations[0].Amount.Amount)
 
 	// sanity check: verify that provider-validator delegations are equal
-	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, valAcc.Addr)
+	diff, _, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, valAcc.Addr)
 	require.NoError(t, err)
 	require.True(t, diff.IsZero())
 }
@@ -358,7 +359,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegator, providers[0], providers[1], ts.spec.Index, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), consensusPowerTokens.MulRaw(5)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply redelegation
-	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	diff, _, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.NoError(t, err)
 	require.True(t, diff.IsZero())
 
@@ -366,7 +367,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	_, err = ts.TxDualstakingUnbond(delegator, providers[2], ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), consensusPowerTokens.MulRaw(5)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply unbond
-	diff, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	diff, _, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.NoError(t, err)
 	require.True(t, diff.IsZero())
 	expectedValidatorTokens = expectedValidatorTokens.Sub(consensusPowerTokens.MulRaw(5))
@@ -414,7 +415,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(consensusPowerTokens.MulRaw(245)).TruncateInt(), totalDelegations)
 
 	// verify once again that the delegator's delegations balance is preserved
-	diff, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
+	diff, _, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.NoError(t, err)
 	require.Equal(t, sdk.OneInt(), diff)
 }
@@ -450,7 +451,7 @@ func TestCancelUnbond(t *testing.T) {
 	_, err = ts.TxCancelUnbondValidator(delegator, validator, unbondBlock, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(50)))
 	require.NoError(t, err)
 
-	diff, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegator.Addr)
+	diff, _, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegator.Addr)
 	require.NoError(t, err)
 	require.True(t, diff.IsZero())
 }
@@ -528,5 +529,186 @@ func TestNotRoundedShares(t *testing.T) {
 	ts.Keepers.StakingKeeper.SetDelegation(ts.Ctx, stakingtypes.NewDelegation(delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr), shares))
 
 	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), delAmount))
+	require.NoError(t, err)
+}
+
+func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
+	ts := newTester(t)
+	ts.addValidators(2)
+	err := ts.addProviders(5)
+	require.NoError(t, err)
+	ts.addClients(2)
+
+	// create validator and providers
+	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
+	amount := sdk.NewIntFromUint64(9999)
+	ts.TxCreateValidator(validator, amount)
+
+	validator2, _ := ts.GetAccount(common.VALIDATOR, 1)
+	amount2 := sdk.NewIntFromUint64(9998)
+	ts.TxCreateValidator(validator2, amount2)
+
+	delegatorAcc1, _ := ts.GetAccount(common.CONSUMER, 0)
+	_, err = ts.TxDelegateValidator(delegatorAcc1, validator, sdk.NewInt(9999))
+	require.NoError(t, err)
+
+	delegatorAcc2, _ := ts.GetAccount(common.CONSUMER, 0)
+	_, err = ts.TxDelegateValidator(delegatorAcc2, validator, sdk.NewInt(9998))
+	require.NoError(t, err)
+
+	for i := 0; i < 5; i++ {
+		provider, _ := ts.GetAccount(common.PROVIDER, i)
+		err := ts.StakeProvider(provider.Addr.String(), ts.spec, sdk.NewIntFromUint64(9999).Int64())
+		require.NoError(t, err)
+	}
+
+	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
+
+	// provider completely unbond from validator, delegation is removed
+	_, err = ts.TxUnbondValidator(providerAcct, validator, sdk.NewInt(9999))
+	require.NoError(t, err)
+
+	// other delegator should not be able to delegate to the provider
+	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
+		dualstakingtypes.EMPTY_PROVIDER,
+		provider,
+		dualstakingtypes.EMPTY_PROVIDER_CHAINID,
+		ts.spec.Index,
+		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
+	require.Error(t, err)
+
+	// checking that provider is not found
+	_, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	require.False(t, found)
+
+	_, err = ts.QueryDualstakingProviderDelegators(provider, true)
+	require.NoError(t, err)
+}
+
+// TestUndelegateProvider checks for a bug that when a provider unstakes, its delegations are not
+// transferred to the empty provider. If the bug persists, this unit test fails
+func TestUndelegateProvider(t *testing.T) {
+	ts := newTester(t)
+	ts.addValidators(2)
+	err := ts.addProviders(5)
+	require.NoError(t, err)
+	ts.addClients(2)
+
+	// create validator and providers
+	validator, _ := ts.GetAccount(common.VALIDATOR, 0)
+	amount := sdk.NewIntFromUint64(9999)
+	ts.TxCreateValidator(validator, amount)
+
+	validator2, _ := ts.GetAccount(common.VALIDATOR, 1)
+	amount2 := sdk.NewIntFromUint64(9998)
+	ts.TxCreateValidator(validator2, amount2)
+
+	delegatorAcc1, _ := ts.GetAccount(common.CONSUMER, 0)
+	_, err = ts.TxDelegateValidator(delegatorAcc1, validator, sdk.NewInt(9999))
+	require.NoError(t, err)
+
+	delegatorAcc2, _ := ts.GetAccount(common.CONSUMER, 1)
+	_, err = ts.TxDelegateValidator(delegatorAcc2, validator, sdk.NewInt(9998))
+	require.NoError(t, err)
+
+	for i := 0; i < 5; i++ {
+		provider, _ := ts.GetAccount(common.PROVIDER, i)
+		err := ts.StakeProvider(provider.Addr.String(), ts.spec, amount.Int64())
+		require.NoError(t, err)
+	}
+
+	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
+
+	// delegator1 redelegates 9999 to the provider
+	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
+		dualstakingtypes.EMPTY_PROVIDER,
+		provider,
+		dualstakingtypes.EMPTY_PROVIDER_CHAINID,
+		ts.spec.Index,
+		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch()
+
+	res2, err := ts.QueryDualstakingProviderDelegators(provider, true)
+	require.NoError(t, err)
+	fmt.Println("Delegation of Provider before provider is removed", res2)
+
+	unstakeHoldBlocks := ts.Keepers.Epochstorage.UnstakeHoldBlocks(ts.Ctx, ts.BlockHeight())
+	unstakeHoldBlocksStatic := ts.Keepers.Epochstorage.UnstakeHoldBlocksStatic(ts.Ctx, ts.BlockHeight())
+
+	_, err = ts.TxPairingUnstakeProvider(provider, ts.spec.Index)
+	require.NoError(t, err)
+
+	ts.AdvanceBlocks(unstakeHoldBlocks)
+
+	_, found, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Addr)
+	require.True(t, found)
+
+	ts.AdvanceBlocks(unstakeHoldBlocksStatic - unstakeHoldBlocks)
+
+	// checking that provider can't be found
+	_, found, _ = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Addr)
+	require.False(t, found)
+
+	ts.AdvanceEpoch()
+
+	_, found, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	require.False(t, found)
+
+	// delegation of the removed provider
+	// the provider is removed but the delegation is still remained
+	res2, err = ts.QueryDualstakingProviderDelegators(provider, true)
+	require.NoError(t, err)
+	fmt.Println("Delegation of Provider after provider is removed", res2)
+
+	// stake provider again
+	err = ts.StakeProvider(providerAcct.Addr.String(), ts.spec, sdk.NewIntFromUint64(1000).Int64())
+	require.NoError(t, err)
+
+	stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	require.True(t, found)
+	fmt.Println("Stake entry of re-staked provider", stakeEntry.String())
+
+	// delegator1 should be able to redelegate back to the empty provider
+	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
+		provider,
+		dualstakingtypes.EMPTY_PROVIDER,
+		ts.spec.Index,
+		dualstakingtypes.EMPTY_PROVIDER_CHAINID,
+		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)))
+	require.NoError(t, err)
+
+	stakeEntry, found, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	require.True(t, found)
+	fmt.Println("Stake entry of re-staked provider after del1 9999 redelegation", stakeEntry.String())
+
+	// another one delegates to provider
+	// delegator2 delegates 9998 to the provider
+	_, err = ts.TxDualstakingRedelegate(delegatorAcc2.Addr.String(),
+		dualstakingtypes.EMPTY_PROVIDER,
+		provider,
+		dualstakingtypes.EMPTY_PROVIDER_CHAINID,
+		ts.spec.Index,
+		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9998)))
+	require.NoError(t, err)
+
+	// delegator 1 can only redelegate 9998 to Empty Provider
+	ts.AdvanceEpoch()
+
+	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
+		provider,
+		dualstakingtypes.EMPTY_PROVIDER,
+		ts.spec.Index,
+		dualstakingtypes.EMPTY_PROVIDER_CHAINID,
+		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
+	require.Error(t, err)
+
+	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
+		provider,
+		dualstakingtypes.EMPTY_PROVIDER,
+		ts.spec.Index,
+		dualstakingtypes.EMPTY_PROVIDER_CHAINID,
+		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9998)))
 	require.NoError(t, err)
 }

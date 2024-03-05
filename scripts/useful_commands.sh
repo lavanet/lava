@@ -135,3 +135,7 @@ wait_for_lava_node_to_start() {
         sleep 1  # Check every second
     done
 }
+
+operator_address() {
+    lavad q staking validators -o json | jq -r '.validators[0].operator_address'
+}
