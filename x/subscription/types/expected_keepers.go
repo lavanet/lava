@@ -30,6 +30,7 @@ type EpochstorageKeeper interface {
 	GetEpochStart(ctx sdk.Context) uint64
 	IsEpochStart(ctx sdk.Context) bool
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
+	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	// Methods imported from epochstorage should be defined here
 }
 
