@@ -257,7 +257,7 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, sub *types.Subscription
 	}
 
 	// Track CU for the previous subscription
-	amount := k.addCuTrackerTimerForSubscription(ctx, block, sub)
+	k.addCuTrackerTimerForSubscription(ctx, block, sub)
 
 	if sub.DurationLeft == 0 {
 		// Subscription was already expired. Can't upgrade.
@@ -278,7 +278,7 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, sub *types.Subscription
 	sub.PlanIndex = newPlan.Index
 	sub.PlanBlock = newPlan.Block
 	sub.MonthCuTotal = newPlan.PlanPolicy.TotalCuLimit
-	sub.Credit.Amount = amount
+	sub.Credit.Amount = math.ZeroInt()
 
 	err = k.resetSubscriptionDetailsAndAppendEntry(ctx, sub, nextEpoch, true)
 	if err != nil {
@@ -463,14 +463,14 @@ func (k Keeper) verifySubExists(ctx sdk.Context, consumer string, block uint64, 
 	return true
 }
 
-func (k Keeper) addCuTrackerTimerForSubscription(ctx sdk.Context, block uint64, sub *types.Subscription) math.Int {
+func (k Keeper) addCuTrackerTimerForSubscription(ctx sdk.Context, block uint64, sub *types.Subscription) {
 	blocksToSave, err := k.epochstorageKeeper.BlocksToSave(ctx, block)
-	creditReward := sub.Credit.Amount.QuoRaw(int64(sub.DurationLeft))
 	if err != nil {
 		utils.LavaFormatError("critical: failed assigning CU tracker callback, skipping", err,
 			utils.Attribute{Key: "block", Value: block},
 		)
 	} else {
+		creditReward := sub.Credit.Amount.QuoRaw(int64(sub.DurationLeft))
 		nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
 		if err != nil {
 			utils.LavaFormatError("critical: failed assigning CU tracker callback. can't get next epoch, skipping", err,
@@ -486,12 +486,11 @@ func (k Keeper) addCuTrackerTimerForSubscription(ctx sdk.Context, block uint64, 
 				utils.LavaFormatError("critical: failed assigning CU tracker callback. can't marshal cu tracker timer data, skipping", err,
 					utils.Attribute{Key: "block", Value: block},
 				)
-				return math.ZeroInt()
+				return
 			}
 			k.cuTrackerTS.AddTimerByBlockHeight(ctx, nextEpoch+blocksToSave-1, []byte(sub.Consumer), marshaledTimerData)
 		}
 	}
-	return creditReward
 }
 
 func (k Keeper) handleZeroDurationLeftForSubscription(ctx sdk.Context, block uint64, sub *types.Subscription) {
