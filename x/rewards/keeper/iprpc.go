@@ -82,7 +82,7 @@ func (k Keeper) handleNoIprpcRewardToProviders(ctx sdk.Context, iprpcReward type
 		"transferred_funds":        iprpcReward.String(),
 		"next_month_updated_funds": nextMonthIprpcReward.String(),
 	}
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.TransferIprpcRewardToNextMonth, details,
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.TransferIprpcRewardToNextMonthEventName, details,
 		"No provider serviced an IPRPC eligible subscription, transferring current month IPRPC funds to next month")
 }
 
