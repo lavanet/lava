@@ -309,7 +309,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		requestBody := string(fiberCtx.Body())
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, requestBody, http.MethodPost, dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch)
+			go apil.refererData.SendRefererForHttp(refererMatch, chainID, metadataValues)
 		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
@@ -374,7 +374,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", fiberCtx.Method(), dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), analytics, restHeaders)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch)
+			go apil.refererData.SendRefererForHttp(refererMatch, chainID, metadataValues)
 		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())

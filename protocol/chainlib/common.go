@@ -11,6 +11,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
+	"github.com/gofiber/websocket/v2"
 	common "github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
@@ -383,7 +384,7 @@ type RefererData struct {
 	ReferrerClient *metrics.ConsumerReferrerClient
 }
 
-func (rd *RefererData) SendReferer(refererMatchString string) error {
+func (rd *RefererData) SendRefererForHttp(refererMatchString string, chainId string, headers map[string][]string) error {
 	if rd == nil || rd.Address == "" {
 		return nil
 	}
@@ -391,7 +392,28 @@ func (rd *RefererData) SendReferer(refererMatchString string) error {
 		return nil
 	}
 
+	referer := strings.Join(headers[metrics.RefererHeaderKey], ", ")
+	origin := strings.Join(headers[metrics.OriginHeaderKey], ", ")
+	userAgent := strings.Join(headers[metrics.UserAgentHeaderKey], ", ")
+
 	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
-	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString))
+	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString, chainId, referer, origin, userAgent))
+	return nil
+}
+
+func (rd *RefererData) SendRefererForWebSocket(refererMatchString string, chainId string, c *websocket.Conn) error {
+	if rd == nil || rd.Address == "" {
+		return nil
+	}
+	if rd.ReferrerClient == nil {
+		return nil
+	}
+
+	referer, _ := c.Locals(metrics.RefererHeaderKey).(string)
+	origin, _ := c.Locals(metrics.OriginHeaderKey).(string)
+	userAgent, _ := c.Locals(metrics.UserAgentHeaderKey).(string)
+
+	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
+	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString, chainId, referer, origin, userAgent))
 	return nil
 }
