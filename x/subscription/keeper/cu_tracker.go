@@ -253,7 +253,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	} else if rewardsRemainder.IsPositive() {
 		{
 			// sub expired (no need to update credit), send rewards remainder to the validators
-			pool := rewardstypes.ValidatorsRewardsDistributionPoolName
+			pool := rewardstypes.ValidatorsRewardsAllocationPoolName
 			err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, string(pool), sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), rewardsRemainder)))
 			if err != nil {
 				utils.LavaFormatError("failed sending remainder of rewards to the community pool", err,
