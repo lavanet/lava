@@ -170,8 +170,14 @@ func (k Keeper) specEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 	return emissions
 }
 
-func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, removeAfterPop bool) ([]types.BasePayWithIndex, math.Int) {
-	basepays := k.popAllBasePayForChain(ctx, chainID, removeAfterPop)
+func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, pop bool) ([]types.BasePayWithIndex, math.Int) {
+	var basepays []types.BasePayWithIndex
+	if pop {
+		basepays = k.popAllBasePayForChain(ctx, chainID)
+	} else {
+		basepays = k.getAllBasePayForChain(ctx, chainID)
+	}
+
 	totalBasePay := math.ZeroInt()
 	for _, basepay := range basepays {
 		totalBasePay = totalBasePay.Add(basepay.Total)
