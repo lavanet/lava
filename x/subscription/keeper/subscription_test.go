@@ -2583,7 +2583,7 @@ func TestAllowedBuyersUpgradeSubscription(t *testing.T) {
 // TestUpgradedSubscriptionCredit checks the following scenario:
 // a user buys a sub for plan A (which opens a CU tracker timer). Before the timer ends,
 // the user upgrades the sub to plan B. Then, the timer ends and invokes the reward function
-// The credit of the new upgraded subscription should not be substracted (because the timer opened
+// The credit of the new upgraded subscription should not be subtracted (because the timer opened
 // for the old plan)
 func TestUpgradedSubscriptionCredit(t *testing.T) {
 	ts := newTester(t)
