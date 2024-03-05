@@ -31,9 +31,9 @@ func TestReferrerClientFlows(t *testing.T) {
 		defer mockServer.Close()
 		endpoint := mockServer.URL
 		serverClient := NewConsumerReferrerClient(endpoint, 100*time.Millisecond)
-		serverClient.AppendReferrer(NewReferrerRequest("banana"))
-		serverClient.AppendReferrer(NewReferrerRequest("banana"))
-		serverClient.AppendReferrer(NewReferrerRequest("papaya"))
+		serverClient.AppendReferrer(NewReferrerRequest("banana", "ETH1", "https://referer.com", "https://origin.com", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"))
+		serverClient.AppendReferrer(NewReferrerRequest("banana", "COS5", "https://referer.com", "https://origin.com", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"))
+		serverClient.AppendReferrer(NewReferrerRequest("papaya", "ETH1", "https://referer.com", "https://origin.com", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"))
 		time.Sleep(110 * time.Millisecond)
 		require.Len(t, messages, 2)
 		bananas := 0
@@ -55,12 +55,12 @@ func TestReferrerClientNull(t *testing.T) {
 	t.Run("null", func(t *testing.T) {
 		serverClient := NewConsumerReferrerClient("")
 		require.Nil(t, serverClient)
-		serverClient.AppendReferrer(NewReferrerRequest("banana"))
+		serverClient.AppendReferrer(NewReferrerRequest("banana", "ETH1", "https://referer.com", "https://origin.com", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"))
 		time.Sleep(110 * time.Millisecond)
 		getSender := func() ReferrerSender {
 			return serverClient
 		}
 		reporter := getSender()
-		reporter.AppendReferrer(NewReferrerRequest("banana"))
+		reporter.AppendReferrer(NewReferrerRequest("banana", "ETH1", "https://referer.com", "https://origin.com", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"))
 	})
 }
