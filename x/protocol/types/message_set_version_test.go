@@ -17,13 +17,7 @@ func TestSetVersion_ValidateBasic(t *testing.T) {
 			name: "invalid authority address",
 			msg: MsgSetVersion{
 				Authority: "invalid_address",
-			},
-			valid: false,
-		},
-		{
-			name: "invalid subscription address",
-			msg: MsgSetVersion{
-				Authority: sample.AccAddress(),
+				Version:   &DefaultGenesis().Params.Version,
 			},
 			valid: false,
 		},
@@ -31,6 +25,7 @@ func TestSetVersion_ValidateBasic(t *testing.T) {
 			name: "valid message",
 			msg: MsgSetVersion{
 				Authority: sample.AccAddress(),
+				Version:   &DefaultGenesis().Params.Version,
 			},
 			valid: true,
 		},

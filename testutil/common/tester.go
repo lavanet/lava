@@ -956,7 +956,7 @@ func (ts *Tester) AdvanceBlock(delta ...time.Duration) *Tester {
 
 func (ts *Tester) AdvanceEpochs(count uint64, delta ...time.Duration) *Tester {
 	for i := 0; i < int(count); i++ {
-		ts.GoCtx = testkeeper.AdvanceEpoch(ts.GoCtx, ts.Keepers)
+		ts.GoCtx = testkeeper.AdvanceEpoch(ts.GoCtx, ts.Keepers, delta...)
 	}
 	ts.Ctx = sdk.UnwrapSDKContext(ts.GoCtx)
 	return ts
