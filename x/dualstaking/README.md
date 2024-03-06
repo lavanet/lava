@@ -45,9 +45,10 @@ The user can than choose to redelegate from the empty provider to an actual prov
 ### Dualstaking
 
 Dualstaking exists to give power to providers in the same way as validators. Whenever a provider stakes tokens, an equal amount is also staked to a validator.
-Dualstaking achieves this by implementing provider delegators (similar to validator delegators) and using hooks from the staking module.
-For every validator delegation, there exists a parallel provider delegation and vice versa.
-When a provider stakes their tokens, they are both self-delegating as a provider and delegating to a validator with the same amount. This gives them governance influence and supports a validator of their choosing, which in turn boosts the security of the chain (the same applies to provider delegators).
+Dualstaking achieves this by implementing provider delegators (similar to validator delegators) and using hooks from the staking module. For every validator delegation, there exists a parallel provider delegation and vice versa.
+
+When a provider stakes their tokens, they are both self-delegating as a provider and delegating to a validator with the same amount. This gives them governance influence and supports a validator of their choosing, which in turn boosts the security of the chain (the same applies to provider delegators). Please note, when a provider stakes, their stake amount must exceed the minimum stake specified in the corresponding specification. If a provider stakes an amount lower than this minimum, they are automatically frozen. The lowest boundary is the minimum self-delegation, a parameter of the dualstaking module. If the provider attempts to stake an amount below the minimum self-delegation, the stake transaction fails. Furthermore, if the provider tries to modify their existing stake entry and falls below the minimum self-delegation threshold, their stake entry is automatically removed (unstaked).
+
 The same process happens with validators. When a validator stakes their tokens (or a delegator), a delegation is created to an empty provider using hooks. Then, using the dualstaking module, they can redelegate from the empty provider to an actual provider.
 Since the module utilizes hooks to achieve this functionality, there is no need to move coins by the module, the staking module handles it automatically.
 For a specific address, the amount of validator delegation is always equal to the amount of provider delegations.
@@ -95,7 +96,13 @@ To prevent the dual staking module from taking action in the case of validator r
 
 ## Parameters
 
-The Dualstaking module does not contain parameters.
+The dualstaking parameters:
+
+| Key                                    | Type                    | Default Value    |
+| -------------------------------------- | ----------------------- | -----------------|
+| MinSelfDelegation                            | uint64                  | 100LAVA(=100000000ulava)               |
+
+`MinSelfDelegation` determines the minimum amount of stake when a provider self delegates.
 
 ## Queries
 

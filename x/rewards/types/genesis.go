@@ -17,12 +17,13 @@ const DefaultIndex uint64 = 1
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		// this line is used by starport scaffolding # genesis/types/default
-		Params:             DefaultParams(),
-		RefillRewardsTS:    *types.DefaultGenesis(),
-		BasePays:           []BasePayGenesis{},
-		IprpcSubscriptions: []string{},
-		MinIprpcCost:       sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
-		IprpcRewards:       []IprpcReward{},
+		Params:              DefaultParams(),
+		RefillRewardsTS:     *types.DefaultGenesis(),
+		BasePays:            []BasePayGenesis{},
+		IprpcSubscriptions:  []string{},
+		MinIprpcCost:        sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
+		IprpcRewards:        []IprpcReward{},
+		IprpcRewardsCurrent: 0,
 	}
 }
 
@@ -49,7 +50,7 @@ func (gs GenesisState) Validate() error {
 		unique[sub] = struct{}{}
 	}
 
-	if commontypes.TokenDenom != "ulava" {
+	if gs.MinIprpcCost.Denom != commontypes.TokenDenom {
 		return fmt.Errorf("invalid min iprpc cost denom. MinIprpcCost: %s", gs.MinIprpcCost.String())
 	}
 

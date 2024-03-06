@@ -24,12 +24,12 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	// if we get here, the spec is active and supported
-	if amount.IsLT(spec.MinStakeProvider) { // we count on this to also check the denom
-		return utils.LavaFormatWarning("insufficient stake amount", fmt.Errorf("stake amount smaller than minStake"),
+	if amount.IsLT(k.dualstakingKeeper.MinSelfDelegation(ctx)) { // we count on this to also check the denom
+		return utils.LavaFormatWarning("insufficient stake amount", fmt.Errorf("stake amount smaller than MinSelfDelegation"),
 			utils.Attribute{Key: "spec", Value: specChainID},
 			utils.Attribute{Key: "provider", Value: creator},
 			utils.Attribute{Key: "stake", Value: amount},
-			utils.Attribute{Key: "minStake", Value: spec.MinStakeProvider.String()},
+			utils.Attribute{Key: "minSelfDelegation", Value: k.dualstakingKeeper.MinSelfDelegation(ctx).String()},
 		)
 	}
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
@@ -39,7 +39,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
-	if !planstypes.IsValidGeoEnum(geolocation) {
+	if !planstypes.IsValidProviderGeoEnum(geolocation) {
 		return utils.LavaFormatWarning(`geolocations are treated as a bitmap. To configure multiple geolocations, 
 		use the uint representation of the valid geolocations`, fmt.Errorf("missing or invalid geolocation"),
 			utils.Attribute{Key: "geolocation", Value: geolocation},
@@ -47,7 +47,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
-	endpointsVerified, err := k.validateGeoLocationAndApiInterfaces(ctx, endpoints, geolocation, spec)
+	endpointsVerified, err := k.validateGeoLocationAndApiInterfaces(endpoints, geolocation, spec)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid endpoints implementation for the given spec", err,
 			utils.Attribute{Key: "provider", Value: creator},
@@ -143,6 +143,32 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		{Key: "geolocation", Value: geolocation},
 	}
 
+	// if there are registered delegations to the provider, count them in the delegateTotal
+	delegateTotal := sdk.ZeroInt()
+	nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, uint64(ctx.BlockHeight()))
+	if err != nil {
+		return utils.LavaFormatWarning("cannot get next epoch to count past delegations", err,
+			utils.LogAttr("provider", senderAddr.String()),
+			utils.LogAttr("block", nextEpoch),
+		)
+	}
+
+	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, senderAddr.String(), nextEpoch)
+	if err != nil {
+		utils.LavaFormatWarning("cannot get provider's delegators", err,
+			utils.LogAttr("provider", senderAddr.String()),
+			utils.LogAttr("block", nextEpoch),
+		)
+	}
+
+	for _, d := range delegations {
+		if d.Delegator == senderAddr.String() {
+			// ignore provider self delegation
+			continue
+		}
+		delegateTotal = delegateTotal.Add(d.Amount.Amount)
+	}
+
 	stakeEntry := epochstoragetypes.StakeEntry{
 		Stake:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
 		Address:            creator,
@@ -151,7 +177,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		Geolocation:        geolocation,
 		Chain:              chainID,
 		Moniker:            moniker,
-		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
+		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
 		DelegateLimit:      delegationLimit,
 		DelegateCommission: delegationCommission,
 	}
@@ -175,7 +201,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	return err
 }
 
-func (k Keeper) validateGeoLocationAndApiInterfaces(ctx sdk.Context, endpoints []epochstoragetypes.Endpoint, geolocation int32, spec spectypes.Spec) (endpointsFormatted []epochstoragetypes.Endpoint, err error) {
+func (k Keeper) validateGeoLocationAndApiInterfaces(endpoints []epochstoragetypes.Endpoint, geolocation int32, spec spectypes.Spec) (endpointsFormatted []epochstoragetypes.Endpoint, err error) {
 	expectedInterfaces := k.specKeeper.GetExpectedServicesForExpandedSpec(spec, true)
 	allowedInterfaces := k.specKeeper.GetExpectedServicesForExpandedSpec(spec, false)
 

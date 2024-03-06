@@ -16,7 +16,7 @@ func (k Keeper) IprpcSpecReward(goCtx context.Context, req *types.QueryIprpcSpec
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	iprpcRewards := k.GetAllIprpcReward(ctx)
-	currentMonthId := k.GetIprpcRewardsCurrent(ctx)
+	currentMonthId := k.GetIprpcRewardsCurrentId(ctx)
 
 	if req.Spec == "" {
 		return &types.QueryIprpcSpecRewardResponse{IprpcRewards: iprpcRewards, CurrentMonthId: currentMonthId}, nil

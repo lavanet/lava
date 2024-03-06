@@ -7,6 +7,8 @@ const (
 	ClaimRewardsEventName      = "delegator_claim_rewards"
 	ContributorRewardEventName = "contributor_rewards"
 	ValidatorSlashEventName    = "validator_slash"
+	FreezeFromUnbond           = "freeze_from_unbond"
+	UnstakeFromUnbond          = "unstake_from_unbond"
 )
 
 const (

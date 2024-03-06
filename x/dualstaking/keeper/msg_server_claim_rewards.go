@@ -23,7 +23,7 @@ func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimReward
 		}
 	}
 
-	err = k.Keeper.ClaimRewards(
+	claimed, err := k.Keeper.ClaimRewards(
 		ctx,
 		msg.Creator,
 		msg.Provider,
@@ -33,6 +33,7 @@ func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimReward
 		details := map[string]string{
 			"delegator": msg.Creator,
 			"provider":  msg.Provider,
+			"claimed":   claimed.String(),
 		}
 		utils.LogLavaEvent(ctx, logger, types.DelegateEventName, details, "Claim Delegation Rewards")
 	}

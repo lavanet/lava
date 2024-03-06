@@ -21,6 +21,7 @@ type AccountKeeper interface {
 type BankKeeper interface {
 	GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
+	SendCoinsFromModuleToModule(ctx sdk.Context, senderPool, recipientPool string, amt sdk.Coins) error
 	// Methods imported from bank should be defined here
 }
 
@@ -69,7 +70,7 @@ type RewardsKeeper interface {
 	ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward sdk.Coin, senderModule string) (updatedReward sdk.Coin, err error)
 	FundCommunityPoolFromModule(ctx sdk.Context, amount sdk.Coins, senderModule string) error
 	IsIprpcSubscription(ctx sdk.Context, address string) bool
-	AggregateCU(ctx sdk.Context, provider string, chainID string, cu uint64)
+	AggregateCU(ctx sdk.Context, subscription, provider string, chainID string, cu uint64)
 }
 
 type StakingKeeper interface {
