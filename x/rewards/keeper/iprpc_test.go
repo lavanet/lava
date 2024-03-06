@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -267,8 +266,6 @@ func TestIprpcSpecRewardQuery(t *testing.T) {
 	// query with no args
 	res, err := ts.QueryRewardsIprpcSpecReward("")
 	require.NoError(t, err)
-	fmt.Printf("expectedResults: %v\n", expectedResults)
-	fmt.Printf("res.IprpcRewards: %v\n", res.IprpcRewards)
 	require.ElementsMatch(t, expectedResults, res.IprpcRewards)
 
 	// query with arg = mockspec
@@ -403,6 +400,54 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.IprpcRewards, 0)
 	require.Equal(t, uint64(3), res.CurrentMonthId)
+}
+
+// TestFundIprpcTwice tests the following scenario:
+// IPRPC is funded for two months, advance month and fund again
+// during this month, let provider serve and advance month again -> reward should be as the original funding
+// advance again and serve -> reward should be from both funds (funding only starts from the next month)
+func TestFundIprpcTwice(t *testing.T) {
+	ts := newTester(t, true)
+	ts.setupForIprpcTests(false)
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	_, p1 := ts.GetAccount(common.PROVIDER, 0)
+
+	// fund iprpc pool
+	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(2)))
+	require.NoError(ts.T, err)
+	_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, 2, iprpcFunds)
+	require.NoError(ts.T, err)
+
+	// advance month and fund again
+	ts.AdvanceMonths(1).AdvanceEpoch()
+	err = ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(2)))
+	require.NoError(ts.T, err)
+	_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, 2, iprpcFunds)
+	require.NoError(ts.T, err)
+
+	// make a provider service an IPRPC eligible consumer and advance month
+	relay := ts.SendRelay(p1, consumerAcc, []string{ts.specs[1].Index}, 100)
+	_, err = ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &relay)
+	ts.AdvanceEpoch()
+	require.NoError(t, err)
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// check rewards - should be only from first funding (=iprpcFunds)
+	res, err := ts.QueryDualstakingDelegatorRewards(p1, p1, mockSpec2)
+	require.NoError(t, err)
+	require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.Rewards[0].Amount))
+
+	// make a provider service an IPRPC eligible consumer and advance month again
+	relay = ts.SendRelay(p1, consumerAcc, []string{ts.specs[1].Index}, 100)
+	_, err = ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &relay)
+	ts.AdvanceEpoch()
+	require.NoError(t, err)
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// check rewards - should be only from first + second funding (=iprpcFunds*3)
+	res, err = ts.QueryDualstakingDelegatorRewards(p1, p1, mockSpec2)
+	require.NoError(t, err)
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).IsEqual(res.Rewards[0].Amount))
 }
 
 // TestIprpcMinCost tests that a fund TX fails if it doesn't have enough tokens to cover for the minimum IPRPC costs
