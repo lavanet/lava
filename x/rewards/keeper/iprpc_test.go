@@ -701,3 +701,17 @@ func TestIprpcRewardWithZeroSubRewards(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, p2ExpectedReward.IsEqual(res2.Rewards[0].Amount))
 }
+
+// TestMinIprpcCostForSeveralMonths checks that if a user sends fund=1.1*minIprpcCost with duration=2
+// the TX succeeds (checks that the min iprpc cost check that per month there is enough funds)
+func TestMinIprpcCostForSeveralMonths(t *testing.T) {
+	ts := newTester(t, true)
+	ts.setupForIprpcTests(false)
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+
+	// fund iprpc pool
+	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(3)))
+	require.NoError(ts.T, err)
+	_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, 2, iprpcFunds.MulInt(math.NewInt(110)).QuoInt(math.NewInt(100)))
+	require.NoError(ts.T, err)
+}
