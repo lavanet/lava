@@ -317,3 +317,12 @@ func FormatStringerList[T fmt.Stringer](description string, listToPrint []T, sep
 	st = fmt.Sprintf(description+"\n\t%s", st)
 	return st
 }
+
+func FormatLongString(msg string, maxCharacters int) string {
+	if maxCharacters != 0 && len(msg) > maxCharacters {
+		postfixLen := maxCharacters / 3
+		prefixLen := maxCharacters - postfixLen
+		return msg[:prefixLen] + "...truncated..." + msg[len(msg)-postfixLen:]
+	}
+	return msg
+}

@@ -225,7 +225,7 @@ func (m Migrator) VerifyDelegationsBalance(ctx sdk.Context) error {
 
 	// verify delegations balance for each delegator
 	for _, d := range delegators {
-		diff, err := m.keeper.VerifyDelegatorBalance(ctx, d)
+		diff, _, err := m.keeper.VerifyDelegatorBalance(ctx, d)
 		if err != nil {
 			return err
 		}
@@ -391,6 +391,9 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		m.keeper.RemoveDelegatorReward(ctx, dualstakingtypes.DelegationKey(dr.Provider, dr.Delegator, dr.ChainId))
 		m.keeper.SetDelegatorReward(ctx, delegatorReward)
 	}
+
+	params := dualstakingtypes.DefaultParams()
+	m.keeper.SetParams(ctx, params)
 	return nil
 }
 

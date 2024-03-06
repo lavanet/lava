@@ -8,8 +8,8 @@ import (
 	"github.com/lavanet/lava/x/rewards/types"
 )
 
-// GetIprpcRewardsCurrent get the total number of IprpcReward
-func (k Keeper) GetIprpcRewardsCurrent(ctx sdk.Context) uint64 {
+// GetIprpcRewardsCurrentId get the total number of IprpcReward
+func (k Keeper) GetIprpcRewardsCurrentId(ctx sdk.Context) uint64 {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
 	byteKey := types.KeyPrefix(types.IprpcRewardsCurrentPrefix)
 	bz := store.Get(byteKey)
@@ -23,8 +23,8 @@ func (k Keeper) GetIprpcRewardsCurrent(ctx sdk.Context) uint64 {
 	return binary.BigEndian.Uint64(bz)
 }
 
-// SetIprpcRewardsCurrent set the total number of IprpcReward
-func (k Keeper) SetIprpcRewardsCurrent(ctx sdk.Context, current uint64) {
+// SetIprpcRewardsCurrentId set the total number of IprpcReward
+func (k Keeper) SetIprpcRewardsCurrentId(ctx sdk.Context, current uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte{})
 	byteKey := types.KeyPrefix(types.IprpcRewardsCurrentPrefix)
 	bz := make([]byte, 8)
@@ -85,10 +85,15 @@ func GetIprpcRewardIDFromBytes(bz []byte) uint64 {
 }
 
 // PopIprpcReward gets the lowest id IprpcReward object and removes it
-func (k Keeper) PopIprpcReward(ctx sdk.Context, advanceCurrent bool) (types.IprpcReward, bool) {
-	current := k.GetIprpcRewardsCurrent(ctx)
-	if advanceCurrent {
-		k.SetIprpcRewardsCurrent(ctx, current+1)
-	}
+func (k Keeper) PopIprpcReward(ctx sdk.Context) (types.IprpcReward, bool) {
+	current := k.GetIprpcRewardsCurrentId(ctx)
+	k.SetIprpcRewardsCurrentId(ctx, current+1)
+	defer k.RemoveIprpcReward(ctx, current)
+	return k.GetIprpcReward(ctx, current)
+}
+
+// GetCurrentIprpcReward gets the lowest id IprpcReward object
+func (k Keeper) GetCurrentIprpcReward(ctx sdk.Context) (types.IprpcReward, bool) {
+	current := k.GetIprpcRewardsCurrentId(ctx)
 	return k.GetIprpcReward(ctx, current)
 }

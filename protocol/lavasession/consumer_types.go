@@ -58,18 +58,18 @@ type QoSReport struct {
 }
 
 type SingleConsumerSession struct {
-	CuSum                       uint64
-	LatestRelayCu               uint64 // set by GetSessions cuNeededForSession
-	QoSInfo                     QoSReport
-	SessionId                   int64
-	Parent                      *ConsumerSessionsWithProvider
-	lock                        utils.LavaMutex
-	RelayNum                    uint64
-	LatestBlock                 int64
-	Endpoint                    *Endpoint
-	BlockListed                 bool   // if session lost sync we blacklist it.
-	ConsecutiveNumberOfFailures uint64 // number of times this session has failed
-	errosCount                  uint64
+	CuSum             uint64
+	LatestRelayCu     uint64 // set by GetSessions cuNeededForSession
+	QoSInfo           QoSReport
+	SessionId         int64
+	Parent            *ConsumerSessionsWithProvider
+	lock              utils.LavaMutex
+	RelayNum          uint64
+	LatestBlock       int64
+	Endpoint          *Endpoint
+	BlockListed       bool // if session lost sync we blacklist it.
+	ConsecutiveErrors []error
+	errorsCount       uint64
 }
 
 type DataReliabilitySession struct {

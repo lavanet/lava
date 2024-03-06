@@ -23,6 +23,20 @@ type JsonrpcMessage struct {
 	chainproxy.BaseMessage `json:"-"`
 }
 
+// returns if error exists and
+func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	result := &JsonrpcMessage{}
+	err := json.Unmarshal(data, result)
+	if err != nil {
+		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
+		return false, ""
+	}
+	if result.Error == nil {
+		return false, ""
+	}
+	return result.Error.Message != "", result.Error.Message
+}
+
 func ConvertJsonRPCMsg(rpcMsg *rpcclient.JsonrpcMessage) (*JsonrpcMessage, error) {
 	// Return an error if the message was not sent
 	if rpcMsg == nil {
@@ -154,4 +168,28 @@ func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 		batch[idx] = element
 	}
 	return JsonrpcBatchMessage{batch: batch}, nil
+}
+
+// returns if error exists and
+func CheckResponseErrorForJsonRpcBatch(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	result := []JsonrpcMessage{}
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		utils.LavaFormatWarning("Failed unmarshalling CheckError", err, utils.LogAttr("data", string(data)))
+		return false, ""
+	}
+	aggregatedResults := ""
+	numberOfBatchElements := len(result)
+	for idx, batchResult := range result {
+		if batchResult.Error == nil {
+			continue
+		}
+		if batchResult.Error.Message != "" {
+			aggregatedResults += batchResult.Error.Message
+			if idx < numberOfBatchElements-1 {
+				aggregatedResults += ",-," // add a unique comma separator between results
+			}
+		}
+	}
+	return aggregatedResults != "", aggregatedResults
 }

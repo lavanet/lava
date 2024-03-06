@@ -12,7 +12,11 @@ import (
 
 const DAY_SECONDS = 60 * 60 * 24
 
-func (k Keeper) AggregateCU(ctx sdk.Context, provider string, chainID string, cu uint64) {
+func (k Keeper) AggregateCU(ctx sdk.Context, subscription, provider string, chainID string, cu uint64) {
+	if !k.IsIprpcSubscription(ctx, subscription) {
+		return
+	}
+
 	index := types.BasePayIndex{Provider: provider, ChainID: chainID}
 	basepay, found := k.getBasePay(ctx, index)
 	if !found {
@@ -49,7 +53,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 
 	defer func() {
 		k.removeAllBasePay(ctx)
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed successfully")
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed")
 	}()
 
 	// Get serviced CU for each provider + spec
@@ -98,16 +102,9 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	}
 
 	// Get current month IprpcReward and use it to distribute rewards
-	iprpcReward, found := k.PopIprpcReward(ctx, true)
+	iprpcReward, found := k.PopIprpcReward(ctx)
 	if !found {
 		utils.LavaFormatError("current month iprpc reward not found", fmt.Errorf("did not reward providers IPRPC bonus"))
-		return
-	}
-	k.RemoveIprpcReward(ctx, iprpcReward.Id)
-
-	// none of the providers will get the IPRPC reward this month, transfer the funds to the next month
-	if len(specCuMap) == 0 {
-		k.handleNoIprpcRewardToProviders(ctx, iprpcReward)
 		return
 	}
 
@@ -170,8 +167,14 @@ func (k Keeper) specEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 	return emissions
 }
 
-func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, removeAfterPop bool) ([]types.BasePayWithIndex, math.Int) {
-	basepays := k.popAllBasePayForChain(ctx, chainID, removeAfterPop)
+func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, pop bool) ([]types.BasePayWithIndex, math.Int) {
+	var basepays []types.BasePayWithIndex
+	if pop {
+		basepays = k.popAllBasePayForChain(ctx, chainID)
+	} else {
+		basepays = k.getAllBasePayForChain(ctx, chainID, "") // getting all basepays with chainID (for all providers)
+	}
+
 	totalBasePay := math.ZeroInt()
 	for _, basepay := range basepays {
 		totalBasePay = totalBasePay.Add(basepay.Total)

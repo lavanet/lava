@@ -7,6 +7,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/parser"
+	"github.com/lavanet/lava/utils"
 )
 
 type RestMessage struct {
@@ -14,6 +15,26 @@ type RestMessage struct {
 	Path     string
 	SpecPath string
 	chainproxy.BaseMessage
+}
+
+func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	if httpStatusCode >= 200 && httpStatusCode <= 300 { // valid code
+		return false, ""
+	}
+	result := make(map[string]interface{}, 0)
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		utils.LavaFormatWarning("Failed unmarshalling RestMessage CheckResponseError", err, utils.LogAttr("data", string(data)))
+		return false, ""
+	}
+	// make sure we have both message and code for an error message.
+	if errMsg, okMessage := result["message"].(string); okMessage {
+		if _, okCode := result["code"].(string); okCode {
+			return true, errMsg
+		}
+		utils.LavaFormatWarning("found only message without code in returned result", nil, utils.LogAttr("result", result))
+	}
+	return false, ""
 }
 
 // GetParams will be deprecated after we remove old client

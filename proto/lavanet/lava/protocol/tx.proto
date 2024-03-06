@@ -2,12 +2,20 @@ syntax = "proto3";
 package lavanet.lava.protocol;
 
 // this line is used by starport scaffolding # proto/tx/import
-
+import "lavanet/lava/protocol/params.proto";
 option go_package = "github.com/lavanet/lava/x/protocol/types";
 
 // Msg defines the Msg service.
 service Msg {
+    rpc SetVersion(MsgSetVersion) returns (MsgSetVersionResponse);
     // this line is used by starport scaffolding # proto/tx/rpc
 }
 
 // this line is used by starport scaffolding # proto/tx/message
+message MsgSetVersion {
+    string authority = 1;
+    Version version = 2;
+}
+
+message MsgSetVersionResponse {
+}

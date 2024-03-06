@@ -1831,7 +1831,11 @@
                             },
                             {
                                 "name": "pruning",
-                                "values": []
+                                "values": [
+                                    {
+                                        "severity": "Warning"
+                                    }
+                                ]
                             }
                         ]
                     }

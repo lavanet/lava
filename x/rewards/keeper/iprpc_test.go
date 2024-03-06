@@ -312,6 +312,9 @@ func TestIprpcSpecRewardQuery(t *testing.T) {
 	relay := ts.SendRelay(p1, c1Acc, []string{ts.specs[1].Index}, 100)
 	_, err = ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &relay)
 	require.NoError(t, err)
+	relay = ts.SendRelay(p1, c1Acc, []string{ts.specs[0].Index}, 100)
+	_, err = ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &relay)
+	require.NoError(t, err)
 
 	// advance month to distribute monthly rewards
 	ts.AdvanceMonths(1)
@@ -344,7 +347,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.NoError(ts.T, err)
 
 	// check there are 2 iprpc reward object, and the first one is with id=1
-	currentIprpcRewardId := ts.Keepers.Rewards.GetIprpcRewardsCurrent(ts.Ctx)
+	currentIprpcRewardId := ts.Keepers.Rewards.GetIprpcRewardsCurrentId(ts.Ctx)
 	require.Equal(t, uint64(0), currentIprpcRewardId)
 	res, err := ts.QueryRewardsIprpcSpecReward(mockSpec2)
 	require.NoError(t, err)
@@ -359,7 +362,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	// there should still be the exact two objects as before
 	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
-	currentIprpcRewardId = ts.Keepers.Rewards.GetIprpcRewardsCurrent(ts.Ctx)
+	currentIprpcRewardId = ts.Keepers.Rewards.GetIprpcRewardsCurrentId(ts.Ctx)
 	require.Equal(t, uint64(1), currentIprpcRewardId)
 	res, err = ts.QueryRewardsIprpcSpecReward(mockSpec2)
 	require.NoError(t, err)
@@ -373,7 +376,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	// advance month without any provider service, there should be one IPRPC object with combined reward
 	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
-	currentIprpcRewardId = ts.Keepers.Rewards.GetIprpcRewardsCurrent(ts.Ctx)
+	currentIprpcRewardId = ts.Keepers.Rewards.GetIprpcRewardsCurrentId(ts.Ctx)
 	require.Equal(t, uint64(2), currentIprpcRewardId)
 	res, err = ts.QueryRewardsIprpcSpecReward(mockSpec2)
 	require.NoError(t, err)

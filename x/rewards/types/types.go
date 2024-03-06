@@ -49,14 +49,19 @@ const (
 // basis
 const (
 	IprpcPoolName                           Pool   = "iprpc_pool"
-	IprpcPoolEmissionEventName              string = "iprpc_pool_emmission"
-	SetIprpcDataEventName                          = "set_iprpc_data"
-	FundIprpcEventName                             = "fund_iprpc"
-	TransferIprpcRewardToNextMonthEventName        = "transfer_iprpc_reward_to_next_month"
+	IprpcPoolEmissionEventName              string = "iprpc-pool-emmission"
+	SetIprpcDataEventName                          = "set-iprpc-data"
+	FundIprpcEventName                             = "fund-iprpc"
+	TransferIprpcRewardToNextMonthEventName        = "transfer-iprpc-reward-to-next-month"
 )
 
 // helper struct to track the serviced IPRPC CU for each spec+provider
 type SpecCuType struct {
-	ProvidersCu map[string]uint64 // provider -> cu
+	ProvidersCu []ProviderCuType
 	TotalCu     uint64
+}
+
+type ProviderCuType struct {
+	Provider string
+	CU       uint64
 }
