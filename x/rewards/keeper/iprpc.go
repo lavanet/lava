@@ -2,11 +2,63 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
 )
+
+func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund sdk.Coins, spec string) error {
+	// verify spec exists and active
+	foundAndActive, _, _ := k.specKeeper.IsSpecFoundAndActive(ctx, spec)
+	if !foundAndActive {
+		return utils.LavaFormatWarning("spec not found or disabled", types.ErrFundIprpc)
+	}
+
+	// check fund consists of minimum amount of ulava (min_iprpc_cost)
+	minIprpcFundCost := k.GetMinIprpcCost(ctx)
+	if fund.AmountOf(k.stakingKeeper.BondDenom(ctx)).LT(minIprpcFundCost.Amount) {
+		return utils.LavaFormatWarning("insufficient ulava tokens in fund. should be at least min iprpc cost * duration", types.ErrFundIprpc,
+			utils.LogAttr("min_iprpc_cost", k.GetMinIprpcCost(ctx).String()),
+			utils.LogAttr("duration", strconv.FormatUint(duration, 10)),
+			utils.LogAttr("fund_ulava_amount", fund.AmountOf(k.stakingKeeper.BondDenom(ctx))),
+		)
+	}
+
+	// check creator has enough balance
+	addr, err := sdk.AccAddressFromBech32(creator)
+	if err != nil {
+		return utils.LavaFormatWarning("invalid creator address", types.ErrFundIprpc)
+	}
+
+	// send the minimum cost to the validators allocation pool (and subtract them from the fund)
+	minIprpcFundCostCoins := sdk.NewCoins(minIprpcFundCost).MulInt(sdk.NewIntFromUint64(duration))
+	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.ValidatorsRewardsAllocationPoolName), minIprpcFundCostCoins)
+	if err != nil {
+		return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding validator allocation pool", err,
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("min_iprpc_fund_cost", minIprpcFundCost.String()),
+		)
+	}
+	fund = fund.Sub(minIprpcFundCost)
+	allFunds := fund.MulInt(math.NewIntFromUint64(duration))
+
+	// send the funds to the iprpc pool
+	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.IprpcPoolName), allFunds)
+	if err != nil {
+		return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding iprpc pool", err,
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("fund", fund.String()),
+		)
+	}
+
+	// add spec funds to next month IPRPC reward object
+	k.addSpecFunds(ctx, spec, fund, duration)
+
+	return nil
+}
 
 // handleNoIprpcRewardToProviders handles the situation in which there are no providers to send IPRPC rewards to
 // so the IPRPC rewards transfer to the next month
@@ -93,6 +145,10 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 		for _, providerCU := range specCu.ProvidersCu {
 			providerAddr, err := sdk.AccAddressFromBech32(providerCU.Provider)
 			if err != nil {
+				continue
+			}
+			if specCu.TotalCu == 0 {
+				// spec was not serviced by any provider, continue
 				continue
 			}
 			// calculate provider IPRPC reward
