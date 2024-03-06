@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -45,15 +46,15 @@ func TestFundIprpcTX(t *testing.T) {
 			sdk.NewCoin(ibcDenom, math.NewInt(50)),
 		)},
 		{spec: ts.specs[1].Index, duration: 3, fund: sdk.NewCoins(
-			sdk.NewCoin(ts.BondDenom(), math.NewInt(90+minIprpcCost.Amount.Int64()*3)),
+			sdk.NewCoin(ts.BondDenom(), math.NewInt(90+minIprpcCost.Amount.Int64())),
 			sdk.NewCoin(ibcDenom, math.NewInt(30)),
 		)},
 		{spec: ts.specs[0].Index, duration: 3, fund: sdk.NewCoins(
-			sdk.NewCoin(ts.BondDenom(), math.NewInt(minIprpcCost.Amount.Int64()*3)),
+			sdk.NewCoin(ts.BondDenom(), math.NewInt(minIprpcCost.Amount.Int64())),
 			sdk.NewCoin(ibcDenom, math.NewInt(130)),
 		)},
 		{spec: ts.specs[1].Index, duration: 12, fund: sdk.NewCoins(
-			sdk.NewCoin(ts.BondDenom(), math.NewInt(10+minIprpcCost.Amount.Int64()*12)),
+			sdk.NewCoin(ts.BondDenom(), math.NewInt(10+minIprpcCost.Amount.Int64())),
 			sdk.NewCoin(ibcDenom, math.NewInt(120)),
 		)},
 	}
@@ -222,13 +223,12 @@ func TestIprpcSpecRewardQuery(t *testing.T) {
 	// first month: mock2 - 500uibc + 3000ulava, mockspec - 100000ulava
 	// second + third month: mock2 - 2000ulava, mockspec - 100000ulava
 	duration := int64(3)
-	minIprpcCostForFund := minIprpcCost.Amount.MulRaw(duration)
 	_, err := ts.TxRewardsFundIprpc(consumer, ts.specs[0].Index, uint64(duration),
-		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000).Add(minIprpcCostForFund))))
+		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000).Add(minIprpcCost.Amount))))
 	require.NoError(ts.T, err)
 
 	_, err = ts.TxRewardsFundIprpc(consumer, ts.specs[1].Index, uint64(duration),
-		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(2000).Add(minIprpcCostForFund))))
+		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(2000).Add(minIprpcCost.Amount))))
 	require.NoError(ts.T, err)
 
 	expectedResults := []rewardstypes.IprpcReward{
@@ -261,6 +261,8 @@ func TestIprpcSpecRewardQuery(t *testing.T) {
 	// query with no args
 	res, err := ts.QueryRewardsIprpcSpecReward("")
 	require.NoError(t, err)
+	fmt.Printf("expectedResults: %v\n", expectedResults)
+	fmt.Printf("res.IprpcRewards: %v\n", res.IprpcRewards)
 	require.ElementsMatch(t, expectedResults, res.IprpcRewards)
 
 	// query with arg = mockspec
@@ -339,9 +341,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 
 	// fund iprpc pool
 	duration := uint64(2)
-	iprpcCost := sdk.NewCoin(ts.BondDenom(), minIprpcCost.Amount.MulRaw(int64(duration)))
-	fundForIprpc := iprpcFunds
-	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, fundForIprpc)
+	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds)
 	require.NoError(ts.T, err)
 	_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, duration, iprpcFunds)
 	require.NoError(ts.T, err)
@@ -355,7 +355,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.Equal(t, uint64(0), res.CurrentMonthId)
 	for i := range res.IprpcRewards {
 		require.Equal(t, uint64(i+1), res.IprpcRewards[i].Id)
-		require.True(t, fundForIprpc.Sub(iprpcCost).IsEqual(res.IprpcRewards[i].SpecFunds[0].Fund))
+		require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.IprpcRewards[i].SpecFunds[0].Fund))
 	}
 
 	// advance month to reach the first iprpc reward (first object is with id=1)
@@ -370,7 +370,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.Equal(t, uint64(1), res.CurrentMonthId)
 	for i := range res.IprpcRewards {
 		require.Equal(t, uint64(i+1), res.IprpcRewards[i].Id)
-		require.True(t, fundForIprpc.Sub(iprpcCost).IsEqual(res.IprpcRewards[i].SpecFunds[0].Fund))
+		require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.IprpcRewards[i].SpecFunds[0].Fund))
 	}
 
 	// advance month without any provider service, there should be one IPRPC object with combined reward
@@ -382,7 +382,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.IprpcRewards, 1)
 	require.Equal(t, uint64(2), res.CurrentMonthId)
-	require.True(t, fundForIprpc.Sub(iprpcCost).MulInt(sdk.NewInt(2)).IsEqual(res.IprpcRewards[0].SpecFunds[0].Fund))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(sdk.NewInt(2)).IsEqual(res.IprpcRewards[0].SpecFunds[0].Fund))
 
 	// make a provider service an IPRPC eligible consumer and advance a month
 	// there should be no iprpc rewards objects
@@ -540,16 +540,14 @@ func TestMultipleIprpcSpec(t *testing.T) {
 
 	// fund iprpc pool for mock2 spec for 1 months
 	duration := uint64(1)
-	iprpcCost := sdk.NewCoin(ts.BondDenom(), minIprpcCost.Amount.MulRaw(int64(duration)))
 	mock2Fund := sdk.NewCoin(ts.BondDenom(), sdk.NewInt(1700))
-	_, err = ts.TxRewardsFundIprpc(c1, mockSpec2, duration, sdk.NewCoins(mock2Fund.Add(iprpcCost)))
+	_, err = ts.TxRewardsFundIprpc(c1, mockSpec2, duration, sdk.NewCoins(mock2Fund.Add(minIprpcCost)))
 	require.NoError(t, err)
 
 	// fund iprpc pool for mock3 spec for 3 months
 	duration = uint64(3)
-	iprpcCost = sdk.NewCoin(ts.BondDenom(), minIprpcCost.Amount.MulRaw(int64(duration)))
 	mock3Fund := sdk.NewCoin(ts.BondDenom(), sdk.NewInt(400))
-	_, err = ts.TxRewardsFundIprpc(c1, mockSpec3, duration, sdk.NewCoins(mock3Fund.Add(iprpcCost)))
+	_, err = ts.TxRewardsFundIprpc(c1, mockSpec3, duration, sdk.NewCoins(mock3Fund.Add(minIprpcCost)))
 	require.NoError(t, err)
 
 	// advance month and epoch to apply pairing and iprpc fund
