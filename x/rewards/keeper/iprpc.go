@@ -41,7 +41,7 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 			utils.LogAttr("min_iprpc_fund_cost", minIprpcFundCost.String()),
 		)
 	}
-	fund = fund.Sub(minIprpcFundCostCoins...)
+	fund = fund.Sub(minIprpcFundCost)
 
 	// send the funds to the iprpc pool
 	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.IprpcPoolName), fund)
