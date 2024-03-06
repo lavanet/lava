@@ -37,8 +37,6 @@ import (
 //  1. The allocation pool has the expected allocated funds minus one block reward
 //  2. The distribution pool has the expected monthly quota minus one block reward
 //  3. The fee collector has one block reward
-//
-// the validator got rewards
 func TestRewardsModuleSetup(t *testing.T) {
 	ts := newTester(t, false)
 	lifetime := int64(types.RewardsAllocationPoolsLifetime)
@@ -64,6 +62,8 @@ func TestRewardsModuleSetup(t *testing.T) {
 			require.Equal(t, allocationPoolBalance*(lifetime-1)/lifetime, pool.Balance.AmountOf(ts.BondDenom()).Int64())
 		case string(types.ValidatorsRewardsDistributionPoolName):
 			require.Equal(t, (allocationPoolBalance/lifetime)-blockReward, pool.Balance.AmountOf(ts.BondDenom()).Int64())
+		case string(types.IprpcPoolName):
+			require.True(t, pool.Balance.Empty())
 		}
 	}
 

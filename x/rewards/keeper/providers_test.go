@@ -18,7 +18,7 @@ func TestZeroProvidersRewards(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	err := ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -51,7 +51,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	err := ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -62,7 +62,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 
 	baserewards := uint64(100)
 	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
-	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, baserewards)
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, baserewards)
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
@@ -96,7 +96,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	err := ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -105,7 +105,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false, false)
 	require.NoError(t, err)
 
-	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64())
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64())
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
@@ -140,7 +140,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	err := ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -150,7 +150,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 		_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false, false)
 		require.NoError(t, err)
 
-		msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64())
+		msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64())
 		_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 		require.NoError(t, err)
 	}
@@ -189,7 +189,7 @@ func TestProvidersEndRewards(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	err := ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -199,7 +199,7 @@ func TestProvidersEndRewards(t *testing.T) {
 		_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false, false)
 		require.NoError(t, err)
 
-		msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64())
+		msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64())
 		_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 		require.NoError(t, err)
 	}
@@ -233,14 +233,14 @@ func TestProvidersEndRewards(t *testing.T) {
 // this means that no matter how much rewards the providers in this spec will get, they will get 0 bonus rewards
 func Test2SpecsZeroShares(t *testing.T) {
 	ts := newTester(t, true)
-	spec2 := ts.spec
+	spec2 := ts.specs[0]
 	spec2.Index = "mock2"
 	spec2.Name = spec2.Index
 	spec2.Shares = 0
 	ts.AddSpec(spec2.Index, spec2)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, 2*testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	err := ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	err = ts.StakeProvider(providerAcc.Addr.String(), spec2, testBalance)
@@ -252,7 +252,7 @@ func Test2SpecsZeroShares(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false, false)
 	require.NoError(t, err)
 
-	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64())
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64())
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
@@ -287,7 +287,7 @@ func Test2SpecsZeroShares(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.Rewards, 1)
 	require.Equal(t, distBalance.QuoRaw(int64(ts.Keepers.Rewards.MaxRewardBoost(ts.Ctx))), res.Rewards[0].Amount.AmountOf(ts.BondDenom()))
-	require.Equal(t, res.Rewards[0].ChainId, ts.spec.Index)
+	require.Equal(t, res.Rewards[0].ChainId, ts.specs[0].Index)
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.NoError(t, err)
 }
@@ -297,14 +297,14 @@ func Test2SpecsZeroShares(t *testing.T) {
 // the bonus for the provider with double the shares should be double than the other provider
 func Test2SpecsDoubleShares(t *testing.T) {
 	ts := newTester(t, true)
-	spec2 := ts.spec
+	spec2 := ts.specs[0]
 	spec2.Index = "mock2"
 	spec2.Name = spec2.Index
 	spec2.Shares *= 2
 	ts.AddSpec(spec2.Index, spec2)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, 2*testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	err := ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	err = ts.StakeProvider(providerAcc.Addr.String(), spec2, testBalance)
@@ -316,7 +316,7 @@ func Test2SpecsDoubleShares(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false, false)
 	require.NoError(t, err)
 
-	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64())
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64())
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
@@ -360,15 +360,15 @@ func TestBonusRewards3Providers(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc1, _ := ts.AddAccount(common.PROVIDER, 1, 2*testBalance)
-	err := ts.StakeProvider(providerAcc1.Addr.String(), ts.spec, testBalance)
+	err := ts.StakeProvider(providerAcc1.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	providerAcc2, _ := ts.AddAccount(common.PROVIDER, 2, 2*testBalance)
-	err = ts.StakeProvider(providerAcc2.Addr.String(), ts.spec, 2*testBalance)
+	err = ts.StakeProvider(providerAcc2.Addr.String(), ts.specs[0], 2*testBalance)
 	require.NoError(t, err)
 
 	providerAcc3, _ := ts.AddAccount(common.PROVIDER, 3, 3*testBalance)
-	err = ts.StakeProvider(providerAcc3.Addr.String(), ts.spec, 3*testBalance)
+	err = ts.StakeProvider(providerAcc3.Addr.String(), ts.specs[0], 3*testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -377,15 +377,15 @@ func TestBonusRewards3Providers(t *testing.T) {
 	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false, false)
 	require.NoError(t, err)
 
-	msg := ts.SendRelay(providerAcc1.Addr.String(), consumerAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64()/2)
+	msg := ts.SendRelay(providerAcc1.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64()/2)
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
-	msg = ts.SendRelay(providerAcc2.Addr.String(), consumerAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64())
+	msg = ts.SendRelay(providerAcc2.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64())
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
-	msg = ts.SendRelay(providerAcc3.Addr.String(), consumerAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64()*2)
+	msg = ts.SendRelay(providerAcc3.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64()*2)
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
@@ -464,7 +464,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 
 	// create provider+comsumer, send relay and send relay payment TX
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err = ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	err = ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -475,7 +475,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 
 	baserewards := uint64(100)
 	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
-	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, baserewards)
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, baserewards)
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
@@ -509,7 +509,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 func TestBonusReward49months(t *testing.T) {
 	ts := newTester(t, true)
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	err := ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -525,7 +525,7 @@ func TestBonusReward49months(t *testing.T) {
 
 	baserewards := uint64(100)
 	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
-	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, baserewards)
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, baserewards)
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
@@ -559,7 +559,7 @@ func TestBonusRewardsEquall5Providers(t *testing.T) {
 
 	for i := 0; i < count; i++ {
 		providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-		err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+		err := ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 		providerAccs = append(providerAccs, providerAcc)
 		require.NoError(t, err)
 
@@ -574,7 +574,7 @@ func TestBonusRewardsEquall5Providers(t *testing.T) {
 
 		for _, providerAcc := range providerAccs {
 			for _, consAcc := range consAccs {
-				msg := ts.SendRelay(providerAcc.Addr.String(), consAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64()/uint64(count)/1000)
+				msg := ts.SendRelay(providerAcc.Addr.String(), consAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64()/uint64(count)/1000)
 				_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 				require.NoError(t, err)
 			}
@@ -622,7 +622,7 @@ func TestBonusRewards5Providers(t *testing.T) {
 
 	for i := 0; i < count; i++ {
 		providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-		err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+		err := ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 		providerAccs = append(providerAccs, providerAcc)
 		require.NoError(t, err)
 
@@ -635,13 +635,13 @@ func TestBonusRewards5Providers(t *testing.T) {
 	for i := 1; i < 10; i++ {
 		ts.AdvanceEpoch()
 
-		msg := ts.SendRelay(providerAccs[0].Addr.String(), consAccs[0], []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64()/100)
+		msg := ts.SendRelay(providerAccs[0].Addr.String(), consAccs[0], []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64()/100)
 		_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 		require.NoError(t, err)
 
 		for _, providerAcc := range providerAccs[1:] {
 			for _, consAcc := range consAccs[1:] {
-				msg := ts.SendRelay(providerAcc.Addr.String(), consAcc, []string{ts.spec.Index}, ts.plan.Price.Amount.Uint64()/uint64(count)/100)
+				msg := ts.SendRelay(providerAcc.Addr.String(), consAcc, []string{ts.specs[0].Index}, ts.plan.Price.Amount.Uint64()/uint64(count)/100)
 				_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 				require.NoError(t, err)
 			}
@@ -708,7 +708,7 @@ func TestCommunityTaxOne(t *testing.T) {
 
 	// create provider+comsumer, send relay and send relay payment TX
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err = ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
+	err = ts.StakeProvider(providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -719,7 +719,7 @@ func TestCommunityTaxOne(t *testing.T) {
 
 	baserewards := uint64(100)
 	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
-	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.spec.Index}, baserewards)
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{ts.specs[0].Index}, baserewards)
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 

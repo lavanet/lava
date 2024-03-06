@@ -183,6 +183,8 @@ echo "Testing rewards q commands"
 trace lavad q rewards pools >/dev/null
 trace lavad q rewards block-reward >/dev/null
 trace lavad q rewards show-iprpc-data > /dev/null
+trace lavad q rewards iprpc-provider-reward > /dev/null
+trace lavad q rewards iprpc-spec-reward > /dev/null
 trace lavad q rewards provider-reward >/dev/null
 
 echo "Testing events command"

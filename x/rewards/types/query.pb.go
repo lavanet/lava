@@ -604,6 +604,202 @@ func (m *QueryProviderRewardResponse) GetRewards() []RewardInfo {
 	return nil
 }
 
+// QueryIprpcProviderRewardEstimationRequest is request type for the Query/IprpcProviderRewardEstimation RPC method.
+type QueryIprpcProviderRewardEstimationRequest struct {
+	Provider string `protobuf:"bytes,1,opt,name=provider,proto3" json:"provider,omitempty"`
+}
+
+func (m *QueryIprpcProviderRewardEstimationRequest) Reset() {
+	*m = QueryIprpcProviderRewardEstimationRequest{}
+}
+func (m *QueryIprpcProviderRewardEstimationRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryIprpcProviderRewardEstimationRequest) ProtoMessage() {}
+func (*QueryIprpcProviderRewardEstimationRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_15bce9a904340007, []int{12}
+}
+func (m *QueryIprpcProviderRewardEstimationRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryIprpcProviderRewardEstimationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryIprpcProviderRewardEstimationRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryIprpcProviderRewardEstimationRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryIprpcProviderRewardEstimationRequest.Merge(m, src)
+}
+func (m *QueryIprpcProviderRewardEstimationRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryIprpcProviderRewardEstimationRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryIprpcProviderRewardEstimationRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryIprpcProviderRewardEstimationRequest proto.InternalMessageInfo
+
+func (m *QueryIprpcProviderRewardEstimationRequest) GetProvider() string {
+	if m != nil {
+		return m.Provider
+	}
+	return ""
+}
+
+// QueryIprpcProviderRewardEstimationResponse is response type for the Query/IprpcProviderRewardEstimation RPC method.
+type QueryIprpcProviderRewardEstimationResponse struct {
+	SpecFunds []Specfund `protobuf:"bytes,1,rep,name=spec_funds,json=specFunds,proto3" json:"spec_funds"`
+}
+
+func (m *QueryIprpcProviderRewardEstimationResponse) Reset() {
+	*m = QueryIprpcProviderRewardEstimationResponse{}
+}
+func (m *QueryIprpcProviderRewardEstimationResponse) String() string {
+	return proto.CompactTextString(m)
+}
+func (*QueryIprpcProviderRewardEstimationResponse) ProtoMessage() {}
+func (*QueryIprpcProviderRewardEstimationResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_15bce9a904340007, []int{13}
+}
+func (m *QueryIprpcProviderRewardEstimationResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryIprpcProviderRewardEstimationResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryIprpcProviderRewardEstimationResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryIprpcProviderRewardEstimationResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryIprpcProviderRewardEstimationResponse.Merge(m, src)
+}
+func (m *QueryIprpcProviderRewardEstimationResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryIprpcProviderRewardEstimationResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryIprpcProviderRewardEstimationResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryIprpcProviderRewardEstimationResponse proto.InternalMessageInfo
+
+func (m *QueryIprpcProviderRewardEstimationResponse) GetSpecFunds() []Specfund {
+	if m != nil {
+		return m.SpecFunds
+	}
+	return nil
+}
+
+// QueryIprpcSpecRewardRequest is request type for the Query/IprpcSpecReward RPC method.
+type QueryIprpcSpecRewardRequest struct {
+	Spec string `protobuf:"bytes,1,opt,name=spec,proto3" json:"spec,omitempty"`
+}
+
+func (m *QueryIprpcSpecRewardRequest) Reset()         { *m = QueryIprpcSpecRewardRequest{} }
+func (m *QueryIprpcSpecRewardRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryIprpcSpecRewardRequest) ProtoMessage()    {}
+func (*QueryIprpcSpecRewardRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_15bce9a904340007, []int{14}
+}
+func (m *QueryIprpcSpecRewardRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryIprpcSpecRewardRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryIprpcSpecRewardRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryIprpcSpecRewardRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryIprpcSpecRewardRequest.Merge(m, src)
+}
+func (m *QueryIprpcSpecRewardRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryIprpcSpecRewardRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryIprpcSpecRewardRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryIprpcSpecRewardRequest proto.InternalMessageInfo
+
+func (m *QueryIprpcSpecRewardRequest) GetSpec() string {
+	if m != nil {
+		return m.Spec
+	}
+	return ""
+}
+
+// QueryIprpcSpecRewardResponse is response type for the Query/IprpcSpecReward RPC method.
+type QueryIprpcSpecRewardResponse struct {
+	IprpcRewards   []IprpcReward `protobuf:"bytes,1,rep,name=iprpc_rewards,json=iprpcRewards,proto3" json:"iprpc_rewards"`
+	CurrentMonthId uint64        `protobuf:"varint,2,opt,name=current_month_id,json=currentMonthId,proto3" json:"current_month_id,omitempty"`
+}
+
+func (m *QueryIprpcSpecRewardResponse) Reset()         { *m = QueryIprpcSpecRewardResponse{} }
+func (m *QueryIprpcSpecRewardResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryIprpcSpecRewardResponse) ProtoMessage()    {}
+func (*QueryIprpcSpecRewardResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_15bce9a904340007, []int{15}
+}
+func (m *QueryIprpcSpecRewardResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryIprpcSpecRewardResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryIprpcSpecRewardResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *QueryIprpcSpecRewardResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryIprpcSpecRewardResponse.Merge(m, src)
+}
+func (m *QueryIprpcSpecRewardResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryIprpcSpecRewardResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryIprpcSpecRewardResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryIprpcSpecRewardResponse proto.InternalMessageInfo
+
+func (m *QueryIprpcSpecRewardResponse) GetIprpcRewards() []IprpcReward {
+	if m != nil {
+		return m.IprpcRewards
+	}
+	return nil
+}
+
+func (m *QueryIprpcSpecRewardResponse) GetCurrentMonthId() uint64 {
+	if m != nil {
+		return m.CurrentMonthId
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*QueryParamsRequest)(nil), "lavanet.lava.rewards.QueryParamsRequest")
 	proto.RegisterType((*QueryParamsResponse)(nil), "lavanet.lava.rewards.QueryParamsResponse")
@@ -617,64 +813,81 @@ func init() {
 	proto.RegisterType((*QueryProviderRewardRequest)(nil), "lavanet.lava.rewards.QueryProviderRewardRequest")
 	proto.RegisterType((*RewardInfo)(nil), "lavanet.lava.rewards.RewardInfo")
 	proto.RegisterType((*QueryProviderRewardResponse)(nil), "lavanet.lava.rewards.QueryProviderRewardResponse")
+	proto.RegisterType((*QueryIprpcProviderRewardEstimationRequest)(nil), "lavanet.lava.rewards.QueryIprpcProviderRewardEstimationRequest")
+	proto.RegisterType((*QueryIprpcProviderRewardEstimationResponse)(nil), "lavanet.lava.rewards.QueryIprpcProviderRewardEstimationResponse")
+	proto.RegisterType((*QueryIprpcSpecRewardRequest)(nil), "lavanet.lava.rewards.QueryIprpcSpecRewardRequest")
+	proto.RegisterType((*QueryIprpcSpecRewardResponse)(nil), "lavanet.lava.rewards.QueryIprpcSpecRewardResponse")
 }
 
 func init() { proto.RegisterFile("lavanet/lava/rewards/query.proto", fileDescriptor_15bce9a904340007) }
 
 var fileDescriptor_15bce9a904340007 = []byte{
-	// 833 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x55, 0xcd, 0x6e, 0xf3, 0x44,
-	0x14, 0x8d, 0xdb, 0xe6, 0xa7, 0x53, 0xa8, 0xc4, 0xb4, 0x52, 0x13, 0xa7, 0xb8, 0xc1, 0x14, 0x35,
-	0x54, 0xaa, 0xdd, 0x96, 0x05, 0x12, 0x08, 0x09, 0x52, 0x36, 0x95, 0x40, 0x6a, 0x1d, 0x56, 0x6c,
-	0xac, 0x89, 0x33, 0x49, 0x46, 0xb5, 0x3d, 0xae, 0x67, 0xd2, 0x52, 0x09, 0x09, 0x09, 0xc4, 0x82,
-	0x1d, 0x12, 0x1b, 0xb6, 0x48, 0xac, 0x78, 0x92, 0x2e, 0x2b, 0xb1, 0x61, 0x05, 0xa8, 0xe5, 0x09,
-	0x10, 0x0f, 0x80, 0x7c, 0x67, 0x9c, 0x26, 0xaa, 0x9b, 0x2f, 0xdf, 0xb7, 0xb2, 0x3d, 0x73, 0xee,
-	0xb9, 0xe7, 0xdc, 0xb9, 0x77, 0x8c, 0x5a, 0x21, 0xb9, 0x22, 0x31, 0x95, 0x6e, 0xf6, 0x74, 0x53,
-	0x7a, 0x4d, 0xd2, 0xbe, 0x70, 0x2f, 0xc7, 0x34, 0xbd, 0x71, 0x92, 0x94, 0x4b, 0x8e, 0x37, 0x35,
-	0xc2, 0xc9, 0x9e, 0x8e, 0x46, 0x98, 0x9b, 0x43, 0x3e, 0xe4, 0x00, 0x70, 0xb3, 0x37, 0x85, 0x35,
-	0xb7, 0x87, 0x9c, 0x0f, 0x43, 0xea, 0x92, 0x84, 0xb9, 0x24, 0x8e, 0xb9, 0x24, 0x92, 0xf1, 0x58,
-	0xe8, 0xdd, 0xfd, 0x80, 0x8b, 0x88, 0x0b, 0xb7, 0x47, 0x04, 0x55, 0x29, 0xdc, 0xab, 0xa3, 0x1e,
-	0x95, 0xe4, 0xc8, 0x4d, 0xc8, 0x90, 0xc5, 0x00, 0xd6, 0xd8, 0xb7, 0x0a, 0x75, 0x25, 0x24, 0x25,
-	0x51, 0x4e, 0x67, 0x4d, 0xd3, 0xe5, 0x44, 0x01, 0x67, 0x9a, 0xc2, 0xde, 0x44, 0xf8, 0x3c, 0x4b,
-	0x72, 0x06, 0x41, 0x1e, 0xbd, 0x1c, 0x53, 0x21, 0xed, 0x73, 0xb4, 0x31, 0xb3, 0x2a, 0x12, 0x1e,
-	0x0b, 0x8a, 0x3f, 0x40, 0x15, 0x45, 0x5e, 0x37, 0x5a, 0x46, 0x7b, 0xed, 0x78, 0xdb, 0x29, 0xb2,
-	0xed, 0xa8, 0xa8, 0xce, 0xca, 0xed, 0x9f, 0x3b, 0x25, 0x4f, 0x47, 0xd8, 0x1b, 0xe8, 0x0d, 0x45,
-	0xc9, 0x79, 0x38, 0xc9, 0xf3, 0xbd, 0x81, 0x6a, 0xd9, 0xc2, 0x69, 0x3c, 0xe0, 0x18, 0xa3, 0x95,
-	0x98, 0x44, 0x14, 0xb8, 0x57, 0x3d, 0x78, 0xc7, 0x14, 0x55, 0x7b, 0x24, 0x24, 0x71, 0x40, 0xeb,
-	0x4b, 0xad, 0xe5, 0xf6, 0xda, 0x71, 0xc3, 0x51, 0x86, 0x9c, 0xcc, 0x90, 0xa3, 0x0d, 0x39, 0x27,
-	0x9c, 0xc5, 0x9d, 0xc3, 0x2c, 0xdf, 0x6f, 0x7f, 0xed, 0xb4, 0x87, 0x4c, 0x8e, 0xc6, 0x3d, 0x27,
-	0xe0, 0x91, 0xab, 0xdd, 0xab, 0xc7, 0x81, 0xe8, 0x5f, 0xb8, 0xf2, 0x26, 0xa1, 0x02, 0x02, 0x84,
-	0x97, 0x73, 0xdb, 0xff, 0x1a, 0x79, 0x19, 0x94, 0xba, 0x89, 0xdf, 0x72, 0x92, 0x2d, 0xd4, 0x0d,
-	0xc8, 0x6d, 0x3d, 0x63, 0x57, 0x1b, 0xd0, 0x86, 0x55, 0x08, 0xde, 0x45, 0xeb, 0x92, 0x45, 0xd4,
-	0x97, 0xdc, 0x4f, 0xe9, 0x80, 0x85, 0x61, 0x7d, 0xa9, 0x65, 0xb4, 0x97, 0xbd, 0xd7, 0xb2, 0xd5,
-	0x2f, 0xb8, 0x07, 0x6b, 0xf8, 0x43, 0x64, 0x52, 0x21, 0x59, 0x44, 0x24, 0xed, 0xfb, 0xbd, 0x90,
-	0x07, 0x17, 0x62, 0x2a, 0x62, 0x19, 0x22, 0xb6, 0x26, 0x88, 0x0e, 0x00, 0x26, 0xc1, 0x1f, 0xa1,
-	0x26, 0x09, 0x43, 0x1e, 0x40, 0x4b, 0xf8, 0x59, 0x5a, 0x3f, 0xe2, 0xb1, 0x1c, 0x09, 0x3f, 0xa4,
-	0x03, 0x59, 0x5f, 0x81, 0xe8, 0xfa, 0x23, 0x24, 0x13, 0xfa, 0x39, 0x00, 0x3e, 0xa3, 0x03, 0x69,
-	0x37, 0xd0, 0x16, 0x78, 0x06, 0x56, 0x0f, 0xcc, 0xe4, 0xe7, 0xd2, 0x45, 0xf5, 0xa7, 0x5b, 0xba,
-	0x28, 0xef, 0xa3, 0x8a, 0x72, 0xae, 0x9b, 0x60, 0xce, 0x89, 0xe8, 0x0e, 0x50, 0x70, 0xbb, 0x89,
-	0x1a, 0x40, 0xda, 0x1d, 0xf1, 0xeb, 0xd3, 0x24, 0x4d, 0x82, 0x4f, 0x89, 0x24, 0x79, 0xc6, 0x1f,
-	0x0c, 0x64, 0x16, 0xed, 0x4e, 0x4e, 0xa2, 0x16, 0xb1, 0xd8, 0x0f, 0xb8, 0x90, 0x8b, 0xa6, 0xad,
-	0x46, 0x2c, 0x3e, 0xe1, 0x42, 0x62, 0x17, 0x6d, 0xb0, 0x8c, 0xd0, 0x17, 0xe3, 0x9e, 0x08, 0x52,
-	0x96, 0xc0, 0xb8, 0x41, 0x3f, 0xad, 0x7a, 0x18, 0xb6, 0xba, 0xd3, 0x3b, 0x76, 0x57, 0x4b, 0x39,
-	0x4b, 0xf9, 0x15, 0xeb, 0xd3, 0x74, 0xa6, 0x36, 0xb8, 0x81, 0x6a, 0xc1, 0x88, 0xb0, 0xd8, 0x67,
-	0x7d, 0xdd, 0xaa, 0x55, 0xf8, 0x3e, 0xed, 0x63, 0x13, 0xd5, 0x12, 0x1d, 0x03, 0xa7, 0xbd, 0xea,
-	0x4d, 0xbe, 0xed, 0xaf, 0x11, 0x52, 0x3c, 0xd0, 0xeb, 0xaf, 0x46, 0x92, 0xd5, 0x9e, 0x44, 0x7c,
-	0x1c, 0x4b, 0x68, 0x8d, 0x45, 0x6a, 0xaf, 0xe0, 0xb6, 0x8f, 0x9a, 0x85, 0x96, 0x74, 0x79, 0x3f,
-	0x46, 0x55, 0xdd, 0xcd, 0xba, 0xd5, 0x5b, 0xc5, 0xad, 0xfe, 0xe8, 0x20, 0x2f, 0xb2, 0xde, 0x39,
-	0xfe, 0xaf, 0x8c, 0xca, 0x90, 0x01, 0x7f, 0x67, 0xa0, 0x8a, 0xba, 0x01, 0x70, 0xbb, 0x98, 0xe5,
-	0xe9, 0x85, 0x63, 0xbe, 0xbb, 0x00, 0x52, 0x69, 0xb5, 0x77, 0xbf, 0xfd, 0xfd, 0x9f, 0x9f, 0x96,
-	0x2c, 0xbc, 0xed, 0xce, 0xb9, 0xfd, 0xf0, 0x37, 0xa8, 0x0c, 0xb3, 0x8c, 0xf7, 0xe6, 0x31, 0x4f,
-	0xdd, 0x45, 0x66, 0xfb, 0xc5, 0x40, 0xad, 0xe0, 0x6d, 0x50, 0xf0, 0x26, 0x6e, 0x3e, 0xa3, 0x00,
-	0xf2, 0xfe, 0x6c, 0xa0, 0xb5, 0xa9, 0xf1, 0xc1, 0x07, 0x73, 0xe8, 0x9f, 0x4e, 0xa0, 0xe9, 0x2c,
-	0x0a, 0xd7, 0x9a, 0xf6, 0x41, 0xd3, 0x2e, 0xb6, 0x8b, 0x35, 0xc1, 0xd5, 0xe2, 0xab, 0x2f, 0xfc,
-	0x8b, 0x81, 0x5e, 0x9f, 0x19, 0x33, 0xec, 0xce, 0xc9, 0x56, 0x34, 0xae, 0xe6, 0xe1, 0xe2, 0x01,
-	0x5a, 0xe0, 0x01, 0x08, 0xdc, 0xc3, 0xef, 0x14, 0x0b, 0x14, 0x23, 0x7e, 0xed, 0xab, 0x31, 0xed,
-	0x67, 0x8a, 0x7e, 0x35, 0xd0, 0xfa, 0x6c, 0xb3, 0xe2, 0x79, 0x39, 0x0b, 0x47, 0xd5, 0x3c, 0x7a,
-	0x89, 0x88, 0xc5, 0x64, 0xe6, 0x93, 0xa8, 0x4b, 0xd9, 0xf9, 0xe4, 0xf6, 0xde, 0x32, 0xee, 0xee,
-	0x2d, 0xe3, 0xef, 0x7b, 0xcb, 0xf8, 0xf1, 0xc1, 0x2a, 0xdd, 0x3d, 0x58, 0xa5, 0x3f, 0x1e, 0xac,
-	0xd2, 0x97, 0x7b, 0x53, 0x7f, 0xa1, 0x19, 0xaa, 0xaf, 0x26, 0x64, 0xf0, 0x2b, 0xea, 0x55, 0xe0,
-	0x47, 0xfc, 0xde, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff, 0x09, 0x8e, 0xb1, 0xb0, 0x65, 0x08, 0x00,
+	// 1041 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0xcf, 0x6f, 0xdc, 0x44,
+	0x14, 0x8e, 0xf3, 0x3b, 0x2f, 0x6d, 0x80, 0x49, 0xa4, 0x6e, 0x9c, 0x74, 0x9b, 0x9a, 0xa0, 0x6c,
+	0x23, 0xc5, 0x4e, 0x82, 0x54, 0x10, 0x08, 0x28, 0x09, 0x3f, 0x14, 0xa9, 0x48, 0xad, 0x97, 0x13,
+	0x17, 0x6b, 0xd6, 0x3b, 0xbb, 0x6b, 0xd5, 0xf6, 0x38, 0x9e, 0xd9, 0x84, 0x0a, 0x2a, 0x24, 0x10,
+	0x07, 0x24, 0x0e, 0x48, 0x48, 0x88, 0x2b, 0x12, 0x27, 0x4e, 0xfc, 0x19, 0x3d, 0x56, 0xe2, 0xc2,
+	0x09, 0x50, 0xc2, 0x5f, 0xc0, 0x5f, 0x80, 0xe6, 0xcd, 0x78, 0xb3, 0x9b, 0x38, 0x9b, 0x6d, 0x4f,
+	0x6b, 0xcf, 0x7c, 0xef, 0x7d, 0xdf, 0xf7, 0xe6, 0xcd, 0x5b, 0xc3, 0x5a, 0x4c, 0x8f, 0x68, 0xca,
+	0xa4, 0xa7, 0x7e, 0xbd, 0x9c, 0x1d, 0xd3, 0xbc, 0x29, 0xbc, 0xc3, 0x2e, 0xcb, 0x1f, 0xbb, 0x59,
+	0xce, 0x25, 0x27, 0x4b, 0x06, 0xe1, 0xaa, 0x5f, 0xd7, 0x20, 0xec, 0xa5, 0x36, 0x6f, 0x73, 0x04,
+	0x78, 0xea, 0x49, 0x63, 0xed, 0xd5, 0x36, 0xe7, 0xed, 0x98, 0x79, 0x34, 0x8b, 0x3c, 0x9a, 0xa6,
+	0x5c, 0x52, 0x19, 0xf1, 0x54, 0x98, 0xdd, 0xcd, 0x90, 0x8b, 0x84, 0x0b, 0xaf, 0x41, 0x05, 0xd3,
+	0x14, 0xde, 0xd1, 0x4e, 0x83, 0x49, 0xba, 0xe3, 0x65, 0xb4, 0x1d, 0xa5, 0x08, 0x36, 0xd8, 0xdb,
+	0xa5, 0xba, 0x32, 0x9a, 0xd3, 0xa4, 0x48, 0x57, 0x2e, 0x3d, 0xca, 0xf2, 0x2c, 0x34, 0x88, 0x6a,
+	0x3f, 0x61, 0x41, 0x15, 0xf2, 0xc8, 0x90, 0x38, 0x4b, 0x40, 0x1e, 0x2a, 0x19, 0x0f, 0x30, 0xad,
+	0xcf, 0x0e, 0xbb, 0x4c, 0x48, 0xe7, 0x21, 0x2c, 0x0e, 0xac, 0x8a, 0x8c, 0xa7, 0x82, 0x91, 0xb7,
+	0x60, 0x5a, 0xd3, 0x57, 0xac, 0x35, 0xab, 0x36, 0xbf, 0xbb, 0xea, 0x96, 0x15, 0xc6, 0xd5, 0x51,
+	0x7b, 0x93, 0x4f, 0xff, 0xba, 0x35, 0xe6, 0x9b, 0x08, 0x67, 0x11, 0x5e, 0xd1, 0x29, 0x39, 0x8f,
+	0x7b, 0x3c, 0xdf, 0x5a, 0x30, 0xab, 0x16, 0x0e, 0xd2, 0x16, 0x27, 0x04, 0x26, 0x53, 0x9a, 0x30,
+	0xcc, 0x3d, 0xe7, 0xe3, 0x33, 0x61, 0x30, 0xd3, 0xa0, 0x31, 0x4d, 0x43, 0x56, 0x19, 0x5f, 0x9b,
+	0xa8, 0xcd, 0xef, 0x2e, 0xbb, 0xda, 0x90, 0xab, 0x0c, 0xb9, 0xc6, 0x90, 0xbb, 0xcf, 0xa3, 0x74,
+	0x6f, 0x5b, 0xf1, 0xfd, 0xf6, 0xf7, 0xad, 0x5a, 0x3b, 0x92, 0x9d, 0x6e, 0xc3, 0x0d, 0x79, 0xe2,
+	0x19, 0xf7, 0xfa, 0x67, 0x4b, 0x34, 0x1f, 0x79, 0xf2, 0x71, 0xc6, 0x04, 0x06, 0x08, 0xbf, 0xc8,
+	0xed, 0xfc, 0x67, 0x15, 0x65, 0xd0, 0xea, 0x7a, 0x7e, 0xa7, 0x32, 0xb5, 0x50, 0xb1, 0x90, 0xbb,
+	0x7a, 0x89, 0x5d, 0x63, 0xc0, 0x18, 0xd6, 0x21, 0x64, 0x1d, 0x16, 0x64, 0x94, 0xb0, 0x40, 0xf2,
+	0x20, 0x67, 0xad, 0x28, 0x8e, 0x2b, 0xe3, 0x6b, 0x56, 0x6d, 0xc2, 0xbf, 0xa6, 0x56, 0x3f, 0xe5,
+	0x3e, 0xae, 0x91, 0xb7, 0xc1, 0x66, 0x42, 0x46, 0x09, 0x95, 0xac, 0x19, 0x34, 0x62, 0x1e, 0x3e,
+	0x12, 0x7d, 0x11, 0x13, 0x18, 0x71, 0xa3, 0x87, 0xd8, 0x43, 0x40, 0x2f, 0xf8, 0x1d, 0x58, 0xa1,
+	0x71, 0xcc, 0x43, 0x6c, 0x9a, 0x40, 0xd1, 0x06, 0x09, 0x4f, 0x65, 0x47, 0x04, 0x31, 0x6b, 0xc9,
+	0xca, 0x24, 0x46, 0x57, 0xce, 0x20, 0x4a, 0xe8, 0x27, 0x08, 0xb8, 0xcf, 0x5a, 0xd2, 0x59, 0x86,
+	0x1b, 0xe8, 0x19, 0xb3, 0xfa, 0x68, 0xa6, 0x38, 0x97, 0x3a, 0x54, 0x2e, 0x6e, 0x99, 0xa2, 0xbc,
+	0x01, 0xd3, 0xda, 0xb9, 0x69, 0x82, 0x21, 0x27, 0x62, 0x3a, 0x40, 0xc3, 0x9d, 0x15, 0x58, 0xc6,
+	0xa4, 0xf5, 0x0e, 0x3f, 0x3e, 0x50, 0x2d, 0xfa, 0x01, 0x95, 0xb4, 0x60, 0xfc, 0xce, 0x02, 0xbb,
+	0x6c, 0xb7, 0x77, 0x12, 0xb3, 0x49, 0x94, 0x06, 0x21, 0x17, 0x72, 0x54, 0xda, 0x99, 0x24, 0x4a,
+	0xf7, 0xb9, 0x90, 0xc4, 0x83, 0x45, 0xbc, 0x11, 0x81, 0xe8, 0x36, 0x44, 0x98, 0x47, 0x19, 0x5e,
+	0x48, 0xec, 0xa7, 0x39, 0x9f, 0xe0, 0x56, 0xbd, 0x7f, 0xc7, 0xa9, 0x1b, 0x29, 0x0f, 0x72, 0x7e,
+	0x14, 0x35, 0x59, 0x3e, 0x50, 0x1b, 0xb2, 0x0c, 0xb3, 0x61, 0x87, 0x46, 0x69, 0x10, 0x35, 0x4d,
+	0xab, 0xce, 0xe0, 0xfb, 0x41, 0x93, 0xd8, 0x30, 0x9b, 0x99, 0x18, 0x3c, 0xed, 0x39, 0xbf, 0xf7,
+	0xee, 0x7c, 0x09, 0xa0, 0xf3, 0x60, 0xaf, 0xbf, 0x58, 0x12, 0x55, 0x7b, 0x9a, 0xf0, 0x6e, 0x2a,
+	0xb1, 0x35, 0x46, 0xa9, 0xbd, 0x86, 0x3b, 0x01, 0xac, 0x94, 0x5a, 0x32, 0xe5, 0xbd, 0x07, 0x33,
+	0xa6, 0x9b, 0x4d, 0xab, 0xaf, 0x95, 0xb7, 0xfa, 0x99, 0x83, 0xa2, 0xc8, 0x66, 0xc7, 0xf9, 0x18,
+	0xee, 0x20, 0x01, 0x1e, 0xdd, 0x20, 0xcb, 0x87, 0xba, 0x7d, 0x23, 0x9e, 0x16, 0x25, 0xec, 0xb7,
+	0x68, 0x9d, 0xab, 0xd3, 0x21, 0x6c, 0x8e, 0x92, 0xc8, 0x08, 0xdf, 0x07, 0x10, 0x19, 0x0b, 0x83,
+	0x56, 0x37, 0x6d, 0x5e, 0x71, 0x4d, 0xeb, 0x19, 0x0b, 0x15, 0xcc, 0x28, 0x9f, 0x53, 0x71, 0x1f,
+	0xa9, 0x30, 0x67, 0xc7, 0x14, 0x07, 0x29, 0x15, 0x6c, 0xf0, 0xc0, 0x09, 0x4c, 0x2a, 0x6c, 0x31,
+	0x97, 0xd4, 0xb3, 0xf3, 0x93, 0x05, 0xab, 0xe5, 0x31, 0x46, 0xd8, 0x7d, 0xb8, 0xae, 0x9b, 0x6e,
+	0xb0, 0xae, 0xb7, 0xcb, 0xb5, 0x61, 0x16, 0x9d, 0xc1, 0xc8, 0xbb, 0x16, 0x9d, 0x2d, 0x09, 0x52,
+	0x83, 0x97, 0xc3, 0x6e, 0x9e, 0xb3, 0x54, 0xea, 0x1b, 0xae, 0xda, 0x46, 0xf5, 0xc6, 0xa4, 0xbf,
+	0x60, 0xd6, 0xf1, 0x5e, 0x1f, 0x34, 0x77, 0xbf, 0x9f, 0x83, 0x29, 0x14, 0x46, 0xbe, 0xb1, 0x60,
+	0x5a, 0x4f, 0x62, 0x52, 0x2b, 0x67, 0xbd, 0x38, 0xf8, 0xed, 0x3b, 0x23, 0x20, 0xb5, 0x43, 0x67,
+	0xfd, 0xeb, 0x3f, 0xfe, 0xfd, 0x71, 0xbc, 0x4a, 0x56, 0xbd, 0x21, 0xff, 0x53, 0xe4, 0x2b, 0x98,
+	0xc2, 0x99, 0x4a, 0x36, 0x86, 0x65, 0xee, 0xfb, 0x4f, 0xb0, 0x6b, 0x57, 0x03, 0x8d, 0x82, 0x57,
+	0x51, 0xc1, 0x4d, 0xb2, 0x72, 0x89, 0x02, 0xe4, 0xfd, 0xd9, 0x82, 0xf9, 0xbe, 0x31, 0x46, 0xb6,
+	0x86, 0xa4, 0xbf, 0x38, 0x09, 0x6d, 0x77, 0x54, 0xb8, 0xd1, 0xb4, 0x89, 0x9a, 0xd6, 0x89, 0x53,
+	0xae, 0x09, 0x47, 0xbc, 0xe9, 0x09, 0xf2, 0x8b, 0x05, 0xd7, 0x07, 0xc6, 0x1d, 0xf1, 0x86, 0xb0,
+	0x95, 0x8d, 0x4d, 0x7b, 0x7b, 0xf4, 0x00, 0x23, 0x70, 0x0b, 0x05, 0x6e, 0x90, 0xd7, 0xca, 0x05,
+	0x8a, 0x0e, 0x3f, 0x0e, 0x74, 0xe7, 0x36, 0x95, 0xa2, 0x5f, 0x2d, 0x58, 0x18, 0xbc, 0x85, 0x64,
+	0x18, 0x67, 0xe9, 0xc8, 0xb4, 0x77, 0x9e, 0x23, 0x62, 0x34, 0x99, 0xc5, 0xb8, 0x28, 0x4a, 0x79,
+	0x62, 0xc1, 0xcd, 0xa1, 0x13, 0x83, 0xbc, 0x37, 0x44, 0xc3, 0x28, 0x43, 0xcb, 0xbe, 0xf7, 0xe2,
+	0x09, 0x8c, 0xa7, 0x77, 0xd1, 0xd3, 0x9b, 0xe4, 0xae, 0x77, 0xf9, 0x67, 0x5b, 0x70, 0xce, 0x99,
+	0xf7, 0x45, 0xb1, 0xf0, 0x84, 0xfc, 0x6e, 0xc1, 0x4b, 0xe7, 0xe6, 0x0d, 0xd9, 0xb9, 0x4a, 0xd5,
+	0x85, 0x79, 0x66, 0xef, 0x3e, 0x4f, 0x88, 0x91, 0x7e, 0x17, 0xa5, 0x6f, 0x13, 0x77, 0x98, 0x74,
+	0x9c, 0xc4, 0x85, 0x6c, 0xf5, 0xf2, 0x64, 0xef, 0xfd, 0xa7, 0x27, 0x55, 0xeb, 0xd9, 0x49, 0xd5,
+	0xfa, 0xe7, 0xa4, 0x6a, 0xfd, 0x70, 0x5a, 0x1d, 0x7b, 0x76, 0x5a, 0x1d, 0xfb, 0xf3, 0xb4, 0x3a,
+	0xf6, 0xd9, 0x46, 0xdf, 0x57, 0xda, 0x40, 0xce, 0xcf, 0x7b, 0x59, 0xf1, 0x53, 0xad, 0x31, 0x8d,
+	0x1f, 0xaa, 0xaf, 0xff, 0x1f, 0x00, 0x00, 0xff, 0xff, 0xaf, 0x0e, 0xc7, 0x33, 0xa7, 0x0b, 0x00,
 	0x00,
 }
 
@@ -700,6 +913,10 @@ type QueryClient interface {
 	ShowIprpcData(ctx context.Context, in *QueryShowIprpcDataRequest, opts ...grpc.CallOption) (*QueryShowIprpcDataResponse, error)
 	// ProviderReward queries for the providers reward for their services
 	ProviderReward(ctx context.Context, in *QueryProviderRewardRequest, opts ...grpc.CallOption) (*QueryProviderRewardResponse, error)
+	// IprpcProviderRewardEstimation queries for a provider's current IPRPC reward (relative to its serviced CU)
+	IprpcProviderRewardEstimation(ctx context.Context, in *QueryIprpcProviderRewardEstimationRequest, opts ...grpc.CallOption) (*QueryIprpcProviderRewardEstimationResponse, error)
+	// IprpcSpecReward queries for a spec's IPRPC reward
+	IprpcSpecReward(ctx context.Context, in *QueryIprpcSpecRewardRequest, opts ...grpc.CallOption) (*QueryIprpcSpecRewardResponse, error)
 }
 
 type queryClient struct {
@@ -755,6 +972,24 @@ func (c *queryClient) ProviderReward(ctx context.Context, in *QueryProviderRewar
 	return out, nil
 }
 
+func (c *queryClient) IprpcProviderRewardEstimation(ctx context.Context, in *QueryIprpcProviderRewardEstimationRequest, opts ...grpc.CallOption) (*QueryIprpcProviderRewardEstimationResponse, error) {
+	out := new(QueryIprpcProviderRewardEstimationResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.rewards.Query/IprpcProviderRewardEstimation", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) IprpcSpecReward(ctx context.Context, in *QueryIprpcSpecRewardRequest, opts ...grpc.CallOption) (*QueryIprpcSpecRewardResponse, error) {
+	out := new(QueryIprpcSpecRewardResponse)
+	err := c.cc.Invoke(ctx, "/lavanet.lava.rewards.Query/IprpcSpecReward", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Parameters queries the parameters of the module.
@@ -767,6 +1002,10 @@ type QueryServer interface {
 	ShowIprpcData(context.Context, *QueryShowIprpcDataRequest) (*QueryShowIprpcDataResponse, error)
 	// ProviderReward queries for the providers reward for their services
 	ProviderReward(context.Context, *QueryProviderRewardRequest) (*QueryProviderRewardResponse, error)
+	// IprpcProviderRewardEstimation queries for a provider's current IPRPC reward (relative to its serviced CU)
+	IprpcProviderRewardEstimation(context.Context, *QueryIprpcProviderRewardEstimationRequest) (*QueryIprpcProviderRewardEstimationResponse, error)
+	// IprpcSpecReward queries for a spec's IPRPC reward
+	IprpcSpecReward(context.Context, *QueryIprpcSpecRewardRequest) (*QueryIprpcSpecRewardResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
@@ -787,6 +1026,12 @@ func (*UnimplementedQueryServer) ShowIprpcData(ctx context.Context, req *QuerySh
 }
 func (*UnimplementedQueryServer) ProviderReward(ctx context.Context, req *QueryProviderRewardRequest) (*QueryProviderRewardResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProviderReward not implemented")
+}
+func (*UnimplementedQueryServer) IprpcProviderRewardEstimation(ctx context.Context, req *QueryIprpcProviderRewardEstimationRequest) (*QueryIprpcProviderRewardEstimationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IprpcProviderRewardEstimation not implemented")
+}
+func (*UnimplementedQueryServer) IprpcSpecReward(ctx context.Context, req *QueryIprpcSpecRewardRequest) (*QueryIprpcSpecRewardResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IprpcSpecReward not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
@@ -883,6 +1128,42 @@ func _Query_ProviderReward_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_IprpcProviderRewardEstimation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryIprpcProviderRewardEstimationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).IprpcProviderRewardEstimation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.rewards.Query/IprpcProviderRewardEstimation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).IprpcProviderRewardEstimation(ctx, req.(*QueryIprpcProviderRewardEstimationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_IprpcSpecReward_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryIprpcSpecRewardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).IprpcSpecReward(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/lavanet.lava.rewards.Query/IprpcSpecReward",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).IprpcSpecReward(ctx, req.(*QueryIprpcSpecRewardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "lavanet.lava.rewards.Query",
 	HandlerType: (*QueryServer)(nil),
@@ -906,6 +1187,14 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ProviderReward",
 			Handler:    _Query_ProviderReward_Handler,
+		},
+		{
+			MethodName: "IprpcProviderRewardEstimation",
+			Handler:    _Query_IprpcProviderRewardEstimation_Handler,
+		},
+		{
+			MethodName: "IprpcSpecReward",
+			Handler:    _Query_IprpcSpecReward_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1329,6 +1618,145 @@ func (m *QueryProviderRewardResponse) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
+func (m *QueryIprpcProviderRewardEstimationRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryIprpcProviderRewardEstimationRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryIprpcProviderRewardEstimationRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Provider) > 0 {
+		i -= len(m.Provider)
+		copy(dAtA[i:], m.Provider)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Provider)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryIprpcProviderRewardEstimationResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryIprpcProviderRewardEstimationResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryIprpcProviderRewardEstimationResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.SpecFunds) > 0 {
+		for iNdEx := len(m.SpecFunds) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.SpecFunds[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryIprpcSpecRewardRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryIprpcSpecRewardRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryIprpcSpecRewardRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Spec) > 0 {
+		i -= len(m.Spec)
+		copy(dAtA[i:], m.Spec)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Spec)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *QueryIprpcSpecRewardResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryIprpcSpecRewardResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *QueryIprpcSpecRewardResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.CurrentMonthId != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.CurrentMonthId))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.IprpcRewards) > 0 {
+		for iNdEx := len(m.IprpcRewards) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.IprpcRewards[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -1505,6 +1933,65 @@ func (m *QueryProviderRewardResponse) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovQuery(uint64(l))
 		}
+	}
+	return n
+}
+
+func (m *QueryIprpcProviderRewardEstimationRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Provider)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryIprpcProviderRewardEstimationResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.SpecFunds) > 0 {
+		for _, e := range m.SpecFunds {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *QueryIprpcSpecRewardRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Spec)
+	if l > 0 {
+		n += 1 + l + sovQuery(uint64(l))
+	}
+	return n
+}
+
+func (m *QueryIprpcSpecRewardResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.IprpcRewards) > 0 {
+		for _, e := range m.IprpcRewards {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	if m.CurrentMonthId != 0 {
+		n += 1 + sovQuery(uint64(m.CurrentMonthId))
 	}
 	return n
 }
@@ -2577,6 +3064,357 @@ func (m *QueryProviderRewardResponse) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryIprpcProviderRewardEstimationRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryIprpcProviderRewardEstimationRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryIprpcProviderRewardEstimationRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Provider", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Provider = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryIprpcProviderRewardEstimationResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryIprpcProviderRewardEstimationResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryIprpcProviderRewardEstimationResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SpecFunds", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SpecFunds = append(m.SpecFunds, Specfund{})
+			if err := m.SpecFunds[len(m.SpecFunds)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryIprpcSpecRewardRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryIprpcSpecRewardRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryIprpcSpecRewardRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spec", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Spec = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryIprpcSpecRewardResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryIprpcSpecRewardResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryIprpcSpecRewardResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IprpcRewards", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.IprpcRewards = append(m.IprpcRewards, IprpcReward{})
+			if err := m.IprpcRewards[len(m.IprpcRewards)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CurrentMonthId", wireType)
+			}
+			m.CurrentMonthId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.CurrentMonthId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])

@@ -5,6 +5,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/rewards/params.proto";
+import "lavanet/lava/rewards/iprpc.proto";
 import "cosmos/base/v1beta1/coin.proto";
 // this line is used by starport scaffolding # 1
 
@@ -31,11 +32,21 @@ service Query {
   rpc ShowIprpcData(QueryShowIprpcDataRequest) returns (QueryShowIprpcDataResponse) {
     option (google.api.http).get = "/lavanet/lava/rewards/show_iprpc_data";
   }
+
   // ProviderReward queries for the providers reward for their services
   rpc ProviderReward(QueryProviderRewardRequest) returns (QueryProviderRewardResponse) {
     option (google.api.http).get = "/lavanet/lava/rewards/provider_reward";
   }
 
+  // IprpcProviderRewardEstimation queries for a provider's current IPRPC reward (relative to its serviced CU)
+  rpc IprpcProviderRewardEstimation(QueryIprpcProviderRewardEstimationRequest) returns (QueryIprpcProviderRewardEstimationResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/iprpc_provider_reward/{provider}";
+  }
+
+  // IprpcSpecReward queries for a spec's IPRPC reward
+  rpc IprpcSpecReward(QueryIprpcSpecRewardRequest) returns (QueryIprpcSpecRewardResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/iprpc_spec_reward/{spec}";
+  }
   // this line is used by starport scaffolding # 2
 }
 
@@ -100,6 +111,27 @@ message RewardInfo {
 // QueryProviderRewardResponse is response type for the Query/ProviderReward RPC method.
 message QueryProviderRewardResponse {
   repeated RewardInfo rewards = 1 [(gogoproto.nullable) = false];
+}
+
+// QueryIprpcProviderRewardEstimationRequest is request type for the Query/IprpcProviderRewardEstimation RPC method.
+message QueryIprpcProviderRewardEstimationRequest {
+  string provider = 1;
+}
+
+// QueryIprpcProviderRewardEstimationResponse is response type for the Query/IprpcProviderRewardEstimation RPC method.
+message QueryIprpcProviderRewardEstimationResponse {
+  repeated Specfund spec_funds = 1 [(gogoproto.nullable) = false]; 
+}
+
+// QueryIprpcSpecRewardRequest is request type for the Query/IprpcSpecReward RPC method.
+message QueryIprpcSpecRewardRequest {
+  string spec = 1;
+}
+
+// QueryIprpcSpecRewardResponse is response type for the Query/IprpcSpecReward RPC method.
+message QueryIprpcSpecRewardResponse {
+  repeated IprpcReward iprpc_rewards = 1 [(gogoproto.nullable) = false];
+  uint64 current_month_id = 2;
 }
 
 // this line is used by starport scaffolding # 3
