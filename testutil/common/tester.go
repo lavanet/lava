@@ -307,6 +307,10 @@ func (ts *Tester) GetBalance(accAddr sdk.AccAddress) int64 {
 	return ts.Keepers.BankKeeper.GetBalance(ts.Ctx, accAddr, denom).Amount.Int64()
 }
 
+func (ts *Tester) GetBalances(accAddr sdk.AccAddress) sdk.Coins {
+	return ts.Keepers.BankKeeper.GetAllBalances(ts.Ctx, accAddr)
+}
+
 func (ts *Tester) FindPlan(index string, block uint64) (planstypes.Plan, bool) {
 	return ts.Keepers.Plans.FindPlan(ts.Ctx, index, block)
 }
@@ -610,9 +614,14 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
 }
 
-func (ts *Tester) TxRewardsSetIprpcDataProposal(ctx sdk.Context, authority string, cost sdk.Coin, subs []string) (*rewardstypes.MsgSetIprpcDataResponse, error) {
+func (ts *Tester) TxRewardsSetIprpcDataProposal(authority string, cost sdk.Coin, subs []string) (*rewardstypes.MsgSetIprpcDataResponse, error) {
 	msg := rewardstypes.NewMsgSetIprpcData(authority, cost, subs)
-	return ts.Servers.RewardsServer.SetIprpcData(sdk.WrapSDKContext(ctx), msg)
+	return ts.Servers.RewardsServer.SetIprpcData(ts.GoCtx, msg)
+}
+
+func (ts *Tester) TxRewardsFundIprpc(creator string, spec string, duration uint64, fund sdk.Coins) (*rewardstypes.MsgFundIprpcResponse, error) {
+	msg := rewardstypes.NewMsgFundIprpc(creator, spec, duration, fund)
+	return ts.Servers.RewardsServer.FundIprpc(ts.GoCtx, msg)
 }
 
 // TxCreateValidator: implement 'tx staking createvalidator' and bond its tokens
@@ -859,6 +868,7 @@ func (ts *Tester) QueryRewardsBlockReward() (*rewardstypes.QueryBlockRewardRespo
 	return ts.Keepers.Rewards.BlockReward(ts.GoCtx, msg)
 }
 
+// QueryRewardsShowIprpcData implements 'q rewards show-iprpc-data'
 func (ts *Tester) QueryRewardsShowIprpcData() (*rewardstypes.QueryShowIprpcDataResponse, error) {
 	msg := &rewardstypes.QueryShowIprpcDataRequest{}
 	return ts.Keepers.Rewards.ShowIprpcData(ts.GoCtx, msg)
