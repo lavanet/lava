@@ -22,7 +22,7 @@ func TestFundIprpcTX(t *testing.T) {
 	ts.setupForIprpcTests(false)
 
 	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
-	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds)
+	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(12)))
 	require.NoError(ts.T, err)
 
 	type fundIprpcData struct {
@@ -64,11 +64,17 @@ func TestFundIprpcTX(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// Expected total IPRPC pool balance: 110ulava (=10+90+10) and 330uibc
+	// Expected total IPRPC pool balance (by TXs):
+	// 1. 10ulava
+	// 2. 50uibc
+	// 3. (90ulava + 30uibc) * 3 = 270ulava + 90uibc
+	// 4. 130uibc * 3 = 390uibc
+	// 5. (10ulava + 120uibc) * 12 = 120ulava + 1440uibc
+	// Total: 400ulava + 1970uibc
 	iprpcTotalBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.IprpcPoolName)
 	expectedIprpcTotalBalance := sdk.NewCoins(
-		sdk.NewCoin(ts.BondDenom(), math.NewInt(110)),
-		sdk.NewCoin(ibcDenom, math.NewInt(330)),
+		sdk.NewCoin(ts.BondDenom(), math.NewInt(400)),
+		sdk.NewCoin(ibcDenom, math.NewInt(1970)),
 	)
 	require.True(t, expectedIprpcTotalBalance.IsEqual(iprpcTotalBalance))
 
@@ -341,7 +347,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 
 	// fund iprpc pool
 	duration := uint64(2)
-	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds)
+	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(2)))
 	require.NoError(ts.T, err)
 	_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, duration, iprpcFunds)
 	require.NoError(ts.T, err)
