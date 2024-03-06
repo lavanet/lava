@@ -96,7 +96,7 @@ func (k Keeper) countIprpcCu(specCuMap map[string]types.SpecCuType, iprpcCu uint
 func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, duration uint64, fromNextMonth bool) {
 	startID := k.GetIprpcRewardsCurrentId(ctx)
 	if fromNextMonth {
-		startID = startID + 1 // fund IPRPC only from the next month for <duration> months
+		startID++ // fund IPRPC only from the next month for <duration> months
 	}
 
 	for i := startID; i < startID+duration; i++ {
