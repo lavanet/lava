@@ -307,6 +307,10 @@ func (ts *Tester) GetBalance(accAddr sdk.AccAddress) int64 {
 	return ts.Keepers.BankKeeper.GetBalance(ts.Ctx, accAddr, denom).Amount.Int64()
 }
 
+func (ts *Tester) GetBalances(accAddr sdk.AccAddress) sdk.Coins {
+	return ts.Keepers.BankKeeper.GetAllBalances(ts.Ctx, accAddr)
+}
+
 func (ts *Tester) FindPlan(index string, block uint64) (planstypes.Plan, bool) {
 	return ts.Keepers.Plans.FindPlan(ts.Ctx, index, block)
 }

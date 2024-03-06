@@ -21,7 +21,7 @@ func TestFundIprpcTX(t *testing.T) {
 	ts.setupForIprpcTests(false)
 
 	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
-	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds)
+	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(12)))
 	require.NoError(ts.T, err)
 
 	type fundIprpcData struct {
@@ -45,15 +45,15 @@ func TestFundIprpcTX(t *testing.T) {
 			sdk.NewCoin(ibcDenom, math.NewInt(50)),
 		)},
 		{spec: ts.specs[1].Index, duration: 3, fund: sdk.NewCoins(
-			sdk.NewCoin(ts.BondDenom(), math.NewInt(90+minIprpcCost.Amount.Int64()*3)),
+			sdk.NewCoin(ts.BondDenom(), math.NewInt(90+minIprpcCost.Amount.Int64())),
 			sdk.NewCoin(ibcDenom, math.NewInt(30)),
 		)},
 		{spec: ts.specs[0].Index, duration: 3, fund: sdk.NewCoins(
-			sdk.NewCoin(ts.BondDenom(), math.NewInt(minIprpcCost.Amount.Int64()*3)),
+			sdk.NewCoin(ts.BondDenom(), math.NewInt(minIprpcCost.Amount.Int64())),
 			sdk.NewCoin(ibcDenom, math.NewInt(130)),
 		)},
 		{spec: ts.specs[1].Index, duration: 12, fund: sdk.NewCoins(
-			sdk.NewCoin(ts.BondDenom(), math.NewInt(10+minIprpcCost.Amount.Int64()*12)),
+			sdk.NewCoin(ts.BondDenom(), math.NewInt(10+minIprpcCost.Amount.Int64())),
 			sdk.NewCoin(ibcDenom, math.NewInt(120)),
 		)},
 	}
@@ -63,11 +63,17 @@ func TestFundIprpcTX(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// Expected total IPRPC pool balance: 110ulava (=10+90+10) and 330uibc
+	// Expected total IPRPC pool balance (by TXs):
+	// 1. 10ulava
+	// 2. 50uibc
+	// 3. (90ulava + 30uibc) * 3 = 270ulava + 90uibc
+	// 4. 130uibc * 3 = 390uibc
+	// 5. (10ulava + 120uibc) * 12 = 120ulava + 1440uibc
+	// Total: 400ulava + 1970uibc
 	iprpcTotalBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.IprpcPoolName)
 	expectedIprpcTotalBalance := sdk.NewCoins(
-		sdk.NewCoin(ts.BondDenom(), math.NewInt(110)),
-		sdk.NewCoin(ibcDenom, math.NewInt(330)),
+		sdk.NewCoin(ts.BondDenom(), math.NewInt(400)),
+		sdk.NewCoin(ibcDenom, math.NewInt(1970)),
 	)
 	require.True(t, expectedIprpcTotalBalance.IsEqual(iprpcTotalBalance))
 
@@ -222,13 +228,12 @@ func TestIprpcSpecRewardQuery(t *testing.T) {
 	// first month: mock2 - 500uibc + 3000ulava, mockspec - 100000ulava
 	// second + third month: mock2 - 2000ulava, mockspec - 100000ulava
 	duration := int64(3)
-	minIprpcCostForFund := minIprpcCost.Amount.MulRaw(duration)
 	_, err := ts.TxRewardsFundIprpc(consumer, ts.specs[0].Index, uint64(duration),
-		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000).Add(minIprpcCostForFund))))
+		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(100000).Add(minIprpcCost.Amount))))
 	require.NoError(ts.T, err)
 
 	_, err = ts.TxRewardsFundIprpc(consumer, ts.specs[1].Index, uint64(duration),
-		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(2000).Add(minIprpcCostForFund))))
+		sdk.NewCoins(sdk.NewCoin(ts.BondDenom(), sdk.NewInt(2000).Add(minIprpcCost.Amount))))
 	require.NoError(ts.T, err)
 
 	expectedResults := []rewardstypes.IprpcReward{
@@ -339,9 +344,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 
 	// fund iprpc pool
 	duration := uint64(2)
-	iprpcCost := sdk.NewCoin(ts.BondDenom(), minIprpcCost.Amount.MulRaw(int64(duration)))
-	fundForIprpc := iprpcFunds
-	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, fundForIprpc)
+	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(2)))
 	require.NoError(ts.T, err)
 	_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, duration, iprpcFunds)
 	require.NoError(ts.T, err)
@@ -355,7 +358,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.Equal(t, uint64(0), res.CurrentMonthId)
 	for i := range res.IprpcRewards {
 		require.Equal(t, uint64(i+1), res.IprpcRewards[i].Id)
-		require.True(t, fundForIprpc.Sub(iprpcCost).IsEqual(res.IprpcRewards[i].SpecFunds[0].Fund))
+		require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.IprpcRewards[i].SpecFunds[0].Fund))
 	}
 
 	// advance month to reach the first iprpc reward (first object is with id=1)
@@ -370,7 +373,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.Equal(t, uint64(1), res.CurrentMonthId)
 	for i := range res.IprpcRewards {
 		require.Equal(t, uint64(i+1), res.IprpcRewards[i].Id)
-		require.True(t, fundForIprpc.Sub(iprpcCost).IsEqual(res.IprpcRewards[i].SpecFunds[0].Fund))
+		require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.IprpcRewards[i].SpecFunds[0].Fund))
 	}
 
 	// advance month without any provider service, there should be one IPRPC object with combined reward
@@ -382,7 +385,7 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.IprpcRewards, 1)
 	require.Equal(t, uint64(2), res.CurrentMonthId)
-	require.True(t, fundForIprpc.Sub(iprpcCost).MulInt(sdk.NewInt(2)).IsEqual(res.IprpcRewards[0].SpecFunds[0].Fund))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(sdk.NewInt(2)).IsEqual(res.IprpcRewards[0].SpecFunds[0].Fund))
 
 	// make a provider service an IPRPC eligible consumer and advance a month
 	// there should be no iprpc rewards objects
@@ -397,6 +400,54 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res.IprpcRewards, 0)
 	require.Equal(t, uint64(3), res.CurrentMonthId)
+}
+
+// TestFundIprpcTwice tests the following scenario:
+// IPRPC is funded for two months, advance month and fund again
+// during this month, let provider serve and advance month again -> reward should be as the original funding
+// advance again and serve -> reward should be from both funds (funding only starts from the next month)
+func TestFundIprpcTwice(t *testing.T) {
+	ts := newTester(t, true)
+	ts.setupForIprpcTests(false)
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	_, p1 := ts.GetAccount(common.PROVIDER, 0)
+
+	// fund iprpc pool
+	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(2)))
+	require.NoError(ts.T, err)
+	_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, 2, iprpcFunds)
+	require.NoError(ts.T, err)
+
+	// advance month and fund again
+	ts.AdvanceMonths(1).AdvanceEpoch()
+	err = ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(2)))
+	require.NoError(ts.T, err)
+	_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, 2, iprpcFunds)
+	require.NoError(ts.T, err)
+
+	// make a provider service an IPRPC eligible consumer and advance month
+	relay := ts.SendRelay(p1, consumerAcc, []string{ts.specs[1].Index}, 100)
+	_, err = ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &relay)
+	ts.AdvanceEpoch()
+	require.NoError(t, err)
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// check rewards - should be only from first funding (=iprpcFunds)
+	res, err := ts.QueryDualstakingDelegatorRewards(p1, p1, mockSpec2)
+	require.NoError(t, err)
+	require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.Rewards[0].Amount))
+
+	// make a provider service an IPRPC eligible consumer and advance month again
+	relay = ts.SendRelay(p1, consumerAcc, []string{ts.specs[1].Index}, 100)
+	_, err = ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &relay)
+	ts.AdvanceEpoch()
+	require.NoError(t, err)
+	ts.AdvanceMonths(1).AdvanceEpoch()
+
+	// check rewards - should be only from first + second funding (=iprpcFunds*3)
+	res, err = ts.QueryDualstakingDelegatorRewards(p1, p1, mockSpec2)
+	require.NoError(t, err)
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).IsEqual(res.Rewards[0].Amount))
 }
 
 // TestIprpcMinCost tests that a fund TX fails if it doesn't have enough tokens to cover for the minimum IPRPC costs
@@ -513,6 +564,15 @@ func TestIprpcEligibleSubscriptions(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res1.SpecFunds, 0)
 	require.Len(t, res2.SpecFunds, 0)
+
+	// advance another month and see there are still no rewards
+	ts.AdvanceMonths(1).AdvanceEpoch()
+	res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
+	require.NoError(t, err)
+	res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
+	require.NoError(t, err)
+	require.Len(t, res1.SpecFunds, 0)
+	require.Len(t, res2.SpecFunds, 0)
 }
 
 // TestMultipleIprpcSpec checks that rewards are distributed correctly when multiple specs are configured in the IPRPC pool
@@ -540,16 +600,14 @@ func TestMultipleIprpcSpec(t *testing.T) {
 
 	// fund iprpc pool for mock2 spec for 1 months
 	duration := uint64(1)
-	iprpcCost := sdk.NewCoin(ts.BondDenom(), minIprpcCost.Amount.MulRaw(int64(duration)))
 	mock2Fund := sdk.NewCoin(ts.BondDenom(), sdk.NewInt(1700))
-	_, err = ts.TxRewardsFundIprpc(c1, mockSpec2, duration, sdk.NewCoins(mock2Fund.Add(iprpcCost)))
+	_, err = ts.TxRewardsFundIprpc(c1, mockSpec2, duration, sdk.NewCoins(mock2Fund.Add(minIprpcCost)))
 	require.NoError(t, err)
 
 	// fund iprpc pool for mock3 spec for 3 months
 	duration = uint64(3)
-	iprpcCost = sdk.NewCoin(ts.BondDenom(), minIprpcCost.Amount.MulRaw(int64(duration)))
 	mock3Fund := sdk.NewCoin(ts.BondDenom(), sdk.NewInt(400))
-	_, err = ts.TxRewardsFundIprpc(c1, mockSpec3, duration, sdk.NewCoins(mock3Fund.Add(iprpcCost)))
+	_, err = ts.TxRewardsFundIprpc(c1, mockSpec3, duration, sdk.NewCoins(mock3Fund.Add(minIprpcCost)))
 	require.NoError(t, err)
 
 	// advance month and epoch to apply pairing and iprpc fund
@@ -642,4 +700,18 @@ func TestIprpcRewardWithZeroSubRewards(t *testing.T) {
 	res2, err := ts.QueryDualstakingDelegatorRewards(p2, p2, mockSpec2)
 	require.NoError(t, err)
 	require.True(t, p2ExpectedReward.IsEqual(res2.Rewards[0].Amount))
+}
+
+// TestMinIprpcCostForSeveralMonths checks that if a user sends fund=1.1*minIprpcCost with duration=2
+// the TX succeeds (checks that the min iprpc cost check that per month there is enough funds)
+func TestMinIprpcCostForSeveralMonths(t *testing.T) {
+	ts := newTester(t, true)
+	ts.setupForIprpcTests(false)
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+
+	// fund iprpc pool
+	err := ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(math.NewInt(3)))
+	require.NoError(ts.T, err)
+	_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, 2, iprpcFunds.MulInt(math.NewInt(110)).QuoInt(math.NewInt(100)))
+	require.NoError(ts.T, err)
 }

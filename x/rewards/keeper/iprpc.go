@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
@@ -41,10 +42,11 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 			utils.LogAttr("min_iprpc_fund_cost", minIprpcFundCost.String()),
 		)
 	}
-	fund = fund.Sub(minIprpcFundCostCoins...)
+	fund = fund.Sub(minIprpcFundCost)
+	allFunds := fund.MulInt(math.NewIntFromUint64(duration))
 
 	// send the funds to the iprpc pool
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.IprpcPoolName), fund)
+	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.IprpcPoolName), allFunds)
 	if err != nil {
 		return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding iprpc pool", err,
 			utils.LogAttr("creator", creator),
@@ -96,7 +98,7 @@ func (k Keeper) countIprpcCu(specCuMap map[string]types.SpecCuType, iprpcCu uint
 func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, duration uint64, fromNextMonth bool) {
 	startID := k.GetIprpcRewardsCurrentId(ctx)
 	if fromNextMonth {
-		startID = startID + 1 // fund IPRPC only from the next month for <duration> months
+		startID++ // fund IPRPC only from the next month for <duration> months
 	}
 
 	for i := startID; i < startID+duration; i++ {
