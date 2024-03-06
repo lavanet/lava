@@ -129,8 +129,11 @@ func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
 		duration := uint64(1)
 		err = ts.Keepers.BankKeeper.AddToBalance(consumerAcc.Addr, iprpcFunds.MulInt(sdk.NewIntFromUint64(duration)))
 		require.NoError(ts.T, err)
+		balanceBeforeFund := ts.GetBalances(consumerAcc.Addr)
 		_, err = ts.TxRewardsFundIprpc(consumer, mockSpec2, duration, iprpcFunds)
 		require.NoError(ts.T, err)
+		expectedBalanceAfterFund := balanceBeforeFund.Sub(iprpcFunds.MulInt(math.NewIntFromUint64(duration))...)
+		require.True(ts.T, ts.GetBalances(consumerAcc.Addr).IsEqual(expectedBalanceAfterFund))
 		ts.AdvanceMonths(1).AdvanceEpoch() // fund only fund for next month, so advance a month
 	}
 }

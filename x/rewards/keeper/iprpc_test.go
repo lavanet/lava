@@ -519,6 +519,15 @@ func TestIprpcEligibleSubscriptions(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res1.SpecFunds, 0)
 	require.Len(t, res2.SpecFunds, 0)
+
+	// advance another month and see there are still no rewards
+	ts.AdvanceMonths(1).AdvanceEpoch()
+	res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
+	require.NoError(t, err)
+	res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
+	require.NoError(t, err)
+	require.Len(t, res1.SpecFunds, 0)
+	require.Len(t, res2.SpecFunds, 0)
 }
 
 // TestMultipleIprpcSpec checks that rewards are distributed correctly when multiple specs are configured in the IPRPC pool
