@@ -364,7 +364,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
 			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
-				go apil.refererData.SendRefererForWebSocket(refererMatch, chainID, websockConn)
+				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), nil, websockConn)
 			}
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
@@ -453,7 +453,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, http.MethodPost, dappID, consumerIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendRefererForHttp(refererMatch, chainID, metadataValues)
+			go apil.refererData.SendReferer(refererMatch, chainID, msg, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())

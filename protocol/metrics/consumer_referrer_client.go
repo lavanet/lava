@@ -20,12 +20,13 @@ type ConsumerReferrerClient struct {
 	*QueueSender
 }
 
-func NewReferrerRequest(referrerId string, chainId string, referer string, origin string, userAgent string) ReferrerRequest {
+func NewReferrerRequest(referrerId string, chainId string, msg string, referer string, origin string, userAgent string) ReferrerRequest {
 	return ReferrerRequest{
 		Name:       referrerName,
 		ReferrerId: referrerId,
 		Count:      1,
 		ChainId:    chainId,
+		Msg:        msg,
 		Referer:    referer,
 		Origin:     origin,
 		UserAgent:  userAgent,
@@ -37,6 +38,7 @@ type ReferrerRequest struct {
 	Name       string `json:"name"`
 	Count      uint64 `json:"count"`
 	ChainId    string `json:"chain-id"`
+	Msg        string `json:"msg"`
 	Referer    string `json:"referer"`
 	Origin     string `json:"origin"`
 	UserAgent  string `json:"user-agent"`

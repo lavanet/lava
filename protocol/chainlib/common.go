@@ -384,7 +384,7 @@ type RefererData struct {
 	ReferrerClient *metrics.ConsumerReferrerClient
 }
 
-func (rd *RefererData) SendRefererForHttp(refererMatchString string, chainId string, headers map[string][]string) error {
+func (rd *RefererData) SendReferer(refererMatchString string, chainId string, msg string, headers map[string][]string, c *websocket.Conn) error {
 	if rd == nil || rd.Address == "" {
 		return nil
 	}
@@ -392,28 +392,25 @@ func (rd *RefererData) SendRefererForHttp(refererMatchString string, chainId str
 		return nil
 	}
 
-	referer := strings.Join(headers[metrics.RefererHeaderKey], ", ")
-	origin := strings.Join(headers[metrics.OriginHeaderKey], ", ")
-	userAgent := strings.Join(headers[metrics.UserAgentHeaderKey], ", ")
-
-	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
-	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString, chainId, referer, origin, userAgent))
-	return nil
-}
-
-func (rd *RefererData) SendRefererForWebSocket(refererMatchString string, chainId string, c *websocket.Conn) error {
-	if rd == nil || rd.Address == "" {
-		return nil
-	}
-	if rd.ReferrerClient == nil {
+	if c == nil && headers == nil {
 		return nil
 	}
 
-	referer, _ := c.Locals(metrics.RefererHeaderKey).(string)
-	origin, _ := c.Locals(metrics.OriginHeaderKey).(string)
-	userAgent, _ := c.Locals(metrics.UserAgentHeaderKey).(string)
+	referer := ""
+	origin := ""
+	userAgent := ""
+
+	if headers != nil {
+		referer = c.Locals(metrics.RefererHeaderKey).(string)
+		origin = c.Locals(metrics.OriginHeaderKey).(string)
+		userAgent = c.Locals(metrics.UserAgentHeaderKey).(string)
+	} else if c != nil {
+		referer = strings.Join(headers[metrics.RefererHeaderKey], ", ")
+		origin = strings.Join(headers[metrics.OriginHeaderKey], ", ")
+		userAgent = strings.Join(headers[metrics.UserAgentHeaderKey], ", ")
+	}
 
 	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
-	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString, chainId, referer, origin, userAgent))
+	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString, chainId, msg, referer, origin, userAgent))
 	return nil
 }
