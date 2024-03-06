@@ -401,13 +401,13 @@ func (rd *RefererData) SendReferer(refererMatchString string, chainId string, ms
 	userAgent := ""
 
 	if headers != nil {
-		referer = c.Locals(metrics.RefererHeaderKey).(string)
-		origin = c.Locals(metrics.OriginHeaderKey).(string)
-		userAgent = c.Locals(metrics.UserAgentHeaderKey).(string)
-	} else if c != nil {
 		referer = strings.Join(headers[metrics.RefererHeaderKey], ", ")
 		origin = strings.Join(headers[metrics.OriginHeaderKey], ", ")
 		userAgent = strings.Join(headers[metrics.UserAgentHeaderKey], ", ")
+	} else if c != nil {
+		referer, _ = c.Locals(metrics.RefererHeaderKey).(string)
+		origin, _ = c.Locals(metrics.OriginHeaderKey).(string)
+		userAgent, _ = c.Locals(metrics.UserAgentHeaderKey).(string)
 	}
 
 	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
