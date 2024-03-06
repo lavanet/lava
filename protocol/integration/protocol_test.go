@@ -38,6 +38,33 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
+func isServerUp(url string) bool {
+	client := http.Client{
+		Timeout: 20 * time.Millisecond,
+	}
+
+	resp, err := client.Get(url)
+	if err != nil {
+		return false
+	}
+
+	defer resp.Body.Close()
+
+	return resp.ContentLength > 0
+}
+
+func checkServerStatusWithTimeout(url string, totalTimeout time.Duration) bool {
+	startTime := time.Now()
+
+	for time.Since(startTime) < totalTimeout {
+		if isServerUp(url) {
+			return true
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	return false
+}
 func TestConsumerProviderBasic(t *testing.T) {
 	ctx := context.Background()
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -46,43 +73,12 @@ func TestConsumerProviderBasic(t *testing.T) {
 	})
 	// can be any spec and api interface
 	specId := "LAV1"
+	apiInterface := spectypes.APIInterfaceTendermintRPC
 	epoch := uint64(100)
 	requiredResponses := 1
 	lavaChainID := "lava"
-
-	apiInterface := spectypes.APIInterfaceTendermintRPC
-	chainParser, _, chainFetcher, closeServer, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", nil)
-	if closeServer != nil {
-		defer closeServer()
-	}
-	require.NoError(t, err)
-	require.NotNil(t, chainParser)
-	require.NotNil(t, chainFetcher)
-	// create basic consumer stuff
 	providerListenAddress := "localhost:0"
-	specIdLava := "LAV1"
-	chainParserLava, _, chainFetcherLava, closeServer, err := chainlib.CreateChainLibMocks(ctx, specIdLava, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
-	if closeServer != nil {
-		defer closeServer()
-	}
-	require.NoError(t, err)
-	require.NotNil(t, chainParserLava)
-	require.NotNil(t, chainFetcherLava)
-	rpcConsumerServer := &rpcconsumer.RPCConsumerServer{}
-	rpcEndpoint := &lavasession.RPCEndpoint{
-		NetworkAddress:  "",
-		ChainID:         specId,
-		ApiInterface:    apiInterface,
-		TLSEnabled:      false,
-		HealthCheckPath: "",
-		Geolocation:     1,
-	}
-	consumerStateTracker := &mockConsumerStateTracker{}
-	finalizationConsensus := lavaprotocol.NewFinalizationConsensus(rpcEndpoint.ChainID)
-	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2)
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil)
+	consumerListenAddress := "localhost:11111"
 	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{
 		1: {
 			PublicLavaAddress: "",
@@ -99,6 +95,33 @@ func TestConsumerProviderBasic(t *testing.T) {
 			PairingEpoch:     epoch,
 		},
 	}
+
+	chainParser, _, chainFetcher, _, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", nil)
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainFetcher)
+	// create basic consumer stuff
+	specIdLava := "LAV1"
+	chainParserLava, _, chainFetcherLava, _, err := chainlib.CreateChainLibMocks(ctx, specIdLava, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+	require.NoError(t, err)
+	require.NotNil(t, chainParserLava)
+	require.NotNil(t, chainFetcherLava)
+	rpcConsumerServer := &rpcconsumer.RPCConsumerServer{}
+	rpcEndpoint := &lavasession.RPCEndpoint{
+		NetworkAddress:  consumerListenAddress,
+		ChainID:         specId,
+		ApiInterface:    apiInterface,
+		TLSEnabled:      false,
+		HealthCheckPath: "",
+		Geolocation:     1,
+	}
+	consumerStateTracker := &mockConsumerStateTracker{}
+	finalizationConsensus := lavaprotocol.NewFinalizationConsensus(rpcEndpoint.ChainID)
+	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
+	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2)
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil)
+
 	consumerSessionManager.UpdateAllProviders(epoch, pairingList)
 	randomizer := sigs.NewZeroReader(seed)
 	account := sigs.GenerateDeterministicFloatingKey(randomizer)
@@ -108,4 +131,14 @@ func TestConsumerProviderBasic(t *testing.T) {
 	require.NoError(t, err)
 	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, account.SK, lavaChainID, nil, rpcsonumerLogs, account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil)
 	require.NoError(t, err)
+
+	// wait for consumer server to be up
+	consumerUp := checkServerStatusWithTimeout("http://"+consumerListenAddress, time.Millisecond*50)
+	require.True(t, consumerUp)
+
+	client := http.Client{}
+	resp, err := client.Get("http://" + consumerListenAddress + "/status")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	resp.Body.Close()
 }
