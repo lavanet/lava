@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	ibctypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/lavanet/lava/app/keepers"
+	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -22,6 +23,7 @@ func v_35_0(
 
 		params := lk.SpecKeeper.GetParams(ctx)
 		params.AllowlistedExpeditedMsgs = []string{
+			proto.MessageName(&protocoltypes.MsgSetVersion{}),
 			proto.MessageName(&spectypes.SpecAddProposal{}),
 			proto.MessageName(&ibctypes.ClientUpdateProposal{}),
 			proto.MessageName(&ibctypes.UpgradeProposal{}),

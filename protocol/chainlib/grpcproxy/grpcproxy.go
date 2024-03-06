@@ -35,17 +35,19 @@ func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.Cons
 			resp.Header().Set("Access-Control-Allow-Credentials", cmdFlags.CredentialsFlag)
 			resp.Header().Set("Access-Control-Max-Age", cmdFlags.CDNCacheDuration)
 			resp.WriteHeader(fiber.StatusNoContent)
-			_, _ = resp.Write(make([]byte, 0))
+			resp.Write(make([]byte, 0))
 			return
 		}
 
-		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
+		if healthReporter != nil && req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
 			if healthReporter.IsHealthy() {
 				resp.WriteHeader(fiber.StatusOK)
+				resp.Write([]byte("Healthy"))
 			} else {
 				resp.WriteHeader(fiber.StatusServiceUnavailable)
+				resp.Write([]byte("Unhealthy"))
 			}
-			_, _ = resp.Write(make([]byte, 0))
+
 			return
 		}
 		wrappedServer.ServeHTTP(resp, req)

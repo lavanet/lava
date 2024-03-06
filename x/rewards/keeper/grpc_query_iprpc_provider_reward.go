@@ -18,7 +18,7 @@ func (k Keeper) IprpcProviderRewardEstimation(goCtx context.Context, req *types.
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	// get current month IPRPC reward
-	id := k.GetIprpcRewardsCurrent(ctx)
+	id := k.GetIprpcRewardsCurrentId(ctx)
 	iprpcReward, found := k.GetIprpcReward(ctx, id)
 	if !found {
 		return nil, fmt.Errorf("current month IPRPC reward does not exist")

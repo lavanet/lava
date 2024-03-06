@@ -193,21 +193,23 @@ func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, reque
 		return nil, err
 	}
 	nodeMsg := &baseChainMessageContainer{
-		api:                    serviceApi,
-		apiCollection:          apiCollection,
-		latestRequestedBlock:   requestedBlock,
-		msg:                    &batchMessage,
-		earliestRequestedBlock: earliestRequestedBlock,
+		api:                      serviceApi,
+		apiCollection:            apiCollection,
+		latestRequestedBlock:     requestedBlock,
+		msg:                      &batchMessage,
+		earliestRequestedBlock:   earliestRequestedBlock,
+		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
 	}
 	return nodeMsg, err
 }
 
 func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
-		api:                  serviceApi,
-		apiCollection:        apiCollection,
-		latestRequestedBlock: requestedBlock,
-		msg:                  msg,
+		api:                      serviceApi,
+		apiCollection:            apiCollection,
+		latestRequestedBlock:     requestedBlock,
+		msg:                      msg,
+		resultErrorParsingMethod: msg.CheckResponseError,
 	}
 	return nodeMsg
 }
@@ -275,12 +277,14 @@ type JsonRPCChainListener struct {
 	relaySender    RelaySender
 	healthReporter HealthReporter
 	logger         *metrics.RPCConsumerLogs
+	refererData    *RefererData
 }
 
 // NewJrpcChainListener creates a new instance of JsonRPCChainListener
 func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
+	refererData *RefererData,
 ) (chainListener *JsonRPCChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &JsonRPCChainListener{
@@ -288,6 +292,7 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 		relaySender,
 		healthReporter,
 		rpcConsumerLogs,
+		refererData,
 	}
 
 	return chainListener
@@ -333,15 +338,29 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			if !ok {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 			}
-
+			refererMatch, ok := websockConn.Locals(refererMatchString).(string)
 			ctx, cancel := context.WithCancel(context.Background())
 			guid := utils.GenerateUniqueIdentifier()
 			ctx = utils.WithUniqueIdentifier(ctx, guid)
 			msgSeed = strconv.FormatUint(guid, 10)
 			defer cancel() // incase there's a problem make sure to cancel the connection
-			utils.LavaFormatDebug("ws in <<<", utils.Attribute{Key: "seed", Value: msgSeed}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "msg", Value: msg}, utils.Attribute{Key: "dappID", Value: dappID})
+
+			logFormattedMsg := string(msg)
+			if !cmdFlags.DebugRelays {
+				logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
+			}
+
+			utils.LavaFormatDebug("ws in <<<",
+				utils.LogAttr("seed", msgSeed),
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("msg", logFormattedMsg),
+				utils.LogAttr("dappID", dappID),
+			)
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
+			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
+				go apil.refererData.SendReferer(refererMatch)
+			}
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
 			go apil.logger.AddMetricForWebSocket(metricsData, err, websockConn)
@@ -392,7 +411,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	app.Get("/ws", websocketCallbackWithDappID)
 	app.Get("/websocket", websocketCallbackWithDappID) // catching http://HOST:PORT/1/websocket requests.
 
-	app.Post("/*", func(fiberCtx *fiber.Ctx) error {
+	handlerPost := func(fiberCtx *fiber.Ctx) error {
 		// Set response header content-type to application/json
 		fiberCtx.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSONCharsetUTF8)
 		startTime := time.Now()
@@ -412,14 +431,25 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		consumerIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
-		utils.LavaFormatInfo("in <<<",
+
+		msg := string(fiberCtx.Body())
+		logFormattedMsg := msg
+		if !cmdFlags.DebugRelays {
+			logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
+		}
+
+		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("seed", msgSeed),
-			utils.LogAttr("msg", fiberCtx.Body()),
+			utils.LogAttr("msg", logFormattedMsg),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", string(fiberCtx.Body()), http.MethodPost, dappID, consumerIp, metricsData, headers)
+		refererMatch := fiberCtx.Params(refererMatchString, "")
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, http.MethodPost, dappID, consumerIp, metricsData, headers)
+		if refererMatch != "" && apil.refererData != nil && err == nil {
+			go apil.refererData.SendReferer(refererMatch)
+		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 		if err != nil {
@@ -427,7 +457,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
 			// Log request and response
-			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), string(fiberCtx.Body()), errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("jsonrpc http", true, "POST", fiberCtx.Request().URI().String(), msg, errMasking, msgSeed, time.Since(startTime), err)
 
 			// Set status to internal error
 			if relayResult.GetStatusCode() != 0 {
@@ -447,7 +477,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			false,
 			"POST",
 			fiberCtx.Request().URI().String(),
-			string(fiberCtx.Body()),
+			msg,
 			response,
 			msgSeed,
 			time.Since(startTime),
@@ -458,8 +488,21 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		}
 		// Return json response
 		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
-	})
-
+	}
+	if apil.refererData != nil && apil.refererData.Marker != "" {
+		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", func(c *fiber.Ctx) error {
+			if websocket.IsWebSocketUpgrade(c) {
+				c.Locals("allowed", true)
+				return c.Next()
+			}
+			return fiber.ErrUpgradeRequired
+		})
+		websocketCallbackWithDappIDAndReferer := constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(webSocketCallback, apil.logger.StoreMetricData)
+		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", websocketCallbackWithDappIDAndReferer)
+		app.Get("/"+apil.refererData.Marker+":"+refererMatchString+"/websocket", websocketCallbackWithDappIDAndReferer)
+		app.Post("/"+apil.refererData.Marker+":"+refererMatchString+"/*", handlerPost)
+	}
+	app.Post("/*", handlerPost)
 	// Go
 	ListenWithRetry(app, apil.endpoint.NetworkAddress)
 }
@@ -547,14 +590,11 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 			defer rpc.SetHeader(metadata.Name, "")
 		}
 	}
-	relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetApi().Category.HangingApi {
-		relayTimeout += cp.averageBlockTime
-	}
-	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
-	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+	// set context with timeout
+	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
 	defer cancel()
+
+	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 	batch := nodeMessage.GetBatch()
 	err = rpc.BatchCallContext(connectCtx, batch, nodeMessage.GetDisableErrorHandling())
 	if err != nil {
@@ -621,14 +661,12 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if ch != nil {
 		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
-		relayTimeout := common.LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-		// check if this API is hanging (waiting for block confirmation)
-		if chainMessage.GetApi().Category.HangingApi {
-			relayTimeout += cp.averageBlockTime
-		}
-		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
-		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, relayTimeout)
+		// we use the minimum timeout between the two, spec or context. to prevent the provider from hanging
+		// we don't use the context alone so the provider won't be hanging forever by an attack
+		connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
 		defer cancel()
+
+		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, nodeMessage.GetDisableErrorHandling())
 		if err != nil {
 			// here we are getting an error for every code that is not 200-300
@@ -653,6 +691,14 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
+		// validate result is valid
+		if replyMessage.Error == nil {
+			responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
+			if responseIsNilValidationError != nil {
+				return nil, "", nil, responseIsNilValidationError
+			}
+		}
+
 		replyMsg = *replyMessage
 		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
 		if err != nil {

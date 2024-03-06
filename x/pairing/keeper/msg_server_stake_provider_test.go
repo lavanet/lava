@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/client/cli"
@@ -721,4 +722,93 @@ func TestStakeEndpoints(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestStakeProviderLimits tests the staking limits
+// Scenarios:
+// 1. provider tries to stake below min self delegation -> stake TX should fail
+// 2. provider stakes above min self delegation but below the spec's min stake -> stake should succeed but provider should be frozen
+// 3. provider stakes above the spec's min stake -> stake should succeed and provider is not frozen
+func TestStakeProviderLimits(t *testing.T) {
+	// set MinSelfDelegation = 100, MinStakeProvider = 200
+	ts := newTester(t)
+	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
+	ts.spec.MinStakeProvider = minSelfDelegation.AddAmount(math.NewInt(100))
+	ts.Keepers.Spec.SetSpec(ts.Ctx, ts.spec)
+	ts.AdvanceEpoch()
+
+	type testCase struct {
+		name     string
+		stake    int64
+		isStaked bool
+		isFrozen bool
+	}
+	testCases := []testCase{
+		{"below min self delegation", minSelfDelegation.Amount.Int64() - 1, false, false},
+		{"above min self delegation and below min provider stake", minSelfDelegation.Amount.Int64() + 1, true, true},
+		{"above min provider stake", ts.spec.MinStakeProvider.Amount.Int64() + 1, true, false},
+	}
+
+	for it, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			providerAcct, addr := ts.AddAccount(common.PROVIDER, it+1, tt.stake)
+			err := ts.StakeProviderExtra(addr, ts.spec, tt.stake, nil, 0, "")
+			if !tt.isStaked {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+			require.True(t, found)
+			require.Equal(t, tt.isFrozen, stakeEntry.IsFrozen())
+		})
+	}
+}
+
+// TestUnfreezeWithDelegations checks the following scenario:
+// a provider stakes below the spec's min stake, so it's frozen (and can't unfreeze due to small stake)
+// Then, delegators add to its effective stake to be above min stake, provider is still frozen but now
+// can unfreeze
+func TestUnfreezeWithDelegations(t *testing.T) {
+	// set MinSelfDelegation = 100, MinStakeProvider = 200
+	ts := newTester(t)
+	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
+	ts.spec.MinStakeProvider = minSelfDelegation.AddAmount(math.NewInt(100))
+	ts.Keepers.Spec.SetSpec(ts.Ctx, ts.spec)
+	ts.AdvanceEpoch()
+
+	// stake minSelfDelegation+1 -> provider staked but frozen
+	providerAcc, provider := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
+	err := ts.StakeProviderExtra(provider, ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
+	require.NoError(t, err)
+	stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	require.True(t, found)
+	require.True(t, stakeEntry.IsFrozen())
+	require.Equal(t, minSelfDelegation.Amount.AddRaw(1), stakeEntry.EffectiveStake())
+
+	// try to unfreeze -> should fail
+	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
+	require.Error(t, err)
+
+	// increase delegation limit of stake entry from 0 to MinStakeProvider + 100
+	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	require.True(t, found)
+	stakeEntry.DelegateLimit = ts.spec.MinStakeProvider.AddAmount(math.NewInt(100))
+	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
+	ts.AdvanceEpoch()
+
+	// add delegator and delegate to provider so its effective stake is MinStakeProvider+MinSelfDelegation+1
+	// provider should still be frozen
+	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
+	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.Index, ts.spec.MinStakeProvider)
+	require.NoError(t, err)
+	ts.AdvanceEpoch() // apply delegation
+	stakeEntry, found, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	require.True(t, found)
+	require.True(t, stakeEntry.IsFrozen())
+	require.Equal(t, ts.spec.MinStakeProvider.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.EffectiveStake())
+
+	// try to unfreeze -> should succeed
+	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
+	require.NoError(t, err)
 }

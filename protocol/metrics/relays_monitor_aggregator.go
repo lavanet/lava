@@ -6,19 +6,23 @@ import (
 	"time"
 )
 
-type RelaysMonitorAggregator struct {
-	relaysMonitors  map[string]*RelaysMonitor // key is endpoint: chainID+apiInterface
-	ticker          *time.Ticker
-	rpcConsumerLogs *ConsumerMetricsManager
-	lock            sync.RWMutex
+type HealthCheckUpdatable interface {
+	UpdateHealthCheckStatus(status bool)
 }
 
-func NewRelaysMonitorAggregator(interval time.Duration, rpcConsumerLogs *ConsumerMetricsManager) *RelaysMonitorAggregator {
+type RelaysMonitorAggregator struct {
+	relaysMonitors       map[string]*RelaysMonitor // key is endpoint: chainID+apiInterface
+	ticker               *time.Ticker
+	healthCheckUpdatable HealthCheckUpdatable
+	lock                 sync.RWMutex
+}
+
+func NewRelaysMonitorAggregator(interval time.Duration, rpcConsumerLogs HealthCheckUpdatable) *RelaysMonitorAggregator {
 	return &RelaysMonitorAggregator{
-		relaysMonitors:  map[string]*RelaysMonitor{},
-		ticker:          time.NewTicker(interval),
-		rpcConsumerLogs: rpcConsumerLogs,
-		lock:            sync.RWMutex{},
+		relaysMonitors:       map[string]*RelaysMonitor{},
+		ticker:               time.NewTicker(interval),
+		healthCheckUpdatable: rpcConsumerLogs,
+		lock:                 sync.RWMutex{},
 	}
 }
 
@@ -49,10 +53,10 @@ func (rma *RelaysMonitorAggregator) runHealthCheck() {
 	// If at least one of the relays monitors is healthy, we set the status to TRUE, otherwise we set it to FALSE.
 	for _, relaysMonitor := range rma.relaysMonitors {
 		if relaysMonitor.IsHealthy() {
-			rma.rpcConsumerLogs.SetEndpointsHealthChecksOkStatus(true)
+			rma.healthCheckUpdatable.UpdateHealthCheckStatus(true)
 			return
 		}
 	}
 
-	rma.rpcConsumerLogs.SetEndpointsHealthChecksOkStatus(false)
+	rma.healthCheckUpdatable.UpdateHealthCheckStatus(false)
 }

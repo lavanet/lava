@@ -25,7 +25,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// list object that holds the
+// object that holds the list for iprpc funcs for a specific month id
 type IprpcReward struct {
 	Id        uint64     `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	SpecFunds []Specfund `protobuf:"bytes,2,rep,name=spec_funds,json=specFunds,proto3" json:"spec_funds"`

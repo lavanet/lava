@@ -31,6 +31,11 @@ type GrpcMessage struct {
 	chainproxy.BaseMessage
 }
 
+func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+	// grpc doesn't get here as it returns a real error
+	return false, ""
+}
+
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (gm GrpcMessage) GetParams() interface{} {

@@ -54,9 +54,9 @@ func (k Keeper) SetAllBasePay(ctx sdk.Context, list []types.BasePayGenesis) {
 	}
 }
 
-func (k Keeper) getAllBasePayForChain(ctx sdk.Context, chainID string) (list []types.BasePayWithIndex) {
+func (k Keeper) getAllBasePayForChain(ctx sdk.Context, chainID string, provider string) (list []types.BasePayWithIndex) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.BasePayPrefix))
-	iterator := sdk.KVStorePrefixIterator(store, []byte(chainID))
+	iterator := sdk.KVStorePrefixIterator(store, []byte(types.BasePayIndex{ChainID: chainID, Provider: provider}.String()))
 
 	defer iterator.Close()
 
