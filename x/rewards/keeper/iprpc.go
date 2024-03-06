@@ -53,7 +53,7 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 	}
 
 	// add spec funds to next month IPRPC reward object
-	k.addSpecFunds(ctx, spec, fund, duration)
+	k.addSpecFunds(ctx, spec, fund, duration, true)
 
 	return nil
 }
@@ -62,7 +62,7 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 // so the IPRPC rewards transfer to the next month
 func (k Keeper) handleNoIprpcRewardToProviders(ctx sdk.Context, iprpcFunds []types.Specfund) {
 	for _, fund := range iprpcFunds {
-		k.addSpecFunds(ctx, fund.Spec, fund.Fund, 1)
+		k.addSpecFunds(ctx, fund.Spec, fund.Fund, 1, false)
 	}
 
 	details := map[string]string{
@@ -91,8 +91,14 @@ func (k Keeper) countIprpcCu(specCuMap map[string]types.SpecCuType, iprpcCu uint
 
 // AddSpecFunds adds funds for a specific spec for <duration> of months.
 // This function is used by the fund-iprpc TX.
-func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, duration uint64) {
-	startID := k.GetIprpcRewardsCurrentId(ctx) + 1 // fund IPRPC only from the next month for <duration> months
+// use fromNextMonth=true for normal IPRPC fund (should always start from next month)
+// use fromNextMonth=false for IPRPC reward transfer for next month (when no providers are eligible for IPRPC rewards)
+func (k Keeper) addSpecFunds(ctx sdk.Context, spec string, fund sdk.Coins, duration uint64, fromNextMonth bool) {
+	startID := k.GetIprpcRewardsCurrentId(ctx)
+	if fromNextMonth {
+		startID = startID + 1 // fund IPRPC only from the next month for <duration> months
+	}
+
 	for i := startID; i < startID+duration; i++ {
 		iprpcReward, found := k.GetIprpcReward(ctx, i)
 		if found {

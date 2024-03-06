@@ -312,6 +312,9 @@ func TestIprpcSpecRewardQuery(t *testing.T) {
 	relay := ts.SendRelay(p1, c1Acc, []string{ts.specs[1].Index}, 100)
 	_, err = ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &relay)
 	require.NoError(t, err)
+	relay = ts.SendRelay(p1, c1Acc, []string{ts.specs[0].Index}, 100)
+	_, err = ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &relay)
+	require.NoError(t, err)
 
 	// advance month to distribute monthly rewards
 	ts.AdvanceMonths(1)
