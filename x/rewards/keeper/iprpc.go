@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
@@ -42,9 +43,10 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 		)
 	}
 	fund = fund.Sub(minIprpcFundCost)
+	allFunds := fund.MulInt(math.NewIntFromUint64(duration))
 
 	// send the funds to the iprpc pool
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.IprpcPoolName), fund)
+	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.IprpcPoolName), allFunds)
 	if err != nil {
 		return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding iprpc pool", err,
 			utils.LogAttr("creator", creator),
