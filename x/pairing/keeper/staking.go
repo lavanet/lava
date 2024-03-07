@@ -103,18 +103,26 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			// if there was a change in the last 24h than we dont allow changes
 			if ctx.BlockTime().UTC().Unix()-int64(existingEntry.LastChange) < int64(CHANGE_WINDOW.Seconds()) {
 				if delegationCommission != existingEntry.DelegateCommission || existingEntry.DelegateLimit != delegationLimit {
-					return utils.LavaFormatWarning(fmt.Sprintf("stake entry commmision or delegate limit can only be changes once in %s", CHANGE_WINDOW), nil)
+					return utils.LavaFormatWarning(fmt.Sprintf("stake entry commmision or delegate limit can only be changes once in %s", CHANGE_WINDOW), nil,
+						utils.LogAttr("last_change_time", existingEntry.LastChange))
 				}
 			}
 
 			// check that the change is not mode than MAX_CHANGE_RATE
 			if int64(delegationCommission)-int64(existingEntry.DelegateCommission) > MAX_CHANGE_RATE {
-				return utils.LavaFormatWarning("stake entry commission increase too high", fmt.Errorf("commission change cannot increase by more than %d at a time", MAX_CHANGE_RATE))
+				return utils.LavaFormatWarning("stake entry commission increase too high", fmt.Errorf("commission change cannot increase by more than %d at a time", MAX_CHANGE_RATE),
+					utils.LogAttr("original_commission", existingEntry.DelegateCommission),
+					utils.LogAttr("wanted_commission", delegationCommission),
+				)
 			}
 
 			// check that the change in delegation limit is decreasing and that new_limit*100/old_limit < (100-MAX_CHANGE_RATE)
 			if delegationLimit.IsLT(existingEntry.DelegateLimit) && delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount).LT(sdk.NewInt(100-MAX_CHANGE_RATE)) {
-				return utils.LavaFormatWarning("stake entry DelegateLimit decrease too high", fmt.Errorf("DelegateLimit change cannot decrease by more than %d at a time", MAX_CHANGE_RATE))
+				return utils.LavaFormatWarning("stake entry DelegateLimit decrease too high", fmt.Errorf("DelegateLimit change cannot decrease by more than %d at a time", MAX_CHANGE_RATE),
+					utils.LogAttr("change_percentage", delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount)),
+					utils.LogAttr("original_limit", existingEntry.DelegateLimit),
+					utils.LogAttr("wanted_limit", delegationLimit),
+				)
 			}
 		}
 
