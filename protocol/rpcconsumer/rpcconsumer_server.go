@@ -498,13 +498,14 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
 			}
 			defer func() {
-				// Close context
-				goroutineCtxCancel()
 				// Return response
 				relayProcessor.SetResponse(&relayResponse{
 					relayResult: *localRelayResult,
 					err:         errResponse,
 				})
+
+				// Close context
+				goroutineCtxCancel()
 			}()
 
 			localRelayRequestData := *relayRequestData

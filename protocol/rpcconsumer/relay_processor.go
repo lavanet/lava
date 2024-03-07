@@ -193,7 +193,7 @@ func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 		}
 	}
 	// check if we got all of the responses
-	if rp.usedProviders.CurrentlyUsed() == 0 && responsesCount >= rp.usedProviders.SessionsLatestBatch() {
+	if responsesCount >= rp.usedProviders.SessionsLatestBatch() {
 		// no active sessions, and we read all the responses, we can return
 		return true
 	}

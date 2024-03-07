@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -24,9 +25,7 @@ import (
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials/insecure"
 
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -53,7 +52,7 @@ func TestMain(m *testing.M) {
 func isGrpcServerUp(url string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 	defer cancel()
-	conn, err := grpc.DialContext(ctx, url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := lavasession.ConnectgRPCClient(context.Background(), url, true)
 	if err != nil {
 		return false
 	}
@@ -169,7 +168,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	return rpcConsumerServer
 }
 
-func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string, specId string, apiInterface string, listenAddress string, account sigs.Account, lavaChainID string, addons []string) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter) {
+func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string, specId string, apiInterface string, listenAddress string, account sigs.Account, lavaChainID string, addons []string) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher) {
 	replySetter := ReplySetter{
 		status:       http.StatusOK,
 		replyDataBuf: []byte(`{"reply": "REPLY-STUB"}`),
@@ -192,9 +191,9 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 			Address:    endpoint.NetworkAddress.Address,
 			KeyPem:     "",
 			CertPem:    "",
-			DisableTLS: true,
+			DisableTLS: false,
 		},
-		ChainID:      lavaChainID,
+		ChainID:      specId,
 		ApiInterface: apiInterface,
 		Geolocation:  1,
 		NodeUrls: []common.NodeUrl{
@@ -242,7 +241,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
 	providerUp := checkGrpcServerStatusWithTimeout(rpcProviderEndpoint.NetworkAddress.Address, time.Millisecond*261)
 	require.True(t, providerUp)
-	return rpcProviderServer, endpoint, &replySetter
+	return rpcProviderServer, endpoint, &replySetter, mockChainFetcher
 }
 
 func TestConsumerProviderBasic(t *testing.T) {
@@ -259,10 +258,11 @@ func TestConsumerProviderBasic(t *testing.T) {
 	consumerListenAddress := "localhost:21111"
 	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 	type providerData struct {
-		account     sigs.Account
-		endpoint    *lavasession.RPCProviderEndpoint
-		server      *rpcprovider.RPCProviderServer
-		replySetter *ReplySetter
+		account          sigs.Account
+		endpoint         *lavasession.RPCProviderEndpoint
+		server           *rpcprovider.RPCProviderServer
+		replySetter      *ReplySetter
+		mockChainFetcher *MockChainFetcher
 	}
 	providers := []providerData{}
 
@@ -277,7 +277,7 @@ func TestConsumerProviderBasic(t *testing.T) {
 		ctx := context.Background()
 		providerDataI := providers[i]
 		listenAddress := "localhost:111" + strconv.Itoa(i)
-		providers[i].server, providers[i].endpoint, providers[i].replySetter = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
+		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
 	}
 	for i := 0; i < numProviders; i++ {
 		pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
@@ -300,6 +300,9 @@ func TestConsumerProviderBasic(t *testing.T) {
 	client := http.Client{}
 	resp, err := client.Get("http://" + consumerListenAddress + "/status")
 	require.NoError(t, err)
-	require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	bodyBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, providers[0].replySetter.replyDataBuf, bodyBytes)
 	resp.Body.Close()
 }
