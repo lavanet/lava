@@ -39,7 +39,7 @@ type ReferrerRequest struct {
 	Count      uint64 `json:"count"`
 	ChainId    string `json:"chain-id"`
 	Msg        string `json:"msg"`
-	Referer    string `json:"referer"`
+	Referer    string `json:"http-referer"`
 	Origin     string `json:"origin"`
 	UserAgent  string `json:"user-agent"`
 }
