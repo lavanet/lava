@@ -1553,7 +1553,7 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 
 	// Verify that provider got rewarded for both subscriptions
 	expectedPrice := freePlan.Price.AddAmount(premiumPlan.Price.Amount).AddAmount(premiumPlusPlan.Price.Amount)
-	require.Equal(t, expectedPrice, reward.Amount)
+	require.Equal(t, sdk.NewCoins(expectedPrice), reward.Amount)
 }
 
 // ### Advance Purchase Tests ###

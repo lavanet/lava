@@ -1,0 +1,20 @@
+syntax = "proto3";
+package lavanet.lava.rewards;
+
+option go_package = "github.com/lavanet/lava/x/rewards/types";
+import "gogoproto/gogo.proto"; 
+import "cosmos/base/v1beta1/coin.proto"; 
+
+// object that holds the list for iprpc funcs for a specific month id
+message IprpcReward {
+    uint64 id = 1; // month id
+    repeated Specfund spec_funds = 2 [(gogoproto.nullable) = false]; 
+}
+
+message Specfund {
+    string spec = 1;
+	repeated cosmos.base.v1beta1.Coin fund = 2 [
+        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+        (gogoproto.nullable)     = false
+    ];
+}

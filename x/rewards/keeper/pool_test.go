@@ -37,8 +37,6 @@ import (
 //  1. The allocation pool has the expected allocated funds minus one block reward
 //  2. The distribution pool has the expected monthly quota minus one block reward
 //  3. The fee collector has one block reward
-//
-// the validator got rewards
 func TestRewardsModuleSetup(t *testing.T) {
 	ts := newTester(t, false)
 	lifetime := int64(types.RewardsAllocationPoolsLifetime)
@@ -61,9 +59,11 @@ func TestRewardsModuleSetup(t *testing.T) {
 	for _, pool := range res.Pools {
 		switch pool.Name {
 		case string(types.ValidatorsRewardsAllocationPoolName):
-			require.Equal(t, allocationPoolBalance*(lifetime-1)/lifetime, pool.Balance.Amount.Int64())
+			require.Equal(t, allocationPoolBalance*(lifetime-1)/lifetime, pool.Balance.AmountOf(ts.BondDenom()).Int64())
 		case string(types.ValidatorsRewardsDistributionPoolName):
-			require.Equal(t, (allocationPoolBalance/lifetime)-blockReward, pool.Balance.Amount.Int64())
+			require.Equal(t, (allocationPoolBalance/lifetime)-blockReward, pool.Balance.AmountOf(ts.BondDenom()).Int64())
+		case string(types.IprpcPoolName):
+			require.True(t, pool.Balance.Empty())
 		}
 	}
 
@@ -78,8 +78,7 @@ func TestRewardsModuleSetup(t *testing.T) {
 func TestBurnRateParam(t *testing.T) {
 	ts := newTester(t, true)
 	lifetime := int64(types.RewardsAllocationPoolsLifetime)
-	allocPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsAllocationPoolName, ts.BondDenom()).Int64()
-
+	allocPoolBalance := ts.getPoolBalance(types.ValidatorsRewardsAllocationPoolName, ts.BondDenom()).Int64()
 	// advance a month to trigger monthly pool refill callback
 	// to see why these 3 are called, see general note 2
 	resp, err := ts.QueryRewardsPools()
@@ -90,7 +89,7 @@ func TestBurnRateParam(t *testing.T) {
 	// default burn rate = 1, distribution pool's old balance should be wiped
 	// current balance should be exactly the expected monthly quota minus block reward
 	expectedMonthlyQuota := allocPoolBalance / (lifetime - 1)
-	distPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName, ts.BondDenom()).Int64()
+	distPoolBalance := ts.getPoolBalance(types.ValidatorsRewardsDistributionPoolName, ts.BondDenom()).Int64()
 	require.Equal(t, expectedMonthlyQuota, distPoolBalance)
 
 	// change the burn rate param to be zero
@@ -105,12 +104,12 @@ func TestBurnRateParam(t *testing.T) {
 	resp, err = ts.QueryRewardsPools()
 	require.NoError(t, err)
 	ts.AdvanceBlock(time.Duration(resp.TimeToRefill) * time.Second)
-	prevDistPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName, ts.BondDenom()).Int64()
+	prevDistPoolBalance := ts.getPoolBalance(types.ValidatorsRewardsDistributionPoolName, ts.BondDenom()).Int64()
 	testkeeper.EndBlock(ts.Ctx, ts.Keepers)
 
 	// burn rate = 0, distribution pool's old balance should not be wiped
 	// current balance should be previous balance (minus block reward) plus new quota
-	distPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName, ts.BondDenom()).Int64()
+	distPoolBalance = ts.getPoolBalance(types.ValidatorsRewardsDistributionPoolName, ts.BondDenom()).Int64()
 	require.Equal(t, prevDistPoolBalance+expectedMonthlyQuota, distPoolBalance)
 }
 
@@ -125,11 +124,11 @@ func TestAllocationPoolMonthlyQuota(t *testing.T) {
 	// calc expectedMonthlyQuota. Check that it was subtracted from the allocation pool and added
 	// to the distribution pool (its balance should be the monthly quota minus the fee collector's balance)
 	expectedMonthlyQuota := allocationPoolBalance / lifetime
-	currentAllocPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsAllocationPoolName, ts.BondDenom())
+	currentAllocPoolBalance := ts.getPoolBalance(types.ValidatorsRewardsAllocationPoolName, ts.BondDenom())
 	require.Equal(t, expectedMonthlyQuota, allocationPoolBalance-currentAllocPoolBalance.Int64())
 
 	feeCollectorBalance := ts.GetBalance(ts.feeCollector())
-	currentDistPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName, ts.BondDenom())
+	currentDistPoolBalance := ts.getPoolBalance(types.ValidatorsRewardsDistributionPoolName, ts.BondDenom())
 	require.Equal(t, expectedMonthlyQuota, feeCollectorBalance+currentDistPoolBalance.Int64())
 
 	// check the monthly quota is as expected with advancement of months
@@ -141,7 +140,7 @@ func TestAllocationPoolMonthlyQuota(t *testing.T) {
 
 		monthsLeft := ts.Keepers.Rewards.AllocationPoolMonthsLeft(ts.Ctx)
 		prevAllocPoolBalance := currentAllocPoolBalance
-		currentAllocPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsAllocationPoolName, ts.BondDenom())
+		currentAllocPoolBalance = ts.getPoolBalance(types.ValidatorsRewardsAllocationPoolName, ts.BondDenom())
 
 		var monthlyQuota int64
 		if monthsLeft != 0 {
@@ -160,7 +159,7 @@ func TestAllocationPoolMonthlyQuota(t *testing.T) {
 	ts.AdvanceMonths(1)
 	ts.AdvanceBlock()
 	testkeeper.EndBlock(ts.Ctx, ts.Keepers)
-	currentAllocPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsAllocationPoolName, ts.BondDenom())
+	currentAllocPoolBalance = ts.getPoolBalance(types.ValidatorsRewardsAllocationPoolName, ts.BondDenom())
 	require.True(t, currentAllocPoolBalance.IsZero())
 
 	// advance another month to distribute the last quota to the fee collector
@@ -174,7 +173,7 @@ func TestAllocationPoolMonthlyQuota(t *testing.T) {
 		ts.AdvanceBlock()
 		testkeeper.EndBlock(ts.Ctx, ts.Keepers)
 
-		currentAllocPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsAllocationPoolName, ts.BondDenom())
+		currentAllocPoolBalance = ts.getPoolBalance(types.ValidatorsRewardsAllocationPoolName, ts.BondDenom())
 		require.True(t, currentAllocPoolBalance.IsZero())
 
 		currentFeeCollectorBalance := ts.GetBalance(ts.feeCollector())
@@ -212,7 +211,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 	res, err := ts.QueryRewardsBlockReward()
 	require.NoError(t, err)
 	blockReward := res.Reward.Amount
-	distPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName, ts.BondDenom())
+	distPoolBalance := ts.getPoolBalance(types.ValidatorsRewardsDistributionPoolName, ts.BondDenom())
 	blocksToNextExpiry := ts.Keepers.Rewards.BlocksToNextTimerExpiry(ts.Ctx)
 	bondedTargetFactor := sdk.OneDec().MulInt(blockReward).MulInt64(blocksToNextExpiry).QuoInt(distPoolBalance).TruncateInt()
 	require.True(t, bondedTargetFactor.Equal(expectedBondedTargetFactor))
@@ -228,7 +227,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 	blockReward = res.Reward.Amount
 
 	// transfer half of the total distribution pool balance to the allocation pool
-	distPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName, ts.BondDenom())
+	distPoolBalance = ts.getPoolBalance(types.ValidatorsRewardsDistributionPoolName, ts.BondDenom())
 	err = ts.Keepers.BankKeeper.SendCoinsFromModuleToModule(
 		ts.Ctx,
 		string(types.ValidatorsRewardsDistributionPoolName),
@@ -263,7 +262,7 @@ func TestValidatorBlockRewards(t *testing.T) {
 	require.NoError(t, err)
 	blockReward = res.Reward.Amount
 	bondedTargetFactor = ts.Keepers.Rewards.BondedTargetFactor(ts.Ctx).TruncateInt()
-	distPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName, ts.BondDenom())
+	distPoolBalance = ts.getPoolBalance(types.ValidatorsRewardsDistributionPoolName, ts.BondDenom())
 	blocksToNextExpiry = bondedTargetFactor.Mul(distPoolBalance).Quo(blockReward).Int64()
 	require.Equal(t, refBlocksToExpiry, blocksToNextExpiry)
 }
