@@ -29,6 +29,18 @@ func isCharDisallowed(c rune, disallowedChars []rune) bool {
 	return false
 }
 
+func isASCII(r rune) bool {
+	if r > 127 || !unicode.IsLetter(r) {
+		return false
+	}
+
+	return true
+}
+
+func isLowercaseASCII(r rune) bool {
+	return r >= 'a' && r <= 'z'
+}
+
 // Validates name strings.
 // Current policy:
 //
@@ -44,6 +56,10 @@ func ValidateString(s string, restrictType charRestrictionEnum, disallowedChars 
 		return false
 	}
 
+	if restrictType == INDEX_RESTRICTIONS && len(s) == 0 {
+		return false
+	}
+
 	// Character check
 	for _, r := range s {
 		if disallowedChars != nil && isCharDisallowed(r, disallowedChars) {
@@ -53,15 +69,15 @@ func ValidateString(s string, restrictType charRestrictionEnum, disallowedChars 
 			case NAME_RESTRICTIONS:
 				if r == ',' {
 					return false
-				} else if !unicode.IsLower(r) && r != ' ' && r != '_' && !unicode.IsDigit(r) {
+				} else if !isLowercaseASCII(r) && r != ' ' && r != '_' && !unicode.IsDigit(r) {
 					return false
 				}
 			case DESCRIPTION_RESTRICTIONS:
-				if !unicode.IsLetter(r) && r != ' ' && r != '_' && !unicode.IsDigit(r) {
+				if !isASCII(r) && r != ' ' && r != '_' && !unicode.IsDigit(r) {
 					return false
 				}
 			case INDEX_RESTRICTIONS:
-				if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+				if !isASCII(r) && !unicode.IsDigit(r) {
 					return false
 				}
 			}
