@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -10,6 +11,11 @@ import (
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+)
+
+const (
+	MAX_CHANGE_RATE = 1
+	CHANGE_WINDOW   = time.Hour * 24
 )
 
 func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64) error {
@@ -92,12 +98,41 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		}
 		details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 
+		// if the provider has no delegations then we dont limit the changes
+		if !existingEntry.DelegateTotal.IsZero() {
+			// if there was a change in the last 24h than we dont allow changes
+			if ctx.BlockTime().UTC().Unix()-int64(existingEntry.LastChange) < int64(CHANGE_WINDOW.Seconds()) {
+				if delegationCommission != existingEntry.DelegateCommission || existingEntry.DelegateLimit != delegationLimit {
+					return utils.LavaFormatWarning(fmt.Sprintf("stake entry commmision or delegate limit can only be changes once in %s", CHANGE_WINDOW), nil,
+						utils.LogAttr("last_change_time", existingEntry.LastChange))
+				}
+			}
+
+			// check that the change is not mode than MAX_CHANGE_RATE
+			if int64(delegationCommission)-int64(existingEntry.DelegateCommission) > MAX_CHANGE_RATE {
+				return utils.LavaFormatWarning("stake entry commission increase too high", fmt.Errorf("commission change cannot increase by more than %d at a time", MAX_CHANGE_RATE),
+					utils.LogAttr("original_commission", existingEntry.DelegateCommission),
+					utils.LogAttr("wanted_commission", delegationCommission),
+				)
+			}
+
+			// check that the change in delegation limit is decreasing and that new_limit*100/old_limit < (100-MAX_CHANGE_RATE)
+			if delegationLimit.IsLT(existingEntry.DelegateLimit) && delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount).LT(sdk.NewInt(100-MAX_CHANGE_RATE)) {
+				return utils.LavaFormatWarning("stake entry DelegateLimit decrease too high", fmt.Errorf("DelegateLimit change cannot decrease by more than %d at a time", MAX_CHANGE_RATE),
+					utils.LogAttr("change_percentage", delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount)),
+					utils.LogAttr("original_limit", existingEntry.DelegateLimit),
+					utils.LogAttr("wanted_limit", delegationLimit),
+				)
+			}
+		}
+
 		// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
 		existingEntry.Geolocation = geolocation
 		existingEntry.Endpoints = endpointsVerified
 		existingEntry.Moniker = moniker
 		existingEntry.DelegateCommission = delegationCommission
 		existingEntry.DelegateLimit = delegationLimit
+		existingEntry.LastChange = uint64(ctx.BlockTime().UTC().Unix())
 
 		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry, indexInStakeStorage)
 
@@ -180,6 +215,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
 		DelegateLimit:      delegationLimit,
 		DelegateCommission: delegationCommission,
+		LastChange:         uint64(ctx.BlockTime().UTC().Unix()),
 	}
 
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
