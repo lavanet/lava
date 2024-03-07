@@ -47,7 +47,7 @@ type RPCConsumerServer struct {
 	requiredResponses      int
 	finalizationConsensus  *lavaprotocol.FinalizationConsensus
 	lavaChainID            string
-	consumerAddress        sdk.AccAddress
+	ConsumerAddress        sdk.AccAddress
 	consumerConsistency    *ConsumerConsistency
 	sharedState            bool // using the cache backend to sync the latest seen block with other consumers
 	relaysMonitor          *metrics.RelaysMonitor
@@ -94,7 +94,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.privKey = privKey
 	rpccs.chainParser = chainParser
 	rpccs.finalizationConsensus = finalizationConsensus
-	rpccs.consumerAddress = consumerAddress
+	rpccs.ConsumerAddress = consumerAddress
 	rpccs.consumerConsistency = consumerConsistency
 	rpccs.sharedState = sharedState
 	rpccs.reporter = reporter
@@ -683,7 +683,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	enabled, _ := rpccs.chainParser.DataReliabilityParams()
 	if enabled {
 		// TODO: DETECTION instead of existingSessionLatestBlock, we need proof of last reply to send the previous reply and the current reply
-		finalizedBlocks, finalizationConflict, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.consumerAddress, existingSessionLatestBlock, blockDistanceForFinalizedData)
+		finalizedBlocks, finalizationConflict, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, blockDistanceForFinalizedData)
 		if err != nil {
 			if lavaprotocol.ProviderFinzalizationDataAccountabilityError.Is(err) && finalizationConflict != nil {
 				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Parent)
