@@ -91,7 +91,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
 	})
-	chainParser, _, chainFetcher, _, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", nil)
+	chainParser, _, chainFetcher, _, _, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainFetcher)
@@ -126,7 +126,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	return rpcConsumerServer
 }
 
-func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string, specId string, apiInterface string, providerListenAddress string, account sigs.Account, epoch uint64, lavaChainID string, addons []string) (*rpcprovider.RPCProviderServer, *ReplySetter) {
+func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string, specId string, apiInterface string, listenAddress string, account sigs.Account, lavaChainID string, addons []string) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter) {
 	replySetter := ReplySetter{
 		status:       http.StatusOK,
 		replyDataBuf: []byte(`{"reply": "REPLY-STUB"}`),
@@ -136,16 +136,17 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 		w.WriteHeader(replySetter.status)
 		fmt.Fprint(w, string(replySetter.replyDataBuf))
 	})
-	chainParser, chainRouter, chainFetcher, _, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", addons)
+	chainParser, chainRouter, chainFetcher, _, endpoint, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", addons)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainFetcher)
 	require.NotNil(t, chainRouter)
+	endpoint.NetworkAddress.Address = listenAddress
 
 	rpcProviderServer := &rpcprovider.RPCProviderServer{}
 	rpcProviderEndpoint := &lavasession.RPCProviderEndpoint{
 		NetworkAddress: lavasession.NetworkAddressData{
-			Address:    providerListenAddress,
+			Address:    endpoint.NetworkAddress.Address,
 			KeyPem:     "",
 			CertPem:    "",
 			DisableTLS: true,
@@ -155,7 +156,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 		Geolocation:  1,
 		NodeUrls: []common.NodeUrl{
 			{
-				Url:               "",
+				Url:               endpoint.NodeUrls[0].Url,
 				InternalPath:      "",
 				AuthConfig:        common.AuthConfig{},
 				IpForwarding:      false,
@@ -196,7 +197,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 	require.NoError(t, err)
 	chainParser.Activate()
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
-	return rpcProviderServer, &replySetter
+	return rpcProviderServer, endpoint, &replySetter
 }
 
 func TestConsumerProviderBasic(t *testing.T) {
@@ -213,23 +214,32 @@ func TestConsumerProviderBasic(t *testing.T) {
 	consumerListenAddress := "localhost:21111"
 	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 	type providerData struct {
-		account       sigs.Account
-		listenAddress string
-		server        *rpcprovider.RPCProviderServer
-		replySetter   *ReplySetter
+		account     sigs.Account
+		endpoint    *lavasession.RPCProviderEndpoint
+		server      *rpcprovider.RPCProviderServer
+		replySetter *ReplySetter
 	}
 	providers := []providerData{}
+
 	for i := 0; i < numProviders; i++ {
 		// providerListenAddress := "localhost:111" + strconv.Itoa(i)
-		providerListenAddress := "localhost:111" + strconv.Itoa(i)
 		account := sigs.GenerateDeterministicFloatingKey(randomizer)
-		providerDataI := providerData{account: account, listenAddress: providerListenAddress}
+		providerDataI := providerData{account: account}
 		providers = append(providers, providerDataI)
+	}
+	consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+	for i := 0; i < numProviders; i++ {
+		ctx := context.Background()
+		providerDataI := providers[i]
+		listenAddress := "localhost:111" + strconv.Itoa(i)
+		providers[i].server, providers[i].endpoint, providers[i].replySetter = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
+	}
+	for i := 0; i < numProviders; i++ {
 		pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
-			PublicLavaAddress: account.Addr.String(),
+			PublicLavaAddress: providers[i].account.Addr.String(),
 			Endpoints: []*lavasession.Endpoint{
 				{
-					NetworkAddress: providerListenAddress,
+					NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
 					Enabled:        true,
 					Geolocation:    1,
 				},
@@ -239,12 +249,6 @@ func TestConsumerProviderBasic(t *testing.T) {
 			UsedComputeUnits: 0,
 			PairingEpoch:     epoch,
 		}
-	}
-	consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
-	for i := 0; i < numProviders; i++ {
-		ctx := context.Background()
-		providerDataI := providers[i]
-		providers[i].server, providers[i].replySetter = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, providerDataI.listenAddress, providerDataI.account, epoch, lavaChainID, nil)
 	}
 	rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
 	require.NotNil(t, rpcconsumerServer)

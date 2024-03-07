@@ -86,11 +86,11 @@ func generateCombinations(arr []string) [][]string {
 
 // generates a chain parser, a chain fetcher messages based on it
 // apiInterface can either be an ApiInterface string as in spectypes.ApiInterfaceXXX or a number for an index in the apiCollections
-func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string, services []string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), errRet error) {
+func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string, services []string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
 	closeServer = nil
 	spec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	index, err := strconv.Atoi(apiInterface)
 	if err == nil && index < len(spec.ApiCollections) {
@@ -98,7 +98,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 	}
 	chainParser, err := NewChainParser(apiInterface)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 	var chainRouter ChainRouter
 	chainParser.SetSpec(spec)
@@ -111,7 +111,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 	}
 	addons, extensions, err := chainParser.SeparateAddonsExtensions(services)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, nil, err
 	}
 
 	if apiInterface == spectypes.APIInterfaceGrpc {
@@ -119,7 +119,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		grpcServer := grpc.NewServer()
 		lis, err := net.Listen("tcp", "localhost:0")
 		if err != nil {
-			return nil, nil, nil, closeServer, err
+			return nil, nil, nil, closeServer, nil, err
 		}
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: addons})
 		allCombinations := generateCombinations(extensions)
@@ -138,7 +138,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		time.Sleep(10 * time.Millisecond)
 		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
 		if err != nil {
-			return nil, nil, nil, closeServer, err
+			return nil, nil, nil, closeServer, nil, err
 		}
 	} else {
 		mockServer := httptest.NewServer(serverCallback)
@@ -146,11 +146,11 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL, Addons: addons})
 		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
 		if err != nil {
-			return nil, nil, nil, closeServer, err
+			return nil, nil, nil, closeServer, nil, err
 		}
 	}
 	chainFetcher := NewChainFetcher(ctx, &ChainFetcherOptions{chainRouter, chainParser, endpoint, nil})
-	return chainParser, chainRouter, chainFetcher, closeServer, err
+	return chainParser, chainRouter, chainFetcher, closeServer, endpoint, err
 }
 
 type TestStruct struct {

@@ -78,7 +78,7 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		specId := "LAV1"
-		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -120,7 +120,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		specId := "LAV1"
-		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -172,7 +172,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		specId := "LAV1"
-		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -216,7 +216,7 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		specId := "LAV1"
-		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -261,7 +261,7 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		specId := "LAV1"
-		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -306,7 +306,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		specId := "LAV1"
-		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -350,7 +350,7 @@ func TestRelayProcessorLatest(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		specId := "LAV1"
-		chainParser, _, _, closeServer, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
