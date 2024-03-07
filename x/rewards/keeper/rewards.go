@@ -72,7 +72,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName, burnRate)
 	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, sdk.OneDec())
 
-	if monthsLeft > 0 {
+	if monthsLeft > 1 {
 		monthsLeft -= 1
 	}
 
