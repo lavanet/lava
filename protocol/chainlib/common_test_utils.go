@@ -117,7 +117,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 	if apiInterface == spectypes.APIInterfaceGrpc {
 		// Start a new gRPC server using the buffered connection
 		grpcServer := grpc.NewServer()
-		lis, err := net.Listen("tcp", "localhost:0")
+		lis, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
 			return nil, nil, nil, closeServer, nil, err
 		}

@@ -24,6 +24,9 @@ import (
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials/insecure"
 
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -38,12 +41,52 @@ func TestMain(m *testing.M) {
 	seed = time.Now().Unix()
 	rand.SetSpecificSeed(seed)
 	randomizer = sigs.NewZeroReader(seed)
+	lavasession.AllowInsecureConnectionToProviders = true
 	// Run the actual tests
 	exitCode := m.Run()
 	if exitCode != 0 {
 		utils.LavaFormatDebug("failed tests seed", utils.Attribute{Key: "seed", Value: seed})
 	}
 	os.Exit(exitCode)
+}
+
+func isGrpcServerUp(url string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
+	defer cancel()
+	conn, err := grpc.DialContext(ctx, url, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return false
+	}
+	defer conn.Close()
+	for {
+		state := conn.GetState()
+		if state == connectivity.Ready {
+			return true
+		} else if state == connectivity.TransientFailure || state == connectivity.Shutdown {
+			return false
+		}
+
+		select {
+		case <-time.After(10 * time.Millisecond):
+			// Check the connection state again after a short delay
+		case <-ctx.Done():
+			// The context has timed out
+			return false
+		}
+	}
+}
+
+func checkGrpcServerStatusWithTimeout(url string, totalTimeout time.Duration) bool {
+	startTime := time.Now()
+
+	for time.Since(startTime) < totalTimeout {
+		if isGrpcServerUp(url) {
+			return true
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	return false
 }
 
 func isServerUp(url string) bool {
@@ -120,7 +163,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, account.SK, lavaChainID, nil, rpcsonumerLogs, account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil)
 	require.NoError(t, err)
 	// wait for consumer server to be up
-	consumerUp := checkServerStatusWithTimeout("http://"+consumerListenAddress, time.Millisecond*50)
+	consumerUp := checkServerStatusWithTimeout("http://"+consumerListenAddress, time.Millisecond*61)
 	require.True(t, consumerUp)
 
 	return rpcConsumerServer
@@ -197,6 +240,8 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 	require.NoError(t, err)
 	chainParser.Activate()
 	chainTracker.RegisterForBlockTimeUpdates(chainParser)
+	providerUp := checkGrpcServerStatusWithTimeout(rpcProviderEndpoint.NetworkAddress.Address, time.Millisecond*261)
+	require.True(t, providerUp)
 	return rpcProviderServer, endpoint, &replySetter
 }
 
