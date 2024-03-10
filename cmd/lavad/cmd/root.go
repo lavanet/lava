@@ -35,6 +35,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	cmdcommon "github.com/lavanet/lava/cmd/common"
+	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -79,6 +81,8 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 				return err
 			}
 
+			setLogLevelFieldNameFromFlag(cmd)
+
 			customAppTemplate, customAppConfig := initAppConfig()
 			return server.InterceptConfigsPreRunHandler(
 				cmd, customAppTemplate, customAppConfig, tmcfg.DefaultConfig(),
@@ -92,6 +96,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 		flags.FlagKeyringBackend: "test",
 	})
 
+	addLogFlagsToSubCommands(rootCmd)
 	return rootCmd, encodingConfig
 }
 
@@ -128,6 +133,8 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 				return err
 			}
 
+			setLogLevelFieldNameFromFlag(cmd)
+
 			customAppTemplate, customAppConfig := initAppConfig()
 			customConfig := initTendermintConfig()
 			return server.InterceptConfigsPreRunHandler(
@@ -141,6 +148,8 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
 		flags.FlagKeyringBackend: "test",
 	})
+
+	addLogFlagsToSubCommands(rootCmd)
 
 	return rootCmd
 }
@@ -167,12 +176,17 @@ func NewLavaVisorRootCmd() *cobra.Command {
 		Long:    `lavavisor is a protocol upgrade manager designed to orchestrate and automate the process of protocol version upgrades.`,
 		Version: version,
 		Run: func(cmd *cobra.Command, args []string) {
+			setLogLevelFieldNameFromFlag(cmd)
+
 			if len(args) == 0 {
 				cmd.Help()
 				os.Exit(0)
 			}
 		},
 	}
+
+	addLogFlagsToSubCommands(rootCmd)
+
 	return rootCmd
 }
 
@@ -233,6 +247,25 @@ func initRootCmd(
 		txCommand(),
 		keys.Commands(app.DefaultNodeHome),
 	)
+}
+
+func addLogFlagsToSubCommands(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(cmdcommon.LogLevelFieldNameFlagName, cmdcommon.LogLevelFieldNameFlagDefault, "Log level field name")
+}
+
+func setLogLevelFieldNameFromFlag(cmd *cobra.Command) error {
+	logLevelFieldName, err := cmd.Flags().GetString(cmdcommon.LogLevelFieldNameFlagName)
+	if err != nil {
+		return err
+	}
+
+	if logLevelFieldName == "" {
+		logLevelFieldName = cmdcommon.LogLevelFieldNameFlagDefault
+	}
+
+	utils.SetLogLevelFieldName(logLevelFieldName)
+
+	return nil
 }
 
 // queryCommand returns the sub-command to send queries to the app
