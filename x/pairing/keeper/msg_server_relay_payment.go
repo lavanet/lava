@@ -178,7 +178,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		// generate validate pairing cache key with CuTrackerKey() to reuse code (doesn't relate to CU tracking at all)
 		validatePairingKey := subscriptiontypes.CuTrackerKey(clientAddr.String(), relay.Provider, relay.SpecId)
-		providers := []epochstoragetypes.StakeEntry{}
+		var providers []epochstoragetypes.StakeEntry
 		allowedCU := uint64(0)
 		pairingData, ok := validatePairingCache[validatePairingKey]
 		if ok {
