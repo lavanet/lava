@@ -21,7 +21,7 @@ const (
 
 const (
 	ConflictVoteRevealEventName        = "conflict_vote_reveal_started"
-	ConflictDetectionRecievedEventName = "conflict_detection_received"
+	ConflictDetectionReceivedEventName = "conflict_detection_received"
 	ConflictVoteDetectionEventName     = "response_conflict_detection"
 	ConflictVoteResolvedEventName      = "conflict_detection_vote_resolved"
 	ConflictVoteUnresolvedEventName    = "conflict_detection_vote_unresolved"

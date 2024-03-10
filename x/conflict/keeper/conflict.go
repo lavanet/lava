@@ -20,30 +20,38 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	if chainID != conflictData.ConflictRelayData1.Request.RelaySession.SpecId {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", chainID, conflictData.ConflictRelayData1.Request.RelaySession.SpecId)
 	}
+
 	block := conflictData.ConflictRelayData0.Request.RelaySession.Epoch
 	if block != conflictData.ConflictRelayData1.Request.RelaySession.Epoch {
 		return fmt.Errorf("mismatching request parameters between providers %d, %d", block, conflictData.ConflictRelayData1.Request.RelaySession.Epoch)
 	}
+
 	if conflictData.ConflictRelayData0.Request.RelayData.ConnectionType != conflictData.ConflictRelayData1.Request.RelayData.ConnectionType {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.RelayData.ConnectionType, conflictData.ConflictRelayData1.Request.RelayData.ConnectionType)
 	}
+
 	if conflictData.ConflictRelayData0.Request.RelayData.ApiUrl != conflictData.ConflictRelayData1.Request.RelayData.ApiUrl {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.RelayData.ApiUrl, conflictData.ConflictRelayData1.Request.RelayData.ApiUrl)
 	}
+
 	if !bytes.Equal(conflictData.ConflictRelayData0.Request.RelayData.Data, conflictData.ConflictRelayData1.Request.RelayData.Data) {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.RelayData.Data, conflictData.ConflictRelayData1.Request.RelayData.Data)
 	}
+
 	if conflictData.ConflictRelayData0.Request.RelayData.RequestBlock != conflictData.ConflictRelayData1.Request.RelayData.RequestBlock {
 		return fmt.Errorf("mismatching request parameters between providers %d, %d", conflictData.ConflictRelayData0.Request.RelayData.RequestBlock, conflictData.ConflictRelayData1.Request.RelayData.RequestBlock)
 	}
+
 	if conflictData.ConflictRelayData0.Request.RelayData.ApiInterface != conflictData.ConflictRelayData1.Request.RelayData.ApiInterface {
 		return fmt.Errorf("mismatching request parameters between providers %s, %s", conflictData.ConflictRelayData0.Request.RelayData.ApiInterface, conflictData.ConflictRelayData1.Request.RelayData.ApiInterface)
 	}
+
 	// 1.5 validate params
 	epochStart, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, uint64(block))
 	if err != nil {
 		return fmt.Errorf("could not find epoch for block %d", block)
 	}
+
 	if conflictData.ConflictRelayData0.Request.RelayData.RequestBlock < 0 {
 		return fmt.Errorf("invalid request block height %d", conflictData.ConflictRelayData0.Request.RelayData.RequestBlock)
 	}
@@ -81,14 +89,17 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		}
 		return nil
 	}
+
 	err = verifyClientAddrFromSignatureOnRequest(*conflictData.ConflictRelayData0)
 	if err != nil {
 		return fmt.Errorf("conflict data 0: %s", err)
 	}
+
 	err = verifyClientAddrFromSignatureOnRequest(*conflictData.ConflictRelayData1)
 	if err != nil {
 		return fmt.Errorf("conflict data 1: %s", err)
 	}
+
 	// 3. validate providers signatures and stakeEntry for that epoch
 	providerAddressFromRelayReplyAndVerifyStakeEntry := func(requestData *pairingtypes.RelayPrivateData, reply *types.ReplyMetadata, first bool) (providerAddress sdk.AccAddress, err error) {
 		print_st := "first"
@@ -117,6 +128,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	if err != nil {
 		return err
 	}
+
 	// 4. validate finalization
 	validateResponseFinalizationData := func(expectedAddress sdk.AccAddress, response *types.ReplyMetadata, request *pairingtypes.RelayRequest, first bool) (err error) {
 		print_st := "first"
@@ -134,7 +146,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 			return fmt.Errorf("AccAddressFromHex %s provider ResponseFinalizationData: %w", print_st, err)
 		}
 		if !derived_providerAccAddress.Equals(expectedAddress) {
-			return fmt.Errorf("mismatching %s provider address signature and responseFinazalizationData %s , %s", print_st, derived_providerAccAddress, expectedAddress)
+			return fmt.Errorf("mismatching %s provider address signature and responseFinalizationData %s , %s", print_st, derived_providerAccAddress, expectedAddress)
 		}
 		// validate the responses are finalized
 		if !k.specKeeper.IsFinalizedBlock(ctx, chainID, request.RelayData.RequestBlock, response.LatestBlock) {
@@ -142,18 +154,22 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		}
 		return nil
 	}
+
 	err = validateResponseFinalizationData(providerAccAddress0, conflictData.ConflictRelayData0.Reply, conflictData.ConflictRelayData0.Request, true)
 	if err != nil {
 		return err
 	}
+
 	err = validateResponseFinalizationData(providerAccAddress1, conflictData.ConflictRelayData1.Reply, conflictData.ConflictRelayData1.Request, true)
 	if err != nil {
 		return err
 	}
+
 	// 5. validate mismatching responses
 	if bytes.Equal(conflictData.ConflictRelayData0.Reply.HashAllDataHash, conflictData.ConflictRelayData1.Reply.HashAllDataHash) {
 		return fmt.Errorf("no conflict between providers data responses, its the same")
 	}
+
 	return nil
 }
 

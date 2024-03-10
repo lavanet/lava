@@ -11,7 +11,7 @@ option go_package = "github.com/lavanet/lava/x/conflict/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc Detection(MsgDetection) returns (MsgDetectionResponse);
+  rpc Detection(MsgDetection) returns (MsgDetectionResponse);
   rpc ConflictVoteCommit(MsgConflictVoteCommit) returns (MsgConflictVoteCommitResponse);
   rpc ConflictVoteReveal(MsgConflictVoteReveal) returns (MsgConflictVoteRevealResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
