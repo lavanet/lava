@@ -47,7 +47,7 @@ func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, relayCU, epochAllo
 			return epochCuLimit - originalTotalCUInEpochForUserProvider, nil
 		}
 
-		utils.LavaFormatWarning("Client exceeded epoch CU limit", fmt.Errorf("client CU usage exceeded epoch limit"),
+		utils.LavaFormatInfo("Client exceeded epoch CU limit",
 			utils.LogAttr("epochCuLimit", epochCuLimit),
 			utils.LogAttr("totalCUInEpochForUserProvider", totalCUInEpochForUserProvider),
 			utils.LogAttr("relayCU", relayCU),
