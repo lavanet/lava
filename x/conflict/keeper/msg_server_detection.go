@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -34,12 +35,20 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 			)
 		}
 	} else if msg.FinalizationConflict == nil && msg.ResponseConflict == nil && msg.SameProviderConflict != nil {
-		err := k.Keeper.ValidateSameProviderConflict(ctx, msg.SameProviderConflict, clientAddr)
+		mismatchingBlockHeight, mismatchingBlockHashes, err := k.Keeper.ValidateSameProviderConflict(ctx, msg.SameProviderConflict, clientAddr)
 		if err != nil {
 			return nil, utils.LavaFormatWarning("Simulation: invalid same provider conflict detection", err,
 				utils.Attribute{Key: "client", Value: msg.Creator},
 			)
 		}
+
+		eventData := map[string]string{"client": msg.Creator}
+		eventData["chainID"] = msg.FinalizationConflict.RelayReply0.SpecId
+		eventData["mismatching_block_height"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
+		eventData["mismatching_block_hashes"] = fmt.Sprintf("%+v", mismatchingBlockHashes)
+
+		utils.LogLavaEvent(ctx, logger, types.ConflictDetectionSameProviderEventName, eventData, "Simulation: Got a new valid conflict detection from consumer on same provider")
+		return &types.MsgDetectionResponse{}, nil
 	} else if msg.FinalizationConflict == nil && msg.ResponseConflict != nil && msg.SameProviderConflict == nil {
 		err := k.Keeper.ValidateResponseConflict(ctx, msg.ResponseConflict, clientAddr)
 		if err != nil {

@@ -2,10 +2,13 @@ package keeper
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
@@ -175,6 +178,129 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 	return nil
 }
 
-func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) error {
+func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) (int64, map[string]string, error) {
+	mismatchingBlockHashes := map[string]string{}
+
+	// 1. Validate Sig of provider and compare addresses
+	provider0PubKey, err := sigs.RecoverPubKey(conflictData.RelayReply0)
+	if err != nil {
+		return 0, mismatchingBlockHashes, fmt.Errorf("ValidateSameProviderConflict: Failed to recover public key: %w", err)
+	}
+
+	providerAddress0, err := sdk.AccAddressFromHexUnsafe(provider0PubKey.Address().String())
+	if err != nil {
+		return 0, mismatchingBlockHashes, fmt.Errorf("ValidateSameProviderConflict: Failed to get provider address: %w", err)
+	}
+
+	provider1PubKey, err := sigs.RecoverPubKey(conflictData.RelayReply1)
+	if err != nil {
+		return 0, mismatchingBlockHashes, fmt.Errorf("ValidateSameProviderConflict: Failed to recover public key: %w", err)
+	}
+
+	providerAddress1, err := sdk.AccAddressFromHexUnsafe(provider1PubKey.Address().String())
+	if err != nil {
+		return 0, mismatchingBlockHashes, fmt.Errorf("ValidateSameProviderConflict: Failed to get provider address: %w", err)
+	}
+
+	if !providerAddress0.Equals(providerAddress1) {
+		return 0, mismatchingBlockHashes, fmt.Errorf("ValidateSameProviderConflict: Mismatching provider addresses %s, %s", providerAddress0, providerAddress1)
+	}
+
+	// 2. Validate block nums are ordered && Finalization distance is right
+
+	finalizedBlocksMap0, minBlock0, maxBlock0, err := k.validateBlockHeights(ctx, conflictData.RelayReply0)
+	if err != nil {
+		return 0, mismatchingBlockHashes, err
+	}
+
+	finalizedBlocksMap1, minBlock1, maxBlock1, err := k.validateBlockHeights(ctx, conflictData.RelayReply0)
+	if err != nil {
+		return 0, mismatchingBlockHashes, err
+	}
+
+	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply0, maxBlock0); err != nil {
+		return 0, mismatchingBlockHashes, err
+	}
+
+	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply1, maxBlock1); err != nil {
+		return 0, mismatchingBlockHashes, err
+	}
+
+	// 3. Check the hashes between responses
+	firstOverlappingBlock := int64(math.Max(float64(minBlock0), float64(minBlock1)))
+	lastOverlappingBlock := int64(math.Min(float64(maxBlock0), float64(maxBlock1)))
+	if firstOverlappingBlock > lastOverlappingBlock {
+		return 0, mismatchingBlockHashes, fmt.Errorf("ValidateSameProviderConflict: No overlapping blocks between providers: %d, %d", minBlock0, minBlock1)
+	}
+
+	mismatchingBlockHeight := int64(0)
+	for i := firstOverlappingBlock; i <= lastOverlappingBlock; i++ {
+		if finalizedBlocksMap0[i] != finalizedBlocksMap1[i] {
+			mismatchingBlockHashes[providerAddress0.String()] = finalizedBlocksMap0[i]
+			mismatchingBlockHashes[providerAddress1.String()] = finalizedBlocksMap1[i]
+			mismatchingBlockHeight = i
+		}
+	}
+
+	if len(mismatchingBlockHashes) == 0 {
+		return 0, mismatchingBlockHashes, fmt.Errorf("ValidateSameProviderConflict: All overlapping blocks are equal between providers")
+	}
+
+	return mismatchingBlockHeight, mismatchingBlockHashes, nil
+}
+
+func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.RelayFinalization) (finalizedBlocksMarshalled map[int64]string, minBlock int64, maxBlock int64, err error) {
+	EMPTY_MAP := map[int64]string{}
+
+	// Unmarshall finalized blocks
+	finalizedBlocks := map[int64]string{}
+	err = json.Unmarshal(relayFinalization.FinalizedBlocksHashes, &finalizedBlocks)
+	if err != nil {
+		return EMPTY_MAP, 0, 0, fmt.Errorf("ValidateSameProviderConflict: Failed unmarshalling finalized blocks data: %w", err)
+	}
+
+	// Validate that finalized blocks are not empty
+	if len(finalizedBlocks) == 0 {
+		return EMPTY_MAP, 0, 0, fmt.Errorf("ValidateSameProviderConflict: No finalized blocks data")
+	}
+
+	// Sort block heights
+	blockHeights := make([]int64, len(finalizedBlocks))
+	idx := 0
+	for blockNum := range finalizedBlocks {
+		blockHeights[idx] = blockNum
+		idx++
+	}
+	slices.SortInt64Slice(blockHeights)
+
+	// Validate that blocks are consecutive
+	_, isConsecutive := slices.IsInt64SliceConsecutive(blockHeights)
+	if !isConsecutive {
+		return EMPTY_MAP, 0, 0, fmt.Errorf("ValidateSameProviderConflict: Finalized blocks are not consecutive: %v", blockHeights)
+	}
+
+	// Validate that all finalized blocks are finalized
+	for _, blockNum := range blockHeights {
+		if !k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.SpecId, blockNum, relayFinalization.GetLatestBlock()) {
+			return EMPTY_MAP, 0, 0, fmt.Errorf("ValidateSameProviderConflict: Finalized block is not finalized: %d", blockNum)
+		}
+	}
+
+	return finalizedBlocks, blockHeights[0], blockHeights[len(blockHeights)-1], nil
+}
+
+func (k Keeper) validateFinalizedBlock(ctx sdk.Context, relayFinalization *types.RelayFinalization, maxBlock int64) error {
+	latestBlock := relayFinalization.GetLatestBlock()
+	blockDistanceToFinalization := relayFinalization.GetBlockDistanceToFinalization()
+
+	// Validate that finalization distance is right
+	if maxBlock != latestBlock-blockDistanceToFinalization {
+		return fmt.Errorf("ValidateSameProviderConflict: Finalization distance is not right: %d, %d", maxBlock, latestBlock-blockDistanceToFinalization)
+	}
+
+	if k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.SpecId, maxBlock+1, latestBlock) {
+		return fmt.Errorf("ValidateSameProviderConflict: Finalized block is not in FinalizedBlocksHashes map. Block height: %d", maxBlock+1)
+	}
+
 	return nil
 }
