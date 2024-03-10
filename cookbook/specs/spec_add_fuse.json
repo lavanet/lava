@@ -35,35 +35,35 @@
             "inheritance_apis": [],
             "parse_directives": [],
             "verifications": [
-                {
-                    "name": "chain-id",
-                    "values": [
-                        {
-                            "expected_value": "0x7a"
-                        }
-                    ]
-                },
-                {
-                    "name": "pruning",
-                    "values": [
-                        {
-                            "latest_distance": 16384
-                        },
-                        {
-                            "extension": "archive",
-                            "expected_value": "0x0"
-                        }
-                    ]
-                }
+              {
+                "name": "chain-id",
+                "values": [
+                  {
+                    "expected_value": "0x7a"
+                  }
+                ]
+              },
+              {
+                "name": "pruning",
+                "values": [
+                  {
+                    "latest_distance": 16384
+                  },
+                  {
+                    "extension": "archive",
+                    "expected_value": "0x0"
+                  }
+                ]
+              }
             ],
             "extensions": [
-                {
-                    "name": "archive",
-                    "cu_multiplier": 5,
-                    "rule": {
-                        "block": 16300
-                    }
+              {
+                "name": "archive",
+                "cu_multiplier": 5,
+                "rule": {
+                  "block": 16300
                 }
+              }
             ]
           }
         ]
