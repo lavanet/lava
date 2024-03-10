@@ -56,16 +56,14 @@ func (k Keeper) UnbondFull(ctx sdk.Context, delegator string, validator string, 
 		return err
 	}
 
-	if err == nil {
-		logger := k.Logger(ctx)
-		details := map[string]string{
-			"delegator": delegator,
-			"provider":  provider,
-			"chainID":   chainID,
-			"amount":    amount.String(),
-		}
-		utils.LogLavaEvent(ctx, logger, types.UnbondingEventName, details, "Unbond")
+	logger := k.Logger(ctx)
+	details := map[string]string{
+		"delegator": delegator,
+		"provider":  provider,
+		"chainID":   chainID,
+		"amount":    amount.String(),
 	}
+	utils.LogLavaEvent(ctx, logger, types.UnbondingEventName, details, "Unbond")
 
-	return err
+	return nil
 }

@@ -19,19 +19,23 @@ func (k Keeper) Pools(goCtx context.Context, req *types.QueryPoolsRequest) (*typ
 	pools := []types.PoolInfo{
 		{
 			Name:    string(types.ValidatorsRewardsDistributionPoolName),
-			Balance: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName, k.stakingKeeper.BondDenom(ctx))),
+			Balance: k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName),
 		},
 		{
 			Name:    string(types.ValidatorsRewardsAllocationPoolName),
-			Balance: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), k.TotalPoolTokens(ctx, types.ValidatorsRewardsAllocationPoolName, k.stakingKeeper.BondDenom(ctx))),
+			Balance: k.TotalPoolTokens(ctx, types.ValidatorsRewardsAllocationPoolName),
 		},
 		{
 			Name:    string(types.ProviderRewardsDistributionPool),
-			Balance: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool, k.stakingKeeper.BondDenom(ctx))),
+			Balance: k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool),
 		},
 		{
 			Name:    string(types.ProvidersRewardsAllocationPool),
-			Balance: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), k.TotalPoolTokens(ctx, types.ProvidersRewardsAllocationPool, k.stakingKeeper.BondDenom(ctx))),
+			Balance: k.TotalPoolTokens(ctx, types.ProvidersRewardsAllocationPool),
+		},
+		{
+			Name:    string(types.IprpcPoolName),
+			Balance: k.TotalPoolTokens(ctx, types.IprpcPoolName),
 		},
 	}
 

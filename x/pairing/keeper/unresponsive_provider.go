@@ -102,7 +102,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
 			if len(providerPaymentStorageKeyList) != 0 && existingProviders[providerStakeEntry.GetChain()] > minProviders {
-				err = k.punishUnresponsiveProvider(ctx, minPaymentBlock, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain(), complaintCU, servicedCU)
+				err = k.punishUnresponsiveProvider(ctx, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain(), complaintCU, servicedCU)
 				existingProviders[providerStakeEntry.GetChain()]--
 				if err != nil {
 					utils.LavaFormatError("unstake unresponsive providers failed to punish provider", err,
@@ -212,7 +212,7 @@ func (k Keeper) getCurrentProviderStakeStorageList(ctx sdk.Context) []epochstora
 }
 
 // Function that punishes providers. Current punishment is freeze
-func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epoch uint64, providerPaymentStorageKeyList []string, providerAddress, chainID string, complaintCU uint64, servicedCU uint64) error {
+func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, providerPaymentStorageKeyList []string, providerAddress, chainID string, complaintCU uint64, servicedCU uint64) error {
 	// freeze the unresponsive provider
 	err := k.FreezeProvider(ctx, providerAddress, []string{chainID}, "unresponsiveness")
 	if err != nil {

@@ -16,6 +16,7 @@ const (
 	DataReliabilityTimeoutIncrease      = 5 * time.Second
 	AverageWorldLatency                 = 300 * time.Millisecond
 	CommunicateWithLocalLavaNodeTimeout = (3 * time.Second) + AverageWorldLatency
+	CacheTimeout                        = 50 * time.Millisecond
 )
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {

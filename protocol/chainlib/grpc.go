@@ -295,6 +295,10 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error) {
+		if method == "grpc.reflection.v1.ServerReflection/ServerReflectionInfo" {
+			return nil, nil, status.Error(codes.Unimplemented, "v1 reflection currently not supported by cosmos-sdk")
+		}
+
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
 		msgSeed := strconv.FormatUint(guid, 10)

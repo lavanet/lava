@@ -29,7 +29,10 @@ func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chain
 }
 
 // AddTrackedCu adds CU to the CU counters in relevant trackedCu entry
+// Also, it counts the IPRPC CU if the subscription is IPRPC eligible
 func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cuToAdd uint64, block uint64) error {
+	k.rewardsKeeper.AggregateCU(ctx, sub, provider, chainID, cuToAdd)
+
 	cu, found, key := k.GetTrackedCu(ctx, sub, provider, chainID, block)
 
 	// Note that the trackedCu entry usually has one version since we used
@@ -186,23 +189,23 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 		// calculate the provider reward (smaller than totalMonthlyReward
 		// because it's shared with delegators)
-		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
-		creditToSub := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward)
-		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyReward)
+		totalMonthlyRewardAmount := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
+		creditToSub := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyRewardAmount)
+		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyRewardAmount)
 
 		// aggregate the reward for the provider
-		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, providerAdjustment, totalMonthlyReward)
+		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, providerAdjustment, totalMonthlyRewardAmount)
 
 		// Transfer some of the total monthly reward to validators contribution and community pool
-		totalMonthlyReward, err = k.rewardsKeeper.ContributeToValidatorsAndCommunityPool(ctx, totalMonthlyReward, types.ModuleName)
+		creditToSub, err = k.rewardsKeeper.ContributeToValidatorsAndCommunityPool(ctx, creditToSub, types.ModuleName)
 		if err != nil {
 			utils.LavaFormatError("could not contribute to validators and community pool", err,
-				utils.Attribute{Key: "total_monthly_reward", Value: totalMonthlyReward.String() + k.stakingKeeper.BondDenom(ctx)})
+				utils.Attribute{Key: "total_monthly_reward", Value: creditToSub.String()})
 		}
 
 		// Note: if the reward function doesn't reward the provider
 		// because he was unstaked, we only print an error and not returning
-		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, types.ModuleName, false, false, false)
+		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, sdk.NewCoins(creditToSub), types.ModuleName, false, false, false)
 		if errors.Is(err, epochstoragetypes.ErrProviderNotStaked) || errors.Is(err, epochstoragetypes.ErrStakeStorageNotFound) {
 			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
 				utils.Attribute{Key: "provider", Value: provider},

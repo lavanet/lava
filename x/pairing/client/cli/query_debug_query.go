@@ -71,13 +71,13 @@ func CmdDebugQuery() *cobra.Command {
 			for _, pool := range resPools.Pools {
 				switch pool.Name {
 				case string(rewardstypes.ValidatorsRewardsAllocationPoolName):
-					info.ValAllocPoolBalance = pool.Balance.Amount.Uint64()
+					info.ValAllocPoolBalance = pool.Balance.String()
 				case string(rewardstypes.ValidatorsRewardsDistributionPoolName):
-					info.ValDistPoolBalance = pool.Balance.Amount.Uint64()
+					info.ValDistPoolBalance = pool.Balance.String()
 				case string(rewardstypes.ProvidersRewardsAllocationPool):
-					info.ProviderAllocPoolBalance = pool.Balance.Amount.Uint64()
+					info.ProviderAllocPoolBalance = pool.Balance.String()
 				case string(rewardstypes.ProviderRewardsDistributionPool):
-					info.ProviderDistPoolBalance = pool.Balance.Amount.Uint64()
+					info.ProviderDistPoolBalance = pool.Balance.String()
 				}
 			}
 
@@ -96,7 +96,7 @@ func CmdDebugQuery() *cobra.Command {
 			} else if len(resDelegatorRewards.Rewards) != 1 {
 				info.ProviderFullReward = 0
 			} else {
-				info.ProviderFullReward = resDelegatorRewards.Rewards[0].Amount.Amount.Uint64()
+				info.ProviderFullReward = resDelegatorRewards.Rewards[0].Amount.AmountOf(commontypes.TokenDenom).Uint64()
 			}
 
 			// provider rewards without bonuses
@@ -132,10 +132,10 @@ func CmdDebugQuery() *cobra.Command {
 			strToPrint := strings.Join([]string{
 				strconv.FormatUint(info.Block, 10),
 				strconv.FormatUint(info.BlockReward, 10),
-				strconv.FormatUint(info.ValAllocPoolBalance, 10),
-				strconv.FormatUint(info.ValDistPoolBalance, 10),
-				strconv.FormatUint(info.ProviderAllocPoolBalance, 10),
-				strconv.FormatUint(info.ProviderDistPoolBalance, 10),
+				info.ValAllocPoolBalance,
+				info.ValDistPoolBalance,
+				info.ProviderAllocPoolBalance,
+				info.ProviderDistPoolBalance,
 				strconv.FormatUint(info.MonthsLeft, 10),
 				strconv.FormatUint(info.ProviderFullReward, 10),
 				strconv.FormatUint(info.ProviderRewardNoBonus, 10),

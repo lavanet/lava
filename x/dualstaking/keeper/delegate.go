@@ -242,7 +242,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
 		stakeEntry.Freeze()
 	} else if delegator == provider && stakeEntry.IsFrozen() {
-		stakeEntry.UnFreeze(uint64(ctx.BlockHeight()))
+		stakeEntry.UnFreeze(k.epochstorageKeeper.GetCurrentNextEpoch(ctx) + 1)
 	}
 
 	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)

@@ -69,7 +69,7 @@ func TestFreeze(t *testing.T) {
 	}
 
 	// advance an epoch and verify the provider is back in the pairing list
-	ts.AdvanceEpoch()
+	ts.AdvanceEpochs(2)
 
 	res, err = ts.QueryPairingGetPairing(ts.spec.Index, clientAddr)
 	require.NoError(t, err)

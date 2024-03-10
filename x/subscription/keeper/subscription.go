@@ -76,6 +76,7 @@ func (k Keeper) CreateSubscription(
 	//
 	// Subscription upgrade:
 	//   When: if already exists and existing plan, and new plan's price is higher than current plan's
+	//		   or if plan index is different from existing
 	//   What: find subscription, verify new plan's price, upgrade, set duration, update credit,
 	//         charge fees, save subscription.
 	// Subscription downgrade: (TBD)
@@ -87,9 +88,12 @@ func (k Keeper) CreateSubscription(
 		}
 	} else {
 		// Allow renewal with the same plan ("same" means both plan index);
-		// If the plan index is different - upgrade if the price is higher
+		// If the plan index is different - upgrade if the price is higher or equal
 		// If the plan index is the same but the plan block is different - advice using the "--advance-purchase" flag
 		if plan.Index != sub.PlanIndex {
+			if sub.Creator != creator && sub.Consumer != creator {
+				return utils.LavaFormatWarning("only the consumer or buyer can overwrite the subscription plan.", nil)
+			}
 			err := k.upgradeSubscriptionPlan(ctx, &sub, &plan)
 			if err != nil {
 				return err

@@ -19,7 +19,7 @@
                                 "shares" : 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "50000000000"
+                    "amount": "47500000000"
                 },
                 "api_collections": [
                     {
@@ -85,7 +85,7 @@
                                 "shares" : 1,
                 "min_stake_provider": {
                     "denom": "ulava",
-                    "amount": "50000000000"
+                    "amount": "47500000000"
                 },
                 "api_collections": [
                     {
