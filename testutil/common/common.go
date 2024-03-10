@@ -195,7 +195,7 @@ func createAndSignReply(provider sigs.Account, request *types.RelayRequest, spec
 
 // finalizeConflictRelayData updates the conflict relay data with the reply information.
 func finalizeConflictRelayData(consumer, provider sigs.Account, conflictData *conflicttypes.ConflictRelayData, reply *types.RelayReply) (*conflicttypes.ConflictRelayData, error) {
-	relayFinalization := conflicttypes.NewRelayFinalization(conflictData.Request.RelaySession, reply, consumer.Addr)
+	relayFinalization := conflicttypes.NewRelayFinalization(conflictData.Request.RelaySession, reply, consumer.Addr, 0)
 	sigBlocks, err := sigs.Sign(provider.SK, relayFinalization)
 	if err != nil {
 		return nil, err

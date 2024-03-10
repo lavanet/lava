@@ -673,13 +673,9 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	var latestBlock int64
 	var requestedHashes []*chaintracker.BlockStore
 	var modifiedReqBlock int64
-	var blocksInFinalizationData uint32
-	var blockDistanceToFinalization uint32
-	var averageBlockTime time.Duration
+	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
 	updatedChainMessage := false
 	if dataReliabilityEnabled {
-		var blockLagForQosSync int64
-		blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData = rpcps.chainParser.ChainBlockStats()
 		var err error
 		specificBlock := request.RelayData.RequestBlock
 		if specificBlock < spectypes.LATEST_BLOCK {
@@ -810,7 +806,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		reply.LatestBlock = proofBlock
 	}
 	// utils.LavaFormatDebug("response signing", utils.LogAttr("request block", request.RelayData.RequestBlock), utils.LogAttr("GUID", ctx), utils.LogAttr("latestBlock", reply.LatestBlock))
-	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled)
+	reply, err = lavaprotocol.SignRelayResponse(consumerAddr, *request, rpcps.privKey, reply, dataReliabilityEnabled, int64(blockDistanceToFinalization))
 	if err != nil {
 		return nil, err
 	}

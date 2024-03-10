@@ -7,13 +7,15 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
-func NewRelayFinalization(relaySession *pairingtypes.RelaySession, relayReply *pairingtypes.RelayReply, addr sdk.AccAddress) RelayFinalization {
+func NewRelayFinalization(relaySession *pairingtypes.RelaySession, relayReply *pairingtypes.RelayReply, addr sdk.AccAddress, blockDistanceToFinalization int64) RelayFinalization {
 	return RelayFinalization{
-		RelaySessionHash:      tendermintcrypto.Sha256(relaySession.CalculateHashForFinalization()),
-		FinalizedBlocksHashes: relayReply.FinalizedBlocksHashes,
-		LatestBlock:           relayReply.LatestBlock,
-		Sig:                   relayReply.SigBlocks,
-		ConsumerAddress:       string(addr.Bytes()),
+		RelaySessionHash:            tendermintcrypto.Sha256(relaySession.CalculateHashForFinalization()),
+		FinalizedBlocksHashes:       relayReply.FinalizedBlocksHashes,
+		LatestBlock:                 relayReply.LatestBlock,
+		Sig:                         relayReply.SigBlocks,
+		ConsumerAddress:             string(addr.Bytes()),
+		BlockDistanceToFinalization: blockDistanceToFinalization,
+		SpecId:                      relaySession.SpecId,
 	}
 }
 
@@ -23,11 +25,14 @@ func (rf RelayFinalization) GetSignature() []byte {
 
 func (rf RelayFinalization) DataToSign() []byte {
 	latestBlockBytes := sigs.EncodeUint64(uint64(rf.LatestBlock))
+	blockDistanceToFinalizationBytes := sigs.EncodeUint64(uint64(rf.BlockDistanceToFinalization))
 	msgParts := [][]byte{
 		latestBlockBytes,
 		rf.FinalizedBlocksHashes,
 		[]byte(rf.ConsumerAddress),
 		rf.RelaySessionHash,
+		blockDistanceToFinalizationBytes,
+		[]byte(rf.SpecId),
 	}
 	return sigs.Join(msgParts)
 }

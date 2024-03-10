@@ -36,4 +36,6 @@ message RelayFinalization {
     int64 latest_block = 3; // Used to generate sig
     string consumer_address = 4; // Used to generate sig
     bytes sig = 5;
+    int64 block_distance_to_finalization = 6;
+    string spec_id = 7;
 }

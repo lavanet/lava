@@ -106,7 +106,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	fc.providerDataContainersMu.Lock()
 	defer fc.providerDataContainersMu.Unlock()
 
-	replyFinalization := conflicttypes.NewRelayFinalization(req, reply, consumerAddress)
+	replyFinalization := conflicttypes.NewRelayFinalization(req, reply, consumerAddress, blockDistanceForFinalizedData)
 
 	if len(fc.currentProviderHashesConsensus) == 0 && len(fc.prevEpochProviderHashesConsensus) == 0 {
 		newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)

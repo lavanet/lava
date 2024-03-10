@@ -15,7 +15,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply, signDataReliability bool) (*pairingtypes.RelayReply, error) {
+func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply, signDataReliability bool, blockDistanceToFinalization int64) (*pairingtypes.RelayReply, error) {
 	// request is a copy of the original request, but won't modify it
 	// update relay request requestedBlock to the provided one in case it was arbitrary
 	UpdateRequestedBlock(request.RelayData, reply)
@@ -32,7 +32,7 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 
 	if signDataReliability {
 		// update sig blocks signature
-		relayFinalization := conflicttypes.NewRelayFinalization(request.RelaySession, reply, consumerAddress)
+		relayFinalization := conflicttypes.NewRelayFinalization(request.RelaySession, reply, consumerAddress, blockDistanceToFinalization)
 		sigBlocks, err := sigs.Sign(pkey, relayFinalization)
 		if err != nil {
 			return nil, utils.LavaFormatError("failed signing finalization data", err,
@@ -70,7 +70,7 @@ func VerifyRelayReply(ctx context.Context, reply *pairingtypes.RelayReply, relay
 }
 
 func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock int64, blockDistanceForFinalization uint32) (finalizedBlocks map[int64]string, finalizationConflict *conflicttypes.FinalizationConflict, errRet error) {
-	relayFinalization := conflicttypes.NewRelayFinalization(relayRequest.RelaySession, reply, consumerAcc)
+	relayFinalization := conflicttypes.NewRelayFinalization(relayRequest.RelaySession, reply, consumerAcc, int64(blockDistanceForFinalization))
 	serverKey, err := sigs.RecoverPubKey(relayFinalization)
 	if err != nil {
 		return nil, nil, err
@@ -123,7 +123,7 @@ func verifyFinalizationDataIntegrity(relaySession *pairingtypes.RelaySession, re
 	maxBlockNum := int64(0)
 	// TODO: compare finalizedBlocks len vs chain parser len to validate (get from same place as blockDistanceForFinalization arrives)
 
-	replyFinalization := conflicttypes.NewRelayFinalization(relaySession, reply, consumerAddr)
+	replyFinalization := conflicttypes.NewRelayFinalization(relaySession, reply, consumerAddr, int64(blockDistanceForFinalization))
 
 	for blockNum := range finalizedBlocks {
 		if !spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceForFinalization) {

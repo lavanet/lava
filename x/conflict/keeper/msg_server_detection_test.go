@@ -130,7 +130,7 @@ func TestDetection(t *testing.T) {
 			sig, err = sigs.Sign(tt.Provider1.SK, relayExchange)
 			require.NoError(t, err)
 			reply.Sig = sig
-			relayFinalization := conflicttypes.NewRelayFinalization(msg.ResponseConflict.ConflictRelayData1.Request.RelaySession, reply, ts.consumer.Addr)
+			relayFinalization := conflicttypes.NewRelayFinalization(msg.ResponseConflict.ConflictRelayData1.Request.RelaySession, reply, ts.consumer.Addr, 0)
 			sigBlocks, err := sigs.Sign(tt.Provider1.SK, relayFinalization)
 			require.NoError(t, err)
 			reply.SigBlocks = sigBlocks
