@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/slices"
@@ -100,10 +101,12 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(blockDistanceForFinal
 // create new consensus group if no consensus matched
 // check for discrepancy with old epoch
 // checks if there is a consensus mismatch between hashes provided by different providers
-func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalizedData int64, providerAddress string, finalizedBlocks map[int64]string, req *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
+func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalizedData int64, consumerAddress sdk.AccAddress, providerAddress string, finalizedBlocks map[int64]string, req *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
 	latestBlock := reply.LatestBlock
 	fc.providerDataContainersMu.Lock()
 	defer fc.providerDataContainersMu.Unlock()
+
+	replyFinalization := conflicttypes.NewRelayFinalization(req, reply, consumerAddress)
 
 	if len(fc.currentProviderHashesConsensus) == 0 && len(fc.prevEpochProviderHashesConsensus) == 0 {
 		newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
@@ -116,7 +119,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 			err := fc.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
 				// TODO: bring the other data as proof
-				finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: reply}
+				finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
 				// we need to insert into a new consensus group before returning
 				// or create new consensus group if no consensus matched
 				continue
@@ -144,7 +147,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 			err := fc.discrepancyChecker(finalizedBlocks, consensus)
 			if err != nil {
 				// TODO: bring the other data as proof
-				finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: reply}
+				finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
 				return finalizationConflict, utils.LavaFormatError("Simulation: prev epoch Conflict found in discrepancyChecker", err, utils.Attribute{Key: "Consensus idx", Value: strconv.Itoa(idx)}, utils.Attribute{Key: "provider", Value: providerAddress})
 			}
 		}

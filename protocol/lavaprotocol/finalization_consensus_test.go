@@ -142,7 +142,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 				finalizationConsensus.NewEpoch(epoch)
 				// check updating hashes works
 				for _, insertion := range play.finalizationInsertions {
-					_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
+					_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), sdk.AccAddress{}, insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
 					if insertion.success {
 						require.NoError(t, err, "failed insertion when was supposed to succeed, provider %s, latest block %d", insertion.providerAddr, insertion.latestBlock)
 					} else {
@@ -203,7 +203,7 @@ func TestQoS(t *testing.T) {
 			finalizationConsensus := &FinalizationConsensus{}
 			finalizationConsensus.NewEpoch(epoch)
 			for _, insertion := range finalizationInsertions {
-				_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
+				_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), sdk.AccAddress{}, insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
 				require.NoError(t, err, "failed insertion when was supposed to succeed, provider %s, latest block %d", insertion.providerAddr, insertion.latestBlock)
 			}
 			plannedExpectedBH := int64(202) // this is the most advanced in all finalizations
@@ -216,7 +216,7 @@ func TestQoS(t *testing.T) {
 			// now advance an epoch to make it interesting
 			finalizationConsensus.NewEpoch(newEpoch)
 			for _, insertion := range finalizationInsertionsAfterEpoch {
-				_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
+				_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), sdk.AccAddress{}, insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
 				require.NoError(t, err, "failed insertion when was supposed to succeed, provider %s, latest block %d", insertion.providerAddr, insertion.latestBlock)
 			}
 			plannedExpectedBH = 205 // this is the most advanced in all finalizations after epoch change
@@ -287,7 +287,7 @@ func TestQoS(t *testing.T) {
 			finalizationConsensus = &FinalizationConsensus{}
 			finalizationConsensus.NewEpoch(epoch)
 			for _, insertion := range finalizationInsertionsSpreadBlocks {
-				_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
+				_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), sdk.AccAddress{}, insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
 				require.NoError(t, err, "failed insertion when was supposed to succeed, provider %s, latest block %d", insertion.providerAddr, insertion.latestBlock)
 			}
 

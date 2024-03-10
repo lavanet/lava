@@ -104,7 +104,7 @@ func TestDetection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			msg, _, reply, err := common.CreateMsgDetectionTest(ts.GoCtx, tt.Creator, tt.Provider0, tt.Provider1, ts.spec)
+			msg, _, reply, err := common.CreateMsgDetectionForTest(ts.GoCtx, tt.Creator, tt.Provider0, tt.Provider1, ts.spec)
 			require.NoError(t, err)
 
 			msg.Creator = tt.Creator.Addr.String()
@@ -130,7 +130,7 @@ func TestDetection(t *testing.T) {
 			sig, err = sigs.Sign(tt.Provider1.SK, relayExchange)
 			require.NoError(t, err)
 			reply.Sig = sig
-			relayFinalization := types.NewRelayFinalization(types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply), ts.consumer.Addr)
+			relayFinalization := conflicttypes.NewRelayFinalization(msg.ResponseConflict.ConflictRelayData1.Request.RelaySession, reply, ts.consumer.Addr)
 			sigBlocks, err := sigs.Sign(tt.Provider1.SK, relayFinalization)
 			require.NoError(t, err)
 			reply.SigBlocks = sigBlocks
@@ -164,7 +164,7 @@ func TestFrozenProviderDetection(t *testing.T) {
 	ts.AdvanceEpoch() // apply the freeze
 
 	// send a conflict detection TX
-	msg, _, _, err := common.CreateMsgDetectionTest(ts.GoCtx, ts.consumer, ts.providers[0], ts.providers[1], ts.spec)
+	msg, _, _, err := common.CreateMsgDetectionForTest(ts.GoCtx, ts.consumer, ts.providers[0], ts.providers[1], ts.spec)
 	require.NoError(t, err)
 	_, err = ts.txConflictDetection(msg)
 	require.NoError(t, err)

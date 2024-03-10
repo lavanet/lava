@@ -26,6 +26,14 @@ message ReplyMetadata {
 }
 
 message FinalizationConflict {
-    lavanet.lava.pairing.RelayReply relayReply0 =1;
-    lavanet.lava.pairing.RelayReply relayReply1 =2;
+    RelayFinalization relayReply0 = 1;
+    RelayFinalization relayReply1 = 2;
+}
+
+message RelayFinalization {
+    bytes relay_session_hash = 1; // Used to generate sig
+    bytes finalized_blocks_hashes = 2; // Used to generate sig and to validate block hashes
+    int64 latest_block = 3; // Used to generate sig
+    string consumer_address = 4; // Used to generate sig
+    bytes sig = 5;
 }

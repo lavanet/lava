@@ -64,12 +64,67 @@ func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHas
 	return relaySession
 }
 
-func CreateMsgDetectionTest(ctx context.Context, consumer, provider0, provider1 sigs.Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *types.RelayReply, errRet error) {
-	msg := &conflicttypes.MsgDetection{}
-	msg.Creator = consumer.Addr.String()
-	// request 0
-	msg.ResponseConflict = &conflicttypes.ResponseConflict{ConflictRelayData0: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &conflicttypes.ReplyMetadata{}}, ConflictRelayData1: &conflicttypes.ConflictRelayData{Request: &types.RelayRequest{}, Reply: &conflicttypes.ReplyMetadata{}}}
-	msg.ResponseConflict.ConflictRelayData0.Request.RelayData = &types.RelayPrivateData{
+func CreateMsgDetectionForTest(ctx context.Context, consumer, provider0, provider1 sigs.Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *types.RelayReply, errRet error) {
+	detectionMsg = &conflicttypes.MsgDetection{
+		Creator: consumer.Addr.String(),
+		ResponseConflict: &conflicttypes.ResponseConflict{
+			ConflictRelayData0: initConflictRelayData(),
+			ConflictRelayData1: initConflictRelayData(),
+		},
+	}
+
+	// Prepare request and session for provider0.
+	prepareRelayData(ctx, detectionMsg.ResponseConflict.ConflictRelayData0, provider0, spec)
+	// Sign the session data with the consumer's private key.
+	if err := signSessionData(consumer, detectionMsg.ResponseConflict.ConflictRelayData0); err != nil {
+		return detectionMsg, nil, nil, err
+	}
+
+	// Duplicate the request for provider1 and update provider-specific fields.
+	duplicateRequestForProvider(detectionMsg.ResponseConflict, provider1, consumer)
+	// Sign the session data with the consumer's private key.
+	if err := signSessionData(consumer, detectionMsg.ResponseConflict.ConflictRelayData1); err != nil {
+		return detectionMsg, nil, nil, err
+	}
+
+	// Create and sign replies for both providers.
+	reply1, err := createAndSignReply(provider0, detectionMsg.ResponseConflict.ConflictRelayData0.Request, spec, false)
+	if err != nil {
+		return detectionMsg, nil, nil, err
+	}
+
+	reply2, err = createAndSignReply(provider1, detectionMsg.ResponseConflict.ConflictRelayData1.Request, spec, true)
+	if err != nil {
+		return detectionMsg, nil, nil, err
+	}
+
+	// Construct final conflict relay data with the replies.
+	conflictRelayData0, err := finalizeConflictRelayData(consumer, provider0, detectionMsg.ResponseConflict.ConflictRelayData0, reply1)
+	if err != nil {
+		return detectionMsg, nil, nil, err
+	}
+	conflictRelayData1, err := finalizeConflictRelayData(consumer, provider1, detectionMsg.ResponseConflict.ConflictRelayData1, reply2)
+	if err != nil {
+		return detectionMsg, nil, nil, err
+	}
+
+	detectionMsg.ResponseConflict.ConflictRelayData0 = conflictRelayData0
+	detectionMsg.ResponseConflict.ConflictRelayData1 = conflictRelayData1
+
+	return detectionMsg, reply1, reply2, nil
+}
+
+// initConflictRelayData initializes the structure for holding relay conflict data.
+func initConflictRelayData() *conflicttypes.ConflictRelayData {
+	return &conflicttypes.ConflictRelayData{
+		Request: &types.RelayRequest{},
+		Reply:   &conflicttypes.ReplyMetadata{},
+	}
+}
+
+// prepareRelayData prepares relay data for a given provider.
+func prepareRelayData(ctx context.Context, conflictData *conflicttypes.ConflictRelayData, provider sigs.Account, spec spectypes.Spec) {
+	relayData := &types.RelayPrivateData{
 		ConnectionType: "",
 		ApiUrl:         "",
 		Data:           []byte("DUMMYREQUEST"),
@@ -78,9 +133,10 @@ func CreateMsgDetectionTest(ctx context.Context, consumer, provider0, provider1 
 		Salt:           []byte{1},
 	}
 
-	msg.ResponseConflict.ConflictRelayData0.Request.RelaySession = &types.RelaySession{
-		Provider:    provider0.Addr.String(),
-		ContentHash: sigs.HashMsg(msg.ResponseConflict.ConflictRelayData0.Request.RelayData.GetContentHashData()),
+	conflictData.Request.RelayData = relayData
+	conflictData.Request.RelaySession = &types.RelaySession{
+		Provider:    provider.Addr.String(),
+		ContentHash: sigs.HashMsg(relayData.GetContentHashData()),
 		SessionId:   uint64(1),
 		SpecId:      spec.Index,
 		CuSum:       0,
@@ -89,64 +145,62 @@ func CreateMsgDetectionTest(ctx context.Context, consumer, provider0, provider1 
 		QosReport:   &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
 	}
 
-	sig, err := sigs.Sign(consumer.SK, *msg.ResponseConflict.ConflictRelayData0.Request.RelaySession)
+}
+
+// signSessionData signs the session data with the consumer's private key.
+func signSessionData(consumer sigs.Account, conflictData *conflicttypes.ConflictRelayData) error {
+	sig, err := sigs.Sign(consumer.SK, *conflictData.Request.RelaySession)
 	if err != nil {
-		return msg, nil, nil, err
+		return err
 	}
 
-	msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.Sig = sig
+	conflictData.Request.RelaySession.Sig = sig
+	return nil
+}
 
-	// request 1
-	temp, _ := msg.ResponseConflict.ConflictRelayData0.Request.Marshal()
-	msg.ResponseConflict.ConflictRelayData1.Request.Unmarshal(temp)
-	msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Provider = provider1.Addr.String()
-	msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
-	sig, err = sigs.Sign(consumer.SK, *msg.ResponseConflict.ConflictRelayData1.Request.RelaySession)
-	if err != nil {
-		return msg, nil, nil, err
-	}
-	msg.ResponseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
+// duplicateRequestForProvider duplicates request data for another provider and signs it.
+func duplicateRequestForProvider(conflict *conflicttypes.ResponseConflict, provider, consumer sigs.Account) {
+	// Clone request data
+	temp, _ := conflict.ConflictRelayData0.Request.Marshal()
+	conflict.ConflictRelayData1.Request.Unmarshal(temp)
 
-	// reply 0
+	conflict.ConflictRelayData1.Request.RelaySession.Provider = provider.Addr.String()
+	conflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
+}
+
+// createAndSignReply creates a reply for a provider and signs it.
+func createAndSignReply(provider sigs.Account, request *types.RelayRequest, spec spectypes.Spec, addDiffData bool) (*types.RelayReply, error) {
 	reply := &types.RelayReply{
 		Data:                  []byte("DUMMYREPLY"),
-		Sig:                   sig,
-		LatestBlock:           msg.ResponseConflict.ConflictRelayData0.Request.RelayData.RequestBlock + int64(spec.BlockDistanceForFinalizedData),
+		Sig:                   request.RelaySession.Sig,
+		LatestBlock:           request.RelayData.RequestBlock + int64(spec.BlockDistanceForFinalizedData),
 		FinalizedBlocksHashes: []byte{},
-		SigBlocks:             sig,
+		SigBlocks:             request.RelaySession.Sig,
 		Metadata:              []types.Metadata{},
 	}
-	relayExchange := types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData0.Request, *reply)
-	sig, err = sigs.Sign(provider0.SK, relayExchange)
-	if err != nil {
-		return msg, nil, nil, err
-	}
-	reply.Sig = sig
 
-	relayFinalization := types.NewRelayFinalization(types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData0.Request, *reply), consumer.Addr)
-	sigBlocks, err := sigs.Sign(provider0.SK, relayFinalization)
+	if addDiffData {
+		reply.Data = append(reply.Data, []byte("DIFF")...)
+	}
+
+	relayExchange := types.NewRelayExchange(*request, *reply)
+	sig, err := sigs.Sign(provider.SK, relayExchange)
 	if err != nil {
-		return msg, nil, nil, err
+		return reply, err
+	}
+
+	reply.Sig = sig
+	return reply, nil
+}
+
+// finalizeConflictRelayData updates the conflict relay data with the reply information.
+func finalizeConflictRelayData(consumer, provider sigs.Account, conflictData *conflicttypes.ConflictRelayData, reply *types.RelayReply) (*conflicttypes.ConflictRelayData, error) {
+	relayFinalization := conflicttypes.NewRelayFinalization(conflictData.Request.RelaySession, reply, consumer.Addr)
+	sigBlocks, err := sigs.Sign(provider.SK, relayFinalization)
+	if err != nil {
+		return nil, err
 	}
 	reply.SigBlocks = sigBlocks
-	msg.ResponseConflict.ConflictRelayData0 = conflictconstruct.ConstructConflictRelayData(reply, msg.ResponseConflict.ConflictRelayData0.Request)
-	// reply 1
-	temp, _ = reply.Marshal()
-	reply2 = &types.RelayReply{}
-	reply2.Unmarshal(temp)
-	reply2.Data = append(reply2.Data, []byte("DIFF")...)
-	relayExchange2 := types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply2)
-	sig, err = sigs.Sign(provider1.SK, relayExchange2)
-	if err != nil {
-		return msg, nil, nil, err
-	}
-	reply2.Sig = sig
-	relayFinalization2 := types.NewRelayFinalization(types.NewRelayExchange(*msg.ResponseConflict.ConflictRelayData1.Request, *reply2), consumer.Addr)
-	sigBlocks, err = sigs.Sign(provider1.SK, relayFinalization2)
-	if err != nil {
-		return msg, nil, nil, err
-	}
-	reply2.SigBlocks = sigBlocks
-	msg.ResponseConflict.ConflictRelayData1 = conflictconstruct.ConstructConflictRelayData(reply2, msg.ResponseConflict.ConflictRelayData1.Request)
-	return msg, reply, reply2, err
+	conflictRelayData := conflictconstruct.ConstructConflictRelayData(reply, conflictData.Request)
+	return conflictRelayData, nil
 }
