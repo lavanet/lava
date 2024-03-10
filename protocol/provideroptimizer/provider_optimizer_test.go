@@ -1,6 +1,7 @@
 package provideroptimizer
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 	"testing"
@@ -539,4 +540,35 @@ func TestExcellence(t *testing.T) {
 	report2 := providerOptimizer.GetExcellenceQoSReportForProvider(providersGen.providersAddresses[1])
 	require.NotNil(t, report2)
 	require.Equal(t, report, report2)
+}
+
+func TestPerturbationWithNormalGaussianOnConcurrentComputation(t *testing.T) {
+	// Initialize random seed
+	rand.InitRandomSeed()
+
+	// Number of iterations
+	iterations := 100000
+
+	// Original value and percentage
+	orig := 10.0
+	percentage := 0.1
+
+	// Create slices to hold perturbed values
+	perturbationValues := make([]float64, iterations)
+
+	// WaitGroup to wait for all Goroutines to finish
+	var wg sync.WaitGroup
+
+	// Generate perturbed values concurrently
+	wg.Add(iterations)
+	for i := 0; i < iterations; i++ {
+		go func(index int) {
+			defer wg.Done()
+			perturbationValues[index] = pertrubWithNormalGaussian(orig, percentage)
+		}(i)
+	}
+
+	// Wait for all Goroutines to finish, this used to panic before the fix and therefore we have this test
+	wg.Wait()
+	fmt.Println("Test completed successfully")
 }
