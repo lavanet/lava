@@ -1699,6 +1699,15 @@
             "parse_directives": [],
             "verifications": [
               {
+                "name": "gas-price",
+                "values": [
+                  {
+                    "expected_value": "50000000000.000000000000000000aevmos",
+                    "severity": "Warning"
+                  }
+                ]
+              },
+              {
                 "name": "chain-id",
                 "values": [
                   {
