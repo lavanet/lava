@@ -21,7 +21,7 @@ func CmdEffectivePolicy() *cobra.Command {
 			if len(args) > 1 {
 				address = args[1]
 			} else {
-				clientCtxForTx, err := client.GetClientTxContext(cmd)
+				clientCtxForTx, err := client.GetClientQueryContext(cmd)
 				if err != nil {
 					return err
 				}

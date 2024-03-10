@@ -854,15 +854,14 @@
                     "expected_value": "evmos_9001-2"
                   }
                 ]
-              },
-              {
-                "name": "pruning",
-                "values": [
-                  {
-                    "latest_distance": 10000,
-                    "severity": "Warning"
-                  }
-                ]
+},
+                          {
+                              "name": "pruning",
+                              "values": [
+                                  {
+                                      "latest_distance": 10000
+                                  }
+                              ]
               }
             ],
             "extensions": [
@@ -1706,24 +1705,14 @@
                     "expected_value": "evmos_9001-2"
                   }
                 ]
-              },
-              {
-                "name": "gas-price",
-                "values": [
-                  {
-                    "expected_value": "50000000000.000000000000000000aevmos",
-                    "severity": "Warning"
-                  }
-                ]
-              },
-              {
-                "name": "pruning",
-                "values": [
-                  {
-                    "latest_distance": 10000,
-                    "severity": "Warning"
-                  }
-                ]
+},
+                          {
+                              "name": "pruning",
+                              "values": [
+                                  {
+                                      "latest_distance": 10000
+                                  }
+                              ]
               }
             ],
             "extensions": [

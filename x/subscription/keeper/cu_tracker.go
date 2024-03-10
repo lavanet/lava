@@ -29,7 +29,10 @@ func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chain
 }
 
 // AddTrackedCu adds CU to the CU counters in relevant trackedCu entry
+// Also, it counts the IPRPC CU if the subscription is IPRPC eligible
 func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cuToAdd uint64, block uint64) error {
+	k.rewardsKeeper.AggregateCU(ctx, sub, provider, chainID, cuToAdd)
+
 	cu, found, key := k.GetTrackedCu(ctx, sub, provider, chainID, block)
 
 	// Note that the trackedCu entry usually has one version since we used
@@ -126,7 +129,8 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	trackedCuList, totalCuTracked := k.GetSubTrackedCuInfo(ctx, sub, timerData.Block)
 
 	if len(trackedCuList) == 0 || totalCuTracked == 0 {
-		// no tracked CU for this sub, nothing to do
+		// no tracked CU for this sub, return the credit to the sub
+		k.returnCreditToSub(ctx, sub, timerData.Credit.Amount)
 		return
 	}
 
@@ -185,23 +189,23 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 		// calculate the provider reward (smaller than totalMonthlyReward
 		// because it's shared with delegators)
-		totalMonthlyReward := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
-		creditToSub := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward)
-		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyReward)
+		totalMonthlyRewardAmount := k.CalcTotalMonthlyReward(ctx, totalTokenAmount, trackedCu, totalCuTracked)
+		creditToSub := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyRewardAmount)
+		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyRewardAmount)
 
 		// aggregate the reward for the provider
-		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, providerAdjustment, totalMonthlyReward)
+		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, providerAdjustment, totalMonthlyRewardAmount)
 
 		// Transfer some of the total monthly reward to validators contribution and community pool
-		totalMonthlyReward, err = k.rewardsKeeper.ContributeToValidatorsAndCommunityPool(ctx, totalMonthlyReward, types.ModuleName)
+		creditToSub, err = k.rewardsKeeper.ContributeToValidatorsAndCommunityPool(ctx, creditToSub, types.ModuleName)
 		if err != nil {
 			utils.LavaFormatError("could not contribute to validators and community pool", err,
-				utils.Attribute{Key: "total_monthly_reward", Value: totalMonthlyReward.String() + k.stakingKeeper.BondDenom(ctx)})
+				utils.Attribute{Key: "total_monthly_reward", Value: creditToSub.String()})
 		}
 
 		// Note: if the reward function doesn't reward the provider
 		// because he was unstaked, we only print an error and not returning
-		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, totalMonthlyReward, types.ModuleName, false, false, false)
+		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, sdk.NewCoins(creditToSub), types.ModuleName, false, false, false)
 		if errors.Is(err, epochstoragetypes.ErrProviderNotStaked) || errors.Is(err, epochstoragetypes.ErrStakeStorageNotFound) {
 			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
 				utils.Attribute{Key: "provider", Value: provider},
@@ -230,38 +234,14 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		}
 	}
 
-	rewardsRemainder := totalTokenAmount.Sub(totalTokenRewarded)
-
-	var latestSub types.Subscription
-	latestEntryBlock, _, _, found := k.subsFS.FindEntryDetailed(ctx, sub, uint64(ctx.BlockHeight()), &latestSub)
-	if found {
-		if latestSub.Credit.Amount.LT(totalTokenRewarded) {
-			latestSub.Credit.Amount = sdk.ZeroInt()
-			utils.LavaFormatWarning("providers rewarded more than the subscription credit", nil,
-				utils.LogAttr("credit", latestSub.Credit.String()),
-				utils.LogAttr("rewarded", totalTokenRewarded),
-				utils.LogAttr("subscription", sub),
-			)
-		} else {
-			latestSub.Credit.Amount = latestSub.Credit.Amount.Sub(totalTokenRewarded)
-		}
-
-		k.subsFS.ModifyEntry(ctx, latestSub.Consumer, latestEntryBlock, &latestSub)
-	} else if rewardsRemainder.IsPositive() {
-		{
-			// sub expired (no need to update credit), send rewards remainder to the validators
-			pool := rewardstypes.ValidatorsRewardsDistributionPoolName
-			err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, string(pool), sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), rewardsRemainder)))
-			if err != nil {
-				utils.LavaFormatError("failed sending remainder of rewards to the community pool", err,
-					utils.Attribute{Key: "rewards_remainder", Value: rewardsRemainder.String()},
-				)
-			}
-		}
+	updatedCredit := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt())
+	if timerData.Credit.Amount.GT(totalTokenRewarded) {
+		updatedCredit = k.returnCreditToSub(ctx, sub, timerData.Credit.Amount.Sub(totalTokenRewarded))
 	}
+
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.RemainingCreditEventName, map[string]string{
 		"sub":              sub,
-		"credit_remaining": latestSub.Credit.String(),
+		"credit_remaining": updatedCredit.String(),
 		"block":            strconv.FormatInt(ctx.BlockHeight(), 10),
 	}, "CU tracker reward and reset executed")
 }
@@ -272,4 +252,25 @@ func (k Keeper) CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, tr
 	}
 	totalMonthlyReward := totalAmount.MulRaw(int64(trackedCu)).QuoRaw(int64(totalCuUsedBySub))
 	return totalMonthlyReward
+}
+
+func (k Keeper) returnCreditToSub(ctx sdk.Context, sub string, credit math.Int) sdk.Coin {
+	var latestSub types.Subscription
+	latestEntryBlock, _, _, found := k.subsFS.FindEntryDetailed(ctx, sub, uint64(ctx.BlockHeight()), &latestSub)
+	if found {
+		latestSub.Credit = latestSub.Credit.AddAmount(credit)
+		k.subsFS.ModifyEntry(ctx, latestSub.Consumer, latestEntryBlock, &latestSub)
+		return latestSub.Credit
+	} else {
+		// sub expired (no need to update credit), send rewards remainder to the validators
+		pool := rewardstypes.ValidatorsRewardsDistributionPoolName
+		err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.ModuleName, string(pool), sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), credit)))
+		if err != nil {
+			utils.LavaFormatError("failed sending remainder of rewards to the community pool", err,
+				utils.Attribute{Key: "rewards_remainder", Value: credit.String()},
+			)
+		}
+	}
+
+	return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt())
 }

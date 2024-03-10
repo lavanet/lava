@@ -17,7 +17,7 @@ func CmdNextToMonthExpiry() *cobra.Command {
 		Short: "Query the subscriptions with the closest month expiry",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			clientCtx, err := client.GetClientTxContext(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}

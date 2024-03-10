@@ -20,6 +20,8 @@ message BasePay {
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
     (gogoproto.nullable)   = false
     ];
+
+    uint64 iprpc_cu = 3;
 }
 
 // aggregated rewards for the provider through out the month

@@ -11,6 +11,7 @@ option go_package = "github.com/lavanet/lava/x/rewards/types";
 // Msg defines the Msg service.
 service Msg {
     rpc SetIprpcData(MsgSetIprpcData) returns (MsgSetIprpcDataResponse);
+    rpc FundIprpc(MsgFundIprpc) returns (MsgFundIprpcResponse);
     // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -21,6 +22,19 @@ message MsgSetIprpcData {
 }
 
 message MsgSetIprpcDataResponse {
+}
+
+message MsgFundIprpc {
+    string creator = 1;
+    uint64 duration = 2; // vesting duration in months
+    repeated cosmos.base.v1beta1.Coin amounts = 3 [
+        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+        (gogoproto.nullable)     = false
+    ]; // tokens to be distributed as reward
+    string spec = 4; // spec on which the providers get incentive 
+}
+
+message MsgFundIprpcResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message

@@ -175,8 +175,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14400,
-                                        "severity": "Warning"
+                                        "latest_distance": 14400
                                     }
                                 ]
                             }
@@ -343,8 +342,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14400,
-                                        "severity": "Warning"
+                                        "latest_distance": 14400
                                     }
                                 ]
                             }
