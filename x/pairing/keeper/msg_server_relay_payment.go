@@ -14,11 +14,17 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 type BadgeData struct {
 	Badge       types.Badge
 	BadgeSigner sdk.AccAddress
+}
+
+type PairingData struct {
+	allowedCU uint64
+	providers []epochstoragetypes.StakeEntry
 }
 
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
@@ -70,6 +76,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
 	rejected_relays_num := len(msg.Relays)
+	validatePairingCache := map[string]PairingData{}
 	for relayIdx, relay := range msg.Relays {
 		rejectedCu += relay.CuSum
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
@@ -169,24 +176,36 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		isValidPairing, allowedCU, providers, err := k.Keeper.ValidatePairingForClient(
-			ctx,
-			relay.SpecId,
-			providerAddr,
-			uint64(relay.Epoch),
-			project,
-		)
-		if err != nil {
-			return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", err,
-				utils.Attribute{Key: "client", Value: clientAddr.String()},
-				utils.Attribute{Key: "provider", Value: providerAddr.String()},
+		// generate validate pairing cache key with CuTrackerKey() to reuse code (doesn't relate to CU tracking at all)
+		validatePairingKey := subscriptiontypes.CuTrackerKey(clientAddr.String(), relay.Provider, relay.SpecId)
+		providers := []epochstoragetypes.StakeEntry{}
+		allowedCU := uint64(0)
+		pairingData, ok := validatePairingCache[validatePairingKey]
+		if ok {
+			allowedCU = pairingData.allowedCU
+			providers = pairingData.providers
+		} else {
+			isValidPairing := false
+			isValidPairing, allowedCU, providers, err = k.Keeper.ValidatePairingForClient(
+				ctx,
+				relay.SpecId,
+				providerAddr,
+				uint64(relay.Epoch),
+				project,
 			)
-		}
-		if !isValidPairing {
-			return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", fmt.Errorf("pairing result doesn't include provider"),
-				utils.Attribute{Key: "client", Value: clientAddr.String()},
-				utils.Attribute{Key: "provider", Value: providerAddr.String()},
-			)
+			if err != nil {
+				return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", err,
+					utils.Attribute{Key: "client", Value: clientAddr.String()},
+					utils.Attribute{Key: "provider", Value: providerAddr.String()},
+				)
+			}
+			if !isValidPairing {
+				return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", fmt.Errorf("pairing result doesn't include provider"),
+					utils.Attribute{Key: "client", Value: clientAddr.String()},
+					utils.Attribute{Key: "provider", Value: providerAddr.String()},
+				)
+			}
+			validatePairingCache[validatePairingKey] = PairingData{allowedCU: allowedCU, providers: providers}
 		}
 
 		rewardedCU, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, clientAddr, relay.SpecId, uint64(relay.Epoch))
