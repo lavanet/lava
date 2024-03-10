@@ -2036,6 +2036,21 @@
                         ],
                         "verifications": [
                             {
+                                "name": "minimum-gas-price",
+                                "parse_directive": {
+                                    "function_template": "",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "minimumGasPrice",
+                                            "="
+                                        ],
+                                        "parser_func": "PARSE_DICTIONARY"
+                                    },
+                                    "api_name": "/cosmos/base/node/v1beta1/config"
+                                }
+                            },
+                            {
                                 "name": "chain-id",
                                 "parse_directive": {
                                     "function_template": "/cosmos/base/tendermint/v1beta1/node_info",
@@ -3710,7 +3725,7 @@
                         ],
                         "verifications": [
                             {
-                                "name": "gas-price",
+                                "name": "minimum-gas-price",
                                 "parse_directive": {
                                     "function_template": "",
                                     "function_tag": "VERIFICATION",
@@ -4372,6 +4387,21 @@
                         ],
                         "verifications": [
                             {
+                                "name": "minimum-gas-price",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"abci_query\",\"params\":{\"path\":\"/cosmos.base.node.v1beta1.Service/Config\", \"height\":\"0\", \"data\":\"\",\"proof\":\"true\"},\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "node_info",
+                                            "network"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    }
+                                }
+                            },
+                            {
                                 "name": "chain-id",
                                 "parse_directive": {
                                     "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
@@ -4379,8 +4409,8 @@
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0",
-                                            "node_info",
-                                            "network"
+                                            "response",
+                                            "value"
                                         ],
                                         "parser_func": "PARSE_CANONICAL"
                                     },

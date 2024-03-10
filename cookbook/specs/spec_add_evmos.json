@@ -848,6 +848,15 @@
             "parse_directives": [],
             "verifications": [
               {
+                "name": "minimum-gas-price",
+                "values": [
+                  {
+                    "expected_value": "50000000000.000000000000000000aevmos",
+                    "severity": "Warning"
+                  }
+                ]
+              },
+              {
                 "name": "chain-id",
                 "values": [
                   {
@@ -1699,7 +1708,7 @@
             "parse_directives": [],
             "verifications": [
               {
-                "name": "gas-price",
+                "name": "minimum-gas-price",
                 "values": [
                   {
                     "expected_value": "50000000000.000000000000000000aevmos",
@@ -1752,6 +1761,15 @@
                 "values": [
                   {
                     "expected_value": "evmos_9001-2"
+                  }
+                ]
+              },
+              {
+                "name": "minimum-gas-price",
+                "values": [
+                  {
+                    "expected_value": "50000000000.000000000000000000aevmos",
+                    "severity": "Warning"
                   }
                 ]
               },
