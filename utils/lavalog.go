@@ -95,6 +95,10 @@ func SetGlobalLoggingLevel(logLevel string) {
 	LavaFormatInfo("setting log level", Attribute{Key: "loglevel", Value: logLevel})
 }
 
+func SetLogLevelFieldName(fieldName string) {
+	zerolog.LevelFieldName = fieldName
+}
+
 func RollingLoggerSetup(rollingLogLevel string, filePath string, maxSize string, maxBackups string, maxAge string, stdFormat string) func() {
 	maxSizeNumber, err := strconv.Atoi(maxSize)
 	if err != nil {
