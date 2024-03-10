@@ -3,7 +3,6 @@ package lavaprotocol
 import (
 	"context"
 	"encoding/json"
-	"sort"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -146,18 +145,16 @@ func verifyFinalizationDataIntegrity(relaySession *pairingtypes.RelaySession, re
 	}
 
 	// check for consecutive blocks
-	sort.Slice(sorted, func(i, j int) bool { return sorted[i] < sorted[j] })
-	for index := range sorted {
-		if index != 0 && sorted[index]-1 != sorted[index-1] {
-			// log.Println("provider returned non consecutive finalized blocks reply.\n Provider: %s", providerAcc)
-			finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
-			return finalizationConflict, utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", ProviderFinalizationDataAccountabilityError,
-				utils.LogAttr("curr block", sorted[index]),
-				utils.LogAttr("prev block", sorted[index-1]),
-				utils.LogAttr("Provider", providerAddr),
-				utils.LogAttr("finalizedBlocks", finalizedBlocks),
-			)
-		}
+	slices.SortInt64Slice(sorted)
+	nonConsecutiveIndex, isConsecutive := slices.IsInt64SliceConsecutive(sorted)
+	if !isConsecutive {
+		finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
+		return finalizationConflict, utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", ProviderFinalizationDataAccountabilityError,
+			utils.LogAttr("currBlock", sorted[nonConsecutiveIndex]),
+			utils.LogAttr("prevBlock", sorted[nonConsecutiveIndex-1]),
+			utils.LogAttr("providerAddr", providerAddr),
+			utils.LogAttr("finalizedBlocks", finalizedBlocks),
+		)
 	}
 
 	// check that latest finalized block address + 1 points to a non finalized block

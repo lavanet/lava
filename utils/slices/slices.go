@@ -261,3 +261,19 @@ func UnorderedEqual[T comparable](slices ...[]T) bool {
 
 	return true
 }
+
+func SortInt64Slice(slice []int64) {
+	slices.SortStableFunc(slice, func(i, j int64) bool { return slice[i] < slice[j] })
+}
+
+// This function is used to check if the slice is consecutive.
+// It returns the index of the first non-consecutive element or 0 if all elements are consecutive.
+func IsInt64SliceConsecutive(slice []int64) (int, bool) {
+	for index := range slice {
+		if index != 0 && slice[index]-1 != slice[index-1] {
+			return index, false
+		}
+	}
+
+	return 0, true
+}
