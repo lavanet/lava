@@ -335,6 +335,26 @@
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
+                            },
+                            {
+                                "name": "next_light_client_block",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "block_id"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL",
+                                    "default_value": "latest"
+                                },
+                                "compute_units": 20,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
