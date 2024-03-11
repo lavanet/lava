@@ -24,7 +24,7 @@ var AllowInsecureConnectionToProviders = false
 type UsedProvidersInf interface {
 	RemoveUsed(providerAddress string, err error)
 	TryLockSelection(context.Context) bool
-	AddUsed(ConsumerSessionsMap)
+	AddUsed(ConsumerSessionsMap, error)
 	GetUnwantedProvidersToSend() map[string]struct{}
 }
 

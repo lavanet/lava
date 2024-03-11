@@ -23,7 +23,7 @@ func TestUsedProviders(t *testing.T) {
 		unwanted := usedProviders.GetUnwantedProvidersToSend()
 		require.Len(t, unwanted, 0)
 		consumerSessionsMap := ConsumerSessionsMap{"test": &SessionInfo{}, "test2": &SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		canUseAgain = usedProviders.tryLockSelection()
 		require.True(t, canUseAgain)
 		unwanted = usedProviders.GetUnwantedProvidersToSend()
@@ -32,7 +32,7 @@ func TestUsedProviders(t *testing.T) {
 		canUseAgain = usedProviders.tryLockSelection()
 		require.False(t, canUseAgain)
 		consumerSessionsMap = ConsumerSessionsMap{"test3": &SessionInfo{}, "test4": &SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap)
+		usedProviders.AddUsed(consumerSessionsMap, nil)
 		unwanted = usedProviders.GetUnwantedProvidersToSend()
 		require.Len(t, unwanted, 4)
 		require.Equal(t, 4, usedProviders.CurrentlyUsed())
@@ -68,7 +68,7 @@ func TestUsedProvidersAsync(t *testing.T) {
 		go func() {
 			time.Sleep(time.Millisecond * 10)
 			consumerSessionsMap := ConsumerSessionsMap{"test": &SessionInfo{}, "test2": &SessionInfo{}}
-			usedProviders.AddUsed(consumerSessionsMap)
+			usedProviders.AddUsed(consumerSessionsMap, nil)
 		}()
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
 		defer cancel()

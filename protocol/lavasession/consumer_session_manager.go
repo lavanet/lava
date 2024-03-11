@@ -324,7 +324,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	if !canSelect {
 		return nil, utils.LavaFormatError("failed getting sessions from used Providers", nil, utils.LogAttr("usedProviders", usedProviders), utils.LogAttr("endpoint", csm.rpcEndpoint))
 	}
-	defer func() { usedProviders.AddUsed(consumerSessionMap) }()
+	defer func() { usedProviders.AddUsed(consumerSessionMap, errRet) }()
 	initUnwantedProviders := usedProviders.GetUnwantedProvidersToSend()
 
 	extensionNames := common.GetExtensionNames(extensions)

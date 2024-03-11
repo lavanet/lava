@@ -100,17 +100,19 @@ func (up *UsedProviders) ClearUnwanted() {
 	up.unwantedProviders = map[string]struct{}{}
 }
 
-func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap) {
+func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap, err error) {
 	if up == nil {
 		return
 	}
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	// this is nil safe
-	up.sessionsLatestBatch = 0
-	for provider := range sessions { // the key for ConsumerSessionsMap is the provider public address
-		up.providers[provider] = struct{}{}
-		up.sessionsLatestBatch++
+	if len(sessions) > 0 && err == nil {
+		up.sessionsLatestBatch = 0
+		for provider := range sessions { // the key for ConsumerSessionsMap is the provider public address
+			up.providers[provider] = struct{}{}
+			up.sessionsLatestBatch++
+		}
 	}
 	up.selecting = false
 }
