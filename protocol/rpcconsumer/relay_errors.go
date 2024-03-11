@@ -37,7 +37,8 @@ func replacePattern(input, pattern, replacement string) string {
 	return re.ReplaceAllString(input, replacement)
 }
 
-func (r *RelayErrors) sanitizeError(errMsg string) string {
+func (r *RelayErrors) sanitizeError(err error) string {
+	errMsg := err.Error()
 	// Replace SessionId:(any digit here) with SessionId:*
 	errMsg = replacePattern(errMsg, `SessionId:\d+`, "SessionId:*")
 
@@ -52,8 +53,7 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	bestResult := github_com_cosmos_cosmos_sdk_types.ZeroDec()
 	errorMap := make(map[string][]int)
 	for idx, relayError := range r.relayErrors {
-		errorMessage := relayError.err.Error()
-		errorMessage = r.sanitizeError(errorMessage)
+		errorMessage := r.sanitizeError(relayError.err)
 		errorMap[errorMessage] = append(errorMap[errorMessage], idx)
 		if relayError.ProviderInfo.ProviderQoSExcellenceSummery.IsNil() || relayError.ProviderInfo.ProviderStake.Amount.IsNil() {
 			continue
@@ -93,7 +93,7 @@ func (r *RelayErrors) getAllUniqueErrors() []error {
 	allErrors := []error{}
 	repeatingErrors := make(map[string]struct{})
 	for _, relayError := range r.relayErrors {
-		errString := relayError.err.Error() // using strings to filter repeating errors
+		errString := r.sanitizeError(relayError.err) // using strings to filter repeating errors
 		_, ok := repeatingErrors[errString]
 		if ok {
 			continue
