@@ -30,7 +30,7 @@ const (
 func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage, consumerConsistency *ConsumerConsistency, dappID string, consumerIp string) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
-	if chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALLPROVIDERS {
+	if chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
 		selection = BestResult // select the majority of node successes
 	}
 	if requiredSuccesses <= 0 {

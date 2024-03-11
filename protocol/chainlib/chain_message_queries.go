@@ -3,7 +3,7 @@ package chainlib
 import "github.com/lavanet/lava/protocol/common"
 
 func ShouldSendToAllProviders(chainMessage ChainMessage) bool {
-	return chainMessage.GetApi().Category.Stateful == common.CONSISTENCY_SELECT_ALLPROVIDERS
+	return chainMessage.GetApi().Category.Stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS
 }
 
 func GetAddon(chainMessage ChainMessageForSend) string {
