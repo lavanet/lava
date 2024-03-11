@@ -294,6 +294,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		rejected_relays_num--
 	}
 
+	// save all payment objects
+	paymentHandler.Flush(ctx)
+
 	// if all relays failed, fail the TX
 	if rejected_relays_num != 0 {
 		return nil, utils.LavaFormatWarning("relay payment failed", fmt.Errorf("all relays rejected"),
