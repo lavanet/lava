@@ -203,7 +203,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		rewardedCUDec := sdk.NewDec(int64(rewardedCU))
+		rewardedCUDec := sdk.NewDecFromInt(sdk.NewIntFromUint64(rewardedCU))
 
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
@@ -245,7 +245,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// calling the same event repeatedly within a transaction just appends the new keys to the event
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 
-		cuAfterQos := uint64(rewardedCUDec.TruncateInt64())
+		cuAfterQos := rewardedCUDec.TruncateInt().Uint64()
 		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, clientAddr, relay, cuAfterQos)
 		if err != nil {
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
