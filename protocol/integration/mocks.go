@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -66,6 +67,7 @@ func (m *mockConsumerStateTracker) GetLatestVirtualEpoch() uint64 {
 type ReplySetter struct {
 	status       int
 	replyDataBuf []byte
+	handler      func([]byte, http.Header) ([]byte, int)
 }
 
 type mockProviderStateTracker struct {
@@ -253,7 +255,7 @@ func (ug *uniqueAddresGenerator) GetAddress() string {
 	defer ug.lock.Unlock()
 	ug.seed++
 	if ug.seed < 100 {
-		return "localhost:10" + strconv.Itoa(ug.seed)
+		return "localhost:111" + strconv.Itoa(ug.seed)
 	}
-	return "localhost:1" + strconv.Itoa(ug.seed)
+	return "localhost:11" + strconv.Itoa(ug.seed)
 }

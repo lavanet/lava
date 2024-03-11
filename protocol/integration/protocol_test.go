@@ -174,11 +174,21 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 	replySetter := ReplySetter{
 		status:       http.StatusOK,
 		replyDataBuf: []byte(`{"reply": "REPLY-STUB"}`),
+		handler:      nil,
 	}
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
-		w.WriteHeader(replySetter.status)
-		fmt.Fprint(w, string(replySetter.replyDataBuf))
+
+		status := replySetter.status
+		data := replySetter.replyDataBuf
+		// if replySetter.handler != nil {
+		// 	data = make([]byte, r.ContentLength)
+		// 	r.Body.Read(data)
+		// 	data, status = replySetter.handler(data, r.Header)
+		// }
+		w.WriteHeader(status)
+		fmt.Fprint(w, string(data))
+
 	})
 	chainParser, chainRouter, chainFetcher, _, endpoint, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", addons)
 	require.NoError(t, err)
@@ -379,5 +389,27 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 		require.True(t, ok)
 		counter[id]++
 	}
+
 	require.Len(t, counter, numProviders) // make sure to talk with all of them
+
+	// add a chance for node errors and timeouts
+	for i := 0; i < numProviders; i++ {
+		handler := func(req []byte, header http.Header) (data []byte, status int) {
+			randVal := rand.Intn(10)
+			switch randVal {
+			case 3:
+				time.Sleep(1 * time.Second) // cause timeout
+			case 2:
+				return []byte(`{"message":"bad","code":123}`), http.StatusInternalServerError
+			}
+			return providers[i].replySetter.replyDataBuf, http.StatusOK
+		}
+		providers[i].replySetter.handler = handler
+	}
+
+	for i := 0; i <= 100; i++ {
+		client := http.Client{Timeout: 300 * time.Millisecond}
+		_, err := client.Get("http://" + consumerListenAddress + "/status")
+		require.NoError(t, err, i)
+	}
 }
