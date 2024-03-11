@@ -92,7 +92,8 @@ type EpochPaymentHandler struct {
 
 func (k Keeper) NewEpochPaymentHandler() EpochPaymentHandler {
 	return EpochPaymentHandler{
-		Keeper: k, providerPaymentStorages: map[string]*types.ProviderPaymentStorage{},
+		Keeper:                              k,
+		providerPaymentStorages:             map[string]*types.ProviderPaymentStorage{},
 		epochPayments:                       map[uint64]*types.EpochPayments{},
 		UniquePaymentsStorageClientProvider: map[string]types.UniquePaymentStorageClientProvider{},
 	}
