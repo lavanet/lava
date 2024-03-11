@@ -16,7 +16,7 @@
                 "imports": [
                     "ETH1"
                 ],
-                "shares" : 1,
+                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "47500000000"
@@ -210,7 +210,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging_api" : true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             }
@@ -243,7 +243,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging_api" : true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -516,7 +516,7 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging_api" : true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             },
@@ -713,15 +713,14 @@
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 1,
-                                    "hanging_api" : true
+                                    "hanging_api": true
                                 },
                                 "extra_compute_units": 0
                             }
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
-                        ]
+                        "parse_directives": []
                     }
                 ]
             }

@@ -17,7 +17,7 @@
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 5000,
                 "allowed_block_lag_for_qos_sync": 2,
-                                "shares" : 1,
+                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "47500000000"
@@ -185,7 +185,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block":14200
+                                    "block": 14200
                                 }
                             }
                         ]
@@ -352,7 +352,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block":14200
+                                    "block": 14200
                                 }
                             }
                         ]
@@ -396,7 +396,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block":14200
+                                    "block": 14200
                                 }
                             }
                         ]
@@ -416,7 +416,7 @@
                 "blocks_in_finalization_proof": 1,
                 "average_block_time": 5000,
                 "allowed_block_lag_for_qos_sync": 2,
-                                "shares" : 1,
+                "shares": 1,
                 "min_stake_provider": {
                     "denom": "ulava",
                     "amount": "47500000000"
