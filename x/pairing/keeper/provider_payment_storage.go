@@ -81,16 +81,22 @@ func (k Keeper) GetProviderPaymentStorageKey(ctx sdk.Context, chainID string, ep
 }
 
 // Function to add a payment (which is represented by a uniquePaymentStorageClientProvider object) to a providerPaymentStorage object
-func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ProviderPaymentStorage, usedCUConsumerTotal uint64) {
+func (k EpochPaymentHandler) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) (userPayment *types.ProviderPaymentStorage, usedCUConsumerTotal uint64) {
 	// create an uniquePaymentStorageClientProvider object and set it in the KVStore
 	uniquePaymentStorageClientProviderEntryAddr := k.AddUniquePaymentStorageClientProvider(ctx, chainID, epoch, projectID, providerAddress, uniqueIdentifier, usedCU)
 
 	// get the providerPaymentStorage object
 	providerPaymentStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, providerAddress)
-	userPaymentStorageInEpoch, found := k.GetProviderPaymentStorage(ctx, providerPaymentStorageKey)
+	userPaymentStorageInEpoch, found := k.providerPaymentStorages[providerPaymentStorageKey]
+	if !found {
+		*userPaymentStorageInEpoch, found = k.GetProviderPaymentStorage(ctx, providerPaymentStorageKey)
+		k.providerPaymentStorages[providerPaymentStorageKey] = userPaymentStorageInEpoch
+	}
+
 	if !found {
 		// is new entry -> create a new providerPaymentStorage object
-		userPaymentStorageInEpoch = types.ProviderPaymentStorage{Index: providerPaymentStorageKey, UniquePaymentStorageClientProviderKeys: []string{uniquePaymentStorageClientProviderEntryAddr.GetIndex()}, Epoch: epoch}
+		userPaymentStorageInEpoch = &types.ProviderPaymentStorage{Index: providerPaymentStorageKey, UniquePaymentStorageClientProviderKeys: []string{uniquePaymentStorageClientProviderEntryAddr.GetIndex()}, Epoch: epoch}
+		k.providerPaymentStorages[providerPaymentStorageKey] = userPaymentStorageInEpoch
 		usedCUConsumerTotal = usedCU
 	} else {
 		// found the providerPaymentStorage object -> append the uniquePaymentStorageClientProvider object's key
@@ -100,20 +106,27 @@ func (k Keeper) AddProviderPaymentInEpoch(ctx sdk.Context, chainID string, epoch
 		usedCUConsumerTotal = k.GetTotalUsedCUForConsumerPerEpoch(ctx, projectID, userPaymentStorageInEpoch.GetUniquePaymentStorageClientProviderKeys(), providerAddress.String())
 	}
 
-	// set the providerPaymentStorage object in the KVStore
-	k.SetProviderPaymentStorage(ctx, userPaymentStorageInEpoch)
-
-	return &userPaymentStorageInEpoch, usedCUConsumerTotal
+	return userPaymentStorageInEpoch, usedCUConsumerTotal
 }
 
 // Function to get the total serviced CU by a provider in this epoch for a specific consumer
-func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, projectID string, uniquePaymentStorageKeys []string, providerAddress string) uint64 {
+func (k EpochPaymentHandler) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, projectID string, uniquePaymentStorageKeys []string, providerAddress string) uint64 {
 	usedCUProviderTotal := uint64(0)
 
 	// go over the uniquePaymentStorageKeys
 	for _, uniquePaymentKey := range uniquePaymentStorageKeys {
+		// if the uniquePaymentStorageClientProvider object is between the provider and the specific consumer, add the serviced CU
+		if k.GetConsumerFromUniquePayment(uniquePaymentKey) != projectID {
+			continue
+		}
+
 		// get the uniquePaymentStorageClientProvider object
-		uniquePayment, found := k.GetUniquePaymentStorageClientProvider(ctx, uniquePaymentKey)
+		uniquePayment, found := k.UniquePaymentsStorageClientProvider[uniquePaymentKey]
+		if !found {
+			uniquePayment, found = k.GetUniquePaymentStorageClientProvider(ctx, uniquePaymentKey)
+			k.UniquePaymentsStorageClientProvider[uniquePaymentKey] = uniquePayment
+		}
+
 		if !found {
 			utils.LavaFormatError("could not find uniquePaymentStorageClientProvider object", fmt.Errorf("unique payment object not found"),
 				utils.Attribute{Key: "providerAddress", Value: providerAddress},
@@ -122,10 +135,7 @@ func (k Keeper) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, projectID str
 			continue
 		}
 
-		// if the uniquePaymentStorageClientProvider object is between the provider and the specific consumer, add the serviced CU
-		if k.GetConsumerFromUniquePayment(&uniquePayment) == projectID {
-			usedCUProviderTotal += uniquePayment.UsedCU
-		}
+		usedCUProviderTotal += uniquePayment.UsedCU
 	}
 	return usedCUProviderTotal
 }

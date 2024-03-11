@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -73,13 +74,24 @@ func (k Keeper) RemoveOldEpochPayment(ctx sdk.Context) {
 
 // Function to get the epochPayments object from a specific epoch. Note that it also returns the epochPayments object's key which is the epoch in hex representation (base 16)
 func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochPayment types.EpochPayments, found bool, key string) {
-	key = strconv.FormatUint(epoch, 16)
+	key = epochPaymentKey(epoch)
 	epochPayment, found = k.GetEpochPayments(ctx, key)
 	return
 }
 
+func epochPaymentKey(epoch uint64) string {
+	return strconv.FormatUint(epoch, 16)
+}
+
+type EpochPaymentHandler struct {
+	Keeper
+	providerPaymentStorages             map[string]*types.ProviderPaymentStorage
+	UniquePaymentsStorageClientProvider map[string]types.UniquePaymentStorageClientProvider
+	epochPayments                       map[uint64]*types.EpochPayments
+}
+
 // Function to add an epoch payment to the epochPayments object
-func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) uint64 {
+func (k EpochPaymentHandler) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) uint64 {
 	if epoch < k.epochStorageKeeper.GetEarliestEpochStart(ctx) {
 		return 0
 	}
@@ -88,10 +100,18 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, p
 	userPaymentProviderStorage, usedCUProviderTotal := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, projectID, providerAddress, usedCU, uniqueIdentifier)
 
 	// get this epoch's epochPayments object
-	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
+
+	epochPayments, found := k.epochPayments[epoch]
+	key := epochPaymentKey(epoch)
+	if !found {
+		*epochPayments, found, _ = k.GetEpochPaymentsFromBlock(ctx, epoch)
+		k.epochPayments[epoch] = epochPayments
+	}
+
 	if !found {
 		// this epoch doesn't have a epochPayments object, create one with the providerPaymentStorage object from before
-		epochPayments = types.EpochPayments{Index: key, ProviderPaymentStorageKeys: []string{userPaymentProviderStorage.GetIndex()}}
+		epochPayments = &types.EpochPayments{Index: key, ProviderPaymentStorageKeys: []string{userPaymentProviderStorage.GetIndex()}}
+		k.epochPayments[epoch] = epochPayments
 	} else {
 		// this epoch has a epochPayments object -> make sure this payment is not already in this object
 		// TODO: improve - have it sorted and binary search, store indexes map for the current epoch providers stake and just lookup at the provider index (and turn it on) - assumes most providers will have payments
@@ -108,9 +128,6 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, p
 			epochPayments.ProviderPaymentStorageKeys = append(epochPayments.ProviderPaymentStorageKeys, userPaymentProviderStorage.GetIndex())
 		}
 	}
-
-	// update the epochPayments object
-	k.SetEpochPayments(ctx, epochPayments)
 
 	return usedCUProviderTotal
 }
@@ -164,7 +181,7 @@ func (k Keeper) RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx sdk.Context,
 
 			// delete the uniquePaymentStorageClientProvider object
 			k.RemoveUniquePaymentStorageClientProvider(ctx, uniquePaymentStorage.Index)
-			consumer := k.GetConsumerFromUniquePayment(&uniquePaymentStorage)
+			consumer := k.GetConsumerFromUniquePayment(uniquePaymentStorageKey)
 
 			provider, err := k.GetProviderFromProviderPaymentStorage(&providerPaymentStorage)
 			if err != nil {
@@ -188,4 +205,31 @@ func (k Keeper) RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx sdk.Context,
 	}
 	// after we're done deleting the providerPaymentStorage objects, delete the epochPayments object
 	k.RemoveEpochPayments(ctx, key)
+}
+
+func (k EpochPaymentHandler) Flush(ctx sdk.Context) {
+	// set epoch payments
+	var keysEpochPayments []uint64
+	for key := range k.epochPayments {
+		keysEpochPayments = append(keysEpochPayments, key)
+	}
+
+	sort.Slice(keysEpochPayments, func(i, j int) bool {
+		return keysEpochPayments[i] < keysEpochPayments[j]
+	})
+
+	for _, key := range keysEpochPayments {
+		k.SetEpochPayments(ctx, *k.epochPayments[key])
+	}
+
+	// set providerPaymentStorages
+	var keysProviderPaymentStorages []string
+	for key := range k.providerPaymentStorages {
+		keysProviderPaymentStorages = append(keysProviderPaymentStorages, key)
+	}
+	sort.Strings(keysProviderPaymentStorages)
+
+	for _, key := range keysProviderPaymentStorages {
+		k.SetProviderPaymentStorage(ctx, *k.providerPaymentStorages[key])
+	}
 }

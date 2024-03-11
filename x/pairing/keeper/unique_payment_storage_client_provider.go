@@ -73,8 +73,8 @@ func (k Keeper) IsDoubleSpend(ctx sdk.Context, chainID string, block uint64, pro
 	return found
 }
 
-func (k Keeper) GetConsumerFromUniquePayment(uniquePaymentStorageClientProvider *types.UniquePaymentStorageClientProvider) string {
-	key := uniquePaymentStorageClientProvider.Index
+func (k Keeper) GetConsumerFromUniquePayment(uniquePaymentStorageClientProvider string) string {
+	key := uniquePaymentStorageClientProvider
 	providerAdrLengh := charToAsciiNumber(rune(key[0]))
 	provider := key[1 : providerAdrLengh+1]
 	return provider
