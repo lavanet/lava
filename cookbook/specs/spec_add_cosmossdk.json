@@ -2036,6 +2036,21 @@
                         ],
                         "verifications": [
                             {
+                                "name": "minimum-gas-price",
+                                "parse_directive": {
+                                    "function_template": "/cosmos/base/node/v1beta1/config",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "minimumGasPrice",
+                                            "="
+                                        ],
+                                        "parser_func": "PARSE_DICTIONARY"
+                                    },
+                                    "api_name": "/cosmos/base/node/v1beta1/config"
+                                }
+                            },
+                            {
                                 "name": "chain-id",
                                 "parse_directive": {
                                     "function_template": "/cosmos/base/tendermint/v1beta1/node_info",
@@ -3607,6 +3622,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "cosmos.base.node.v1beta1.Service/Config",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "cosmos.upgrade.v1beta1.Query/UpgradedConsensusState",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -3691,6 +3724,21 @@
                             }
                         ],
                         "verifications": [
+                            {
+                                "name": "minimum-gas-price",
+                                "parse_directive": {
+                                    "function_template": "cosmos.base.node.v1beta1.Service.Config",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "minimumGasPrice",
+                                            "="
+                                        ],
+                                        "parser_func": "PARSE_DICTIONARY"
+                                    },
+                                    "api_name": "cosmos.base.node.v1beta1.Service.Config"
+                                }
+                            },
                             {
                                 "name": "chain-id",
                                 "parse_directive": {
@@ -4338,6 +4386,22 @@
                             }
                         ],
                         "verifications": [
+                            {
+                                "name": "minimum-gas-price",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"abci_query\",\"params\":{\"path\":\"/cosmos.base.node.v1beta1.Service/Config\", \"height\":\"0\", \"data\":\"\",\"proof\":\"true\"},\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "response",
+                                            "value"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "abci_query"
+                                }
+                            },
                             {
                                 "name": "chain-id",
                                 "parse_directive": {
