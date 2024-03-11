@@ -2038,7 +2038,7 @@
                             {
                                 "name": "minimum-gas-price",
                                 "parse_directive": {
-                                    "function_template": "",
+                                    "function_template": "/cosmos/base/node/v1beta1/config",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
@@ -3727,7 +3727,7 @@
                             {
                                 "name": "minimum-gas-price",
                                 "parse_directive": {
-                                    "function_template": "",
+                                    "function_template": "cosmos.base.node.v1beta1.Service.Config",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
@@ -4398,7 +4398,8 @@
                                             "value"
                                         ],
                                         "parser_func": "PARSE_CANONICAL"
-                                    }
+                                    },
+                                    "api_name": "abci_query"
                                 }
                             },
                             {
