@@ -72,7 +72,7 @@ type TimeoutInfo struct {
 
 func GetTimeoutForProcessing(relayTimeout time.Duration, timeoutInfo TimeoutInfo) time.Duration {
 	ctxTimeout := DefaultTimeout
-	if timeoutInfo.Hanging || timeoutInfo.CU > 100 || timeoutInfo.Stateful == CONSISTENCY_SELECT_ALLPROVIDERS {
+	if timeoutInfo.Hanging || timeoutInfo.CU > 100 || timeoutInfo.Stateful == CONSISTENCY_SELECT_ALL_PROVIDERS {
 		ctxTimeout = DefaultTimeoutLong
 	}
 	if relayTimeout > ctxTimeout {
