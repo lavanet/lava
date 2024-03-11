@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -305,4 +306,77 @@ func TestConsumerProviderBasic(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, providers[0].replySetter.replyDataBuf, bodyBytes)
 	resp.Body.Close()
+}
+
+func TestConsumerProviderWithProviders(t *testing.T) {
+	ctx := context.Background()
+	// can be any spec and api interface
+	specId := "LAV1"
+	apiInterface := spectypes.APIInterfaceTendermintRPC
+	epoch := uint64(100)
+	requiredResponses := 1
+	lavaChainID := "lava"
+
+	numProviders := 5
+
+	consumerListenAddress := "localhost:21111"
+	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+	type providerData struct {
+		account          sigs.Account
+		endpoint         *lavasession.RPCProviderEndpoint
+		server           *rpcprovider.RPCProviderServer
+		replySetter      *ReplySetter
+		mockChainFetcher *MockChainFetcher
+	}
+	providers := []providerData{}
+
+	for i := 0; i < numProviders; i++ {
+		// providerListenAddress := "localhost:111" + strconv.Itoa(i)
+		account := sigs.GenerateDeterministicFloatingKey(randomizer)
+		providerDataI := providerData{account: account}
+		providers = append(providers, providerDataI)
+	}
+	consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+	for i := 0; i < numProviders; i++ {
+		ctx := context.Background()
+		providerDataI := providers[i]
+		listenAddress := "localhost:111" + strconv.Itoa(i)
+		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
+		providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"reply": %d}`, i))
+	}
+	for i := 0; i < numProviders; i++ {
+		pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
+			PublicLavaAddress: providers[i].account.Addr.String(),
+			Endpoints: []*lavasession.Endpoint{
+				{
+					NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
+					Enabled:        true,
+					Geolocation:    1,
+				},
+			},
+			Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+			MaxComputeUnits:  10000,
+			UsedComputeUnits: 0,
+			PairingEpoch:     epoch,
+		}
+	}
+	rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+	require.NotNil(t, rpcconsumerServer)
+	counter := map[int]int{}
+	for i := 0; i <= 1000; i++ {
+		client := http.Client{}
+		resp, err := client.Get("http://" + consumerListenAddress + "/status")
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		bodyBytes, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		resp.Body.Close()
+		mapi := map[string]int{}
+		err = json.Unmarshal(bodyBytes, &mapi)
+		require.NoError(t, err)
+		id, ok := mapi["reply"]
+		require.True(t, ok)
+		counter[id]++
+	}
+	require.Len(t, counter, numProviders) // make sure to talk with all of them
 }

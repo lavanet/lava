@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
@@ -31,12 +32,28 @@ func (r *RelayErrors) findMaxAppearances(input map[string][]int) (maxVal int, in
 	return
 }
 
+func replacePattern(input, pattern, replacement string) string {
+	re := regexp.MustCompile(pattern)
+	return re.ReplaceAllString(input, replacement)
+}
+
+func (r *RelayErrors) sanitizeError(errMsg string) string {
+	// Replace SessionId:(any digit here) with SessionId:*
+	errMsg = replacePattern(errMsg, `SessionId:\d+`, "SessionId:*")
+
+	// Replace GUID:(any digit here) with GUID:*
+	errMsg = replacePattern(errMsg, `GUID:\d+`, "GUID:*")
+
+	return errMsg
+}
+
 func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	bestIndex := -1
 	bestResult := github_com_cosmos_cosmos_sdk_types.ZeroDec()
 	errorMap := make(map[string][]int)
 	for idx, relayError := range r.relayErrors {
 		errorMessage := relayError.err.Error()
+		errorMessage = r.sanitizeError(errorMessage)
 		errorMap[errorMessage] = append(errorMap[errorMessage], idx)
 		if relayError.ProviderInfo.ProviderQoSExcellenceSummery.IsNil() || relayError.ProviderInfo.ProviderStake.Amount.IsNil() {
 			continue
@@ -73,16 +90,16 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 }
 
 func (r *RelayErrors) getAllUniqueErrors() []error {
-	allErrors := make([]error, len(r.relayErrors))
+	allErrors := []error{}
 	repeatingErrors := make(map[string]struct{})
-	for idx, relayError := range r.relayErrors {
+	for _, relayError := range r.relayErrors {
 		errString := relayError.err.Error() // using strings to filter repeating errors
 		_, ok := repeatingErrors[errString]
 		if ok {
 			continue
 		}
 		repeatingErrors[errString] = struct{}{}
-		allErrors[idx] = relayError.err
+		allErrors = append(allErrors, relayError.err)
 	}
 	return allErrors
 }
@@ -105,4 +122,8 @@ type RelayError struct {
 	err          error
 	ProviderInfo common.ProviderInfo
 	response     *relayResponse
+}
+
+func (re RelayError) String() string {
+	return fmt.Sprintf("err: %s, ProviderInfo: %v, response: %v", re.err, re.ProviderInfo, re.response)
 }
