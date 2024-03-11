@@ -22,11 +22,6 @@ type BadgeData struct {
 	BadgeSigner sdk.AccAddress
 }
 
-type PairingData struct {
-	allowedCU uint64
-	providers []epochstoragetypes.StakeEntry
-}
-
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
 	if len(msg.LatestBlockReports) > len(msg.Relays) {
 		return nil, utils.LavaFormatError("RelayPayment_invalid_latest_block_reports", fmt.Errorf("invalid latest block reports"),
@@ -76,7 +71,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
 	rejected_relays_num := len(msg.Relays)
-	validatePairingCache := map[string]PairingData{}
+	validatePairingCache := map[string][]epochstoragetypes.StakeEntry{}
 	for relayIdx, relay := range msg.Relays {
 		rejectedCu += relay.CuSum
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
@@ -180,10 +175,18 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		validatePairingKey := subscriptiontypes.CuTrackerKey(clientAddr.String(), relay.Provider, relay.SpecId)
 		var providers []epochstoragetypes.StakeEntry
 		allowedCU := uint64(0)
-		pairingData, ok := validatePairingCache[validatePairingKey]
+		val, ok := validatePairingCache[validatePairingKey]
 		if ok {
-			allowedCU = pairingData.allowedCU
-			providers = pairingData.providers
+			providers = val
+			strictestPolicy, _, err := k.GetProjectStrictestPolicy(ctx, project, relay.SpecId, epochStart)
+			if err != nil {
+				return nil, utils.LavaFormatError("strictest policy calculation for pairing validation cache failed", err,
+					utils.LogAttr("project", project.Index),
+					utils.LogAttr("chainID", relay.SpecId),
+					utils.LogAttr("block", strconv.FormatUint(epochStart, 10)),
+				)
+			}
+			allowedCU = strictestPolicy.EpochCuLimit
 		} else {
 			isValidPairing := false
 			isValidPairing, allowedCU, providers, err = k.Keeper.ValidatePairingForClient(
@@ -205,7 +208,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 					utils.Attribute{Key: "provider", Value: providerAddr.String()},
 				)
 			}
-			validatePairingCache[validatePairingKey] = PairingData{allowedCU: allowedCU, providers: providers}
+			validatePairingCache[validatePairingKey] = providers
 		}
 
 		rewardedCU, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, clientAddr, relay.SpecId, uint64(relay.Epoch))
