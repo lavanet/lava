@@ -291,10 +291,22 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 	for _, report := range msg.LatestBlockReports {
 		latestBlockReports[report.GetSpecId()] = strconv.FormatUint(report.GetLatestBlock(), 10)
+		k.setStakeEntryBlockReport(ctx, creator, report.GetSpecId(), report.GetLatestBlock())
 	}
 	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
 
 	return &types.MsgRelayPaymentResponse{RejectedRelays: rejected_relays}, nil
+}
+
+func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, latestBlock uint64) {
+	stakeEntry, found, ind := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
+	if found {
+		stakeEntry.BlockReport = &epochstoragetypes.BlockReport{
+			Epoch:       k.epochStorageKeeper.GetEpochStart(ctx),
+			LatestBlock: latestBlock,
+		}
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, ind)
+	}
 }
 
 func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum uint64, providersToPair []epochstoragetypes.StakeEntry, projectID string) error {
