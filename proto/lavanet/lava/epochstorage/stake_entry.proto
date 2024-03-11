@@ -19,4 +19,13 @@ message StakeEntry {
   cosmos.base.v1beta1.Coin delegate_limit = 10 [(gogoproto.nullable) = false]; // delegation limit
   uint64 delegate_commission = 11; // delegation commission (precentage 0-100)
   uint64 last_change = 12;
+  BlockReport block_report = 13;
+}
+
+// BlockReport holds the most up-to-date info regarding blocks of the provider
+// It is set in the relay payment TX logic
+// used by the consumer to calculate the provider's sync score 
+message BlockReport {
+  uint64 epoch = 1; 
+  uint64 latest_block = 2;
 }

@@ -226,7 +226,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		rewardedCUDec := sdk.NewDec(int64(rewardedCU))
+		rewardedCUDec := sdk.NewDecFromInt(sdk.NewIntFromUint64(rewardedCU))
 
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
@@ -268,7 +268,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// calling the same event repeatedly within a transaction just appends the new keys to the event
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 
-		cuAfterQos := uint64(rewardedCUDec.TruncateInt64())
+		cuAfterQos := rewardedCUDec.TruncateInt().Uint64()
 		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, clientAddr, relay, cuAfterQos)
 		if err != nil {
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
@@ -317,10 +317,22 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 	for _, report := range msg.LatestBlockReports {
 		latestBlockReports[report.GetSpecId()] = strconv.FormatUint(report.GetLatestBlock(), 10)
+		k.setStakeEntryBlockReport(ctx, creator, report.GetSpecId(), report.GetLatestBlock())
 	}
 	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
 
 	return &types.MsgRelayPaymentResponse{RejectedRelays: rejected_relays}, nil
+}
+
+func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, latestBlock uint64) {
+	stakeEntry, found, ind := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
+	if found {
+		stakeEntry.BlockReport = &epochstoragetypes.BlockReport{
+			Epoch:       k.epochStorageKeeper.GetEpochStart(ctx),
+			LatestBlock: latestBlock,
+		}
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, ind)
+	}
 }
 
 func (k EpochPaymentHandler) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum uint64, providersToPair []epochstoragetypes.StakeEntry, projectID string) error {
