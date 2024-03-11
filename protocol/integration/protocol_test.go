@@ -319,7 +319,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 
 	numProviders := 5
 
-	consumerListenAddress := "localhost:21111"
+	consumerListenAddress := "localhost:21112"
 	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 	type providerData struct {
 		account          sigs.Account
@@ -340,7 +340,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 	for i := 0; i < numProviders; i++ {
 		ctx := context.Background()
 		providerDataI := providers[i]
-		listenAddress := "localhost:111" + strconv.Itoa(i)
+		listenAddress := "localhost:112" + strconv.Itoa(i)
 		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
 		providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"reply": %d}`, i))
 	}
