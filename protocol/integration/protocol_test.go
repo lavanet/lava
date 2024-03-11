@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strconv"
 	"testing"
 	"time"
 
@@ -34,12 +33,14 @@ import (
 var (
 	seed       int64
 	randomizer *sigs.ZeroReader
+	addressGen uniqueAddresGenerator
 )
 
 func TestMain(m *testing.M) {
 	// This code will run once before any test cases are executed.
 	seed = time.Now().Unix()
 	rand.SetSpecificSeed(seed)
+	addressGen = uniqueAddresGenerator{}
 	randomizer = sigs.NewZeroReader(seed)
 	lavasession.AllowInsecureConnectionToProviders = true
 	// Run the actual tests
@@ -256,7 +257,7 @@ func TestConsumerProviderBasic(t *testing.T) {
 
 	numProviders := 1
 
-	consumerListenAddress := "localhost:21111"
+	consumerListenAddress := addressGen.GetAddress()
 	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 	type providerData struct {
 		account          sigs.Account
@@ -277,7 +278,7 @@ func TestConsumerProviderBasic(t *testing.T) {
 	for i := 0; i < numProviders; i++ {
 		ctx := context.Background()
 		providerDataI := providers[i]
-		listenAddress := "localhost:111" + strconv.Itoa(i)
+		listenAddress := addressGen.GetAddress()
 		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
 	}
 	for i := 0; i < numProviders; i++ {
@@ -319,7 +320,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 
 	numProviders := 5
 
-	consumerListenAddress := "localhost:21112"
+	consumerListenAddress := addressGen.GetAddress()
 	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 	type providerData struct {
 		account          sigs.Account
@@ -340,7 +341,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 	for i := 0; i < numProviders; i++ {
 		ctx := context.Background()
 		providerDataI := providers[i]
-		listenAddress := "localhost:112" + strconv.Itoa(i)
+		listenAddress := addressGen.GetAddress()
 		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
 		providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"reply": %d}`, i))
 	}

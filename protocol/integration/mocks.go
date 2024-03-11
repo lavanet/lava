@@ -242,3 +242,18 @@ func NewMockChainFetcher(startBlock, blocksToSave int64, callback func()) *MockC
 	}
 	return &mockCHainFetcher
 }
+
+type uniqueAddresGenerator struct {
+	seed int
+	lock sync.Mutex
+}
+
+func (ug *uniqueAddresGenerator) GetAddress() string {
+	ug.lock.Lock()
+	defer ug.lock.Unlock()
+	ug.seed++
+	if ug.seed < 100 {
+		return "localhost:10" + strconv.Itoa(ug.seed)
+	}
+	return "localhost:1" + strconv.Itoa(ug.seed)
+}
