@@ -89,7 +89,9 @@ func (k EpochPaymentHandler) AddProviderPaymentInEpoch(ctx sdk.Context, chainID 
 	providerPaymentStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, providerAddress)
 	userPaymentStorageInEpoch, found := k.providerPaymentStorages[providerPaymentStorageKey]
 	if !found {
-		*userPaymentStorageInEpoch, found = k.GetProviderPaymentStorage(ctx, providerPaymentStorageKey)
+		var userPaymentStorageInEpochTemp types.ProviderPaymentStorage
+		userPaymentStorageInEpochTemp, found = k.GetProviderPaymentStorage(ctx, providerPaymentStorageKey)
+		userPaymentStorageInEpoch = &userPaymentStorageInEpochTemp
 		k.providerPaymentStorages[providerPaymentStorageKey] = userPaymentStorageInEpoch
 	}
 

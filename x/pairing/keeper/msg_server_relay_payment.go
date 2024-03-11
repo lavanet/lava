@@ -23,7 +23,7 @@ type BadgeData struct {
 }
 
 func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPayment) (*types.MsgRelayPaymentResponse, error) {
-	paymentHandler := EpochPaymentHandler{Keeper: k.Keeper}
+	paymentHandler := k.NewEpochPaymentHandler()
 	if len(msg.LatestBlockReports) > len(msg.Relays) {
 		return nil, utils.LavaFormatError("RelayPayment_invalid_latest_block_reports", fmt.Errorf("invalid latest block reports"),
 			utils.LogAttr("latestBlockReports", msg.LatestBlockReports),
@@ -370,7 +370,9 @@ func (k EpochPaymentHandler) updateProviderPaymentStorageWithComplainerCU(ctx sd
 		providerStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, sdkUnresponsiveProviderAddress)
 		providerPaymentStorage, found := k.providerPaymentStorages[providerStorageKey]
 		if !found {
-			*providerPaymentStorage, found = k.GetProviderPaymentStorage(ctx, providerStorageKey)
+			var userPaymentStorageInEpochTemp types.ProviderPaymentStorage
+			userPaymentStorageInEpochTemp, found = k.GetProviderPaymentStorage(ctx, providerStorageKey)
+			providerPaymentStorage = &userPaymentStorageInEpochTemp
 			k.providerPaymentStorages[providerStorageKey] = providerPaymentStorage
 		}
 

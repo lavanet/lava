@@ -90,6 +90,14 @@ type EpochPaymentHandler struct {
 	epochPayments                       map[uint64]*types.EpochPayments
 }
 
+func (k Keeper) NewEpochPaymentHandler() EpochPaymentHandler {
+	return EpochPaymentHandler{
+		Keeper: k, providerPaymentStorages: map[string]*types.ProviderPaymentStorage{},
+		epochPayments:                       map[uint64]*types.EpochPayments{},
+		UniquePaymentsStorageClientProvider: map[string]types.UniquePaymentStorageClientProvider{},
+	}
+}
+
 // Function to add an epoch payment to the epochPayments object
 func (k EpochPaymentHandler) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) uint64 {
 	if epoch < k.epochStorageKeeper.GetEarliestEpochStart(ctx) {
@@ -104,7 +112,9 @@ func (k EpochPaymentHandler) AddEpochPayment(ctx sdk.Context, chainID string, ep
 	epochPayments, found := k.epochPayments[epoch]
 	key := epochPaymentKey(epoch)
 	if !found {
-		*epochPayments, found, _ = k.GetEpochPaymentsFromBlock(ctx, epoch)
+		var epochPaymentsTemp types.EpochPayments
+		epochPaymentsTemp, found, _ = k.GetEpochPaymentsFromBlock(ctx, epoch)
+		epochPayments = &epochPaymentsTemp
 		k.epochPayments[epoch] = epochPayments
 	}
 
