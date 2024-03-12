@@ -167,7 +167,7 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 			slashedAmount = sdk.MinInt(total, slashedAmount)
 			total = total.Sub(slashedAmount)
 
-			if total.IsZero() {
+			if !total.IsPositive() {
 				return
 			}
 		}
@@ -175,20 +175,20 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 
 	// try slashing existing unbondings
 	slashUnbonding()
-	if total.IsZero() {
+	if !total.IsPositive() {
 		return nil
 	}
 
 	// we need to unbond from the delegator by force the amount left
 	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, delAddr)
-	totalUnbonding := total
+	tokensToUnbond := total
 	for _, delegation := range delegations {
 		validator, found := k.stakingKeeper.GetValidator(ctx, delegation.GetValidatorAddr())
 		if !found {
 			continue
 		}
 		amount := validator.TokensFromShares(delegation.Shares).TruncateInt()
-		amount = sdk.MinInt(totalUnbonding, amount)
+		amount = sdk.MinInt(tokensToUnbond, amount)
 		shares, err := validator.SharesFromTokensTruncated(amount)
 		if err != nil {
 			return utils.LavaFormatWarning("failed to get delegators shares", err,
@@ -204,14 +204,14 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 			)
 		}
 
-		totalUnbonding = totalUnbonding.Sub(amount)
-		if totalUnbonding.IsZero() {
+		tokensToUnbond = tokensToUnbond.Sub(amount)
+		if !tokensToUnbond.IsPositive() {
 			break
 		}
 	}
 
-	if !totalUnbonding.IsZero() {
-		return utils.LavaFormatWarning("delegator does not have enough delegations to slash", err,
+	if tokensToUnbond.IsPositive() {
+		utils.LavaFormatWarning("delegator does not have enough delegations to slash", err,
 			utils.Attribute{Key: "address", Value: delAddr},
 		)
 	}
