@@ -380,13 +380,7 @@ func (k EpochPaymentHandler) updateProviderPaymentStorageWithComplainerCU(ctx sd
 
 		// get the providerPaymentStorage object using the providerStorageKey
 		providerStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, sdkUnresponsiveProviderAddress)
-		providerPaymentStorage, found := k.providerPaymentStorages[providerStorageKey]
-		if !found {
-			var userPaymentStorageInEpochTemp types.ProviderPaymentStorage
-			userPaymentStorageInEpochTemp, found = k.GetProviderPaymentStorage(ctx, providerStorageKey)
-			providerPaymentStorage = &userPaymentStorageInEpochTemp
-			k.providerPaymentStorages[providerStorageKey] = providerPaymentStorage
-		}
+		providerPaymentStorage, found := k.GetProviderPaymentStorageCached(ctx, providerStorageKey)
 
 		if !found {
 			// providerPaymentStorage not found (this provider has no payments in this epoch and also no complaints) -> we need to add one complaint

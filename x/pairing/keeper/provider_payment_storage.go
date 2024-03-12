@@ -87,13 +87,7 @@ func (k EpochPaymentHandler) AddProviderPaymentInEpoch(ctx sdk.Context, chainID 
 
 	// get the providerPaymentStorage object
 	providerPaymentStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, providerAddress)
-	userPaymentStorageInEpoch, found := k.providerPaymentStorages[providerPaymentStorageKey]
-	if !found {
-		var userPaymentStorageInEpochTemp types.ProviderPaymentStorage
-		userPaymentStorageInEpochTemp, found = k.GetProviderPaymentStorage(ctx, providerPaymentStorageKey)
-		userPaymentStorageInEpoch = &userPaymentStorageInEpochTemp
-		k.providerPaymentStorages[providerPaymentStorageKey] = userPaymentStorageInEpoch
-	}
+	userPaymentStorageInEpoch, found := k.GetProviderPaymentStorageCached(ctx, providerPaymentStorageKey)
 
 	if !found {
 		// is new entry -> create a new providerPaymentStorage object
@@ -126,7 +120,9 @@ func (k EpochPaymentHandler) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, 
 		uniquePayment, found := k.UniquePaymentsStorageClientProvider[uniquePaymentKey]
 		if !found {
 			uniquePayment, found = k.GetUniquePaymentStorageClientProvider(ctx, uniquePaymentKey)
-			k.UniquePaymentsStorageClientProvider[uniquePaymentKey] = uniquePayment
+			if found {
+				k.UniquePaymentsStorageClientProvider[uniquePaymentKey] = uniquePayment
+			}
 		}
 
 		if !found {

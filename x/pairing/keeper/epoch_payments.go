@@ -99,6 +99,32 @@ func (k Keeper) NewEpochPaymentHandler() EpochPaymentHandler {
 	}
 }
 
+func (k EpochPaymentHandler) GetProviderPaymentStorageCached(ctx sdk.Context, providerStorageKey string) (*types.ProviderPaymentStorage, bool) {
+	providerPaymentStorage, found := k.providerPaymentStorages[providerStorageKey]
+	if !found {
+		var userPaymentStorageInEpochTemp types.ProviderPaymentStorage
+		userPaymentStorageInEpochTemp, found = k.GetProviderPaymentStorage(ctx, providerStorageKey)
+		providerPaymentStorage = &userPaymentStorageInEpochTemp
+		if found {
+			k.providerPaymentStorages[providerStorageKey] = providerPaymentStorage
+		}
+	}
+	return providerPaymentStorage, found
+}
+
+func (k EpochPaymentHandler) GetEpochPaymentsFromBlockCached(ctx sdk.Context, epoch uint64) (*types.EpochPayments, bool) {
+	epochPayments, found := k.epochPayments[epoch]
+	if !found {
+		var epochPaymentsTemp types.EpochPayments
+		epochPaymentsTemp, found, _ = k.GetEpochPaymentsFromBlock(ctx, epoch)
+		epochPayments = &epochPaymentsTemp
+		if found {
+			k.epochPayments[epoch] = epochPayments
+		}
+	}
+	return epochPayments, found
+}
+
 // Function to add an epoch payment to the epochPayments object
 func (k EpochPaymentHandler) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) uint64 {
 	if epoch < k.epochStorageKeeper.GetEarliestEpochStart(ctx) {
@@ -110,14 +136,8 @@ func (k EpochPaymentHandler) AddEpochPayment(ctx sdk.Context, chainID string, ep
 
 	// get this epoch's epochPayments object
 
-	epochPayments, found := k.epochPayments[epoch]
 	key := epochPaymentKey(epoch)
-	if !found {
-		var epochPaymentsTemp types.EpochPayments
-		epochPaymentsTemp, found, _ = k.GetEpochPaymentsFromBlock(ctx, epoch)
-		epochPayments = &epochPaymentsTemp
-		k.epochPayments[epoch] = epochPayments
-	}
+	epochPayments, found := k.GetEpochPaymentsFromBlockCached(ctx, epoch)
 
 	if !found {
 		// this epoch doesn't have a epochPayments object, create one with the providerPaymentStorage object from before
