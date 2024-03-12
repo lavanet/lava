@@ -7,13 +7,13 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
-func NewRelayFinalization(relaySession *pairingtypes.RelaySession, relayReply *pairingtypes.RelayReply, addr sdk.AccAddress, blockDistanceToFinalization int64) RelayFinalization {
+func NewRelayFinalization(relaySession *pairingtypes.RelaySession, relayReply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, blockDistanceToFinalization int64) RelayFinalization {
 	return RelayFinalization{
 		RelaySessionHash:            tendermintcrypto.Sha256(relaySession.CalculateHashForFinalization()),
 		FinalizedBlocksHashes:       relayReply.FinalizedBlocksHashes,
 		LatestBlock:                 relayReply.LatestBlock,
 		Sig:                         relayReply.SigBlocks,
-		ConsumerAddress:             string(addr.Bytes()),
+		ConsumerAddress:             string(consumerAddr.Bytes()),
 		BlockDistanceToFinalization: blockDistanceToFinalization,
 		SpecId:                      relaySession.SpecId,
 		Epoch:                       relaySession.Epoch,
