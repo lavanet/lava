@@ -212,8 +212,8 @@ var Upgrade_0_35_0 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{Added: []string{authzkeeper.StoreKey, group.StoreKey}},
 }
 
-var Upgrade_0_36_0 = Upgrade{
-	UpgradeName:          "v0.36.0",
+var Upgrade_1_0_0 = Upgrade{
+	UpgradeName:          "v1.0.0",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades:        store.StoreUpgrades{},
 }
