@@ -316,6 +316,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
 
+	// consume constant gas (dependent on the number of relays)
+	ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "")
+	ctx.GasMeter().ConsumeGas(uint64(10000+100000*len(msg.Relays)), "")
+
 	return &types.MsgRelayPaymentResponse{RejectedRelays: rejected_relays}, nil
 }
 
