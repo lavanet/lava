@@ -38,4 +38,5 @@ message RelayFinalization {
     bytes sig = 5;
     int64 block_distance_to_finalization = 6;
     string spec_id = 7;
+    int64 epoch = 8;
 }

@@ -17,6 +17,7 @@ type PairingKeeper interface {
 	BailEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, bail sdk.Coin) error
 	SlashEntry(ctx sdk.Context, account sdk.AccAddress, chainID string, percentage sdk.Dec) (sdk.Coin, error)
 	GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, chainID string, blockHeight uint64) (proj projectstypes.Project, errRet error)
+	ValidatePairingForClient(ctx sdk.Context, chainID string, providerAddress sdk.AccAddress, reqEpoch uint64, project projectstypes.Project) (isValidPairing bool, allowedCU uint64, pairedProviders []epochstoragetypes.StakeEntry, errorRet error)
 }
 
 type EpochstorageKeeper interface {

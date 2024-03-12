@@ -16,6 +16,7 @@ func NewRelayFinalization(relaySession *pairingtypes.RelaySession, relayReply *p
 		ConsumerAddress:             string(addr.Bytes()),
 		BlockDistanceToFinalization: blockDistanceToFinalization,
 		SpecId:                      relaySession.SpecId,
+		Epoch:                       relaySession.Epoch,
 	}
 }
 
@@ -26,6 +27,7 @@ func (rf RelayFinalization) GetSignature() []byte {
 func (rf RelayFinalization) DataToSign() []byte {
 	latestBlockBytes := sigs.EncodeUint64(uint64(rf.LatestBlock))
 	blockDistanceToFinalizationBytes := sigs.EncodeUint64(uint64(rf.BlockDistanceToFinalization))
+	epochBytes := sigs.EncodeUint64(uint64(rf.Epoch))
 	msgParts := [][]byte{
 		latestBlockBytes,
 		rf.FinalizedBlocksHashes,
@@ -33,6 +35,7 @@ func (rf RelayFinalization) DataToSign() []byte {
 		rf.RelaySessionHash,
 		blockDistanceToFinalizationBytes,
 		[]byte(rf.SpecId),
+		epochBytes,
 	}
 	return sigs.Join(msgParts)
 }
