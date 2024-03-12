@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -139,6 +140,84 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			return k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
 		}
 	}
+
+	return nil
+}
+
+func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlashing) error {
+	delAddr, err := sdk.AccAddressFromBech32(slashingInfo.Delegator)
+	if err != nil {
+		return err
+	}
+	total := slashingInfo.DelegateLimit.Amount
+
+	// this method goes over all unbondings and tries to slash them
+	slashUnbonding := func() {
+		unbondings := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, math.MaxUint16)
+
+		for _, unbonding := range unbondings {
+			totalBalance := sdk.ZeroInt()
+			for _, entry := range unbonding.Entries {
+				totalBalance = totalBalance.Add(entry.Balance)
+			}
+
+			slashingFactor := total.ToLegacyDec().QuoInt(totalBalance)
+			slashingFactor = sdk.MinDec(sdk.OneDec(), slashingFactor)
+			slashedAmount := k.stakingKeeper.SlashUnbondingDelegation(ctx, unbonding, 1, slashingFactor)
+			total = total.Sub(slashedAmount)
+
+			if total.IsZero() {
+				return
+			}
+		}
+	}
+
+	// try slashing existing unbondings
+	slashUnbonding()
+	if total.IsZero() {
+		return nil
+	}
+
+	// we need to unbond from the delegator by force the amount left
+	delegations := k.stakingKeeper.GetAllDelegatorDelegations(ctx, delAddr)
+	totalUnbonding := total
+	for _, delegation := range delegations {
+		validator, found := k.stakingKeeper.GetValidator(ctx, delegation.GetValidatorAddr())
+		if !found {
+			continue
+		}
+		amount := validator.TokensFromShares(delegation.Shares).TruncateInt()
+		if totalUnbonding.LT(amount) {
+			amount = totalUnbonding
+		}
+		shares, err := validator.SharesFromTokensTruncated(amount)
+		if err != nil {
+			return utils.LavaFormatWarning("blablabla", err,
+				utils.Attribute{Key: "address", Value: delAddr},
+			)
+		}
+
+		totalUnbonding = total.Sub(totalUnbonding)
+		_, err = k.stakingKeeper.Undelegate(ctx, delAddr, validator.GetOperator(), shares)
+		if err != nil {
+			return utils.LavaFormatWarning("can't unbond self delegation for slashing", err,
+				utils.Attribute{Key: "address", Value: delAddr},
+			)
+		}
+
+		if totalUnbonding.IsZero() {
+			break
+		}
+	}
+
+	if !totalUnbonding.IsZero() {
+		return utils.LavaFormatWarning("delegator does not have enough delegations to slash", err,
+			utils.Attribute{Key: "address", Value: delAddr},
+		)
+	}
+
+	// try slashing existing unbondings
+	slashUnbonding()
 
 	return nil
 }

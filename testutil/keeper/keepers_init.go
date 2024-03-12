@@ -385,7 +385,7 @@ func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, spec
 }
 
 func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderUnstakeInfo) error {
-	proposal := pairingtypes.NewUnstakeProposal("mockProposal", "mockProposal unstake provider for testing", providersInfo)
+	proposal := pairingtypes.NewUnstakeProposal("mockProposal", "mockProposal unstake provider for testing", providersInfo, []pairingtypes.DelegatorSlashing{})
 	err := proposal.ValidateBasic()
 	if err != nil {
 		return err

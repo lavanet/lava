@@ -66,6 +66,10 @@ func handleUnstakeProposal(ctx sdk.Context, k keeper.Keeper, p *types.UnstakePro
 		}
 	}
 
+	for _, delegatorSlashing := range p.DelegatorsSlashing {
+		err := k.SlashDelegator(ctx, delegatorSlashing)
+		_ = err
+	}
 	details["providers_unstaked"] = strings.Join(providersUnstaked, ";")
 	details["providers_not_staked_from_before"] = strings.Join(providersNotStaked, ";")
 	details["providers_failed_unstaking"] = strings.Join(providersFailedUnstaking, ";")

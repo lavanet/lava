@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +15,10 @@ import (
 	"github.com/spf13/cobra"
 
 	// "github.com/cosmos/cosmos-sdk/client/flags"
+	commontypes "github.com/lavanet/lava/common/types"
+	lavautils "github.com/lavanet/lava/utils"
+	dualstakingTypes "github.com/lavanet/lava/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/client/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
@@ -53,34 +59,91 @@ func GetTxCmd() *cobra.Command {
 func NewSubmitUnstakeProposalTxCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "unstake proposal-file",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.RangeArgs(1, 4),
 		Short: "Submit an unstake proposal",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Submit an unstake proposal.
-The proposal details must be supplied via a JSON file.
-
-Example:
-$ %s tx gov pairing-proposal unstake <path/to/proposal.json> --from=<key_or_address>
-`,
-				version.AppName,
+			The proposal details must be supplied via a JSON file.
+			Example:
+			$ %s tx gov pairing-proposal unstake <path/to/proposal.json> --from=<key_or_address>
+			$ %s tx gov pairing-proposal unstake <provider-address> <chainid> <slash-factor> <deposit> --from=<key_or_address>
+			`, version.AppName, version.AppName,
 			),
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
+			ctx := context.Background()
 			if err != nil {
 				return err
 			}
-			proposal, err := utils.ParseUnstakeProposalJSON(clientCtx.LegacyAmino, args[0])
-			if err != nil {
-				return err
+			var content *types.UnstakeProposal
+			var deposit sdk.Coins
+			if len(args) == 1 {
+				proposal, err := utils.ParseUnstakeProposalJSON(clientCtx.LegacyAmino, args[0])
+				if err != nil {
+					return err
+				}
+				content = &proposal.Proposal
+				deposit, err = sdk.ParseCoinsNormalized(proposal.Deposit)
+				if err != nil {
+					return err
+				}
+			}
+			if len(args) == 4 {
+				deposit, err = sdk.ParseCoinsNormalized(args[3])
+				if err != nil {
+					return err
+				}
+
+				slashfactor, err := strconv.ParseUint(args[2], 10, 64)
+				if err != nil || slashfactor == 0 || slashfactor > 100 {
+					return lavautils.LavaFormatError("slashing factor needs to be an integer [1,100]", nil)
+				}
+
+				pairingQuerier := types.NewQueryClient(clientCtx)
+				response, err := pairingQuerier.Providers(ctx, &types.QueryProvidersRequest{
+					ChainID:    args[1],
+					ShowFrozen: true,
+				})
+				if err != nil {
+					return err
+				}
+				if len(response.StakeEntry) == 0 {
+					return lavautils.LavaFormatError("provider isn't staked on chainID, no providers at all", nil)
+				}
+				var providerEntry *epochstoragetypes.StakeEntry
+				for idx, provider := range response.StakeEntry {
+					if provider.Address == args[0] {
+						providerEntry = &response.StakeEntry[idx]
+						break
+					}
+				}
+				if providerEntry == nil {
+					return lavautils.LavaFormatError("provider isn't staked on chainID, no address match", nil)
+				}
+
+				dualstakingQuerier := dualstakingTypes.NewQueryClient(clientCtx)
+				delegators, err := dualstakingQuerier.ProviderDelegators(ctx, &dualstakingTypes.QueryProviderDelegatorsRequest{Provider: providerEntry.Address})
+				if err != nil {
+					return lavautils.LavaFormatError("failed to fetch delegators", nil)
+				}
+
+				content = &types.UnstakeProposal{}
+				content.Title = "unstaking and slashing provider"
+				content.Description = "unstaking and slashing provider and providers delegators by proposal"
+				content.ProvidersInfo = []types.ProviderUnstakeInfo{{Provider: providerEntry.Address, ChainId: providerEntry.Chain}}
+				content.DelegatorsSlashing = []types.DelegatorSlashing{}
+				for _, delegator := range delegators.Delegations {
+					if delegator.ChainID == providerEntry.Chain {
+						content.DelegatorsSlashing = append(content.DelegatorsSlashing, types.DelegatorSlashing{
+							Delegator:     delegator.Delegator,
+							DelegateLimit: sdk.NewCoin(commontypes.TokenDenom, delegator.Amount.Amount.MulRaw(int64(slashfactor)).QuoRaw(100)),
+						})
+					}
+				}
 			}
 
 			from := clientCtx.GetFromAddress()
-			content := &proposal.Proposal
-			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
-			if err != nil {
-				return err
-			}
 
 			msg, err := v1beta1.NewMsgSubmitProposal(content, deposit, from)
 			if err != nil {
