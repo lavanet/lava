@@ -149,7 +149,7 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 	if err != nil {
 		return err
 	}
-	total := slashingInfo.DelegateLimit.Amount
+	total := slashingInfo.SlashingAmount.Amount
 
 	// this method goes over all unbondings and tries to slash them
 	slashUnbonding := func() {
@@ -164,6 +164,7 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 			slashingFactor := total.ToLegacyDec().QuoInt(totalBalance)
 			slashingFactor = sdk.MinDec(sdk.OneDec(), slashingFactor)
 			slashedAmount := k.stakingKeeper.SlashUnbondingDelegation(ctx, unbonding, 1, slashingFactor)
+			slashedAmount = sdk.MinInt(total, slashedAmount)
 			total = total.Sub(slashedAmount)
 
 			if total.IsZero() {

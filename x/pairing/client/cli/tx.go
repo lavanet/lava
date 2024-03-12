@@ -136,8 +136,8 @@ func NewSubmitUnstakeProposalTxCmd() *cobra.Command {
 				for _, delegator := range delegators.Delegations {
 					if delegator.ChainID == providerEntry.Chain {
 						content.DelegatorsSlashing = append(content.DelegatorsSlashing, types.DelegatorSlashing{
-							Delegator:     delegator.Delegator,
-							DelegateLimit: sdk.NewCoin(commontypes.TokenDenom, delegator.Amount.Amount.MulRaw(int64(slashfactor)).QuoRaw(100)),
+							Delegator:      delegator.Delegator,
+							SlashingAmount: sdk.NewCoin(commontypes.TokenDenom, delegator.Amount.Amount.MulRaw(int64(slashfactor)).QuoRaw(100)),
 						})
 					}
 				}
