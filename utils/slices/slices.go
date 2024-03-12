@@ -263,7 +263,7 @@ func UnorderedEqual[T comparable](slices ...[]T) bool {
 }
 
 func SortInt64Slice(slice []int64) {
-	slices.SortStableFunc(slice, func(i, j int64) bool { return slice[i] < slice[j] })
+	slices.SortStableFunc(slice, func(i, j int64) bool { return i < j })
 }
 
 // This function is used to check if the slice is consecutive.

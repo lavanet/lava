@@ -237,36 +237,39 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 		return 0, nil, err
 	}
 
-	_, _, _, err = k.pairingKeeper.ValidatePairingForClient(ctx, conflictData.RelayReply0.SpecId, providerAddress, epoch, project)
+	isValidPairing, _, _, err := k.pairingKeeper.ValidatePairingForClient(ctx, conflictData.RelayReply0.SpecId, providerAddress, epoch, project)
 	if err != nil {
 		return 0, nil, err
+	}
+
+	if !isValidPairing {
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Invalid pairing between client %s and provider %s", clientAddr, providerAddress)
 	}
 
 	// Validate block nums are ordered && Finalization distance is right
-
-	finalizedBlocksMap0, minBlock0, maxBlock0, err := k.validateBlockHeights(ctx, conflictData.RelayReply0)
+	finalizedBlocksMap0, earliestFinalizedBlock0, latestFinalizedBlock0, err := k.validateBlockHeights(ctx, conflictData.RelayReply0)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	finalizedBlocksMap1, minBlock1, maxBlock1, err := k.validateBlockHeights(ctx, conflictData.RelayReply0)
+	finalizedBlocksMap1, earliestFinalizedBlock1, latestFinalizedBlock1, err := k.validateBlockHeights(ctx, conflictData.RelayReply1)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply0, maxBlock0); err != nil {
+	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply0, latestFinalizedBlock0); err != nil {
 		return 0, nil, err
 	}
 
-	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply1, maxBlock1); err != nil {
+	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply1, latestFinalizedBlock1); err != nil {
 		return 0, nil, err
 	}
 
 	// Check the hashes between responses
-	firstOverlappingBlock := int64(math.Max(float64(minBlock0), float64(minBlock1)))
-	lastOverlappingBlock := int64(math.Min(float64(maxBlock0), float64(maxBlock1)))
+	firstOverlappingBlock := int64(math.Max(float64(earliestFinalizedBlock0), float64(earliestFinalizedBlock1)))
+	lastOverlappingBlock := int64(math.Min(float64(latestFinalizedBlock0), float64(latestFinalizedBlock1)))
 	if firstOverlappingBlock > lastOverlappingBlock {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: No overlapping blocks between providers: %d, %d", minBlock0, minBlock1)
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: No overlapping blocks between providers: provider0: %d, provider1: %d", earliestFinalizedBlock0, earliestFinalizedBlock1)
 	}
 
 	mismatchingBlockHashes = map[string]string{}
@@ -286,7 +289,7 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 	return mismatchingBlockHeight, mismatchingBlockHashes, nil
 }
 
-func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.RelayFinalization) (finalizedBlocksMarshalled map[int64]string, minBlock int64, maxBlock int64, err error) {
+func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.RelayFinalization) (finalizedBlocksMarshalled map[int64]string, earliestFinalizedBlock int64, latestFinalizedBlock int64, err error) {
 	EMPTY_MAP := map[int64]string{}
 
 	// Unmarshall finalized blocks
@@ -326,17 +329,17 @@ func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.R
 	return finalizedBlocks, blockHeights[0], blockHeights[len(blockHeights)-1], nil
 }
 
-func (k Keeper) validateFinalizedBlock(ctx sdk.Context, relayFinalization *types.RelayFinalization, maxBlock int64) error {
+func (k Keeper) validateFinalizedBlock(ctx sdk.Context, relayFinalization *types.RelayFinalization, latestFinalizedBlock int64) error {
 	latestBlock := relayFinalization.GetLatestBlock()
 	blockDistanceToFinalization := relayFinalization.GetBlockDistanceToFinalization()
 
 	// Validate that finalization distance is right
-	if maxBlock != latestBlock-blockDistanceToFinalization {
-		return fmt.Errorf("ValidateSameProviderConflict: Finalization distance is not right: %d, %d", maxBlock, latestBlock-blockDistanceToFinalization)
+	if latestFinalizedBlock != latestBlock-blockDistanceToFinalization {
+		return fmt.Errorf("ValidateSameProviderConflict: Missing blocks from finalization blocks: latestFinalizedBlock[%d], latestBlock[%d]-blockDistanceToFinalization[%d]=expectedLatestFinalizedBlock[%d]", latestFinalizedBlock, latestBlock, blockDistanceToFinalization, latestBlock-blockDistanceToFinalization)
 	}
 
-	if k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.SpecId, maxBlock+1, latestBlock) {
-		return fmt.Errorf("ValidateSameProviderConflict: Finalized block is not in FinalizedBlocksHashes map. Block height: %d", maxBlock+1)
+	if k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.SpecId, latestFinalizedBlock+1, latestBlock) {
+		return fmt.Errorf("ValidateSameProviderConflict: Finalized block is not in FinalizedBlocksHashes map. Block height: %d", latestFinalizedBlock+1)
 	}
 
 	return nil
