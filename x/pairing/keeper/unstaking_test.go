@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testutils "github.com/lavanet/lava/testutil/keeper"
@@ -19,7 +20,7 @@ func TestUnstakeAndSlashProposal(t *testing.T) {
 
 	_, provider := ts.GetAccount(common.PROVIDER, 0)
 	delegatorsSlashing := []types.DelegatorSlashing{}
-	beforeSlashDelegation := map[string]sdk.Int{}
+	beforeSlashDelegation := map[string]math.Int{}
 	for i := 0; i < delegators; i++ {
 		_, delegator := ts.GetAccount(common.CONSUMER, i)
 		beforeSlashDelegation[delegator] = sdk.NewInt(1000 * int64(i+1))
