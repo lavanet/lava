@@ -2,6 +2,7 @@ package common
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -11,6 +12,7 @@ import (
 	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 	"github.com/stretchr/testify/require"
@@ -64,7 +66,7 @@ func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHas
 	return relaySession
 }
 
-func CreateMsgDetectionForTest(ctx context.Context, consumer, provider0, provider1 sigs.Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *types.RelayReply, errRet error) {
+func CreateResponseConflictMsgDetectionForTest(ctx context.Context, consumer, provider0, provider1 sigs.Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *types.RelayReply, errRet error) {
 	detectionMsg = &conflicttypes.MsgDetection{
 		Creator: consumer.Addr.String(),
 		ResponseConflict: &conflicttypes.ResponseConflict{
@@ -76,14 +78,14 @@ func CreateMsgDetectionForTest(ctx context.Context, consumer, provider0, provide
 	// Prepare request and session for provider0.
 	prepareRelayData(ctx, detectionMsg.ResponseConflict.ConflictRelayData0, provider0, spec)
 	// Sign the session data with the consumer's private key.
-	if err := signSessionData(consumer, detectionMsg.ResponseConflict.ConflictRelayData0); err != nil {
+	if err := signSessionData(consumer, detectionMsg.ResponseConflict.ConflictRelayData0.Request.RelaySession); err != nil {
 		return detectionMsg, nil, nil, err
 	}
 
 	// Duplicate the request for provider1 and update provider-specific fields.
 	duplicateRequestForProvider(detectionMsg.ResponseConflict, provider1, consumer)
 	// Sign the session data with the consumer's private key.
-	if err := signSessionData(consumer, detectionMsg.ResponseConflict.ConflictRelayData1); err != nil {
+	if err := signSessionData(consumer, detectionMsg.ResponseConflict.ConflictRelayData1.Request.RelaySession); err != nil {
 		return detectionMsg, nil, nil, err
 	}
 
@@ -148,13 +150,13 @@ func prepareRelayData(ctx context.Context, conflictData *conflicttypes.ConflictR
 }
 
 // signSessionData signs the session data with the consumer's private key.
-func signSessionData(consumer sigs.Account, conflictData *conflicttypes.ConflictRelayData) error {
-	sig, err := sigs.Sign(consumer.SK, *conflictData.Request.RelaySession)
+func signSessionData(consumer sigs.Account, relaySession *pairingtypes.RelaySession) error {
+	sig, err := sigs.Sign(consumer.SK, *relaySession)
 	if err != nil {
 		return err
 	}
 
-	conflictData.Request.RelaySession.Sig = sig
+	relaySession.Sig = sig
 	return nil
 }
 
@@ -203,4 +205,74 @@ func finalizeConflictRelayData(consumer, provider sigs.Account, conflictData *co
 	reply.SigBlocks = sigBlocks
 	conflictRelayData := conflictconstruct.ConstructConflictRelayData(reply, conflictData.Request)
 	return conflictRelayData, nil
+}
+
+func CreateRelayFinalizationForTest(ctx context.Context, consumer, provider sigs.Account, epoch, latestBlock int64, finalizationBlockHashes map[int64]string, spec spectypes.Spec) (*conflicttypes.RelayFinalization, error) {
+	relayFinalization := initConflictRelayFinalization(epoch, latestBlock, spec, consumer)
+
+	err := setRelayFinalizationFinalizedBlocksHashes(relayFinalization, finalizationBlockHashes)
+	if err != nil {
+		return relayFinalization, err
+	}
+
+	err = setRelayFinalizationRelaySession(relayFinalization, epoch, consumer, provider, spec)
+	if err != nil {
+		return relayFinalization, err
+	}
+
+	// Sign relay reply for provider
+	sig0, err := sigs.Sign(provider.SK, relayFinalization)
+	if err != nil {
+		return relayFinalization, err
+	}
+	relayFinalization.Sig = sig0
+
+	return relayFinalization, nil
+}
+
+// initConflictRelayData initializes the structure for holding relay conflict data.
+func initConflictRelayFinalization(epoch, latestBlock int64, spec spectypes.Spec, consumer sigs.Account) *conflicttypes.RelayFinalization {
+	return &conflicttypes.RelayFinalization{
+		RelaySessionHash:            []byte{},
+		FinalizedBlocksHashes:       []byte{},
+		LatestBlock:                 latestBlock,
+		ConsumerAddress:             consumer.Addr.String(),
+		Sig:                         []byte{},
+		BlockDistanceToFinalization: int64(spec.BlockDistanceForFinalizedData),
+		SpecId:                      spec.Index,
+		Epoch:                       epoch,
+	}
+}
+
+// setRelayFinalizationFinalizedBlocksHashes sets the finalized blocks hashes in the relay finalization
+func setRelayFinalizationFinalizedBlocksHashes(relayFinalization *conflicttypes.RelayFinalization, finalizedBlocksHashes map[int64]string) error {
+	jsonStr, err := json.Marshal(finalizedBlocksHashes)
+	if err != nil {
+		return err
+	}
+
+	relayFinalization.FinalizedBlocksHashes = []byte(jsonStr)
+	return nil
+}
+
+// setRelayFinalizationRelaySession sets the relay session in the relay finalization
+func setRelayFinalizationRelaySession(relayFinalization *conflicttypes.RelayFinalization, epoch int64, consumer, provider sigs.Account, spec spectypes.Spec) error {
+	relaySession := &pairingtypes.RelaySession{
+		Provider:    provider.Addr.String(),
+		ContentHash: []byte("thisisatest"),
+		SessionId:   0,
+		SpecId:      spec.Index,
+		CuSum:       0,
+		Epoch:       epoch,
+		RelayNum:    0,
+	}
+
+	err := signSessionData(consumer, relaySession)
+	if err != nil {
+		return err
+	}
+
+	relayFinalization.RelaySessionHash = sigs.HashMsg(relaySession.CalculateHashForFinalization())
+
+	return nil
 }

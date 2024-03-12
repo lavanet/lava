@@ -104,7 +104,7 @@ func TestDetection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			msg, _, reply, err := common.CreateMsgDetectionForTest(ts.GoCtx, tt.Creator, tt.Provider0, tt.Provider1, ts.spec)
+			msg, _, reply, err := common.CreateResponseConflictMsgDetectionForTest(ts.GoCtx, tt.Creator, tt.Provider0, tt.Provider1, ts.spec)
 			require.NoError(t, err)
 
 			msg.Creator = tt.Creator.Addr.String()
@@ -164,7 +164,7 @@ func TestFrozenProviderDetection(t *testing.T) {
 	ts.AdvanceEpoch() // apply the freeze
 
 	// send a conflict detection TX
-	msg, _, _, err := common.CreateMsgDetectionForTest(ts.GoCtx, ts.consumer, ts.providers[0], ts.providers[1], ts.spec)
+	msg, _, _, err := common.CreateResponseConflictMsgDetectionForTest(ts.GoCtx, ts.consumer, ts.providers[0], ts.providers[1], ts.spec)
 	require.NoError(t, err)
 	_, err = ts.txConflictDetection(msg)
 	require.NoError(t, err)

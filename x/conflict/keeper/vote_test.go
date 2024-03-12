@@ -27,7 +27,7 @@ func (ts *tester) txConflictDetection(msg *conflicttypes.MsgDetection) (*conflic
 func (ts *tester) setupForCommit() (string, conflicttypes.MsgDetection, *pairingtypes.RelayReply, *pairingtypes.RelayReply) {
 	ts.setupForConflict(ProvidersCount)
 
-	msg, reply1, reply2, err := common.CreateMsgDetectionForTest(ts.GoCtx, ts.consumer, ts.providers[0], ts.providers[1], ts.spec)
+	msg, reply1, reply2, err := common.CreateResponseConflictMsgDetectionForTest(ts.GoCtx, ts.consumer, ts.providers[0], ts.providers[1], ts.spec)
 	require.Nil(ts.T, err)
 
 	_, err = ts.txConflictDetection(msg)
