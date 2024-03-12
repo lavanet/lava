@@ -187,17 +187,15 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 			continue
 		}
 		amount := validator.TokensFromShares(delegation.Shares).TruncateInt()
-		if totalUnbonding.LT(amount) {
-			amount = totalUnbonding
-		}
+		amount = sdk.MinInt(totalUnbonding, amount)
 		shares, err := validator.SharesFromTokensTruncated(amount)
 		if err != nil {
-			return utils.LavaFormatWarning("blablabla", err,
+			return utils.LavaFormatWarning("failed to get delegators shares", err,
 				utils.Attribute{Key: "address", Value: delAddr},
+				utils.Attribute{Key: "validator", Value: validator.OperatorAddress},
 			)
 		}
 
-		totalUnbonding = total.Sub(totalUnbonding)
 		_, err = k.stakingKeeper.Undelegate(ctx, delAddr, validator.GetOperator(), shares)
 		if err != nil {
 			return utils.LavaFormatWarning("can't unbond self delegation for slashing", err,
@@ -205,6 +203,7 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 			)
 		}
 
+		totalUnbonding = totalUnbonding.Sub(amount)
 		if totalUnbonding.IsZero() {
 			break
 		}
