@@ -868,7 +868,8 @@
                 "name": "pruning",
                 "values": [
                   {
-                    "latest_distance": 10000
+                    "latest_distance": 10000,
+                    "severity": "Warning"
                   }
                 ]
               }
@@ -1728,7 +1729,8 @@
                 "name": "pruning",
                 "values": [
                   {
-                    "latest_distance": 10000
+                    "latest_distance": 10000,
+                    "severity": "Warning"
                   }
                 ]
               }
@@ -1821,11 +1823,13 @@
                 "name": "pruning",
                 "values": [
                   {
-                    "expected_value": ""
+                    "expected_value": "",
+                    "severity": "Warning"
                   },
                   {
                     "extension": "archive",
-                    "expected_value": ""
+                    "expected_value": "",
+                    "severity": "Warning"
                   }
                 ]
               }

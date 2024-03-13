@@ -282,10 +282,12 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14900
+                                        "latest_distance": 14900,
+                                        "severity": "Warning"
                                     },
                                     {
                                         "extension": "archive",
+                                        "severity": "Warning",
                                         "expected_value": "5200791"
                                     }
                                 ]
@@ -543,10 +545,12 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14900
+                                        "latest_distance": 14900,
+                                        "severity": "Warning"
                                     },
                                     {
                                         "extension": "archive",
+                                        "severity": "Warning",
                                         "expected_value": "1"
                                     }
                                 ]
@@ -587,10 +591,12 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 14900
+                                        "latest_distance": 14900,
+                                        "severity": "Warning"
                                     },
                                     {
                                         "extension": "archive",
+                                        "severity": "Warning",
                                         "expected_value": "1"
                                     }
                                 ]
