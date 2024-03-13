@@ -23,7 +23,7 @@ Abstract
    correctness of the hash.  VRFs are useful for preventing enumeration
    of hash-based data structures.  This document specifies several VRF
    constructions that are secure in the cryptographic random oracle
-   model.  One VRF uses RSA and the other VRF uses Eliptic Curves (EC).
+   model.  One VRF uses RSA and the other VRF uses Elliptic Curves (EC).
 
 Status of This Memo
 
@@ -143,7 +143,7 @@ Internet-Draft                     VRF                     February 2020
    structure.  Anyone who knows the public VRF key can verify that the
    Prover has answered the queries correctly.  However no offline
    inferences (i.e. inferences without querying the Prover) can be made
-   about the data stored in the data strucuture.
+   about the data stored in the data structure.
 
 1.2.  Requirements
 
@@ -340,7 +340,7 @@ Internet-Draft                     VRF                     February 2020
 
    this specification are believed to satisfy this property if the
    public key was generated in a trustworthy manner.  Additionally, the
-   ECVRF also satisifies this property even if the public key was not
+   ECVRF also satisfies this property even if the public key was not
    generated in a trustworthy manner, as long as the public key
    satisfies the key validation procedure in Section 5.6.
 
@@ -763,7 +763,7 @@ Internet-Draft                     VRF                     February 2020
 
    The ECVRF_hash_to_curve algorithm takes in the VRF input alpha and
    converts it to H, an EC point in G.  This algorithm is the only place
-   the VRF input alpha is used in for proving and verfying.  See
+   the VRF input alpha is used in for proving and verifying.  See
    Section 7.6 for further discussion.
 
    The algorithms in this section are not compatible with each other;
@@ -1363,7 +1363,7 @@ Internet-Draft                     VRF                     February 2020
    o  The string_to_int function interprets the string as an integer in
       little-endian representation.
 
-   o  The point_to_string function converts an EC point to an octect
+   o  The point_to_string function converts an EC point to an octet
       string according to the encoding specified in Section 5.1.2 of
       [RFC8032].  This implies ptLen = 2n = 32.  (Note that certain
       software implementations do not introduce a separate elliptic
@@ -1443,7 +1443,7 @@ Internet-Draft                     VRF                     February 2020
 
    2.  If Y is "INVALID", output "INVALID" and stop
 
-   3.  If cofactor*Y is the EC point at infinty, output "INVALID" and
+   3.  If cofactor*Y is the EC point at infinity, output "INVALID" and
        stop
 
    4.  Output Y
@@ -1525,7 +1525,7 @@ Internet-Draft                     VRF                     February 2020
    P256-SHA256-SWU, ECVRF-EDWARDS25519-SHA512-TAI, ECVRF-
    EDWARDS25519-SHA512-Elligator2 is available at
    <https://github.com/reyzin/ecvrf>.  This implementation is neither
-   secure nor especially effecient, but can be used to generate test
+   secure nor especially efficient, but can be used to generate test
    vectors.
 
    A Python implementation of ECVRF-EDWARDS25519-SHA512-Elligator2 is
@@ -1536,11 +1536,11 @@ Internet-Draft                     VRF                     February 2020
    available at <https://github.com/algorand/libsodium/tree/draft-irtf-
    cfrg-vrf-03/src/libsodium/crypto_vrf/ietfdraft03>.
 
-   A Rust implemention of ECVRF-P256-SHA256-TAI, as well as variants for
+   A Rust implementation of ECVRF-P256-SHA256-TAI, as well as variants for
    the sect163k1 and secp256k1 curves, is available at
    <https://crates.io/crates/vrf>.
 
-   A C implemention of a variant of this VRF for the secp256k1 curve is
+   A C implementation of a variant of this VRF for the secp256k1 curve is
    available at <https://github.com/aergoio/secp256k1-vrf>.
 
    An implementation of an earlier, slightly different, version of RSA-
@@ -1548,7 +1548,7 @@ Internet-Draft                     VRF                     February 2020
    part of the NSEC5 project [I-D.vcelak-nsec5] and is available at
    <http://github.com/fcelda/nsec5-crypto>.
 
-   The Key Transparency project at Google uses a VRF implemention that
+   The Key Transparency project at Google uses a VRF implementation that
    is similar to the ECVRF-P256-SHA256-TAI, with a few minor changes
    including the use of SHA-512 instead of SHA-256.  Its implementation
    is available at
@@ -1587,14 +1587,14 @@ Internet-Draft                     VRF                     February 2020
 
 7.1.1.  Uniqueness and collision resistance with untrusted keys
 
-   The ECVRF as specified in Section 5.1-Section 5.5 statisfies the
+   The ECVRF as specified in Section 5.1-Section 5.5 satisfies the
    "trusted uniqueness" and "trusted collision resistance" properties as
    long as the VRF keys are generated correctly, with good randomness.
    If the Verifier trusts the VRF keys are generated correctly, it MAY
    use the public key Y as is.
 
    However, if the ECVRF uses keys that could be generated
-   adversarially, then the the Verfier MUST first perform the validation
+   adversarially, then the the Verifier MUST first perform the validation
    procedure ECVRF_validate_key(PK) (specified in Section 5.6) upon
    receipt of the public key PK as an octet string.  If the validation
    procedure outputs "INVALID", then the public key MUST not be used.
@@ -1602,7 +1602,7 @@ Internet-Draft                     VRF                     February 2020
    ECVRF with public key Y satisfies the "full uniqueness" and "full
    collision resistance" properties.
 
-   The RSA-FDH-VRF statisfies the "trusted uniqueness" and "trusted
+   The RSA-FDH-VRF satisfies the "trusted uniqueness" and "trusted
    collision resistance" properties as long as the VRF keys are
    generated correctly, with good randomness.  These properties may not
    hold if the keys are generated adversarially (e.g., if RSA is not
@@ -1610,7 +1610,7 @@ Internet-Draft                     VRF                     February 2020
    resistance" are properties that hold even if VRF keys are generated
    by an adversary.  The RSA-FDH-VRF defined in this document does not
    have these properties.  However, if adversarial key generation is a
-   concern, the RSA-FDH-VRF may be modifed to have these properties by
+   concern, the RSA-FDH-VRF may be modified to have these properties by
    adding additional cryptographic checks that its public key has the
    right form.  These modifications are left for future specification.
 
@@ -1640,11 +1640,11 @@ Internet-Draft                     VRF                     February 2020
    [PWHVNRG17] presents cryptographic reductions to an underlying hard
    problem (e.g.  Decisional Diffie Hellman for the ECVRF, or the
    standard RSA assumption for RSA-FDH-VRF) that prove the VRFs
-   specificied in this document possess full pseudorandomness as well as
+   specified in this document possess full pseudorandomness as well as
    selective pseudorandomness.  However, the cryptographic reductions
    are tighter for selective pseudorandomness than for full
    pseudorandomness.  This means the the VRFs have quantitavely stronger
-   security guarentees for selective pseudorandomness.
+   security guarantees for selective pseudorandomness.
 
    Applications that are concerned about tightness of cryptographic
    reductions therefore have two options.
@@ -1684,7 +1684,7 @@ Internet-Draft                     VRF                     February 2020
 
 7.4.  Side-channel attacks
 
-   Side channel attacks on cryptographic primatives are an important
+   Side channel attacks on cryptographic primitives are an important
    issue.  Here we discuss only one such side channel: timing attacks
    that can be used to leak information about the VRF input alpha.
    Implementers should take care to avoid side-channel attacks that leak
@@ -1769,7 +1769,7 @@ Internet-Draft                     VRF                     February 2020
 
    For the RSA VRF, if future designs need to specify variants of the
    design in this document, such variants should use different first
-   octets in inputs to MGF1 and to the hash funciton used in
+   octets in inputs to MGF1 and to the hash function used in
    proof_to_hash, in order to avoid the possibility that an adversary
    can obtain a VRF output under one variant, and then claim it was
    obtained under another variant
@@ -1808,7 +1808,7 @@ Internet-Draft                     VRF                     February 2020
       ED25519-SHA256 suite_string to ECVRF-ED25519-SHA512.  (This change
       made because Ed25519 in [RFC8032] signatures use SHA512 and not
       SHA256.)  Made ECVRF nonce generation a separate component, so
-      that nonces are determinsitic.  In ECVRF proving, changed + to -
+      that nonces are deterministic.  In ECVRF proving, changed + to -
       (and made corresponding verification changes) in order to be
       consistent with EdDSA and ECDSA.  Highlighted that
       ECVRF_hash_to_curve acts like a prehash.  Added "suites" variable
@@ -1829,7 +1829,7 @@ Internet-Draft                     VRF                     February 2020
       generation as a section; changed counter in try-and-increment from
       four bytes to one, to avoid endian issues; renamed try-and-
       increment ciphersuites to -TAI; added qLen as a separate
-      paremeter; changed output length to hLen for ECVRF, to match
+      parameter; changed output length to hLen for ECVRF, to match
       RSAVRF; made Verify return beta so unverified proofs don't end up
       in proof_to_hash; added test vectors.
 
@@ -2020,7 +2020,7 @@ Internet-Draft                     VRF                     February 2020
 
 Appendix A.  Test Vectors for the ECVRFs
 
-   The test vectors in this section were genereated using the reference
+   The test vectors in this section were generated using the reference
    implementation at <https://github.com/reyzin/ecvrf>.
 
 A.1.  ECVRF-P256-SHA256-TAI
@@ -2033,7 +2033,7 @@ A.1.  ECVRF-P256-SHA256-TAI
    PK =
    0360fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6
    alpha = 73616d706c65 (ASCII "sample")
-   try_and_increment succeded on ctr = 0
+   try_and_increment succeeded on ctr = 0
    H =
    02e2e1ab1b9f5a8a68fa4aad597e7493095648d3473b213bba120fe42d1a595f3e
    k = b7de5757b28c349da738409dfba70763ace31a6b15be8216991715fbc833e5fa
@@ -2052,7 +2052,7 @@ A.1.  ECVRF-P256-SHA256-TAI
    PK =
    0360fed4ba255a9d31c961eb74c6356d68c049b8923b61fa6ce669622e60f29fb6
    alpha = 74657374 (ASCII "test")
-   try_and_increment succeded on ctr = 0
+   try_and_increment succeeded on ctr = 0
    H =
    02ca565721155f9fd596f1c529c7af15dad671ab30c76713889e3d45b767ff6433
    k = c3c4f385523b814e1794f22ad1679c952e83bff78583c85eb5c2f6ea6eee2e7d
@@ -2084,7 +2084,7 @@ Internet-Draft                     VRF                     February 2020
    alpha = 4578616d706c65206f66204543445341207769746820616e7369703235367
    23120616e64205348412d323536 (ASCII "Example of ECDSA with ansip256r1
    and SHA-256")
-   try_and_increment succeded on ctr = 1
+   try_and_increment succeeded on ctr = 1
    H =
    02141e41d4d55802b0e3adaba114c81137d95fd3869b6b385d4487b1130126648d
    k = 6ac8f1efa102bdcdcc8db99b755d39bc995491e3f9dea076add1905a92779610
@@ -2205,7 +2205,7 @@ A.3.  ECVRF-EDWARDS25519-SHA512-TAI
    PK = d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a
    alpha = (the empty string)
    x = 307c83864f2833cb427a2ef1c00a013cfdff2768d980c0a3a520f006904de94f
-   try_and_increment succeded on ctr = 0
+   try_and_increment succeeded on ctr = 0
    H = 5b2c80db3ce2d79cc85b1bfb269f02f915c5f0e222036dc82123f640205d0d24
    k = 647ac2b3ca3f6a77e4c4f4f79c6c4c8ce1f421a9baaa294b0adf0244915130f70
    67640acb6fd9e7e84f8bc30d4e03a95e410b82f96a5ada97080e0f187758d38
@@ -2223,7 +2223,7 @@ A.3.  ECVRF-EDWARDS25519-SHA512-TAI
    PK = 3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c
    alpha = 72 (1 byte)
    x = 68bd9ed75882d52815a97585caf4790a7f6c6b3b7f821c5e259a24b02e502e51
-   try_and_increment succeded on ctr = 4
+   try_and_increment succeeded on ctr = 4
    H = 08e18a34f3923db32e80834fb8ced4e878037cd0459c63ddd66e5004258cf76c
    k = 627237308294a8b344a09ad893997c630153ee514cd292eddd577a9068e2a6f24
    cbee0038beb0b1ee5df8be08215e9fc74608e6f9358b0e8d6383b1742a70628
@@ -2249,7 +2249,7 @@ Internet-Draft                     VRF                     February 2020
    PK = fc51cd8e6218a1a38da47ed00230f0580816ed13ba3303ac5deb911548908025
    alpha = af82 (2 bytes)
    x = 909a8b755ed902849023a55b15c23d11ba4d7f4ec5c2f51b1325a181991ea95c
-   try_and_increment succeded on ctr = 0
+   try_and_increment succeeded on ctr = 0
    H = e4581824b70badf0e57af789dd8cf85513d4b9814566de0e3f738439becfba33
    k = a950f736af2e3ae2dbcb76795f9cbd57c671eee64ab17069f945509cd6c4a7485
    2fe1bbc331e1bd573038ec703ca28601d861ad1e9684ec89d57bc22986acb0e

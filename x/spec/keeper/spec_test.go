@@ -185,7 +185,7 @@ func selectMockApis(apis []*types.Api, ids []int) []*types.Api {
 	return res
 }
 
-// createNSpec retruns a slice of mock simple Spec
+// createNSpec returns a slice of mock simple Spec
 func createNSpec(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.Spec {
 	items := make([]types.Spec, n)
 	for i := range items {

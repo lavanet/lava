@@ -103,7 +103,7 @@ func TestAddAndUpdateOtherEpoch(t *testing.T) {
 	require.Equal(t, plans[1].OveruseRate, plan.GetOveruseRate())
 }
 
-// TestAddAndUpdateSameBlock addding the same plan twice in the same block;
+// TestAddAndUpdateSameBlock adding the same plan twice in the same block;
 // Only the latter should prevail.
 func TestUpdatePlanInSameEpoch(t *testing.T) {
 	ts := newTester(t)
@@ -245,7 +245,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	// add 3rd plan (so the prevous two would become stale)
+	// add 3rd plan (so the previous two would become stale)
 	plan := plans[1]
 	plan.OveruseRate += 20
 	err = ts.TxProposalAddPlans(plan)
@@ -263,7 +263,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, plans[1], res)
 
-	// decremenet the old plans' refCount
+	// decrement the old plans' refCount
 	ts.Keepers.Plans.PutPlan(ts.Ctx, plans[0].Index, plans[0].Block)
 	ts.Keepers.Plans.PutPlan(ts.Ctx, plans[1].Index, plans[1].Block)
 
@@ -282,7 +282,7 @@ func TestPlansStaleRemoval(t *testing.T) {
 	require.Equal(t, plan, res)
 }
 
-// TestAddAndDelete tests creation and deleteion of plans
+// TestAddAndDelete tests creation and deletion of plans
 func TestAddAndDelete(t *testing.T) {
 	ts := newTester(t)
 	ts.AdvanceEpoch()

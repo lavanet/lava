@@ -124,7 +124,7 @@ func ParseJsonRPCMsg(data []byte) (msgRet []JsonrpcMessage, err error) {
 	var msg JsonrpcMessage
 	err = json.Unmarshal(data, &msg)
 	if err != nil {
-		// we failed unmarshaling
+		// we failed unmarshalling
 		// try to parse a batch
 		var batch []JsonrpcMessage
 		errBatch := json.Unmarshal(data, &batch)

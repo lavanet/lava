@@ -191,7 +191,7 @@ func (k Keeper) AddKeysToProject(ctx sdk.Context, projectID, adminKey string, pr
 	return nil
 }
 
-// DelKeysFromProject delete keys from a project. Keys are marked for deleteion due by
+// DelKeysFromProject delete keys from a project. Keys are marked for deletion due by
 // the beginning of next epoch. The adminKey must be valid (specifically, not already
 // marked for deletion by next epoch).
 func (k Keeper) DelKeysFromProject(ctx sdk.Context, projectID, adminKey string, projectKeys []types.ProjectKey) error {

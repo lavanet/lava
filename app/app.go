@@ -934,7 +934,7 @@ func (app *LavaApp) setupUpgradeStoreLoaders() {
 	}
 }
 
-// setupUpgradeHandlers when modifing already existing modules
+// setupUpgradeHandlers when modifying already existing modules
 func (app *LavaApp) setupUpgradeHandlers() {
 	for _, upgrade := range Upgrades {
 		app.UpgradeKeeper.SetUpgradeHandler(

@@ -39,7 +39,7 @@ When a provider stakes tokens, they create a self-delegation entry. Whenever a p
 ### Empty Provider
 
 The empty provider is a place holder for provider delegations that are issued by the staking module. 
-To support the functionality of the legacy Staking module, when a user delegates to a validator (it can't define the provider to delegate to in the legacy message), the dual staking module will delegate the same ammount to the empty provider.
+To support the functionality of the legacy Staking module, when a user delegates to a validator (it can't define the provider to delegate to in the legacy message), the dual staking module will delegate the same amount to the empty provider.
 The user can than choose to redelegate from the empty provider to an actual provider.
 
 ### Dualstaking
@@ -84,7 +84,7 @@ The following are use cases of the dualstaking module:
 ### Hooks
 
 Dual staking module uses [staking hooks](keeper/hooks.go) to achieve its functionality.
-1. AfterDelegationModified: this hook is called whenever a delegation is changed, whether it is created, or modified (NOT when completly removed). it calculates the difference in providers and validators stake to determine the action of the user (delegation or unbonding) depending on who is higher and than does the same with provider delegation.
+1. AfterDelegationModified: this hook is called whenever a delegation is changed, whether it is created, or modified (NOT when completely removed). it calculates the difference in providers and validators stake to determine the action of the user (delegation or unbonding) depending on who is higher and than does the same with provider delegation.
     * If provider delegations > validator delegations: user unbonded, uniform unbond from providers delegations (priority to empty provider).
     * If provider delegations < validator delegations: user delegation, delegate to the empty provider.
 2. BeforeDelegationRemoved: this hook is called when a delegation to a validator is removed (unbonding of all the tokens). uniform unbond from providers delegations

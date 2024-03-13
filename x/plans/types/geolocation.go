@@ -97,7 +97,7 @@ func GetGeolocationsFromUint(geoloc int32) []Geolocation {
 	return geoList
 }
 
-// allows unmarshaling parser func
+// allows unmarshalling parser func
 func (g Geolocation) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
 	buffer.WriteString(Geolocation_name[int32(g)])

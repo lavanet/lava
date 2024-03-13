@@ -53,7 +53,7 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 					)
 				}
 
-				// create self delegation, this will increase the stake entry, we need to fix that by reseting the stake before delegating
+				// create self delegation, this will increase the stake entry, we need to fix that by resetting the stake before delegating
 				stake := entry.Stake
 				entry.Stake.Amount = sdk.ZeroInt()
 				m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, entry, uint64(i))

@@ -77,7 +77,7 @@ for spec_file in spec_add_files:
 
     with open(spec_file, 'r') as f_json:
         json_data = json.load(f_json)
-        print("# Proccessing " + spec_file)
+        print("# Processing " + spec_file)
 
         # take only mainnet
         json_spec_data = json_data["proposal"]["specs"][0]

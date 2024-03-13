@@ -67,7 +67,7 @@ type BatchElemWithId struct {
 	// discarded.
 	Result interface{}
 	// Error is set if the server returns an error for this request, or if
-	// unmarshaling into Result fails. It is not set for I/O errors.
+	// unmarshalling into Result fails. It is not set for I/O errors.
 	Error error
 	ID    json.RawMessage // added an ID field because we build our messages with built in ID, this is optional and can be set to nil
 }

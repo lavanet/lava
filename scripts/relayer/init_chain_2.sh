@@ -1,5 +1,5 @@
 #!/bin/bash
-# this scripts boots up another chain in different ports to run in parrallel with the regular /scripts/init_chain.sh script
+# this scripts boots up another chain in different ports to run in parallel with the regular /scripts/init_chain.sh script
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/../useful_commands.sh
 

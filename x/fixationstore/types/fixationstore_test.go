@@ -398,7 +398,7 @@ func TestDelEntry(t *testing.T) {
 		{op: "getvers", name: "count versions pending del", count: 2},
 		// double del should fail
 		{op: "del", name: "entry #1", count: block2 + 2, fail: true},
-		// entry #1 stil around
+		// entry #1 still around
 		{op: "get", name: "entry #1 almost gone", coin: 1},
 		// append beyond block2 + 1 should fail
 		{op: "append", name: "entry #1 version 2", count: -block3, fail: true},

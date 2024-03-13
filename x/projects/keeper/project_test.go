@@ -1088,7 +1088,7 @@ func TestSetPolicyByGeolocation(t *testing.T) {
 	servers, keepers, _ctx := testkeeper.InitAllKeepers(t)
 	ctx := sdk.UnwrapSDKContext(_ctx)
 
-	// for convinience
+	// for convenience
 	GLS := planstypes.Geolocation_value["GLS"]
 	GL := planstypes.Geolocation_value["GL"]
 	USE := planstypes.Geolocation_value["USE"]
@@ -1305,7 +1305,7 @@ func TestMaxKeysInProject(t *testing.T) {
 	err = ts.TxProjectAddKeys(proj.Index, sub, dummyKeys[0])
 	require.Error(t, err)
 
-	// wait an epoch and add the previosly added key, should succeed
+	// wait an epoch and add the previously added key, should succeed
 	ts.AdvanceEpoch()
 	err = ts.TxProjectAddKeys(proj.Index, sub, dummyKeys[2])
 	require.NoError(t, err)

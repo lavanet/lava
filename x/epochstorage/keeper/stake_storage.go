@@ -379,10 +379,10 @@ func (k Keeper) PopUnstakeEntries(ctx sdk.Context, block uint64) (value []types.
 		return nil
 	}
 	found_idx := -1
-	// the unstaking is a sorted list so just chekcing until an entry stakeAppliedBlock is too big
+	// the unstaking is a sorted list so just checking until an entry stakeAppliedBlock is too big
 	for idx, entry := range stakeStorage.StakeEntries {
 		if entry.StakeAppliedBlock <= block {
-			// found an enrty that its stakeAppliedBlock is less equal to the wanted block number
+			// found an entry that its stakeAppliedBlock is less equal to the wanted block number
 			value = append(value, entry)
 			// remove from the unstaking stakeStorage everything before this index
 			found_idx = idx

@@ -311,7 +311,7 @@ func GetRelayTimeout(chainMessage ChainMessage, chainParser ChainParser, timeout
 	if chainMessage.GetApi().TimeoutMs > 0 {
 		relayTimeAddition = time.Millisecond * time.Duration(chainMessage.GetApi().TimeoutMs)
 	}
-	// Set relay timout, increase it every time we fail a relay on timeout
+	// Set relay timeout, increase it every time we fail a relay on timeout
 	return extraRelayTimeout + time.Duration(timeouts+1)*relayTimeAddition + common.AverageWorldLatency
 }
 

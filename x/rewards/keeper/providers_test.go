@@ -706,7 +706,7 @@ func TestCommunityTaxOne(t *testing.T) {
 	err = ts.TxProposalChangeParam(types.ModuleName, paramKey, paramVal)
 	require.Nil(ts.T, err)
 
-	// create provider+comsumer, send relay and send relay payment TX
+	// create provider+consumer, send relay and send relay payment TX
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
 	err = ts.StakeProvider(providerAcc.Addr.String(), ts.spec, testBalance)
 	require.NoError(t, err)

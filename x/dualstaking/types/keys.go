@@ -39,7 +39,7 @@ func KeyPrefix(p string) []byte {
 }
 
 // DelegationKey returns the key/prefix for the Delegation entry in fixation store.
-// Using " " (space) as spearator is safe because Bech32 forbids its use as part of
+// Using " " (space) as separator is safe because Bech32 forbids its use as part of
 // the address (and is the only visible character that can be safely used).
 // (reference https://en.bitcoin.it/wiki/BIP_0173#Specification)
 func DelegationKey(provider, delegator, chainID string) string {

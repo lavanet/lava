@@ -946,7 +946,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 3, 1)
 
-	// for convinience
+	// for convenience
 	GL := planstypes.Geolocation_value["GL"]
 	USE := planstypes.Geolocation_value["USE"]
 	EU := planstypes.Geolocation_value["EU"]

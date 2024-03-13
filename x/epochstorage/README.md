@@ -100,7 +100,7 @@ type StakeEntry struct {
 	Moniker            string     // free string description
 	DelegateTotal      types.Coin // total delegation to the provider (without self delegation)
 	DelegateLimit      types.Coin // delegation total limit
-	DelegateCommission uint64     // commision from delegation rewards
+	DelegateCommission uint64     // commission from delegation rewards
 }
 ```
 
@@ -118,7 +118,7 @@ type Endpoint struct {
 	IPPORT        string   // the ip and port where the consumer can access the provider
 	Geolocation   int32    // the geolocation of the endpoint
 	Addons        []string // the supported addons of the endpoint
-	ApiInterfaces []string // the supported interfaces by the enpoint
+	ApiInterfaces []string // the supported interfaces by the endpoint
 	Extensions    []string // the supported extensions of the endpoint
 }
 ```

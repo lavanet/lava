@@ -8,7 +8,7 @@ package keeper
 //
 // The delegated funds are stored in the module's BondedPoolName account. On request
 // to terminate the delegation, they are then moved to the modules NotBondedPoolName
-// account, and remain locked there for staking.UnbondingTime() witholding period
+// account, and remain locked there for staking.UnbondingTime() withholding period
 // before finally released back to the delegator. The timers for bonded funds are
 // tracked are indexed by the delegator, provider, and chainID.
 //
@@ -292,7 +292,7 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 }
 
 // Redelegate lets a delegator transfer its delegation between providers, but
-// without the funds being subject to unstakeHoldBlocks witholding period.
+// without the funds being subject to unstakeHoldBlocks withholding period.
 // (effective on next epoch)
 func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, toChainID string, amount sdk.Coin) error {
 	_, foundFrom := k.specKeeper.GetSpec(ctx, fromChainID)

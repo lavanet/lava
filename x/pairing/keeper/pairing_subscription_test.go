@@ -348,7 +348,7 @@ func TestStrictestPolicyCuPerEpoch(t *testing.T) {
 
 	for _, tt := range providersToPairTestTemplates {
 		t.Run(tt.name, func(t *testing.T) {
-			// add a new project to the subscription just to waste the subcsription's cu
+			// add a new project to the subscription just to waste the subscriptions's cu
 			if tt.wasteSubscriptionCu {
 				waste1Acct, waste1Addr := ts.AddAccount("waste", 0, testBalance)
 

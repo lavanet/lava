@@ -39,7 +39,7 @@
 #
 #   cleveldb, rocksdb   - (not to be used)
 # 
-#   production-log-level - logs for errros related to bad usage (rather than bugs) set as warnings
+#   production-log-level - logs for errors related to bad usage (rather than bugs) set as warnings
 #
 # Environment
 #   LAVA_VERSION=...    - select lava version (for 'release')
@@ -232,7 +232,7 @@ LAVA_ALL_BINARIES := lavad lavap lavavisor
 
 # helper target/build functions
 
-# return prefix of $2 before first occurence of $1
+# return prefix of $2 before first occurrence of $1
 # example: $(call prefix -,hello-world) yields "hello"
 define prefix
 $(word 1,$(subst $1,$(whitespace),$2))

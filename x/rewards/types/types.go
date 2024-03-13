@@ -31,7 +31,7 @@ const (
 
 // BlocksToTimerExpirySlackFactor is used to calculate the number of blocks until the
 // next timer expiry which determine the validators block rewards.
-// since the time/blocks conversion can be errornous, we multiply our calculated number
+// since the time/blocks conversion can be erroneous, we multiply our calculated number
 // of blocks by this error margin, so we'll won't have a case of having too few blocks
 var BlocksToTimerExpirySlackFactor math.LegacyDec = sdk.NewDecWithPrec(105, 2) // 1.05
 

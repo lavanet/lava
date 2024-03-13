@@ -465,7 +465,7 @@ func (cs *ChainTracker) fetchInitDataWithRetry(ctx context.Context) (err error) 
 func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Duration) (pollTime time.Duration, enoughSampled bool) {
 	blockGapsLen := len(ct.blockEventsGap)
 	if blockGapsLen > PollingUpdateLength { // check we have enough samples
-		// smaller times give more resolution to indentify changes, and also make block arrival predictions more optimistic
+		// smaller times give more resolution to identify changes, and also make block arrival predictions more optimistic
 		// so we take a 0.33 percentile because we want to be on the safe side by have a smaller time than expected
 		percentileTime := slices.Percentile(ct.blockEventsGap, 0.33)
 		stability := slices.Stability(ct.blockEventsGap, percentileTime)

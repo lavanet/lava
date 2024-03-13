@@ -301,7 +301,7 @@ export function verifyRelayReply(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   providerAddress: string
 ): Error | undefined {
-  // TODO: implement signature verificaion
+  // TODO: implement signature verification
   return;
 }
 

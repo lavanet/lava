@@ -123,7 +123,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 			}
 
 			if !inserted {
-				// if no discrepency with this group and not inserted yet -> insert into consensus
+				// if no discrepancy with this group and not inserted yet -> insert into consensus
 				fc.insertProviderToConsensus(blockDistanceForFinalizedData, &consensus, finalizedBlocks, latestBlock, reply, req, providerAddress)
 				inserted = true
 			}

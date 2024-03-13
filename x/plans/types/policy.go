@@ -195,7 +195,7 @@ func VerifyTotalCuUsage(effectiveTotalCu uint64, cuUsage uint64) bool {
 	return cuUsage < effectiveTotalCu
 }
 
-// allows unmarshaling parser func
+// allows unmarshalling parser func
 func (s SELECTED_PROVIDERS_MODE) MarshalJSON() ([]byte, error) {
 	buffer := bytes.NewBufferString(`"`)
 	buffer.WriteString(SELECTED_PROVIDERS_MODE_name[int32(s)])

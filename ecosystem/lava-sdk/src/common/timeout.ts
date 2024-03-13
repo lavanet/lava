@@ -38,7 +38,7 @@ export function GetRelayTimeout(
   if (chainMessage.getApi().getTimeoutMs() > 0) {
     relayTimeAddition = chainMessage.getApi().getTimeoutMs();
   }
-  // Set relay timout, increase it every time we fail a relay on timeout
+  // Set relay timeout, increase it every time we fail a relay on timeout
   return (
     extraRelayTimeout + (timeouts + 1) * relayTimeAddition + AverageWorldLatency
   );

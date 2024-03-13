@@ -60,7 +60,7 @@ func (entry Entry) IsStale(ctx sdk.Context) bool {
 }
 
 // IsDeletedBy tests whether an entry is deleted, with respect to a given
-// block, i.e. has entry.DeletAt smaller or equal to that that block.
+// block, i.e. has entry.DeleteAt smaller or equal to that that block.
 func (entry Entry) IsDeletedBy(block uint64) bool {
 	return entry.DeleteAt <= block
 }
