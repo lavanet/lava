@@ -160,6 +160,9 @@ func (k Keeper) SlashDelegator(ctx sdk.Context, slashingInfo types.DelegatorSlas
 			for _, entry := range unbonding.Entries {
 				totalBalance = totalBalance.Add(entry.Balance)
 			}
+			if totalBalance.IsZero() {
+				continue
+			}
 
 			slashingFactor := total.ToLegacyDec().QuoInt(totalBalance)
 			slashingFactor = sdk.MinDec(sdk.OneDec(), slashingFactor)
