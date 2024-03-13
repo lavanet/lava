@@ -215,11 +215,6 @@ func CreateRelayFinalizationForTest(ctx context.Context, consumer, provider sigs
 		return relayFinalization, err
 	}
 
-	err = setRelayFinalizationRelaySession(relayFinalization, epoch, consumer, provider, spec)
-	if err != nil {
-		return relayFinalization, err
-	}
-
 	// Sign relay reply for provider
 	sig0, err := sigs.Sign(provider.SK, relayFinalization)
 	if err != nil {
@@ -233,7 +228,6 @@ func CreateRelayFinalizationForTest(ctx context.Context, consumer, provider sigs
 // initConflictRelayData initializes the structure for holding relay conflict data.
 func initConflictRelayFinalization(epoch, latestBlock int64, spec spectypes.Spec, consumer sigs.Account) *conflicttypes.RelayFinalization {
 	return &conflicttypes.RelayFinalization{
-		RelaySessionHash:            []byte{},
 		FinalizedBlocksHashes:       []byte{},
 		LatestBlock:                 latestBlock,
 		ConsumerAddress:             consumer.Addr.String(),
@@ -252,27 +246,5 @@ func setRelayFinalizationFinalizedBlocksHashes(relayFinalization *conflicttypes.
 	}
 
 	relayFinalization.FinalizedBlocksHashes = []byte(jsonStr)
-	return nil
-}
-
-// setRelayFinalizationRelaySession sets the relay session in the relay finalization
-func setRelayFinalizationRelaySession(relayFinalization *conflicttypes.RelayFinalization, epoch int64, consumer, provider sigs.Account, spec spectypes.Spec) error {
-	relaySession := &pairingtypes.RelaySession{
-		Provider:    provider.Addr.String(),
-		ContentHash: []byte("thisisatest"),
-		SessionId:   0,
-		SpecId:      spec.Index,
-		CuSum:       0,
-		Epoch:       epoch,
-		RelayNum:    0,
-	}
-
-	err := signSessionData(consumer, relaySession)
-	if err != nil {
-		return err
-	}
-
-	relayFinalization.RelaySessionHash = sigs.HashMsg(relaySession.CalculateHashForFinalization())
-
 	return nil
 }
