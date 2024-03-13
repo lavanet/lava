@@ -418,14 +418,14 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 				// add a chance for node errors and timeouts
 				for i := 0; i < numProviders; i++ {
 					replySetter := providers[i].replySetter
-					// index := i
+					index := i
 					handler := func(req []byte, header http.Header) (data []byte, status int) {
 						randVal := rand.Intn(10)
 						switch randVal {
-						// case 1:
-						// 	if index%2 == 0 {
-						// 		time.Sleep(2 * time.Second) // cause timeout, but only possible on half the providers so there's always a provider that answers
-						// 	}
+						case 1:
+							if index < (numProviders+1)/2 {
+								time.Sleep(2 * time.Second) // cause timeout, but only possible on half the providers so there's always a provider that answers
+							}
 						case 2, 3, 4:
 							return []byte(`{"message":"bad","code":123}`), http.StatusServiceUnavailable
 						case 5:
@@ -440,13 +440,24 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 				statuses := map[int]struct{}{}
 				for i := 0; i <= 100; i++ {
 					client := http.Client{Timeout: 500 * time.Millisecond}
-					resp, err := client.Get("http://" + consumerListenAddress + "/status")
+					req, err := http.NewRequest("GET", "http://"+consumerListenAddress+"/status", nil)
+					if err != nil {
+						// Handle error
+						panic(err)
+					}
+
+					// Add custom headers to the request
+					req.Header.Add(common.RELAY_TIMEOUT_HEADER_NAME, "90ms")
+
+					// Perform the request
+					resp, err := client.Do(req)
 					require.NoError(t, err, i)
 					if resp.StatusCode == http.StatusServiceUnavailable {
 						seenError = true
 					}
 					statuses[resp.StatusCode] = struct{}{}
 					require.NotEqual(t, resp.StatusCode, http.StatusTooManyRequests, i) // should never return too many requests, because it triggers a retry
+					resp.Body.Close()
 				}
 				require.True(t, seenError, statuses)
 			}
