@@ -181,11 +181,11 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 
 		status := replySetter.status
 		data := replySetter.replyDataBuf
-		// if replySetter.handler != nil {
-		// 	data = make([]byte, r.ContentLength)
-		// 	r.Body.Read(data)
-		// 	data, status = replySetter.handler(data, r.Header)
-		// }
+		if replySetter.handler != nil {
+			data = make([]byte, r.ContentLength)
+			r.Body.Read(data)
+			data, status = replySetter.handler(data, r.Header)
+		}
 		w.WriteHeader(status)
 		fmt.Fprint(w, string(data))
 
@@ -320,96 +320,136 @@ func TestConsumerProviderBasic(t *testing.T) {
 }
 
 func TestConsumerProviderWithProviders(t *testing.T) {
-	ctx := context.Background()
-	// can be any spec and api interface
-	specId := "LAV1"
-	apiInterface := spectypes.APIInterfaceTendermintRPC
-	epoch := uint64(100)
-	requiredResponses := 1
-	lavaChainID := "lava"
 
-	numProviders := 5
+	playbook := []struct {
+		name     string
+		scenario int
+	}{
+		{
+			name:     "basic-success",
+			scenario: 0,
+		},
+		{
+			name:     "with errors",
+			scenario: 1,
+		},
+	}
+	for _, play := range playbook {
+		t.Run(play.name, func(t *testing.T) {
 
-	consumerListenAddress := addressGen.GetAddress()
-	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
-	type providerData struct {
-		account          sigs.Account
-		endpoint         *lavasession.RPCProviderEndpoint
-		server           *rpcprovider.RPCProviderServer
-		replySetter      *ReplySetter
-		mockChainFetcher *MockChainFetcher
-	}
-	providers := []providerData{}
+			ctx := context.Background()
+			// can be any spec and api interface
+			specId := "LAV1"
+			apiInterface := spectypes.APIInterfaceTendermintRPC
+			epoch := uint64(100)
+			requiredResponses := 1
+			lavaChainID := "lava"
+			numProviders := 5
 
-	for i := 0; i < numProviders; i++ {
-		// providerListenAddress := "localhost:111" + strconv.Itoa(i)
-		account := sigs.GenerateDeterministicFloatingKey(randomizer)
-		providerDataI := providerData{account: account}
-		providers = append(providers, providerDataI)
-	}
-	consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
-	for i := 0; i < numProviders; i++ {
-		ctx := context.Background()
-		providerDataI := providers[i]
-		listenAddress := addressGen.GetAddress()
-		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
-		providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"reply": %d}`, i))
-	}
-	for i := 0; i < numProviders; i++ {
-		pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
-			PublicLavaAddress: providers[i].account.Addr.String(),
-			Endpoints: []*lavasession.Endpoint{
-				{
-					NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
-					Enabled:        true,
-					Geolocation:    1,
-				},
-			},
-			Sessions:         map[int64]*lavasession.SingleConsumerSession{},
-			MaxComputeUnits:  10000,
-			UsedComputeUnits: 0,
-			PairingEpoch:     epoch,
-		}
-	}
-	rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
-	require.NotNil(t, rpcconsumerServer)
-	counter := map[int]int{}
-	for i := 0; i <= 1000; i++ {
-		client := http.Client{}
-		resp, err := client.Get("http://" + consumerListenAddress + "/status")
-		require.NoError(t, err)
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-		bodyBytes, err := io.ReadAll(resp.Body)
-		require.NoError(t, err)
-		resp.Body.Close()
-		mapi := map[string]int{}
-		err = json.Unmarshal(bodyBytes, &mapi)
-		require.NoError(t, err)
-		id, ok := mapi["reply"]
-		require.True(t, ok)
-		counter[id]++
-	}
-
-	require.Len(t, counter, numProviders) // make sure to talk with all of them
-
-	// add a chance for node errors and timeouts
-	for i := 0; i < numProviders; i++ {
-		handler := func(req []byte, header http.Header) (data []byte, status int) {
-			randVal := rand.Intn(10)
-			switch randVal {
-			case 3:
-				time.Sleep(1 * time.Second) // cause timeout
-			case 2:
-				return []byte(`{"message":"bad","code":123}`), http.StatusInternalServerError
+			consumerListenAddress := addressGen.GetAddress()
+			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+			type providerData struct {
+				account          sigs.Account
+				endpoint         *lavasession.RPCProviderEndpoint
+				server           *rpcprovider.RPCProviderServer
+				replySetter      *ReplySetter
+				mockChainFetcher *MockChainFetcher
 			}
-			return providers[i].replySetter.replyDataBuf, http.StatusOK
-		}
-		providers[i].replySetter.handler = handler
-	}
+			providers := []providerData{}
 
-	for i := 0; i <= 100; i++ {
-		client := http.Client{Timeout: 300 * time.Millisecond}
-		_, err := client.Get("http://" + consumerListenAddress + "/status")
-		require.NoError(t, err, i)
+			for i := 0; i < numProviders; i++ {
+				// providerListenAddress := "localhost:111" + strconv.Itoa(i)
+				account := sigs.GenerateDeterministicFloatingKey(randomizer)
+				providerDataI := providerData{account: account}
+				providers = append(providers, providerDataI)
+			}
+			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+			for i := 0; i < numProviders; i++ {
+				ctx := context.Background()
+				providerDataI := providers[i]
+				listenAddress := addressGen.GetAddress()
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
+				providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"reply": %d}`, i+1))
+			}
+			for i := 0; i < numProviders; i++ {
+				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
+					PublicLavaAddress: providers[i].account.Addr.String(),
+					Endpoints: []*lavasession.Endpoint{
+						{
+							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
+							Enabled:        true,
+							Geolocation:    1,
+						},
+					},
+					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+					MaxComputeUnits:  10000,
+					UsedComputeUnits: 0,
+					PairingEpoch:     epoch,
+				}
+			}
+			rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+			require.NotNil(t, rpcconsumerServer)
+			if play.scenario != 1 {
+				counter := map[int]int{}
+				for i := 0; i <= 1000; i++ {
+					client := http.Client{}
+					resp, err := client.Get("http://" + consumerListenAddress + "/status")
+					require.NoError(t, err)
+					require.Equal(t, http.StatusOK, resp.StatusCode)
+					bodyBytes, err := io.ReadAll(resp.Body)
+					require.NoError(t, err)
+					resp.Body.Close()
+					mapi := map[string]int{}
+					err = json.Unmarshal(bodyBytes, &mapi)
+					require.NoError(t, err)
+					id, ok := mapi["reply"]
+					require.True(t, ok)
+					counter[id]++
+					handler := func(req []byte, header http.Header) (data []byte, status int) {
+						time.Sleep(3 * time.Millisecond) // cause timeout for providers we got a reply for so others get chosen with a bigger likelihood
+						return providers[id].replySetter.replyDataBuf, http.StatusOK
+					}
+					providers[id-1].replySetter.handler = handler
+				}
+
+				require.Len(t, counter, numProviders) // make sure to talk with all of them
+			}
+			if play.scenario != 0 {
+				// add a chance for node errors and timeouts
+				for i := 0; i < numProviders; i++ {
+					replySetter := providers[i].replySetter
+					// index := i
+					handler := func(req []byte, header http.Header) (data []byte, status int) {
+						randVal := rand.Intn(10)
+						switch randVal {
+						// case 1:
+						// 	if index%2 == 0 {
+						// 		time.Sleep(2 * time.Second) // cause timeout, but only possible on half the providers so there's always a provider that answers
+						// 	}
+						case 2, 3, 4:
+							return []byte(`{"message":"bad","code":123}`), http.StatusServiceUnavailable
+						case 5:
+							return []byte(`{"message":"bad","code":777}`), http.StatusTooManyRequests // cause protocol error
+						}
+						return replySetter.replyDataBuf, http.StatusOK
+					}
+					providers[i].replySetter.handler = handler
+				}
+
+				seenError := false
+				statuses := map[int]struct{}{}
+				for i := 0; i <= 100; i++ {
+					client := http.Client{Timeout: 500 * time.Millisecond}
+					resp, err := client.Get("http://" + consumerListenAddress + "/status")
+					require.NoError(t, err, i)
+					if resp.StatusCode == http.StatusServiceUnavailable {
+						seenError = true
+					}
+					statuses[resp.StatusCode] = struct{}{}
+					require.NotEqual(t, resp.StatusCode, http.StatusTooManyRequests, i) // should never return too many requests, because it triggers a retry
+				}
+				require.True(t, seenError, statuses)
+			}
+		})
 	}
 }
