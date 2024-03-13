@@ -23,22 +23,29 @@ message CacheUsage {
     uint64 CacheMisses = 2;
 }
 
-message RelayCacheGet {
+// data containing the cache key hash
+message CacheHash {
     RelayPrivateData request = 1;
-    bytes blockHash = 2;
-    string chainID = 3; //Used to differentiate between different chains so each has its own bucket
-    bool finalized = 4;
-    string provider = 5;
-    string shared_state_id = 6; // empty id for no shared state
+    string chain_id = 2;
+}
+
+message RelayCacheGet {
+    bytes request_hash = 1; // hash of the RelayPrivateData
+    bytes block_hash = 2;
+    bool finalized = 3;
+    int64 requested_block = 4;
+    string shared_state_id = 5; // empty id for no shared state
+    string chain_id = 6; // used to set latest block per chain.
 }
 
 message RelayCacheSet {
-    RelayPrivateData request = 1;
-    bytes blockHash = 2;
-    string chainID = 3; //Used to differentiate between different chains so each has its own bucket
-    RelayReply response = 4;
-    bool finalized = 5;
-    string provider = 6;
-    repeated Metadata optional_metadata = 7 [(gogoproto.nullable)   = false];
-    string shared_state_id = 8; // empty id for no shared state
+    bytes request_hash = 1; // hash of the RelayPrivateData
+    bytes block_hash = 2;
+    RelayReply response = 3;
+    bool finalized = 4;
+    repeated Metadata optional_metadata = 5 [(gogoproto.nullable) = false];
+    string shared_state_id = 6; // empty id for no shared state
+    int64 requested_block = 7;
+    string chain_id = 9; // used to set latest block per chain.
+    int64 seen_block = 10;
 }

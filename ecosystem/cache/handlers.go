@@ -3,7 +3,6 @@ package cache
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"strconv"
@@ -13,8 +12,6 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/dgraph-io/ristretto"
-	"github.com/lavanet/lava/ecosystem/cache/format"
-	rpcInterfaceMessages "github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
@@ -90,14 +87,14 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	var seenBlock int64
 
 	waitGroup := sync.WaitGroup{}
-	waitGroup.Add(2)                                     // currently we have two groups getRelayInner and getSeenBlock
-	requestedBlock := relayCacheGet.Request.RequestBlock // save requested block
+	waitGroup.Add(2)                               // currently we have two groups getRelayInner and getSeenBlock
+	requestedBlock := relayCacheGet.RequestedBlock // save requested block
 
 	// fetch all reads at the same time.
 	go func() {
 		defer waitGroup.Done()
 		var cacheReplyTmp *pairingtypes.CacheRelayReply
-		cacheReplyTmp, err = s.getRelayInner(ctx, relayCacheGet)
+		cacheReplyTmp, err = s.getRelayInner(relayCacheGet)
 		if cacheReplyTmp != nil {
 			cacheReply = cacheReplyTmp // set cache reply only if its not nil, as we need to store seen block in it.
 		}
@@ -105,7 +102,7 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	go func() {
 		defer waitGroup.Done()
 		// set seen block if required
-		seenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.ChainID, relayCacheGet.SharedStateId)
+		seenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.ChainId, relayCacheGet.SharedStateId)
 	}()
 
 	// wait for all reads to complete before moving forward
@@ -115,30 +112,36 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		cacheReply.SeenBlock = seenBlock
 	}
 
-	var hit bool
-	if err != nil {
-		s.cacheMiss(ctx, err)
-	} else {
-		hit = true
-		s.cacheHit(ctx)
-	}
-	// add prometheus metrics
-	s.CacheServer.CacheMetrics.AddApiSpecific(requestedBlock, relayCacheGet.ChainID, getMethodFromRequest(relayCacheGet), relayCacheGet.Request.ApiInterface, hit)
+	// add prometheus metrics asynchronously
+	go func() {
+		var hit bool
+		if err != nil {
+			s.cacheMiss(ctx, err)
+		} else {
+			hit = true
+			s.cacheHit(ctx)
+		}
+		s.CacheServer.CacheMetrics.AddApiSpecific(requestedBlock, relayCacheGet.ChainId, hit)
+	}()
 	return cacheReply, err
 }
 
-func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
-	inputFormatter, outputFormatter := format.FormatterForRelayRequestAndResponse(relayCacheGet.Request.ApiInterface)
-	relayCacheGet.Request.Data = inputFormatter(relayCacheGet.Request.Data)
-	requestedBlock := relayCacheGet.Request.RequestBlock
-	getLatestBlock := s.getLatestBlock(latestBlockKey(relayCacheGet.ChainID, relayCacheGet.Provider))
-	relayCacheGet.Request.RequestBlock = lavaprotocol.ReplaceRequestedBlock(requestedBlock, getLatestBlock)
-	cacheKey := formatCacheKey(relayCacheGet.Request.ApiInterface, relayCacheGet.ChainID, relayCacheGet.Request, relayCacheGet.Provider)
-	utils.LavaFormatDebug("Got Cache Get", utils.Attribute{Key: "cacheKey", Value: parser.CapStringLen(cacheKey)},
+func (s *RelayerCacheServer) getRelayInner(relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
+	requestedBlock := relayCacheGet.RequestedBlock
+	// get the latest block per chain, on consumer side .Provider is empty,
+	// on the provider side it contains the provider public key to distinguish between different providers using the same cache service.
+	getLatestBlock := s.getLatestBlock(latestBlockKey(relayCacheGet.ChainId, ""))
+	relayCacheGet.RequestedBlock = lavaprotocol.ReplaceRequestedBlock(requestedBlock, getLatestBlock)
+	// cache key is compressed from:
+	// 1. Request hash including all the information inside RelayPrivateData (Salt can cause issues if not dealt with on consumer side.)
+	// 2. chain-id (same requests for different chains should get unique results)
+	// 3. provider address, different providers can return different results on none deterministic responses. we want to have consistency.
+	cacheKey := relayCacheGet.RequestHash
+	utils.LavaFormatDebug("Got Cache Get", utils.Attribute{Key: "cacheKey", Value: string(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: relayCacheGet.Finalized},
 		utils.Attribute{Key: "requestedBlock", Value: requestedBlock},
 		utils.Attribute{Key: "requestHash", Value: relayCacheGet.BlockHash},
-		utils.Attribute{Key: "getLatestBlock", Value: relayCacheGet.Request.RequestBlock},
+		utils.Attribute{Key: "getLatestBlock", Value: relayCacheGet.RequestedBlock},
 	)
 	cacheVal, cache_source, found := s.findInAllCaches(relayCacheGet.Finalized, cacheKey)
 	// TODO: use the information when a new block is finalized
@@ -147,7 +150,6 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 	}
 	if cacheVal.Hash == nil {
 		// if we didn't store a hash its also always a match
-		cacheVal.Response.Data = outputFormatter(cacheVal.Response.Data)
 		utils.LavaFormatDebug("returning response", utils.Attribute{Key: "cache_source", Value: cache_source},
 			utils.Attribute{Key: "hash", Value: "nil"},
 			utils.Attribute{Key: "response_data", Value: parser.CapStringLen(string(cacheVal.Response.Data))},
@@ -156,7 +158,6 @@ func (s *RelayerCacheServer) getRelayInner(ctx context.Context, relayCacheGet *p
 	}
 	// entry found, now we check the hash requested and hash stored
 	if bytes.Equal(cacheVal.Hash, relayCacheGet.BlockHash) {
-		cacheVal.Response.Data = outputFormatter(cacheVal.Response.Data)
 		utils.LavaFormatDebug("returning response", utils.Attribute{Key: "cache_source", Value: cache_source},
 			utils.Attribute{Key: "hash", Value: "match"},
 			utils.Attribute{Key: "response_data", Value: parser.CapStringLen(string(cacheVal.Response.Data))},
@@ -213,16 +214,13 @@ func (s *RelayerCacheServer) setSeenBlockOnSharedStateMode(chainId, sharedStateI
 }
 
 func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairingtypes.RelayCacheSet) (*emptypb.Empty, error) {
-	if relayCacheSet.Request.RequestBlock < 0 {
-		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.Request.RequestBlock})
+	if relayCacheSet.RequestedBlock < 0 {
+		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.RequestedBlock})
 	}
 	// TODO: make this non-blocking
-	inputFormatter, _ := format.FormatterForRelayRequestAndResponse(relayCacheSet.Request.ApiInterface)
-	relayCacheSet.Request.Data = inputFormatter(relayCacheSet.Request.Data) // so we can find the entry regardless of id
-
-	cacheKey := formatCacheKey(relayCacheSet.Request.ApiInterface, relayCacheSet.ChainID, relayCacheSet.Request, relayCacheSet.Provider)
+	cacheKey := relayCacheSet.RequestHash
 	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized, relayCacheSet.OptionalMetadata)
-	utils.LavaFormatDebug("Got Cache Set", utils.Attribute{Key: "cacheKey", Value: parser.CapStringLen(cacheKey)},
+	utils.LavaFormatDebug("Got Cache Set", utils.Attribute{Key: "cacheKey", Value: string(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: fmt.Sprintf("%t", relayCacheSet.Finalized)},
 		utils.Attribute{Key: "response_data", Value: parser.CapStringLen(string(relayCacheSet.Response.Data))},
 		utils.Attribute{Key: "requestHash", Value: string(relayCacheSet.BlockHash)})
@@ -232,13 +230,13 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.CacheServer.ExpirationFinalized)
 	} else {
 		cache := s.CacheServer.tempCache
-		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.getExpirationForChain(relayCacheSet.ChainID, relayCacheSet.BlockHash))
+		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.getExpirationForChain(relayCacheSet.ChainId, relayCacheSet.BlockHash))
 	}
 	// Setting the seen block for shared state.
 	// Getting the max block number between the seen block on the consumer side vs the latest block on the response of the provider
-	latestKnownBlock := int64(math.Max(float64(relayCacheSet.Response.LatestBlock), float64(relayCacheSet.Request.SeenBlock)))
-	s.setSeenBlockOnSharedStateMode(relayCacheSet.ChainID, relayCacheSet.SharedStateId, latestKnownBlock)
-	s.setLatestBlock(latestBlockKey(relayCacheSet.ChainID, relayCacheSet.Provider), latestKnownBlock)
+	latestKnownBlock := int64(math.Max(float64(relayCacheSet.Response.LatestBlock), float64(relayCacheSet.SeenBlock)))
+	s.setSeenBlockOnSharedStateMode(relayCacheSet.ChainId, relayCacheSet.SharedStateId, latestKnownBlock)
+	s.setLatestBlock(latestBlockKey(relayCacheSet.ChainId, ""), latestKnownBlock)
 	return &emptypb.Empty{}, nil
 }
 
@@ -312,7 +310,7 @@ func (s *RelayerCacheServer) getExpirationForChain(chainID string, blockHash []b
 	return s.CacheServer.ExpirationForChain(chainID)
 }
 
-func getNonExpiredFromCache(c *ristretto.Cache, key string) (value interface{}, found bool) {
+func getNonExpiredFromCache(c *ristretto.Cache, key interface{}) (value interface{}, found bool) {
 	value, found = c.Get(key)
 	if found {
 		return value, true
@@ -320,8 +318,8 @@ func getNonExpiredFromCache(c *ristretto.Cache, key string) (value interface{}, 
 	return nil, false
 }
 
-func (s *RelayerCacheServer) findInAllCaches(finalized bool, cacheKey string) (retVal CacheValue, cacheSource string, found bool) {
-	inner := func(finalized bool, cacheKey string) (interface{}, string, bool) {
+func (s *RelayerCacheServer) findInAllCaches(finalized bool, cacheKey []byte) (retVal CacheValue, cacheSource string, found bool) {
+	inner := func(finalized bool, cacheKey []byte) (interface{}, string, bool) {
 		if finalized {
 			cache := s.CacheServer.finalizedCache
 			value, found := getNonExpiredFromCache(cache, cacheKey)
@@ -362,19 +360,6 @@ func (s *RelayerCacheServer) findInAllCaches(finalized bool, cacheKey string) (r
 	return CacheValue{}, "", false
 }
 
-func formatCacheKey(apiInterface string, chainID string, request *pairingtypes.RelayPrivateData, provider string) string {
-	return chainID + SEP + usedFieldsFromRequest(request, provider)
-}
-
-func usedFieldsFromRequest(request *pairingtypes.RelayPrivateData, provider string) string {
-	// used fields:
-	// RelayData except for salt: because it defines the query
-	// Provider: because we want to keep coherence between calls, assuming different providers can return different forks, useful for cache in rpcconsumer
-	request.Salt = nil
-	relayDataStr := request.String()
-	return relayDataStr + SEP + provider
-}
-
 func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized bool, optionalMetadata []pairingtypes.Metadata) CacheValue {
 	response.Sig = []byte{} // make sure we return a signed value, as the output was modified by our outputParser
 	if !finalized {
@@ -398,16 +383,4 @@ func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized 
 func latestBlockKey(chainID string, uniqueId string) string {
 	// because we want to support coherence in providers
 	return chainID + "_" + uniqueId
-}
-
-func getMethodFromRequest(relayCacheGet *pairingtypes.RelayCacheGet) string {
-	if relayCacheGet.Request.ApiUrl != "" {
-		return relayCacheGet.Request.ApiUrl
-	}
-	var msg rpcInterfaceMessages.JsonrpcMessage
-	err := json.Unmarshal(relayCacheGet.Request.Data, &msg)
-	if err != nil {
-		return "failed_parsing_method"
-	}
-	return msg.Method
 }

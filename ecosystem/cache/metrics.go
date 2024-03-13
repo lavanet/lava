@@ -82,11 +82,10 @@ func (c *CacheMetrics) addMiss() {
 	c.totalMisses.WithLabelValues(totalMissesKey).Add(1)
 }
 
-func (c *CacheMetrics) AddApiSpecific(block int64, chainId string, method string, apiInterface string, hit bool) {
+func (c *CacheMetrics) AddApiSpecific(block int64, chainId string, hit bool) {
 	if c == nil {
 		return
 	}
-
 	requestedBlock := "specific"
 	if spectypes.LATEST_BLOCK == block {
 		requestedBlock = "latest"
@@ -97,18 +96,18 @@ func (c *CacheMetrics) AddApiSpecific(block int64, chainId string, method string
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if hit {
-		c.apiSpecificWithMethodIfNeeded(requestedBlock, chainId, method, apiInterface, "hit")
+		c.apiSpecificWithMethodIfNeeded(requestedBlock, chainId, "hit")
 		c.addHit()
 	} else {
-		c.apiSpecificWithMethodIfNeeded(requestedBlock, chainId, method, apiInterface, "miss")
+		c.apiSpecificWithMethodIfNeeded(requestedBlock, chainId, "miss")
 		c.addMiss()
 	}
 }
 
-func (c *CacheMetrics) apiSpecificWithMethodIfNeeded(requestedBlock, chainId, method, apiInterface, hitOrMiss string) {
+func (c *CacheMetrics) apiSpecificWithMethodIfNeeded(requestedBlock, chainId, hitOrMiss string) {
 	if c.useMethodInApiSpecificMetric {
-		c.apiSpecifics.WithLabelValues(requestedBlock, chainId, method, apiInterface, hitOrMiss).Add(1) // Removed "specifics" label
+		c.apiSpecifics.WithLabelValues(requestedBlock, chainId, hitOrMiss).Add(1) // Removed "specifics" label
 	} else {
-		c.apiSpecifics.WithLabelValues(requestedBlock, chainId, apiInterface, hitOrMiss).Add(1) // Removed "specifics" and "method" label
+		c.apiSpecifics.WithLabelValues(requestedBlock, chainId, hitOrMiss).Add(1) // Removed "specifics" and "method" label
 	}
 }

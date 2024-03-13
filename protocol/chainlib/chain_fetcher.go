@@ -7,17 +7,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/golang/protobuf/proto"
+	formatter "github.com/lavanet/lava/ecosystem/cache/format"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/protocopy"
+	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -93,7 +96,25 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 		defer cancel()
 		// provider side doesn't use SharedStateId, so we default it to empty so it wont have effect.
-		err := cf.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: relayData, BlockHash: requestedBlockHash, ChainID: cf.endpoint.ChainID, Response: reply, Finalized: finalized, OptionalMetadata: nil, SharedStateId: ""})
+
+		hash, _, err := HashCacheRequest(relayData, cf.endpoint.ChainID)
+		if err != nil {
+			utils.LavaFormatError("populateCache Failed getting Hash for request", err)
+			return
+		}
+
+		err = cf.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
+			RequestHash:      hash,
+			BlockHash:        requestedBlockHash,
+			ChainId:          cf.endpoint.ChainID,
+			Response:         reply,
+			Finalized:        finalized,
+			OptionalMetadata: nil,
+			RequestedBlock:   relayData.RequestBlock,
+			SeenBlock:        relayData.SeenBlock,
+			SharedStateId:    "",
+			// TODO: add provider address
+		})
 		if err != nil {
 			utils.LavaFormatWarning("chain fetcher error updating cache with new entry", err)
 		}
@@ -451,4 +472,33 @@ func NewVerificationsOnlyChainFetcher(ctx context.Context, chainRouter ChainRout
 	cfi := ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint}
 	cf := &DummyChainFetcher{ChainFetcher: &cfi}
 	return cf
+}
+
+func HashCacheRequest(relayData *pairingtypes.RelayPrivateData, chainId string) ([]byte, func([]byte) []byte, error) {
+	copyPrivateData := &pairingtypes.RelayPrivateData{}
+	err := protocopy.DeepCopyProtoObject(relayData, copyPrivateData)
+	if err != nil {
+		return nil, nil, utils.LavaFormatError("Failed copying relayData in HashCacheRequest", err)
+	}
+	return HashCacheRequestInner(copyPrivateData, chainId)
+}
+
+// this changes the object relayData, so careful when using directly
+func HashCacheRequestInner(relayData *pairingtypes.RelayPrivateData, chainId string) ([]byte, func([]byte) []byte, error) {
+	// we need to remove some data from the request so the cache will hit properly.
+	inputFormatter, outputFormatter := formatter.FormatterForRelayRequestAndResponse(relayData.ApiInterface)
+	relayData.Data = inputFormatter(relayData.Data) // remove id from request.
+	relayData.Salt = nil                            // remove salt
+	// TODO: Do we need to set this to 0? or in some cases the data is no longer relevant and we need to set it to a value
+	relayData.SeenBlock = 0 // remove seen block changes
+
+	cashHash := &pairingtypes.CacheHash{
+		Request: relayData,
+		ChainId: chainId,
+	}
+	cashHashBytes, err := proto.Marshal(cashHash)
+	if err != nil {
+		return nil, outputFormatter, utils.LavaFormatError("Failed marshalling cash hash in HashCacheRequest", err)
+	}
+	return sigs.HashMsg(cashHashBytes), outputFormatter, nil
 }
