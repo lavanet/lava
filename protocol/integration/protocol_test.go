@@ -188,7 +188,6 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 		}
 		w.WriteHeader(status)
 		fmt.Fprint(w, string(data))
-
 	})
 	chainParser, chainRouter, chainFetcher, _, endpoint, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", addons)
 	require.NoError(t, err)
@@ -320,7 +319,6 @@ func TestConsumerProviderBasic(t *testing.T) {
 }
 
 func TestConsumerProviderWithProviders(t *testing.T) {
-
 	playbook := []struct {
 		name     string
 		scenario int
@@ -336,7 +334,6 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 	}
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
-
 			ctx := context.Background()
 			// can be any spec and api interface
 			specId := "LAV1"
