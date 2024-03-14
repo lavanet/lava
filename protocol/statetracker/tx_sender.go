@@ -291,7 +291,17 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 }
 
 func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
-	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
+	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String())
+	if finalizationConflict != nil {
+		msg.SetFinalizationConflict(finalizationConflict)
+	} else if responseConflict != nil {
+		msg.SetResponseConflict(responseConflict)
+	} else if sameProviderConflict != nil {
+		msg.SetSameProviderConflict(sameProviderConflict)
+	} else {
+		return utils.LavaFormatError("discrepancyChecker - TxSenderConflictDetection - no conflict provided", nil)
+	}
+
 	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
 	if err != nil {
 		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err)

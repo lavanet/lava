@@ -10,11 +10,26 @@ const TypeMsgDetection = "detection"
 
 var _ sdk.Msg = &MsgDetection{}
 
-func NewMsgDetection(creator string, finalizationConflict *FinalizationConflict, responseConflict *ResponseConflict, sameProviderConflict *FinalizationConflict) *MsgDetection {
+func NewMsgDetection(creator string) *MsgDetection {
 	return &MsgDetection{
-		Creator:              creator,
+		Creator: creator,
+	}
+}
+
+func (msg *MsgDetection) SetFinalizationConflict(finalizationConflict *FinalizationConflict) {
+	msg.Conflict = &MsgDetection_FinalizationConflict{
 		FinalizationConflict: finalizationConflict,
-		ResponseConflict:     responseConflict,
+	}
+}
+
+func (msg *MsgDetection) SetResponseConflict(responseConflict *ResponseConflict) {
+	msg.Conflict = &MsgDetection_ResponseConflict{
+		ResponseConflict: responseConflict,
+	}
+}
+
+func (msg *MsgDetection) SetSameProviderConflict(sameProviderConflict *FinalizationConflict) {
+	msg.Conflict = &MsgDetection_SameProviderConflict{
 		SameProviderConflict: sameProviderConflict,
 	}
 }

@@ -69,49 +69,52 @@ func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHas
 func CreateResponseConflictMsgDetectionForTest(ctx context.Context, consumer, provider0, provider1 sigs.Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *types.RelayReply, errRet error) {
 	detectionMsg = &conflicttypes.MsgDetection{
 		Creator: consumer.Addr.String(),
-		ResponseConflict: &conflicttypes.ResponseConflict{
-			ConflictRelayData0: initConflictRelayData(),
-			ConflictRelayData1: initConflictRelayData(),
+		Conflict: &conflicttypes.MsgDetection_ResponseConflict{
+			ResponseConflict: &conflicttypes.ResponseConflict{
+				ConflictRelayData0: initConflictRelayData(),
+				ConflictRelayData1: initConflictRelayData(),
+			},
 		},
 	}
 
+	responseConflict := detectionMsg.GetResponseConflict()
 	// Prepare request and session for provider0.
-	prepareRelayData(ctx, detectionMsg.ResponseConflict.ConflictRelayData0, provider0, spec)
+	prepareRelayData(ctx, responseConflict.ConflictRelayData0, provider0, spec)
 	// Sign the session data with the consumer's private key.
-	if err := signSessionData(consumer, detectionMsg.ResponseConflict.ConflictRelayData0.Request.RelaySession); err != nil {
+	if err := signSessionData(consumer, responseConflict.ConflictRelayData0.Request.RelaySession); err != nil {
 		return detectionMsg, nil, nil, err
 	}
 
 	// Duplicate the request for provider1 and update provider-specific fields.
-	duplicateRequestForProvider(detectionMsg.ResponseConflict, provider1, consumer)
+	duplicateRequestForProvider(responseConflict, provider1, consumer)
 	// Sign the session data with the consumer's private key.
-	if err := signSessionData(consumer, detectionMsg.ResponseConflict.ConflictRelayData1.Request.RelaySession); err != nil {
+	if err := signSessionData(consumer, responseConflict.ConflictRelayData1.Request.RelaySession); err != nil {
 		return detectionMsg, nil, nil, err
 	}
 
 	// Create and sign replies for both providers.
-	reply1, err := createAndSignReply(provider0, detectionMsg.ResponseConflict.ConflictRelayData0.Request, spec, false)
+	reply1, err := createAndSignReply(provider0, responseConflict.ConflictRelayData0.Request, spec, false)
 	if err != nil {
 		return detectionMsg, nil, nil, err
 	}
 
-	reply2, err = createAndSignReply(provider1, detectionMsg.ResponseConflict.ConflictRelayData1.Request, spec, true)
+	reply2, err = createAndSignReply(provider1, responseConflict.ConflictRelayData1.Request, spec, true)
 	if err != nil {
 		return detectionMsg, nil, nil, err
 	}
 
 	// Construct final conflict relay data with the replies.
-	conflictRelayData0, err := finalizeConflictRelayData(consumer, provider0, detectionMsg.ResponseConflict.ConflictRelayData0, reply1)
+	conflictRelayData0, err := finalizeConflictRelayData(consumer, provider0, responseConflict.ConflictRelayData0, reply1)
 	if err != nil {
 		return detectionMsg, nil, nil, err
 	}
-	conflictRelayData1, err := finalizeConflictRelayData(consumer, provider1, detectionMsg.ResponseConflict.ConflictRelayData1, reply2)
+	conflictRelayData1, err := finalizeConflictRelayData(consumer, provider1, responseConflict.ConflictRelayData1, reply2)
 	if err != nil {
 		return detectionMsg, nil, nil, err
 	}
 
-	detectionMsg.ResponseConflict.ConflictRelayData0 = conflictRelayData0
-	detectionMsg.ResponseConflict.ConflictRelayData1 = conflictRelayData1
+	responseConflict.ConflictRelayData0 = conflictRelayData0
+	responseConflict.ConflictRelayData1 = conflictRelayData1
 
 	return detectionMsg, reply1, reply2, nil
 }

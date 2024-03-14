@@ -298,7 +298,8 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 
 		conflict := lavaprotocol.VerifyReliabilityResults(ts.Ctx, relayResult, relayResultDR, chainMessage.GetApiCollection(), chainParser)
 		require.NotNil(t, conflict)
-		msg := conflicttypes.NewMsgDetection(consumer_address.String(), nil, conflict, nil)
+		msg := conflicttypes.NewMsgDetection(consumer_address.String())
+		msg.SetResponseConflict(conflict)
 
 		cb := func() error {
 			_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg)
