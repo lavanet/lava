@@ -17,14 +17,13 @@ const (
 )
 
 type CacheMetrics struct {
-	lock                         sync.RWMutex
-	totalHits                    *prometheus.CounterVec
-	totalMisses                  *prometheus.CounterVec
-	apiSpecifics                 *prometheus.GaugeVec
-	useMethodInApiSpecificMetric bool
+	lock         sync.RWMutex
+	totalHits    *prometheus.CounterVec
+	totalMisses  *prometheus.CounterVec
+	apiSpecifics *prometheus.GaugeVec
 }
 
-func NewCacheMetricsServer(listenAddress string, useMethodInApiSpecificMetric bool) *CacheMetrics {
+func NewCacheMetricsServer(listenAddress string) *CacheMetrics {
 	if listenAddress == DisabledFlagOption {
 		utils.LavaFormatWarning("prometheus endpoint inactive, option is disabled", nil)
 		return nil
@@ -39,14 +38,7 @@ func NewCacheMetricsServer(listenAddress string, useMethodInApiSpecificMetric bo
 		Help: "The total number of misses the cache server could not reply.",
 	}, []string{totalMissesKey})
 
-	var apiSpecificsLabelNames []string
-
-	if useMethodInApiSpecificMetric {
-		apiSpecificsLabelNames = []string{"requested_block", "chain_id", "method", "api_interface", "result"}
-	} else {
-		apiSpecificsLabelNames = []string{"requested_block", "chain_id", "api_interface", "result"}
-	}
-
+	apiSpecificsLabelNames := []string{"requested_block", "chain_id", "api_interface", "result"}
 	apiSpecifics := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "cache_api_specifics",
 		Help: "api specific information",
@@ -61,10 +53,9 @@ func NewCacheMetricsServer(listenAddress string, useMethodInApiSpecificMetric bo
 		http.ListenAndServe(listenAddress, nil)
 	}()
 	return &CacheMetrics{
-		totalHits:                    totalHits,
-		totalMisses:                  totalMisses,
-		apiSpecifics:                 apiSpecifics,
-		useMethodInApiSpecificMetric: useMethodInApiSpecificMetric,
+		totalHits:    totalHits,
+		totalMisses:  totalMisses,
+		apiSpecifics: apiSpecifics,
 	}
 }
 
@@ -105,9 +96,5 @@ func (c *CacheMetrics) AddApiSpecific(block int64, chainId string, hit bool) {
 }
 
 func (c *CacheMetrics) apiSpecificWithMethodIfNeeded(requestedBlock, chainId, hitOrMiss string) {
-	if c.useMethodInApiSpecificMetric {
-		c.apiSpecifics.WithLabelValues(requestedBlock, chainId, hitOrMiss).Add(1) // Removed "specifics" label
-	} else {
-		c.apiSpecifics.WithLabelValues(requestedBlock, chainId, hitOrMiss).Add(1) // Removed "specifics" and "method" label
-	}
+	c.apiSpecifics.WithLabelValues(requestedBlock, chainId, hitOrMiss).Add(1) // Removed "specifics" label
 }

@@ -360,14 +360,14 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		serveExecutor = func() error { return httpServer.Serve(lis) }
 	}
 
-	fmt.Printf(fmt.Sprintf(`
+	fmt.Printf(`
  ┌───────────────────────────────────────────────────┐ 
  │               Lava's Grpc Server                  │ 
  │               %s│ 
  │               Lavap Version: %s│ 
  └───────────────────────────────────────────────────┘
 
-`, truncateAndPadString(apil.endpoint.NetworkAddress, 36), truncateAndPadString(protocoltypes.DefaultVersion.ConsumerTarget, 21)))
+`, truncateAndPadString(apil.endpoint.NetworkAddress, 36), truncateAndPadString(protocoltypes.DefaultVersion.ConsumerTarget, 21))
 	if err := serveExecutor(); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
 	}
