@@ -41,6 +41,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Logger(ctx)
+	paymentHandler := k.NewEpochPaymentHandler(ctx)
 	lavaChainID := ctx.BlockHeader().ChainID
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
@@ -157,7 +158,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// if they failed (one relay should affect all of them). From here on, every check will
 		// fail the TX ***
 
-		totalCUInEpochForUserProvider := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
+		totalCUInEpochForUserProvider := paymentHandler.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "")
 		if badgeFound {
 			k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
@@ -274,7 +275,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, cuAfterQos, providers, project.Index)
+		err = paymentHandler.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, cuAfterQos, providers, project.Index)
 		if err != nil {
 			var reportedProviders []string
 			for _, p := range relay.UnresponsiveProviders {
@@ -317,6 +318,10 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
 
+	paymentHandler.EpochPaymentsCache.Write()
+	paymentHandler.ProviderPaymentStorageCache.Write()
+	paymentHandler.UniquePaymentStorageClientProviderCache.Write()
+
 	// consume constant gas (dependent on the number of relays)
 	ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "")
 	ctx.GasMeter().ConsumeGas(uint64(10000+100000*len(msg.Relays)), "")
@@ -335,7 +340,7 @@ func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr sdk.Ac
 	}
 }
 
-func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum uint64, providersToPair []epochstoragetypes.StakeEntry, projectID string) error {
+func (k EpochPaymentHandler) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum uint64, providersToPair []epochstoragetypes.StakeEntry, projectID string) error {
 	// check that unresponsiveData exists
 	if len(unresponsiveProviders) == 0 {
 		return nil
@@ -371,32 +376,28 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		}
 
 		// get this epoch's epochPayments object
-		epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
+		epochPayments, found := k.GetEpochPaymentsCached(ctx, epochPaymentKey(epoch))
 		if !found {
 			// the epochPayments object should exist since we already paid. if not found, print an error and continue
-			utils.LavaFormatError("did not find epochPayments object", err, utils.Attribute{Key: "epochPaymentsKey", Value: key})
+			utils.LavaFormatError("did not find epochPayments object", err, utils.Attribute{Key: "epochPaymentsKey", Value: epoch})
 			continue
 		}
 
 		// get the providerPaymentStorage object using the providerStorageKey
 		providerStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, sdkUnresponsiveProviderAddress)
-		providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, providerStorageKey)
-
+		providerPaymentStorage, found := k.GetProviderPaymentStorageCached(ctx, providerStorageKey)
 		if !found {
 			// providerPaymentStorage not found (this provider has no payments in this epoch and also no complaints) -> we need to add one complaint
-			emptyProviderPaymentStorageWithComplaint := types.ProviderPaymentStorage{
+			providerPaymentStorage := types.ProviderPaymentStorage{
 				Index:                                  providerStorageKey,
 				UniquePaymentStorageClientProviderKeys: []string{},
 				Epoch:                                  epoch,
 				ComplainersTotalCu:                     uint64(0),
 			}
 
-			// append the emptyProviderPaymentStorageWithComplaint to the epochPayments object's providerPaymentStorages
-			epochPayments.ProviderPaymentStorageKeys = append(epochPayments.GetProviderPaymentStorageKeys(), emptyProviderPaymentStorageWithComplaint.GetIndex())
-			k.SetEpochPayments(ctx, epochPayments)
-
-			// assign providerPaymentStorage with the new empty providerPaymentStorage
-			providerPaymentStorage = emptyProviderPaymentStorageWithComplaint
+			// append the providerPaymentStorage to the epochPayments object's providerPaymentStorages
+			epochPayments.ProviderPaymentStorageKeys = append(epochPayments.GetProviderPaymentStorageKeys(), providerPaymentStorage.GetIndex())
+			k.SetEpochPaymentsCached(ctx, epochPayments)
 		}
 
 		// add complainer's used CU to providerPaymentStorage
@@ -404,7 +405,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		timestamp := time.Unix(unresponsiveProvider.TimestampS, 0)
 		utils.LogLavaEvent(ctx, logger, types.ProviderReportedEventName, map[string]string{"provider": unresponsiveProvider.GetAddress(), "timestamp": timestamp.Format(time.DateTime), "disconnections": strconv.FormatUint(unresponsiveProvider.GetDisconnections(), 10), "errors": strconv.FormatUint(unresponsiveProvider.GetErrors(), 10), "project": projectID, "cu": strconv.FormatUint(complainerCuToAdd, 10), "epoch": strconv.FormatUint(epoch, 10), "total_complaint_this_epoch": strconv.FormatUint(providerPaymentStorage.ComplainersTotalCu, 10)}, "provider got reported by consumer")
 		// set the final provider payment storage state including the complaints
-		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
+		k.SetProviderPaymentStorageCached(ctx, providerPaymentStorage)
 	}
 
 	return nil

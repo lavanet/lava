@@ -33,6 +33,24 @@ func (k Keeper) GetUniquePaymentStorageClientProvider(
 	return val, true
 }
 
+func (k EpochPaymentHandler) SetUniquePaymentStorageClientProviderCached(ctx sdk.Context, uniquePaymentStorageClientProvider types.UniquePaymentStorageClientProvider) {
+	b := k.cdc.MustMarshal(&uniquePaymentStorageClientProvider)
+	k.UniquePaymentStorageClientProviderCache.Set(types.ProviderPaymentStorageKey(uniquePaymentStorageClientProvider.Index), b)
+}
+
+func (k EpochPaymentHandler) GetUniquePaymentStorageClientProviderCached(
+	ctx sdk.Context,
+	index string,
+) (val types.UniquePaymentStorageClientProvider, found bool) {
+	b := k.UniquePaymentStorageClientProviderCache.Get(types.UniquePaymentStorageClientProviderKey(index))
+	if b == nil {
+		return val, false
+	}
+
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
 // RemoveUniquePaymentStorageClientProvider removes a uniquePaymentStorageClientProvider from the store
 func (k Keeper) RemoveUniquePaymentStorageClientProvider(
 	ctx sdk.Context,
@@ -73,8 +91,8 @@ func (k Keeper) IsDoubleSpend(ctx sdk.Context, chainID string, block uint64, pro
 	return found
 }
 
-func (k Keeper) GetConsumerFromUniquePayment(uniquePaymentStorageClientProvider *types.UniquePaymentStorageClientProvider) string {
-	key := uniquePaymentStorageClientProvider.Index
+func (k Keeper) GetConsumerFromUniquePayment(uniquePaymentStorageClientProvider string) string {
+	key := uniquePaymentStorageClientProvider
 	providerAdrLengh := charToAsciiNumber(rune(key[0]))
 	provider := key[1 : providerAdrLengh+1]
 	return provider
