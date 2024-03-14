@@ -179,6 +179,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 }
 
 func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) (mismatchingBlockHeight int64, mismatchingBlockHashes map[string]string, err error) {
+	// TODO: Validate BlockDistanceFromFinalization with spec
 	// Nil check
 	if conflictData == nil {
 		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Conflict data is nil")
@@ -305,16 +306,10 @@ func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.R
 	}
 
 	// Sort block heights
-	blockHeights := make([]int64, len(finalizedBlocks))
-	idx := 0
-	for blockNum := range finalizedBlocks {
-		blockHeights[idx] = blockNum
-		idx++
-	}
-	slices.SortInt64Slice(blockHeights)
+	blockHeights := slices.StableSortedKeys(finalizedBlocks)
 
 	// Validate that blocks are consecutive
-	_, isConsecutive := slices.IsInt64SliceConsecutive(blockHeights)
+	_, isConsecutive := slices.IsSliceConsecutive(blockHeights)
 	if !isConsecutive {
 		return EMPTY_MAP, 0, 0, fmt.Errorf("ValidateSameProviderConflict: Finalized blocks are not consecutive: %v", blockHeights)
 	}

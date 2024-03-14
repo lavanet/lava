@@ -262,13 +262,13 @@ func UnorderedEqual[T comparable](slices ...[]T) bool {
 	return true
 }
 
-func SortInt64Slice(slice []int64) {
-	slices.SortStableFunc(slice, func(i, j int64) bool { return i < j })
+func SortStable[T constraints.Ordered](slice []T) {
+	slices.SortStableFunc(slice, func(i, j T) bool { return i < j })
 }
 
 // This function is used to check if the slice is consecutive.
 // It returns the index of the first non-consecutive element or 0 if all elements are consecutive.
-func IsInt64SliceConsecutive(slice []int64) (int, bool) {
+func IsSliceConsecutive[T constraints.Integer](slice []T) (int, bool) {
 	for index := range slice {
 		if index != 0 && slice[index]-1 != slice[index-1] {
 			return index, false
@@ -276,4 +276,14 @@ func IsInt64SliceConsecutive(slice []int64) (int, bool) {
 	}
 
 	return 0, true
+}
+
+func StableSortedKeys[T constraints.Ordered, V any](m map[T]V) []T {
+	keys := make([]T, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	SortStable(keys)
+	return keys
 }
