@@ -634,18 +634,21 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					if requestedBlock == spectypes.NOT_APPLICABLE {
 						return
 					}
+
 					new_ctx := context.Background()
 					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 					defer cancel()
-					hashKey, _, hashErr := chainlib.HashCacheRequestInner(copyPrivateData, chainID)
+					requestedBlock = copyPrivateData.RequestBlock                                   // get requested block before removing it from the data
+					seenBlock := copyPrivateData.SeenBlock                                          // get seen block before removing it from the data
+					hashKey, _, hashErr := chainlib.HashCacheRequestInner(copyPrivateData, chainID) // get the hash (this changes the data)
 					if hashErr != nil {
 						utils.LavaFormatError("Failed calculating Hash on cache.SetEntry", hashErr)
 					}
 					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 						RequestHash:      hashKey,
 						ChainId:          chainID,
-						RequestedBlock:   copyPrivateData.RequestBlock,
-						SeenBlock:        copyPrivateData.SeenBlock,
+						RequestedBlock:   requestedBlock,
+						SeenBlock:        seenBlock,
 						BlockHash:        nil, // consumer cache doesn't care about block hashes
 						Response:         copyReply,
 						Finalized:        localRelayResult.Finalized,

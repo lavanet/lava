@@ -737,7 +737,9 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			})
 			cancel()
 			reply = cacheReply.GetReply()
-			reply.Data = outPutFormatter(reply.Data) // setting request id back to reply.
+			if reply != nil {
+				reply.Data = outPutFormatter(reply.Data) // setting request id back to reply.
+			}
 			ignoredMetadata = cacheReply.GetOptionalMetadata()
 			if err != nil && performance.NotConnectedError.Is(err) {
 				utils.LavaFormatDebug("cache not connected", utils.LogAttr("err", err), utils.Attribute{Key: "GUID", Value: ctx})
@@ -779,6 +781,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 				new_ctx := context.Background()
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
+				requestedBlock := copyPrivateData.RequestBlock // get requested block before removing it from the private data when calculating the hash
 				hash, _, err := chainlib.HashCacheRequestInner(copyPrivateData, rpcps.rpcProviderEndpoint.ChainID)
 				if err != nil {
 					utils.LavaFormatError("TryRelay failed calculating hash for cach.SetEntry", err)
@@ -786,7 +789,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 				}
 				err = cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 					RequestHash:      hash,
-					RequestedBlock:   copyPrivateData.RequestBlock,
+					RequestedBlock:   requestedBlock,
 					BlockHash:        requestedBlockHash,
 					ChainId:          rpcps.rpcProviderEndpoint.ChainID,
 					Response:         copyReply,
