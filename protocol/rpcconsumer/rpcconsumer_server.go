@@ -808,7 +808,11 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		finalizedBlocks, finalizationAccountabilityError, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.consumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData))
 		if err != nil {
 			if lavaprotocol.ProviderFinalizationDataAccountabilityError.Is(err) && finalizationAccountabilityError != nil {
-				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationConflict, nil, nil, singleConsumerSession.Parent)
+				// TODO: Send to consensus when it will support single reply finalization error. When this happens, the type of finalizationAccountabilityError will be different.
+				utils.LavaFormatInfo("provider finalization data accountability error",
+					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+					utils.LogAttr("finalizationConflict", finalizationAccountabilityError),
+				)
 			}
 			return 0, err, false
 		}
