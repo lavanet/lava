@@ -130,6 +130,12 @@ func HashRequest(t *testing.T, request *pairingtypes.RelayPrivateData, chainId s
 	return hash
 }
 
+func HashRequestFormatter(t *testing.T, request *pairingtypes.RelayPrivateData, chainId string) ([]byte, func([]byte) []byte) {
+	hash, outputFormatter, err := chainlib.HashCacheRequest(request, chainId)
+	require.NoError(t, err)
+	return hash, outputFormatter
+}
+
 func TestCacheGetWithoutSet(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -156,7 +162,6 @@ func TestCacheGetWithoutSet(t *testing.T) {
 			request := getRequest(1230, []byte(StubSig), StubApiInterface)
 
 			// now to get it
-
 			messageGet := pairingtypes.RelayCacheGet{
 				RequestHash:    HashRequest(t, request, StubChainID),
 				BlockHash:      tt.hash,
@@ -316,6 +321,8 @@ func TestCacheSetGetLatest(t *testing.T) {
 				RequestedBlock: request.RequestBlock,
 			}
 
+			// hashes needs to be equal.
+			require.Equal(t, messageGet.RequestHash, messageSet.RequestHash)
 			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
 				require.NoError(t, err)

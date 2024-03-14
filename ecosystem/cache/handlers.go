@@ -3,6 +3,7 @@ package cache
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"math"
 	"strconv"
@@ -126,6 +127,17 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	return cacheReply, err
 }
 
+// add the requested block to the hash key information so we hit the right block.
+func (s *RelayerCacheServer) formatHashKey(hash []byte, latestBlock int64) []byte {
+	// Convert the int64 number to a byte array
+	numBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(numBytes, uint64(latestBlock))
+
+	// Append the int64 byte array to the hash byte array
+	hash = append(hash, numBytes...)
+	return hash
+}
+
 func (s *RelayerCacheServer) getRelayInner(relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
 	requestedBlock := relayCacheGet.RequestedBlock
 	// get the latest block per chain, on consumer side .Provider is empty,
@@ -136,7 +148,7 @@ func (s *RelayerCacheServer) getRelayInner(relayCacheGet *pairingtypes.RelayCach
 	// 1. Request hash including all the information inside RelayPrivateData (Salt can cause issues if not dealt with on consumer side.)
 	// 2. chain-id (same requests for different chains should get unique results)
 	// 3. provider address, different providers can return different results on none deterministic responses. we want to have consistency.
-	cacheKey := relayCacheGet.RequestHash
+	cacheKey := s.formatHashKey(relayCacheGet.RequestHash, relayCacheGet.RequestedBlock)
 	utils.LavaFormatDebug("Got Cache Get", utils.Attribute{Key: "cacheKey", Value: string(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: relayCacheGet.Finalized},
 		utils.Attribute{Key: "requestedBlock", Value: requestedBlock},
@@ -218,7 +230,7 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.RequestedBlock})
 	}
 	// TODO: make this non-blocking
-	cacheKey := relayCacheSet.RequestHash
+	cacheKey := s.formatHashKey(relayCacheSet.RequestHash, relayCacheSet.RequestedBlock)
 	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized, relayCacheSet.OptionalMetadata)
 	utils.LavaFormatDebug("Got Cache Set", utils.Attribute{Key: "cacheKey", Value: string(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: fmt.Sprintf("%t", relayCacheSet.Finalized)},
