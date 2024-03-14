@@ -139,7 +139,6 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	for _, consensus := range fc.currentProviderHashesConsensus {
 		err := fc.discrepancyChecker(finalizedBlocks, consensus)
 		if err != nil {
-			// TODO: bring the other data as proof
 			finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
 			err := fc.addProofToFinalizationConflictFromConsensus(finalizationConflict, &consensus, consumerAddress, providerAddress)
 			if err != nil {
