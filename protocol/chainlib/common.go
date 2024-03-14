@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	common "github.com/lavanet/lava/protocol/common"
@@ -319,6 +320,7 @@ func GetRelayTimeout(chainMessage ChainMessage, chainParser ChainParser, timeout
 func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheckPath string, healthReporter HealthReporter) *fiber.App {
 	app := fiber.New(fiber.Config{})
 	app.Use(favicon.New())
+	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
 	app.Use(func(c *fiber.Ctx) error {
 		// we set up wild card by default.
 		c.Set("Access-Control-Allow-Origin", cmdFlags.OriginFlag)
