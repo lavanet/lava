@@ -33,15 +33,15 @@ type ProviderHashesConsensus struct {
 }
 
 type providerDataContainer struct {
-	LatestFinalizedBlock  int64
-	LatestBlockTime       time.Time
-	FinalizedBlocksHashes map[int64]string
-	SigBlocks             []byte
-	SessionId             uint64
-	BlockHeight           int64
-	RelayNum              uint64
-	LatestBlock           int64
-	// TODO:: keep relay request for conflict reporting
+	LatestFinalizedBlock          int64
+	LatestBlockTime               time.Time
+	FinalizedBlocksHashes         map[int64]string
+	SigBlocks                     []byte
+	SessionId                     uint64
+	BlockHeight                   int64
+	RelayNum                      uint64
+	LatestBlock                   int64
+	BlockDistanceFromFinalization int64
 }
 
 func NewFinalizationConsensus(specId string) *FinalizationConsensus {
@@ -61,36 +61,38 @@ func (fc *FinalizationConsensus) String() string {
 	return fmt.Sprintf("{FinalizationConsensus: {mapExpectedBlockHeights:%v} epoch: %d latestBlockByMedian %d}", mapExpectedBlockHeights, fc.currentEpoch, fc.latestBlockByMedian)
 }
 
-func (fc *FinalizationConsensus) newProviderHashesConsensus(blockDistanceForFinalizedData int64, providerAcc string, latestBlock int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelaySession) ProviderHashesConsensus {
+func (fc *FinalizationConsensus) newProviderHashesConsensus(latestBlock, blockDistanceForFinalizedData int64, providerAcc string, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelaySession) ProviderHashesConsensus {
 	newProviderDataContainer := providerDataContainer{
-		LatestFinalizedBlock:  GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData),
-		LatestBlockTime:       time.Now(),
-		FinalizedBlocksHashes: finalizedBlocks,
-		SigBlocks:             reply.SigBlocks,
-		SessionId:             req.SessionId,
-		RelayNum:              req.RelayNum,
-		BlockHeight:           req.Epoch,
-		LatestBlock:           latestBlock,
+		LatestFinalizedBlock:          GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData),
+		LatestBlockTime:               time.Now(),
+		FinalizedBlocksHashes:         finalizedBlocks,
+		SigBlocks:                     reply.SigBlocks,
+		SessionId:                     req.SessionId,
+		RelayNum:                      req.RelayNum,
+		BlockHeight:                   req.Epoch,
+		LatestBlock:                   latestBlock,
+		BlockDistanceFromFinalization: blockDistanceForFinalizedData,
 	}
-	providerDataContainers := map[string]providerDataContainer{}
-	providerDataContainers[providerAcc] = newProviderDataContainer
+
 	return ProviderHashesConsensus{
 		FinalizedBlocksHashes: finalizedBlocks,
-		agreeingProviders:     providerDataContainers,
+		agreeingProviders:     map[string]providerDataContainer{providerAcc: newProviderDataContainer},
 	}
 }
 
-func (fc *FinalizationConsensus) insertProviderToConsensus(blockDistanceForFinalizedData int64, consensus *ProviderHashesConsensus, finalizedBlocks map[int64]string, latestBlock int64, reply *pairingtypes.RelayReply, req *pairingtypes.RelaySession, providerAcc string) {
+func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDistanceForFinalizedData int64, consensus *ProviderHashesConsensus, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelaySession, providerAcc string) {
 	newProviderDataContainer := providerDataContainer{
-		LatestFinalizedBlock:  GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData),
-		LatestBlockTime:       time.Now(),
-		FinalizedBlocksHashes: finalizedBlocks,
-		SigBlocks:             reply.SigBlocks,
-		SessionId:             req.SessionId,
-		RelayNum:              req.RelayNum,
-		BlockHeight:           req.Epoch,
-		LatestBlock:           latestBlock,
+		LatestFinalizedBlock:          GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData),
+		LatestBlockTime:               time.Now(),
+		FinalizedBlocksHashes:         finalizedBlocks,
+		SigBlocks:                     reply.SigBlocks,
+		SessionId:                     req.SessionId,
+		RelayNum:                      req.RelayNum,
+		BlockHeight:                   req.Epoch,
+		LatestBlock:                   latestBlock,
+		BlockDistanceFromFinalization: blockDistanceForFinalizedData,
 	}
+
 	consensus.agreeingProviders[providerAcc] = newProviderDataContainer
 
 	for blockNum, blockHash := range finalizedBlocks {
@@ -106,58 +108,89 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(blockDistanceForFinal
 // checks if there is a consensus mismatch between hashes provided by different providers
 func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalizedData int64, consumerAddress sdk.AccAddress, providerAddress string, finalizedBlocks map[int64]string, req *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
 	latestBlock := reply.LatestBlock
+
 	fc.providerDataContainersMu.Lock()
 	defer fc.providerDataContainersMu.Unlock()
 
 	replyFinalization := conflicttypes.NewRelayFinalization(req, reply, consumerAddress, blockDistanceForFinalizedData)
 
+	logSuccessUpdate := func() {
+		if debug {
+			utils.LavaFormatDebug("finalization information update successfully",
+				utils.LogAttr("specId", fc.specId),
+				utils.LogAttr("finalization data", finalizedBlocks),
+				utils.LogAttr("currentProviderHashesConsensus", fc.currentProviderHashesConsensus),
+			)
+		}
+	}
+
+	// No previous consensus, create a new consensus group
 	if len(fc.currentProviderHashesConsensus) == 0 && len(fc.prevEpochProviderHashesConsensus) == 0 {
-		newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
-		fc.currentProviderHashesConsensus = append(make([]ProviderHashesConsensus, 0), newHashConsensus)
-	} else {
-		inserted := false
-		// Looks for discrepancy with current epoch providers
-		// go over all consensus groups, if there is a mismatch add it as a consensus group and send a conflict
-		for _, consensus := range fc.currentProviderHashesConsensus {
-			err := fc.discrepancyChecker(finalizedBlocks, consensus)
+		newHashConsensus := fc.newProviderHashesConsensus(latestBlock, blockDistanceForFinalizedData, providerAddress, finalizedBlocks, reply, req)
+		fc.currentProviderHashesConsensus = []ProviderHashesConsensus{newHashConsensus}
+
+		logSuccessUpdate()
+		return finalizationConflict, nil
+	}
+
+	inserted := false
+	// Looks for discrepancy with current epoch providers
+	// go over all consensus groups, if there is a mismatch add it as a consensus group and send a conflict
+	for _, consensus := range fc.currentProviderHashesConsensus {
+		err := fc.discrepancyChecker(finalizedBlocks, consensus)
+		if err != nil {
+			// TODO: bring the other data as proof
+			finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
+			err := fc.addProofToFinalizationConflictFromConsensus(finalizationConflict, &consensus, consumerAddress, providerAddress)
 			if err != nil {
-				// TODO: bring the other data as proof
-				finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
-				// we need to insert into a new consensus group before returning
-				// or create new consensus group if no consensus matched
-				continue
+				return finalizationConflict, err
 			}
 
-			if !inserted {
-				// if no discrepancy with this group and not inserted yet -> insert into consensus
-				fc.insertProviderToConsensus(blockDistanceForFinalizedData, &consensus, finalizedBlocks, latestBlock, reply, req, providerAddress)
-				inserted = true
-			}
-			// keep comparing with other groups, if there is a new message with a conflict we need to report it too
+			// we need to insert into a new consensus group before returning
+			// or create new consensus group if no consensus matched
+			continue
 		}
+
 		if !inserted {
-			// means there was a consensus mismatch with everything, so it wasn't inserted and we add it here
-			newHashConsensus := fc.newProviderHashesConsensus(blockDistanceForFinalizedData, providerAddress, latestBlock, finalizedBlocks, reply, req)
-			fc.currentProviderHashesConsensus = append(fc.currentProviderHashesConsensus, newHashConsensus)
+			// if no discrepancy with this group and not inserted yet -> insert into consensus
+			fc.insertProviderToConsensus(latestBlock, blockDistanceForFinalizedData, &consensus, finalizedBlocks, reply, req, providerAddress)
+			inserted = true
 		}
-		if finalizationConflict != nil {
-			// means there was a conflict and we need to report
-			return finalizationConflict, utils.LavaFormatError("Simulation: Conflict found in discrepancyChecker", err)
-		}
+		// keep comparing with other groups, if there is a new message with a conflict we need to report it too
+	}
 
-		// check for discrepancy with old epoch
-		for idx, consensus := range fc.prevEpochProviderHashesConsensus {
-			err := fc.discrepancyChecker(finalizedBlocks, consensus)
+	if !inserted {
+		// means there was a consensus mismatch with everything, so it wasn't inserted and we add it here
+		newHashConsensus := fc.newProviderHashesConsensus(latestBlock, blockDistanceForFinalizedData, providerAddress, finalizedBlocks, reply, req)
+		fc.currentProviderHashesConsensus = append(fc.currentProviderHashesConsensus, newHashConsensus)
+	}
+
+	if finalizationConflict != nil {
+		// means there was a conflict and we need to report
+		return finalizationConflict, utils.LavaFormatInfo("Simulation: Conflict found in discrepancyChecker",
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("finalizationConflict", finalizationConflict),
+		)
+	}
+
+	// check for discrepancy with old epoch
+	for idx, consensus := range fc.prevEpochProviderHashesConsensus {
+		err := fc.discrepancyChecker(finalizedBlocks, consensus)
+		if err != nil {
+			finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
+			err := fc.addProofToFinalizationConflictFromConsensus(finalizationConflict, &consensus, consumerAddress, providerAddress)
 			if err != nil {
-				// TODO: bring the other data as proof
-				finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
-				return finalizationConflict, utils.LavaFormatError("Simulation: prev epoch Conflict found in discrepancyChecker", err, utils.Attribute{Key: "Consensus idx", Value: strconv.Itoa(idx)}, utils.Attribute{Key: "provider", Value: providerAddress})
+				return finalizationConflict, err
 			}
+
+			return finalizationConflict, utils.LavaFormatInfo("Simulation: prev epoch Conflict found in discrepancyChecker",
+				utils.LogAttr("Consensus idx", strconv.Itoa(idx)),
+				utils.LogAttr("provider", providerAddress),
+			)
 		}
 	}
-	if debug {
-		utils.LavaFormatDebug("finalization information update successfully", utils.Attribute{Key: "specId", Value: fc.specId}, utils.Attribute{Key: "finalization data", Value: finalizedBlocks}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus}, utils.Attribute{Key: "currentProviderHashesConsensus", Value: fc.currentProviderHashesConsensus})
-	}
+
+	logSuccessUpdate()
 	return finalizationConflict, nil
 }
 
@@ -177,11 +210,61 @@ func (fc *FinalizationConsensus) discrepancyChecker(finalizedBlocksA map[int64]s
 		if otherHash, ok := otherBlocks[blockNum]; ok {
 			if blockHash != otherHash {
 				// TODO: gather discrepancy data
-				return utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", HashesConsunsusError, utils.Attribute{Key: "blockNum", Value: blockNum}, utils.Attribute{Key: "Hashes", Value: fmt.Sprintf("%s vs %s", blockHash, otherHash)}, utils.Attribute{Key: "toIterate", Value: toIterate}, utils.Attribute{Key: "otherBlocks", Value: otherBlocks})
+				return utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", HashesConsensusError,
+					utils.LogAttr("blockNum", blockNum),
+					utils.LogAttr("Hashes", fmt.Sprintf("%s vs %s", blockHash, otherHash)),
+					utils.LogAttr("toIterate", toIterate),
+					utils.LogAttr("otherBlocks", otherBlocks),
+				)
 			}
 		}
 	}
 
+	return nil
+}
+
+func (fc *FinalizationConsensus) createRelayFinalizationFromProviderDataContainer(dataContainer providerDataContainer, consumerAddr sdk.AccAddress) (*conflicttypes.RelayFinalization, error) {
+	finalizedBlocksHashesBytes, err := json.Marshal(dataContainer.FinalizedBlocksHashes)
+	if err != nil {
+		utils.LavaFormatError("error in marshaling finalized blocks hashes", err)
+		return nil, err
+	}
+
+	return &conflicttypes.RelayFinalization{
+		FinalizedBlocksHashes:       finalizedBlocksHashesBytes,
+		LatestBlock:                 dataContainer.LatestBlock,
+		Sig:                         dataContainer.SigBlocks,
+		ConsumerAddress:             consumerAddr.String(),
+		BlockDistanceToFinalization: dataContainer.BlockDistanceFromFinalization,
+		SpecId:                      fc.specId,
+		Epoch:                       int64(fc.currentEpoch),
+	}, nil
+}
+
+func (fc *FinalizationConsensus) addProofToFinalizationConflictFromConsensus(finalizationConflict *conflicttypes.FinalizationConflict, consensus *ProviderHashesConsensus, consumerAddr sdk.AccAddress, providerAddr string) error {
+	if providerPrevReply, ok := consensus.agreeingProviders[providerAddr]; ok {
+		// Get a provider from the consensus group and add it as proof
+		relayFinalization, err := fc.createRelayFinalizationFromProviderDataContainer(providerPrevReply, consumerAddr)
+		if err != nil {
+			return err
+		}
+
+		finalizationConflict.RelayReply1 = relayFinalization
+	} else {
+		// Get any provider from the consensus group and add it as proof
+		for otherProviderAddr := range consensus.agreeingProviders {
+			otherProviderReply := consensus.agreeingProviders[otherProviderAddr]
+			relayFinalization, err := fc.createRelayFinalizationFromProviderDataContainer(otherProviderReply, consumerAddr)
+			if err != nil {
+				return err
+			}
+
+			finalizationConflict.RelayReply1 = relayFinalization
+
+			// One is enough, no need to iterate over the whole group
+			break
+		}
+	}
 	return nil
 }
 
