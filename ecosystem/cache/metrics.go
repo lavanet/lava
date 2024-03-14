@@ -38,7 +38,7 @@ func NewCacheMetricsServer(listenAddress string) *CacheMetrics {
 		Help: "The total number of misses the cache server could not reply.",
 	}, []string{totalMissesKey})
 
-	apiSpecificsLabelNames := []string{"requested_block", "chain_id", "api_interface", "result"}
+	apiSpecificsLabelNames := []string{"requested_block", "chain_id", "result"}
 	apiSpecifics := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "cache_api_specifics",
 		Help: "api specific information",

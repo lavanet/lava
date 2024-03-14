@@ -458,7 +458,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
 			cancel()
 			reply := cacheReply.GetReply()
-			reply.Data = outputFormatter(reply.Data)
+
 			// read seen block from cache even if we had a miss we still want to get the seen block so we can use it to get the right provider.
 			cacheSeenBlock := cacheReply.GetSeenBlock()
 			// check if the cache seen block is greater than my local seen block, this means the user requested this
@@ -474,6 +474,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			if cacheError == nil && reply != nil {
 				// Info was fetched from cache, so we don't need to change the state
 				// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+				reply.Data = outputFormatter(reply.Data)
 				relayResult = &common.RelayResult{
 					Reply: reply,
 					Request: &pairingtypes.RelayRequest{

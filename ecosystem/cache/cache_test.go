@@ -476,7 +476,6 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			response := &pairingtypes.RelayReply{
 				Data: formatIDInJsonResponse(id), // response has the old id when cached
 			}
-
 			messageSet := pairingtypes.RelayCacheSet{
 				RequestHash:    HashRequest(t, request, StubChainID),
 				BlockHash:      tt.hash,
@@ -496,9 +495,9 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			changedID := id + 1
 			// now we change the ID:
 			request.Data = formatIDInJson(changedID)
-
+			hash, outputFormatter := HashRequestFormatter(t, request, StubChainID)
 			messageGet := pairingtypes.RelayCacheGet{
-				RequestHash:    HashRequest(t, request, StubChainID),
+				RequestHash:    hash,
 				BlockHash:      tt.hash,
 				ChainId:        StubChainID,
 				Finalized:      tt.finalized,
@@ -506,6 +505,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			}
 			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
+				cacheReply.Reply.Data = outputFormatter(cacheReply.Reply.Data)
 				require.NoError(t, err)
 				result := gjson.GetBytes(cacheReply.GetReply().Data, format.IDFieldName)
 				extractedID := result.Raw
