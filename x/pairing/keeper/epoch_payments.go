@@ -117,6 +117,12 @@ func (k Keeper) NewEpochPaymentHandler(ctx sdk.Context) EpochPaymentHandler {
 	}
 }
 
+func (k EpochPaymentHandler) Flush() {
+	k.EpochPaymentsCache.Write()
+	k.ProviderPaymentStorageCache.Write()
+	k.UniquePaymentStorageClientProviderCache.Write()
+}
+
 // Function to add an epoch payment to the epochPayments object
 func (k EpochPaymentHandler) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) uint64 {
 	if epoch < k.epochStorageKeeper.GetEarliestEpochStart(ctx) {
