@@ -388,7 +388,7 @@ func (k EpochPaymentHandler) updateProviderPaymentStorageWithComplainerCU(ctx sd
 		providerPaymentStorage, found := k.GetProviderPaymentStorageCached(ctx, providerStorageKey)
 		if !found {
 			// providerPaymentStorage not found (this provider has no payments in this epoch and also no complaints) -> we need to add one complaint
-			providerPaymentStorage := types.ProviderPaymentStorage{
+			providerPaymentStorage = types.ProviderPaymentStorage{
 				Index:                                  providerStorageKey,
 				UniquePaymentStorageClientProviderKeys: []string{},
 				Epoch:                                  epoch,
