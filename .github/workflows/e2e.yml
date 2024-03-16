@@ -17,8 +17,17 @@ jobs:
       ### Run Lava Protocol E2E Tests
       ######################################################
       - name: Run Lava E2E Tests -timeout 1200s
-        run: go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s # 20mins
-
+        run: |
+          go install github.com/jstemmer/go-junit-report/v2@latest
+          go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s | go-junit-report -set-exit-code > protocol-e2e-report.xml  # 20mins
+      
+      - name: Test Summary
+        uses: test-summary/action@v2
+        if: always()
+        with:
+          paths: |
+            protocol-e2e-report.xml
+            
       - name: tail -n 1000 Lavad Logs
         if: always()
         run: tail -n 1000 testutil/e2e/protocolLogs/00_StartLava.log
@@ -94,20 +103,19 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/06_RPCConsumer* --include="*errors*"
+
   test-sdk-e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: "0"
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version: "1.20.5"
 
       # Install Node.js
       - name: Setup Node.js environment
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "21.2.0"
 
@@ -196,13 +204,12 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/sdkLogs/01_sdkTest* --include="*errors*"
+
   test-payment-e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: "0"
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: 1.20.5
 
