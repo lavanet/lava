@@ -34,13 +34,5 @@ jobs:
         working-directory: ./ecosystem/lava-sdk
 
       - name: Test
-        run: ./node_modules/.bin/jest ./src --ci --reporters=default --reporters=jest-junit
+        run: ./node_modules/.bin/jest ./src --ci
         working-directory: ./ecosystem/lava-sdk
-
-      - name: Test Report
-        uses: dorny/test-reporter@v1
-        if: always()
-        with:
-          name: Lava SDK Tests            
-          path: ./ecosystem/lava-sdk/src/*.xml
-          reporter: jest-junit  
