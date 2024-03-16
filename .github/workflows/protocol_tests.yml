@@ -41,12 +41,11 @@ jobs:
       run: |
         go install github.com/jstemmer/go-junit-report/v2@latest
         go test -v ./protocol/... | go-junit-report -set-exit-code > protocol-report.xml
-    - uses: dorny/test-reporter@v1
+    - name: Test Summary
+      uses: test-summary/action@v2
       if: always()
       with:
-        artifact: test-results     
-        name: Go Tests           
-        path: 'protocol-report.xml'
-        reporter: jest-junit 
+        paths: |
+          protocol-report.xml       
     - name: Run Cache Tests
       run: go test -v ./ecosystem/cache/... | go-junit-report -set-exit-code > cache-report.xml
