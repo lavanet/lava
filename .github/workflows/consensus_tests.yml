@@ -44,7 +44,7 @@ jobs:
         go test ./utils/... | go-junit-report -set-exit-code > utils-report.xml  
         go test ./common/... | go-junit-report -set-exit-code > common-report.xml  
         go test ./x/pairing/... | go-junit-report -set-exit-code > pairing-report.xml  
-        go test ./x/paiepochstoragering/... | go-junit-report -set-exit-code > epochstorage-report.xml  
+        go test ./x/epochstorage/... | go-junit-report -set-exit-code > epochstorage-report.xml  
         go test ./x/spec/... | go-junit-report -set-exit-code > spec-report.xml  
         go test ./x/conflict/... | go-junit-report -set-exit-code > conflict-report.xml  
         go test ./x/plans/... | go-junit-report -set-exit-code > plans-report.xml  
