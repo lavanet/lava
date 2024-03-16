@@ -38,7 +38,7 @@ jobs:
     ######################################################
     ### Run Consensus unitests
     ######################################################
-    - name: lava utils unit Tests
+    - name: Lava Unit Tests
       run: |
         go install github.com/jstemmer/go-junit-report/v2@latest
         go test ./utils/... | go-junit-report -set-exit-code > utils-report.xml  
@@ -61,4 +61,17 @@ jobs:
       if: always()
       with:
         paths: |
-          *-report.xml
+          utils-report.xml
+          common-report.xml  
+          pairing-report.xml  
+          epochstorage-report.xml  
+          spec-report.xml  
+          conflict-report.xml  
+          plans-report.xml  
+          projects-report.xml  
+          subscription-report.xml  
+          dualstaking-report.xml  
+          fixationstore-report.xml  
+          timerstore-report.xml  
+          downtime-report.xml  
+          rewards-report.xml  
