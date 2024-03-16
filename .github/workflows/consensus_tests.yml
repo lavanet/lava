@@ -61,17 +61,4 @@ jobs:
       if: always()
       with:
         paths: |
-          utils-report.xml
-          common-report.xml  
-          pairing-report.xml  
-          epochstorage-report.xml  
-          spec-report.xml  
-          conflict-report.xml  
-          plans-report.xml  
-          projects-report.xml  
-          subscription-report.xml  
-          dualstaking-report.xml  
-          fixationstore-report.xml  
-          timerstore-report.xml  
-          downtime-report.xml  
-          rewards-report.xml  
+          *-report.xml
