@@ -150,6 +150,7 @@ jobs:
         if: always()
         with:
           paths: |
+            *-report.xml
 
       - name: tail -n 300 Lavad Logs
         if: always()
