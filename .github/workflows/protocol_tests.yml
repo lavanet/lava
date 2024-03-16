@@ -1,18 +1,16 @@
 name: Lava Protocol Tests
 
-on: [pull_request]
+on: 
+  pull_request
 
 jobs:
   go:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: '0'
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
       with:
         go-version: 1.20.5
-    
 
     # Setup Paths
     - name: home
@@ -23,8 +21,6 @@ jobs:
       run:  cp -r ~/work/lava/lava ~/go/lava 
     - name: export PATH
       run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
-    # - name: export
-    #   run: export PATH=$PATH:/go/lava
     - name: export GOPATH
       run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
     - name: export LAVA
@@ -41,7 +37,9 @@ jobs:
     ######################################################
     ### Run protocol unitests
     ######################################################
+    - name: Install go-junit-report
+      run: go install github.com/jstemmer/go-junit-report@latest
     - name: Run Lava Protocol Tests
-      run: go test ./protocol/...
+      run: go test ./protocol/... go-junit-report -set-exit-code > protocol-report.xml
     - name: Run Cache Tests
-      run: go test ./ecosystem/cache/...
+      run: go test ./ecosystem/cache/... go-junit-report -set-exit-code > cache-report.xml
