@@ -41,20 +41,20 @@ jobs:
     - name: Lava Unit Tests
       run: |
         go install github.com/jstemmer/go-junit-report/v2@latest
-        go test -v ./utils/... | go-junit-report -iocopy -set-exit-code > utils-report.xml  
-        go test -v ./common/... | go-junit-report -iocopy -set-exit-code > common-report.xml  
-        go test -v ./x/pairing/... | go-junit-report -iocopy -set-exit-code > pairing-report.xml  
-        go test -v ./x/epochstorage/... | go-junit-report -iocopy -set-exit-code > epochstorage-report.xml  
-        go test -v ./x/spec/... | go-junit-report -iocopy -set-exit-code > spec-report.xml  
-        go test -v ./x/conflict/... | go-junit-report -iocopy -set-exit-code > conflict-report.xml  
-        go test -v ./x/plans/... | go-junit-report -iocopy -set-exit-code > plans-report.xml  
-        go test -v ./x/projects/... | go-junit-report -iocopy -set-exit-code > projects-report.xml  
-        go test -v ./x/subscription/... | go-junit-report -iocopy -set-exit-code > subscription-report.xml  
-        go test -v ./x/dualstaking/... | go-junit-report -iocopy -set-exit-code > dualstaking-report.xml  
-        go test -v ./x/fixationstore/... | go-junit-report -iocopy -set-exit-code > fixationstore-report.xml  
-        go test -v ./x/timerstore/... | go-junit-report -iocopy -set-exit-code > timerstore-report.xml  
-        go test -v ./x/downtime/... | go-junit-report -iocopy -set-exit-code > downtime-report.xml  
-        go test -v ./x/rewards/... | go-junit-report -iocopy -set-exit-code > rewards-report.xml  
+        go test -v ./utils/... | go-junit-report -iocopy -set-exit-code -out utils-report.xml  
+        go test -v ./common/... | go-junit-report -iocopy -set-exit-code -out common-report.xml  
+        go test -v ./x/pairing/... | go-junit-report -iocopy -set-exit-code -out pairing-report.xml  
+        go test -v ./x/epochstorage/... | go-junit-report -iocopy -set-exit-code -out epochstorage-report.xml  
+        go test -v ./x/spec/... | go-junit-report -iocopy -set-exit-code -out spec-report.xml  
+        go test -v ./x/conflict/... | go-junit-report -iocopy -set-exit-code -out conflict-report.xml  
+        go test -v ./x/plans/... | go-junit-report -iocopy -set-exit-code -out plans-report.xml  
+        go test -v ./x/projects/... | go-junit-report -iocopy -set-exit-code -out projects-report.xml  
+        go test -v ./x/subscription/... | go-junit-report -iocopy -set-exit-code -out subscription-report.xml  
+        go test -v ./x/dualstaking/... | go-junit-report -iocopy -set-exit-code -out dualstaking-report.xml  
+        go test -v ./x/fixationstore/... | go-junit-report -iocopy -set-exit-code -out fixationstore-report.xml  
+        go test -v ./x/timerstore/... | go-junit-report -iocopy -set-exit-code -out timerstore-report.xml  
+        go test -v ./x/downtime/... | go-junit-report -iocopy -set-exit-code -out downtime-report.xml  
+        go test -v ./x/rewards/... | go-junit-report -iocopy -set-exit-code -out rewards-report.xml  
     
     - name: Test Summary
       uses: test-summary/action@v2
