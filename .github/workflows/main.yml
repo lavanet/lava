@@ -24,3 +24,12 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           args: --print-issued-lines --config .golangci.yml -v
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          args: release --clean
+          workdir: out
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
