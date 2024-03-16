@@ -37,15 +37,15 @@ jobs:
     ######################################################
     ### Run protocol unitests
     ######################################################
-    - name: Run Lava Protocol Tests
+    - name: Run Lava Tests
       run: |
         go install github.com/jstemmer/go-junit-report/v2@latest
-        go test -v ./protocol/... | go-junit-report -set-exit-code > protocol-report.xml
+        go test -v ./protocol/... | go-junit-report -set-exit-code > protocol-report.xml  
+        go test -v ./ecosystem/cache/... | go-junit-report -set-exit-code > cache-report.xml
     - name: Test Summary
       uses: test-summary/action@v2
       if: always()
       with:
         paths: |
-          protocol-report.xml       
-    - name: Run Cache Tests
-      run: go test -v ./ecosystem/cache/... | go-junit-report -set-exit-code > cache-report.xml
+          protocol-report.xml     
+          cache-report.xml
