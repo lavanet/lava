@@ -438,10 +438,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 				for i := 0; i <= 100; i++ {
 					client := http.Client{Timeout: 500 * time.Millisecond}
 					req, err := http.NewRequest("GET", "http://"+consumerListenAddress+"/status", nil)
-					if err != nil {
-						// Handle error
-						panic(err)
-					}
+					require.NoError(t, err)
 
 					// Add custom headers to the request
 					req.Header.Add(common.RELAY_TIMEOUT_HEADER_NAME, "90ms")
@@ -458,6 +455,98 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 				}
 				require.True(t, seenError, statuses)
 			}
+		})
+	}
+}
+
+func TestConsumerProviderTx(t *testing.T) {
+	playbook := []struct {
+		name string
+	}{
+		{
+			name: "basic-tx",
+		},
+	}
+	for _, play := range playbook {
+		t.Run(play.name, func(t *testing.T) {
+			ctx := context.Background()
+			// can be any spec and api interface
+			specId := "LAV1"
+			apiInterface := spectypes.APIInterfaceRest
+			epoch := uint64(100)
+			requiredResponses := 1
+			lavaChainID := "lava"
+			numProviders := 5
+
+			consumerListenAddress := addressGen.GetAddress()
+			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+			type providerData struct {
+				account          sigs.Account
+				endpoint         *lavasession.RPCProviderEndpoint
+				server           *rpcprovider.RPCProviderServer
+				replySetter      *ReplySetter
+				mockChainFetcher *MockChainFetcher
+			}
+			providers := []providerData{}
+
+			for i := 0; i < numProviders; i++ {
+				// providerListenAddress := "localhost:111" + strconv.Itoa(i)
+				account := sigs.GenerateDeterministicFloatingKey(randomizer)
+				providerDataI := providerData{account: account}
+				providers = append(providers, providerDataI)
+			}
+			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+			for i := 0; i < numProviders; i++ {
+				ctx := context.Background()
+				providerDataI := providers[i]
+				listenAddress := addressGen.GetAddress()
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
+				providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
+			}
+			for i := 0; i < numProviders; i++ {
+				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
+					PublicLavaAddress: providers[i].account.Addr.String(),
+					Endpoints: []*lavasession.Endpoint{
+						{
+							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
+							Enabled:        true,
+							Geolocation:    1,
+						},
+					},
+					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+					MaxComputeUnits:  10000,
+					UsedComputeUnits: 0,
+					PairingEpoch:     epoch,
+				}
+			}
+			rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+			require.NotNil(t, rpcconsumerServer)
+
+			for i := 0; i < numProviders; i++ {
+				replySetter := providers[i].replySetter
+				index := i
+				handler := func(req []byte, header http.Header) (data []byte, status int) {
+					if index == 1 {
+						// only one provider responds correctly, but after a delay
+						time.Sleep(20 * time.Millisecond)
+						return replySetter.replyDataBuf, http.StatusOK
+					} else {
+						return []byte(`{"message":"bad","code":777}`), http.StatusInternalServerError
+					}
+				}
+				providers[i].replySetter.handler = handler
+			}
+
+			client := http.Client{Timeout: 500 * time.Millisecond}
+			req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress+"/cosmos/tx/v1beta1/txs", nil)
+			require.NoError(t, err)
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, resp.StatusCode)
+			bodyBytes, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			resp.Body.Close()
+			require.Equal(t, `{"result": 2}`, string(bodyBytes))
 		})
 	}
 }
