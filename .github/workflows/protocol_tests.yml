@@ -38,7 +38,7 @@ jobs:
     ### Run protocol unitests
     ######################################################
     - name: Install go-junit-report
-      run: go get github.com/jstemmer/go-junit-report/v2@latest
+      run: go install github.com/jstemmer/go-junit-report/v2@latest
     - name: Run Lava Protocol Tests
       run: go test -v ./protocol/... | go-junit-report -set-exit-code > protocol-report.xml
     - name: Test Summary
@@ -47,6 +47,5 @@ jobs:
       with:
         paths: |
           protocol-report.xml          
-      
     - name: Run Cache Tests
       run: go test -v ./ecosystem/cache/... | go-junit-report -set-exit-code > cache-report.xml
