@@ -1,15 +1,14 @@
 name: Lava Consensus Tests
 
-on: [pull_request]
+on: 
+  pull_request
 
 jobs:
   go:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: '0'
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
       with:
         go-version: 1.20.5
     
@@ -40,43 +39,26 @@ jobs:
     ### Run Consensus unitests
     ######################################################
     - name: lava utils unit Tests
-      run: go test ./utils/...
-
-    - name: lava common unit Tests
-      run: go test ./common/...
-
-    - name: lava pairing unit Tests
-      run: go test ./x/pairing/...
-      
-    - name: lava epochstorage unit Tests
-      run: go test ./x/epochstorage/...
-
-    - name: lava spec unit Tests
-      run: go test ./x/spec/...
-
-    - name: lava conflict unit Tests
-      run: go test ./x/conflict/...
-
-    - name: lava plans unit Tests
-      run: go test ./x/plans/...
-
-    - name: lava projects unit Tests
-      run: go test ./x/projects/... 
-
-    - name: lava subscription unit Tests
-      run: go test ./x/subscription/... 
-
-    - name: lava dualstaking unit Tests
-      run: go test ./x/dualstaking/... 
-
-    - name: lava fixation unit Tests
-      run: go test ./x/fixationstore/... 
-
-    - name: lava timerstore unit Tests
-      run: go test ./x/timerstore/... 
+      run: |
+        go install github.com/jstemmer/go-junit-report/v2@latest
+        go test ./utils/... | go-junit-report -set-exit-code > utils-report.xml  
+        go test ./common/... | go-junit-report -set-exit-code > common-report.xml  
+        go test ./x/pairing/... | go-junit-report -set-exit-code > pairing-report.xml  
+        go test ./x/paiepochstoragering/... | go-junit-report -set-exit-code > epochstorage-report.xml  
+        go test ./x/spec/... | go-junit-report -set-exit-code > spec-report.xml  
+        go test ./x/conflict/... | go-junit-report -set-exit-code > conflict-report.xml  
+        go test ./x/plans/... | go-junit-report -set-exit-code > plans-report.xml  
+        go test ./x/projects/... | go-junit-report -set-exit-code > projects-report.xml  
+        go test ./x/subscription/... | go-junit-report -set-exit-code > subscription-report.xml  
+        go test ./x/dualstaking/... | go-junit-report -set-exit-code > dualstaking-report.xml  
+        go test ./x/fixationstore/... | go-junit-report -set-exit-code > fixationstore-report.xml  
+        go test ./x/timerstore/... | go-junit-report -set-exit-code > timerstore-report.xml  
+        go test ./x/downtime/... | go-junit-report -set-exit-code > downtime-report.xml  
+        go test ./x/rewards/... | go-junit-report -set-exit-code > rewards-report.xml  
     
-    - name: lava downtime unit Tests
-      run: go test ./x/downtime/... 
-
-    - name: lava rewards unit Tests
-      run: go test ./x/rewards/... 
+    - name: Test Summary
+      uses: test-summary/action@v2
+      if: always()
+      with:
+        paths: |
+          *-report.xml
