@@ -77,7 +77,6 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 
 func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, checkProfitability bool) error {
 	txfactory := ts.txFactory.WithGasPrices(defaultGasPrice)
-	txfactory = txfactory.WithGasAdjustment(defaultGasAdjustment)
 
 	if err := msg.ValidateBasic(); err != nil {
 		return err
