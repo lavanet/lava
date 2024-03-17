@@ -29,6 +29,7 @@ builds:
 dockers:
   - image_templates: ["us-central1-docker.pkg.dev/lavanet/lavavisor:{{ .Version }}"]
     dockerfile: Dockerfile
+    use: buildx
     build_flag_templates:
     - --label=org.opencontainers.image.title={{ .ProjectName }}
     - --label=org.opencontainers.image.description={{ .ProjectName }}
