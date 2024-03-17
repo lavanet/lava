@@ -61,12 +61,14 @@ type CacheValue struct {
 	Response         pairingtypes.RelayReply
 	Hash             []byte
 	OptionalMetadata []pairingtypes.Metadata
+	SeenBlock        int64
 }
 
 func (cv *CacheValue) ToCacheReply() *pairingtypes.CacheRelayReply {
 	return &pairingtypes.CacheRelayReply{
 		Reply:            &cv.Response,
 		OptionalMetadata: cv.OptionalMetadata,
+		SeenBlock:        cv.SeenBlock,
 	}
 }
 
@@ -289,7 +291,7 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.RequestedBlock})
 	}
 	cacheKey := s.formatHashKey(relayCacheSet.RequestHash, relayCacheSet.RequestedBlock, relayCacheSet.SeenBlock)
-	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized, relayCacheSet.OptionalMetadata)
+	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized, relayCacheSet.OptionalMetadata, relayCacheSet.SeenBlock)
 	utils.LavaFormatDebug("Got Cache Set", utils.Attribute{Key: "cacheKey", Value: string(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: fmt.Sprintf("%t", relayCacheSet.Finalized)},
 		utils.Attribute{Key: "requested_block", Value: relayCacheSet.RequestedBlock},
@@ -431,7 +433,7 @@ func (s *RelayerCacheServer) findInAllCaches(finalized bool, cacheKey []byte) (r
 	return CacheValue{}, "", false
 }
 
-func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized bool, optionalMetadata []pairingtypes.Metadata) CacheValue {
+func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized bool, optionalMetadata []pairingtypes.Metadata, seenBlock int64) CacheValue {
 	response.Sig = []byte{} // make sure we return a signed value, as the output was modified by our outputParser
 	if !finalized {
 		// hash value is only used on non finalized entries to check for forks
@@ -439,6 +441,7 @@ func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized 
 			Response:         *response,
 			Hash:             hash,
 			OptionalMetadata: optionalMetadata,
+			SeenBlock:        seenBlock,
 		}
 	}
 	// no need to store the hash value for finalized entries
@@ -446,6 +449,7 @@ func formatCacheValue(response *pairingtypes.RelayReply, hash []byte, finalized 
 		Response:         *response,
 		Hash:             nil,
 		OptionalMetadata: optionalMetadata,
+		SeenBlock:        seenBlock,
 	}
 }
 
