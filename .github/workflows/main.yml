@@ -31,7 +31,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
-          args: build --single-target --skip=validate --snapshot --clean
+          args: build --single-target --snapshot --clean
           workdir: cmd/lavad
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
