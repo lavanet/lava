@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  lint:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
