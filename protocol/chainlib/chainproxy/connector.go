@@ -30,6 +30,7 @@ const (
 	GRPCUseTls                                 = "use-tls"
 	GRPCAllowInsecureConnection                = "allow-insecure-connection"
 	MaximumNumberOfParallelConnectionsAttempts = 10
+	maxCallRecvMsgSize                         = 1024 * 1024 * 32 // setting receive size to 32mb instead of 4mb default
 )
 
 var NumberOfParallelConnections uint = 10
@@ -307,7 +308,7 @@ func (connector *GRPCConnector) increaseNumberOfClients(ctx context.Context, num
 	var err error
 	for connectionAttempt := 0; connectionAttempt < MaximumNumberOfParallelConnectionsAttempts; connectionAttempt++ {
 		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
-		grpcClient, err = grpc.DialContext(nctx, connector.nodeUrl.Url, grpc.WithBlock(), connector.getTransportCredentials())
+		grpcClient, err = grpc.DialContext(nctx, connector.nodeUrl.Url, grpc.WithBlock(), connector.getTransportCredentials(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize)))
 		if err != nil {
 			utils.LavaFormatDebug("increaseNumberOfClients, Could not connect to the node, retrying", []utils.Attribute{{Key: "err", Value: err.Error()}, {Key: "Number Of Attempts", Value: connectionAttempt}, {Key: "nodeUrl", Value: connector.nodeUrl.UrlStr()}}...)
 			cancel()
@@ -455,7 +456,7 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, nodeUrl co
 			return nil, ctx.Err()
 		}
 		nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
-		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), connector.getTransportCredentials())
+		rpcClient, err = grpc.DialContext(nctx, addr, grpc.WithBlock(), connector.getTransportCredentials(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize)))
 		cancel()
 		if err == nil {
 			return rpcClient, nil
@@ -469,7 +470,7 @@ func (connector *GRPCConnector) createConnection(ctx context.Context, nodeUrl co
 			}
 			nctx, cancel := connector.nodeUrl.LowerContextTimeoutWithDuration(ctx, common.AverageWorldLatency*2)
 			var errNew error
-			rpcClient, errNew = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(credentialsToConnect))
+			rpcClient, errNew = grpc.DialContext(nctx, addr, grpc.WithBlock(), grpc.WithTransportCredentials(credentialsToConnect), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(maxCallRecvMsgSize)))
 			cancel()
 			if errNew == nil {
 				// this means our endpoint is TLS, and we support upgrading even if the config didn't explicitly say it
