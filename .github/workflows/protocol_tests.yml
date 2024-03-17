@@ -47,12 +47,4 @@ jobs:
       with:
         name: Lava Tests                  
         path: '*-report.xml'                     
-        reporter: java-junit     
-
-    - name: Test Summary
-      uses: test-summary/action@v2
-      if: always()
-      with:
-        paths: |
-          protocol-report.xml     
-          cache-report.xml
+        reporter: java-junit

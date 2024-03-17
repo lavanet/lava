@@ -56,9 +56,9 @@ jobs:
         go test -v ./x/downtime/... | go-junit-report -iocopy -set-exit-code -out downtime-report.xml  
         go test -v ./x/rewards/... | go-junit-report -iocopy -set-exit-code -out rewards-report.xml  
     
-    - name: Test Summary
-      uses: test-summary/action@v2
+    - uses: dorny/test-reporter@v1
       if: always()
       with:
-        paths: |
-          *-report.xml
+        name: Lava Tests                  
+        path: '*-report.xml'                     
+        reporter: java-junit

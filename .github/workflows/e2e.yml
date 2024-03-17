@@ -21,12 +21,12 @@ jobs:
           go install github.com/jstemmer/go-junit-report/v2@latest
           go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s | go-junit-report -iocopy -set-exit-code -out protocol-e2e-report.xml  # 20mins
       
-      - name: Test Summary
-        uses: test-summary/action@v2
+      - uses: dorny/test-reporter@v1
         if: always()
         with:
-          paths: |
-            *-report.xml
+          name: Lava Tests                  
+          path: '*-report.xml'                     
+          reporter: java-junit
 
       - name: tail -n 1000 Lavad Logs
         if: always()
@@ -145,12 +145,12 @@ jobs:
           go install github.com/jstemmer/go-junit-report/v2@latest
           go test ./testutil/e2e/ -run ^TestLavaSDK -v -timeout 1200s | go-junit-report -iocopy -set-exit-code -out sdk-e2e-report.xml # 20mins
 
-      - name: Test Summary
-        uses: test-summary/action@v2
+      - uses: dorny/test-reporter@v1
         if: always()
         with:
-          paths: |
-            *-report.xml
+          name: Lava Tests                  
+          path: '*-report.xml'                     
+          reporter: java-junit
 
       - name: tail -n 300 Lavad Logs
         if: always()
@@ -230,12 +230,12 @@ jobs:
           go install github.com/jstemmer/go-junit-report/v2@latest
           go test ./testutil/e2e/ -run ^TestLavaProtocolPayment$ -v -timeout 1200s | go-junit-report -iocopy -set-exit-code -out payment-e2e-report.xml # 20mins
       
-      - name: Test Summary
-        uses: test-summary/action@v2
+      - uses: dorny/test-reporter@v1
         if: always()
         with:
-          paths: |
-            *-report.xml
+          name: Lava Tests                  
+          path: '*-report.xml'                     
+          reporter: java-junit
 
       - name: tail -n 300 Lavad Logs
         if: always()
