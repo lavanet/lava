@@ -45,7 +45,6 @@ jobs:
     
     - uses: dorny/test-reporter@v1
       with:
-        artifact: test-results            
         name: Lava Tests                  
         path: '*-report.xml'                     
         reporter: java-junit     
