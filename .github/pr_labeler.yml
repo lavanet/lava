@@ -1,3 +1,13 @@
+"C:cmd/lavad":
+  - cmd/lavad/**/*
+"C:cmd/lavap":
+  - cmd/lavap/**/*
+"C:cmd/lavavisor":
+  - cmd/lavavisor/**/*
+"C:cmd/common":
+  - cmd/common/**/*
+"C:protocol":
+  - protocol/**/*
 "C:x/conflict":
   - x/conflict/**/*
 "C:x/downtime":
@@ -31,3 +41,7 @@
   - scripts/*
 "Type: CI":
   - .github/**
+"Type: Docs":
+  - docs/**/*
+"Type: Proto":
+  - proto/**/*
