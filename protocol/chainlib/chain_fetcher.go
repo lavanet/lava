@@ -16,7 +16,6 @@ import (
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/protocopy"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -474,17 +473,21 @@ func NewVerificationsOnlyChainFetcher(ctx context.Context, chainRouter ChainRout
 	return cf
 }
 
+// this method will calculate the request hash by changing the original object, and returning the data back to it after calculating the hash
+// couldn't be used in parallel
 func HashCacheRequest(relayData *pairingtypes.RelayPrivateData, chainId string) ([]byte, func([]byte) []byte, error) {
-	copyPrivateData := &pairingtypes.RelayPrivateData{}
-	err := protocopy.DeepCopyProtoObject(relayData, copyPrivateData)
-	if err != nil {
-		return nil, nil, utils.LavaFormatError("Failed copying relayData in HashCacheRequest", err)
-	}
-	return HashCacheRequestInner(copyPrivateData, chainId)
-}
+	originalData := relayData.Data
+	originalSalt := relayData.Salt
+	originalRequestedBlock := relayData.RequestBlock
+	originalSeenBlock := relayData.SeenBlock
+	defer func() {
+		// return all information back to the object on defer (in any case)
+		relayData.Data = originalData
+		relayData.Salt = originalSalt
+		relayData.RequestBlock = originalRequestedBlock
+		relayData.SeenBlock = originalSeenBlock
+	}()
 
-// this changes the object relayData, so careful when using directly
-func HashCacheRequestInner(relayData *pairingtypes.RelayPrivateData, chainId string) ([]byte, func([]byte) []byte, error) {
 	// we need to remove some data from the request so the cache will hit properly.
 	inputFormatter, outputFormatter := formatter.FormatterForRelayRequestAndResponse(relayData.ApiInterface)
 	relayData.Data = inputFormatter(relayData.Data) // remove id from request.
@@ -504,5 +507,7 @@ func HashCacheRequestInner(relayData *pairingtypes.RelayPrivateData, chainId str
 	if err != nil {
 		return nil, outputFormatter, utils.LavaFormatError("Failed marshalling cash hash in HashCacheRequest", err)
 	}
+
+	// return the value
 	return sigs.HashMsg(cashHashBytes), outputFormatter, nil
 }

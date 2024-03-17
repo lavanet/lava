@@ -49,4 +49,5 @@ message RelayCacheSet {
     int64 requested_block = 7;
     string chain_id = 9; // used to set latest block per chain.
     int64 seen_block = 10;
+    int64 average_block_time = 11;
 }

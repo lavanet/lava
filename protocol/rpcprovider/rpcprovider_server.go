@@ -782,7 +782,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
 				requestedBlock := copyPrivateData.RequestBlock // get requested block before removing it from the private data when calculating the hash
-				hash, _, err := chainlib.HashCacheRequestInner(copyPrivateData, rpcps.rpcProviderEndpoint.ChainID)
+				hash, _, err := chainlib.HashCacheRequest(copyPrivateData, rpcps.rpcProviderEndpoint.ChainID)
 				if err != nil {
 					utils.LavaFormatError("TryRelay failed calculating hash for cach.SetEntry", err)
 					return

@@ -289,7 +289,7 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.CacheServer.ExpirationFinalized)
 	} else {
 		cache := s.CacheServer.tempCache
-		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.getExpirationForChain(relayCacheSet.ChainId, relayCacheSet.BlockHash))
+		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.getExpirationForChain(time.Duration(relayCacheSet.AverageBlockTime), relayCacheSet.BlockHash))
 	}
 	// Setting the seen block for shared state.
 	// Getting the max block number between the seen block on the consumer side vs the latest block on the response of the provider
@@ -359,14 +359,14 @@ func (s *RelayerCacheServer) setLatestBlock(key string, latestBlock int64) {
 	s.performInt64WriteWithValidationAndRetry(get, set, latestBlock)
 }
 
-func (s *RelayerCacheServer) getExpirationForChain(chainID string, blockHash []byte) time.Duration {
+func (s *RelayerCacheServer) getExpirationForChain(averageBlockTimeForChain time.Duration, blockHash []byte) time.Duration {
 	if blockHash != nil {
 		// this means that this entry has a block hash, so we don't have to delete it quickly
 		return s.CacheServer.ExpirationFinalized
 	}
 	// if there is no block hash, for non finalized we cant know if there was a fork, so we have to delete it as soon as we have new data
 	// with the assumption new data should arrive by the arrival of a new block (average block time)
-	return s.CacheServer.ExpirationForChain(chainID)
+	return s.CacheServer.ExpirationForChain(averageBlockTimeForChain)
 }
 
 func getNonExpiredFromCache(c *ristretto.Cache, key interface{}) (value interface{}, found bool) {
