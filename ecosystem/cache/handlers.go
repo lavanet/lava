@@ -8,8 +8,9 @@
 // if seen >= requested_block -> seen_for_hash = requested (for key calculation)
 // if seen < requested_block, seen_for_hash = 0
 
-// fetch with the new key, check if result.seen_block >= my_seen ==> return hit
-// else, the result is bad. cache miss.
+// if the requested_block > seen:
+//     fetch with the new key, check if result.seen_block >= my_seen ==> return hit
+//     else, the result is bad. cache miss.
 
 // ============ SET =========
 // if seen >= requested_block -> seen_for_hash = requested (for key calculation)
@@ -149,6 +150,17 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 			cacheReplyTmp, err = s.getRelayInner(relayCacheGet)
 			if cacheReplyTmp != nil {
 				cacheReply = cacheReplyTmp // set cache reply only if its not nil, as we need to store seen block in it.
+			}
+
+			// validate that the response seen block is larger or equal to our expectations.
+			if cacheReply.SeenBlock < seenBlock {
+				// Error, our reply seen block is not larger than our expectations, meaning we got an old response
+				// this can happen only in the case relayCacheGet.SeenBlock < relayCacheGet.RequestedBlock
+				// by setting the err variable we will get a cache miss, and the relay will continue to the node.
+				err = utils.LavaFormatDebug("reply seen block is smaller than our expectations",
+					utils.LogAttr("cacheReply.SeenBlock", cacheReply.SeenBlock),
+					utils.LogAttr("seenBlock", seenBlock),
+				)
 			}
 		}
 
