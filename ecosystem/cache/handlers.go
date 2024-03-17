@@ -183,15 +183,15 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 // formatHashKey formats the hash key by adding latestBlock and seenBlock information.
 // If seenBlock is greater than or equal to latestBlock, seenBlock is set to latestBlock for key calculation,
 // otherwise, it's set to 0.
-func (s *RelayerCacheServer) formatHashKey(hash []byte, latestBlock int64, seenBlock int64) []byte {
+func (s *RelayerCacheServer) formatHashKey(hash []byte, parsedRequestedBlock int64, seenBlock int64) []byte {
 	// Handle seenBlock according to the specified rules
-	if seenBlock >= latestBlock {
-		seenBlock = latestBlock
+	if seenBlock >= parsedRequestedBlock {
+		seenBlock = parsedRequestedBlock
 	} else {
 		seenBlock = 0
 	}
 	// Append the latestBlock and seenBlock directly to the hash using little-endian encoding
-	hash = binary.LittleEndian.AppendUint64(hash, uint64(latestBlock))
+	hash = binary.LittleEndian.AppendUint64(hash, uint64(parsedRequestedBlock))
 	hash = binary.LittleEndian.AppendUint64(hash, uint64(seenBlock))
 	return hash
 }
