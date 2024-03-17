@@ -277,13 +277,3 @@ func IsSliceConsecutive[T constraints.Integer](slice []T) (int, bool) {
 
 	return 0, true
 }
-
-func StableSortedKeys[T constraints.Ordered, V any](m map[T]V) []T {
-	keys := make([]T, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-
-	SortStable(keys)
-	return keys
-}

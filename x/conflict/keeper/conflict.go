@@ -7,6 +7,7 @@ import (
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils/maps"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/conflict/types"
@@ -306,7 +307,7 @@ func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.R
 	}
 
 	// Sort block heights
-	blockHeights := slices.StableSortedKeys(finalizedBlocks)
+	blockHeights := maps.StableSortedKeys(finalizedBlocks)
 
 	// Validate that blocks are consecutive
 	_, isConsecutive := slices.IsSliceConsecutive(blockHeights)
