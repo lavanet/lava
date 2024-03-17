@@ -41,8 +41,9 @@ dockers:
     - --label=org.opencontainers.image.licenses=Apache
     - "--build-arg=LAVA_BINARY=lavap"
 
-# nfpms:
-#   - id: lavap
+nfpms:
+  - id: lavap
+    maintainer: Amit <amit@lavanet.xyz>
 
 archives:
   - format: tar.gz
@@ -58,6 +59,13 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
+
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+  algorithm: sha256
+
+sboms:
+  - artifacts: archive
 
 changelog:
   sort: asc

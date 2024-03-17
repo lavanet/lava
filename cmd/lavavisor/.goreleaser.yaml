@@ -40,8 +40,9 @@ dockers:
     - --label=org.opencontainers.image.revision={{ .FullCommit }}
     - --label=org.opencontainers.image.licenses=Apache
 
-# nfpms:
-#   - id: lavavisor
+nfpms:
+  - id: lavavisor
+    maintainer: Amit <amit@lavanet.xyz>
 
 archives:
   - format: tar.gz
@@ -61,6 +62,9 @@ archives:
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
   algorithm: sha256
+
+sboms:
+  - artifacts: archive
 
 changelog:
   sort: asc
