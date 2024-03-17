@@ -59,6 +59,6 @@ jobs:
     - uses: dorny/test-reporter@v1
       if: always()
       with:
-        name: Lava Tests                  
+        name: Lava Consensus Tests                  
         path: '*-report.xml'                     
         reporter: java-junit

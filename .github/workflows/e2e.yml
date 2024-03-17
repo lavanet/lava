@@ -24,7 +24,7 @@ jobs:
       - uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Lava Tests                  
+          name: Lava Protocol E2E Tests                  
           path: '*-report.xml'                     
           reporter: java-junit
 
@@ -148,7 +148,7 @@ jobs:
       - uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Lava Tests                  
+          name: Lava SDK E2E Tests                  
           path: '*-report.xml'                     
           reporter: java-junit
 
@@ -233,7 +233,7 @@ jobs:
       - uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Lava Tests                  
+          name: Lava Payment E2E Tests                  
           path: '*-report.xml'                     
           reporter: java-junit
 

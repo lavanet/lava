@@ -45,6 +45,6 @@ jobs:
     
     - uses: dorny/test-reporter@v1
       with:
-        name: Lava Tests                  
+        name: Lava Protocol Tests                  
         path: '*-report.xml'                     
         reporter: java-junit
