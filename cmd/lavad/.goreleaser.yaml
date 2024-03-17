@@ -14,7 +14,9 @@ before:
     - go generate ./...
 
 builds:
-  - env:
+  - id: lavad
+    binary: lavad
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -38,8 +40,8 @@ dockers:
     - --label=org.opencontainers.image.licenses=Apache
     - "--build-arg=LAVA_BINARY=lavad"
 
-nfpms:
-  - id: lavad
+# nfpms:
+#   - id: lavad
 
 archives:
   - format: tar.gz

@@ -14,7 +14,9 @@ before:
     - go generate ./...
 
 builds:
-  - env:
+  - id: lavavisor
+    binary: lavavisor
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -37,8 +39,8 @@ dockers:
     - --label=org.opencontainers.image.revision={{ .FullCommit }}
     - --label=org.opencontainers.image.licenses=Apache
 
-nfpms:
-  - id: lavavisor
+# nfpms:
+#   - id: lavavisor
 
 archives:
   - format: tar.gz

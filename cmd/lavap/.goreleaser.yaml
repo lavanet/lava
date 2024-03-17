@@ -14,7 +14,9 @@ before:
     - go generate ./...
 
 builds:
-  - env:
+  - id: lavap
+    binary: lavap
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -38,8 +40,8 @@ dockers:
     - --label=org.opencontainers.image.licenses=Apache
     - "--build-arg=LAVA_BINARY=lavap"
 
-nfpms:
-  - id: lavap
+# nfpms:
+#   - id: lavap
 
 archives:
   - format: tar.gz
