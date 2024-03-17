@@ -36,6 +36,7 @@ message RelayCacheGet {
     int64 requested_block = 4;
     string shared_state_id = 5; // empty id for no shared state
     string chain_id = 6; // used to set latest block per chain.
+    int64 seen_block = 7;
 }
 
 message RelayCacheSet {

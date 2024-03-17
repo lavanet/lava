@@ -489,8 +489,7 @@ func HashCacheRequestInner(relayData *pairingtypes.RelayPrivateData, chainId str
 	inputFormatter, outputFormatter := formatter.FormatterForRelayRequestAndResponse(relayData.ApiInterface)
 	relayData.Data = inputFormatter(relayData.Data) // remove id from request.
 	relayData.Salt = nil                            // remove salt
-	// TODO: Do we need to set this to 0? or in some cases the data is no longer relevant and we need to set it to a value
-	relayData.SeenBlock = 0 // remove seen block changes
+	relayData.SeenBlock = 0                         // remove seen block
 	// we remove the discrepancy of requested block from the hash, and add it on the cache side instead
 	// this is due to the fact that we don't know the latest seen block at this moment, as on shared state
 	// only the cache has this information. we make sure the hashing at this stage does not include the requested block.
