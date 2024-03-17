@@ -78,16 +78,16 @@ func (k Keeper) GetAllUniquePaymentStorageClientProvider(ctx sdk.Context) (list 
 	return
 }
 
-func (k Keeper) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID string, block uint64, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) *types.UniquePaymentStorageClientProvider {
+func (k EpochPaymentHandler) AddUniquePaymentStorageClientProvider(ctx sdk.Context, chainID string, block uint64, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string, usedCU uint64) *types.UniquePaymentStorageClientProvider {
 	key := k.EncodeUniquePaymentKey(ctx, projectID, providerAddress, uniqueIdentifier, chainID)
 	entry := types.UniquePaymentStorageClientProvider{Index: key, Block: block, UsedCU: usedCU}
-	k.SetUniquePaymentStorageClientProvider(ctx, entry)
+	k.SetUniquePaymentStorageClientProviderCached(ctx, entry)
 	return &entry
 }
 
-func (k Keeper) IsDoubleSpend(ctx sdk.Context, chainID string, block uint64, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string) bool {
+func (k EpochPaymentHandler) IsDoubleSpend(ctx sdk.Context, chainID string, block uint64, projectID string, providerAddress sdk.AccAddress, uniqueIdentifier string) bool {
 	key := k.EncodeUniquePaymentKey(ctx, projectID, providerAddress, uniqueIdentifier, chainID)
-	_, found := k.GetUniquePaymentStorageClientProvider(ctx, key)
+	_, found := k.GetUniquePaymentStorageClientProviderCached(ctx, key)
 	return found
 }
 

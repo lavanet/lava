@@ -137,10 +137,7 @@ func (k EpochPaymentHandler) GetTotalUsedCUForConsumerPerEpoch(ctx sdk.Context, 
 		// get the uniquePaymentStorageClientProvider object
 		uniquePayment, found := k.GetUniquePaymentStorageClientProviderCached(ctx, uniquePaymentKey)
 		if !found {
-			uniquePayment, found = k.GetUniquePaymentStorageClientProvider(ctx, uniquePaymentKey)
-			if found {
-				k.SetUniquePaymentStorageClientProviderCached(ctx, uniquePayment)
-			}
+			k.SetUniquePaymentStorageClientProviderCached(ctx, uniquePayment)
 		}
 		if !found {
 			utils.LavaFormatError("could not find uniquePaymentStorageClientProvider object", fmt.Errorf("unique payment object not found"),

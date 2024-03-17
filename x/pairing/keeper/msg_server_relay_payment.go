@@ -144,7 +144,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			continue
 		}
 
-		if k.IsDoubleSpend(ctx, relay.SpecId, epochStart, project.Index, providerAddr, strconv.FormatUint(relay.SessionId, 16)) {
+		if paymentHandler.IsDoubleSpend(ctx, relay.SpecId, epochStart, project.Index, providerAddr, strconv.FormatUint(relay.SessionId, 16)) {
 			utils.LavaFormatWarning("double spending detected", err,
 				utils.Attribute{Key: "epoch", Value: epochStart},
 				utils.Attribute{Key: "client", Value: clientAddr.String()},
