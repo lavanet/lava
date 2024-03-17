@@ -11,6 +11,9 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        binary: [lavad, lavap, lavavisor]
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
@@ -27,12 +30,12 @@ jobs:
         with:
           version: latest
           args: build --single-target --snapshot --clean
-          workdir: cmd/lavad
+          workdir: cmd/${{ matrix.binary }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lavad
-          path: cmd/lavad/dist/*
+          name: ${{ matrix.binary }}
+          path: cmd/${{ matrix.binary }}/dist/*
