@@ -240,7 +240,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
-	latestKnownBlock, numProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
+	latestKnownBlock, numProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.chainParser)
 	if numProviders > 0 && latestKnownBlock > 0 {
 		return uint64(latestKnownBlock)
 	}
@@ -575,7 +575,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			// get here only if performed a regular relay successfully
-			expectedBH, numOfProviders := rpccs.finalizationConsensus.ExpectedBlockHeight(rpccs.chainParser)
+			expectedBH, numOfProviders := rpccs.finalizationConsensus.GetExpectedBlockHeight(rpccs.chainParser)
 			pairingAddressesLen := rpccs.consumerSessionManager.GetAtomicPairingAddressesLength()
 			latestBlock := localRelayResult.Reply.LatestBlock
 			if expectedBH-latestBlock > 1000 {
@@ -819,7 +819,9 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 
 		finalizationAccountabilityError, err = rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), rpccs.consumerAddress, providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
 		if err != nil {
-			go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationAccountabilityError, nil, nil, singleConsumerSession.Parent)
+			if finalizationAccountabilityError != nil {
+				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationAccountabilityError, nil, nil, singleConsumerSession.Parent)
+			}
 			return 0, err, false
 		}
 	}

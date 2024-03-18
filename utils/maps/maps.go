@@ -31,3 +31,12 @@ func StableSortedKeys[T constraints.Ordered, V any](m map[T]V) []T {
 	return keys
 }
 
+func GetMaxKey[T constraints.Ordered, V any](m map[T]V) T {
+	var maxKey T
+	for k := range m {
+		if k > maxKey {
+			maxKey = k
+		}
+	}
+	return maxKey
+}
