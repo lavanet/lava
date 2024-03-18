@@ -25,7 +25,7 @@ import (
 
 const (
 	defaultGasPrice      = "0.000000001" + commontypes.TokenDenom
-	defaultGasAdjustment = 3
+	DefaultGasAdjustment = "10.0"
 	// same account can continue failing the more providers you have under the same account
 	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
 	// therefore currently our best solution is to continue retrying increasing sequence number until successful
@@ -78,7 +78,6 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 
 func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, checkProfitability bool) error {
 	txfactory := ts.txFactory.WithGasPrices(defaultGasPrice)
-	txfactory = txfactory.WithGasAdjustment(defaultGasAdjustment)
 
 	if err := msg.ValidateBasic(); err != nil {
 		return err
