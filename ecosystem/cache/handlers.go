@@ -1,21 +1,3 @@
-// ============= GET =============
-// if seen block >= requested block && requested_block > 0 -> no need to fetch seen block in advance of get.
-// if requested_block < 0 -> parse block, replace requested block,
-//     * check if seen_block >= replaced_requested_block -> no need to fetch seen and get.
-
-// else fetch seen
-
-// if seen >= requested_block -> seen_for_hash = requested (for key calculation)
-// if seen < requested_block, seen_for_hash = 0
-
-// if the requested_block > seen:
-//     fetch with the new key, check if result.seen_block >= my_seen ==> return hit
-//     else, the result is bad. cache miss.
-
-// ============ SET =========
-// if seen >= requested_block -> seen_for_hash = requested (for key calculation)
-// if seen < requested_block, seen_for_hash = 0
-
 package cache
 
 import (
@@ -123,52 +105,40 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	)
 	if relayCacheGet.RequestedBlock >= 0 { // we can only fetch
 		// check seen block is larger than our requested block, we don't need to fetch seen block prior as its already larger than requested block
-		if relayCacheGet.SeenBlock >= relayCacheGet.RequestedBlock {
-			waitGroup := sync.WaitGroup{}
-			waitGroup.Add(2) // currently we have two groups getRelayInner and getSeenBlock
-			// fetch all reads at the same time.
-			go func() {
-				defer waitGroup.Done()
-				cacheReplyTmp, err = s.getRelayInner(relayCacheGet)
-				if cacheReplyTmp != nil {
-					cacheReply = cacheReplyTmp // set cache reply only if its not nil, as we need to store seen block in it.
-				}
-			}()
-			go func() {
-				defer waitGroup.Done()
-				// set seen block if required
-				seenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.ChainId, relayCacheGet.SharedStateId)
-			}()
-			// wait for all reads to complete before moving forward
-			waitGroup.Wait()
-		} else {
-			// our seen block might change our cache key value when shared state is enabled, we need to fetch it prior to moving forward
-			// fetch seen block prior to cache
-			seenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.ChainId, relayCacheGet.SharedStateId)
-			if seenBlock > relayCacheGet.SeenBlock {
-				relayCacheGet.SeenBlock = seenBlock // update state.
-			}
-			// now that we have our updated seen block state we can
+		waitGroup := sync.WaitGroup{}
+		waitGroup.Add(2) // currently we have two groups getRelayInner and getSeenBlock
+		// fetch all reads at the same time.
+		go func() {
+			defer waitGroup.Done()
 			cacheReplyTmp, err = s.getRelayInner(relayCacheGet)
 			if cacheReplyTmp != nil {
 				cacheReply = cacheReplyTmp // set cache reply only if its not nil, as we need to store seen block in it.
 			}
-
-			// validate that the response seen block is larger or equal to our expectations.
-			if cacheReply.SeenBlock < seenBlock {
-				// Error, our reply seen block is not larger than our expectations, meaning we got an old response
-				// this can happen only in the case relayCacheGet.SeenBlock < relayCacheGet.RequestedBlock
-				// by setting the err variable we will get a cache miss, and the relay will continue to the node.
-				err = utils.LavaFormatDebug("reply seen block is smaller than our expectations",
-					utils.LogAttr("cacheReply.SeenBlock", cacheReply.SeenBlock),
-					utils.LogAttr("seenBlock", seenBlock),
-				)
+		}()
+		go func() {
+			defer waitGroup.Done()
+			// set seen block if required
+			seenBlock = s.getSeenBlockForSharedStateMode(relayCacheGet.ChainId, relayCacheGet.SharedStateId)
+			if seenBlock > relayCacheGet.SeenBlock {
+				relayCacheGet.SeenBlock = seenBlock // update state.
 			}
-		}
+		}()
+		// wait for all reads to complete before moving forward
+		waitGroup.Wait()
 
+		// validate that the response seen block is larger or equal to our expectations.
+		if cacheReply.SeenBlock < relayCacheGet.SeenBlock {
+			// Error, our reply seen block is not larger than our expectations, meaning we got an old response
+			// this can happen only in the case relayCacheGet.SeenBlock < relayCacheGet.RequestedBlock
+			// by setting the err variable we will get a cache miss, and the relay will continue to the node.
+			err = utils.LavaFormatDebug("reply seen block is smaller than our expectations",
+				utils.LogAttr("cacheReply.SeenBlock", cacheReply.SeenBlock),
+				utils.LogAttr("seenBlock", relayCacheGet.SeenBlock),
+			)
+		}
 		// set seen block.
-		if seenBlock > cacheReply.SeenBlock {
-			cacheReply.SeenBlock = seenBlock
+		if relayCacheGet.SeenBlock > cacheReply.SeenBlock {
+			cacheReply.SeenBlock = relayCacheGet.SeenBlock
 		}
 	} else {
 		// set the error so cache miss will trigger.
@@ -197,16 +167,9 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 // formatHashKey formats the hash key by adding latestBlock and seenBlock information.
 // If seenBlock is greater than or equal to latestBlock, seenBlock is set to latestBlock for key calculation,
 // otherwise, it's set to 0.
-func (s *RelayerCacheServer) formatHashKey(hash []byte, parsedRequestedBlock int64, seenBlock int64) []byte {
-	// Handle seenBlock according to the specified rules
-	if seenBlock >= parsedRequestedBlock {
-		seenBlock = parsedRequestedBlock
-	} else {
-		seenBlock = 0
-	}
+func (s *RelayerCacheServer) formatHashKey(hash []byte, parsedRequestedBlock int64) []byte {
 	// Append the latestBlock and seenBlock directly to the hash using little-endian encoding
 	hash = binary.LittleEndian.AppendUint64(hash, uint64(parsedRequestedBlock))
-	hash = binary.LittleEndian.AppendUint64(hash, uint64(seenBlock))
 	return hash
 }
 
@@ -215,7 +178,7 @@ func (s *RelayerCacheServer) getRelayInner(relayCacheGet *pairingtypes.RelayCach
 	// 1. Request hash including all the information inside RelayPrivateData (Salt can cause issues if not dealt with on consumer side.)
 	// 2. chain-id (same requests for different chains should get unique results)
 	// 3. seen block to distinguish between seen entries and unseen entries.
-	cacheKey := s.formatHashKey(relayCacheGet.RequestHash, relayCacheGet.RequestedBlock, relayCacheGet.SeenBlock)
+	cacheKey := s.formatHashKey(relayCacheGet.RequestHash, relayCacheGet.RequestedBlock)
 	cacheVal, cache_source, found := s.findInAllCaches(relayCacheGet.Finalized, cacheKey)
 	// TODO: use the information when a new block is finalized
 	if !found {
@@ -290,7 +253,7 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 	if relayCacheSet.RequestedBlock < 0 {
 		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.RequestedBlock})
 	}
-	cacheKey := s.formatHashKey(relayCacheSet.RequestHash, relayCacheSet.RequestedBlock, relayCacheSet.SeenBlock)
+	cacheKey := s.formatHashKey(relayCacheSet.RequestHash, relayCacheSet.RequestedBlock)
 	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized, relayCacheSet.OptionalMetadata, relayCacheSet.SeenBlock)
 	utils.LavaFormatDebug("Got Cache Set", utils.Attribute{Key: "cacheKey", Value: string(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: fmt.Sprintf("%t", relayCacheSet.Finalized)},

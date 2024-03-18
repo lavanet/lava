@@ -102,6 +102,7 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 			return
 		}
 
+		_, averageBlockTime, _, _ := cf.chainParser.ChainBlockStats()
 		err = cf.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 			RequestHash:      hash,
 			BlockHash:        requestedBlockHash,
@@ -112,7 +113,7 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 			RequestedBlock:   relayData.RequestBlock,
 			SeenBlock:        relayData.SeenBlock,
 			SharedStateId:    "",
-			// TODO: add provider address
+			AverageBlockTime: int64(averageBlockTime),
 		})
 		if err != nil {
 			utils.LavaFormatWarning("chain fetcher error updating cache with new entry", err)
@@ -294,7 +295,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	return blockNum, nil
 }
 
-func (cf *ChainFetcher) constructRelayData(conectionType string, path string, data []byte, requestBlock int64, addon string, extensions []string) *pairingtypes.RelayPrivateData {
+func (cf *ChainFetcher) constructRelayData(conectionType string, path string, data []byte, requestBlock int64, addon string, extensions []string, latestBlock int64) *pairingtypes.RelayPrivateData {
 	relayData := &pairingtypes.RelayPrivateData{
 		ConnectionType: conectionType,
 		ApiUrl:         path,
@@ -304,6 +305,7 @@ func (cf *ChainFetcher) constructRelayData(conectionType string, path string, da
 		Metadata:       nil,
 		Addon:          addon,
 		Extensions:     extensions,
+		SeenBlock:      latestBlock,
 	}
 	return relayData
 }
@@ -354,7 +356,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	latestBlock := atomic.LoadInt64(&cf.latestBlock) // assuming FetchLatestBlockNum is called before this one it's always true
 	if latestBlock > 0 {
 		finalized := spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceToFinalization)
-		cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil), reply, []byte(res), finalized)
+		cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply, []byte(res), finalized)
 	}
 	return res, nil
 }
