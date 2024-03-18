@@ -7,17 +7,19 @@ import (
 	"sync/atomic"
 	"time"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/golang/protobuf/proto"
+	formatter "github.com/lavanet/lava/ecosystem/cache/format"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/protocol/performance"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -93,7 +95,26 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 		new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 		defer cancel()
 		// provider side doesn't use SharedStateId, so we default it to empty so it wont have effect.
-		err := cf.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: relayData, BlockHash: requestedBlockHash, ChainID: cf.endpoint.ChainID, Response: reply, Finalized: finalized, OptionalMetadata: nil, SharedStateId: ""})
+
+		hash, _, err := HashCacheRequest(relayData, cf.endpoint.ChainID)
+		if err != nil {
+			utils.LavaFormatError("populateCache Failed getting Hash for request", err)
+			return
+		}
+
+		_, averageBlockTime, _, _ := cf.chainParser.ChainBlockStats()
+		err = cf.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
+			RequestHash:      hash,
+			BlockHash:        requestedBlockHash,
+			ChainId:          cf.endpoint.ChainID,
+			Response:         reply,
+			Finalized:        finalized,
+			OptionalMetadata: nil,
+			RequestedBlock:   relayData.RequestBlock,
+			SeenBlock:        relayData.SeenBlock, // seen block is latestBlock so it will hit consumers requesting it.
+			SharedStateId:    "",
+			AverageBlockTime: int64(averageBlockTime),
+		})
 		if err != nil {
 			utils.LavaFormatWarning("chain fetcher error updating cache with new entry", err)
 		}
@@ -274,7 +295,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	return blockNum, nil
 }
 
-func (cf *ChainFetcher) constructRelayData(conectionType string, path string, data []byte, requestBlock int64, addon string, extensions []string) *pairingtypes.RelayPrivateData {
+func (cf *ChainFetcher) constructRelayData(conectionType string, path string, data []byte, requestBlock int64, addon string, extensions []string, latestBlock int64) *pairingtypes.RelayPrivateData {
 	relayData := &pairingtypes.RelayPrivateData{
 		ConnectionType: conectionType,
 		ApiUrl:         path,
@@ -284,6 +305,7 @@ func (cf *ChainFetcher) constructRelayData(conectionType string, path string, da
 		Metadata:       nil,
 		Addon:          addon,
 		Extensions:     extensions,
+		SeenBlock:      latestBlock,
 	}
 	return relayData
 }
@@ -334,7 +356,7 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	latestBlock := atomic.LoadInt64(&cf.latestBlock) // assuming FetchLatestBlockNum is called before this one it's always true
 	if latestBlock > 0 {
 		finalized := spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceToFinalization)
-		cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil), reply, []byte(res), finalized)
+		cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply, []byte(res), finalized)
 	}
 	return res, nil
 }
@@ -451,4 +473,43 @@ func NewVerificationsOnlyChainFetcher(ctx context.Context, chainRouter ChainRout
 	cfi := ChainFetcher{chainRouter: chainRouter, chainParser: chainParser, endpoint: endpoint}
 	cf := &DummyChainFetcher{ChainFetcher: &cfi}
 	return cf
+}
+
+// this method will calculate the request hash by changing the original object, and returning the data back to it after calculating the hash
+// couldn't be used in parallel
+func HashCacheRequest(relayData *pairingtypes.RelayPrivateData, chainId string) ([]byte, func([]byte) []byte, error) {
+	originalData := relayData.Data
+	originalSalt := relayData.Salt
+	originalRequestedBlock := relayData.RequestBlock
+	originalSeenBlock := relayData.SeenBlock
+	defer func() {
+		// return all information back to the object on defer (in any case)
+		relayData.Data = originalData
+		relayData.Salt = originalSalt
+		relayData.RequestBlock = originalRequestedBlock
+		relayData.SeenBlock = originalSeenBlock
+	}()
+
+	// we need to remove some data from the request so the cache will hit properly.
+	inputFormatter, outputFormatter := formatter.FormatterForRelayRequestAndResponse(relayData.ApiInterface)
+	relayData.Data = inputFormatter(relayData.Data) // remove id from request.
+	relayData.Salt = nil                            // remove salt
+	relayData.SeenBlock = 0                         // remove seen block
+	// we remove the discrepancy of requested block from the hash, and add it on the cache side instead
+	// this is due to the fact that we don't know the latest seen block at this moment, as on shared state
+	// only the cache has this information. we make sure the hashing at this stage does not include the requested block.
+	// It does include it on the cache key side.
+	relayData.RequestBlock = 0
+
+	cashHash := &pairingtypes.CacheHash{
+		Request: relayData,
+		ChainId: chainId,
+	}
+	cashHashBytes, err := proto.Marshal(cashHash)
+	if err != nil {
+		return nil, outputFormatter, utils.LavaFormatError("Failed marshalling cash hash in HashCacheRequest", err)
+	}
+
+	// return the value
+	return sigs.HashMsg(cashHashBytes), outputFormatter, nil
 }
