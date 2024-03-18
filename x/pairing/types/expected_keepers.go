@@ -1,6 +1,8 @@
 package types
 
 import (
+	"time"
+
 	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -124,4 +126,7 @@ type StakingKeeper interface {
 	GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	BondDenom(ctx sdk.Context) string
+	GetUnbondingDelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) (unbondingDelegations []stakingtypes.UnbondingDelegation)
+	SlashUnbondingDelegation(ctx sdk.Context, unbondingDelegation stakingtypes.UnbondingDelegation, infractionHeight int64, slashFactor sdk.Dec) (totalSlashAmount math.Int)
+	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (time.Time, error)
 }

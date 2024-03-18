@@ -158,7 +158,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// fail the TX ***
 
 		totalCUInEpochForUserProvider := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
-
+		ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "")
 		if badgeFound {
 			k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
 		}

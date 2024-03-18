@@ -13,8 +13,8 @@ func init() {
 	v1beta1.RegisterProposalType(ProposalUnstake)
 }
 
-func NewUnstakeProposal(title, description string, providers []ProviderUnstakeInfo) *UnstakeProposal {
-	return &UnstakeProposal{title, description, providers}
+func NewUnstakeProposal(title, description string, providers []ProviderUnstakeInfo, delegatorsSlashing []DelegatorSlashing) *UnstakeProposal {
+	return &UnstakeProposal{title, description, providers, delegatorsSlashing}
 }
 
 // GetTitle returns the title of a proposal.
