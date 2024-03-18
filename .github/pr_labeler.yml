@@ -8,6 +8,12 @@
   - cmd/common/**/*
 "C:protocol":
   - protocol/**/*
+"Team:Consensus":
+  - x/**/*  
+  - app/**/*
+"Team:Protocol":
+  - protocol/**/*  
+  - ecosystem/**/*  
 "C:x/conflict":
   - x/conflict/**/*
 "C:x/downtime":
