@@ -111,7 +111,7 @@ func (cf *ChainFetcher) populateCache(relayData *pairingtypes.RelayPrivateData, 
 			Finalized:        finalized,
 			OptionalMetadata: nil,
 			RequestedBlock:   relayData.RequestBlock,
-			SeenBlock:        relayData.SeenBlock,
+			SeenBlock:        relayData.SeenBlock, // seen block is latestBlock so it will hit consumers requesting it.
 			SharedStateId:    "",
 			AverageBlockTime: int64(averageBlockTime),
 		})
