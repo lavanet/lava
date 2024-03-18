@@ -79,24 +79,6 @@ func TestValidateBlockHeights(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	t.Run("different epoch", func(t *testing.T) {
-		ts, keeper, ctx := initTester()
-		ts.setupForConflict(1) // stake provider
-		providerAcc, _ := ts.GetAccount(common.PROVIDER, 0)
-
-		latestBlockHeight := int64(6)
-		finalizationBlockHashes := map[int64]string{}
-
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart())+1, latestBlockHeight, finalizationBlockHashes, ts.spec)
-		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
-		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
-
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
-		require.Error(t, err)
-	})
-
 	t.Run("different spec", func(t *testing.T) {
 		ts, keeper, ctx := initTester()
 		ts.setupForConflict(1) // stake provider

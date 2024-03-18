@@ -225,27 +225,30 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Mismatching spec id %s, %s", conflictData.RelayReply0.SpecId, conflictData.RelayReply1.SpecId)
 	}
 
-	if conflictData.RelayReply0.Epoch != conflictData.RelayReply1.Epoch {
-		return conflictData.RelayReply0.Epoch, nil, fmt.Errorf("ValidateSameProviderConflict: Mismatching epochs %d, %d", conflictData.RelayReply0.Epoch, conflictData.RelayReply1.Epoch)
-	}
-
 	specId := conflictData.RelayReply0.SpecId
 	providerAddress := providerAddress0
-	epoch := uint64(conflictData.RelayReply0.Epoch)
 
-	// Validate pairing
-	project, err := k.pairingKeeper.GetProjectData(ctx, clientAddr, specId, epoch)
-	if err != nil {
-		return 0, nil, err
+	validatePairing := func(epoch uint64) bool {
+		// Validate pairing for provider 0
+		project, err := k.pairingKeeper.GetProjectData(ctx, clientAddr, specId, epoch)
+		if err != nil {
+			return false
+		}
+
+		isValidPairing, _, _, err := k.pairingKeeper.ValidatePairingForClient(ctx, specId, providerAddress, epoch, project)
+		if err != nil {
+			return false
+		}
+
+		return isValidPairing
 	}
 
-	isValidPairing, _, _, err := k.pairingKeeper.ValidatePairingForClient(ctx, conflictData.RelayReply0.SpecId, providerAddress, epoch, project)
-	if err != nil {
-		return 0, nil, err
+	if !validatePairing(uint64(conflictData.RelayReply0.Epoch)) {
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Invalid pairing between client %s and provider %s for epoch %d", clientAddr, providerAddress, conflictData.RelayReply0.Epoch)
 	}
 
-	if !isValidPairing {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Invalid pairing between client %s and provider %s", clientAddr, providerAddress)
+	if !validatePairing(uint64(conflictData.RelayReply1.Epoch)) {
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Invalid pairing between client %s and provider %s for epoch %d", clientAddr, providerAddress, conflictData.RelayReply1.Epoch)
 	}
 
 	// Validate block nums are ordered && Finalization distance is right
