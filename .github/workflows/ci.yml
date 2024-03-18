@@ -10,10 +10,11 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         binary: [lavad, lavap, lavavisor]
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
