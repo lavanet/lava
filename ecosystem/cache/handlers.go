@@ -165,9 +165,7 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	return cacheReply, err
 }
 
-// formatHashKey formats the hash key by adding latestBlock and seenBlock information.
-// If seenBlock is greater than or equal to latestBlock, seenBlock is set to latestBlock for key calculation,
-// otherwise, it's set to 0.
+// formatHashKey formats the hash key by adding latestBlock information.
 func (s *RelayerCacheServer) formatHashKey(hash []byte, parsedRequestedBlock int64) []byte {
 	// Append the latestBlock and seenBlock directly to the hash using little-endian encoding
 	hash = binary.LittleEndian.AppendUint64(hash, uint64(parsedRequestedBlock))
@@ -254,13 +252,17 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 	if relayCacheSet.RequestedBlock < 0 {
 		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.RequestedBlock})
 	}
+	// Getting the max block number between the seen block on the consumer side vs the latest block on the response of the provider
+	latestKnownBlock := int64(math.Max(float64(relayCacheSet.Response.LatestBlock), float64(relayCacheSet.SeenBlock)))
+
 	cacheKey := s.formatHashKey(relayCacheSet.RequestHash, relayCacheSet.RequestedBlock)
-	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized, relayCacheSet.OptionalMetadata, relayCacheSet.SeenBlock)
+	cacheValue := formatCacheValue(relayCacheSet.Response, relayCacheSet.BlockHash, relayCacheSet.Finalized, relayCacheSet.OptionalMetadata, latestKnownBlock)
 	utils.LavaFormatDebug("Got Cache Set", utils.Attribute{Key: "cacheKey", Value: string(cacheKey)},
 		utils.Attribute{Key: "finalized", Value: fmt.Sprintf("%t", relayCacheSet.Finalized)},
 		utils.Attribute{Key: "requested_block", Value: relayCacheSet.RequestedBlock},
 		utils.Attribute{Key: "response_data", Value: parser.CapStringLen(string(relayCacheSet.Response.Data))},
-		utils.Attribute{Key: "requestHash", Value: string(relayCacheSet.BlockHash)})
+		utils.Attribute{Key: "requestHash", Value: string(relayCacheSet.BlockHash)},
+		utils.Attribute{Key: "latestKnownBlock", Value: string(relayCacheSet.BlockHash)})
 	// finalized entries can stay there
 	if relayCacheSet.Finalized {
 		cache := s.CacheServer.finalizedCache
@@ -270,8 +272,6 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.getExpirationForChain(time.Duration(relayCacheSet.AverageBlockTime), relayCacheSet.BlockHash))
 	}
 	// Setting the seen block for shared state.
-	// Getting the max block number between the seen block on the consumer side vs the latest block on the response of the provider
-	latestKnownBlock := int64(math.Max(float64(relayCacheSet.Response.LatestBlock), float64(relayCacheSet.SeenBlock)))
 	s.setSeenBlockOnSharedStateMode(relayCacheSet.ChainId, relayCacheSet.SharedStateId, latestKnownBlock)
 	s.setLatestBlock(latestBlockKey(relayCacheSet.ChainId, ""), latestKnownBlock)
 	return &emptypb.Empty{}, nil
