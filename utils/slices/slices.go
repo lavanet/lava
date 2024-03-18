@@ -1,6 +1,8 @@
 package slices
 
 import (
+	"math"
+
 	"golang.org/x/exp/constraints"
 	"golang.org/x/exp/slices"
 )
@@ -77,7 +79,7 @@ func Median[T Number](slice []T) T {
 	if data_len == 0 {
 		return 0
 	} else if data_len%2 == 0 {
-		return ((slice[data_len/2-1] + slice[data_len/2]) / T(2))
+		return T(math.Floor((float64(slice[data_len/2-1]) + float64(slice[data_len/2])) / 2))
 	} else {
 		return slice[(data_len-1)/2]
 	}
