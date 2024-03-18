@@ -29,7 +29,7 @@ linters:
     - stylecheck
     - typecheck
     - unconvert
-    #- unused we have a lot of unused code that we dont want to delete
+    #- unused we have a lot of unused code that we don't want to delete
     - forcetypeassert
     - gofmt
     - goimports
@@ -56,6 +56,9 @@ issues:
     - text: "ST1016:"
       linters:
         - stylecheck
+    - text: "SA1019:.*\"github.com/golang/protobuf/proto\" is deprecated.*" # proto is deprecated, but some places couldn't be removed
+      linters:
+        - staticcheck
     - path: "migrations"
       text: "SA1019:"
       linters:
@@ -72,6 +75,5 @@ linters-settings:
     suggest-new: true
   nolintlint:
     allow-unused: false
-    allow-leading-space: true
     require-explanation: false
     require-specific: false

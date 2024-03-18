@@ -64,7 +64,7 @@ func createGRPCServerWithRegisteredProto(t *testing.T) *grpc.Server {
 	return s
 }
 
-func createRPCServer(t *testing.T) net.Listener {
+func createRPCServer() net.Listener {
 	timeserver := new(TimeServer)
 	// Register the timeserver object upon which the GiveServerTime
 	// function will be called from the RPC server (from the client)
@@ -85,7 +85,7 @@ func createRPCServer(t *testing.T) net.Listener {
 }
 
 func TestConnector(t *testing.T) {
-	listener := createRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
+	listener := createRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer listener.Close()
 	ctx := context.Background()
 	conn, err := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
