@@ -185,6 +185,8 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_33_0,
 	upgrades.Upgrade_0_34_0,
 	upgrades.Upgrade_0_35_0,
+	upgrades.Upgrade_1_0_0,
+	upgrades.Upgrade_1_0_1,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -270,6 +272,7 @@ var (
 		string(rewardsmoduletypes.ProviderRewardsDistributionPool):       {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ProvidersRewardsAllocationPool):        {authtypes.Minter, authtypes.Staking},
 		dualstakingmoduletypes.ModuleName:                                {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.IprpcPoolName):                         nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -1049,7 +1052,8 @@ func (app *LavaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register new tendermint queries routes from grpc-gateway.
 	tmservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
-
+	// Register node gRPC service for grpc-gateway.
+	node.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 	// Register legacy and grpc-gateway routes for all modules.
 	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 

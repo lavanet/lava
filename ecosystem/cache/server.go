@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/lavanet/lava/utils/slices"
+
 	"github.com/dgraph-io/ristretto"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/utils"
@@ -20,13 +22,12 @@ import (
 )
 
 const (
-	ExpirationFlagName                         = "expiration"
-	ExpirationNonFinalizedFlagName             = "expiration-non-finalized"
-	FlagCacheSizeName                          = "max-items"
-	FlagUseMethodInApiSpecificCacheMetricsName = "use-method-in-cache-metrics"
-	DefaultExpirationForNonFinalized           = 500 * time.Millisecond
-	DefaultExpirationTimeFinalized             = time.Hour
-	CacheNumCounters                           = 100000000 // expect 10M items
+	ExpirationFlagName               = "expiration"
+	ExpirationNonFinalizedFlagName   = "expiration-non-finalized"
+	FlagCacheSizeName                = "max-items"
+	DefaultExpirationForNonFinalized = 500 * time.Millisecond
+	DefaultExpirationTimeFinalized   = time.Hour
+	CacheNumCounters                 = 100000000 // expect 10M items
 )
 
 type CacheServer struct {
@@ -38,7 +39,7 @@ type CacheServer struct {
 	CacheMaxCost           int64
 }
 
-func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, expirationNonFinalized time.Duration, metricsAddr string, useMethodInApiSpecificMetric bool) {
+func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, expirationNonFinalized time.Duration, metricsAddr string) {
 	cs.ExpirationFinalized = expiration
 	cs.ExpirationNonFinalized = expirationNonFinalized
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
@@ -54,7 +55,7 @@ func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, 
 	cs.finalizedCache = cache
 
 	// initialize prometheus
-	cs.CacheMetrics = NewCacheMetricsServer(metricsAddr, useMethodInApiSpecificMetric)
+	cs.CacheMetrics = NewCacheMetricsServer(metricsAddr)
 }
 
 func (cs *CacheServer) Serve(ctx context.Context,
@@ -112,9 +113,9 @@ func (cs *CacheServer) Serve(ctx context.Context,
 	}
 }
 
-func (cs *CacheServer) ExpirationForChain(chainID string) time.Duration {
-	// TODO: query spec from lava for average block time and put here duration max(blockTime/2, 200ms)
-	return cs.ExpirationNonFinalized
+func (cs *CacheServer) ExpirationForChain(averageBlockTimeForChain time.Duration) time.Duration {
+	eighthBlock := averageBlockTimeForChain / 8
+	return slices.Max([]time.Duration{eighthBlock, cs.ExpirationNonFinalized}) // return the maximum TTL between an eighth block and expiration
 }
 
 func Server(
@@ -139,12 +140,7 @@ func Server(
 	}
 	cs := CacheServer{CacheMaxCost: cacheMaxCost}
 
-	useMethodInApiSpecificMetric, err := flags.GetBool(FlagUseMethodInApiSpecificCacheMetricsName)
-	if err != nil {
-		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: FlagUseMethodInApiSpecificCacheMetricsName})
-	}
-
-	cs.InitCache(ctx, expiration, expirationNonFinalized, metricsAddr, useMethodInApiSpecificMetric)
+	cs.InitCache(ctx, expiration, expirationNonFinalized, metricsAddr)
 	// TODO: have a state tracker
 	cs.Serve(ctx, listenAddr)
 }

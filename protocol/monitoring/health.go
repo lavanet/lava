@@ -533,9 +533,6 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 		return err
 	}
 	lavaVersion := param.GetParams().Version
-	if err != nil {
-		return err
-	}
 	targetVersion := lvutil.ParseToSemanticVersion(lavaVersion.ProviderTarget)
 	var wg sync.WaitGroup
 	wg.Add(len(providerEntries))

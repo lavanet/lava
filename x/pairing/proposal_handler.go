@@ -29,6 +29,7 @@ func NewPairingProposalsHandler(k keeper.Keeper) v1beta1.Handler {
 func handleUnstakeProposal(ctx sdk.Context, k keeper.Keeper, p *types.UnstakeProposal) error {
 	var providersNotStaked []string
 	var providersFailedUnstaking []string
+	var delegatorsFailedSlashing []string
 	var providersUnstaked []string
 	details := map[string]string{}
 
@@ -66,9 +67,16 @@ func handleUnstakeProposal(ctx sdk.Context, k keeper.Keeper, p *types.UnstakePro
 		}
 	}
 
+	for _, delegatorSlashing := range p.DelegatorsSlashing {
+		err := k.SlashDelegator(ctx, delegatorSlashing)
+		if err != nil {
+			delegatorsFailedSlashing = append(delegatorsFailedSlashing, strings.Join([]string{delegatorSlashing.Delegator, err.Error()}, ","))
+		}
+	}
 	details["providers_unstaked"] = strings.Join(providersUnstaked, ";")
 	details["providers_not_staked_from_before"] = strings.Join(providersNotStaked, ";")
 	details["providers_failed_unstaking"] = strings.Join(providersFailedUnstaking, ";")
+	details["delegators_failed_slaghing"] = strings.Join(delegatorsFailedSlashing, ";")
 
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeProposalEventName, details, "Unstake gov proposal performed")
 

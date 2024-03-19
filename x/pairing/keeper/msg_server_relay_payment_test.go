@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -868,5 +869,149 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 		badgeUsedCuMapEntry, found := ts.Keepers.Pairing.GetBadgeUsedCu(ts.Ctx, badgeUsedCuMapKey)
 		require.True(t, found)
 		require.Equal(t, cuSum, badgeUsedCuMapEntry.UsedCu)
+	}
+}
+
+func TestIntOverflow(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+	consumerAcct, consumerAddr := ts.GetAccount(common.CONSUMER, 0)
+	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+
+	spec2 := ts.spec
+	spec2.Index = "mock2"
+	ts.AddSpec("mock2", spec2)
+
+	err := ts.StakeProvider(provider1Addr, spec2, testStake)
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch()
+
+	// The TotalCuLimit needs to be higher than the CU used
+	// The EpochCuLimit needs to be smaller than the CU used
+	whalePolicy := planstypes.Policy{
+		TotalCuLimit:       400,
+		EpochCuLimit:       200,
+		MaxProvidersToPair: 3,
+		GeolocationProfile: 1,
+	}
+
+	whalePlan := planstypes.Plan{
+		Index:                    "whale",
+		Description:              "whale",
+		Type:                     "rpc",
+		Block:                    ts.BlockHeight(),
+		Price:                    sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(1000)),
+		AllowOveruse:             true,
+		OveruseRate:              10,
+		AnnualDiscountPercentage: 20,
+		PlanPolicy:               whalePolicy,
+		ProjectsLimit:            10,
+	}
+
+	whalePlan2 := planstypes.Plan{
+		Index:                    "whale2",
+		Description:              "whale2",
+		Type:                     "rpc",
+		Block:                    ts.BlockHeight(),
+		Price:                    sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(1001)),
+		AllowOveruse:             true,
+		OveruseRate:              10,
+		AnnualDiscountPercentage: 20,
+		PlanPolicy:               whalePolicy,
+		ProjectsLimit:            10,
+	}
+
+	whalePlan = ts.AddPlan("whale", whalePlan).Plan("whale")
+	whalePlan2 = ts.AddPlan("whale2", whalePlan2).Plan("whale2")
+	ts.AdvanceBlock()
+
+	// Buy the whale plan
+	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, whalePlan.Index, 1, false, false)
+	require.NoError(t, err)
+	ts.AdvanceEpoch()
+
+	relaySessionCus := []struct {
+		Cu uint64
+	}{
+		{Cu: 60},
+		{Cu: 70},
+		{Cu: 60},
+		{Cu: 60},
+		{Cu: 60},
+		{Cu: 60},
+		{Cu: 10},
+	}
+
+	for i, relaySessionCu := range relaySessionCus {
+		relaySession := ts.newRelaySession(provider1Addr, uint64(i), relaySessionCu.Cu, ts.BlockHeight(), 0)
+		if i != 0 {
+			relaySession.SpecId = spec2.Index
+		}
+		sig, err := sigs.Sign(consumerAcct.SK, *relaySession)
+		relaySession.Sig = sig
+		require.NoError(t, err)
+
+		_, err = ts.TxPairingRelayPayment(provider1Addr, relaySession)
+		require.NoError(t, err)
+	}
+
+	_, err = ts.TxSubscriptionBuy(consumerAddr, consumerAddr, whalePlan2.Index, 1, false, false)
+	require.NoError(t, err)
+	for i := 0; i < 20; i++ {
+		ts.AdvanceEpoch()
+	}
+}
+
+func TestPairingCaching(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(3, 3, 0) // 3 provider, 3 client, default providers-to-pair
+
+	ts.AdvanceEpoch()
+
+	relayNum := uint64(0)
+	totalCU := uint64(0)
+	// trigger relay payment with cache
+	for i := 0; i < 3; i++ {
+		relays := []*types.RelaySession{}
+		_, provider1Addr := ts.GetAccount(common.PROVIDER, i)
+		for i := 0; i < 3; i++ {
+			consumerAcct, _ := ts.GetAccount(common.CONSUMER, i)
+			totalCU = 0
+			for i := 0; i < 50; i++ {
+				totalCU += uint64(i)
+				relaySession := ts.newRelaySession(provider1Addr, relayNum, uint64(i), ts.BlockHeight(), 0)
+				sig, err := sigs.Sign(consumerAcct.SK, *relaySession)
+				relaySession.Sig = sig
+				require.NoError(t, err)
+				relays = append(relays, relaySession)
+				relayNum++
+			}
+		}
+		_, err := ts.TxPairingRelayPayment(provider1Addr, relays...)
+		require.NoError(t, err)
+	}
+
+	epochPayment, found, _ := ts.Keepers.Pairing.GetEpochPaymentsFromBlock(ts.Ctx, ts.EpochStart())
+	require.True(t, found)
+	require.Len(t, epochPayment.ProviderPaymentStorageKeys, 3)
+
+	UniquePayments := ts.Keepers.Pairing.GetAllUniquePaymentStorageClientProvider(ts.Ctx)
+	require.Len(t, UniquePayments, 3*3*50)
+
+	storages := ts.Keepers.Pairing.GetAllProviderPaymentStorage(ts.Ctx)
+	for _, storage := range storages {
+		require.Len(t, storage.UniquePaymentStorageClientProviderKeys, 3*50)
+	}
+
+	for i := 0; i < 3; i++ {
+		consumerAcct, _ := ts.GetAccount(common.CONSUMER, i)
+		project, err := ts.GetProjectForDeveloper(consumerAcct.Addr.String(), ts.BlockHeight())
+		require.NoError(t, err)
+		require.Equal(t, totalCU*3, project.UsedCu)
+
+		sub, err := ts.QuerySubscriptionCurrent(consumerAcct.Addr.String())
+		require.NoError(t, err)
+		require.Equal(t, totalCU*3, sub.Sub.MonthCuTotal-sub.Sub.MonthCuLeft)
 	}
 }

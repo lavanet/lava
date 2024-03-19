@@ -360,14 +360,14 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		serveExecutor = func() error { return httpServer.Serve(lis) }
 	}
 
-	fmt.Printf(fmt.Sprintf(`
+	fmt.Printf(`
  ┌───────────────────────────────────────────────────┐ 
  │               Lava's Grpc Server                  │ 
  │               %s│ 
  │               Lavap Version: %s│ 
  └───────────────────────────────────────────────────┘
 
-`, truncateAndPadString(apil.endpoint.NetworkAddress, 36), truncateAndPadString(protocoltypes.DefaultVersion.ConsumerTarget, 21)))
+`, truncateAndPadString(apil.endpoint.NetworkAddress, 36), truncateAndPadString(protocoltypes.DefaultVersion.ConsumerTarget, 21))
 	if err := serveExecutor(); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
 	}
@@ -395,10 +395,10 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	if err != nil {
 		return nil, err
 	}
-	return newGrpcChainProxy(ctx, nodeUrl.Url, averageBlockTime, parser, conn, rpcProviderEndpoint)
+	return newGrpcChainProxy(ctx, averageBlockTime, parser, conn, rpcProviderEndpoint)
 }
 
-func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface, rpcProviderEndpoint lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+func newGrpcChainProxy(ctx context.Context, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface, rpcProviderEndpoint lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
 		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
 		descriptorsCache: &grpcDescriptorCache{},

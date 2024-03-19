@@ -8,9 +8,9 @@ import (
 )
 
 // TotalPoolTokens gets the total tokens supply from a pool
-func (k Keeper) TotalPoolTokens(ctx sdk.Context, pool types.Pool, denom string) math.Int {
+func (k Keeper) TotalPoolTokens(ctx sdk.Context, pool types.Pool) sdk.Coins {
 	poolAddr := k.accountKeeper.GetModuleAddress(string(pool))
-	return k.bankKeeper.GetBalance(ctx, poolAddr, denom).Amount
+	return k.bankKeeper.GetAllBalances(ctx, poolAddr)
 }
 
 // BurnPoolTokens removes coins from a pool module account

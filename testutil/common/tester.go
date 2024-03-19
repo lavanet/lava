@@ -307,6 +307,10 @@ func (ts *Tester) GetBalance(accAddr sdk.AccAddress) int64 {
 	return ts.Keepers.BankKeeper.GetBalance(ts.Ctx, accAddr, denom).Amount.Int64()
 }
 
+func (ts *Tester) GetBalances(accAddr sdk.AccAddress) sdk.Coins {
+	return ts.Keepers.BankKeeper.GetAllBalances(ts.Ctx, accAddr)
+}
+
 func (ts *Tester) FindPlan(index string, block uint64) (planstypes.Plan, bool) {
 	return ts.Keepers.Plans.FindPlan(ts.Ctx, index, block)
 }
@@ -567,6 +571,55 @@ func (ts *Tester) TxPairingStakeProvider(
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
 
+// TxPairingStakeProvider: implement 'tx pairing stake-provider'
+func (ts *Tester) TxPairingStakeProviderFull(
+	addr string,
+	chainID string,
+	amount sdk.Coin,
+	endpoints []epochstoragetypes.Endpoint,
+	geoloc int32,
+	moniker string,
+	commission uint64,
+	delegateLimit uint64,
+) (*pairingtypes.MsgStakeProviderResponse, error) {
+	val, _ := ts.GetAccount(VALIDATOR, 0)
+	// if geoloc left zero, use default 1
+	if geoloc == 0 {
+		geoloc = 1
+	}
+
+	// if necessary, generate mock endpoints
+	if endpoints == nil {
+		apiInterfaces := []string{}
+		for _, apiCollection := range ts.specs[chainID].ApiCollections {
+			apiInterfaces = append(apiInterfaces, apiCollection.CollectionData.ApiInterface)
+		}
+		geolocations := planstypes.GetGeolocationsFromUint(geoloc)
+
+		for _, geo := range geolocations {
+			endpoint := epochstoragetypes.Endpoint{
+				IPPORT:        "123",
+				ApiInterfaces: apiInterfaces,
+				Geolocation:   int32(geo),
+			}
+			endpoints = append(endpoints, endpoint)
+		}
+	}
+
+	msg := &pairingtypes.MsgStakeProvider{
+		Creator:            addr,
+		Validator:          sdk.ValAddress(val.Addr).String(),
+		ChainID:            chainID,
+		Amount:             amount,
+		Geolocation:        geoloc,
+		Endpoints:          endpoints,
+		Moniker:            moniker,
+		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.NewIntFromUint64(delegateLimit)),
+		DelegateCommission: commission,
+	}
+	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
+}
+
 // TxPairingUnstakeProvider: implement 'tx pairing unstake-provider'
 func (ts *Tester) TxPairingUnstakeProvider(
 	addr string,
@@ -610,9 +663,14 @@ func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
 }
 
-func (ts *Tester) TxRewardsSetIprpcDataProposal(ctx sdk.Context, authority string, cost sdk.Coin, subs []string) (*rewardstypes.MsgSetIprpcDataResponse, error) {
+func (ts *Tester) TxRewardsSetIprpcDataProposal(authority string, cost sdk.Coin, subs []string) (*rewardstypes.MsgSetIprpcDataResponse, error) {
 	msg := rewardstypes.NewMsgSetIprpcData(authority, cost, subs)
-	return ts.Servers.RewardsServer.SetIprpcData(sdk.WrapSDKContext(ctx), msg)
+	return ts.Servers.RewardsServer.SetIprpcData(ts.GoCtx, msg)
+}
+
+func (ts *Tester) TxRewardsFundIprpc(creator string, spec string, duration uint64, fund sdk.Coins) (*rewardstypes.MsgFundIprpcResponse, error) {
+	msg := rewardstypes.NewMsgFundIprpc(creator, spec, duration, fund)
+	return ts.Servers.RewardsServer.FundIprpc(ts.GoCtx, msg)
 }
 
 // TxCreateValidator: implement 'tx staking createvalidator' and bond its tokens
@@ -859,9 +917,24 @@ func (ts *Tester) QueryRewardsBlockReward() (*rewardstypes.QueryBlockRewardRespo
 	return ts.Keepers.Rewards.BlockReward(ts.GoCtx, msg)
 }
 
-func (ts *Tester) QueryShowIprpcData() (*rewardstypes.QueryShowIprpcDataResponse, error) {
+// QueryRewardsShowIprpcData implements 'q rewards show-iprpc-data'
+func (ts *Tester) QueryRewardsShowIprpcData() (*rewardstypes.QueryShowIprpcDataResponse, error) {
 	msg := &rewardstypes.QueryShowIprpcDataRequest{}
 	return ts.Keepers.Rewards.ShowIprpcData(ts.GoCtx, msg)
+}
+
+func (ts *Tester) QueryRewardsIprpcProviderRewardEstimation(provider string) (*rewardstypes.QueryIprpcProviderRewardEstimationResponse, error) {
+	msg := &rewardstypes.QueryIprpcProviderRewardEstimationRequest{
+		Provider: provider,
+	}
+	return ts.Keepers.Rewards.IprpcProviderRewardEstimation(ts.GoCtx, msg)
+}
+
+func (ts *Tester) QueryRewardsIprpcSpecReward(spec string) (*rewardstypes.QueryIprpcSpecRewardResponse, error) {
+	msg := &rewardstypes.QueryIprpcSpecRewardRequest{
+		Spec: spec,
+	}
+	return ts.Keepers.Rewards.IprpcSpecReward(ts.GoCtx, msg)
 }
 
 // block/epoch helpers
@@ -956,7 +1029,7 @@ func (ts *Tester) AdvanceBlock(delta ...time.Duration) *Tester {
 
 func (ts *Tester) AdvanceEpochs(count uint64, delta ...time.Duration) *Tester {
 	for i := 0; i < int(count); i++ {
-		ts.GoCtx = testkeeper.AdvanceEpoch(ts.GoCtx, ts.Keepers)
+		ts.GoCtx = testkeeper.AdvanceEpoch(ts.GoCtx, ts.Keepers, delta...)
 	}
 	ts.Ctx = sdk.UnwrapSDKContext(ts.GoCtx)
 	return ts

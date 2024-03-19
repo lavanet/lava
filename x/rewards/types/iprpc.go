@@ -6,4 +6,10 @@ const (
 
 	// MinIprpcCostPrefix is the prefix to retrieve all MinIprpcCost
 	MinIprpcCostPrefix = "MinIprpcCost/"
+
+	// IprpcRewardPrefix is the prefix to retrieve all IprpcReward
+	IprpcRewardPrefix = "IprpcReward/"
+
+	// IprpcRewardsCurrentPrefix is the prefix to retrieve all IprpcRewardsCurrent
+	IprpcRewardsCurrentPrefix = "IprpcRewardsCurrent/"
 )

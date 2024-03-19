@@ -1553,7 +1553,7 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 
 	// Verify that provider got rewarded for both subscriptions
 	expectedPrice := freePlan.Price.AddAmount(premiumPlan.Price.Amount).AddAmount(premiumPlusPlan.Price.Amount)
-	require.Equal(t, expectedPrice, reward.Amount)
+	require.Equal(t, sdk.NewCoins(expectedPrice), reward.Amount)
 }
 
 // ### Advance Purchase Tests ###
@@ -2508,6 +2508,7 @@ func TestAllowedBuyersAutoRenewal(t *testing.T) {
 
 	// advance month to trigger the subscription's auto-renewal
 	ts.AdvanceMonths(1).AdvanceEpoch()
+	ts.AdvanceEpoch()
 
 	// the auto-renewal should have failed, so we're not supposed to find a subscription for consumer2
 	_, found := ts.getSubscription(consumer2)
@@ -2577,4 +2578,74 @@ func TestAllowedBuyersUpgradeSubscription(t *testing.T) {
 	require.NoError(t, err)
 	_, err = ts.TxSubscriptionBuy(consumer2, consumer2, premiumPlan.Index, 1, false, false)
 	require.NoError(t, err)
+}
+
+// TestUpgradedSubscriptionCredit checks the following scenario:
+// a user buys a sub for plan A (which opens a CU tracker timer). Before the timer ends,
+// the user upgrades the sub to plan B. Then, the timer ends and invokes the reward function
+// The credit of the new upgraded subscription should not be subtracted (because the timer opened
+// for the old plan)
+func TestUpgradedSubscriptionCredit(t *testing.T) {
+	ts := newTester(t)
+	ts.SetupAccounts(1, 0, 0)
+
+	subAcc, sub := ts.Account("sub1")
+	_, err := ts.TxSubscriptionBuy(sub, sub, "free", 1, false, false)
+	require.NoError(t, err)
+
+	spec := ts.AddSpec("testSpec", common.CreateMockSpec()).Spec("testSpec")
+
+	// Setup validator and provider
+	testBalance := int64(1000000)
+	testStake := int64(100000)
+	validationAcc, _ := ts.AddAccount(common.VALIDATOR, 0, testBalance)
+	ts.TxCreateValidator(validationAcc, math.NewInt(testBalance))
+	_, providerAddr := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	err = ts.StakeProviderExtra(providerAddr, spec, testStake, nil, 0, "provider")
+	require.NoError(t, err)
+	ts.AdvanceEpoch(10 * time.Minute) // Trigger changes
+
+	// Send relay
+	sessionId := uint64(1)
+	relayNum := uint64(1)
+	sendRelayPayment := func() {
+		relaySession := &pairingtypes.RelaySession{
+			Provider:    providerAddr,
+			ContentHash: []byte(spec.ApiCollections[0].Apis[0].Name),
+			SessionId:   sessionId,
+			SpecId:      spec.Index,
+			CuSum:       1000,
+			Epoch:       int64(ts.EpochStart(ts.BlockHeight())),
+			RelayNum:    relayNum,
+		}
+
+		sig, err := sigs.Sign(subAcc.SK, *relaySession)
+		require.Nil(ts.T, err)
+		relaySession.Sig = sig
+
+		_, err = ts.TxPairingRelayPayment(providerAddr, relaySession)
+		require.NoError(t, err)
+
+		sessionId++
+		relayNum++
+	}
+
+	// Send relay under the free subscription
+	sendRelayPayment()
+
+	// upgrade to the premium plan
+	_, err = ts.TxSubscriptionBuy(sub, sub, "premium", 2, false, false)
+	require.NoError(t, err)
+
+	// advance month+blocksToSave+1 to trigger monthly payment
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	// check upgraded sub credit, should be the premium plan's price * duration(=2) (without subtraction of the previous
+	// plan credit)
+	premiumPlanPrice := ts.Plan("premium").Price
+	res, err := ts.QuerySubscriptionCurrent(sub)
+	require.NoError(t, err)
+	require.True(t, premiumPlanPrice.Amount.MulRaw(2).Equal(res.Sub.Credit.Amount))
 }

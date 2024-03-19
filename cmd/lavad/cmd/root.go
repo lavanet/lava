@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
@@ -35,6 +34,8 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	cmdcommon "github.com/lavanet/lava/cmd/common"
+	"github.com/lavanet/lava/utils"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -79,6 +80,8 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 				return err
 			}
 
+			setLogLevelFieldNameFromFlag(cmd)
+
 			customAppTemplate, customAppConfig := initAppConfig()
 			return server.InterceptConfigsPreRunHandler(
 				cmd, customAppTemplate, customAppConfig, tmcfg.DefaultConfig(),
@@ -87,11 +90,7 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 	}
 
 	initRootCmd(rootCmd, encodingConfig)
-	overwriteFlagDefaults(rootCmd, map[string]string{
-		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
-		flags.FlagKeyringBackend: "test",
-	})
-
+	addLogFlagsToSubCommands(rootCmd)
 	return rootCmd, encodingConfig
 }
 
@@ -128,6 +127,8 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 				return err
 			}
 
+			setLogLevelFieldNameFromFlag(cmd)
+
 			customAppTemplate, customAppConfig := initAppConfig()
 			customConfig := initTendermintConfig()
 			return server.InterceptConfigsPreRunHandler(
@@ -137,10 +138,7 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 	}
 
 	initLavaProtocolRootCmd(rootCmd)
-	overwriteFlagDefaults(rootCmd, map[string]string{
-		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
-		flags.FlagKeyringBackend: "test",
-	})
+	addLogFlagsToSubCommands(rootCmd)
 
 	return rootCmd
 }
@@ -167,12 +165,17 @@ func NewLavaVisorRootCmd() *cobra.Command {
 		Long:    `lavavisor is a protocol upgrade manager designed to orchestrate and automate the process of protocol version upgrades.`,
 		Version: version,
 		Run: func(cmd *cobra.Command, args []string) {
+			setLogLevelFieldNameFromFlag(cmd)
+
 			if len(args) == 0 {
 				cmd.Help()
 				os.Exit(0)
 			}
 		},
 	}
+
+	addLogFlagsToSubCommands(rootCmd)
+
 	return rootCmd
 }
 
@@ -235,6 +238,25 @@ func initRootCmd(
 	)
 }
 
+func addLogFlagsToSubCommands(cmd *cobra.Command) {
+	cmd.PersistentFlags().String(cmdcommon.LogLevelFieldNameFlagName, cmdcommon.LogLevelFieldNameFlagDefault, "Log level field name")
+}
+
+func setLogLevelFieldNameFromFlag(cmd *cobra.Command) error {
+	logLevelFieldName, err := cmd.Flags().GetString(cmdcommon.LogLevelFieldNameFlagName)
+	if err != nil {
+		return err
+	}
+
+	if logLevelFieldName == "" {
+		logLevelFieldName = cmdcommon.LogLevelFieldNameFlagDefault
+	}
+
+	utils.SetLogLevelFieldName(logLevelFieldName)
+
+	return nil
+}
+
 // queryCommand returns the sub-command to send queries to the app
 func queryCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -292,7 +314,7 @@ func addModuleInitFlags(startCmd *cobra.Command) {
 	// this line is used by starport scaffolding # root/arguments
 }
 
-func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
+func OverwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
 	set := func(s *pflag.FlagSet, key, val string) {
 		if f := s.Lookup(key); f != nil {
 			f.DefValue = val
@@ -304,7 +326,7 @@ func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
 		set(c.PersistentFlags(), key, val)
 	}
 	for _, c := range c.Commands() {
-		overwriteFlagDefaults(c, defaults)
+		OverwriteFlagDefaults(c, defaults)
 	}
 }
 

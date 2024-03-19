@@ -1,6 +1,8 @@
 package types
 
 import (
+	"time"
+
 	"cosmossdk.io/math"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -105,7 +107,7 @@ type DowntimeKeeper interface {
 }
 
 type DualstakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward math.Int, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward math.Int, totalRewards math.Int, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
 	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error
 	UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin, unstake bool) error
 	GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]dualstakingtypes.Delegation, error)
@@ -124,4 +126,7 @@ type StakingKeeper interface {
 	GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation
 	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
 	BondDenom(ctx sdk.Context) string
+	GetUnbondingDelegations(ctx sdk.Context, delegator sdk.AccAddress, maxRetrieve uint16) (unbondingDelegations []stakingtypes.UnbondingDelegation)
+	SlashUnbondingDelegation(ctx sdk.Context, unbondingDelegation stakingtypes.UnbondingDelegation, infractionHeight int64, slashFactor sdk.Dec) (totalSlashAmount math.Int)
+	Undelegate(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, sharesAmount sdk.Dec) (time.Time, error)
 }

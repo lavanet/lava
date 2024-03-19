@@ -241,7 +241,7 @@ func (ts *tester) payAndVerifyBalance(
 	reward, err := ts.QueryDualstakingDelegatorRewards(providerAddr.String(), providerAddr.String(), "")
 	require.Nil(ts.T, err)
 	for _, reward := range reward.Rewards {
-		want = want.Sub(reward.Amount.Amount)
+		want = want.Sub(reward.Amount.AmountOf(ts.BondDenom()))
 	}
 	require.True(ts.T, want.IsZero())
 	_, err = ts.TxDualstakingClaimRewards(providerAddr.String(), providerAddr.String())

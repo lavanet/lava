@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 type BadgeData struct {
@@ -40,6 +41,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Logger(ctx)
+	paymentHandler := k.NewEpochPaymentHandler(ctx)
 	lavaChainID := ctx.BlockHeader().ChainID
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
@@ -70,6 +72,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
 	rejected_relays_num := len(msg.Relays)
+	validatePairingCache := map[string][]epochstoragetypes.StakeEntry{}
 	for relayIdx, relay := range msg.Relays {
 		rejectedCu += relay.CuSum
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
@@ -141,7 +144,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			continue
 		}
 
-		if k.IsDoubleSpend(ctx, relay.SpecId, epochStart, project.Index, providerAddr, strconv.FormatUint(relay.SessionId, 16)) {
+		if paymentHandler.IsDoubleSpend(ctx, relay.SpecId, epochStart, project.Index, providerAddr, strconv.FormatUint(relay.SessionId, 16)) {
 			utils.LavaFormatWarning("double spending detected", err,
 				utils.Attribute{Key: "epoch", Value: epochStart},
 				utils.Attribute{Key: "client", Value: clientAddr.String()},
@@ -155,8 +158,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// if they failed (one relay should affect all of them). From here on, every check will
 		// fail the TX ***
 
-		totalCUInEpochForUserProvider := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
-
+		totalCUInEpochForUserProvider := paymentHandler.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
 		if badgeFound {
 			k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
 		}
@@ -169,24 +171,44 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		isValidPairing, allowedCU, providers, err := k.Keeper.ValidatePairingForClient(
-			ctx,
-			relay.SpecId,
-			providerAddr,
-			uint64(relay.Epoch),
-			project,
-		)
-		if err != nil {
-			return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", err,
-				utils.Attribute{Key: "client", Value: clientAddr.String()},
-				utils.Attribute{Key: "provider", Value: providerAddr.String()},
+		// generate validate pairing cache key with CuTrackerKey() to reuse code (doesn't relate to CU tracking at all)
+		validatePairingKey := subscriptiontypes.CuTrackerKey(clientAddr.String(), relay.Provider, relay.SpecId)
+		var providers []epochstoragetypes.StakeEntry
+		allowedCU := uint64(0)
+		val, ok := validatePairingCache[validatePairingKey]
+		if ok {
+			providers = val
+			strictestPolicy, _, err := k.GetProjectStrictestPolicy(ctx, project, relay.SpecId, epochStart)
+			if err != nil {
+				return nil, utils.LavaFormatError("strictest policy calculation for pairing validation cache failed", err,
+					utils.LogAttr("project", project.Index),
+					utils.LogAttr("chainID", relay.SpecId),
+					utils.LogAttr("block", strconv.FormatUint(epochStart, 10)),
+				)
+			}
+			allowedCU = strictestPolicy.EpochCuLimit
+		} else {
+			isValidPairing := false
+			isValidPairing, allowedCU, providers, err = k.Keeper.ValidatePairingForClient(
+				ctx,
+				relay.SpecId,
+				providerAddr,
+				uint64(relay.Epoch),
+				project,
 			)
-		}
-		if !isValidPairing {
-			return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", fmt.Errorf("pairing result doesn't include provider"),
-				utils.Attribute{Key: "client", Value: clientAddr.String()},
-				utils.Attribute{Key: "provider", Value: providerAddr.String()},
-			)
+			if err != nil {
+				return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", err,
+					utils.Attribute{Key: "client", Value: clientAddr.String()},
+					utils.Attribute{Key: "provider", Value: providerAddr.String()},
+				)
+			}
+			if !isValidPairing {
+				return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", fmt.Errorf("pairing result doesn't include provider"),
+					utils.Attribute{Key: "client", Value: clientAddr.String()},
+					utils.Attribute{Key: "provider", Value: providerAddr.String()},
+				)
+			}
+			validatePairingCache[validatePairingKey] = providers
 		}
 
 		rewardedCU, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, clientAddr, relay.SpecId, uint64(relay.Epoch))
@@ -203,7 +225,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// pairing is valid, we can pay provider for work
-		rewardedCUDec := sdk.NewDec(int64(rewardedCU))
+		rewardedCUDec := sdk.NewDecFromInt(sdk.NewIntFromUint64(rewardedCU))
 
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
@@ -245,14 +267,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// calling the same event repeatedly within a transaction just appends the new keys to the event
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 
-		cuAfterQos := uint64(rewardedCUDec.TruncateInt64())
+		cuAfterQos := rewardedCUDec.TruncateInt().Uint64()
 		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, clientAddr, relay, cuAfterQos)
 		if err != nil {
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, cuAfterQos, providers, project.Index)
+		err = paymentHandler.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, cuAfterQos, providers, project.Index)
 		if err != nil {
 			var reportedProviders []string
 			for _, p := range relay.UnresponsiveProviders {
@@ -291,13 +313,27 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 	for _, report := range msg.LatestBlockReports {
 		latestBlockReports[report.GetSpecId()] = strconv.FormatUint(report.GetLatestBlock(), 10)
+		k.setStakeEntryBlockReport(ctx, creator, report.GetSpecId(), report.GetLatestBlock())
 	}
 	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
+
+	paymentHandler.Flush()
 
 	return &types.MsgRelayPaymentResponse{RejectedRelays: rejected_relays}, nil
 }
 
-func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum uint64, providersToPair []epochstoragetypes.StakeEntry, projectID string) error {
+func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, latestBlock uint64) {
+	stakeEntry, found, ind := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
+	if found {
+		stakeEntry.BlockReport = &epochstoragetypes.BlockReport{
+			Epoch:       k.epochStorageKeeper.GetEpochStart(ctx),
+			LatestBlock: latestBlock,
+		}
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, ind)
+	}
+}
+
+func (k EpochPaymentHandler) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum uint64, providersToPair []epochstoragetypes.StakeEntry, projectID string) error {
 	// check that unresponsiveData exists
 	if len(unresponsiveProviders) == 0 {
 		return nil
@@ -333,32 +369,28 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		}
 
 		// get this epoch's epochPayments object
-		epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
+		epochPayments, found := k.GetEpochPaymentsCached(ctx, epochPaymentKey(epoch))
 		if !found {
 			// the epochPayments object should exist since we already paid. if not found, print an error and continue
-			utils.LavaFormatError("did not find epochPayments object", err, utils.Attribute{Key: "epochPaymentsKey", Value: key})
+			utils.LavaFormatError("did not find epochPayments object", err, utils.Attribute{Key: "epochPaymentsKey", Value: epoch})
 			continue
 		}
 
 		// get the providerPaymentStorage object using the providerStorageKey
 		providerStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, sdkUnresponsiveProviderAddress)
-		providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, providerStorageKey)
-
+		providerPaymentStorage, found := k.GetProviderPaymentStorageCached(ctx, providerStorageKey)
 		if !found {
 			// providerPaymentStorage not found (this provider has no payments in this epoch and also no complaints) -> we need to add one complaint
-			emptyProviderPaymentStorageWithComplaint := types.ProviderPaymentStorage{
+			providerPaymentStorage = types.ProviderPaymentStorage{
 				Index:                                  providerStorageKey,
 				UniquePaymentStorageClientProviderKeys: []string{},
 				Epoch:                                  epoch,
 				ComplainersTotalCu:                     uint64(0),
 			}
 
-			// append the emptyProviderPaymentStorageWithComplaint to the epochPayments object's providerPaymentStorages
-			epochPayments.ProviderPaymentStorageKeys = append(epochPayments.GetProviderPaymentStorageKeys(), emptyProviderPaymentStorageWithComplaint.GetIndex())
-			k.SetEpochPayments(ctx, epochPayments)
-
-			// assign providerPaymentStorage with the new empty providerPaymentStorage
-			providerPaymentStorage = emptyProviderPaymentStorageWithComplaint
+			// append the providerPaymentStorage to the epochPayments object's providerPaymentStorages
+			epochPayments.ProviderPaymentStorageKeys = append(epochPayments.GetProviderPaymentStorageKeys(), providerPaymentStorage.GetIndex())
+			k.SetEpochPaymentsCached(ctx, epochPayments)
 		}
 
 		// add complainer's used CU to providerPaymentStorage
@@ -366,7 +398,7 @@ func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context,
 		timestamp := time.Unix(unresponsiveProvider.TimestampS, 0)
 		utils.LogLavaEvent(ctx, logger, types.ProviderReportedEventName, map[string]string{"provider": unresponsiveProvider.GetAddress(), "timestamp": timestamp.Format(time.DateTime), "disconnections": strconv.FormatUint(unresponsiveProvider.GetDisconnections(), 10), "errors": strconv.FormatUint(unresponsiveProvider.GetErrors(), 10), "project": projectID, "cu": strconv.FormatUint(complainerCuToAdd, 10), "epoch": strconv.FormatUint(epoch, 10), "total_complaint_this_epoch": strconv.FormatUint(providerPaymentStorage.ComplainersTotalCu, 10)}, "provider got reported by consumer")
 		// set the final provider payment storage state including the complaints
-		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
+		k.SetProviderPaymentStorageCached(ctx, providerPaymentStorage)
 	}
 
 	return nil

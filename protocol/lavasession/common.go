@@ -14,6 +14,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/keeper/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -63,7 +64,7 @@ func ConnectgRPCClient(ctx context.Context, address string, allowInsecure bool) 
 		tlsConf.InsecureSkipVerify = true // this will allow us to use self signed certificates in development.
 	}
 	credentials := credentials.NewTLS(&tlsConf)
-	conn, err := grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
+	conn, err := grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithTransportCredentials(credentials), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
 	return conn, err
 }
 

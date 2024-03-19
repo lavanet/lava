@@ -130,7 +130,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			if tt.d1Reward == 0 {
 				require.Len(t, resRewards1.Rewards, 0)
 			} else {
-				d1Reward = resRewards1.Rewards[0].Amount.Amount.Int64()
+				d1Reward = resRewards1.Rewards[0].Amount.AmountOf(ts.BondDenom()).Int64()
 				require.Equal(t, tt.d1Reward, d1Reward)
 				// claim delegator rewards and verify balance
 				delegator1Addr, err := sdk.AccAddressFromBech32(delegator1)
@@ -142,7 +142,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			if tt.d2Reward == 0 {
 				require.Len(t, resRewards2.Rewards, 0)
 			} else {
-				d2Reward = resRewards2.Rewards[0].Amount.Amount.Int64()
+				d2Reward = resRewards2.Rewards[0].Amount.AmountOf(ts.BondDenom()).Int64()
 				require.Equal(t, tt.d2Reward, d2Reward)
 				// claim delegator rewards and verify balance
 				delegator2Addr, err := sdk.AccAddressFromBech32(delegator2)
@@ -285,10 +285,10 @@ func TestProviderRewardWithCommission(t *testing.T) {
 		func(d dualstakingtypes.Delegation) bool {
 			return d.ChainID == ts.spec.Index && d.IsFirstMonthPassed(currentTimestamp)
 		})
-	totalReward := math.NewInt(int64(relayCuSum))
-	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(stakeEntry, totalReward, relevantDelegations)
+	totalReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(relayCuSum))))
+	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(ts.Ctx, stakeEntry, totalReward, relevantDelegations)
 
-	require.True(t, totalReward.Equal(providerReward))
+	require.True(t, totalReward.IsEqual(providerReward))
 
 	// check that the expected reward equals to the provider's new balance minus old balance
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
@@ -315,7 +315,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, 1, len(resRewards.Rewards))
 	dReward := resRewards.Rewards[0]
 	expectedDRewardForRelay := totalReward
-	require.Equal(t, expectedDRewardForRelay.Int64()/2, dReward.Amount.Amount.Int64())
+	require.Equal(t, expectedDRewardForRelay.AmountOf(ts.BondDenom()).Int64()/2, dReward.Amount.AmountOf(ts.BondDenom()).Int64())
 
 	// claim delegator rewards and verify balance
 	claimRewardsAndVerifyBalance(ts, delegator1Acc.Addr, provider, ts.spec.Index)
@@ -332,7 +332,7 @@ func claimRewardsAndVerifyBalance(ts *tester, delegator sdk.AccAddress, provider
 	require.Nil(ts.T, err)
 
 	newBalance := ts.GetBalance(delegator)
-	require.Equal(ts.T, balance+reward.Amount.Amount.Int64(), newBalance)
+	require.Equal(ts.T, balance+reward.Amount.AmountOf(ts.BondDenom()).Int64(), newBalance)
 
 	res, err = ts.QueryDualstakingDelegatorRewards(delegator.String(), provider, chainID)
 	require.Nil(ts.T, err)
@@ -424,7 +424,7 @@ func TestQueryDelegatorRewards(t *testing.T) {
 			require.NoError(t, err)
 			delegatorReward := int64(0)
 			for _, reward := range res.Rewards {
-				delegatorReward += reward.Amount.Amount.Int64()
+				delegatorReward += reward.Amount.AmountOf(ts.BondDenom()).Int64()
 			}
 			require.Equal(t, tt.expectedRewards, delegatorReward)
 		})
@@ -564,11 +564,11 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	// the delegation will already mature enough to be part of the reward process. To go around
 	// this, we'll call the reward calculation function directly with a fabricated reward just to
 	// verify that the delegator gets nothing from the total reward
-	fakeReward := sdk.NewInt(testStake)
+	fakeReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	providerReward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, providerAcc.Addr, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, true, true)
 	require.NoError(t, err)
-	require.True(t, fakeReward.Equal(providerReward)) // if the delegator got anything, this would fail
+	require.True(t, fakeReward.IsEqual(providerReward)) // if the delegator got anything, this would fail
 
 	// verify again that the delegator has no unclaimed rewards
 	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator, provider, ts.spec.Index)
@@ -628,15 +628,15 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	// this, we'll call the reward calculation function directly with a fabricated reward just to
 	// verify that the delegator gets nothing from the total reward from provider1 but does get
 	// reward from provider
-	fakeReward := sdk.NewInt(testStake)
+	fakeReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	provider1Reward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, provider1Acc.Addr, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, false, true)
 	require.NoError(t, err)
-	require.True(t, fakeReward.Equal(provider1Reward)) // if the delegator got anything, this would fail
+	require.True(t, fakeReward.IsEqual(provider1Reward)) // if the delegator got anything, this would fail
 	providerReward, _, err := ts.Keepers.Dualstaking.RewardProvidersAndDelegators(ts.Ctx, providerAcc.Addr, ts.spec.Index,
 		fakeReward, subscriptiontypes.ModuleName, true, false, true)
 	require.NoError(t, err)
-	require.False(t, fakeReward.Equal(providerReward)) // the delegator should have rewards
+	require.False(t, fakeReward.IsEqual(providerReward)) // the delegator should have rewards
 
 	// verify again that the delegator has no unclaimed rewards with provider1 but has some with provider
 	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator, provider1, ts.spec.Index)

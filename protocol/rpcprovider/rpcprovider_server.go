@@ -117,7 +117,7 @@ func (rpcps *RPCProviderServer) initRelaysMonitor(ctx context.Context) {
 	}
 
 	rpcps.relaysMonitor.SetRelaySender(func() (bool, error) {
-		chainMessage, err := rpcps.craftChainMessage(ctx)
+		chainMessage, err := rpcps.craftChainMessage()
 		if err != nil {
 			return false, err
 		}
@@ -129,7 +129,7 @@ func (rpcps *RPCProviderServer) initRelaysMonitor(ctx context.Context) {
 	rpcps.relaysMonitor.Start(ctx)
 }
 
-func (rpcps *RPCProviderServer) craftChainMessage(ctx context.Context) (chainMessage chainlib.ChainMessage, err error) {
+func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.ChainMessage, err error) {
 	parsing, collectionData, ok := rpcps.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	if !ok {
 		return nil, utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil,
@@ -723,13 +723,29 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	ignoredMetadata := []pairingtypes.Metadata{}
 	if requestedBlockHash != nil || finalized {
 		var cacheReply *pairingtypes.CacheRelayReply
-		cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
-		cacheReply, err = cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{Request: request.RelayData, BlockHash: requestedBlockHash, ChainID: rpcps.rpcProviderEndpoint.ChainID, Finalized: finalized, Provider: rpcps.providerAddress.String()})
-		cancel()
-		reply = cacheReply.GetReply()
-		ignoredMetadata = cacheReply.GetOptionalMetadata()
-		if err != nil && performance.NotConnectedError.Is(err) {
-			utils.LavaFormatDebug("cache not connected", utils.LogAttr("err", err), utils.Attribute{Key: "GUID", Value: ctx})
+
+		hashKey, outPutFormatter, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID)
+		if hashErr != nil {
+			utils.LavaFormatError("TryRelay Failed computing hash for cache request", hashErr)
+		} else {
+			cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
+			cacheReply, err = cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
+				RequestHash:    hashKey,
+				RequestedBlock: request.RelayData.RequestBlock,
+				ChainId:        rpcps.rpcProviderEndpoint.ChainID,
+				BlockHash:      requestedBlockHash,
+				Finalized:      finalized,
+				SeenBlock:      request.RelayData.SeenBlock,
+			})
+			cancel()
+			reply = cacheReply.GetReply()
+			if reply != nil {
+				reply.Data = outPutFormatter(reply.Data) // setting request id back to reply.
+			}
+			ignoredMetadata = cacheReply.GetOptionalMetadata()
+			if err != nil && performance.NotConnectedError.Is(err) {
+				utils.LavaFormatDebug("cache not connected", utils.LogAttr("err", err), utils.Attribute{Key: "GUID", Value: ctx})
+			}
 		}
 	}
 	if err != nil || reply == nil {
@@ -755,19 +771,33 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
 		if cache.CacheActive() && (requestedBlockHash != nil || finalized) {
 			// copy request and reply as they change later on and we call SetEntry in a routine.
-			copyPrivateData := &pairingtypes.RelayPrivateData{}
-			copyRequestErr := protocopy.DeepCopyProtoObject(request.RelayData, copyPrivateData)
+			requestedBlock := request.RelayData.RequestBlock                                                       // get requested block before removing it from the data
+			hashKey, _, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID) // get the hash (this changes the data)
 			copyReply := &pairingtypes.RelayReply{}
 			copyReplyErr := protocopy.DeepCopyProtoObject(reply, copyReply)
 			go func() {
-				if copyRequestErr != nil || copyReplyErr != nil {
-					utils.LavaFormatError("Failed copying relay private data on TryRelay", nil, utils.LogAttr("copyReplyErr", copyReplyErr), utils.LogAttr("copyRequestErr", copyRequestErr))
+				if hashErr != nil || copyReplyErr != nil {
+					utils.LavaFormatError("Failed copying relay private data on TryRelay", nil, utils.LogAttr("copyReplyErr", copyReplyErr), utils.LogAttr("hashErr", hashErr))
 					return
 				}
 				new_ctx := context.Background()
 				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 				defer cancel()
-				err := cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: copyPrivateData, BlockHash: requestedBlockHash, ChainID: rpcps.rpcProviderEndpoint.ChainID, Response: copyReply, Finalized: finalized, Provider: rpcps.providerAddress.String(), OptionalMetadata: ignoredMetadata})
+				if err != nil {
+					utils.LavaFormatError("TryRelay failed calculating hash for cach.SetEntry", err)
+					return
+				}
+				err = cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
+					RequestHash:      hashKey,
+					RequestedBlock:   requestedBlock,
+					BlockHash:        requestedBlockHash,
+					ChainId:          rpcps.rpcProviderEndpoint.ChainID,
+					Response:         copyReply,
+					Finalized:        finalized,
+					OptionalMetadata: ignoredMetadata,
+					AverageBlockTime: int64(averageBlockTime),
+					SeenBlock:        latestBlock,
+				})
 				if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 					utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
 				}

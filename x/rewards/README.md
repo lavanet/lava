@@ -6,14 +6,18 @@ This document specifies the rewards module of Lava Protocol.
 
 The rewards module is responsible for distributing rewards to validators and providers. Rewards are collected from the validators' and providers' pools, respectively. The pools' funds originate from the treasury account - a module account that holds all the pre-allocated Lava tokens of the network. It is important to note that the pre-allocated amount is constant, and there will be no minting of new Lava tokens in the future.
 
+The rewards module also operates the Incentivized Providers RPC program (IPRPC). This program distributes bonus rewards to providers servicing specific chains. The IPRPC rewards are funded by the chains' DAO and other contributors.
+
 Please note that this module replaces Cosmos SDK's mint module, which is typically responsible for minting rewards for validators.
 
 ## Contents
 
 * [Concepts](#concepts)
   * [The Treasury](#the-treasury)
-  * [Validators Rewards Pool](#validators-rewards-pool)
-  * [Providers Rewards Pool](#providers-rewards-pool)
+  * [Rewards Pools](#rewards-pools)
+    * [Validators Rewards Pool](#validators-rewards-pool)
+    * [Providers Rewards Pool](#providers-rewards-pool)
+  * [IPRPC](#iprpc)
 * [Parameters](#parameters)
   * [MinBondedTarget](#minbondedtarget)
   * [MaxBondedTarget](#maxbondedtarget)
@@ -110,6 +114,16 @@ The adjustment is calculated per epoch using a weighted average based on usage. 
 \text{monthlyAdjustment}_{i,k} = \frac{\sum_{\text{epoch}\; t }\left(CU_\text{i}(t)\cdot \text{epochAdjustment}_{i,k}(t)\right)}{\sum_{\text{epoch}\; t}CU_{i}(t)}
 ```
 
+### IPRPC
+
+IPRPC (Incentivized Providers RPC) is a program designed to motivate providers to offer services for specific chains using Lava. Providers supplying RPC data for chain X will receive additional rewards from the IPRPC pool each month. This pool is funded by chain X's DAO and other contributors.
+
+The IPRPC pools will hold both Lava's native tokens and IBC wrapped tokens. Providers' rewards will be based on the amount of CU they serviced during the month relative to other providers' serviced CU. Only the CU from eligible subscriptions will be counted. IPRPC eligible subscriptions are determined via a government proposal.
+
+Users have the freedom to fund the pool with any token of their choice, for any supported chain and set the emission schedule for their funds. For instance, a user can fund the IPRPC pool for the Osmosis chain with 300ulava, which will be dispersed over a period of three months. It's important to note that the IPRPC pool will start receiving funds from the beginning of the upcoming month.
+
+In order to fund the IPRPC pool, the user's funds must cover the monthly minimum IPRPC cost, a parameter determined by governance. This minimum IPRPC cost will be subtracted from the monthly emission.
+
 ## Parameters
 
 The rewards module contains the following parameters:
@@ -171,14 +185,35 @@ The rewards module supports the following queries:
 | `block-reward`     | none  | show the block reward for validators                  |
 | `pools`     | none            | show the info of the distribution pools  |
 | `params`   | none            | shows the module's parameters                 |
+| `show-iprpc-data`   | none            | shows the IPRPC data that includes the minimum IPRPC cost and a list of IPRPC eligible subscriptions                 |
+| `iprpc-provider-reward`   | provider (string)            | shows the estimated IPRPC rewards for a specific provider (relative to its serviced CU) for the upcoming monthly emission                 |
+| `iprpc-spec-rewards`   | spec (string, optional)            | shows a specific spec's IPRPC rewards (for the entire period). If no spec is given, all IPRPC rewards are shown                 |
 
 ## Transactions
 
-The rewards module does not support any transactions.
+All the transactions below require setting the `--from` flag and gas related flags.
+
+The rewards module supports the following transactions:
+
+| Transaction      | Arguments       | What it does                                  |
+| ---------- | --------------- | ----------------------------------------------|
+| `fund-iprpc`     | spec (string), duration (uint64, in months), coins (sdk.Coins, for example: `100ulava,50ibctoken`)  | fund the IPRPC pool to a specific spec with ulava or IBC wrapped tokens. The tokens will be vested for `duration` months.                  |
+
+Please note that the coins specified in the `fund-iprpc` transaction is the monthly emission fund. For instance, if you specify a fund of 100ulava for a duration of three months, providers will receive 100ulava each month, not 33ulava.
+
+Also, the coins must include `duration*min_iprpc_cost` of ulava tokens (`min_iprpc_cost` is shown with the `show-iprpc-data` query).
 
 ## Proposals
 
-The rewards module does not support any proposals.
+The rewards module supports the `set-iprpc-data` proposal which set the minimum IPRPC cost and the IPRPC eligible subscriptions.
+
+To send a proposal and vote use the following commands:
+
+```
+lavad tx gov submit-legacy-proposal set-iprpc-data <deposit> --min-cost 0ulava --add-subscriptions addr1,addr2 --remove-subscriptions addr3,addr4 --from alice <gas-flags>
+
+lavad tx gov vote <latest_proposal_id> yes --from alice <gas-flags>
+```
 
 ## Events
 
@@ -188,3 +223,8 @@ The rewards module has the following events:
 | ---------- | --------------- |
 | `distribution_pools_refill`     | a successful distribution rewards pools refill   |
 | `provider_bonus_rewards`     | a successful distribution of provider bonus rewards   |
+| `iprpc_pool_emmission`     | a successful distribution of IPRPC bonus rewards   |
+| `iprpc_pool_emmission`     | a successful distribution of IPRPC bonus rewards   |
+| `set_iprpc_data`     | a successful setting of IPRPC data   |
+| `fund_iprpc`     | a successful funding of the IPRPC pool   |
+| `transfer_iprpc_reward_to_next_month`     | a successful transfer of the current month's IPRPC reward to the next month. Happens when there are no providers eligible for IPRPC rewards in the current month   |

@@ -41,3 +41,15 @@ func NextMonth(date time.Time) time.Time {
 		time.UTC,
 	)
 }
+
+func IsMiddleOfMonthPassed(date time.Time) bool {
+	// Get the total number of days in the current month
+	_, month, year := date.Date()
+	daysInMonth := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
+
+	// Calculate the middle day of the month
+	middleDay := daysInMonth / 2
+
+	// Check if the day of the given date is greater than the middle day
+	return date.Day() > middleDay
+}

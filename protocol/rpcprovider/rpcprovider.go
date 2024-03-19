@@ -613,6 +613,8 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 			if err != nil {
 				utils.LavaFormatFatal("failed to create tx factory", err)
 			}
+			txFactory = txFactory.WithGasAdjustment(viper.GetFloat64(flags.FlagGasAdjustment))
+
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
@@ -719,6 +721,7 @@ rpcprovider 127.0.0.1:3333 COS3 tendermintrpc "wss://www.node-path.com:80,https:
 	cmdRPCProvider.Flags().Bool(common.RelaysHealthEnableFlag, true, "enables relays health check")
 	cmdRPCProvider.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
 	cmdRPCProvider.Flags().String(HealthCheckURLPathFlagName, HealthCheckURLPathFlagDefault, "the url path for the provider's grpc health check")
+	cmdRPCProvider.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider
