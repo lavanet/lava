@@ -129,7 +129,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 		} else {
 			// No discrepancy found, log and return nil
 			logSuccessUpdate()
-			return nil, nil
+			return finalizationConflict, nil
 		}
 	}
 
@@ -233,7 +233,7 @@ func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlock
 	calcExpectedBlocks := func(mapExpectedBlockHeights map[string]int64, blockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders) map[string]int64 {
 		sortedBlockHeights := maps.StableSortedKeys(blockToHashesToAgreeingProviders)
 		for _, blockHeight := range sortedBlockHeights {
-			blockHashesToAgreeingProviders := blockToHashesToAgreeingProviders[int64(blockHeight)]
+			blockHashesToAgreeingProviders := blockToHashesToAgreeingProviders[blockHeight]
 			for _, agreeingProviders := range blockHashesToAgreeingProviders {
 				for providerAddress, providerDataContainer := range agreeingProviders {
 					interpolation := InterpolateBlocks(now, providerDataContainer.LatestBlockTime, averageBlockTime_ms)

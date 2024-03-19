@@ -11,7 +11,6 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
@@ -31,7 +30,7 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 	for _, collection := range spec.ApiCollections {
 		endpoints = append(endpoints, epochstoragetypes.Endpoint{IPPORT: "123", ApiInterfaces: []string{collection.CollectionData.ApiInterface}, Geolocation: 1})
 	}
-	_, err := servers.PairingServer.StakeProvider(ctx, &types.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Index, Amount: sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: "prov", DelegateLimit: sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.ZeroInt()), DelegateCommission: 100, Validator: sdk.ValAddress(validator.Addr).String()})
+	_, err := servers.PairingServer.StakeProvider(ctx, &pairingtypes.MsgStakeProvider{Creator: acc.Addr.String(), ChainID: spec.Index, Amount: sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.NewInt(stake)), Geolocation: 1, Endpoints: endpoints, Moniker: "prov", DelegateLimit: sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.ZeroInt()), DelegateCommission: 100, Validator: sdk.ValAddress(validator.Addr).String()})
 	require.NoError(t, err)
 }
 
@@ -39,16 +38,16 @@ func BuySubscription(ctx context.Context, keepers testkeeper.Keepers, servers te
 	servers.SubscriptionServer.Buy(ctx, &subscriptiontypes.MsgBuy{Creator: acc.Addr.String(), Consumer: acc.Addr.String(), Index: plan, Duration: 1})
 }
 
-func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, qos *types.QualityOfServiceReport) *types.RelaySession {
+func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, qos *pairingtypes.QualityOfServiceReport) *pairingtypes.RelaySession {
 	return BuildRelayRequestWithBadge(ctx, provider, contentHash, uint64(1), cuSum, spec, qos, nil)
 }
 
-func BuildRelayRequestWithSession(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *types.QualityOfServiceReport) *types.RelaySession {
+func BuildRelayRequestWithSession(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *pairingtypes.QualityOfServiceReport) *pairingtypes.RelaySession {
 	return BuildRelayRequestWithBadge(ctx, provider, contentHash, sessionId, cuSum, spec, qos, nil)
 }
 
-func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *types.QualityOfServiceReport, badge *types.Badge) *types.RelaySession {
-	relaySession := &types.RelaySession{
+func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHash []byte, sessionId uint64, cuSum uint64, spec string, qos *pairingtypes.QualityOfServiceReport, badge *pairingtypes.Badge) *pairingtypes.RelaySession {
+	relaySession := &pairingtypes.RelaySession{
 		Provider:    provider,
 		ContentHash: contentHash,
 		SessionId:   sessionId,
@@ -66,7 +65,7 @@ func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHas
 	return relaySession
 }
 
-func CreateResponseConflictMsgDetectionForTest(ctx context.Context, consumer, provider0, provider1 sigs.Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *types.RelayReply, errRet error) {
+func CreateResponseConflictMsgDetectionForTest(ctx context.Context, consumer, provider0, provider1 sigs.Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *pairingtypes.RelayReply, errRet error) {
 	detectionMsg = &conflicttypes.MsgDetection{
 		Creator: consumer.Addr.String(),
 		Conflict: &conflicttypes.MsgDetection_ResponseConflict{
@@ -122,14 +121,14 @@ func CreateResponseConflictMsgDetectionForTest(ctx context.Context, consumer, pr
 // initConflictRelayData initializes the structure for holding relay conflict data.
 func initConflictRelayData() *conflicttypes.ConflictRelayData {
 	return &conflicttypes.ConflictRelayData{
-		Request: &types.RelayRequest{},
+		Request: &pairingtypes.RelayRequest{},
 		Reply:   &conflicttypes.ReplyMetadata{},
 	}
 }
 
 // prepareRelayData prepares relay data for a given provider.
 func prepareRelayData(ctx context.Context, conflictData *conflicttypes.ConflictRelayData, provider sigs.Account, spec spectypes.Spec) {
-	relayData := &types.RelayPrivateData{
+	relayData := &pairingtypes.RelayPrivateData{
 		ConnectionType: "",
 		ApiUrl:         "",
 		Data:           []byte("DUMMYREQUEST"),
@@ -139,7 +138,7 @@ func prepareRelayData(ctx context.Context, conflictData *conflicttypes.ConflictR
 	}
 
 	conflictData.Request.RelayData = relayData
-	conflictData.Request.RelaySession = &types.RelaySession{
+	conflictData.Request.RelaySession = &pairingtypes.RelaySession{
 		Provider:    provider.Addr.String(),
 		ContentHash: sigs.HashMsg(relayData.GetContentHashData()),
 		SessionId:   uint64(1),
@@ -147,9 +146,8 @@ func prepareRelayData(ctx context.Context, conflictData *conflicttypes.ConflictR
 		CuSum:       0,
 		Epoch:       sdk.UnwrapSDKContext(ctx).BlockHeight(),
 		RelayNum:    0,
-		QosReport:   &types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
+		QosReport:   &pairingtypes.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()},
 	}
-
 }
 
 // signSessionData signs the session data with the consumer's private key.
@@ -174,21 +172,21 @@ func duplicateRequestForProvider(conflict *conflicttypes.ResponseConflict, provi
 }
 
 // createAndSignReply creates a reply for a provider and signs it.
-func createAndSignReply(provider sigs.Account, request *types.RelayRequest, spec spectypes.Spec, addDiffData bool) (*types.RelayReply, error) {
-	reply := &types.RelayReply{
+func createAndSignReply(provider sigs.Account, request *pairingtypes.RelayRequest, spec spectypes.Spec, addDiffData bool) (*pairingtypes.RelayReply, error) {
+	reply := &pairingtypes.RelayReply{
 		Data:                  []byte("DUMMYREPLY"),
 		Sig:                   request.RelaySession.Sig,
 		LatestBlock:           request.RelayData.RequestBlock + int64(spec.BlockDistanceForFinalizedData),
 		FinalizedBlocksHashes: []byte{},
 		SigBlocks:             request.RelaySession.Sig,
-		Metadata:              []types.Metadata{},
+		Metadata:              []pairingtypes.Metadata{},
 	}
 
 	if addDiffData {
 		reply.Data = append(reply.Data, []byte("DIFF")...)
 	}
 
-	relayExchange := types.NewRelayExchange(*request, *reply)
+	relayExchange := pairingtypes.NewRelayExchange(*request, *reply)
 	sig, err := sigs.Sign(provider.SK, relayExchange)
 	if err != nil {
 		return reply, err
@@ -199,7 +197,7 @@ func createAndSignReply(provider sigs.Account, request *types.RelayRequest, spec
 }
 
 // finalizeConflictRelayData updates the conflict relay data with the reply information.
-func finalizeConflictRelayData(consumer, provider sigs.Account, conflictData *conflicttypes.ConflictRelayData, reply *types.RelayReply) (*conflicttypes.ConflictRelayData, error) {
+func finalizeConflictRelayData(consumer, provider sigs.Account, conflictData *conflicttypes.ConflictRelayData, reply *pairingtypes.RelayReply) (*conflicttypes.ConflictRelayData, error) {
 	relayFinalization := conflicttypes.NewRelayFinalization(conflictData.Request.RelaySession, reply, consumer.Addr, 0)
 	sigBlocks, err := sigs.Sign(provider.SK, relayFinalization)
 	if err != nil {
@@ -248,6 +246,6 @@ func setRelayFinalizationFinalizedBlocksHashes(relayFinalization *conflicttypes.
 		return err
 	}
 
-	relayFinalization.FinalizedBlocksHashes = []byte(jsonStr)
+	relayFinalization.FinalizedBlocksHashes = jsonStr
 	return nil
 }
