@@ -275,10 +275,6 @@ func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, sub *types.Subscription
 	// The "old" subscription's duration is now expired
 	// If called from CreateSubscription, the duration will reset to the duration bought
 	sub.DurationLeft = 0
-
-	// Remove one refcount for previous plan
-	k.plansKeeper.PutPlan(ctx, sub.PlanIndex, sub.PlanBlock)
-
 	sub.PlanIndex = newPlan.Index
 	sub.PlanBlock = newPlan.Block
 	sub.MonthCuTotal = newPlan.PlanPolicy.TotalCuLimit
@@ -376,7 +372,7 @@ func (k Keeper) renewSubscription(ctx sdk.Context, sub *types.Subscription) erro
 }
 
 func (k Keeper) advanceMonth(ctx sdk.Context, subkey []byte) {
-	block := uint64(ctx.BlockHeight())
+	block := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 	consumer := string(subkey)
 
 	var sub types.Subscription
@@ -474,26 +470,21 @@ func (k Keeper) addCuTrackerTimerForSubscription(ctx sdk.Context, block uint64, 
 			utils.Attribute{Key: "block", Value: block},
 		)
 	} else {
-		nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
+		creditReward := sub.Credit.Amount.QuoRaw(int64(sub.DurationLeft))
+		sub.Credit = sub.Credit.SubAmount(creditReward)
+
+		timerData := types.CuTrackerTimerData{
+			Block:  sub.Block,
+			Credit: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), creditReward),
+		}
+		marshaledTimerData, err := k.cdc.Marshal(&timerData)
 		if err != nil {
-			utils.LavaFormatError("critical: failed assigning CU tracker callback. can't get next epoch, skipping", err,
+			utils.LavaFormatError("critical: failed assigning CU tracker callback. can't marshal cu tracker timer data, skipping", err,
 				utils.Attribute{Key: "block", Value: block},
 			)
-		} else {
-			creditReward := sub.Credit.Amount.QuoRaw(int64(sub.DurationLeft))
-			timerData := types.CuTrackerTimerData{
-				Block:  sub.Block,
-				Credit: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), creditReward),
-			}
-			marshaledTimerData, err := k.cdc.Marshal(&timerData)
-			if err != nil {
-				utils.LavaFormatError("critical: failed assigning CU tracker callback. can't marshal cu tracker timer data, skipping", err,
-					utils.Attribute{Key: "block", Value: block},
-				)
-				return
-			}
-			k.cuTrackerTS.AddTimerByBlockHeight(ctx, nextEpoch+blocksToSave-1, []byte(sub.Consumer), marshaledTimerData)
+			return
 		}
+		k.cuTrackerTS.AddTimerByBlockHeight(ctx, block+blocksToSave-1, []byte(sub.Consumer), marshaledTimerData)
 	}
 }
 
@@ -687,17 +678,7 @@ func (k Keeper) RemoveExpiredSubscription(ctx sdk.Context, consumer string, bloc
 	// delete all projects before deleting
 	k.delAllProjectsFromSubscription(ctx, consumer)
 
-	// delete subscription effective next epoch
-	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
-	if err != nil {
-		utils.LavaFormatError("deleting expired subscription failed. can't get next epoch", err,
-			utils.Attribute{Key: "consumer", Value: consumer},
-			utils.Attribute{Key: "block", Value: strconv.FormatUint(block, 10)},
-		)
-		return
-	}
-
-	err = k.subsFS.DelEntry(ctx, consumer, nextEpoch)
+	err := k.subsFS.DelEntry(ctx, consumer, block) // minus 1 to avoid deleting an upgraded subscription
 	if err != nil {
 		utils.LavaFormatError("deleting expired subscription failed", err,
 			utils.Attribute{Key: "consumer", Value: consumer},

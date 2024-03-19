@@ -21,11 +21,13 @@ func TestGenesisState_Validate(t *testing.T) {
 		{
 			desc: "invalid iprpc subscriptions",
 			genState: &types.GenesisState{
-				Params:             types.DefaultParams(),
-				RefillRewardsTS:    types.DefaultGenesis().RefillRewardsTS,
-				BasePays:           types.DefaultGenesis().BasePays,
-				IprpcSubscriptions: []string{"invalidAddress"},
-				MinIprpcCost:       types.DefaultGenesis().MinIprpcCost,
+				Params:              types.DefaultParams(),
+				RefillRewardsTS:     types.DefaultGenesis().RefillRewardsTS,
+				BasePays:            types.DefaultGenesis().BasePays,
+				IprpcSubscriptions:  []string{"invalidAddress"},
+				MinIprpcCost:        types.DefaultGenesis().MinIprpcCost,
+				IprpcRewards:        types.DefaultGenesis().IprpcRewards,
+				IprpcRewardsCurrent: types.DefaultGenesis().GetIprpcRewardsCurrent(),
 			},
 			valid: false,
 		},

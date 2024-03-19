@@ -54,7 +54,7 @@ func (geh *genericErrorHandler) handleGenericErrors(ctx context.Context, nodeErr
 	return retError
 }
 
-func (geh *genericErrorHandler) handleCodeErrors(ctx context.Context, code codes.Code) error {
+func (geh *genericErrorHandler) handleCodeErrors(code codes.Code) error {
 	if code == codes.DeadlineExceeded {
 		return utils.LavaFormatProduction("Provider Failed Sending Message", common.ContextDeadlineExceededError)
 	}
@@ -124,7 +124,7 @@ func (geh *GRPCErrorHandler) HandleNodeError(ctx context.Context, nodeError erro
 	st, ok := status.FromError(nodeError)
 	if ok {
 		// Get the error message from the gRPC status
-		return geh.handleCodeErrors(ctx, st.Code())
+		return geh.handleCodeErrors(st.Code())
 	}
 	return geh.handleGenericErrors(ctx, nodeError)
 }

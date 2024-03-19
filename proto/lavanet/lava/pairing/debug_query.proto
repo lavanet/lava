@@ -13,10 +13,10 @@ import "lavanet/lava/projects/project.proto";
 
 message QueryDebugQueryResponse {
 	uint64 block_reward = 1;
-	uint64 val_dist_pool_balance = 2;
-	uint64 val_alloc_pool_balance = 3;
-	uint64 provider_dist_pool_balance = 4;
-	uint64 provider_alloc_pool_balance = 5;
+	string val_dist_pool_balance = 2;
+	string val_alloc_pool_balance = 3;
+	string provider_dist_pool_balance = 4;
+	string provider_alloc_pool_balance = 5;
 	uint64 provider_full_reward = 6;
 	uint64 provider_reward_no_bonus = 7;
 	uint64 block = 8;

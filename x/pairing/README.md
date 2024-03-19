@@ -64,6 +64,8 @@ type StakeEntry struct {
 
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). A provider can accept delegations to increase its effective stake, which increases its chances of being selected in the pairing process. The provider can also set a delegation limit, which determines the maximum value of delegations they can accept. This limit is in place to prevent delegators from increasing the provider's effective stake to a level where the provider is overwhelmed with more consumers than they can handle in the pairing process. For more details about delegations, refer to the dualstaking module README.
 
+* `DelegateCommission` and `DelegateLimit` changes for existing providers are limited as follows: limitations are applied only for providers that have delegations. limitations are on decreasing `DelegateLimit` and/or increasing `DelegateCommission`, limits are changes up to 1% of the original value and once per 24H.
+
 An provider's endpoint is defined as follows:
 
 ```go

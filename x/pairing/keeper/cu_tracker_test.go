@@ -166,7 +166,7 @@ func TestTrackedCuWithDelegations(t *testing.T) {
 	// sanity check - delegator reward should be 34% of the reward (which is the plan price)
 	res, err := ts.QueryDualstakingDelegatorRewards(delegator, provider, ts.spec.Index)
 	require.NoError(t, err)
-	require.Equal(t, ts.plan.Price.Amount.Int64()*34/100, res.Rewards[0].Amount.Amount.Int64())
+	require.Equal(t, ts.plan.Price.Amount.Int64()*34/100, res.Rewards[0].Amount.AmountOf(ts.BondDenom()).Int64())
 }
 
 // TestTrackedCuWithQos checks that the tracked CU is counted properly when considering QoS
@@ -263,13 +263,13 @@ func TestTrackedCuWithQos(t *testing.T) {
 			reward, err := ts.QueryDualstakingDelegatorRewards(provider1Acc.Addr.String(), provider1Acc.Addr.String(), ts.spec.Index)
 			require.Nil(ts.T, err)
 			require.Len(t, reward.Rewards, 1)
-			require.Equal(ts.T, tt.p1ExpectedReward, reward.Rewards[0].Amount.Amount.Int64())
+			require.Equal(ts.T, tt.p1ExpectedReward, reward.Rewards[0].Amount.AmountOf(ts.BondDenom()).Int64())
 			_, err = ts.TxDualstakingClaimRewards(provider1Acc.Addr.String(), provider1Acc.Addr.String())
 			require.Nil(ts.T, err)
 
 			reward, err = ts.QueryDualstakingDelegatorRewards(provider2Acc.Addr.String(), provider2Acc.Addr.String(), ts.spec.Index)
 			require.Nil(ts.T, err)
-			require.Equal(ts.T, tt.p2ExpectedReward, reward.Rewards[0].Amount.Amount.Int64())
+			require.Equal(ts.T, tt.p2ExpectedReward, reward.Rewards[0].Amount.AmountOf(ts.BondDenom()).Int64())
 			_, err = ts.TxDualstakingClaimRewards(provider2Acc.Addr.String(), provider2Acc.Addr.String())
 			require.Nil(ts.T, err)
 
@@ -370,7 +370,7 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 
 	reward, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), ts.spec.Index)
 	require.Nil(ts.T, err)
-	require.Equal(ts.T, originalPlanPrice, reward.Rewards[0].Amount.Amount.Int64())
+	require.Equal(ts.T, originalPlanPrice, reward.Rewards[0].Amount.AmountOf(ts.BondDenom()).Int64())
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.Nil(ts.T, err)
 
@@ -656,7 +656,7 @@ func TestFrozenProviderGetReward(t *testing.T) {
 	planPrice := ts.plan.Price.Amount.Int64()
 	reward, err := ts.QueryDualstakingDelegatorRewards(providerAcc.Addr.String(), providerAcc.Addr.String(), ts.spec.Index)
 	require.Nil(ts.T, err)
-	require.Equal(ts.T, planPrice, reward.Rewards[0].Amount.Amount.Int64())
+	require.Equal(ts.T, planPrice, reward.Rewards[0].Amount.AmountOf(ts.BondDenom()).Int64())
 	_, err = ts.TxDualstakingClaimRewards(providerAcc.Addr.String(), providerAcc.Addr.String())
 	require.Nil(ts.T, err)
 

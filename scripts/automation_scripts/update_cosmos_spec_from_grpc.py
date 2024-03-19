@@ -3,8 +3,6 @@ import json
 import os
 import re
 
-LAVA_PUBLIC_RPC = ""
-
 
 def parse_endpoints_from_spec(lava_spec_file: str) -> dict[str, list[str]]:
     print("### Parsing endpoints from current spec file")
@@ -26,7 +24,9 @@ def parse_endpoints_from_spec(lava_spec_file: str) -> dict[str, list[str]]:
 
         for api in api_collection.get("apis", []):
             api_name = api.get("name", "")
-            if not ("cosmos" in api_name or "cosmwasm" in api_name or "/ibc/" in api_name):
+            if not (
+                "cosmos" in api_name or "cosmwasm" in api_name or "/ibc/" in api_name
+            ):
                 endpoints[interface_type].append(api_name)
 
     print(f"    ### {len(endpoints['grpc'])} gRPC endpoints")
@@ -35,11 +35,11 @@ def parse_endpoints_from_spec(lava_spec_file: str) -> dict[str, list[str]]:
     return endpoints
 
 
-def parse_endpoints_from_grpcurl() -> dict[str, list[str]]:
+def parse_endpoints_from_grpcurl(grpc_url: str) -> dict[str, list[str]]:
     print("### Parsing endpoints from gRPC service")
 
     endpoints: dict[str, list[str]] = {"grpc": [], "rest": []}
-    content = os.popen(f"grpcurl -plaintext {LAVA_PUBLIC_RPC} describe").read()
+    content = os.popen(f"grpcurl -plaintext {grpc_url} describe").read()
 
     # Regex pattern to find services starting with their corresponding rpc and rest paths
     grpc_pattern = re.compile(
@@ -54,7 +54,12 @@ def parse_endpoints_from_grpcurl() -> dict[str, list[str]]:
     for service_match in grpc_pattern.finditer(content):
         service_name, service_content = service_match.groups()
 
-        if "cosmos" in service_content or "cosmwasm" in service_content or "ibc" in service_content:
+        if (
+            "cosmos" in service_content
+            or "cosmwasm" in service_content
+            or "ibc" in service_content
+            or "grpc.reflection.v1alpha" in service_content
+        ):
             continue
 
         # Extracting all grpc paths
@@ -120,18 +125,18 @@ def create_api_entry(endpoint: str) -> dict:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Update Lava's spec file")
-    parser.add_argument("lava_spec_file", help="Path to the Lava spec file.")
+    parser = argparse.ArgumentParser(description="Update Cosmos-based spec file")
+    parser.add_argument("spec_file", help="Path to the spec file to update")
+    parser.add_argument("grpc_url", help="GRPC URL to fetch the endpoints from")
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Perform a dry run without making any changes.",
     )
     args = parser.parse_args()
-
     try:
-        grpcurl_endpoints = parse_endpoints_from_grpcurl()
-        spec_endpoints = parse_endpoints_from_spec(args.lava_spec_file)
+        grpcurl_endpoints = parse_endpoints_from_grpcurl(args.grpc_url)
+        spec_endpoints = parse_endpoints_from_spec(args.spec_file)
 
         grpc_endpoints_to_update = set(grpcurl_endpoints["grpc"]) - set(
             spec_endpoints["grpc"]
@@ -146,7 +151,7 @@ if __name__ == "__main__":
                 exit(1)
         else:
             update_spec_file(
-                args.lava_spec_file, grpc_endpoints_to_update, rest_endpoints_to_update
+                args.spec_file, grpc_endpoints_to_update, rest_endpoints_to_update
             )
 
         print("### Done")

@@ -269,7 +269,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	// remove lava directive headers
 	metadata, directiveHeaders := rpccs.LavaDirectiveHeaders(metadata)
 	relaySentTime := time.Now()
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(rpccs.getLatestBlock(), directiveHeaders))
+	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders))
 	if err != nil {
 		return nil, err
 	}
@@ -374,7 +374,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 			return errorRelayResult, utils.LavaFormatError("Failed all relay retries due to timeout consider adding 'lava-relay-timeout' header to extend the allowed timeout duration", nil, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 		bestRelayError := relayErrors.GetBestErrorMessageForUser()
-		return errorRelayResult, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("error", bestRelayError.err))
+		return errorRelayResult, utils.LavaFormatError("Failed all retries", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("error", bestRelayError.err), utils.LogAttr("chain_id", rpccs.listenEndpoint.ChainID))
 	} else if len(relayErrors.relayErrors) > 0 {
 		utils.LavaFormatDebug("relay succeeded but had some errors", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "errors", Value: relayErrors})
 	}
@@ -443,38 +443,53 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	var cacheError error
 	if reqBlock != spectypes.NOT_APPLICABLE || !chainMessage.GetForceCacheRefresh() {
 		var cacheReply *pairingtypes.CacheRelayReply
-		cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
-		cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{Request: relayRequestData, BlockHash: nil, ChainID: chainID, Finalized: false, SharedStateId: sharedStateId}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
-		cancel()
-		reply := cacheReply.GetReply()
-		// read seen block from cache even if we had a miss we still want to get the seen block so we can use it to get the right provider.
-		cacheSeenBlock := cacheReply.GetSeenBlock()
-		// check if the cache seen block is greater than my local seen block, this means the user requested this
-		// request spoke with another consumer instance and use that block for inter consumer consistency.
-		if rpccs.sharedState && cacheSeenBlock > relayRequestData.SeenBlock {
-			utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", relayRequestData.SeenBlock))
-			relayRequestData.SeenBlock = cacheSeenBlock
-			// setting the fetched seen block from the cache server to our local cache as well.
-			rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, dappID, consumerIp)
-		}
+		hashKey, outputFormatter, err := chainlib.HashCacheRequest(relayRequestData, chainID)
+		if err != nil {
+			utils.LavaFormatError("sendRelayToProvider Failed getting Hash for cache request", err)
+		} else {
+			cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
+			cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
+				RequestHash:    hashKey,
+				RequestedBlock: relayRequestData.RequestBlock,
+				ChainId:        chainID,
+				BlockHash:      nil,
+				Finalized:      false,
+				SharedStateId:  sharedStateId,
+				SeenBlock:      relayRequestData.SeenBlock,
+			}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+			cancel()
+			reply := cacheReply.GetReply()
 
-		// handle cache reply
-		if cacheError == nil && reply != nil {
-			// Info was fetched from cache, so we don't need to change the state
-			// so we can return here, no need to update anything and calculate as this info was fetched from the cache
-			relayResult = &common.RelayResult{
-				Reply: reply,
-				Request: &pairingtypes.RelayRequest{
-					RelayData: relayRequestData,
-				},
-				Finalized:    false, // set false to skip data reliability
-				ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
+			// read seen block from cache even if we had a miss we still want to get the seen block so we can use it to get the right provider.
+			cacheSeenBlock := cacheReply.GetSeenBlock()
+			// check if the cache seen block is greater than my local seen block, this means the user requested this
+			// request spoke with another consumer instance and use that block for inter consumer consistency.
+			if rpccs.sharedState && cacheSeenBlock > relayRequestData.SeenBlock {
+				utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", relayRequestData.SeenBlock))
+				relayRequestData.SeenBlock = cacheSeenBlock
+				// setting the fetched seen block from the cache server to our local cache as well.
+				rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, dappID, consumerIp)
 			}
-			return relayResult, nil
-		}
-		// cache failed, move on to regular relay
-		if performance.NotConnectedError.Is(cacheError) {
-			utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
+
+			// handle cache reply
+			if cacheError == nil && reply != nil {
+				// Info was fetched from cache, so we don't need to change the state
+				// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+				reply.Data = outputFormatter(reply.Data)
+				relayResult = &common.RelayResult{
+					Reply: reply,
+					Request: &pairingtypes.RelayRequest{
+						RelayData: relayRequestData,
+					},
+					Finalized:    false, // set false to skip data reliability
+					ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
+				}
+				return relayResult, nil
+			}
+			// cache failed, move on to regular relay
+			if performance.NotConnectedError.Is(cacheError) {
+				utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
+			}
 		}
 	} else {
 		utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: chainMessage.GetApi().Name})
@@ -604,26 +619,46 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(chainMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 
 			if rpccs.cache.CacheActive() {
-				// copy private data so if it changes it doesn't panic mid async send
-				copyPrivateData := &pairingtypes.RelayPrivateData{}
-				copyRequestErr := protocopy.DeepCopyProtoObject(localRelayResult.Request.RelayData, copyPrivateData)
+				// copy reply data so if it changes it doesn't panic mid async send
 				copyReply := &pairingtypes.RelayReply{}
 				copyReplyErr := protocopy.DeepCopyProtoObject(localRelayResult.Reply, copyReply)
 				// set cache in a non blocking call
+
+				requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
+				seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
+				hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainID) // get the hash (this changes the data)
+
 				go func() {
 					// deal with copying error.
-					if copyRequestErr != nil || copyReplyErr != nil {
-						utils.LavaFormatError("Failed copying relay private data sendRelayToProvider", nil, utils.LogAttr("copyReplyErr", copyReplyErr), utils.LogAttr("copyRequestErr", copyRequestErr))
+					if copyReplyErr != nil || hashErr != nil {
+						utils.LavaFormatError("Failed copying relay private data sendRelayToProvider", nil,
+							utils.LogAttr("copyReplyErr", copyReplyErr),
+							utils.LogAttr("hashErr", hashErr),
+						)
 						return
 					}
-					requestedBlock, _ := chainMessage.RequestedBlock()
-					if requestedBlock == spectypes.NOT_APPLICABLE {
+					chainMessageRequestedBlock, _ := chainMessage.RequestedBlock()
+					if chainMessageRequestedBlock == spectypes.NOT_APPLICABLE {
 						return
 					}
+
 					new_ctx := context.Background()
 					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 					defer cancel()
-					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{Request: copyPrivateData, BlockHash: nil, ChainID: chainID, Response: copyReply, Finalized: localRelayResult.Finalized, OptionalMetadata: nil, SharedStateId: sharedStateId}) // caching in the portal doesn't care about hashes
+					_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+
+					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
+						RequestHash:      hashKey,
+						ChainId:          chainID,
+						RequestedBlock:   requestedBlock,
+						SeenBlock:        seenBlock,
+						BlockHash:        nil, // consumer cache doesn't care about block hashes
+						Response:         copyReply,
+						Finalized:        localRelayResult.Finalized,
+						OptionalMetadata: nil,
+						SharedStateId:    sharedStateId,
+						AverageBlockTime: int64(averageBlockTime), // by using average block time we can set longer TTL
+					})
 					if err2 != nil {
 						utils.LavaFormatWarning("error updating cache with new entry", err2)
 					}
@@ -939,7 +974,7 @@ func (rpccs *RPCConsumerServer) GetInitialUnwantedProviders(directiveHeaders map
 	return unwantedProviders
 }
 
-func (rpccs *RPCConsumerServer) getExtensionsFromDirectiveHeaders(latestBlock uint64, directiveHeaders map[string]string) extensionslib.ExtensionInfo {
+func (rpccs *RPCConsumerServer) getExtensionsFromDirectiveHeaders(directiveHeaders map[string]string) extensionslib.ExtensionInfo {
 	extensionsStr, ok := directiveHeaders[common.EXTENSION_OVERRIDE_HEADER_NAME]
 	if ok {
 		extensions := strings.Split(extensionsStr, ",")
