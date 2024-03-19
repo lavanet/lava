@@ -917,6 +917,9 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 				Value: strconv.FormatUint(protocolErrors, 10),
 			})
 	}
+	if relayResult.Reply == nil {
+		relayResult.Reply = &pairingtypes.RelayReply{}
+	}
 	if relayResult.Reply.LatestBlock > 0 {
 		metadataReply = append(metadataReply,
 			pairingtypes.Metadata{
@@ -933,9 +936,7 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 				Value: guidStr,
 			})
 	}
-	if relayResult.Reply == nil {
-		relayResult.Reply = &pairingtypes.RelayReply{}
-	}
+
 	relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, metadataReply...)
 }
 
