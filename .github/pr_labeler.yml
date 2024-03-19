@@ -1,53 +1,77 @@
 "C:cmd/lavad":
-  - cmd/lavad/**/*
+- changed-files:
+  - any-glob-to-any-file: "cmd/lavad/**/*"
 "C:cmd/lavap":
-  - cmd/lavap/**/*
+- changed-files:
+  - any-glob-to-any-file: "cmd/lavap/**/*"
 "C:cmd/lavavisor":
-  - cmd/lavavisor/**/*
+- changed-files:
+  - any-glob-to-any-file: "cmd/lavavisor/**/*"
 "C:cmd/common":
-  - cmd/common/**/*
+- changed-files:
+  - any-glob-to-any-file: "cmd/common/**/*"
 "C:protocol":
-  - protocol/**/*
+- changed-files:
+  - any-glob-to-any-file: "protocol/**/*"
 "Team:Consensus":
-  - x/**/*  
-  - app/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/**/*"  
+  - any-glob-to-any-file: "app/**/*"
 "Team:Protocol":
-  - protocol/**/*  
-  - ecosystem/**/*  
+- changed-files:
+  - any-glob-to-any-file: "protocol/**/*"  
+  - any-glob-to-any-file: "ecosystem/**/*"  
 "C:x/conflict":
-  - x/conflict/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/conflict/**/*"
 "C:x/downtime":
-  - x/downtime/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/downtime/**/*"
 "C:x/dualstaking":
-  - x/dualstaking/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/dualstaking/**/*"
 "C:x/epochstorage":
-  - x/epochstorage/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/epochstorage/**/*"
 "C:x/fixationstore":
-  - x/fixationstore/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/fixationstore/**/*"
 "C:x/pairing":
-  - x/pairing/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/pairing/**/*"
 "C:x/plans":
-  - x/plans/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/plans/**/*"
 "C:x/projects":
-  - x/projects/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/projects/**/*"
 "C:x/protocol":
-  - x/protocol/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/protocol/**/*"
 "C:x/rewards":
-  - x/rewards/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/rewards/**/*"
 "C:x/spec":
-  - x/spec/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/spec/**/*"
 "C:x/subscription":
-  - x/subscription/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/subscription/**/*"
 "C:x/timerstore":
-  - x/timerstore/**/*
+- changed-files:
+  - any-glob-to-any-file: "x/timerstore/**/*"
 "Type: Build":
-  - Makefile
-  - Dockerfile
-  - docker-compose.yml
-  - scripts/*
+- changed-files:
+  - any-glob-to-any-file: "Makefile"
+  - any-glob-to-any-file: "Dockerfile"
+  - any-glob-to-any-file: "docker-compose.yml"
+  - any-glob-to-any-file: "scripts/*"
 "Type: CI":
-  - .github/**
+- changed-files:
+  - any-glob-to-any-file: ".github/**"
 "Type: Docs":
-  - docs/**/*
+- changed-files:
+  - any-glob-to-any-file: "docs/**/*"
 "Type: Proto":
-  - proto/**/*
+- changed-files:
+  - any-glob-to-any-file: "proto/**/*"
