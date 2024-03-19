@@ -4,7 +4,7 @@
         "description": "Adding new specification support for relaying Scroll zkEVM data on Lava",
         "specs": [
             {
-                "index": "SCRLL",
+                "index": "SCROLL",
                 "name": "scroll mainnet",
                 "enabled": true,
                 "imports": [
@@ -69,11 +69,11 @@
                 ]
             },
             {
-                "index": "SCRLLS",
+                "index": "SCROLLS",
                 "name": "scroll sepolia testnet",
                 "enabled": true,
                 "imports": [
-                    "SCRLL"
+                    "SCROLL"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
