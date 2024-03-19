@@ -3,7 +3,9 @@ package main
 import (
 	_ "net/http/pprof"
 	"os"
+	"strings"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	"github.com/lavanet/lava/app"
@@ -47,6 +49,13 @@ func main() {
 	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
+
+	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
+		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
+		flags.FlagKeyringBackend: "test",
+		flags.FlagGasAdjustment:  statetracker.DefaultGasAdjustment,
+	})
+
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:

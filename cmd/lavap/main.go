@@ -4,7 +4,9 @@ import (
 	"fmt"
 	_ "net/http/pprof"
 	"os"
+	"strings"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	"github.com/lavanet/lava/app"
@@ -63,6 +65,13 @@ func main() {
 	testCmd.AddCommand(connection.CreateTestConnectionProbeCobraCommand())
 	testCmd.AddCommand(monitoring.CreateHealthCobraCommand())
 	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
+
+	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
+		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
+		flags.FlagKeyringBackend: "test",
+		flags.FlagGasAdjustment:  statetracker.DefaultGasAdjustment,
+	})
+
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:

@@ -18,6 +18,7 @@ const (
 	MaximumConcurrentProvidersFlagName = "concurrent-providers"
 	StatusCodeMetadataKey              = "status-code"
 	VersionMetadataKey                 = "lavap-version"
+	TimeOutForFetchingLavaBlocksFlag   = "timeout-for-fetching-lava-blocks"
 )
 
 func ParseEndpointArgs(endpoint_strings, yaml_config_properties []string, endpointsConfigName string) (viper_endpoints *viper.Viper, err error) {

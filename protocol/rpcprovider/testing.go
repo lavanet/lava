@@ -13,7 +13,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/gogo/status"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
@@ -101,7 +100,7 @@ func validateCORSHeaders(resp *http.Response) error {
 	return nil
 }
 
-func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Factory, providerEntries []epochstoragetypes.StakeEntry) error {
+func startTesting(ctx context.Context, clientCtx client.Context, providerEntries []epochstoragetypes.StakeEntry) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -118,9 +117,6 @@ func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Fa
 		return err
 	}
 	lavaVersion := param.GetParams().Version
-	if err != nil {
-		utils.LavaFormatFatal("failed fetching protocol version from node", err)
-	}
 	targetVersion := lvutil.ParseToSemanticVersion(lavaVersion.ProviderTarget)
 	for _, providerEntry := range providerEntries {
 		utils.LavaFormatInfo("checking provider entry", utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "endpoints", Value: providerEntry.Endpoints})
@@ -274,10 +270,6 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 			utils.LavaFormatInfo("RPCProvider Test started", utils.Attribute{Key: "address", Value: address})
 			utils.SetGlobalLoggingLevel(logLevel)
 			clientCtx = clientCtx.WithChainID(networkChainId)
-			txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
-			if err != nil {
-				utils.LavaFormatFatal("failed to create txFactory", err)
-			}
 
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.InitRandomSeed()
@@ -359,7 +351,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 				utils.LavaFormatError("no active chains for provider", nil, utils.Attribute{Key: "address", Value: address})
 			}
 			utils.LavaFormatDebug("checking chain entries", utils.Attribute{Key: "stakedProviderChains", Value: stakedProviderChains})
-			return startTesting(ctx, clientCtx, txFactory, stakedProviderChains)
+			return startTesting(ctx, clientCtx, stakedProviderChains)
 		},
 	}
 
