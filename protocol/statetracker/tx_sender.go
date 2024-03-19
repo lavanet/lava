@@ -215,8 +215,13 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 	txResultChan := make(chan *coretypes.ResultTx)
 	guid := utils.GenerateUniqueIdentifier()
 	// check consumer session manager
+	timeOutReached := false
 	go func() {
 		for {
+			if timeOutReached {
+				utils.LavaFormatWarning("Timeout waiting for transaction", nil, utils.LogAttr("hash", resultData.Txhash))
+				return
+			}
 			ctx, cancel := context.WithTimeout(utils.WithUniqueIdentifier(context.Background(), guid), 3*time.Second)
 			result, err := clientCtx.Client.Tx(ctx, resultData.Txhash, false)
 			cancel()
@@ -242,6 +247,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 		utils.LavaFormatDebug("Tx Hash found on blockchain", utils.LogAttr("Txhash", hex.EncodeToString(resultData.Txhash)), utils.LogAttr("Code", resultData.Code))
 		break
 	case <-time.After(5 * time.Minute):
+		timeOutReached = true
 		return common.TxResultData{}, utils.LavaFormatError("failed sending tx, wasn't found after timeout", nil, utils.Attribute{Key: "hash", Value: hex.EncodeToString(resultData.Txhash)})
 	}
 	// we found the tx on chain and it failed
