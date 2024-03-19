@@ -1,53 +1,53 @@
 "C:cmd/lavad":
-  - "cmd/lavad/**/*"
+  - cmd/lavad/**/*
 "C:cmd/lavap":
-  - "cmd/lavap/**/*"
+  - cmd/lavap/**/*
 "C:cmd/lavavisor":
-  - "cmd/lavavisor/**/*"
+  - cmd/lavavisor/**/*
 "C:cmd/common":
-  - "cmd/common/**/*"
+  - cmd/common/**/*
 "C:protocol":
-  - "protocol/**/*"
+  - protocol/**/*
 "Team:Consensus":
-  - "x/**/*"  
-  - "app/**/*"
+  - x/**/*  
+  - app/**/*
 "Team:Protocol":
-  - "protocol/**/*"  
-  - "ecosystem/**/*"
+  - protocol/**/*  
+  - ecosystem/**/*  
 "C:x/conflict":
-  - "x/conflict/**/*"
+  - x/conflict/**/*
 "C:x/downtime":
-  - "x/downtime/**/*"
+  - x/downtime/**/*
 "C:x/dualstaking":
-  - "x/dualstaking/**/*"
+  - x/dualstaking/**/*
 "C:x/epochstorage":
-  - "x/epochstorage/**/*"
+  - x/epochstorage/**/*
 "C:x/fixationstore":
-  - "x/fixationstore/**/*"
+  - x/fixationstore/**/*
 "C:x/pairing":
-  - "x/pairing/**/*"
+  - x/pairing/**/*
 "C:x/plans":
-  - "x/plans/**/*"
+  - x/plans/**/*
 "C:x/projects":
-  - "x/projects/**/*"
+  - x/projects/**/*
 "C:x/protocol":
-  - "x/protocol/**/*"
+  - x/protocol/**/*
 "C:x/rewards":
-  - "x/rewards/**/*"
+  - x/rewards/**/*
 "C:x/spec":
-  - "x/spec/**/*"
+  - x/spec/**/*
 "C:x/subscription":
-  - "x/subscription/**/*"
+  - x/subscription/**/*
 "C:x/timerstore":
-  - "x/timerstore/**/*"
+  - x/timerstore/**/*
 "Type: Build":
-  - "Makefile"
-  - "Dockerfile"
-  - "docker-compose.yml"
-  - "scripts/*"
+  - Makefile
+  - Dockerfile
+  - docker-compose.yml
+  - scripts/*
 "Type: CI":
-  - ".github/**"
+  - .github/**
 "Type: Docs":
-  - "docs/**/*"
+  - docs/**/*
 "Type: Proto":
-  - "proto/**/*"
+  - proto/**/*
