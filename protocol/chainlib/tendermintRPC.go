@@ -469,7 +469,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("seed", msgSeed),
-			utils.LogAttr("msg", logFormattedMsg),
+			utils.LogAttr("_msg", logFormattedMsg),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
@@ -529,7 +529,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		headers := convertToMetadataMap(metadataValues)
 		utils.LavaFormatDebug("urirpc in <<<",
 			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("msg", path),
+			utils.LogAttr("_msg", path),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)

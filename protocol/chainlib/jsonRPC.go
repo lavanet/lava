@@ -446,7 +446,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("seed", msgSeed),
-			utils.LogAttr("msg", logFormattedMsg),
+			utils.LogAttr("_msg", logFormattedMsg),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
