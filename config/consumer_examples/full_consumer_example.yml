@@ -149,6 +149,9 @@ endpoints:
     - chain-id: KOIIT
       api-interface: jsonrpc
       network-address: 127.0.0.1:3392
+    - chain-id: AVAXT
+      api-interface: jsonrpc
+      network-address: 127.0.0.1:3393
 metrics-listen-address: ":7779"
 # referer-be-address: "http://127.0.0.1:6500"
 # reports-be-address: "http://127.0.0.1:6501"
