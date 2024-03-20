@@ -222,7 +222,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 				utils.LavaFormatWarning("Timeout waiting for transaction", nil, utils.LogAttr("hash", resultData.Txhash))
 				return
 			}
-			ctx, cancel := context.WithTimeout(utils.WithUniqueIdentifier(context.Background(), guid), 3*time.Second)
+			ctx, cancel := context.WithTimeout(utils.WithUniqueIdentifier(context.Background(), guid), 5*time.Second)
 			result, err := clientCtx.Client.Tx(ctx, resultData.Txhash, false)
 			cancel()
 			if err == nil {
