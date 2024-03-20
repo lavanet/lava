@@ -21,6 +21,12 @@
 - changed-files:
   - any-glob-to-any-file: "protocol/**/*"  
   - any-glob-to-any-file: "ecosystem/**/*"  
+"C:specs":
+- changed-files:
+  - any-glob-to-any-file: "cookbook/**/*"
+"C:proto":
+- changed-files:
+  - any-glob-to-any-file: "proto/**/*"
 "C:x/conflict":
 - changed-files:
   - any-glob-to-any-file: "x/conflict/**/*"
