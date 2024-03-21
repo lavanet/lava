@@ -41,10 +41,9 @@ type providerDataContainer struct {
 	LatestBlockTime               time.Time
 	FinalizedBlocksHashes         map[int64]string
 	SigBlocks                     []byte
-	SessionId                     uint64
-	RelayNum                      uint64
 	LatestBlock                   int64
 	BlockDistanceFromFinalization int64
+	RelaySession                  pairingtypes.RelaySession
 }
 
 func NewFinalizationConsensus(specId string) *FinalizationConsensus {
@@ -73,10 +72,9 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 		LatestBlockTime:               time.Now(),
 		FinalizedBlocksHashes:         finalizedBlocks,
 		SigBlocks:                     reply.SigBlocks,
-		SessionId:                     req.SessionId,
-		RelayNum:                      req.RelayNum,
 		LatestBlock:                   latestBlock,
 		BlockDistanceFromFinalization: blockDistanceForFinalizedData,
+		RelaySession:                  *req,
 	}
 
 	for blockNum, blockHash := range finalizedBlocks {
@@ -98,7 +96,7 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 // create new consensus group if no consensus matched
 // check for discrepancy with old epoch
 // checks if there is a consensus mismatch between hashes provided by different providers
-func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalizedData int64, consumerAddress sdk.AccAddress, providerAddress string, finalizedBlocks map[int64]string, req *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
+func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalizedData int64, consumerAddress sdk.AccAddress, providerAddress string, finalizedBlocks map[int64]string, relaySession *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
 	logSuccessUpdate := func() {
 		if debug {
 			utils.LavaFormatDebug("finalization information update successfully",
@@ -113,7 +111,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 
 	fc.providerDataContainersMu.Lock()
 	defer func() {
-		fc.insertProviderToConsensus(latestBlock, blockDistanceForFinalizedData, finalizedBlocks, reply, req, providerAddress)
+		fc.insertProviderToConsensus(latestBlock, blockDistanceForFinalizedData, finalizedBlocks, reply, relaySession, providerAddress)
 		fc.providerDataContainersMu.Unlock()
 	}()
 
@@ -133,7 +131,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 		}
 	}
 
-	replyFinalization := conflicttypes.NewRelayFinalization(req, reply, consumerAddress, blockDistanceForFinalizedData)
+	replyFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relaySession, reply, consumerAddress)
 	finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
 
 	var otherBlockHash string
@@ -199,13 +197,10 @@ func (fc *FinalizationConsensus) createRelayFinalizationFromProviderDataContaine
 	}
 
 	return &conflicttypes.RelayFinalization{
-		FinalizedBlocksHashes:       finalizedBlocksHashesBytes,
-		LatestBlock:                 dataContainer.LatestBlock,
-		Sig:                         dataContainer.SigBlocks,
-		ConsumerAddress:             consumerAddr.String(),
-		BlockDistanceToFinalization: dataContainer.BlockDistanceFromFinalization,
-		SpecId:                      fc.specId,
-		Epoch:                       int64(fc.currentEpoch),
+		FinalizedBlocksHashes: finalizedBlocksHashesBytes,
+		LatestBlock:           dataContainer.LatestBlock,
+		ConsumerAddress:       consumerAddr.String(),
+		RelaySession:          &dataContainer.RelaySession,
 	}, nil
 }
 
@@ -313,7 +308,7 @@ func InterpolateBlocks(timeNow, latestBlockTime time.Time, averageBlockTime time
 func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock, blockDistanceForFinalization int64) (finalizedBlocks map[int64]string, finalizationConflict *conflicttypes.FinalizationConflict, errRet error) {
 	// TODO: Should block provider and report
 
-	relayFinalization := conflicttypes.NewRelayFinalization(relayRequest.RelaySession, reply, consumerAcc, blockDistanceForFinalization)
+	relayFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relayRequest.RelaySession, reply, consumerAcc)
 	recoveredProviderPubKey, err := sigs.RecoverPubKey(relayFinalization)
 	if err != nil {
 		return nil, nil, err
@@ -368,7 +363,7 @@ func verifyFinalizationDataIntegrity(relaySession *pairingtypes.RelaySession, re
 	maxBlockNum := int64(0)
 	// TODO: compare finalizedBlocks len vs chain parser len to validate (get from same place as blockDistanceForFinalization arrives)
 
-	replyFinalization := conflicttypes.NewRelayFinalization(relaySession, reply, consumerAddr, blockDistanceForFinalization)
+	replyFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relaySession, reply, consumerAddr)
 
 	for blockNum := range finalizedBlocks {
 		// Check if finalized

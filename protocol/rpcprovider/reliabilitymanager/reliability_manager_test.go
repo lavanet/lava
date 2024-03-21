@@ -89,7 +89,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		reply.FinalizedBlocksHashes = jsonStr
 		reply.LatestBlock = latestBlock
-		reply, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true, 0)
+		reply, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
@@ -122,7 +122,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		replyDR.FinalizedBlocksHashes = jsonStr
 		replyDR.LatestBlock = latestBlock
-		replyDR, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true, 0)
+		replyDR, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true)
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
@@ -185,16 +185,18 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, string(replyDataBuf))
 		})
+
 		chainParser, chainProxy, chainFetcher, closeServer, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
+
 		require.NoError(t, err)
 		require.NotNil(t, chainParser)
 		require.NotNil(t, chainProxy)
 		require.NotNil(t, chainFetcher)
 
-		consumerSesssionWithProvider := &lavasession.ConsumerSessionsWithProvider{}
+		consumerSessionWithProvider := &lavasession.ConsumerSessionsWithProvider{}
 		singleConsumerSession := &lavasession.SingleConsumerSession{
 			CuSum:         20,
 			LatestRelayCu: 10, // set by GetSessions cuNeededForSession
@@ -206,22 +208,24 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 			Endpoint:      nil,
 			BlockListed:   false, // if session lost sync we blacklist it.
 		}
+
 		singleConsumerSession2 := &lavasession.SingleConsumerSession{
 			CuSum:         200,
 			LatestRelayCu: 100, // set by GetSessions cuNeededForSession
 			QoSInfo:       lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
 			SessionId:     456,
-			Parent:        consumerSesssionWithProvider,
+			Parent:        consumerSessionWithProvider,
 			RelayNum:      5,
 			LatestBlock:   epoch,
 			Endpoint:      nil,
 			BlockListed:   false, // if session lost sync we blacklist it.
 		}
-		metadataValue := make([]pairingtypes.Metadata, 1)
-		metadataValue[0] = pairingtypes.Metadata{
+
+		metadataValue := []pairingtypes.Metadata{{
 			Name:  "banana",
 			Value: "55",
-		}
+		}}
+
 		chainMessage, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/latest", []byte{}, "GET", metadataValue, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
 		reqBlock, _ := chainMessage.RequestedBlock()
@@ -244,7 +248,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply.FinalizedBlocksHashes = jsonStr
 		reply.LatestBlock = latestBlock
-		reply, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true, 0)
+		reply, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ts.Ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
@@ -274,18 +278,24 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.Equal(t, extractedConsumerAddress, consumer_address)
 		require.True(t, bytes.Equal(relayDR.RelaySession.ContentHash, sigs.HashMsg(relayDR.RelayData.GetContentHashData())))
 		latestBlock = int64(123)
+
 		// provider handling the response
 		finalizedBlockHashes = map[int64]interface{}{latestBlock: "AAA"}
 		maliciousReply := []byte("Gimme-your-lava")
 		replyDR := &pairingtypes.RelayReply{Data: maliciousReply}
+
 		jsonStr, err = json.Marshal(finalizedBlockHashes)
 		require.NoError(t, err)
+
 		replyDR.FinalizedBlocksHashes = jsonStr
 		replyDR.LatestBlock = latestBlock
-		replyDR, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true, 0)
+
+		replyDR, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true)
 		require.NoError(t, err)
+
 		err = lavaprotocol.VerifyRelayReply(ts.Ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
+
 		_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
@@ -306,7 +316,9 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 			require.NoError(t, err)
 			return err
 		}
+
 		txm := &txSenderMock{cb: cb}
+
 		consumerStateTracker := &statetracker.ConsumerStateTracker{ConsumerTxSenderInf: txm}
 		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Parent) // report first time
 		require.NoError(t, err)

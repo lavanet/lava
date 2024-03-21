@@ -31,11 +31,9 @@ message FinalizationConflict {
 }
 
 message RelayFinalization {
-    bytes finalized_blocks_hashes = 1; // Used for validation of block hashes
-    int64 block_distance_to_finalization = 2; // Used for validation of finalization blocks
-    int64 latest_block = 3; // Used for validation finalization blocks
-    int64 epoch = 4; // Used for pairing validation
-    string spec_id = 5; // Used for pairing validation
-    string consumer_address = 6;
-    bytes sig = 7;
+    bytes finalized_blocks_hashes = 1;
+    int64 latest_block = 2;
+    string consumer_address = 3;
+    lavanet.lava.pairing.RelaySession relay_session = 4;
+    bytes sig_blocks = 5;
 }

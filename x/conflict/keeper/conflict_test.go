@@ -47,9 +47,9 @@ func TestValidateBlockHeights(t *testing.T) {
 		latestBlockHeight := int64(6)
 		finalizationBlockHashes := map[int64]string{}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, provider0Acc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, provider0Acc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, provider1Acc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, provider1Acc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 
@@ -69,9 +69,9 @@ func TestValidateBlockHeights(t *testing.T) {
 		latestBlockHeight := int64(6)
 		finalizationBlockHashes := map[int64]string{}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 
@@ -92,9 +92,9 @@ func TestValidateBlockHeights(t *testing.T) {
 		latestBlockHeight := int64(6)
 		finalizationBlockHashes := map[int64]string{}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, altSpec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 
@@ -110,9 +110,9 @@ func TestValidateBlockHeights(t *testing.T) {
 		latestBlockHeight := int64(6)
 		finalizationBlockHashes := map[int64]string{}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 
@@ -128,9 +128,9 @@ func TestValidateBlockHeights(t *testing.T) {
 		latestBlockHeight := int64(6)
 		finalizationBlockHashes := map[int64]string{}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 
@@ -151,9 +151,9 @@ func TestValidateBlockHeights(t *testing.T) {
 			5: "hash4",
 		}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 
@@ -176,9 +176,9 @@ func TestValidateBlockHeights(t *testing.T) {
 			4: "hash4",
 		}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 
@@ -201,9 +201,9 @@ func TestValidateBlockHeights(t *testing.T) {
 			4: "hash4",
 		}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight, finalizationBlockHashes, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 
@@ -234,9 +234,9 @@ func TestValidateBlockHeights(t *testing.T) {
 			8: "hash",
 		}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight0, finalizationBlockHashes0, ts.spec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight0, finalizationBlockHashes0, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight1, finalizationBlockHashes1, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight1, finalizationBlockHashes1, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 
@@ -267,9 +267,9 @@ func TestValidateBlockHeights(t *testing.T) {
 			7: "hash7",
 		}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight0, finalizationBlockHashes0, ts.spec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight0, finalizationBlockHashes0, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight1, finalizationBlockHashes1, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight1, finalizationBlockHashes1, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 
@@ -300,9 +300,9 @@ func TestValidateBlockHeights(t *testing.T) {
 			7: "hash7",
 		}
 
-		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight0, finalizationBlockHashes0, ts.spec)
+		reply0, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight0, finalizationBlockHashes0, &ts.spec)
 		require.NoError(t, err)
-		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, int64(ts.EpochStart()), latestBlockHeight1, finalizationBlockHashes1, ts.spec)
+		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight1, finalizationBlockHashes1, &ts.spec)
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
 

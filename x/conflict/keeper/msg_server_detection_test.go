@@ -104,7 +104,7 @@ func TestDetection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			msg, _, reply, err := common.CreateResponseConflictMsgDetectionForTest(ts.GoCtx, tt.Creator, tt.Provider0, tt.Provider1, ts.spec)
+			msg, _, reply, err := common.CreateResponseConflictMsgDetectionForTest(ts.GoCtx, tt.Creator, tt.Provider0, tt.Provider1, &ts.spec)
 			require.NoError(t, err)
 
 			msg.Creator = tt.Creator.Addr.String()
@@ -122,19 +122,23 @@ func TestDetection(t *testing.T) {
 			responseConflict.ConflictRelayData1.Request.RelaySession.RelayNum += tt.RelayNum
 			responseConflict.ConflictRelayData1.Request.RelaySession.SessionId += tt.SeassionID
 			responseConflict.ConflictRelayData1.Request.RelaySession.Provider = tt.Provider1.Addr.String()
+
 			responseConflict.ConflictRelayData1.Request.RelaySession.Sig = []byte{}
 			sig, err := sigs.Sign(ts.consumer.SK, *responseConflict.ConflictRelayData1.Request.RelaySession)
 			require.NoError(t, err)
 			responseConflict.ConflictRelayData1.Request.RelaySession.Sig = sig
+
 			reply.Data = append(reply.Data, tt.ReplyData...)
 			relayExchange := types.NewRelayExchange(*responseConflict.ConflictRelayData1.Request, *reply)
 			sig, err = sigs.Sign(tt.Provider1.SK, relayExchange)
 			require.NoError(t, err)
 			reply.Sig = sig
-			relayFinalization := conflicttypes.NewRelayFinalization(responseConflict.ConflictRelayData1.Request.RelaySession, reply, ts.consumer.Addr, 0)
+
+			relayFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(responseConflict.ConflictRelayData1.Request.RelaySession, reply, ts.consumer.Addr)
 			sigBlocks, err := sigs.Sign(tt.Provider1.SK, relayFinalization)
 			require.NoError(t, err)
 			reply.SigBlocks = sigBlocks
+
 			responseConflict.ConflictRelayData1.Reply = conflictconstruct.ConstructReplyMetadata(reply, responseConflict.ConflictRelayData1.Request)
 			// send detection msg
 			_, err = ts.txConflictDetection(msg)
@@ -165,7 +169,7 @@ func TestFrozenProviderDetection(t *testing.T) {
 	ts.AdvanceEpoch() // apply the freeze
 
 	// send a conflict detection TX
-	msg, _, _, err := common.CreateResponseConflictMsgDetectionForTest(ts.GoCtx, ts.consumer, ts.providers[0], ts.providers[1], ts.spec)
+	msg, _, _, err := common.CreateResponseConflictMsgDetectionForTest(ts.GoCtx, ts.consumer, ts.providers[0], ts.providers[1], &ts.spec)
 	require.NoError(t, err)
 	_, err = ts.txConflictDetection(msg)
 	require.NoError(t, err)

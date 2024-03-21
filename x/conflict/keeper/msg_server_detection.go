@@ -96,7 +96,7 @@ func (k msgServer) handleSameProviderConflict(ctx sdk.Context, conflict *types.F
 	}
 
 	eventData = map[string]string{"client": clientAddr.String()}
-	eventData["chainID"] = conflict.RelayReply0.SpecId
+	eventData["chainID"] = conflict.RelayReply0.RelaySession.SpecId
 	eventData["mismatching_block_height"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
 	eventData["mismatching_block_hashes"] = fmt.Sprintf("%+v", mismatchingBlockHashes)
 

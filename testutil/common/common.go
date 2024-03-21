@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
@@ -65,7 +66,7 @@ func BuildRelayRequestWithBadge(ctx context.Context, provider string, contentHas
 	return relaySession
 }
 
-func CreateResponseConflictMsgDetectionForTest(ctx context.Context, consumer, provider0, provider1 sigs.Account, spec spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *pairingtypes.RelayReply, errRet error) {
+func CreateResponseConflictMsgDetectionForTest(ctx context.Context, consumer, provider0, provider1 sigs.Account, spec *spectypes.Spec) (detectionMsg *conflicttypes.MsgDetection, reply1, reply2 *pairingtypes.RelayReply, errRet error) {
 	detectionMsg = &conflicttypes.MsgDetection{
 		Creator: consumer.Addr.String(),
 		Conflict: &conflicttypes.MsgDetection_ResponseConflict{
@@ -127,7 +128,7 @@ func initConflictRelayData() *conflicttypes.ConflictRelayData {
 }
 
 // prepareRelayData prepares relay data for a given provider.
-func prepareRelayData(ctx context.Context, conflictData *conflicttypes.ConflictRelayData, provider sigs.Account, spec spectypes.Spec) {
+func prepareRelayData(ctx context.Context, conflictData *conflicttypes.ConflictRelayData, provider sigs.Account, spec *spectypes.Spec) {
 	relayData := &pairingtypes.RelayPrivateData{
 		ConnectionType: "",
 		ApiUrl:         "",
@@ -172,14 +173,11 @@ func duplicateRequestForProvider(conflict *conflicttypes.ResponseConflict, provi
 }
 
 // createAndSignReply creates a reply for a provider and signs it.
-func createAndSignReply(provider sigs.Account, request *pairingtypes.RelayRequest, spec spectypes.Spec, addDiffData bool) (*pairingtypes.RelayReply, error) {
+func createAndSignReply(provider sigs.Account, request *pairingtypes.RelayRequest, spec *spectypes.Spec, addDiffData bool) (*pairingtypes.RelayReply, error) {
 	reply := &pairingtypes.RelayReply{
-		Data:                  []byte("DUMMYREPLY"),
-		Sig:                   request.RelaySession.Sig,
-		LatestBlock:           request.RelayData.RequestBlock + int64(spec.BlockDistanceForFinalizedData),
-		FinalizedBlocksHashes: []byte{},
-		SigBlocks:             request.RelaySession.Sig,
-		Metadata:              []pairingtypes.Metadata{},
+		Data:        []byte("DUMMYREPLY"),
+		Sig:         request.RelaySession.Sig,
+		LatestBlock: request.RelayData.RequestBlock + int64(spec.BlockDistanceForFinalizedData),
 	}
 
 	if addDiffData {
@@ -193,59 +191,58 @@ func createAndSignReply(provider sigs.Account, request *pairingtypes.RelayReques
 	}
 
 	reply.Sig = sig
+
 	return reply, nil
 }
 
 // finalizeConflictRelayData updates the conflict relay data with the reply information.
 func finalizeConflictRelayData(consumer, provider sigs.Account, conflictData *conflicttypes.ConflictRelayData, reply *pairingtypes.RelayReply) (*conflicttypes.ConflictRelayData, error) {
-	relayFinalization := conflicttypes.NewRelayFinalization(conflictData.Request.RelaySession, reply, consumer.Addr, 0)
+	relayFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(conflictData.Request.RelaySession, reply, consumer.Addr)
 	sigBlocks, err := sigs.Sign(provider.SK, relayFinalization)
 	if err != nil {
 		return nil, err
 	}
+	relayFinalization.SigBlocks = sigBlocks
+	pubKey, _ := sigs.RecoverPubKey(relayFinalization)
+	derived_providerAccAddress, _ := sdk.AccAddressFromHexUnsafe(pubKey.Address().String())
+	utils.LavaFormatDebug("ELAD",
+		utils.LogAttr("original_address", provider.Addr.String()),
+		utils.LogAttr("derived_address", derived_providerAccAddress.String()),
+	)
+
 	reply.SigBlocks = sigBlocks
+
 	conflictRelayData := conflictconstruct.ConstructConflictRelayData(reply, conflictData.Request)
 	return conflictRelayData, nil
 }
 
-func CreateRelayFinalizationForTest(ctx context.Context, consumer, provider sigs.Account, epoch, latestBlock int64, finalizationBlockHashes map[int64]string, spec spectypes.Spec) (*conflicttypes.RelayFinalization, error) {
-	relayFinalization := initConflictRelayFinalization(epoch, latestBlock, spec, consumer)
+func CreateRelayFinalizationForTest(ctx context.Context, consumer, provider sigs.Account, latestBlock int64, finalizationBlockHashes map[int64]string, spec *spectypes.Spec) (*conflicttypes.RelayFinalization, error) {
+	relayFinalization := &conflicttypes.RelayFinalization{
+		LatestBlock:     latestBlock,
+		ConsumerAddress: consumer.Addr.String(),
+	}
 
-	err := setRelayFinalizationFinalizedBlocksHashes(relayFinalization, finalizationBlockHashes)
+	conflictData := initConflictRelayData()
+	prepareRelayData(ctx, conflictData, provider, spec)
+	if err := signSessionData(consumer, conflictData.Request.RelaySession); err != nil {
+		return relayFinalization, err
+	}
+
+	relayFinalization.RelaySession = conflictData.Request.RelaySession
+
+	jsonStr, err := json.Marshal(finalizationBlockHashes)
 	if err != nil {
 		return relayFinalization, err
 	}
+
+	relayFinalization.FinalizedBlocksHashes = jsonStr
 
 	// Sign relay reply for provider
 	sig0, err := sigs.Sign(provider.SK, relayFinalization)
 	if err != nil {
 		return relayFinalization, err
 	}
-	relayFinalization.Sig = sig0
+	relayFinalization.SigBlocks = sig0
 
 	return relayFinalization, nil
-}
-
-// initConflictRelayData initializes the structure for holding relay conflict data.
-func initConflictRelayFinalization(epoch, latestBlock int64, spec spectypes.Spec, consumer sigs.Account) *conflicttypes.RelayFinalization {
-	return &conflicttypes.RelayFinalization{
-		FinalizedBlocksHashes:       []byte{},
-		LatestBlock:                 latestBlock,
-		ConsumerAddress:             consumer.Addr.String(),
-		Sig:                         []byte{},
-		BlockDistanceToFinalization: int64(spec.BlockDistanceForFinalizedData),
-		SpecId:                      spec.Index,
-		Epoch:                       epoch,
-	}
-}
-
-// setRelayFinalizationFinalizedBlocksHashes sets the finalized blocks hashes in the relay finalization
-func setRelayFinalizationFinalizedBlocksHashes(relayFinalization *conflicttypes.RelayFinalization, finalizedBlocksHashes map[int64]string) error {
-	jsonStr, err := json.Marshal(finalizedBlocksHashes)
-	if err != nil {
-		return err
-	}
-
-	relayFinalization.FinalizedBlocksHashes = jsonStr
-	return nil
 }

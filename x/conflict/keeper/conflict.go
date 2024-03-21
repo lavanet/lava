@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 func (k Keeper) ValidateFinalizationConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) error {
@@ -142,8 +143,8 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 			print_st = "second"
 		}
 
-		metaData := types.NewRelayFinalizationMetaData(*replyMetadata, *request, clientAddr)
-		pubKey, err := sigs.RecoverPubKey(metaData)
+		relayFinalization := types.NewRelayFinalizationMetaDataFromReplyMetadataAndRelayRequest(*replyMetadata, *request, clientAddr)
+		pubKey, err := sigs.RecoverPubKey(relayFinalization)
 		if err != nil {
 			return fmt.Errorf("RecoverPubKey %s provider ResponseFinalizationData: %w", print_st, err)
 		}
@@ -221,34 +222,13 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 	}
 
 	// Validate matching spec and epoch
-	if conflictData.RelayReply0.SpecId != conflictData.RelayReply1.SpecId {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Mismatching spec id %s, %s", conflictData.RelayReply0.SpecId, conflictData.RelayReply1.SpecId)
+	if conflictData.RelayReply0.RelaySession.SpecId != conflictData.RelayReply1.RelaySession.SpecId {
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Mismatching spec id %s, %s", conflictData.RelayReply0.RelaySession.SpecId, conflictData.RelayReply1.RelaySession.SpecId)
 	}
 
-	specId := conflictData.RelayReply0.SpecId
-	providerAddress := providerAddress0
-
-	validatePairing := func(epoch uint64) bool {
-		// Validate pairing for provider 0
-		project, err := k.pairingKeeper.GetProjectData(ctx, clientAddr, specId, epoch)
-		if err != nil {
-			return false
-		}
-
-		isValidPairing, _, _, err := k.pairingKeeper.ValidatePairingForClient(ctx, specId, providerAddress, epoch, project)
-		if err != nil {
-			return false
-		}
-
-		return isValidPairing
-	}
-
-	if !validatePairing(uint64(conflictData.RelayReply0.Epoch)) {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Invalid pairing between client %s and provider %s for epoch %d", clientAddr, providerAddress, conflictData.RelayReply0.Epoch)
-	}
-
-	if !validatePairing(uint64(conflictData.RelayReply1.Epoch)) {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Invalid pairing between client %s and provider %s for epoch %d", clientAddr, providerAddress, conflictData.RelayReply1.Epoch)
+	spec, _ := k.specKeeper.GetSpec(ctx, conflictData.RelayReply0.RelaySession.SpecId)
+	if uint64(conflictData.RelayReply0.RelaySession.Epoch) <= spec.BlockLastUpdated {
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Epoch %d is less than spec last updated block %d", conflictData.RelayReply0.RelaySession.Epoch, spec.BlockLastUpdated)
 	}
 
 	// Validate block nums are ordered && Finalization distance is right
@@ -262,11 +242,11 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 		return 0, nil, err
 	}
 
-	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply0, latestFinalizedBlock0); err != nil {
+	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply0, latestFinalizedBlock0, &spec); err != nil {
 		return 0, nil, err
 	}
 
-	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply1, latestFinalizedBlock1); err != nil {
+	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply1, latestFinalizedBlock1, &spec); err != nil {
 		return 0, nil, err
 	}
 
@@ -320,7 +300,7 @@ func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.R
 
 	// Validate that all finalized blocks are finalized
 	for _, blockNum := range blockHeights {
-		if !k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.SpecId, blockNum, relayFinalization.GetLatestBlock()) {
+		if !k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.RelaySession.SpecId, blockNum, relayFinalization.GetLatestBlock()) {
 			return EMPTY_MAP, 0, 0, fmt.Errorf("ValidateSameProviderConflict: Finalized block is not finalized: %d", blockNum)
 		}
 	}
@@ -328,16 +308,16 @@ func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.R
 	return finalizedBlocks, blockHeights[0], blockHeights[len(blockHeights)-1], nil
 }
 
-func (k Keeper) validateFinalizedBlock(ctx sdk.Context, relayFinalization *types.RelayFinalization, latestFinalizedBlock int64) error {
+func (k Keeper) validateFinalizedBlock(ctx sdk.Context, relayFinalization *types.RelayFinalization, latestFinalizedBlock int64, spec *spectypes.Spec) error {
 	latestBlock := relayFinalization.GetLatestBlock()
-	blockDistanceToFinalization := relayFinalization.GetBlockDistanceToFinalization()
+	blockDistanceToFinalization := int64(spec.BlockDistanceForFinalizedData)
 
 	// Validate that finalization distance is right
 	if latestFinalizedBlock != latestBlock-blockDistanceToFinalization {
 		return fmt.Errorf("ValidateSameProviderConflict: Missing blocks from finalization blocks: latestFinalizedBlock[%d], latestBlock[%d]-blockDistanceToFinalization[%d]=expectedLatestFinalizedBlock[%d]", latestFinalizedBlock, latestBlock, blockDistanceToFinalization, latestBlock-blockDistanceToFinalization)
 	}
 
-	if k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.SpecId, latestFinalizedBlock+1, latestBlock) {
+	if k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.RelaySession.SpecId, latestFinalizedBlock+1, latestBlock) {
 		return fmt.Errorf("ValidateSameProviderConflict: Finalized block is not in FinalizedBlocksHashes map. Block height: %d", latestFinalizedBlock+1)
 	}
 

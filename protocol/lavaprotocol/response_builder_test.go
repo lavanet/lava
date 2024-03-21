@@ -57,7 +57,7 @@ func TestSignAndExtractResponse(t *testing.T) {
 	require.NoError(t, err)
 	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = 123
-	reply, err = SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true, 0)
+	reply, err = SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
@@ -107,7 +107,7 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	require.NoError(t, err)
 	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = latestBlock
-	reply, err = SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true, 0)
+	reply, err = SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
