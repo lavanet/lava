@@ -267,8 +267,7 @@ func (rp *RelayProcessor) readExistingResponses() {
 // it then updates the responses in their respective place, node errors, protocol errors or success results
 func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 	if rp == nil {
-		utils.LavaFormatError("RelayProcessor.WaitForResults is nil, misuse detected", nil)
-		return nil
+		return utils.LavaFormatError("RelayProcessor.WaitForResults is nil, misuse detected", nil)
 	}
 	responsesCount := 0
 	for {
@@ -353,8 +352,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 // on error: we will return a placeholder relayResult, with a provider address and a status code
 func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult, processingError error) {
 	if rp == nil {
-		utils.LavaFormatError("RelayProcessor.ProcessingResult is nil, misuse detected", nil)
-		return nil, nil
+		return nil, utils.LavaFormatError("RelayProcessor.ProcessingResult is nil, misuse detected", nil)
 	}
 
 	// this must be here before the lock because this function locks
