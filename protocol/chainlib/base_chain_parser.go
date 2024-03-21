@@ -300,10 +300,7 @@ func (apip *BaseChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatWarning("api not supported", common.APINotSupportedError,
-			utils.LogAttr("name", name),
-			utils.LogAttr("connectionType", connectionType),
-		)
+		return nil, common.APINotSupportedError
 	}
 
 	// Return an error if api is disabled
