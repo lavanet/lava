@@ -36,7 +36,7 @@ type UsedProviders struct {
 func (up *UsedProviders) CurrentlyUsed() int {
 	if up == nil {
 		utils.LavaFormatError("UsedProviders.CurrentlyUsed is nil, misuse detected", nil)
-		return -1
+		return 0
 	}
 	up.lock.RLock()
 	defer up.lock.RUnlock()
@@ -46,7 +46,7 @@ func (up *UsedProviders) CurrentlyUsed() int {
 func (up *UsedProviders) SessionsLatestBatch() int {
 	if up == nil {
 		utils.LavaFormatError("UsedProviders.SessionsLatestBatch is nil, misuse detected", nil)
-		return -1
+		return 0
 	}
 	up.lock.RLock()
 	defer up.lock.RUnlock()
