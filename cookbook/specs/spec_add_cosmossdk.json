@@ -5348,7 +5348,7 @@
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0",
-                                            "result",
+                                            "response",
                                             "value"
                                         ],
                                         "parser_func": "PARSE_CANONICAL"
