@@ -383,14 +383,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
 			if common.APINotSupportedError.Is(err) {
-				switch chainID {
-				case "APT1":
-					// Aptos node returns a different error body than the rest of the chains
-					// This solution is temporary until we change the spec to state how the error looks like
-					return fiberCtx.Status(fiber.StatusNotImplemented).JSON(common.RestAptosMethodNotFoundError)
-				default:
-					return fiberCtx.Status(fiber.StatusNotImplemented).JSON(common.RestMethodNotFoundError)
-				}
+				return common.CreateRestMethodNotFoundError(fiberCtx, chainID)
 			}
 
 			// Get unique GUID response
