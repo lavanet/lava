@@ -345,8 +345,10 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 	return nil
 }
 
-var good_stakeStorage_lava_staging_4 []byte
-var good_stakeStorage_lava_testnet_2 []byte
+var (
+	good_stakeStorage_lava_staging_4 []byte
+	good_stakeStorage_lava_testnet_2 []byte
+)
 
 func GetStakeStorages(lavaChainID string) map[string]epochstoragetypes.StakeStorage {
 	var payload []byte
