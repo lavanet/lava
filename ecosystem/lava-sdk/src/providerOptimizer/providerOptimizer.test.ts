@@ -165,7 +165,7 @@ describe("ProviderOptimizer", () => {
       providers,
       "skipIndex",
       skipIndex
-    )
+    );
     expect(returnedProviders[0]).toBe(providers[skipIndex]);
 
     returnedProviders = providerOptimizer.chooseProvider(
