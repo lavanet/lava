@@ -40,7 +40,7 @@ jobs:
         continue-on-error: true
         if: ${{ matrix.binary }} == "lavad"
         run: |
-          response=$(./${{ fromJson(steps.releaser.outputs.artifacts)[0].path }} status --node http://public-rpc.lavanet.xyz:80/rpc/ | jq '.NodeInfo')
+          response=$(cmd/lavad/${{ fromJson(steps.releaser.outputs.artifacts)[0].path }} status --node http://public-rpc.lavanet.xyz:80/rpc/ | jq '.NodeInfo')
           if [ -z "${response}" ]; then
             echo "The binary fails to connect to a node."
             exit 1
