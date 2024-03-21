@@ -85,6 +85,10 @@ func (rp *RelayProcessor) String() string {
 }
 
 func (rp *RelayProcessor) GetUsedProviders() *lavasession.UsedProviders {
+	if rp == nil {
+		utils.LavaFormatError("RelayProcessor.GetUsedProviders is nil, misuse detected", nil)
+		return nil
+	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	return rp.usedProviders
@@ -262,6 +266,10 @@ func (rp *RelayProcessor) readExistingResponses() {
 // this function waits for the processing results, they are written by multiple go routines and read by this go routine
 // it then updates the responses in their respective place, node errors, protocol errors or success results
 func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
+	if rp == nil {
+		utils.LavaFormatError("RelayProcessor.WaitForResults is nil, misuse detected", nil)
+		return nil
+	}
 	responsesCount := 0
 	for {
 		select {
@@ -344,6 +352,11 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 // if strategy == quorum get majority of node responses
 // on error: we will return a placeholder relayResult, with a provider address and a status code
 func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult, processingError error) {
+	if rp == nil {
+		utils.LavaFormatError("RelayProcessor.ProcessingResult is nil, misuse detected", nil)
+		return nil, nil
+	}
+
 	// this must be here before the lock because this function locks
 	allProvidersAddresses := rp.GetUsedProviders().UnwantedAddresses()
 
