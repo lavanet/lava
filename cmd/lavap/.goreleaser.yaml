@@ -36,10 +36,6 @@ builds:
       - goos: windows
         goarch: arm64
 
-nfpms:
-  - id: lavap
-    maintainer: Amit <amit@lavanet.xyz>
-
 archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of `uname`.
