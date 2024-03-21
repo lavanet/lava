@@ -34,18 +34,30 @@ type UsedProviders struct {
 }
 
 func (up *UsedProviders) CurrentlyUsed() int {
+	if up == nil {
+		utils.LavaFormatError("UsedProviders.CurrentlyUsed is nil, misuse detected", nil)
+		return -1
+	}
 	up.lock.RLock()
 	defer up.lock.RUnlock()
 	return len(up.providers)
 }
 
 func (up *UsedProviders) SessionsLatestBatch() int {
+	if up == nil {
+		utils.LavaFormatError("UsedProviders.SessionsLatestBatch is nil, misuse detected", nil)
+		return -1
+	}
 	up.lock.RLock()
 	defer up.lock.RUnlock()
 	return up.sessionsLatestBatch
 }
 
 func (up *UsedProviders) CurrentlyUsedAddresses() []string {
+	if up == nil {
+		utils.LavaFormatError("UsedProviders.CurrentlyUsedAddresses is nil, misuse detected", nil)
+		return []string{}
+	}
 	up.lock.RLock()
 	defer up.lock.RUnlock()
 	addresses := []string{}
@@ -56,6 +68,10 @@ func (up *UsedProviders) CurrentlyUsedAddresses() []string {
 }
 
 func (up *UsedProviders) UnwantedAddresses() []string {
+	if up == nil {
+		utils.LavaFormatError("UsedProviders.UnwantedAddresses is nil, misuse detected", nil)
+		return []string{}
+	}
 	up.lock.RLock()
 	defer up.lock.RUnlock()
 	addresses := []string{}
