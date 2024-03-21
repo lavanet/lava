@@ -126,6 +126,9 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		)
 		return
 	}
+	if !timerData.Validate() {
+		return
+	}
 	trackedCuList, totalCuTracked := k.GetSubTrackedCuInfo(ctx, sub, timerData.Block)
 
 	if len(trackedCuList) == 0 || totalCuTracked == 0 {

@@ -25,7 +25,7 @@ import (
 
 const (
 	defaultGasPrice      = "0.000000001" + commontypes.TokenDenom
-	DefaultGasAdjustment = "10.0"
+	DefaultGasAdjustment = "1000.0"
 	// same account can continue failing the more providers you have under the same account
 	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
 	// therefore currently our best solution is to continue retrying increasing sequence number until successful
@@ -215,9 +215,14 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 	txResultChan := make(chan *coretypes.ResultTx)
 	guid := utils.GenerateUniqueIdentifier()
 	// check consumer session manager
+	timeOutReached := false
 	go func() {
 		for {
-			ctx, cancel := context.WithTimeout(utils.WithUniqueIdentifier(context.Background(), guid), 3*time.Second)
+			if timeOutReached {
+				utils.LavaFormatWarning("Timeout waiting for transaction", nil, utils.LogAttr("hash", resultData.Txhash))
+				return
+			}
+			ctx, cancel := context.WithTimeout(utils.WithUniqueIdentifier(context.Background(), guid), 5*time.Second)
 			result, err := clientCtx.Client.Tx(ctx, resultData.Txhash, false)
 			cancel()
 			if err == nil {
@@ -242,6 +247,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 		utils.LavaFormatDebug("Tx Hash found on blockchain", utils.LogAttr("Txhash", hex.EncodeToString(resultData.Txhash)), utils.LogAttr("Code", resultData.Code))
 		break
 	case <-time.After(5 * time.Minute):
+		timeOutReached = true
 		return common.TxResultData{}, utils.LavaFormatError("failed sending tx, wasn't found after timeout", nil, utils.Attribute{Key: "hash", Value: hex.EncodeToString(resultData.Txhash)})
 	}
 	// we found the tx on chain and it failed

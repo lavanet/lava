@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/cosmos/cosmos-sdk/store/cachekv"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -29,6 +30,24 @@ func (k Keeper) GetEpochPayments(
 	b := store.Get(types.EpochPaymentsKey(
 		index,
 	))
+	if b == nil {
+		return val, false
+	}
+
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+func (k EpochPaymentHandler) SetEpochPaymentsCached(ctx sdk.Context, epochPayments types.EpochPayments) {
+	b := k.cdc.MustMarshal(&epochPayments)
+	k.EpochPaymentsCache.Set(types.EpochPaymentsKey(epochPayments.Index), b)
+}
+
+func (k EpochPaymentHandler) GetEpochPaymentsCached(
+	ctx sdk.Context,
+	index string,
+) (val types.EpochPayments, found bool) {
+	b := k.EpochPaymentsCache.Get(types.EpochPaymentsKey(index))
 	if b == nil {
 		return val, false
 	}
@@ -73,13 +92,39 @@ func (k Keeper) RemoveOldEpochPayment(ctx sdk.Context) {
 
 // Function to get the epochPayments object from a specific epoch. Note that it also returns the epochPayments object's key which is the epoch in hex representation (base 16)
 func (k Keeper) GetEpochPaymentsFromBlock(ctx sdk.Context, epoch uint64) (epochPayment types.EpochPayments, found bool, key string) {
-	key = strconv.FormatUint(epoch, 16)
+	key = epochPaymentKey(epoch)
 	epochPayment, found = k.GetEpochPayments(ctx, key)
 	return
 }
 
+func epochPaymentKey(epoch uint64) string {
+	return strconv.FormatUint(epoch, 16)
+}
+
+type EpochPaymentHandler struct {
+	Keeper
+	EpochPaymentsCache                      *cachekv.Store
+	ProviderPaymentStorageCache             *cachekv.Store
+	UniquePaymentStorageClientProviderCache *cachekv.Store
+}
+
+func (k Keeper) NewEpochPaymentHandler(ctx sdk.Context) EpochPaymentHandler {
+	return EpochPaymentHandler{
+		Keeper:                                  k,
+		EpochPaymentsCache:                      cachekv.NewStore(prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochPaymentsKeyPrefix))),
+		ProviderPaymentStorageCache:             cachekv.NewStore(prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.ProviderPaymentStorageKeyPrefix))),
+		UniquePaymentStorageClientProviderCache: cachekv.NewStore(prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.UniquePaymentStorageClientProviderKeyPrefix))),
+	}
+}
+
+func (k EpochPaymentHandler) Flush() {
+	k.EpochPaymentsCache.Write()
+	k.ProviderPaymentStorageCache.Write()
+	k.UniquePaymentStorageClientProviderCache.Write()
+}
+
 // Function to add an epoch payment to the epochPayments object
-func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) uint64 {
+func (k EpochPaymentHandler) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, projectID string, providerAddress sdk.AccAddress, usedCU uint64, uniqueIdentifier string) uint64 {
 	if epoch < k.epochStorageKeeper.GetEarliestEpochStart(ctx) {
 		return 0
 	}
@@ -88,7 +133,8 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, p
 	userPaymentProviderStorage, usedCUProviderTotal := k.AddProviderPaymentInEpoch(ctx, chainID, epoch, projectID, providerAddress, usedCU, uniqueIdentifier)
 
 	// get this epoch's epochPayments object
-	epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
+	key := epochPaymentKey(epoch)
+	epochPayments, found := k.GetEpochPaymentsCached(ctx, key)
 	if !found {
 		// this epoch doesn't have a epochPayments object, create one with the providerPaymentStorage object from before
 		epochPayments = types.EpochPayments{Index: key, ProviderPaymentStorageKeys: []string{userPaymentProviderStorage.GetIndex()}}
@@ -110,7 +156,7 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, p
 	}
 
 	// update the epochPayments object
-	k.SetEpochPayments(ctx, epochPayments)
+	k.SetEpochPaymentsCached(ctx, epochPayments)
 
 	return usedCUProviderTotal
 }
@@ -164,7 +210,7 @@ func (k Keeper) RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx sdk.Context,
 
 			// delete the uniquePaymentStorageClientProvider object
 			k.RemoveUniquePaymentStorageClientProvider(ctx, uniquePaymentStorage.Index)
-			consumer := k.GetConsumerFromUniquePayment(&uniquePaymentStorage)
+			consumer := k.GetConsumerFromUniquePayment(uniquePaymentStorageKey)
 
 			provider, err := k.GetProviderFromProviderPaymentStorage(&providerPaymentStorage)
 			if err != nil {

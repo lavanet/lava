@@ -1,0 +1,83 @@
+"C:cmd/lavad":
+- changed-files:
+  - any-glob-to-any-file: "cmd/lavad/**/*"
+"C:cmd/lavap":
+- changed-files:
+  - any-glob-to-any-file: "cmd/lavap/**/*"
+"C:cmd/lavavisor":
+- changed-files:
+  - any-glob-to-any-file: "cmd/lavavisor/**/*"
+"C:cmd/common":
+- changed-files:
+  - any-glob-to-any-file: "cmd/common/**/*"
+"C:protocol":
+- changed-files:
+  - any-glob-to-any-file: "protocol/**/*"
+"Team:Consensus":
+- changed-files:
+  - any-glob-to-any-file: "x/**/*"  
+  - any-glob-to-any-file: "app/**/*"
+"Team:Protocol":
+- changed-files:
+  - any-glob-to-any-file: "protocol/**/*"  
+  - any-glob-to-any-file: "ecosystem/**/*"  
+"C:specs":
+- changed-files:
+  - any-glob-to-any-file: "cookbook/**/*"
+"C:proto":
+- changed-files:
+  - any-glob-to-any-file: "proto/**/*"
+"C:x/conflict":
+- changed-files:
+  - any-glob-to-any-file: "x/conflict/**/*"
+"C:x/downtime":
+- changed-files:
+  - any-glob-to-any-file: "x/downtime/**/*"
+"C:x/dualstaking":
+- changed-files:
+  - any-glob-to-any-file: "x/dualstaking/**/*"
+"C:x/epochstorage":
+- changed-files:
+  - any-glob-to-any-file: "x/epochstorage/**/*"
+"C:x/fixationstore":
+- changed-files:
+  - any-glob-to-any-file: "x/fixationstore/**/*"
+"C:x/pairing":
+- changed-files:
+  - any-glob-to-any-file: "x/pairing/**/*"
+"C:x/plans":
+- changed-files:
+  - any-glob-to-any-file: "x/plans/**/*"
+"C:x/projects":
+- changed-files:
+  - any-glob-to-any-file: "x/projects/**/*"
+"C:x/protocol":
+- changed-files:
+  - any-glob-to-any-file: "x/protocol/**/*"
+"C:x/rewards":
+- changed-files:
+  - any-glob-to-any-file: "x/rewards/**/*"
+"C:x/spec":
+- changed-files:
+  - any-glob-to-any-file: "x/spec/**/*"
+"C:x/subscription":
+- changed-files:
+  - any-glob-to-any-file: "x/subscription/**/*"
+"C:x/timerstore":
+- changed-files:
+  - any-glob-to-any-file: "x/timerstore/**/*"
+"Type: Build":
+- changed-files:
+  - any-glob-to-any-file: "Makefile"
+  - any-glob-to-any-file: "Dockerfile"
+  - any-glob-to-any-file: "docker-compose.yml"
+  - any-glob-to-any-file: "scripts/*"
+"Type: CI":
+- changed-files:
+  - any-glob-to-any-file: ".github/**"
+"Type: Docs":
+- changed-files:
+  - any-glob-to-any-file: "docs/**/*"
+"Type: Proto":
+- changed-files:
+  - any-glob-to-any-file: "proto/**/*"
