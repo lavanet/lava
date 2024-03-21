@@ -200,7 +200,7 @@ const cosmosHub = await LavaSDK.create({
   privateKey: "<lava consumer private key>",
 
   // chainID for Cosmos Hub
-  chainIds: "COS5",
+  chainIds: "COSMOSHUB",
 
   // geolocation 1 for North america - geolocation 2 for Europe providers
   // default value is 1
