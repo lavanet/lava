@@ -157,7 +157,15 @@ describe("ProviderOptimizer", () => {
       perturbationPercentage
     );
     expect(returnedProviders).toHaveLength(1);
-    console.log("[Debugging] expect(returnedProviders[0]).toBe(providers[skipIndex]); Optimizer Issue", "returnedProviders", returnedProviders, "providers", providers, "skipIndex", skipIndex)
+    console.log(
+      "[Debugging] expect(returnedProviders[0]).toBe(providers[skipIndex]); Optimizer Issue",
+      "returnedProviders",
+      returnedProviders,
+      "providers",
+      providers,
+      "skipIndex",
+      skipIndex
+    )
     expect(returnedProviders[0]).toBe(providers[skipIndex]);
 
     returnedProviders = providerOptimizer.chooseProvider(
