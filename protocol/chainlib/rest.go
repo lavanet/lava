@@ -173,7 +173,10 @@ func (apip *RestChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("rest api not supported " + name)
+		return nil, utils.LavaFormatWarning("rest api not supported", common.APINotSupportedError,
+			utils.LogAttr("name", name),
+			utils.LogAttr("connectionType", connectionType),
+		)
 	}
 	api := apiCont.api
 
@@ -379,6 +382,17 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
+			if common.APINotSupportedError.Is(err) {
+				switch chainID {
+				case "APT1":
+					// Aptos node returns a different error body than the rest of the chains
+					// This solution is temporary until we change the spec to state how the error looks like
+					return fiberCtx.Status(fiber.StatusNotImplemented).JSON(common.RestAptosMethodNotFoundError)
+				default:
+					return fiberCtx.Status(fiber.StatusNotImplemented).JSON(common.RestMethodNotFoundError)
+				}
+			}
+
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 
