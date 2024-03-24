@@ -265,6 +265,9 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 		},
 	}
 
+	paymentWaitGroup := sync.WaitGroup{}
+	paymentWaitGroup.Add(newRewardsLength + failedRewardsLength)
+
 	// add expected pay and ask for rewards
 	for _, paymentConfig := range paymentConfiguration {
 		for _, rewardsToClaim := range paymentConfig.relaySessionChunks {
@@ -277,6 +280,7 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 				continue
 			}
 			go func(rewards []*pairingtypes.RelaySession, payment *PaymentConfiguration) { // send rewards asynchronously
+				defer paymentWaitGroup.Done()
 				specs := map[string]struct{}{}
 				if payment.shouldAddExpectedPayment {
 					for _, relay := range rewards {
@@ -319,6 +323,8 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 			}(rewardsToClaim, paymentConfig)
 		}
 	}
+	utils.LavaFormatDebug("Waiting for all Payment groups to finish", utils.LogAttr("wait_group_size", newRewardsLength+failedRewardsLength))
+	paymentWaitGroup.Wait()
 	return nil
 }
 
