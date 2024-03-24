@@ -38,7 +38,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.binary }}-${{ fromJson(steps.releaser.outputs.metadata).tag }}-${{ fromJson(steps.releaser.outputs.artifacts).goos }}-${{ fromJson(steps.releaser.outputs.artifacts).goarch }}
+          name: ${{ matrix.binary }}-${{ fromJson(steps.releaser.outputs.metadata).tag }}-${{ fromJson(steps.releaser.outputs.artifacts)[0].goos }}-${{ fromJson(steps.releaser.outputs.artifacts)[0].goarch }}
           path: cmd/${{ matrix.binary }}/${{ fromJson(steps.releaser.outputs.artifacts)[0].path }}
 
       # - name: Docker meta
