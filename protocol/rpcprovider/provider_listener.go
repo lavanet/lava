@@ -86,10 +86,14 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 	var serveExecutor func() error
 	if networkAddress.DisableTLS {
 		utils.LavaFormatInfo("Running with disabled TLS configuration")
-		serveExecutor = func() error { return pl.httpServer.Serve(lis) }
+		serveExecutor = func() error {
+			return pl.httpServer.Serve(lis)
+		}
 	} else {
 		pl.httpServer.TLSConfig = lavasession.GetTlsConfig(networkAddress)
-		serveExecutor = func() error { return pl.httpServer.ServeTLS(lis, "", "") }
+		serveExecutor = func() error {
+			return pl.httpServer.ServeTLS(lis, "", "")
+		}
 	}
 
 	relayServer := &relayServer{relayReceivers: map[string]*relayReceiverWrapper{}}
