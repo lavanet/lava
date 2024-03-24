@@ -7,8 +7,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -182,5 +182,5 @@ func TestFrozenProviderDetection(t *testing.T) {
 	require.NotEqual(t, 0, len(votersList))
 
 	// the frozen provider should not be part of the voters list
-	require.False(t, slices.Contains(votersList, frozenProvider))
+	require.False(t, lavaslices.Contains(votersList, frozenProvider))
 }
