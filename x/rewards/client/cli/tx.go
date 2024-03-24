@@ -16,7 +16,7 @@ import (
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/x/rewards/types"
 )
 
@@ -121,7 +121,7 @@ $ %s tx gov submit-legacy-proposal set-iprpc-data --min-cost 0ulava --add-subscr
 				return err
 			}
 			for _, sub := range subsToRemove {
-				iprpcSubs, _ = slices.Remove(iprpcSubs, sub)
+				iprpcSubs, _ = lavaslices.Remove(iprpcSubs, sub)
 			}
 
 			deposit, err := sdk.ParseCoinsNormalized(args[0])

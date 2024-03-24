@@ -1,4 +1,4 @@
-package slices
+package lavaslices
 
 import (
 	"golang.org/x/exp/constraints"

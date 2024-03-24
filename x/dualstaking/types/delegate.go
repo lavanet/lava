@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 )
 
 func NewDelegation(delegator, provider, chainID string, blockTime time.Time, tokenDenom string) Delegation {
@@ -51,14 +51,14 @@ func NewDelegator(delegator, provider string) Delegator {
 }
 
 func (delegator *Delegator) AddProvider(provider string) {
-	if !slices.Contains(delegator.Providers, provider) {
+	if !lavaslices.Contains(delegator.Providers, provider) {
 		delegator.Providers = append(delegator.Providers, provider)
 	}
 }
 
 func (delegator *Delegator) DelProvider(provider string) {
-	if slices.Contains(delegator.Providers, provider) {
-		delegator.Providers, _ = slices.Remove(delegator.Providers, provider)
+	if lavaslices.Contains(delegator.Providers, provider) {
+		delegator.Providers, _ = lavaslices.Remove(delegator.Providers, provider)
 	}
 }
 

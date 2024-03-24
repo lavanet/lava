@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -115,7 +115,7 @@ func (cs *CacheServer) Serve(ctx context.Context,
 
 func (cs *CacheServer) ExpirationForChain(averageBlockTimeForChain time.Duration) time.Duration {
 	eighthBlock := averageBlockTimeForChain / 8
-	return slices.Max([]time.Duration{eighthBlock, cs.ExpirationNonFinalized}) // return the maximum TTL between an eighth block and expiration
+	return lavaslices.Max([]time.Duration{eighthBlock, cs.ExpirationNonFinalized}) // return the maximum TTL between an eighth block and expiration
 }
 
 func Server(
