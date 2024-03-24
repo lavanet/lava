@@ -419,3 +419,25 @@ func TestFilter(t *testing.T) {
 	require.Equal(t, []int{}, Filter([]int{1}, filter))
 	require.Equal(t, []int{2, 4}, Filter([]int{1, 2, 3, 4}, filter))
 }
+
+func TestSliceSplitter(t *testing.T) {
+	// Sample usage
+	originalSliceSize := 1400
+	testSlice := make([]int, originalSliceSize) // Assuming this is your original array
+	for i := 0; i < originalSliceSize; i++ {
+		testSlice[i] = i
+	}
+	testSizes := []int{500, 333, 200, 20, 1}
+	for _, i := range testSizes {
+		originalSizeCopy := originalSliceSize
+		retSlice := SplitGenericSliceIntoChunks(testSlice, i)
+		for _, k := range retSlice {
+			if originalSizeCopy < i {
+				require.Len(t, k, originalSizeCopy)
+			} else {
+				require.Len(t, k, i)
+			}
+			originalSizeCopy -= i
+		}
+	}
+}
