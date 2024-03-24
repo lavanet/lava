@@ -126,16 +126,17 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		}()
 		// wait for all reads to complete before moving forward
 		waitGroup.Wait()
-
-		// validate that the response seen block is larger or equal to our expectations.
-		if cacheReply.SeenBlock < slices.Min([]int64{relayCacheGet.SeenBlock, relayCacheGet.RequestedBlock}) { // TODO unitest this.
-			// Error, our reply seen block is not larger than our expectations, meaning we got an old response
-			// this can happen only in the case relayCacheGet.SeenBlock < relayCacheGet.RequestedBlock
-			// by setting the err variable we will get a cache miss, and the relay will continue to the node.
-			err = utils.LavaFormatDebug("reply seen block is smaller than our expectations",
-				utils.LogAttr("cacheReply.SeenBlock", cacheReply.SeenBlock),
-				utils.LogAttr("seenBlock", relayCacheGet.SeenBlock),
-			)
+		if err == nil { // in case we got a hit validate seen block of the reply.
+			// validate that the response seen block is larger or equal to our expectations.
+			if cacheReply.SeenBlock < slices.Min([]int64{relayCacheGet.SeenBlock, relayCacheGet.RequestedBlock}) { // TODO unitest this.
+				// Error, our reply seen block is not larger than our expectations, meaning we got an old response
+				// this can happen only in the case relayCacheGet.SeenBlock < relayCacheGet.RequestedBlock
+				// by setting the err variable we will get a cache miss, and the relay will continue to the node.
+				err = utils.LavaFormatDebug("reply seen block is smaller than our expectations",
+					utils.LogAttr("cacheReply.SeenBlock", cacheReply.SeenBlock),
+					utils.LogAttr("seenBlock", relayCacheGet.SeenBlock),
+				)
+			}
 		}
 		// set seen block.
 		if relayCacheGet.SeenBlock > cacheReply.SeenBlock {

@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	CONSISTENCY_SELECT_ALLPROVIDERS = 1
-	NOSTATE                         = 0
+	CONSISTENCY_SELECT_ALL_PROVIDERS = 1
+	NO_STATE                         = 0
 )
 
 func GetExtensionNames(extensionCollection []*spectypes.Extension) (extensions []string) {
