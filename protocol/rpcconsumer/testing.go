@@ -9,7 +9,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -24,7 +23,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func startTesting(ctx context.Context, clientCtx client.Context, txFactory tx.Factory, rpcEndpoints []*lavasession.RPCProviderEndpoint, parallelConnections uint) error {
+func startTesting(ctx context.Context, clientCtx client.Context, rpcEndpoints []*lavasession.RPCProviderEndpoint, parallelConnections uint) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -156,17 +155,13 @@ func CreateTestRPCConsumerCobraCommand() *cobra.Command {
 				}
 			}
 			clientCtx = clientCtx.WithChainID(networkChainId)
-			txFactory, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
-			if err != nil {
-				utils.LavaFormatFatal("failed to create txFactory", err)
-			}
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.InitRandomSeed()
 			numberOfNodeParallelConnections, err := cmd.Flags().GetUint(chainproxy.ParallelConnectionsFlag)
 			if err != nil {
 				utils.LavaFormatFatal("error fetching chainproxy.ParallelConnectionsFlag", err)
 			}
-			return startTesting(ctx, clientCtx, txFactory, modifiedProviderEndpoints, numberOfNodeParallelConnections)
+			return startTesting(ctx, clientCtx, modifiedProviderEndpoints, numberOfNodeParallelConnections)
 		},
 	}
 

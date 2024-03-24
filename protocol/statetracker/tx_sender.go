@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -24,7 +25,7 @@ import (
 
 const (
 	defaultGasPrice      = "0.000000001" + commontypes.TokenDenom
-	defaultGasAdjustment = 3
+	DefaultGasAdjustment = "1000.0"
 	// same account can continue failing the more providers you have under the same account
 	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
 	// therefore currently our best solution is to continue retrying increasing sequence number until successful
@@ -77,7 +78,6 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 
 func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, checkProfitability bool) error {
 	txfactory := ts.txFactory.WithGasPrices(defaultGasPrice)
-	txfactory = txfactory.WithGasAdjustment(defaultGasAdjustment)
 
 	if err := msg.ValidateBasic(); err != nil {
 		return err
@@ -105,19 +105,14 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, ch
 		if err == nil { // if we get some other code which isn't 0 then keep retrying
 			success = true
 			break
-		} else if strings.Contains(transactionResult, "account sequence") {
-			txfactory, err = ts.getNewFactoryFromASequenceNumberError(transactionResult, txfactory, clientCtx)
-			if err != nil {
-				return utils.LavaFormatError("Failed getting a new factory", err)
-			}
-			// we got a new factory with an adjusted sequence number we should be good to try again
 		} else if strings.Contains(transactionResult, "out of gas") {
 			utils.LavaFormatInfo("Transaction got out of gas error, retrying next block.")
-		} else if strings.Contains(transactionResult, "insufficient fees; got:") { //
-			err := parseInsufficientFeesError(transactionResult, gasUsed)
-			if err == nil {
-				return utils.LavaFormatError("Failed sending transaction", nil, utils.Attribute{Key: "result", Value: latestResult})
+		} else {
+			txfactory, err = ts.parseTxErrorsAndTryGettingANewFactory(transactionResult, clientCtx, txfactory, gasUsed)
+			if err != nil {
+				return utils.LavaFormatError("Failed getting a new tx factory", err)
 			}
+			// else continue with the new factory
 		}
 		utils.LavaFormatDebug("Failed sending transaction, will retry", utils.LogAttr("Index", idx), utils.LogAttr("reason:", err), utils.LogAttr("rawLog", transactionResult))
 	}
@@ -152,6 +147,17 @@ func (ts *TxSender) getNewFactoryFromASequenceNumberError(errString string, txfa
 	return txfactory.WithSequence(sequence), nil
 }
 
+// trying to fetch sequence number required from the tx error and creates a new factory using this sequence
+func (ts *TxSender) parseTxErrorsAndTryGettingANewFactory(txResultString string, clientCtx client.Context, txfactory tx.Factory, gasUsed uint64) (tx.Factory, error) {
+	if strings.Contains(txResultString, "account sequence") { // case for more than one tx in a block
+		utils.LavaFormatInfo("Identified account sequence reason, attempting to run a new simulation with the correct sequence number")
+		return ts.getNewFactoryFromASequenceNumberError(txResultString, txfactory, clientCtx)
+	} else if strings.Contains(txResultString, "insufficient fees; got:") { // handle a case where node minimum gas fees is misconfigured
+		return ts.txFactory, parseInsufficientFeesError(txResultString, gasUsed)
+	}
+	return txfactory, fmt.Errorf(txResultString)
+}
+
 func (ts *TxSender) simulateTxWithRetry(clientCtx client.Context, txfactory tx.Factory, msg sdk.Msg) (tx.Factory, uint64, error) {
 	for retrySimulation := 0; retrySimulation < RETRY_INCORRECT_SEQUENCE; retrySimulation++ {
 		utils.LavaFormatDebug("Running Simulation", utils.LogAttr("idx", retrySimulation))
@@ -159,16 +165,12 @@ func (ts *TxSender) simulateTxWithRetry(clientCtx client.Context, txfactory tx.F
 		if err != nil {
 			utils.LavaFormatInfo("Simulation failed", utils.LogAttr("reason:", err))
 			errString := err.Error()
-			if strings.Contains(errString, "account sequence") {
-				utils.LavaFormatInfo("Identified account sequence reason, attempting to run a new simulation with the correct sequence number")
-				txfactory, err = ts.getNewFactoryFromASequenceNumberError(errString, txfactory, clientCtx)
-				if err != nil {
-					return txfactory, 0, err
-				}
-				continue // if we got a new factory successfully continue to next attempt in simulation
-			} else {
-				return txfactory, 0, err
+			var errParsed error
+			txfactory, errParsed = ts.parseTxErrorsAndTryGettingANewFactory(errString, clientCtx, txfactory, gasUsed)
+			if errParsed != nil {
+				return txfactory, 0, errParsed
 			}
+			continue // we errored, we will retry if parseTxErrors managed to get a new factory
 		}
 		txfactory = txfactory.WithGas(gasUsed)
 		return txfactory, gasUsed, nil
@@ -213,9 +215,14 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 	txResultChan := make(chan *coretypes.ResultTx)
 	guid := utils.GenerateUniqueIdentifier()
 	// check consumer session manager
+	timeOutReached := false
 	go func() {
 		for {
-			ctx, cancel := context.WithTimeout(utils.WithUniqueIdentifier(context.Background(), guid), 3*time.Second)
+			if timeOutReached {
+				utils.LavaFormatWarning("Timeout waiting for transaction", nil, utils.LogAttr("hash", resultData.Txhash))
+				return
+			}
+			ctx, cancel := context.WithTimeout(utils.WithUniqueIdentifier(context.Background(), guid), 5*time.Second)
 			result, err := clientCtx.Client.Tx(ctx, resultData.Txhash, false)
 			cancel()
 			if err == nil {
@@ -240,6 +247,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 		utils.LavaFormatDebug("Tx Hash found on blockchain", utils.LogAttr("Txhash", hex.EncodeToString(resultData.Txhash)), utils.LogAttr("Code", resultData.Code))
 		break
 	case <-time.After(5 * time.Minute):
+		timeOutReached = true
 		return common.TxResultData{}, utils.LavaFormatError("failed sending tx, wasn't found after timeout", nil, utils.Attribute{Key: "hash", Value: hex.EncodeToString(resultData.Txhash)})
 	}
 	// we found the tx on chain and it failed
@@ -358,10 +366,8 @@ func parseInsufficientFeesError(msg string, gasUsed uint64) error {
 		return utils.LavaFormatError("Failed fetching required gas from error", nil, utils.Attribute{Key: "message", Value: prices})
 	}
 	minimumGasPricesGot := (float64(gasUsed) / float64(required))
-	utils.LavaFormatError("Bad Lava Node Configuration detected, Gas fees inconsistencies can be related to the app.toml configuration of the lava node you are using under 'minimum-gas-prices', Please remove the field or set it to the required amount or change rpc to a different lava node", nil,
+	return utils.LavaFormatError("Bad Lava Node Configuration detected, Gas fees inconsistencies can be related to the app.toml configuration of the lava node you are using under 'minimum-gas-prices', Please remove the field or set it to the required amount or change rpc to a different lava node", nil,
 		utils.Attribute{Key: "Required Minimum Gas Prices", Value: defaultGasPrice},
 		utils.Attribute{Key: "Current (estimated) Minimum Gas Prices", Value: strconv.FormatFloat(minimumGasPricesGot, 'f', -1, 64) + commontypes.TokenDenom},
 	)
-
-	return nil
 }
