@@ -35,6 +35,9 @@ builds:
         goarch: ppc64le
       - goos: windows
         goarch: arm64
+    flags:
+      - -mod=readonly
+      - -trimpath
 
 archives:
   - format: tar.gz
