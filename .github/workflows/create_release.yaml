@@ -29,4 +29,5 @@ jobs:
           git config user.name "LavaNet Bot"
           # Update origin with token
           git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git
+          chmod +x ./.github/scripts/create-release.sh
           ./.github/scripts/create-release.sh ${{ inputs.rel_version }}
