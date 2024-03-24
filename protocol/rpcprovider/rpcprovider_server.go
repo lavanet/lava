@@ -25,9 +25,9 @@ import (
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/protocol/upgrade"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/protocopy"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	grpc "google.golang.org/grpc"
@@ -824,7 +824,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		} // else: we updated the chain message to request the specific latestBlock we fetched earlier, so use the previously fetched latest block and hashes
 		if proofBlock < modifiedReqBlock && proofBlock < request.RelayData.SeenBlock {
 			// we requested with a newer block, but don't necessarily have the finaliziation proof, chaintracker might be behind
-			proofBlock = slices.Min([]int64{modifiedReqBlock, request.RelayData.SeenBlock})
+			proofBlock = lavaslices.Min([]int64{modifiedReqBlock, request.RelayData.SeenBlock})
 
 			proofBlock, requestedHashes, err = rpcps.GetBlockDataForOptimisticFetch(ctx, relayTimeout, proofBlock, blockDistanceToFinalization, blocksInFinalizationData, averageBlockTime)
 			if err != nil {
@@ -864,7 +864,7 @@ func (rpcps *RPCProviderServer) GetBlockDataForOptimisticFetch(ctx context.Conte
 	}
 	timeSlept := 0 * time.Millisecond
 	refreshTime := (averageBlockTime / chaintracker.MostFrequentPollingMultiplier) / 2
-	sleepTime := slices.Min([]time.Duration{10 * refreshTime, timeCanWait, relayBaseTimeout / 2})
+	sleepTime := lavaslices.Min([]time.Duration{10 * refreshTime, timeCanWait, relayBaseTimeout / 2})
 	sleepContext, cancel := context.WithTimeout(context.Background(), sleepTime)
 	fetchedWithoutError := func() bool {
 		timeSlept += refreshTime
@@ -976,7 +976,7 @@ func (rpcps *RPCProviderServer) SleepUntilTimeOrConditionReached(ctx context.Con
 				var sleeping time.Duration
 				deadline, ok := ctx.Deadline()
 				if ok {
-					sleeping = slices.Min([]time.Duration{queryTime, time.Until(deadline) / 4})
+					sleeping = lavaslices.Min([]time.Duration{queryTime, time.Until(deadline) / 4})
 				} else {
 					sleeping = queryTime
 				}

@@ -21,7 +21,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
@@ -467,8 +467,8 @@ func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Durati
 	if blockGapsLen > PollingUpdateLength { // check we have enough samples
 		// smaller times give more resolution to indentify changes, and also make block arrival predictions more optimistic
 		// so we take a 0.33 percentile because we want to be on the safe side by have a smaller time than expected
-		percentileTime := slices.Percentile(ct.blockEventsGap, 0.33)
-		stability := slices.Stability(ct.blockEventsGap, percentileTime)
+		percentileTime := lavaslices.Percentile(ct.blockEventsGap, 0.33)
+		stability := lavaslices.Stability(ct.blockEventsGap, percentileTime)
 		if debug {
 			utils.LavaFormatDebug("block gaps", utils.Attribute{Key: "block gaps", Value: ct.blockEventsGap}, utils.Attribute{Key: "specID", Value: ct.endpoint.ChainID})
 		}

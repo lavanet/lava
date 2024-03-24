@@ -5,9 +5,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
@@ -108,7 +108,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		require.NoError(t, err)
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: providerAddress,
-			Relays:  slices.Slice(relaySession),
+			Relays:  lavaslices.Slice(relaySession),
 		}
 
 		// send relay payment and check the funds did transfer normally
@@ -175,7 +175,7 @@ func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 		require.NoError(t, err)
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: provider0_addr.String(),
-			Relays:  slices.Slice(relaySession),
+			Relays:  lavaslices.Slice(relaySession),
 		}
 
 		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
@@ -233,7 +233,7 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 	require.NoError(t, err)
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider0_addr.String(),
-		Relays:  slices.Slice(relaySession),
+		Relays:  lavaslices.Slice(relaySession),
 	}
 
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
@@ -260,7 +260,7 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: provider0_addr.String(),
-			Relays:  slices.Slice(relaySession),
+			Relays:  lavaslices.Slice(relaySession),
 		}
 
 		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
@@ -327,7 +327,7 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: provider0_addr.String(),
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, 100)
