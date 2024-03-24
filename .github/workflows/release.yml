@@ -26,7 +26,6 @@ jobs:
 
     - name: Fetch all tags
       run: |
-        set -e
         git fetch --force --tags
 
     - name: Configure Go
