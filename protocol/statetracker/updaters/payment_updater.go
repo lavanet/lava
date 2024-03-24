@@ -44,7 +44,6 @@ func (pu *PaymentUpdater) updateInner() {
 	if err != nil {
 		return
 	}
-
 	relevantPayments := 0
 	for _, payment := range payments {
 		updatable, foundUpdatable := pu.paymentUpdatable[payment.Description]
