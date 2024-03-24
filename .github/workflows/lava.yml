@@ -23,6 +23,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.20.5
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
 
       - name: Run GoReleaser
         id: releaser
@@ -33,7 +35,12 @@ jobs:
           workdir: cmd/${{ matrix.binary }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary }}-${{ fromJson(steps.releaser.outputs.metadata).tag }}-${{ fromJson(steps.releaser.outputs.metadata).goos }}-${{ fromJson(steps.releaser.outputs.metadata).goarch }}
+          path: cmd/${{ matrix.binary }}/${{ fromJson(steps.releaser.outputs.artifacts)[0].path }}
+
       # - name: Docker meta
       #   id: meta
       #   uses: docker/metadata-action@v5
