@@ -80,3 +80,12 @@ changelog:
       - '^test:'
       - '^.*?Bump(\([[:word:]]+\))?.+$'
       - '^.*?[Bot](\([[:word:]]+\))?.+$'
+
+release:
+  github:
+    owner: lavanet
+    name: lava
+  replace_existing_draft: true
+  name_template: "Lava v{{.Version}} 🌋"
+  mode: replace
+  draft: true
