@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	commonconsts "github.com/lavanet/lava/testutil/common/consts"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -61,7 +61,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChange(t *testing.T) {
 			// Request payment (helper validates balances and verifies error through valid)
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
@@ -102,7 +102,7 @@ func TestRelayPaymentBlockHeight(t *testing.T) {
 
 			payment := types.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			ts.relayPaymentWithoutPay(payment, tt.valid)
@@ -291,7 +291,7 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 
 	payment := types.MsgRelayPayment{
 		Creator: providerAddr,
-		Relays:  slices.Slice(relaySession, relaySession),
+		Relays:  lavaslices.Slice(relaySession, relaySession),
 	}
 
 	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, false, 100)
@@ -391,7 +391,7 @@ func TestRelayPaymentOldEpochs(t *testing.T) {
 
 			payment := types.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 			ts.relayPaymentWithoutPay(payment, tt.valid)
 		})
@@ -438,7 +438,7 @@ func TestRelayPaymentQoS(t *testing.T) {
 
 			payment := types.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 			ts.relayPaymentWithoutPay(payment, tt.valid)
 		})
@@ -460,7 +460,7 @@ func TestEpochPaymentDeletion(t *testing.T) {
 
 	payment := types.MsgRelayPayment{
 		Creator: providerAddr,
-		Relays:  slices.Slice(relaySession),
+		Relays:  lavaslices.Slice(relaySession),
 	}
 
 	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
@@ -523,7 +523,7 @@ func TestCuUsageInProjectsAndSubscription(t *testing.T) {
 	// Request payment (helper validates the balances and verifies expected errors through valid)
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: providerAddr,
-		Relays:  slices.Slice(relaySession),
+		Relays:  lavaslices.Slice(relaySession),
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
@@ -613,7 +613,7 @@ func TestBadgeValidation(t *testing.T) {
 
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			ts.relayPaymentWithoutPay(relayPaymentMessage, tt.valid)
@@ -720,7 +720,7 @@ func TestBadgeCuAllocationEnforcement(t *testing.T) {
 
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			ts.relayPaymentWithoutPay(relayPaymentMessage, tt.valid)
@@ -861,7 +861,7 @@ func TestBadgeDifferentProvidersCuAllocation(t *testing.T) {
 
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: providers[i].Addr.String(),
-			Relays:  slices.Slice(relaySession),
+			Relays:  lavaslices.Slice(relaySession),
 		}
 		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 

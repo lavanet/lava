@@ -7,7 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -66,7 +66,7 @@ func (k msgServer) AutoRenewal(goCtx context.Context, msg *types.MsgAutoRenewal)
 		}
 
 		if len(plan.AllowedBuyers) != 0 {
-			if !slices.Contains(plan.AllowedBuyers, msg.Creator) {
+			if !lavaslices.Contains(plan.AllowedBuyers, msg.Creator) {
 				allowedBuyers := strings.Join(plan.AllowedBuyers, ",")
 				return nil, utils.LavaFormatWarning("cannot apply auto-renewal to subscription", fmt.Errorf("creator is not part of the allowed buyers list"),
 					utils.LogAttr("creator", msg.Creator),

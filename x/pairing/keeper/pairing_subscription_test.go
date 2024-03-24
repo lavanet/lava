@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
@@ -25,7 +25,7 @@ func TestGetPairingForSubscription(t *testing.T) {
 		Name:        "project",
 		Enabled:     true,
 		Policy:      &ts.plan.PlanPolicy,
-		ProjectKeys: slices.Slice(projectstypes.ProjectDeveloperKey(dev1Addr)),
+		ProjectKeys: lavaslices.Slice(projectstypes.ProjectDeveloperKey(dev1Addr)),
 	}
 	err := ts.TxSubscriptionAddProject(client1Addr, projectData)
 	require.NoError(t, err)
@@ -75,7 +75,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, sub.Sub)
 
-	policies := slices.Slice(
+	policies := lavaslices.Slice(
 		proj.Project.AdminPolicy,
 		proj.Project.SubscriptionPolicy,
 		&ts.plan.PlanPolicy,
@@ -112,7 +112,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	client1Acct, client1Addr := ts.GetAccount(common.CONSUMER, 0)
 	dev1Acct, dev1Addr := ts.Account("dev1")
 
-	consumers := slices.Slice(client1Addr, dev1Addr)
+	consumers := lavaslices.Slice(client1Addr, dev1Addr)
 
 	projectData := projectstypes.ProjectData{
 		Name:    "proj_b",

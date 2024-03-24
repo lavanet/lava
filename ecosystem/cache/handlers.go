@@ -16,7 +16,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
@@ -128,7 +128,7 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		waitGroup.Wait()
 		if err == nil { // in case we got a hit validate seen block of the reply.
 			// validate that the response seen block is larger or equal to our expectations.
-			if cacheReply.SeenBlock < slices.Min([]int64{relayCacheGet.SeenBlock, relayCacheGet.RequestedBlock}) { // TODO unitest this.
+			if cacheReply.SeenBlock < lavaslices.Min([]int64{relayCacheGet.SeenBlock, relayCacheGet.RequestedBlock}) { // TODO unitest this.
 				// Error, our reply seen block is not larger than our expectations, meaning we got an old response
 				// this can happen only in the case relayCacheGet.SeenBlock < relayCacheGet.RequestedBlock
 				// by setting the err variable we will get a cache miss, and the relay will continue to the node.
