@@ -285,6 +285,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 	// try to lock an existing session, if can't create a new one
 	var numberOfBlockedSessions uint64 = 0
 	for sessionID, session := range cswp.Sessions {
+		break
 		if sessionID == DataReliabilitySessionId {
 			continue // we cant use the data reliability session. which is located at key DataReliabilitySessionId
 		}
