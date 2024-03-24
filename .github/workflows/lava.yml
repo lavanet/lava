@@ -1,4 +1,4 @@
-name: Lava
+name: Lava Build
 
 on:
   push:
@@ -13,8 +13,13 @@ jobs:
     strategy:
       matrix:
         binary: [lavad, lavap, lavavisor]
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+        targetos: [darwin, linux]
+        arch: [amd64, arm64]
+    runs-on: ubuntu-latest
+    env:
+      GOOS: ${{ matrix.targetos }}
+      GOARCH: ${{ matrix.arch }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,7 +27,6 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.20.5
           go-version-file: go.mod
           cache-dependency-path: go.sum
 
