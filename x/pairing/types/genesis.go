@@ -13,12 +13,12 @@ const DefaultIndex uint64 = 1
 // DefaultGenesis returns the default Capability genesis state
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
-		UniquePaymentStorageClientProviderList: []UniquePaymentStorageClientProvider{},
-		ProviderPaymentStorageList:             []ProviderPaymentStorage{},
-		EpochPaymentsList:                      []EpochPayments{},
-		BadgeUsedCuList:                        []BadgeUsedCu{},
-		BadgesTS:                               *timerstoretypes.DefaultGenesis(),
-		ProviderQosFS:                          *fixationtypes.DefaultGenesis(),
+		UniqueEpochSessions:      []UniqueEpochSessionGenesis{},
+		ProviderEpochCus:         []ProviderEpochCuGenesis{},
+		ProviderConsumerEpochCus: []ProviderConsumerEpochCuGenesis{},
+		BadgeUsedCuList:          []BadgeUsedCu{},
+		BadgesTS:                 *timerstoretypes.DefaultGenesis(),
+		ProviderQosFS:            *fixationtypes.DefaultGenesis(),
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}
@@ -27,35 +27,34 @@ func DefaultGenesis() *GenesisState {
 // Validate performs basic genesis state validation returning an error upon any
 // failure.
 func (gs GenesisState) Validate() error {
-	// Check for duplicated index in uniquePaymentStorageClientProvider
-	uniquePaymentStorageClientProviderIndexMap := make(map[string]struct{})
+	// Check for duplicated index in UniqueEpochSession
+	UniqueEpochSessionsProviderIndexMap := make(map[string]struct{})
 
-	for _, elem := range gs.UniquePaymentStorageClientProviderList {
-		index := string(UniquePaymentStorageClientProviderKey(elem.Index))
-		if _, ok := uniquePaymentStorageClientProviderIndexMap[index]; ok {
-			return fmt.Errorf("duplicated index for uniquePaymentStorageClientProvider")
+	for _, elem := range gs.UniqueEpochSessions {
+		if _, ok := UniqueEpochSessionsProviderIndexMap[elem.UniqueEpochSession]; ok {
+			return fmt.Errorf("duplicated index for UniqueEpochSession")
 		}
-		uniquePaymentStorageClientProviderIndexMap[index] = struct{}{}
+		UniqueEpochSessionsProviderIndexMap[elem.UniqueEpochSession] = struct{}{}
 	}
-	// Check for duplicated index in providerPaymentStorage
-	providerPaymentStorageIndexMap := make(map[string]struct{})
+	// Check for duplicated index in ProviderEpochCu
+	providerEpochCusIndexMap := make(map[string]struct{})
 
-	for _, elem := range gs.ProviderPaymentStorageList {
-		index := string(ProviderPaymentStorageKey(elem.Index))
-		if _, ok := providerPaymentStorageIndexMap[index]; ok {
-			return fmt.Errorf("duplicated index for providerPaymentStorage")
+	for _, elem := range gs.ProviderEpochCus {
+		index := string(ProviderEpochCuKey(elem.Provider))
+		if _, ok := providerEpochCusIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for ProviderEpochCu")
 		}
-		providerPaymentStorageIndexMap[index] = struct{}{}
+		providerEpochCusIndexMap[index] = struct{}{}
 	}
-	// Check for duplicated index in epochPayments
-	epochPaymentsIndexMap := make(map[string]struct{})
+	// Check for duplicated index in ProviderConsumerEpochCu
+	providerConsumerEpochCuIndexMap := make(map[string]struct{})
 
-	for _, elem := range gs.EpochPaymentsList {
-		index := string(EpochPaymentsKey(elem.Index))
-		if _, ok := epochPaymentsIndexMap[index]; ok {
-			return fmt.Errorf("duplicated index for epochPayments")
+	for _, elem := range gs.ProviderConsumerEpochCus {
+		index := string(ProviderConsumerEpochCuKey(elem.Provider, elem.Project))
+		if _, ok := providerConsumerEpochCuIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for ProviderConsumerEpochCu")
 		}
-		epochPaymentsIndexMap[index] = struct{}{}
+		providerConsumerEpochCuIndexMap[index] = struct{}{}
 	}
 
 	// check the badgeUsedCuIndex map is empty

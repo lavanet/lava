@@ -22,28 +22,40 @@ func TestGenesisState_Validate(t *testing.T) {
 			desc: "valid genesis state",
 			genState: &types.GenesisState{
 				Params: types.DefaultParams(),
-				UniquePaymentStorageClientProviderList: []types.UniquePaymentStorageClientProvider{
+				UniqueEpochSessions: []types.UniqueEpochSessionGenesis{
 					{
-						Index: "0",
+						Epoch:              0,
+						UniqueEpochSession: "0",
 					},
 					{
-						Index: "1",
-					},
-				},
-				ProviderPaymentStorageList: []types.ProviderPaymentStorage{
-					{
-						Index: "0",
-					},
-					{
-						Index: "1",
+						Epoch:              1,
+						UniqueEpochSession: "1",
 					},
 				},
-				EpochPaymentsList: []types.EpochPayments{
+				ProviderEpochCus: []types.ProviderEpochCuGenesis{
 					{
-						Index: "0",
+						Epoch:           0,
+						Provider:        "0",
+						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10, ComplainersCu: 100},
 					},
 					{
-						Index: "1",
+						Epoch:           1,
+						Provider:        "1",
+						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 20, ComplainersCu: 200},
+					},
+				},
+				ProviderConsumerEpochCus: []types.ProviderConsumerEpochCuGenesis{
+					{
+						Epoch:                   0,
+						Provider:                "0",
+						Project:                 "0",
+						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
+					},
+					{
+						Epoch:                   1,
+						Provider:                "1",
+						Project:                 "1",
+						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 20},
 					},
 				},
 				// this line is used by starport scaffolding # types/genesis/validField
@@ -51,30 +63,36 @@ func TestGenesisState_Validate(t *testing.T) {
 			valid: true,
 		},
 		{
-			desc: "duplicated uniquePaymentStorageClientProvider",
+			desc: "duplicated UniqueEpochSessions",
 			genState: &types.GenesisState{
 				Params: types.DefaultParams(),
-				UniquePaymentStorageClientProviderList: []types.UniquePaymentStorageClientProvider{
+				UniqueEpochSessions: []types.UniqueEpochSessionGenesis{
 					{
-						Index: "0",
+						Epoch:              0,
+						UniqueEpochSession: "0",
 					},
 					{
-						Index: "0",
+						Epoch:              0,
+						UniqueEpochSession: "0",
 					},
 				},
 			},
 			valid: false,
 		},
 		{
-			desc: "duplicated providerPaymentStorage",
+			desc: "duplicated ProviderEpochCus",
 			genState: &types.GenesisState{
 				Params: types.DefaultParams(),
-				ProviderPaymentStorageList: []types.ProviderPaymentStorage{
+				ProviderEpochCus: []types.ProviderEpochCuGenesis{
 					{
-						Index: "0",
+						Epoch:           0,
+						Provider:        "0",
+						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10, ComplainersCu: 100},
 					},
 					{
-						Index: "0",
+						Epoch:           0,
+						Provider:        "0",
+						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10, ComplainersCu: 100},
 					},
 				},
 			},
@@ -84,12 +102,18 @@ func TestGenesisState_Validate(t *testing.T) {
 			desc: "duplicated epochPayments",
 			genState: &types.GenesisState{
 				Params: types.DefaultParams(),
-				EpochPaymentsList: []types.EpochPayments{
+				ProviderConsumerEpochCus: []types.ProviderConsumerEpochCuGenesis{
 					{
-						Index: "0",
+						Epoch:                   0,
+						Provider:                "0",
+						Project:                 "0",
+						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
 					},
 					{
-						Index: "0",
+						Epoch:                   0,
+						Provider:                "0",
+						Project:                 "0",
+						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
 					},
 				},
 			},

@@ -5,7 +5,7 @@ import "gogoproto/gogo.proto";
 import "lavanet/lava/pairing/params.proto";
 import "lavanet/lava/pairing/unique_payment_storage_client_provider.proto";
 import "lavanet/lava/pairing/provider_payment_storage.proto";
-import "lavanet/lava/pairing/epoch_payments.proto";
+import "lavanet/lava/pairing/epoch_cu.proto";
 import "lavanet/lava/fixationstore/fixation.proto";
 import "lavanet/lava/timerstore/timer.proto";
 
@@ -21,11 +21,32 @@ message BadgeUsedCu {
 // GenesisState defines the pairing module's genesis state.
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
-  repeated UniquePaymentStorageClientProvider uniquePaymentStorageClientProviderList = 2 [(gogoproto.nullable) = false];
-  repeated ProviderPaymentStorage providerPaymentStorageList = 3 [(gogoproto.nullable) = false];
-  repeated EpochPayments epochPaymentsList = 4 [(gogoproto.nullable) = false];
+  reserved 2;
+  reserved 3;
+  reserved 4;
   repeated BadgeUsedCu badgeUsedCuList = 5 [(gogoproto.nullable) = false];
   lavanet.lava.timerstore.GenesisState badgesTS = 6 [(gogoproto.nullable) = false];
   lavanet.lava.fixationstore.GenesisState providerQosFS = 7 [(gogoproto.nullable) = false];
+  repeated UniqueEpochSessionGenesis unique_epoch_sessions = 8 [(gogoproto.nullable) = false];
+  repeated ProviderEpochCuGenesis provider_epoch_cus = 9 [(gogoproto.nullable) = false];
+  repeated ProviderConsumerEpochCuGenesis provider_consumer_epoch_cus = 10 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
+}
+
+message UniqueEpochSessionGenesis {
+  uint64 epoch = 1;
+  string unique_epoch_session = 2;
+}
+
+message ProviderEpochCuGenesis {
+  uint64 epoch = 1;
+  string provider = 2;
+  ProviderEpochCu provider_epoch_cu = 3 [(gogoproto.nullable) = false];
+}
+
+message ProviderConsumerEpochCuGenesis {
+  uint64 epoch = 1;
+  string provider = 2;
+  string project = 3;
+  ProviderConsumerEpochCu provider_consumer_epoch_cu = 4 [(gogoproto.nullable) = false];
 }
