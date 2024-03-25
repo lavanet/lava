@@ -28,11 +28,13 @@ func TestGenesis(t *testing.T) {
 			{
 				Epoch:           0,
 				Provider:        "0",
+				ChainId:         "0",
 				ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10, ComplainersCu: 100},
 			},
 			{
 				Epoch:           1,
 				Provider:        "1",
+				ChainId:         "1",
 				ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 20, ComplainersCu: 200},
 			},
 		},
@@ -41,12 +43,14 @@ func TestGenesis(t *testing.T) {
 				Epoch:                   0,
 				Provider:                "0",
 				Project:                 "0",
+				ChainId:                 "0",
 				ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
 			},
 			{
 				Epoch:                   1,
 				Provider:                "1",
 				Project:                 "1",
+				ChainId:                 "1",
 				ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 20},
 			},
 		},

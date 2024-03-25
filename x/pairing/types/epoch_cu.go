@@ -16,12 +16,12 @@ func UniqueEpochSessionKey(provider string, project string, chainID string, sess
 	return []byte(strings.Join([]string{provider, project, chainID, strconv.FormatUint(sessionID, 10)}, " "))
 }
 
-func ProviderEpochCuKey(provider string) []byte {
-	return []byte(provider)
+func ProviderEpochCuKey(provider string, chainID string) []byte {
+	return []byte(strings.Join([]string{provider, chainID}, " "))
 }
 
-func ProviderConsumerEpochCuKey(provider string, project string) []byte {
-	return []byte(strings.Join([]string{provider, project}, " "))
+func ProviderConsumerEpochCuKey(provider string, project string, chainID string) []byte {
+	return []byte(strings.Join([]string{provider, project, chainID}, " "))
 }
 
 func DecodeUniqueEpochSessionKey(key string) (provider string, project string, chainID string, sessionID uint64, err error) {
@@ -36,12 +36,20 @@ func DecodeUniqueEpochSessionKey(key string) (provider string, project string, c
 	return split[0], split[1], split[2], sessionID, nil
 }
 
-func DecodeProviderConsumerEpochCuKey(key string) (provider string, project string, err error) {
+func DecodeProviderEpochCuKey(key string) (provider string, chainID string, err error) {
 	split := strings.Split(key, " ")
 	if len(split) != 2 {
-		return "", "", fmt.Errorf("invalid ProviderConsumerEpochCu key")
+		return "", "", fmt.Errorf("invalid ProviderEpochCu key")
 	}
 	return split[0], split[1], nil
+}
+
+func DecodeProviderConsumerEpochCuKey(key string) (provider string, project string, chainID string, err error) {
+	split := strings.Split(key, " ")
+	if len(split) != 3 {
+		return "", "", "", fmt.Errorf("invalid ProviderConsumerEpochCu key")
+	}
+	return split[0], split[1], split[2], nil
 }
 
 func UniqueEpochSessionKeyPrefix(epoch uint64) []byte {

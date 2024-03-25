@@ -40,7 +40,7 @@ func (gs GenesisState) Validate() error {
 	providerEpochCusIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.ProviderEpochCus {
-		index := string(ProviderEpochCuKey(elem.Provider))
+		index := string(ProviderEpochCuKey(elem.Provider, elem.ChainId))
 		if _, ok := providerEpochCusIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for ProviderEpochCu")
 		}
@@ -50,7 +50,7 @@ func (gs GenesisState) Validate() error {
 	providerConsumerEpochCuIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.ProviderConsumerEpochCus {
-		index := string(ProviderConsumerEpochCuKey(elem.Provider, elem.Project))
+		index := string(ProviderConsumerEpochCuKey(elem.Provider, elem.Project, elem.ChainId))
 		if _, ok := providerConsumerEpochCuIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for ProviderConsumerEpochCu")
 		}

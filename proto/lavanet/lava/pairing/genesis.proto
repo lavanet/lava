@@ -41,12 +41,14 @@ message UniqueEpochSessionGenesis {
 message ProviderEpochCuGenesis {
   uint64 epoch = 1;
   string provider = 2;
-  ProviderEpochCu provider_epoch_cu = 3 [(gogoproto.nullable) = false];
+  string chain_id = 3;
+  ProviderEpochCu provider_epoch_cu = 4 [(gogoproto.nullable) = false];
 }
 
 message ProviderConsumerEpochCuGenesis {
   uint64 epoch = 1;
   string provider = 2;
   string project = 3;
-  ProviderConsumerEpochCu provider_consumer_epoch_cu = 4 [(gogoproto.nullable) = false];
+  string chain_id = 4;
+  ProviderConsumerEpochCu provider_consumer_epoch_cu = 5 [(gogoproto.nullable) = false];
 }

@@ -21,11 +21,11 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	}
 	// Set all the providerPaymentStorage
 	for _, elem := range genState.ProviderEpochCus {
-		k.SetProviderEpochCu(ctx, elem.Epoch, elem.Provider, elem.ProviderEpochCu)
+		k.SetProviderEpochCu(ctx, elem.Epoch, elem.Provider, elem.ChainId, elem.ProviderEpochCu)
 	}
 	// Set all the epochPayments
 	for _, elem := range genState.ProviderConsumerEpochCus {
-		k.SetProviderConsumerEpochCu(ctx, elem.Epoch, elem.Provider, elem.Project, elem.ProviderConsumerEpochCu)
+		k.SetProviderConsumerEpochCu(ctx, elem.Epoch, elem.Provider, elem.Project, elem.ChainId, elem.ProviderConsumerEpochCu)
 	}
 	// Set all the badgeUsedCu
 	for _, elem := range genState.BadgeUsedCuList {
@@ -52,11 +52,17 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 		genesis.UniqueEpochSessions = append(genesis.UniqueEpochSessions, ues)
 	}
 
-	epochs, providers, providerEpochCus := k.GetAllProviderEpochCuStore(ctx)
+	epochs, keys, providerEpochCus := k.GetAllProviderEpochCuStore(ctx)
 	for i := range epochs {
+		provider, chainID, err := types.DecodeProviderEpochCuKey(keys[i])
+		if err != nil {
+			utils.LavaFormatError("could not decode ProviderEpochCu key", err, utils.LogAttr("key", keys[i]))
+			continue
+		}
 		pec := types.ProviderEpochCuGenesis{
 			Epoch:           epochs[i],
-			Provider:        providers[i],
+			Provider:        provider,
+			ChainId:         chainID,
 			ProviderEpochCu: providerEpochCus[i],
 		}
 		genesis.ProviderEpochCus = append(genesis.ProviderEpochCus, pec)
@@ -64,7 +70,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 
 	epochs, keys, providerConsumerEpochCus := k.GetAllProviderConsumerEpochCuStore(ctx)
 	for i := range epochs {
-		provider, project, err := types.DecodeProviderConsumerEpochCuKey(keys[i])
+		provider, project, chainID, err := types.DecodeProviderConsumerEpochCuKey(keys[i])
 		if err != nil {
 			utils.LavaFormatError("could not decode ProviderConsumerEpochCu key", err, utils.LogAttr("key", keys[i]))
 			continue
@@ -73,6 +79,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 			Epoch:                   epochs[i],
 			Provider:                provider,
 			Project:                 project,
+			ChainId:                 chainID,
 			ProviderConsumerEpochCu: providerConsumerEpochCus[i],
 		}
 		genesis.ProviderConsumerEpochCus = append(genesis.ProviderConsumerEpochCus, pcec)

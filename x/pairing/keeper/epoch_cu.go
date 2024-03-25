@@ -86,16 +86,16 @@ func (k Keeper) GetAllUniqueEpochSessionStore(ctx sdk.Context) (epochs []uint64,
 /* ########## ProviderEpochCu ############ */
 
 // SetProviderEpochCu sets a ProviderEpochCu in the store
-func (k Keeper) SetProviderEpochCu(ctx sdk.Context, epoch uint64, provider string, providerEpochCu types.ProviderEpochCu) {
+func (k Keeper) SetProviderEpochCu(ctx sdk.Context, epoch uint64, provider string, chainID string, providerEpochCu types.ProviderEpochCu) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochCuKeyPrefix(epoch))
 	b := k.cdc.MustMarshal(&providerEpochCu)
-	store.Set(types.ProviderEpochCuKey(provider), b)
+	store.Set(types.ProviderEpochCuKey(provider, chainID), b)
 }
 
 // GetProviderEpochCu returns a ProviderEpochCu for a specific epoch and provider
-func (k Keeper) GetProviderEpochCu(ctx sdk.Context, epoch uint64, provider string) (val types.ProviderEpochCu, found bool) {
+func (k Keeper) GetProviderEpochCu(ctx sdk.Context, epoch uint64, provider string, chainID string) (val types.ProviderEpochCu, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochCuKeyPrefix(epoch))
-	b := store.Get(types.ProviderEpochCuKey(provider))
+	b := store.Get(types.ProviderEpochCuKey(provider, chainID))
 	if b == nil {
 		return val, false
 	}
@@ -105,46 +105,46 @@ func (k Keeper) GetProviderEpochCu(ctx sdk.Context, epoch uint64, provider strin
 }
 
 // RemoveProviderEpochCu removes a ProviderEpochCu from the store
-func (k Keeper) RemoveProviderEpochCu(ctx sdk.Context, epoch uint64, provider string) {
+func (k Keeper) RemoveProviderEpochCu(ctx sdk.Context, epoch uint64, provider string, chainID string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochCuKeyPrefix(epoch))
-	store.Delete(types.ProviderEpochCuKey(provider))
+	store.Delete(types.ProviderEpochCuKey(provider, chainID))
 }
 
 // GetAllProviderEpochCuStore returns all the ProviderEpochCu from the store (used for genesis)
-func (k Keeper) GetAllProviderEpochCuStore(ctx sdk.Context) (epochs []uint64, providers []string, providerEpochCus []types.ProviderEpochCu) {
+func (k Keeper) GetAllProviderEpochCuStore(ctx sdk.Context) (epochs []uint64, keys []string, providerEpochCus []types.ProviderEpochCu) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(types.ProviderEpochCuPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		split := strings.Split(string(iterator.Key()), "/") // key structure: epoch/provider
+		split := strings.Split(string(iterator.Key()), "/") // key structure: epoch/provider_epoch_cu_key
 		epoch, err := strconv.ParseUint(split[0], 10, 64)
 		if err != nil {
 			utils.LavaFormatError("could not decode ProviderEpochCuKey", err, utils.LogAttr("key", string(iterator.Key())))
 			continue
 		}
 		epochs = append(epochs, epoch)
-		providers = append(providers, split[1])
+		keys = append(keys, split[1])
 		var pec types.ProviderEpochCu
 		k.cdc.MustUnmarshal(iterator.Value(), &pec)
 		providerEpochCus = append(providerEpochCus, pec)
 	}
 
-	return epochs, providers, providerEpochCus
+	return epochs, keys, providerEpochCus
 }
 
 /* ########## ProviderConsumerEpochCu ############ */
 
 // SetProviderConsumerEpochCu sets a ProviderConsumerEpochCu in the store
-func (k Keeper) SetProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provider string, project string, ProviderConsumerEpochCu types.ProviderConsumerEpochCu) {
+func (k Keeper) SetProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provider string, project string, chainID string, ProviderConsumerEpochCu types.ProviderConsumerEpochCu) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix(epoch))
 	b := k.cdc.MustMarshal(&ProviderConsumerEpochCu)
-	store.Set(types.ProviderConsumerEpochCuKey(provider, project), b)
+	store.Set(types.ProviderConsumerEpochCuKey(provider, project, chainID), b)
 }
 
 // GetProviderConsumerEpochCu returns a ProviderConsumerEpochCu for a specific epoch, provider and project
-func (k Keeper) GetProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provider string, project string) (val types.ProviderConsumerEpochCu, found bool) {
+func (k Keeper) GetProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provider string, project string, chainID string) (val types.ProviderConsumerEpochCu, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix(epoch))
-	b := store.Get(types.ProviderConsumerEpochCuKey(provider, project))
+	b := store.Get(types.ProviderConsumerEpochCuKey(provider, project, chainID))
 	if b == nil {
 		return val, false
 	}
@@ -154,9 +154,9 @@ func (k Keeper) GetProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provid
 }
 
 // RemoveProviderConsumerEpochCu removes a ProviderConsumerEpochCu from the store
-func (k Keeper) RemoveProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provider string, project string) {
+func (k Keeper) RemoveProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provider string, project string, chainID string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix(epoch))
-	store.Delete(types.ProviderConsumerEpochCuKey(provider, project))
+	store.Delete(types.ProviderConsumerEpochCuKey(provider, project, chainID))
 }
 
 // GetAllProviderConsumerEpochCuStore returns all the ProviderConsumerEpochCu from the store (used for genesis)

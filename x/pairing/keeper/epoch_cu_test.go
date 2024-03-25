@@ -77,9 +77,9 @@ func TestUniqueEpochSessionGetAllStore(t *testing.T) {
 func createNProviderEpochCu(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.ProviderEpochCu {
 	items := make([]types.ProviderEpochCu, n)
 	for i := range items {
-		provider := strconv.Itoa(i)
+		name := strconv.Itoa(i)
 		items[i] = types.ProviderEpochCu{ServicedCu: uint64(i)}
-		keeper.SetProviderEpochCu(ctx, uint64(i), provider, items[i])
+		keeper.SetProviderEpochCu(ctx, uint64(i), name, name, items[i])
 	}
 	return items
 }
@@ -88,8 +88,8 @@ func TestProviderEpochCuGet(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	items := createNProviderEpochCu(keeper, ctx, 10)
 	for i, item := range items {
-		provider := strconv.Itoa(i)
-		pec, found := keeper.GetProviderEpochCu(ctx, uint64(i), provider)
+		name := strconv.Itoa(i)
+		pec, found := keeper.GetProviderEpochCu(ctx, uint64(i), name, name)
 		require.True(t, found)
 		require.Equal(t, item.ServicedCu, pec.ServicedCu)
 	}
@@ -99,9 +99,9 @@ func TestProviderEpochCuRemove(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	items := createNProviderEpochCu(keeper, ctx, 10)
 	for i := range items {
-		provider := strconv.Itoa(i)
-		keeper.RemoveProviderEpochCu(ctx, uint64(i), provider)
-		_, found := keeper.GetProviderEpochCu(ctx, uint64(i), provider)
+		name := strconv.Itoa(i)
+		keeper.RemoveProviderEpochCu(ctx, uint64(i), name, name)
+		_, found := keeper.GetProviderEpochCu(ctx, uint64(i), name, name)
 		require.False(t, found)
 	}
 }
@@ -111,8 +111,8 @@ func TestProviderEpochCuGetAllStore(t *testing.T) {
 	items := createNProviderEpochCu(keeper, ctx, 10)
 	expectedKeys := []string{}
 	for i := range items {
-		provider := strconv.Itoa(i)
-		key := string(types.ProviderEpochCuKey(provider))
+		name := strconv.Itoa(i)
+		key := string(types.ProviderEpochCuKey(name, name))
 		expectedKeys = append(expectedKeys, key)
 	}
 	_, keys, pecs := keeper.GetAllProviderEpochCuStore(ctx)
@@ -127,7 +127,7 @@ func createNProviderConsumerEpochCu(keeper *keeper.Keeper, ctx sdk.Context, n in
 	for i := range items {
 		name := strconv.Itoa(i)
 		items[i] = types.ProviderConsumerEpochCu{Cu: uint64(i)}
-		keeper.SetProviderConsumerEpochCu(ctx, uint64(i), name, name, items[i])
+		keeper.SetProviderConsumerEpochCu(ctx, uint64(i), name, name, name, items[i])
 	}
 	return items
 }
@@ -137,7 +137,7 @@ func TestProviderConsumerEpochCuGet(t *testing.T) {
 	items := createNProviderConsumerEpochCu(keeper, ctx, 10)
 	for i, item := range items {
 		name := strconv.Itoa(i)
-		pecc, found := keeper.GetProviderConsumerEpochCu(ctx, uint64(i), name, name)
+		pecc, found := keeper.GetProviderConsumerEpochCu(ctx, uint64(i), name, name, name)
 		require.True(t, found)
 		require.Equal(t, item.Cu, pecc.Cu)
 	}
@@ -148,8 +148,8 @@ func TestProviderConsumerEpochCuRemove(t *testing.T) {
 	items := createNProviderConsumerEpochCu(keeper, ctx, 10)
 	for i := range items {
 		name := strconv.Itoa(i)
-		keeper.RemoveProviderConsumerEpochCu(ctx, uint64(i), name, name)
-		_, found := keeper.GetProviderConsumerEpochCu(ctx, uint64(i), name, name)
+		keeper.RemoveProviderConsumerEpochCu(ctx, uint64(i), name, name, name)
+		_, found := keeper.GetProviderConsumerEpochCu(ctx, uint64(i), name, name, name)
 		require.False(t, found)
 	}
 }
@@ -160,7 +160,7 @@ func TestProviderConsumerEpochCuGetAllStore(t *testing.T) {
 	expectedKeys := []string{}
 	for i := range items {
 		name := strconv.Itoa(i)
-		key := string(types.ProviderConsumerEpochCuKey(name, name))
+		key := string(types.ProviderConsumerEpochCuKey(name, name, name))
 		expectedKeys = append(expectedKeys, key)
 	}
 	_, keys, pecs := keeper.GetAllProviderConsumerEpochCuStore(ctx)
