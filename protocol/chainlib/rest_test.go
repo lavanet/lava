@@ -91,7 +91,7 @@ func TestRestGetSupportedApi(t *testing.T) {
 	_, err = apip.getSupportedApi("API2", connectionType_test)
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, common.APINotSupportedError)
-	assert.Equal(t, "rest api not supported ErrMsg: api is not supported {name:API2,connectionType:test}: api is not supported", err.Error())
+	assert.Equal(t, "rest api not supported ErrMsg: api not supported {name:API2,connectionType:test}: api not supported", err.Error())
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &RestChainParser{
