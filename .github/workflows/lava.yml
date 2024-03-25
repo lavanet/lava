@@ -40,8 +40,8 @@ jobs:
         run: |
           GOWRK=off go build cmd/${{ matrix.binary }}/main.go
       
-      # - name: Upload Artifacts
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{ matrix.binary }}-${{ matrix.targetos }}-${{ matrix.arch }}
-      #     path: dist/**/*
+      - name: Upload Lava Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary }}-${{ matrix.targetos }}-${{ matrix.arch }}
+          path: cmd/${{ matrix.binary }}/${{ matrix.binary }}
