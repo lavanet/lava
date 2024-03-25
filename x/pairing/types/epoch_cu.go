@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -25,6 +26,9 @@ func ProviderConsumerEpochCuKey(provider string, project string) []byte {
 
 func DecodeUniqueEpochSessionKey(key string) (provider string, project string, chainID string, sessionID uint64, err error) {
 	split := strings.Split(key, " ")
+	if len(split) != 4 {
+		return "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key")
+	}
 	sessionID, err = strconv.ParseUint(split[3], 10, 64)
 	if err != nil {
 		return "", "", "", 0, err
@@ -32,9 +36,12 @@ func DecodeUniqueEpochSessionKey(key string) (provider string, project string, c
 	return split[0], split[1], split[2], sessionID, nil
 }
 
-func DecodeProviderConsumerEpochCuKey(key string) (provider string, project string) {
+func DecodeProviderConsumerEpochCuKey(key string) (provider string, project string, err error) {
 	split := strings.Split(key, " ")
-	return split[0], split[1]
+	if len(split) != 2 {
+		return "", "", fmt.Errorf("invalid ProviderConsumerEpochCu key")
+	}
+	return split[0], split[1], nil
 }
 
 func UniqueEpochSessionKeyPrefix(epoch uint64) []byte {
