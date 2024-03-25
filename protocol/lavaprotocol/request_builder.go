@@ -126,6 +126,8 @@ func ReplaceRequestedBlock(requestedBlock, latestBlock int64) int64 {
 		return latestBlock
 	case spectypes.FINALIZED_BLOCK:
 		return latestBlock
+	case spectypes.PENDING_BLOCK:
+		return latestBlock
 	case spectypes.EARLIEST_BLOCK:
 		return spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
 	}
