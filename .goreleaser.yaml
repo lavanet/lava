@@ -16,7 +16,7 @@ before:
 builds:
   - id: lavavisor
     binary: lavavisor
-    dir: lavavisor
+    dir: cmd/lavavisor
     env:
       - CGO_ENABLED=0
     goos:
@@ -43,7 +43,7 @@ builds:
   
   - id: lavad
     binary: lavad
-    dir: lavad
+    dir: cmd/lavad
     env:
       - CGO_ENABLED=0
     goos:
@@ -70,7 +70,7 @@ builds:
 
   - id: lavap
     binary: lavap
-    dir: lavap
+    dir: cmd/lavap
     env:
       - CGO_ENABLED=0
     goos:
