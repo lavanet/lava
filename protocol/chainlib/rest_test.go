@@ -137,7 +137,7 @@ func TestRestChainProxy(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
 	})
-	chainParser, chainProxy, chainFetcher, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -168,7 +168,7 @@ func TestParsingRequestedBlocksHeadersRest(t *testing.T) {
 			fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
 		}
 	})
-	chainParser, chainRouter, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {
@@ -238,7 +238,7 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 		}
 		fmt.Fprint(w, `{"block": { "header": {"height": "244591"}}}`)
 	})
-	chainParser, chainRouter, _, closeServer, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+	chainParser, chainRouter, _, closeServer, _, err := CreateChainLibMocks(ctx, "LAV1", spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 	require.NoError(t, err)
 	defer func() {
 		if closeServer != nil {

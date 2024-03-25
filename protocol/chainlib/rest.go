@@ -303,7 +303,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("path", path),
+			utils.LogAttr("_path", path),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("msgSeed", msgSeed),
 			utils.LogAttr("headers", restHeaders),
@@ -369,7 +369,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("path", path),
+			utils.LogAttr("_path", path),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("msgSeed", msgSeed),
 			utils.LogAttr("headers", restHeaders),
@@ -480,7 +480,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	urlPath := rcp.NodeUrl.Url + nodeMessage.Path
 
 	// set context with timeout
-	connectCtx, cancel := rcp.NodeUrl.LowerContextTimeout(ctx, chainMessage, rcp.averageBlockTime)
+	connectCtx, cancel := rcp.CapTimeoutForSend(ctx, chainMessage)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(connectCtx, connectionTypeSlected, rcp.NodeUrl.AuthConfig.AddAuthPath(urlPath), msgBuffer)
@@ -503,7 +503,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 
 	if debug {
 		utils.LavaFormatDebug("provider sending node message",
-			utils.Attribute{Key: "method", Value: nodeMessage.Path},
+			utils.Attribute{Key: "_method", Value: nodeMessage.Path},
 			utils.Attribute{Key: "headers", Value: req.Header},
 			utils.Attribute{Key: "apiInterface", Value: "rest"},
 		)
