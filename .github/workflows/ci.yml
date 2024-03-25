@@ -27,12 +27,12 @@ jobs:
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
-          args: build --snapshot --clean
+          args: build --snapshot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      # - name: Upload Artifacts
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{ matrix.binary }}-${{ fromJson(steps.releaser.outputs.metadata).tag }}-${{ fromJson(steps.releaser.outputs.metadata).runtime.goos }}-${{ fromJson(steps.releaser.outputs.metadata).runtime.goarch }}
-      #     path: cmd/${{ matrix.binary }}/dist/*
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lava-binaries
+          path: dist/**/*
