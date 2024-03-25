@@ -6,8 +6,8 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
@@ -281,7 +281,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
 	currentTimestamp := ts.Ctx.BlockTime().UTC().Unix()
-	relevantDelegations := slices.Filter(res.Delegations,
+	relevantDelegations := lavaslices.Filter(res.Delegations,
 		func(d dualstakingtypes.Delegation) bool {
 			return d.ChainID == ts.spec.Index && d.IsFirstMonthPassed(currentTimestamp)
 		})

@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/utils"
 	"golang.org/x/net/context"
 )
 
@@ -43,11 +44,16 @@ func (pu *PaymentUpdater) updateInner() {
 	if err != nil {
 		return
 	}
+	relevantPayments := 0
 	for _, payment := range payments {
 		updatable, foundUpdatable := pu.paymentUpdatable[payment.Description]
 		if foundUpdatable {
+			relevantPayments += 1
 			(*updatable).PaymentHandler(payment)
 		}
+	}
+	if len(payments) > 0 {
+		utils.LavaFormatDebug("relevant payment events", utils.Attribute{Key: "number_of_payment_events_detected", Value: len(payments)}, utils.Attribute{Key: "number_of_relevant_payments_detected", Value: relevantPayments})
 	}
 }
 

@@ -25,7 +25,7 @@ import (
 
 const (
 	defaultGasPrice      = "0.000000001" + commontypes.TokenDenom
-	DefaultGasAdjustment = "10.0"
+	DefaultGasAdjustment = "1000.0"
 	// same account can continue failing the more providers you have under the same account
 	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
 	// therefore currently our best solution is to continue retrying increasing sequence number until successful
@@ -198,7 +198,7 @@ func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (pa
 		utils.LavaFormatDebug("transaction results", utils.Attribute{Key: "jsonParsedResult", Value: jsonParsedResult})
 	}
 	resultData, err := common.ParseTransactionResult(jsonParsedResult)
-	utils.LavaFormatDebug("Sent Transaction", utils.LogAttr("Hash", hex.EncodeToString(resultData.Txhash)))
+	utils.LavaFormatInfo("Sent Transaction", utils.LogAttr("Hash", hex.EncodeToString(resultData.Txhash)))
 	if err != nil {
 		return common.TxResultData{}, err
 	}
@@ -215,9 +215,16 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 	txResultChan := make(chan *coretypes.ResultTx)
 	guid := utils.GenerateUniqueIdentifier()
 	// check consumer session manager
+	timeOutReached := false
 	go func() {
 		for {
-			ctx, cancel := context.WithTimeout(utils.WithUniqueIdentifier(context.Background(), guid), 3*time.Second)
+			// we will never catch the tx hash in the first attempt as not enough time have passed, so we sleep at the beginning of the loop
+			time.Sleep(5 * time.Second)
+			if timeOutReached {
+				utils.LavaFormatWarning("Timeout waiting for transaction", nil, utils.LogAttr("hash", resultData.Txhash))
+				return
+			}
+			ctx, cancel := context.WithTimeout(utils.WithUniqueIdentifier(context.Background(), guid), 5*time.Second)
 			result, err := clientCtx.Client.Tx(ctx, resultData.Txhash, false)
 			cancel()
 			if err == nil {
@@ -229,7 +236,6 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 			if debug {
 				utils.LavaFormatWarning("Tx query got error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "resultData", Value: resultData})
 			}
-			time.Sleep(5 * time.Second)
 		}
 	}()
 	select {
@@ -242,6 +248,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 		utils.LavaFormatDebug("Tx Hash found on blockchain", utils.LogAttr("Txhash", hex.EncodeToString(resultData.Txhash)), utils.LogAttr("Code", resultData.Code))
 		break
 	case <-time.After(5 * time.Minute):
+		timeOutReached = true
 		return common.TxResultData{}, utils.LavaFormatError("failed sending tx, wasn't found after timeout", nil, utils.Attribute{Key: "hash", Value: hex.EncodeToString(resultData.Txhash)})
 	}
 	// we found the tx on chain and it failed

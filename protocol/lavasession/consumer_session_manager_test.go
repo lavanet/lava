@@ -139,7 +139,7 @@ func TestHappyFlow(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -161,7 +161,7 @@ func TestHappyFlowVirtualEpoch(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch*(virtualEpoch+1), nil, servicedBlockNumber, "", nil, common.NOSTATE, virtualEpoch) // get a session
+	css, err := csm.GetSessions(ctx, maxCuForVirtualEpoch*(virtualEpoch+1), NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, virtualEpoch) // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -185,7 +185,7 @@ func TestVirtualEpochWithFailure(t *testing.T) {
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
 
-	_, err = csm.GetSessions(ctx, maxCuForVirtualEpoch*(virtualEpoch+1)+10, nil, servicedBlockNumber, "", nil, common.NOSTATE, virtualEpoch) // get a session
+	_, err = csm.GetSessions(ctx, maxCuForVirtualEpoch*(virtualEpoch+1)+10, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, virtualEpoch) // get a session
 	require.Error(t, err)
 }
 
@@ -195,8 +195,8 @@ func TestPairingReset(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	csm.validAddresses = []string{}                                                                           // set valid addresses to zero
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+	csm.validAddresses = []string{}                                                                                              // set valid addresses to zero
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.NoError(t, err)
 	require.Equal(t, len(csm.validAddresses), len(csm.pairingAddresses))
 
@@ -225,7 +225,7 @@ func TestPairingResetWithFailures(t *testing.T) {
 		if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
 			break
 		}
-		css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 		require.NoError(t, err)
 
 		for _, cs := range css {
@@ -234,7 +234,7 @@ func TestPairingResetWithFailures(t *testing.T) {
 		}
 	}
 	require.Equal(t, len(csm.validAddresses), 0)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.NoError(t, err)
 	require.Equal(t, len(csm.validAddresses), len(csm.pairingAddresses))
 
@@ -259,7 +259,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 			if len(csm.validAddresses) == 0 { // wait for all pairings to be blocked.
 				break
 			}
-			css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+			css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 
 			for _, cs := range css {
 				err = csm.OnSessionFailure(cs.Session, nil)
@@ -271,7 +271,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 			}
 		}
 		require.Equal(t, len(csm.validAddresses), 0)
-		css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 		require.NoError(t, err)
 		require.Equal(t, len(csm.validAddresses), len(csm.pairingAddresses))
 
@@ -283,7 +283,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 		}
 	}
 
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -318,7 +318,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	sessionList := make([]session, numberOfAllowedSessionsPerConsumer)
 	sessionListData := make([]SessTestData, numberOfAllowedSessionsPerConsumer)
 	for i := 0; i < numberOfAllowedSessionsPerConsumer; i++ {
-		css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 		require.NoError(t, err)
 
 		for _, cs := range css { // get a session
@@ -354,7 +354,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 	}
 
 	for i := 0; i < numberOfAllowedSessionsPerConsumer; i++ {
-		css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 		require.NoError(t, err)
 
 		for _, cs := range css { // get a session
@@ -387,7 +387,7 @@ func TestSuccessAndFailureOfSessionWithUpdatePairingsInTheMiddle(t *testing.T) {
 }
 
 func successfulSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.T, p int, ch chan int) {
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -400,7 +400,7 @@ func successfulSession(ctx context.Context, csm *ConsumerSessionManager, t *test
 }
 
 func failedSession(ctx context.Context, csm *ConsumerSessionManager, t *testing.T, p int, ch chan int) {
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -518,7 +518,7 @@ func TestSessionFailureAndGetReportedProviders(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -552,7 +552,7 @@ func TestSessionFailureEpochMisMatch(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -573,7 +573,7 @@ func TestAllProvidersEndpointsDisabled(t *testing.T) {
 	pairingList := createPairingList("", false)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
-	cs, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0) // get a session
+	cs, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.Nil(t, cs)
 	require.Error(t, err)
 }
@@ -613,7 +613,7 @@ func TestGetSession(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList)
 	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, "", nil, common.NOSTATE, 0)
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0)
 	require.NoError(t, err)
 
 	for _, cs := range css {
@@ -659,7 +659,7 @@ func TestPairingWithAddons(t *testing.T) {
 			// block all providers
 			initialProvidersLen := len(csm.getValidAddresses(addon, nil))
 			for i := 0; i < initialProvidersLen; i++ {
-				css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, addon, nil, common.NOSTATE, 0) // get a session
+				css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.NO_STATE, 0) // get a session
 				require.NoError(t, err, i)
 				for _, cs := range css {
 					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
@@ -671,7 +671,7 @@ func TestPairingWithAddons(t *testing.T) {
 			if addon != "" {
 				require.NotEqual(t, csm.getValidAddresses(addon, nil), csm.getValidAddresses("", nil))
 			}
-			css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, addon, nil, common.NOSTATE, 0) // get a session
+			css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.NO_STATE, 0) // get a session
 			require.NoError(t, err)
 			for _, cs := range css {
 				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
@@ -734,7 +734,7 @@ func TestPairingWithExtensions(t *testing.T) {
 			}
 			initialProvidersLen := len(csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions))
 			for i := 0; i < initialProvidersLen; i++ {
-				css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, extensionOpt.addon, extensionsList, common.NOSTATE, 0) // get a session
+				css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, extensionOpt.addon, extensionsList, common.NO_STATE, 0) // get a session
 				require.NoError(t, err, i)
 				for _, cs := range css {
 					err = csm.OnSessionFailure(cs.Session, ReportAndBlockProviderError)
@@ -746,7 +746,7 @@ func TestPairingWithExtensions(t *testing.T) {
 			if len(extensionOpt.extensions) > 0 || extensionOpt.addon != "" {
 				require.NotEqual(t, csm.getValidAddresses(extensionOpt.addon, extensionOpt.extensions), csm.getValidAddresses("", nil))
 			}
-			css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, extensionOpt.addon, extensionsList, common.NOSTATE, 0) // get a session
+			css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, extensionOpt.addon, extensionsList, common.NO_STATE, 0) // get a session
 			require.NoError(t, err)
 			for _, cs := range css {
 				err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
@@ -762,7 +762,7 @@ func TestNoPairingsError(t *testing.T) {
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
 	time.Sleep(5 * time.Millisecond) // let probes finish
-	_, err = csm.getValidProviderAddresses(map[string]struct{}{}, 10, 100, "invalid", nil, common.NOSTATE)
+	_, err = csm.getValidProviderAddresses(map[string]struct{}{}, 10, 100, "invalid", nil, common.NO_STATE)
 	require.Error(t, err)
 	require.True(t, PairingListEmptyError.Is(err))
 }
@@ -781,15 +781,16 @@ func TestPairingWithStateful(t *testing.T) {
 		providerAddresses := csm.getValidAddresses(addon, nil)
 		allProviders := len(providerAddresses)
 		require.Equal(t, 10, allProviders)
-		css, err := csm.GetSessions(ctx, cuForFirstRequest, nil, servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALLPROVIDERS, 0) // get a session
+		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALL_PROVIDERS, 0) // get a session
 		require.NoError(t, err)
 		require.Equal(t, allProviders, len(css))
 		for _, cs := range css {
 			err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
 			require.NoError(t, err)
 		}
-		unwantedProvider := map[string]struct{}{providerAddresses[0]: {}}
-		css, err = csm.GetSessions(ctx, cuForFirstRequest, unwantedProvider, servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALLPROVIDERS, 0) // get a session
+		usedProviders := NewUsedProviders(nil)
+		usedProviders.RemoveUsed(providerAddresses[0], nil)
+		css, err = csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, addon, nil, common.CONSISTENCY_SELECT_ALL_PROVIDERS, 0) // get a session
 		require.NoError(t, err)
 		require.Equal(t, allProviders-1, len(css))
 	})

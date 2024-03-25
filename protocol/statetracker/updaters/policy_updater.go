@@ -71,7 +71,6 @@ func (pu *PolicyUpdater) UpdateEpoch(epoch uint64) {
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
 	// update policy now
-	utils.LavaFormatDebug("PolicyUpdater, fetching current policy and updating the effective policy", utils.LogAttr("epoch", epoch), utils.LogAttr("chainId", pu.chainId))
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	policy, err := pu.policyFetcher.GetConsumerPolicy(ctx, pu.consumerAddress, pu.chainId)

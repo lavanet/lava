@@ -2168,7 +2168,7 @@
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
-                                            "minimumGasPrice",
+                                            "minimum_gas_price",
                                             "="
                                         ],
                                         "parser_func": "PARSE_DICTIONARY"
@@ -4681,7 +4681,7 @@
                             {
                                 "name": "minimum-gas-price",
                                 "parse_directive": {
-                                    "function_template": "cosmos.base.node.v1beta1.Service.Config",
+                                    "function_template": "cosmos.base.node.v1beta1.Service/Config",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
@@ -4690,7 +4690,7 @@
                                         ],
                                         "parser_func": "PARSE_DICTIONARY"
                                     },
-                                    "api_name": "cosmos.base.node.v1beta1.Service.Config"
+                                    "api_name": "cosmos.base.node.v1beta1.Service/Config"
                                 }
                             },
                             {
