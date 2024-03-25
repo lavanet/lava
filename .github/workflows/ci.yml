@@ -10,11 +10,7 @@ on:
 
 jobs:
   ci:
-    strategy:
-      matrix:
-        binary: [lavad, lavap, lavavisor]
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v5
@@ -31,13 +27,12 @@ jobs:
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
-          args: build --single-target --snapshot --clean
-          workdir: cmd/${{ matrix.binary }}
+          args: build --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.binary }}-${{ fromJson(steps.releaser.outputs.metadata).tag }}-${{ fromJson(steps.releaser.outputs.metadata).runtime.goos }}-${{ fromJson(steps.releaser.outputs.metadata).runtime.goarch }}
-          path: cmd/${{ matrix.binary }}/dist/*
+      # - name: Upload Artifacts
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ matrix.binary }}-${{ fromJson(steps.releaser.outputs.metadata).tag }}-${{ fromJson(steps.releaser.outputs.metadata).runtime.goos }}-${{ fromJson(steps.releaser.outputs.metadata).runtime.goarch }}
+      #     path: cmd/${{ matrix.binary }}/dist/*
