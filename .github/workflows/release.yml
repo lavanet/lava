@@ -11,15 +11,7 @@ permissions:
 jobs:
   release:
     name: 'release'
-    strategy:
-      matrix:
-        binary: [lavad, lavap, lavavisor]
-        targetos: [darwin, linux]
-        arch: [amd64, arm64]
     runs-on: ubuntu-latest
-    env:
-      GOOS: ${{ matrix.targetos }}
-      GOARCH: ${{ matrix.arch }}
 
     permissions:
       contents: write
@@ -46,7 +38,6 @@ jobs:
       with:
         version: latest
         args: release --clean --timeout 90m
-        workdir: cmd/${{ matrix.binary }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
