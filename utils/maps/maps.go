@@ -1,7 +1,7 @@
 package maps
 
 import (
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"golang.org/x/exp/constraints"
 )
 
@@ -27,7 +27,7 @@ func StableSortedKeys[T constraints.Ordered, V any](m map[T]V) []T {
 		keys = append(keys, k)
 	}
 
-	slices.SortStable(keys)
+	lavaslices.SortStable(keys)
 	return keys
 }
 

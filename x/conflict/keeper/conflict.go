@@ -7,9 +7,9 @@ import (
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/maps"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -293,7 +293,7 @@ func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.R
 	blockHeights := maps.StableSortedKeys(finalizedBlocks)
 
 	// Validate that blocks are consecutive
-	_, isConsecutive := slices.IsSliceConsecutive(blockHeights)
+	_, isConsecutive := lavaslices.IsSliceConsecutive(blockHeights)
 	if !isConsecutive {
 		return EMPTY_MAP, 0, 0, fmt.Errorf("ValidateSameProviderConflict: Finalized blocks are not consecutive: %v", blockHeights)
 	}
