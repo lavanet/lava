@@ -8,8 +8,13 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   ci:
+    name: ${{ matrix.binary }}-${{ matrix.targetos }}-${{ matrix.arch }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -38,10 +43,10 @@ jobs:
 
       - name: Build ${{ matrix.binary }}
         run: |
-          GOWRK=off go build cmd/${{ matrix.binary }}/main.go
+          GOWRK=off go build -o out cmd/${{ matrix.binary }}/main.go
       
       - name: Upload Lava Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.binary }}-${{ matrix.targetos }}-${{ matrix.arch }}
-          path: cmd/${{ matrix.binary }}/${{ matrix.binary }}
+          path: out
