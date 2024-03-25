@@ -8,8 +8,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/stretchr/testify/require"
@@ -87,7 +87,7 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 
 				relayPaymentMessage := types.MsgRelayPayment{
 					Creator: provider1Addr,
-					Relays:  slices.Slice(relaySession),
+					Relays:  lavaslices.Slice(relaySession),
 				}
 
 				ts.relayPaymentWithoutPay(relayPaymentMessage, true)
@@ -242,13 +242,13 @@ func TestTrackedCuWithQos(t *testing.T) {
 
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: provider1,
-				Relays:  slices.Slice(relaySession1),
+				Relays:  lavaslices.Slice(relaySession1),
 			}
 			ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
 			relayPaymentMessage2 := types.MsgRelayPayment{
 				Creator: provider2,
-				Relays:  slices.Slice(relaySession2),
+				Relays:  lavaslices.Slice(relaySession2),
 			}
 			ts.relayPaymentWithoutPay(relayPaymentMessage2, true)
 
@@ -314,7 +314,7 @@ func TestTrackedCuMultipleChains(t *testing.T) {
 
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider1,
-		Relays:  slices.Slice(relaySession, relaySession1),
+		Relays:  lavaslices.Slice(relaySession, relaySession1),
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
@@ -327,7 +327,7 @@ func TestTrackedCuMultipleChains(t *testing.T) {
 
 	relayPaymentMessage2 := types.MsgRelayPayment{
 		Creator: provider2,
-		Relays:  slices.Slice(relaySession2),
+		Relays:  lavaslices.Slice(relaySession2),
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage2, true)
 
@@ -428,7 +428,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	relaySession2.Sig = sig
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider,
-		Relays:  slices.Slice(relaySession, relaySession2),
+		Relays:  lavaslices.Slice(relaySession, relaySession2),
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
@@ -446,7 +446,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	for _, p := range res.Details {
 		details = append(details, *p)
 	}
-	require.True(t, slices.UnorderedEqual(expectedPayouts, details))
+	require.True(t, lavaslices.UnorderedEqual(expectedPayouts, details))
 
 	// check the expected subscrription payout
 	subRes, err := ts.QueryPairingSubscriptionMonthlyPayout(client)
@@ -555,7 +555,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	relaySession2.Sig = sig
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider,
-		Relays:  slices.Slice(relaySession, relaySession2),
+		Relays:  lavaslices.Slice(relaySession, relaySession2),
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
@@ -574,7 +574,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	for _, p := range res.Details {
 		details = append(details, *p)
 	}
-	require.True(t, slices.UnorderedEqual(expectedPayouts, details))
+	require.True(t, lavaslices.UnorderedEqual(expectedPayouts, details))
 
 	// check the expected subscrription payout
 	subRes, err := ts.QueryPairingSubscriptionMonthlyPayout(client)

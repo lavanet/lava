@@ -9,9 +9,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/maps"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -265,7 +265,7 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser chainlib.Cha
 			data[i] = latestBlock
 			i++
 		}
-		return slices.Median(data)
+		return lavaslices.Median(data)
 	}
 
 	medianOfExpectedBlocks := median(mapExpectedBlockHeights)
@@ -344,7 +344,7 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	seenBlock := relayRequest.RelayData.SeenBlock
 	requestBlock := relayRequest.RelayData.RequestBlock
 
-	if providerLatestBlock < slices.Min([]int64{seenBlock, requestBlock}) {
+	if providerLatestBlock < lavaslices.Min([]int64{seenBlock, requestBlock}) {
 		return nil, nil, utils.LavaFormatError("provider response does not meet consistency requirements", ProviderFinalizationDataError,
 			utils.LogAttr("ProviderAddress", relayRequest.RelaySession.Provider),
 			utils.LogAttr("providerLatestBlock", providerLatestBlock),
@@ -389,10 +389,10 @@ func verifyFinalizationDataIntegrity(relaySession *pairingtypes.RelaySession, re
 		// TODO: check block hash length and format
 	}
 
-	slices.SortStable(sorted)
+	lavaslices.SortStable(sorted)
 
 	// Check for consecutive blocks
-	nonConsecutiveIndex, isConsecutive := slices.IsSliceConsecutive(sorted)
+	nonConsecutiveIndex, isConsecutive := lavaslices.IsSliceConsecutive(sorted)
 	if !isConsecutive {
 		finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
 		return finalizationConflict, utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", ProviderFinalizationDataAccountabilityError,

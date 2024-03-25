@@ -1,4 +1,4 @@
-package slices
+package lavaslices
 
 import (
 	"math"
@@ -262,6 +262,39 @@ func UnorderedEqual[T comparable](slices ...[]T) bool {
 	}
 
 	return true
+}
+
+// splitSliceGeneric splits a slice into smaller slices of at most chunkSize length.
+// for example len(arr) == 1400 and chunk size 500 will return [500, 500, 400]
+func SplitGenericSliceIntoChunks[T any](arr []T, chunkSize int) [][]T {
+	var result [][]T
+
+	// Calculate the number of chunks needed
+	numChunks := int(math.Ceil(float64(len(arr)) / float64(chunkSize)))
+
+	// Iterate over the original slice and slice it into chunks
+	for i := 0; i < numChunks; i++ {
+		start := i * chunkSize
+		end := start + chunkSize
+
+		// Ensure end doesn't exceed the length of the slice
+		if end > len(arr) {
+			end = len(arr)
+		}
+
+		// Create a chunk with preallocated capacity
+		chunk := make([]T, 0, chunkSize)
+
+		// Append elements to the chunk
+		for j := start; j < end; j++ {
+			chunk = append(chunk, arr[j])
+		}
+
+		// Append the chunk to the result slice
+		result = append(result, chunk)
+	}
+
+	return result
 }
 
 func SortStable[T constraints.Ordered](slice []T) {
