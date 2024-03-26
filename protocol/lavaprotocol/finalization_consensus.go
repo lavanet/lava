@@ -145,7 +145,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 
 			logSuccessUpdate()
 			finalizationConflict.RelayReply1 = relayFinalization
-			return finalizationConflict, fmt.Errorf("found same provider [%s] conflict on block %d", providerAddress, discrepancyBlock)
+			return finalizationConflict, fmt.Errorf("found same provider conflict on block [%d], provider address [%s]", discrepancyBlock, providerAddress)
 		} else if otherBlockHash == "" {
 			// Use some other hash to create proof, in case of no same provider conflict
 			otherBlockHash = blockHash
@@ -170,8 +170,6 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	logSuccessUpdate()
 	return finalizationConflict, fmt.Errorf("found finalization conflict on block %d between provider [%s] and provider [%s] ", discrepancyBlock, providerAddress, otherProviderAddress)
 }
-
-// func (fc *FinalizationConsensus) find
 
 func (fc *FinalizationConsensus) findDiscrepancy(finalizedBlocksA map[int64]string, consensus BlockToHashesToAgreeingProviders) (foundDiscrepancy bool, discrepancyBlock int64) {
 	for blockNum, blockHash := range finalizedBlocksA {

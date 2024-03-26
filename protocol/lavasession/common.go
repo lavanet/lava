@@ -58,7 +58,7 @@ func IsSessionSyncLoss(err error) bool {
 	return code == codes.Code(SessionOutOfSyncError.ABCICode())
 }
 
-func ConnectgRPCClient(ctx context.Context, address string, allowInsecure bool) (*grpc.ClientConn, error) {
+func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool) (*grpc.ClientConn, error) {
 	var tlsConf tls.Config
 	if allowInsecure {
 		tlsConf.InsecureSkipVerify = true // this will allow us to use self signed certificates in development.

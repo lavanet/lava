@@ -245,12 +245,12 @@ func NewMockChainFetcher(startBlock, blocksToSave int64, callback func()) *MockC
 	return &mockCHainFetcher
 }
 
-type uniqueAddresGenerator struct {
+type uniqueAddressGenerator struct {
 	seed int
 	lock sync.Mutex
 }
 
-func (ug *uniqueAddresGenerator) GetAddress() string {
+func (ug *uniqueAddressGenerator) GetAddress() string {
 	ug.lock.Lock()
 	defer ug.lock.Unlock()
 	ug.seed++

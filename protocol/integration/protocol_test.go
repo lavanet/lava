@@ -33,14 +33,14 @@ import (
 var (
 	seed       int64
 	randomizer *sigs.ZeroReader
-	addressGen uniqueAddresGenerator
+	addressGen uniqueAddressGenerator
 )
 
 func TestMain(m *testing.M) {
 	// This code will run once before any test cases are executed.
 	seed = time.Now().Unix()
 	rand.SetSpecificSeed(seed)
-	addressGen = uniqueAddresGenerator{}
+	addressGen = uniqueAddressGenerator{}
 	randomizer = sigs.NewZeroReader(seed)
 	lavasession.AllowInsecureConnectionToProviders = true
 	// Run the actual tests
@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 func isGrpcServerUp(url string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 	defer cancel()
-	conn, err := lavasession.ConnectgRPCClient(context.Background(), url, true)
+	conn, err := lavasession.ConnectGRPCClient(context.Background(), url, true)
 	if err != nil {
 		return false
 	}

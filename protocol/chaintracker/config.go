@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DefualtAssumedBlockMemory      = 20
+	DefaultAssumedBlockMemory      = 20
 	DefaultBlockCheckpointDistance = 100
 )
 
@@ -33,7 +33,7 @@ func (cnf *ChainTrackerConfig) validate() error {
 	}
 
 	if cnf.ServerBlockMemory == 0 {
-		cnf.ServerBlockMemory = DefualtAssumedBlockMemory
+		cnf.ServerBlockMemory = DefaultAssumedBlockMemory
 	}
 	if cnf.BlocksCheckpointDistance == 0 {
 		cnf.BlocksCheckpointDistance = DefaultBlockCheckpointDistance
