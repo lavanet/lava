@@ -381,7 +381,8 @@ func (k msgServer) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveProv
 			"project":                    project,
 			"cu":                         strconv.FormatUint(complainerCuToAdd, 10),
 			"epoch":                      strconv.FormatUint(epoch, 10),
-			"total_complaint_this_epoch": strconv.FormatUint(pec.ComplainersCu, 10)}
+			"total_complaint_this_epoch": strconv.FormatUint(pec.ComplainersCu, 10),
+		}
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderReportedEventName, details, "provider got reported by consumer")
 	}
 

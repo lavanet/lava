@@ -139,9 +139,9 @@ func (k Keeper) GetAllProviderEpochCuStore(ctx sdk.Context) (epochs []uint64, ke
 /* ########## ProviderConsumerEpochCu ############ */
 
 // SetProviderConsumerEpochCu sets a ProviderConsumerEpochCu in the store
-func (k Keeper) SetProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provider string, project string, chainID string, ProviderConsumerEpochCu types.ProviderConsumerEpochCu) {
+func (k Keeper) SetProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provider string, project string, chainID string, providerConsumerEpochCu types.ProviderConsumerEpochCu) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix(epoch))
-	b := k.cdc.MustMarshal(&ProviderConsumerEpochCu)
+	b := k.cdc.MustMarshal(&providerConsumerEpochCu)
 	store.Set(types.ProviderConsumerEpochCuKey(provider, project, chainID), b)
 }
 
@@ -165,7 +165,7 @@ func (k Keeper) RemoveProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, pro
 
 // GetAllProviderConsumerEpochCuStore returns all the ProviderConsumerEpochCu from the store (used for genesis)
 func (k Keeper) GetAllProviderConsumerEpochCu(ctx sdk.Context, epoch uint64) (keys []string, providerConsumerEpochCus []types.ProviderConsumerEpochCu) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(types.ProviderConsumerEpochCuKeyPrefix(epoch)))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix(epoch))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {

@@ -205,7 +205,8 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, pro
 			"provider_address": provider,
 			"chain_id":         chainID,
 			"complaint_cu":     strconv.FormatUint(complaintCU, 10),
-			"serviced_cu":      strconv.FormatUint(servicedCU, 10)},
+			"serviced_cu":      strconv.FormatUint(servicedCU, 10),
+		},
 		"Unresponsive provider was freezed due to unresponsiveness")
 
 	// reset the provider's complainer CU (so he won't get punished for the same complaints twice)
