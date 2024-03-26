@@ -310,7 +310,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
 		utils.LavaFormatDebug("in <<< GRPC Relay ",
 			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("method", method),
+			utils.LogAttr("_method", method),
 			utils.LogAttr("headers", grpcHeaders),
 		)
 		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
@@ -520,14 +520,14 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	if debug {
 		utils.LavaFormatDebug("provider sending node message",
-			utils.Attribute{Key: "method", Value: nodeMessage.Path},
+			utils.Attribute{Key: "_method", Value: nodeMessage.Path},
 			utils.Attribute{Key: "headers", Value: metadataMap},
 			utils.Attribute{Key: "apiInterface", Value: "grpc"},
 		)
 	}
 	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
-	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
+	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
 	defer cancel()
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
 	if err != nil {

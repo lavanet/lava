@@ -1,6 +1,7 @@
 package chainlib
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -84,6 +85,13 @@ type BaseChainProxy struct {
 // returns the node url and chain id for that proxy.
 func (bcp *BaseChainProxy) GetChainProxyInformation() (common.NodeUrl, string) {
 	return bcp.NodeUrl, bcp.ChainID
+}
+
+func (bcp *BaseChainProxy) CapTimeoutForSend(ctx context.Context, chainMessage ChainMessageForSend) (context.Context, context.CancelFunc) {
+	relayTimeout := GetRelayTimeout(chainMessage, bcp.averageBlockTime)
+	processingTimeout := common.GetTimeoutForProcessing(relayTimeout, GetTimeoutInfo(chainMessage))
+	connectCtx, cancel := bcp.NodeUrl.LowerContextTimeout(ctx, processingTimeout)
+	return connectCtx, cancel
 }
 
 func extractDappIDFromFiberContext(c *fiber.Ctx) (dappID string) {
@@ -299,21 +307,21 @@ func CompareRequestedBlockInBatch(firstRequestedBlock int64, second int64) (late
 	return returnBigger(firstRequestedBlock, second)
 }
 
-func GetRelayTimeout(chainMessage ChainMessage, chainParser ChainParser, timeouts int) time.Duration {
+func GetRelayTimeout(chainMessage ChainMessageForSend, averageBlockTime time.Duration) time.Duration {
 	if chainMessage.TimeoutOverride() != 0 {
 		return chainMessage.TimeoutOverride()
 	}
 	// Calculate extra RelayTimeout
 	extraRelayTimeout := time.Duration(0)
 	if IsHangingApi(chainMessage) {
-		_, extraRelayTimeout, _, _ = chainParser.ChainBlockStats()
+		extraRelayTimeout = averageBlockTime * 2
 	}
 	relayTimeAddition := common.GetTimePerCu(GetComputeUnits(chainMessage))
 	if chainMessage.GetApi().TimeoutMs > 0 {
 		relayTimeAddition = time.Millisecond * time.Duration(chainMessage.GetApi().TimeoutMs)
 	}
 	// Set relay timout, increase it every time we fail a relay on timeout
-	return extraRelayTimeout + time.Duration(timeouts+1)*relayTimeAddition + common.AverageWorldLatency
+	return extraRelayTimeout + relayTimeAddition + common.AverageWorldLatency
 }
 
 // setup a common preflight and cors configuration allowing wild cards and preflight caching.
@@ -415,4 +423,12 @@ func (rd *RefererData) SendReferer(refererMatchString string, chainId string, ms
 	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
 	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString, chainId, msg, referer, origin, userAgent))
 	return nil
+}
+
+func GetTimeoutInfo(chainMessage ChainMessageForSend) common.TimeoutInfo {
+	return common.TimeoutInfo{
+		CU:       chainMessage.GetApi().ComputeUnits,
+		Hanging:  IsHangingApi(chainMessage),
+		Stateful: GetStateful(chainMessage),
+	}
 }

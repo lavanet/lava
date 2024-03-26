@@ -88,7 +88,7 @@ func (rr ConflictRequest) String() string {
 
 func NewConsumerReportsClient(endpointAddress string, interval ...time.Duration) *ConsumerReportsClient {
 	if endpointAddress == "" {
-		utils.LavaFormatInfo("Running with Consumer Relay Server Disabled")
+		utils.LavaFormatInfo("Running with Consumer Reports Client Disabled")
 		return nil
 	}
 

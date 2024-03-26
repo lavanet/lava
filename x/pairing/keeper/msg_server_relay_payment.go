@@ -166,7 +166,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// fail the TX ***
 
 		totalCUInEpochForUserProvider := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, relay.Provider, relay.CuSum, relay.SessionId)
-		ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "")
 		if badgeFound {
 			k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
 		}
@@ -324,10 +323,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		k.setStakeEntryBlockReport(ctx, creator, report.GetSpecId(), report.GetLatestBlock())
 	}
 	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
-
-	// consume constant gas (dependent on the number of relays)
-	ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "")
-	ctx.GasMeter().ConsumeGas(uint64(10000+100000*len(msg.Relays)), "")
 
 	return &types.MsgRelayPaymentResponse{RejectedRelays: rejected_relays}, nil
 }
