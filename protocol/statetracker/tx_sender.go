@@ -299,14 +299,12 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
+func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error {
 	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String())
 	if finalizationConflict != nil {
 		msg.SetFinalizationConflict(finalizationConflict)
 	} else if responseConflict != nil {
 		msg.SetResponseConflict(responseConflict)
-	} else if sameProviderConflict != nil {
-		msg.SetSameProviderConflict(sameProviderConflict)
 	} else {
 		return utils.LavaFormatError("discrepancyChecker - TxSenderConflictDetection - no conflict provided", nil)
 	}

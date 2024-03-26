@@ -28,12 +28,6 @@ func (msg *MsgDetection) SetResponseConflict(responseConflict *ResponseConflict)
 	}
 }
 
-func (msg *MsgDetection) SetSameProviderConflict(sameProviderConflict *FinalizationConflict) {
-	msg.Conflict = &MsgDetection_SameProviderConflict{
-		SameProviderConflict: sameProviderConflict,
-	}
-}
-
 func (msg *MsgDetection) Route() string {
 	return RouterKey
 }

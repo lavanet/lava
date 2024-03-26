@@ -29,17 +29,23 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	}
 	switch msg.Conflict.(type) {
 	case *types.MsgDetection_FinalizationConflict:
-		err := k.handleFinalizationConflict(ctx, msg.GetFinalizationConflict(), clientAddr)
-		if err != nil {
-			return nil, err
-		}
-	case *types.MsgDetection_SameProviderConflict:
-		eventData, err := k.handleSameProviderConflict(ctx, msg.GetSameProviderConflict(), clientAddr)
-		if err != nil {
-			return nil, err
+		conflict := msg.GetFinalizationConflict()
+		if conflict.RelayReply0.RelaySession.Provider == conflict.RelayReply1.RelaySession.Provider {
+			eventData, err := k.handleSameProviderConflict(ctx, conflict, clientAddr)
+			if err != nil {
+				return nil, err
+			}
+
+			utils.LogLavaEvent(ctx, logger, types.ConflictDetectionSameProviderEventName, eventData, "Simulation: Got a new valid conflict detection from consumer on same provider")
+		} else {
+			eventData, err := k.handleTwoProvidersConflict(ctx, conflict, clientAddr)
+			if err != nil {
+				return nil, err
+			}
+
+			utils.LogLavaEvent(ctx, logger, types.ConflictDetectionTwoProvidersEventName, eventData, "Simulation: Got a new valid conflict detection from consumer on two providers")
 		}
 
-		utils.LogLavaEvent(ctx, logger, types.ConflictDetectionSameProviderEventName, eventData, "Simulation: Got a new valid conflict detection from consumer on same provider")
 		return &types.MsgDetectionResponse{}, nil
 	case *types.MsgDetection_ResponseConflict:
 		eventData, err := k.handleResponseConflict(ctx, goCtx, msg.GetResponseConflict(), clientAddr)
@@ -49,11 +55,9 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 
 		utils.LogLavaEvent(ctx, logger, types.ConflictVoteDetectionEventName, eventData, "Simulation: Got a new valid conflict detection from consumer, starting new vote")
 		return &types.MsgDetectionResponse{}, nil
+	default:
+		return nil, utils.LavaFormatWarning("invalid conflict type", nil, utils.LogAttr("conflict", fmt.Sprintf("%+v", msg.Conflict)))
 	}
-
-	eventData := map[string]string{"client": msg.Creator}
-	utils.LogLavaEvent(ctx, logger, types.ConflictDetectionReceivedEventName, eventData, "Simulation: Got a new valid conflict detection from consumer")
-	return &types.MsgDetectionResponse{}, nil
 }
 
 func (k Keeper) LotteryVoters(goCtx context.Context, epoch uint64, chainID string, exemptions []string) []string {
@@ -76,17 +80,23 @@ func (k Keeper) LotteryVoters(goCtx context.Context, epoch uint64, chainID strin
 	return voters
 }
 
-func (k msgServer) handleFinalizationConflict(ctx sdk.Context, conflict *types.FinalizationConflict, clientAddr sdk.AccAddress) error {
-	err := k.Keeper.ValidateFinalizationConflict(ctx, conflict, clientAddr)
+func (k msgServer) handleTwoProvidersConflict(ctx sdk.Context, conflict *types.FinalizationConflict, clientAddr sdk.AccAddress) (eventData map[string]string, err error) {
+	err = k.Keeper.ValidateFinalizationConflict(ctx, conflict, clientAddr)
 	if err != nil {
-		return utils.LavaFormatWarning("Simulation: invalid finalization conflict detection", err,
+		return nil, utils.LavaFormatWarning("Simulation: invalid finalization conflict detection", err,
 			utils.LogAttr("client", clientAddr.String()),
 		)
 	}
 
-	return nil
-}
+	eventData = map[string]string{"client": clientAddr.String()}
+	eventData["chainID"] = conflict.RelayReply0.RelaySession.SpecId
+	eventData["provider0"] = fmt.Sprintf("%+v", conflict.RelayReply0.RelaySession.Provider)
+	eventData["provider1"] = fmt.Sprintf("%+v", conflict.RelayReply1.RelaySession.Provider)
+	// eventData["mismatching_block_height"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
+	// eventData["mismatching_block_hashes"] = fmt.Sprintf("%+v", mismatchingBlockHashes)
 
+	return eventData, nil
+}
 func (k msgServer) handleSameProviderConflict(ctx sdk.Context, conflict *types.FinalizationConflict, clientAddr sdk.AccAddress) (eventData map[string]string, err error) {
 	mismatchingBlockHeight, mismatchingBlockHashes, err := k.Keeper.ValidateSameProviderConflict(ctx, conflict, clientAddr)
 	if err != nil {
@@ -97,6 +107,7 @@ func (k msgServer) handleSameProviderConflict(ctx sdk.Context, conflict *types.F
 
 	eventData = map[string]string{"client": clientAddr.String()}
 	eventData["chainID"] = conflict.RelayReply0.RelaySession.SpecId
+	eventData["provider"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
 	eventData["mismatching_block_height"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
 	eventData["mismatching_block_hashes"] = fmt.Sprintf("%+v", mismatchingBlockHashes)
 

@@ -29,6 +29,7 @@ const (
 	ConflictVoteGotRevealEventName         = "conflict_vote_got_reveal"
 	ConflictUnstakeFraudVoterEventName     = "conflict_unstake_fraud_voter"
 	ConflictDetectionSameProviderEventName = "conflict_detection_same_provider"
+	ConflictDetectionTwoProvidersEventName = "conflict_detection_two_providers"
 )
 
 // unstake description

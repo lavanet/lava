@@ -26,7 +26,6 @@ message MsgDetection {
   oneof conflict {
     FinalizationConflict finalization_conflict = 5; 
     ResponseConflict response_conflict = 6;
-    FinalizationConflict same_provider_conflict = 7;
   }
 }
 

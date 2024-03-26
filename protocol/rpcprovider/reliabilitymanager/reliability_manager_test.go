@@ -160,7 +160,7 @@ type txSenderMock struct {
 	cb func() error
 }
 
-func (tsm *txSenderMock) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
+func (tsm *txSenderMock) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error {
 	if tsm.cb == nil {
 		return fmt.Errorf("No cb")
 	}
@@ -319,9 +319,9 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		txm := &txSenderMock{cb: cb}
 
 		consumerStateTracker := &statetracker.ConsumerStateTracker{ConsumerTxSenderInf: txm}
-		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Parent) // report first time
+		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, singleConsumerSession2.Parent) // report first time
 		require.NoError(t, err)
-		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, nil, singleConsumerSession2.Parent) // make sure we dont report 2nd time
+		err = consumerStateTracker.TxConflictDetection(ts.Ctx, nil, conflict, singleConsumerSession2.Parent) // make sure we dont report 2nd time
 		require.NoError(t, err)
 
 		_, err = ts.Servers.ConflictServer.Detection(ts.Ctx, msg) // validate reporting 2nd time returns an error.
