@@ -324,7 +324,11 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 		sdk.NewCoins(sdk.NewCoin(stakingparams.BondDenom, sdk.NewIntFromUint64(allocationPoolBalance))))
 	require.NoError(t, err)
 
-	ctx = ctx.WithBlockTime(time.Now())
+	if !fixedTime {
+		ctx = ctx.WithBlockTime(time.Now())
+	} else {
+		ctx = ctx.WithBlockTime(fixedDate)
+	}
 
 	ks.Dualstaking.InitDelegations(ctx, *fixationtypes.DefaultGenesis())
 	ks.Dualstaking.InitDelegators(ctx, *fixationtypes.DefaultGenesis())
