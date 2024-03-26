@@ -23,7 +23,6 @@ import (
 	"time"
 
 	tmclient "github.com/cometbft/cometbft/rpc/client/http"
-	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -71,8 +70,6 @@ type lavaTest struct {
 	logPath              string
 	tokenDenom           string
 }
-
-var providerBalances = make(map[string]*bankTypes.QueryBalanceResponse)
 
 func init() {
 	_, filename, _, _ := runtime.Caller(0)
@@ -882,7 +879,6 @@ func (lt *lavaTest) checkQoS() error {
 	if err != nil {
 		panic("Provider CU calculation error!")
 	}
-
 	providerIdx := 0
 	for provider := range providerCU {
 		// Get sequence number of provider
@@ -895,7 +891,7 @@ func (lt *lavaTest) checkQoS() error {
 		cmdAcc.Args = strings.Split(fetchAccCommand, " ")
 		cmdAcc.Stdout = lt.logs[logNameAcc]
 		cmdAcc.Stderr = lt.logs[logNameAcc]
-		err = cmdAcc.Start()
+		err := cmdAcc.Start()
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("%s", err))
 		}
@@ -906,7 +902,7 @@ func (lt *lavaTest) checkQoS() error {
 		}
 
 		var obj map[string]interface{}
-		err := json.Unmarshal((lt.logs[logNameAcc].Bytes()), &obj)
+		err = json.Unmarshal((lt.logs[logNameAcc].Bytes()), &obj)
 		if err != nil {
 			panic(err)
 		}
@@ -1165,29 +1161,15 @@ func (lt *lavaTest) getKeyAddress(key string) string {
 
 func calculateProviderCU(pairingClient pairingTypes.QueryClient) (map[string]uint64, error) {
 	providerCU := make(map[string]uint64)
-	paymentStorageClientRes, err := pairingClient.UniquePaymentStorageClientProviderAll(context.Background(), &pairingTypes.QueryAllUniquePaymentStorageClientProviderRequest{})
+	res, err := pairingClient.ProviderEpochCu(context.Background(), &pairingTypes.QueryProviderEpochCuRequest{})
 	if err != nil {
 		return nil, err
 	}
-	uniquePaymentStorageClientProviderList := paymentStorageClientRes.GetUniquePaymentStorageClientProvider()
 
-	for _, uniquePaymentStorageClientProvider := range uniquePaymentStorageClientProviderList {
-		_, providerAddr := decodeProviderAddressFromUniquePaymentStorageClientProvider(uniquePaymentStorageClientProvider.Index)
-
-		cu := uniquePaymentStorageClientProvider.UsedCU
-		providerCU[providerAddr] += cu
+	for _, info := range res.Info {
+		providerCU[info.Provider] = info.Cu
 	}
 	return providerCU, nil
-}
-
-func decodeProviderAddressFromUniquePaymentStorageClientProvider(inputStr string) (clientAddr string, providerAddr string) {
-	firstIndex := strings.Index(inputStr, "lava@")
-	secondIndex := firstIndex + strings.Index(inputStr[firstIndex+len("lava@"):], "lava@") + len("lava@")
-
-	clientAddr = inputStr[firstIndex:secondIndex]
-	providerAddr = inputStr[secondIndex : secondIndex+44]
-
-	return clientAddr, providerAddr
 }
 
 func runProtocolE2E(timeout time.Duration) {

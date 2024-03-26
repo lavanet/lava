@@ -64,11 +64,18 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/pairing/subscription_monthly_payout/{consumer}";
 	}
 
-// this line is used by starport scaffolding # 2
-	// Queries a list of SdkPairing items.
-rpc SdkPairing (QueryGetPairingRequest) returns (QuerySdkPairingResponse) {
-	option (google.api.http).get = "/lavanet/lava/pairing/sdk_pairing";
+// Queries a list of SdkPairing items.
+	rpc SdkPairing (QueryGetPairingRequest) returns (QuerySdkPairingResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/sdk_pairing";
+	}
+
+// Queries a for the aggregated CU of all ProviderEpochCu object of a specific provider.
+rpc ProviderEpochCu(QueryProviderEpochCuRequest) returns (QueryProviderEpochCuResponse) {
+	option (google.api.http).get = "/lavanet/lava/pairing/provider_epoch_cu";
 }
+
+	// this line is used by starport scaffolding # 2
+
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -189,4 +196,16 @@ message QuerySubscriptionMonthlyPayoutRequest {
 message QuerySubscriptionMonthlyPayoutResponse {
 	uint64 total = 1;
 	repeated ChainIDPayout details = 2;
+}
+
+message QueryProviderEpochCuRequest {
+}
+
+message QueryProviderEpochCuResponse {
+	repeated ProviderCuInfo info = 1 [(gogoproto.nullable) = false];
+}
+
+message ProviderCuInfo {
+	string provider = 1;
+	uint64 cu = 2;
 }
