@@ -26,7 +26,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "cmd/lavad/main.go",
-            "args": ["test_client", "COS3", "tendermintrpc", "--from", "user2"]
+            "args": ["test_client", "OSMOSIS", "tendermintrpc", "--from", "user2"]
         },
         {
             "name": "COS server",
@@ -34,7 +34,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "cmd/lavad/main.go",
-            "args": ["server", "127.0.0.1", "2242", "http://<insert user here>:<insert pass here>@<insert ip here>/rpc/", "COS3", "tendermintrpc", "--from", "servicer2"]
+            "args": ["server", "127.0.0.1", "2242", "http://<insert user here>:<insert pass here>@<insert ip here>/rpc/", "OSMOSIS", "tendermintrpc", "--from", "servicer2"]
         }
     ]
 }
