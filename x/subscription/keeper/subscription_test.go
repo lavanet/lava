@@ -670,6 +670,7 @@ func TestAddDelProjectForSubscription(t *testing.T) {
 }
 
 func TestDelProjectEndSubscription(t *testing.T) {
+	keepertest.SetFixedTime()
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
 
@@ -1173,6 +1174,7 @@ func TestSubAutoRenewalDifferentPlanIndexOnAutoRenewTx(t *testing.T) {
 // scenario - buy 3 subs: 2 at the same time, and one a little after. The query should return the two subs
 // then, expire those and expect to get the last one from the query
 func TestNextToMonthExpiryQuery(t *testing.T) {
+	keepertest.SetFixedTime()
 	ts := newTester(t)
 	ts.SetupAccounts(3, 0, 0) // 1 sub, 0 adm, 0 dev
 	months := 1
@@ -2317,6 +2319,7 @@ func TestBuySubscriptionImmediatelyAfterExpiration(t *testing.T) {
 // since policy changes are applied after an epoch, the policy changes "after" the sub is expired
 // the expected result should be no unexpected errors and the project change should not exist
 func TestChangeProjectJustBeforeSubExpiry(t *testing.T) {
+	keepertest.SetFixedTime()
 	ts := newTester(t)
 	ts.SetupAccounts(1, 0, 0) // 1 sub, 0 adm, 0 dev
 	_, consumerAddr := ts.Account("sub1")

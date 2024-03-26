@@ -8,8 +8,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
-func (k Keeper) UpdateProviderQos(epochPayments pairingtypes.EpochPayments) {
-}
+// TODO: implement UpdateProviderQos(payments)
 
 // GetQos gets a provider's QoS excellence report from the providerQosFS
 func (k Keeper) GetQos(ctx sdk.Context, chainID string, cluster string, provider string) (pairingtypes.QualityOfServiceReport, error) {

@@ -467,9 +467,16 @@ func TestEpochPaymentDeletion(t *testing.T) {
 
 	ts.AdvanceEpochs(ts.EpochsToSave() + 1)
 
-	res, err := ts.QueryPairingListEpochPayments()
-	require.NoError(t, err)
-	require.Equal(t, 0, len(res.EpochPayments))
+	epoch := ts.EpochStart(ts.BlockHeight())
+	listA := ts.Keepers.Pairing.GetAllUniqueEpochSession(ts.Ctx, epoch)
+	require.Len(t, listA, 0)
+
+	_, found := ts.Keepers.Pairing.GetProviderEpochCu(ts.Ctx, epoch, providerAddr, ts.spec.Index)
+	require.False(t, found)
+
+	listB, listC := ts.Keepers.Pairing.GetAllProviderConsumerEpochCu(ts.Ctx, epoch)
+	require.Len(t, listB, 0)
+	require.Len(t, listC, 0)
 }
 
 // Test that after the consumer uses some CU it's updated in its project and subscription

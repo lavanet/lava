@@ -23,13 +23,12 @@ func (ts *tester) checkProviderFreeze(provider sdk.AccAddress, shouldFreeze bool
 	}
 }
 
-func (ts *tester) checkComplainerReset(provider sdk.AccAddress, epoch uint64) {
+func (ts *tester) checkComplainerReset(provider string, epoch uint64) {
 	// validate the complainers CU field in the unresponsive provider's providerPaymentStorage
 	// was reset after being punished (use the epoch from the relay - when it got reported)
-	providerPaymentStorageKey := ts.Keepers.Pairing.GetProviderPaymentStorageKey(ts.Ctx, ts.spec.Name, epoch, provider)
-	providerPaymentStorage, found := ts.Keepers.Pairing.GetProviderPaymentStorage(ts.Ctx, providerPaymentStorageKey)
+	pec, found := ts.Keepers.Pairing.GetProviderEpochCu(ts.Ctx, epoch, provider, ts.spec.Name)
 	require.Equal(ts.T, true, found)
-	require.Equal(ts.T, uint64(0), providerPaymentStorage.ComplainersTotalCu)
+	require.Equal(ts.T, uint64(0), pec.ComplainersCu)
 }
 
 func (ts *tester) checkProviderStaked(provider sdk.AccAddress) {
@@ -124,7 +123,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 
 	for i := 0; i < unresponsiveCount; i++ {
 		ts.checkProviderFreeze(providers[i].Addr, true)
-		ts.checkComplainerReset(providers[i].Addr, relayEpoch)
+		ts.checkComplainerReset(providers[i].Addr.String(), relayEpoch)
 	}
 
 	for i := unresponsiveCount; i < providersCount; i++ {
@@ -189,7 +188,7 @@ func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 	ts.AdvanceEpochs(largerConst)
 
 	ts.checkProviderFreeze(provider1_addr, true)
-	ts.checkComplainerReset(provider1_addr, relayEpoch)
+	ts.checkComplainerReset(provider1_addr.String(), relayEpoch)
 	ts.checkProviderStaked(provider0_addr)
 }
 
@@ -246,7 +245,7 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 	ts.AdvanceEpochs(largerConst)
 
 	ts.checkProviderFreeze(provider1_addr, true)
-	ts.checkComplainerReset(provider1_addr, relayEpoch)
+	ts.checkComplainerReset(provider1_addr.String(), relayEpoch)
 
 	ts.AdvanceEpochs(2)
 

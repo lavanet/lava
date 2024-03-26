@@ -112,7 +112,7 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 		// unstake any unstaking providers
 		k.CheckUnstakingForCommit(ctx)
 		// unstake/jail unresponsive providers
-		k.UnstakeUnresponsiveProviders(ctx,
+		k.PunishUnresponsiveProviders(ctx,
 			types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER,
 			types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 	}

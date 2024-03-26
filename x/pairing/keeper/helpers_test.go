@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"strconv"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -138,14 +137,6 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 	return ts
 }
 
-func newStubRelayRequest(relaySession *pairingtypes.RelaySession) *pairingtypes.RelayRequest {
-	req := &pairingtypes.RelayRequest{
-		RelaySession: relaySession,
-		RelayData:    &pairingtypes.RelayPrivateData{Data: []byte("stub-data")},
-	}
-	return req
-}
-
 // payAndVerifyBalance performs payment and then verifies the balances
 // (provider balance should increase and consumer should decrease)
 // The providerRewardPerc arg is the part of the provider reward after dedcuting
@@ -254,66 +245,31 @@ func (ts *tester) payAndVerifyBalance(
 // verifyRelayPayments verifies relay payments saved on-chain after getting payment
 func (ts *tester) verifyRelayPayment(relaySession *pairingtypes.RelaySession, exists bool) {
 	epoch := uint64(relaySession.Epoch)
-	// Get EpochPayment struct from current epoch and perform basic verifications
-	epochPayments, found, epochPaymentKey := ts.Keepers.Pairing.GetEpochPaymentsFromBlock(ts.Ctx, epoch)
-	if exists {
-		require.Equal(ts.T, true, found)
-		require.Equal(ts.T, epochPaymentKey, epochPayments.Index)
-	} else {
-		require.Equal(ts.T, false, found)
-		return
-	}
+	chainID := ts.spec.Name
+	cu := relaySession.CuSum
+	sessionID := relaySession.SessionId
 
 	// note: assume a single client and a single provider, so these make sense:
-	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
-	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
+	_, consumer := ts.GetAccount(common.CONSUMER, 0)
+	_, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	providerPaymentStorageKey := ts.Keepers.Pairing.GetProviderPaymentStorageKey(
-		ts.Ctx, ts.spec.Name, epoch, providerAcct.Addr)
+	project, err := ts.GetProjectForDeveloper(consumer, epoch)
+	require.NoError(ts.T, err)
 
-	// Get the providerPaymentStorage struct from epochPayments
-	var providerPaymentStorageFromEpochPayments pairingtypes.ProviderPaymentStorage
-	for _, paymentStorageKey := range epochPayments.GetProviderPaymentStorageKeys() {
-		if paymentStorageKey == providerPaymentStorageKey {
-			providerPaymentStorageFromEpochPayments, found = ts.Keepers.Pairing.GetProviderPaymentStorage(ts.Ctx, providerPaymentStorageKey)
-			require.True(ts.T, found)
-		}
+	found := ts.Keepers.Pairing.GetUniqueEpochSession(ts.Ctx, epoch, provider, project.Index, chainID, sessionID)
+	require.Equal(ts.T, exists, found)
+
+	pec, found := ts.Keepers.Pairing.GetProviderEpochCu(ts.Ctx, epoch, provider, chainID)
+	require.Equal(ts.T, exists, found)
+	if exists {
+		require.GreaterOrEqual(ts.T, pec.ServicedCu, cu)
 	}
-	require.NotEmpty(ts.T, providerPaymentStorageFromEpochPayments.Index)
-	require.Equal(ts.T, epoch, providerPaymentStorageFromEpochPayments.Epoch)
 
-	project, err := ts.QueryProjectDeveloper(client1Addr)
-	require.Nil(ts.T, err)
-
-	// Get the UniquePaymentStorageClientProvider key
-	hexSessionID := strconv.FormatUint(relaySession.SessionId, 16)
-	uniquePaymentStorageClientProviderKey := ts.Keepers.Pairing.EncodeUniquePaymentKey(
-		ts.Ctx, project.Project.Index, providerAcct.Addr, hexSessionID, ts.spec.Name)
-
-	// Get a uniquePaymentStorageClientProvider from providerPaymentStorageFromEpochPayments
-	// (note, this is one of the uniqueXXXX structs. So usedCU was calculated above with a
-	// function that takes into account all the structs)
-	var uniquePaymentStorageClientProviderFromProviderPaymentStorage pairingtypes.UniquePaymentStorageClientProvider
-	for _, paymentStorageKey := range providerPaymentStorageFromEpochPayments.UniquePaymentStorageClientProviderKeys {
-		if paymentStorageKey == uniquePaymentStorageClientProviderKey {
-			uniquePaymentStorageClientProviderFromProviderPaymentStorage, found = ts.Keepers.Pairing.GetUniquePaymentStorageClientProvider(ts.Ctx, paymentStorageKey)
-			require.True(ts.T, found)
-		}
+	pcec, found := ts.Keepers.Pairing.GetProviderConsumerEpochCu(ts.Ctx, epoch, provider, project.Index, chainID)
+	require.Equal(ts.T, exists, found)
+	if exists {
+		require.GreaterOrEqual(ts.T, pcec.Cu, cu)
 	}
-	require.NotEmpty(ts.T, uniquePaymentStorageClientProviderFromProviderPaymentStorage.Index)
-	require.Equal(ts.T, epoch, uniquePaymentStorageClientProviderFromProviderPaymentStorage.Block)
-	require.Equal(ts.T, relaySession.CuSum, uniquePaymentStorageClientProviderFromProviderPaymentStorage.UsedCU)
-
-	// Get the providerPaymentStorage struct directly
-	providerPaymentStorage, found := ts.Keepers.Pairing.GetProviderPaymentStorage(ts.Ctx, providerPaymentStorageKey)
-	require.Equal(ts.T, true, found)
-	require.Equal(ts.T, uint64(relaySession.Epoch), providerPaymentStorage.Epoch)
-
-	// Get one of the UniquePaymentStorageClientProvider struct directly
-	uniquePaymentStorageClientProvider, found := ts.Keepers.Pairing.GetUniquePaymentStorageClientProvider(ts.Ctx, uniquePaymentStorageClientProviderKey)
-	require.Equal(ts.T, true, found)
-	require.Equal(ts.T, epoch, uniquePaymentStorageClientProvider.Block)
-	require.Equal(ts.T, relaySession.CuSum, uniquePaymentStorageClientProvider.UsedCU)
 }
 
 func (ts *tester) newRelaySession(

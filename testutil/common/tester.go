@@ -788,12 +788,6 @@ func (ts *Tester) QueryPairingGetPairing(chainID, client string) (*pairingtypes.
 	return ts.Keepers.Pairing.GetPairing(ts.GoCtx, msg)
 }
 
-// QueryPairingListEpochPayments implements 'q pairing list-epoch-payments'
-func (ts *Tester) QueryPairingListEpochPayments() (*pairingtypes.QueryAllEpochPaymentsResponse, error) {
-	msg := &pairingtypes.QueryAllEpochPaymentsRequest{}
-	return ts.Keepers.Pairing.EpochPaymentsAll(ts.GoCtx, msg)
-}
-
 // QueryPairingProviders: implement 'q pairing providers'
 func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingtypes.QueryProvidersResponse, error) {
 	msg := &pairingtypes.QueryProvidersRequest{

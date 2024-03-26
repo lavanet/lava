@@ -13,8 +13,8 @@ import (
 
 const THRESHOLD_FACTOR = 4
 
-// Function that returns a map that links between a provider that should be punished and its providerCuCounterForUnreponsiveness
-func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers uint64) {
+// PunishUnresponsiveProviders punished unresponsive providers (current punishment: freeze)
+func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers uint64) {
 	// check the epochsNum consts
 	if epochsNumToCheckCUForComplainers <= 0 || epochsNumToCheckCUForUnresponsiveProvider <= 0 {
 		utils.LavaFormatError("epoch to check CU for unresponsive provider or for complainer is zero",
@@ -92,7 +92,7 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 				continue
 			}
 			// update the CU count for this provider in providerCuCounterForUnreponsivenessMap
-			providerPaymentStorageKeyList, complaintCU, servicedCU, err := k.countCuForUnresponsiveness(ctx, minPaymentBlock, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, providerStakeEntry)
+			epochs, complaintCU, servicedCU, err := k.countCuForUnresponsiveness(ctx, minPaymentBlock, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, providerStakeEntry)
 			if err != nil {
 				utils.LavaFormatError("unstake unresponsive providers failed to count CU", err,
 					utils.Attribute{Key: "provider", Value: providerStakeEntry.Address},
@@ -101,8 +101,8 @@ func (k Keeper) UnstakeUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCU
 			}
 
 			// providerPaymentStorageKeyList is not empty -> provider should be punished
-			if len(providerPaymentStorageKeyList) != 0 && existingProviders[providerStakeEntry.GetChain()] > minProviders {
-				err = k.punishUnresponsiveProvider(ctx, providerPaymentStorageKeyList, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain(), complaintCU, servicedCU)
+			if len(epochs) != 0 && existingProviders[providerStakeEntry.GetChain()] > minProviders {
+				err = k.punishUnresponsiveProvider(ctx, epochs, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain(), complaintCU, servicedCU)
 				existingProviders[providerStakeEntry.GetChain()]--
 				if err != nil {
 					utils.LavaFormatError("unstake unresponsive providers failed to punish provider", err,
@@ -127,69 +127,48 @@ func (k Keeper) getBlockEpochsAgo(ctx sdk.Context, blockHeight, numEpochs uint64
 	return blockHeight, nil
 }
 
-// Function to count the CU serviced by the unresponsive provider and the CU of the complainers. The function returns a list of the found providerPaymentStorageKey
-func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers uint64, providerStakeEntry epochstoragetypes.StakeEntry) (keysToResetIfJail []string, complaints uint64, servicedCU uint64, errRet error) {
-	epochTemp := epoch
-	providerServicedCu := uint64(0)
-	complainersCu := uint64(0)
-	providerPaymentStorageKeyList := []string{}
-
-	// get the provider's SDK account address
-	sdkStakeEntryProviderAddress, err := sdk.AccAddressFromBech32(providerStakeEntry.GetAddress())
-	if err != nil {
-		return nil, 0, 0, utils.LavaFormatError("unable to sdk.AccAddressFromBech32(provider)", err, utils.Attribute{Key: "provider_address", Value: providerStakeEntry.Address})
-	}
-
-	// check which of the consts is larger
-	largerEpochsNumConst := epochsNumToCheckCUForComplainers
+// Function to count the CU serviced by the unresponsive provider and the CU of the complainers. The function returns the keys of the objects containing complainer CU
+func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers uint64, providerStakeEntry epochstoragetypes.StakeEntry) (epochs []uint64, complainersCu uint64, servicedCu uint64, errRet error) {
+	// check which of the epoch consts is larger
+	max := epochsNumToCheckCUForComplainers
 	if epochsNumToCheckCUForUnresponsiveProvider > epochsNumToCheckCUForComplainers {
-		largerEpochsNumConst = epochsNumToCheckCUForUnresponsiveProvider
+		max = epochsNumToCheckCUForUnresponsiveProvider
 	}
 
 	// count the CU serviced by the unersponsive provider and used CU of the complainers
-	for counter := uint64(0); counter < largerEpochsNumConst; counter++ {
-		// get providerPaymentStorageKey for epochTemp (other traits from the stake entry)
-		providerPaymentStorageKey := k.GetProviderPaymentStorageKey(ctx, providerStakeEntry.GetChain(), epochTemp, sdkStakeEntryProviderAddress)
-
-		// try getting providerPaymentStorage using the providerPaymentStorageKey
-		providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, providerPaymentStorageKey)
+	for counter := uint64(0); counter < max; counter++ {
+		pec, found := k.GetProviderEpochCu(ctx, epoch, providerStakeEntry.Address, providerStakeEntry.Chain)
 		if found {
-			// counter is smaller than epochsNumToCheckCUForUnresponsiveProvider -> count CU serviced by the provider in the epoch
-			if counter < epochsNumToCheckCUForUnresponsiveProvider {
-				// count the CU by iterating through the uniquePaymentStorageClientProvider objects
-				for _, uniquePaymentKey := range providerPaymentStorage.GetUniquePaymentStorageClientProviderKeys() {
-					uniquePayment, _ := k.GetUniquePaymentStorageClientProvider(ctx, uniquePaymentKey)
-					providerServicedCu += uniquePayment.GetUsedCU()
-				}
-			}
-
 			// counter is smaller than epochsNumToCheckCUForComplainers -> count complainer CU
 			if counter < epochsNumToCheckCUForComplainers {
-				// update complainersCu
-				complainersCu += providerPaymentStorage.ComplainersTotalCu
+				complainersCu += pec.ComplainersCu
+				epochs = append(epochs, epoch)
 			}
 
-			// save the providerPaymentStorageKey in the providerPaymentStorageKeyList
-			providerPaymentStorageKeyList = append(providerPaymentStorageKeyList, providerPaymentStorageKey)
+			// counter is smaller than epochsNumToCheckCUForUnresponsiveProvider -> count CU serviced by the provider in the epoch
+			if counter < epochsNumToCheckCUForUnresponsiveProvider {
+				servicedCu += pec.ServicedCu
+			}
 		}
 
 		// Get previous epoch (from epochTemp)
-		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epochTemp)
+		previousEpoch, err := k.epochStorageKeeper.GetPreviousEpochStartForBlock(ctx, epoch)
 		if err != nil {
 			return nil, 0, 0, utils.LavaFormatWarning("couldn't get previous epoch", err,
 				utils.Attribute{Key: "epoch", Value: epoch},
 			)
 		}
-		// update epochTemp
-		epochTemp = previousEpoch
+		// update epoch
+		epoch = previousEpoch
 	}
 
-	// the complainers' CU is larger than the provider serviced CU -> should be punished (return providerPaymentStorageKeyList so the complainers' CU can be reset after the punishment)
-	if complainersCu > THRESHOLD_FACTOR*providerServicedCu {
-		return providerPaymentStorageKeyList, complainersCu, providerServicedCu, nil
+	// the complainers' CU is larger than the provider serviced CU -> should be punished
+	// epochs list is returned so the complainers' CU can be reset
+	if complainersCu > THRESHOLD_FACTOR*servicedCu {
+		return epochs, complainersCu, servicedCu, nil
 	}
 
-	return nil, complainersCu, providerServicedCu, nil
+	return nil, complainersCu, servicedCu, nil
 }
 
 // Function that return the current stake storage for all chains
@@ -212,35 +191,39 @@ func (k Keeper) getCurrentProviderStakeStorageList(ctx sdk.Context) []epochstora
 }
 
 // Function that punishes providers. Current punishment is freeze
-func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, providerPaymentStorageKeyList []string, providerAddress, chainID string, complaintCU uint64, servicedCU uint64) error {
+func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, provider, chainID string, complaintCU uint64, servicedCU uint64) error {
 	// freeze the unresponsive provider
-	err := k.FreezeProvider(ctx, providerAddress, []string{chainID}, "unresponsiveness")
+	err := k.FreezeProvider(ctx, provider, []string{chainID}, "unresponsiveness")
 	if err != nil {
 		utils.LavaFormatError("unable to freeze provider entry due to unresponsiveness", err,
-			utils.Attribute{Key: "provider", Value: providerAddress},
+			utils.Attribute{Key: "provider", Value: provider},
 			utils.Attribute{Key: "chainID", Value: chainID},
 		)
 	}
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderJailedEventName, map[string]string{"provider_address": providerAddress, "chain_id": chainID, "complaint_cu": strconv.FormatUint(complaintCU, 10), "serviced_cu": strconv.FormatUint(servicedCU, 10)}, "Unresponsive provider was freezed due to unresponsiveness")
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderJailedEventName,
+		map[string]string{
+			"provider_address": provider,
+			"chain_id":         chainID,
+			"complaint_cu":     strconv.FormatUint(complaintCU, 10),
+			"serviced_cu":      strconv.FormatUint(servicedCU, 10)},
+		"Unresponsive provider was freezed due to unresponsiveness")
 
 	// reset the provider's complainer CU (so he won't get punished for the same complaints twice)
-	k.resetComplainersCU(ctx, providerPaymentStorageKeyList)
+	k.resetComplainersCU(ctx, epochs, provider, chainID)
 
 	return nil
 }
 
-// Function that reset the complainer CU of providerPaymentStorage objects that can be accessed using providerPaymentStorageIndexList
-func (k Keeper) resetComplainersCU(ctx sdk.Context, providerPaymentStorageIndexList []string) {
-	// go over the providerPaymentStorageIndexList
-	for _, providerPaymentStorageIndex := range providerPaymentStorageIndexList {
-		// get providerPaymentStorage using its index
-		providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, providerPaymentStorageIndex)
+// resetComplainersCU resets the complainers CU for a specific provider and chain
+func (k Keeper) resetComplainersCU(ctx sdk.Context, epochs []uint64, provider string, chainID string) {
+	for _, epoch := range epochs {
+		pec, found := k.GetProviderEpochCu(ctx, epoch, provider, chainID)
 		if !found {
 			continue
 		}
 
 		// reset the complainer CU
-		providerPaymentStorage.ComplainersTotalCu = 0
-		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
+		pec.ComplainersCu = 0
+		k.SetProviderEpochCu(ctx, epoch, provider, chainID, pec)
 	}
 }

@@ -3,8 +3,6 @@ package lavanet.lava.pairing;
 
 import "gogoproto/gogo.proto";
 import "lavanet/lava/pairing/params.proto";
-import "lavanet/lava/pairing/unique_payment_storage_client_provider.proto";
-import "lavanet/lava/pairing/provider_payment_storage.proto";
 import "lavanet/lava/pairing/epoch_cu.proto";
 import "lavanet/lava/fixationstore/fixation.proto";
 import "lavanet/lava/timerstore/timer.proto";

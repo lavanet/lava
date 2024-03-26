@@ -13,11 +13,11 @@ import (
 // UniqueEpochSession is used to detect double spend attacks
 // It's kept in a epoch-prefixed store with a unique index: provider, project ID, chain ID and session ID
 //
-// ProviderEpochCu is used to track the CU of a specific provider in a specific epoch
+// ProviderEpochCu is used to track the CU of a specific provider in a specific epoch for unresponsiveness
 // It's kept in a epoch-prefixed store with a unique index: provider address
 //
 // ProviderConsumerEpochCu is used to track the CU between a specific provider and
-// consumer in a specific epoch
+// consumer in a specific epoch for payments
 // It's kept in a epoch-prefixed store with a unique index: provider and project ID
 
 /* ########## UniqueEpochSession ############ */
@@ -105,9 +105,13 @@ func (k Keeper) GetProviderEpochCu(ctx sdk.Context, epoch uint64, provider strin
 }
 
 // RemoveProviderEpochCu removes a ProviderEpochCu from the store
-func (k Keeper) RemoveProviderEpochCu(ctx sdk.Context, epoch uint64, provider string, chainID string) {
+func (k Keeper) RemoveProviderEpochCus(ctx sdk.Context, epoch uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochCuKeyPrefix(epoch))
-	store.Delete(types.ProviderEpochCuKey(provider, chainID))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		store.Delete(iterator.Key())
+	}
 }
 
 // GetAllProviderEpochCuStore returns all the ProviderEpochCu from the store (used for genesis)
@@ -157,6 +161,21 @@ func (k Keeper) GetProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provid
 func (k Keeper) RemoveProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, provider string, project string, chainID string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix(epoch))
 	store.Delete(types.ProviderConsumerEpochCuKey(provider, project, chainID))
+}
+
+// GetAllProviderConsumerEpochCuStore returns all the ProviderConsumerEpochCu from the store (used for genesis)
+func (k Keeper) GetAllProviderConsumerEpochCu(ctx sdk.Context, epoch uint64) (keys []string, providerConsumerEpochCus []types.ProviderConsumerEpochCu) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(types.ProviderConsumerEpochCuKeyPrefix(epoch)))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		keys = append(keys, string(iterator.Key()))
+		var pcec types.ProviderConsumerEpochCu
+		k.cdc.MustUnmarshal(iterator.Value(), &pcec)
+		providerConsumerEpochCus = append(providerConsumerEpochCus, pcec)
+	}
+
+	return keys, providerConsumerEpochCus
 }
 
 // GetAllProviderConsumerEpochCuStore returns all the ProviderConsumerEpochCu from the store (used for genesis)

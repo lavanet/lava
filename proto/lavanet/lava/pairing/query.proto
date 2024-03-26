@@ -5,14 +5,11 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
 import "lavanet/lava/pairing/params.proto";
-import "lavanet/lava/pairing/epoch_payments.proto";
 import "lavanet/lava/spec/spec.proto";
 
 
 // this line is used by starport scaffolding # 1
 import "lavanet/lava/plans/policy.proto";
-import "lavanet/lava/pairing/provider_payment_storage.proto";
-import "lavanet/lava/pairing/unique_payment_storage_client_provider.proto";
 import "lavanet/lava/epochstorage/stake_entry.proto";
 import "lavanet/lava/subscription/subscription.proto";
 import "lavanet/lava/projects/project.proto";
@@ -40,36 +37,6 @@ service Query {
 // Queries a list of VerifyPairing items.
 	rpc VerifyPairing(QueryVerifyPairingRequest) returns (QueryVerifyPairingResponse) {
 		option (google.api.http).get = "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}";
-	}
-
-// Queries a UniquePaymentStorageClientProvider by index.
-	rpc UniquePaymentStorageClientProvider(QueryGetUniquePaymentStorageClientProviderRequest) returns (QueryGetUniquePaymentStorageClientProviderResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/unique_payment_storage_client_provider/{index}";
-	}
-
-	// Queries a list of UniquePaymentStorageClientProvider items.
-	rpc UniquePaymentStorageClientProviderAll(QueryAllUniquePaymentStorageClientProviderRequest) returns (QueryAllUniquePaymentStorageClientProviderResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/unique_payment_storage_client_provider";
-	}
-
-// Queries a ProviderPaymentStorage by index.
-	rpc ProviderPaymentStorage(QueryGetProviderPaymentStorageRequest) returns (QueryGetProviderPaymentStorageResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/provider_payment_storage/{index}";
-	}
-
-	// Queries a list of ProviderPaymentStorage items.
-	rpc ProviderPaymentStorageAll(QueryAllProviderPaymentStorageRequest) returns (QueryAllProviderPaymentStorageResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/provider_payment_storage";
-	}
-
-// Queries a EpochPayments by index.
-	rpc EpochPayments(QueryGetEpochPaymentsRequest) returns (QueryGetEpochPaymentsResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/epoch_payments/{index}";
-	}
-
-	// Queries a list of EpochPayments items.
-	rpc EpochPaymentsAll(QueryAllEpochPaymentsRequest) returns (QueryAllEpochPaymentsResponse) {
-		option (google.api.http).get = "/lavanet/lava/pairing/epoch_payments";
 	}
 
 // Queries a UserEntry items.
@@ -149,59 +116,6 @@ message QueryVerifyPairingResponse {
   uint64 paired_providers = 3;
   uint64 cu_per_epoch = 4;
   string project_id = 5;
-}
-
-message QueryGetUniquePaymentStorageClientProviderRequest {
-	  string index = 1;
-}
-
-message QueryGetUniquePaymentStorageClientProviderResponse {
-	UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryAllUniquePaymentStorageClientProviderRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-message QueryAllUniquePaymentStorageClientProviderResponse {
-	repeated UniquePaymentStorageClientProvider uniquePaymentStorageClientProvider = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
-}
-
-message QueryGetProviderPaymentStorageRequest {
-	  string index = 1;
-
-}
-
-message QueryGetProviderPaymentStorageResponse {
-	ProviderPaymentStorage providerPaymentStorage = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryAllProviderPaymentStorageRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-message QueryAllProviderPaymentStorageResponse {
-	repeated ProviderPaymentStorage providerPaymentStorage = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
-}
-
-message QueryGetEpochPaymentsRequest {
-	  string index = 1;
-
-}
-
-message QueryGetEpochPaymentsResponse {
-	EpochPayments epochPayments = 1 [(gogoproto.nullable) = false];
-}
-
-message QueryAllEpochPaymentsRequest {
-	cosmos.base.query.v1beta1.PageRequest pagination = 1;
-}
-
-message QueryAllEpochPaymentsResponse {
-	repeated EpochPayments epochPayments = 1 [(gogoproto.nullable) = false];
-	cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 message QueryUserEntryRequest {
