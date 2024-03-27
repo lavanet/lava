@@ -18,16 +18,12 @@ func (k Keeper) ProvidersEpochCu(goCtx context.Context, req *types.QueryProvider
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	infoMap := map[string]uint64{}
 
-	_, keys, pecs := k.GetAllProviderEpochCuStore(ctx)
-	for i := range pecs {
-		provider, _, err := types.DecodeProviderEpochCuKey(keys[i])
-		if err != nil {
-			continue
-		}
-		if _, ok := infoMap[provider]; !ok {
-			infoMap[provider] = pecs[i].ServicedCu
+	infos := k.GetAllProviderEpochCuStore(ctx)
+	for _, info := range infos {
+		if _, ok := infoMap[info.Provider]; !ok {
+			infoMap[info.Provider] = info.ProviderEpochCu.ServicedCu
 		} else {
-			infoMap[provider] += pecs[i].ServicedCu
+			infoMap[info.Provider] += info.ProviderEpochCu.ServicedCu
 		}
 	}
 

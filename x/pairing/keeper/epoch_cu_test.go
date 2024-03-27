@@ -63,13 +63,18 @@ func TestUniqueEpochSessionGetAll(t *testing.T) {
 func TestUniqueEpochSessionGetAllStore(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	items := createNUniqueEpochSession(keeper, ctx, 10)
-	expectedKeys := []string{}
+	expectedInfo := []types.UniqueEpochSessionGenesis{}
 	for i, item := range items {
-		key := string(types.UniqueEpochSessionKey(item, item, item, uint64(i)))
-		expectedKeys = append(expectedKeys, key)
+		expectedInfo = append(expectedInfo, types.UniqueEpochSessionGenesis{
+			Epoch:     uint64(i),
+			Provider:  item,
+			Project:   item,
+			ChainId:   item,
+			SessionId: uint64(i),
+		})
 	}
-	_, keys := keeper.GetAllUniqueEpochSessionStore(ctx)
-	require.ElementsMatch(t, nullify.Fill(expectedKeys), nullify.Fill(keys))
+	info := keeper.GetAllUniqueEpochSessionStore(ctx)
+	require.ElementsMatch(t, nullify.Fill(expectedInfo), nullify.Fill(info))
 }
 
 /* ########## ProviderEpochCu ############ */
@@ -109,15 +114,18 @@ func TestProviderEpochCuRemove(t *testing.T) {
 func TestProviderEpochCuGetAllStore(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	items := createNProviderEpochCu(keeper, ctx, 10)
-	expectedKeys := []string{}
+	expectedInfo := []types.ProviderEpochCuGenesis{}
 	for i := range items {
 		name := strconv.Itoa(i)
-		key := string(types.ProviderEpochCuKey(name, name))
-		expectedKeys = append(expectedKeys, key)
+		expectedInfo = append(expectedInfo, types.ProviderEpochCuGenesis{
+			Epoch:           uint64(i),
+			Provider:        name,
+			ChainId:         name,
+			ProviderEpochCu: types.ProviderEpochCu{ServicedCu: uint64(i)},
+		})
 	}
-	_, keys, pecs := keeper.GetAllProviderEpochCuStore(ctx)
-	require.ElementsMatch(t, nullify.Fill(expectedKeys), nullify.Fill(keys))
-	require.ElementsMatch(t, items, pecs)
+	info := keeper.GetAllProviderEpochCuStore(ctx)
+	require.ElementsMatch(t, nullify.Fill(expectedInfo), nullify.Fill(info))
 }
 
 /* ########## ProviderConsumerEpochCu ############ */
@@ -176,13 +184,17 @@ func TestProviderConsumerEpochCuGetAll(t *testing.T) {
 func TestProviderConsumerEpochCuGetAllStore(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	items := createNProviderConsumerEpochCu(keeper, ctx, 10)
-	expectedKeys := []string{}
+	expectedInfo := []types.ProviderConsumerEpochCuGenesis{}
 	for i := range items {
 		name := strconv.Itoa(i)
-		key := string(types.ProviderConsumerEpochCuKey(name, name, name))
-		expectedKeys = append(expectedKeys, key)
+		expectedInfo = append(expectedInfo, types.ProviderConsumerEpochCuGenesis{
+			Epoch:                   uint64(i),
+			Provider:                name,
+			Project:                 name,
+			ChainId:                 name,
+			ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: uint64(i)},
+		})
 	}
-	_, keys, pecs := keeper.GetAllProviderConsumerEpochCuStore(ctx)
-	require.ElementsMatch(t, nullify.Fill(expectedKeys), nullify.Fill(keys))
-	require.ElementsMatch(t, items, pecs)
+	info := keeper.GetAllProviderConsumerEpochCuStore(ctx)
+	require.ElementsMatch(t, nullify.Fill(expectedInfo), nullify.Fill(info))
 }

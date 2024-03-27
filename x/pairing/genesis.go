@@ -2,7 +2,6 @@ package pairing
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
 )
@@ -37,57 +36,9 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 	genesis.Params = k.GetParams(ctx)
-
-	epochs, uniqueEpochSessions := k.GetAllUniqueEpochSessionStore(ctx)
-	for i := range epochs {
-		provider, project, chainID, sessionID, err := types.DecodeUniqueEpochSessionKey(uniqueEpochSessions[i])
-		if err != nil {
-			utils.LavaFormatError("could not decode UniqueEpochSessionKey", err, utils.LogAttr("key", uniqueEpochSessions[i]))
-			continue
-		}
-		ues := types.UniqueEpochSessionGenesis{
-			Epoch:     epochs[i],
-			Provider:  provider,
-			Project:   project,
-			ChainId:   chainID,
-			SessionId: sessionID,
-		}
-		genesis.UniqueEpochSessions = append(genesis.UniqueEpochSessions, ues)
-	}
-
-	epochs, keys, providerEpochCus := k.GetAllProviderEpochCuStore(ctx)
-	for i := range epochs {
-		provider, chainID, err := types.DecodeProviderEpochCuKey(keys[i])
-		if err != nil {
-			utils.LavaFormatError("could not decode ProviderEpochCu key", err, utils.LogAttr("key", keys[i]))
-			continue
-		}
-		pec := types.ProviderEpochCuGenesis{
-			Epoch:           epochs[i],
-			Provider:        provider,
-			ChainId:         chainID,
-			ProviderEpochCu: providerEpochCus[i],
-		}
-		genesis.ProviderEpochCus = append(genesis.ProviderEpochCus, pec)
-	}
-
-	epochs, keys, providerConsumerEpochCus := k.GetAllProviderConsumerEpochCuStore(ctx)
-	for i := range epochs {
-		provider, project, chainID, err := types.DecodeProviderConsumerEpochCuKey(keys[i])
-		if err != nil {
-			utils.LavaFormatError("could not decode ProviderConsumerEpochCu key", err, utils.LogAttr("key", keys[i]))
-			continue
-		}
-		pcec := types.ProviderConsumerEpochCuGenesis{
-			Epoch:                   epochs[i],
-			Provider:                provider,
-			Project:                 project,
-			ChainId:                 chainID,
-			ProviderConsumerEpochCu: providerConsumerEpochCus[i],
-		}
-		genesis.ProviderConsumerEpochCus = append(genesis.ProviderConsumerEpochCus, pcec)
-	}
-
+	genesis.UniqueEpochSessions = k.GetAllUniqueEpochSessionStore(ctx)
+	genesis.ProviderEpochCus = k.GetAllProviderEpochCuStore(ctx)
+	genesis.ProviderConsumerEpochCus = k.GetAllProviderConsumerEpochCuStore(ctx)
 	genesis.BadgeUsedCuList = k.GetAllBadgeUsedCu(ctx)
 	genesis.BadgesTS = k.ExportBadgesTimers(ctx)
 	genesis.ProviderQosFS = k.ExportProviderQoS(ctx)
