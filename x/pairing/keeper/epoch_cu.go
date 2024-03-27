@@ -25,13 +25,13 @@ import (
 // SetUniqueEpochSession sets a UniqueEpochSession in the store
 func (k Keeper) SetUniqueEpochSession(ctx sdk.Context, epoch uint64, provider string, project string, chainID string, sessionID uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UniqueEpochSessionKeyPrefix(epoch))
-	store.Set(types.UniqueEpochSessionKey(provider, project, chainID, sessionID), []byte{0})
+	store.Set(types.UniqueEpochSessionKey(provider, chainID, project, sessionID), []byte{0})
 }
 
 // IsUniqueEpochSessionExists checks if a UniqueEpochSession exists
 func (k Keeper) IsUniqueEpochSessionExists(ctx sdk.Context, epoch uint64, provider string, project string, chainID string, sessionID uint64) bool {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UniqueEpochSessionKeyPrefix(epoch))
-	b := store.Get(types.UniqueEpochSessionKey(provider, project, chainID, sessionID))
+	b := store.Get(types.UniqueEpochSessionKey(provider, chainID, project, sessionID))
 	return b != nil
 }
 
@@ -77,7 +77,7 @@ func (k Keeper) GetAllUniqueEpochSessionStore(ctx sdk.Context) []types.UniqueEpo
 			utils.LavaFormatError("could not decode UniqueEpochSessionKey with epoch", err, utils.LogAttr("key", string(iterator.Key())))
 			continue
 		}
-		provider, project, chainID, sessionID, err := types.DecodeUniqueEpochSessionKey(split[1])
+		provider, chainID, project, sessionID, err := types.DecodeUniqueEpochSessionKey(split[1])
 		if err != nil {
 			utils.LavaFormatError("could not decode UniqueEpochSessionKey", err, utils.LogAttr("key", split[1]))
 		}

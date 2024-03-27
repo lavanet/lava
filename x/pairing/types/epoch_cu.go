@@ -12,8 +12,8 @@ const (
 	ProviderConsumerEpochCuPrefix = "ProviderConsumerEpochCu/"
 )
 
-func UniqueEpochSessionKey(provider string, project string, chainID string, sessionID uint64) []byte {
-	return []byte(strings.Join([]string{provider, project, chainID, strconv.FormatUint(sessionID, 10)}, " "))
+func UniqueEpochSessionKey(provider string, chainID string, project string, sessionID uint64) []byte {
+	return []byte(strings.Join([]string{provider, chainID, project, strconv.FormatUint(sessionID, 10)}, " "))
 }
 
 func ProviderEpochCuKey(provider string, chainID string) []byte {
@@ -24,7 +24,7 @@ func ProviderConsumerEpochCuKey(provider string, project string, chainID string)
 	return []byte(strings.Join([]string{provider, project, chainID}, " "))
 }
 
-func DecodeUniqueEpochSessionKey(key string) (provider string, project string, chainID string, sessionID uint64, err error) {
+func DecodeUniqueEpochSessionKey(key string) (provider string, chainID string, project string, sessionID uint64, err error) {
 	split := strings.Split(key, " ")
 	if len(split) != 4 {
 		return "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key")

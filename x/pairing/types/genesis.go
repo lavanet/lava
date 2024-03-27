@@ -31,7 +31,7 @@ func (gs GenesisState) Validate() error {
 	UniqueEpochSessionsProviderIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.UniqueEpochSessions {
-		index := string(UniqueEpochSessionKey(elem.Provider, elem.Project, elem.ChainId, elem.SessionId))
+		index := string(UniqueEpochSessionKey(elem.Provider, elem.ChainId, elem.Project, elem.SessionId))
 		if _, ok := UniqueEpochSessionsProviderIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for UniqueEpochSession")
 		}
