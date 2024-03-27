@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) ProviderEpochCu(goCtx context.Context, req *types.QueryProviderEpochCuRequest) (*types.QueryProviderEpochCuResponse, error) {
+func (k Keeper) ProvidersEpochCu(goCtx context.Context, req *types.QueryProvidersEpochCuRequest) (*types.QueryProvidersEpochCuResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
@@ -40,5 +40,5 @@ func (k Keeper) ProviderEpochCu(goCtx context.Context, req *types.QueryProviderE
 		return info[i].Provider < info[j].Provider
 	})
 
-	return &types.QueryProviderEpochCuResponse{Info: info}, nil
+	return &types.QueryProvidersEpochCuResponse{Info: info}, nil
 }

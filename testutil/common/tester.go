@@ -826,9 +826,9 @@ func (ts *Tester) QueryPairingProviderMonthlyPayout(provider string) (*pairingty
 }
 
 // QueryPairingProviderEpochCu implements 'q pairing provider-epoch-cu'
-func (ts *Tester) QueryPairingProviderEpochCu(provider string, project string, chainID string) (*pairingtypes.QueryProviderEpochCuResponse, error) {
-	msg := &pairingtypes.QueryProviderEpochCuRequest{}
-	return ts.Keepers.Pairing.ProviderEpochCu(ts.GoCtx, msg)
+func (ts *Tester) QueryPairingProviderEpochCu(provider string, project string, chainID string) (*pairingtypes.QueryProvidersEpochCuResponse, error) {
+	msg := &pairingtypes.QueryProvidersEpochCuRequest{}
+	return ts.Keepers.Pairing.ProvidersEpochCu(ts.GoCtx, msg)
 }
 
 // QueryPairingSubscriptionMonthlyPayout implements 'q pairing subscription-monthly-payout'

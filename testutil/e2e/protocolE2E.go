@@ -1161,7 +1161,7 @@ func (lt *lavaTest) getKeyAddress(key string) string {
 
 func calculateProviderCU(pairingClient pairingTypes.QueryClient) (map[string]uint64, error) {
 	providerCU := make(map[string]uint64)
-	res, err := pairingClient.ProviderEpochCu(context.Background(), &pairingTypes.QueryProviderEpochCuRequest{})
+	res, err := pairingClient.ProvidersEpochCu(context.Background(), &pairingTypes.QueryProvidersEpochCuRequest{})
 	if err != nil {
 		return nil, err
 	}

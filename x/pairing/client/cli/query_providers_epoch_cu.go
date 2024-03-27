@@ -7,12 +7,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func CmdProviderEpochCu() *cobra.Command {
+func CmdProvidersEpochCu() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "provider-epoch-cu",
+		Use:   "providers-epoch-cu",
 		Short: "Query to show the amount of CU serviced by all provider in a specific epoch",
 		Example: `
-		lavad q pairing provider-epoch-cu`,
+		lavad q pairing providers-epoch-cu`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -21,9 +21,9 @@ func CmdProviderEpochCu() *cobra.Command {
 			}
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryProviderEpochCuRequest{}
+			params := &types.QueryProvidersEpochCuRequest{}
 
-			res, err := queryClient.ProviderEpochCu(cmd.Context(), params)
+			res, err := queryClient.ProvidersEpochCu(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
