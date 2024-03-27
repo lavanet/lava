@@ -14,8 +14,9 @@ function prepare() {
     file_path="../../go.mod"
     expected_lines=(
         "github.com/gogo/googleapis v1.4.1 // indirect"
-        "github.com/cosmos/cosmos-sdk v0.47.3"
+        "github.com/cosmos/cosmos-sdk v0.47.10"
         "github.com/cosmos/gogoproto v1.4.10"
+        "github.com/cosmos/cosmos-proto v1.0.0-beta.4"
     )
 
     missing_lines=()
@@ -53,7 +54,7 @@ function prepare() {
     fi
 
     echo "$(ls $gopath/pkg/mod/github.com/cosmos)"
-    specific_dir="$gopath/pkg/mod/github.com/lavanet/cosmos-sdk@v0.47.7-0.20231211141641-2a9ea55b724d"
+    specific_dir="$gopath/pkg/mod/github.com/lavanet/cosmos-sdk@v0.47.10-lava-cosmos"
 
     if [[ ! -d "$specific_dir" ]]; then
         echo "Error: The cosmos-sdk directory ('$specific_dir') does not exist under '$gopath/pkg/mod'." >&2
@@ -77,11 +78,20 @@ function prepare() {
         exit 1
     fi
 
+    cosmosprotosdir="$GOPATH/pkg/mod/github.com/cosmos/cosmos-proto@v1.0.0-beta.4"
+
+    if [[ ! -d "$cosmosprotosdir" ]]; then
+        echo "Error: The cosmosprotosdir directory ('$cosmosprotosdir') does not exist under '$GOPATH/pkg/mod'." >&2
+        echo "make sure you ran 'go mod tidy' in the lava main repo"
+        exit 1
+    fi
+
     $SUDO rm -rf ./proto/cosmos; cp -r $specific_dir/proto/cosmos ./proto
     $SUDO rm -rf ./proto/amino; cp -r $specific_dir/proto/amino ./proto
     $SUDO rm -rf ./proto/tendermint; cp -r $specific_dir/proto/tendermint ./proto
     $SUDO rm -rf ./proto/gogoproto; cp -r $gogodir/gogoproto ./proto
     $SUDO rm -rf ./proto/google; cp -r $gogodir/protobuf/google ./proto
+    $SUDO rm -rf ./proto/cosmos_proto; cp -r $cosmosprotosdir/proto/cosmos_proto ./proto
     $SUDO mkdir ./proto/google/api
     $SUDO cp -r $googledir/google/api/annotations.proto ./proto/google/api/.
     $SUDO cp -r $googledir/google/api/http.proto ./proto/google/api/.
