@@ -16,12 +16,18 @@ func TestGenesis(t *testing.T) {
 
 		UniqueEpochSessions: []types.UniqueEpochSessionGenesis{
 			{
-				Epoch:              0,
-				UniqueEpochSession: string(types.UniqueEpochSessionKey("0", "0", "0", 0)),
+				Epoch:     0,
+				Provider:  "0",
+				Project:   "0",
+				ChainId:   "0",
+				SessionId: 0,
 			},
 			{
-				Epoch:              1,
-				UniqueEpochSession: string(types.UniqueEpochSessionKey("1", "1", "1", 1)),
+				Epoch:     1,
+				Provider:  "1",
+				Project:   "1",
+				ChainId:   "1",
+				SessionId: 1,
 			},
 		},
 		ProviderEpochCus: []types.ProviderEpochCuGenesis{

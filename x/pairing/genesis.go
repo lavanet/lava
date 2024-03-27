@@ -12,12 +12,7 @@ import (
 func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) {
 	// Set all the uniquePaymentStorageClientProvider
 	for _, elem := range genState.UniqueEpochSessions {
-		provider, project, chainID, sessionID, err := types.DecodeUniqueEpochSessionKey(elem.UniqueEpochSession)
-		if err != nil {
-			utils.LavaFormatError("could not decode UniqueEpochSessionKey", err, utils.LogAttr("key", elem))
-			continue
-		}
-		k.SetUniqueEpochSession(ctx, elem.Epoch, provider, project, chainID, sessionID)
+		k.SetUniqueEpochSession(ctx, elem.Epoch, elem.Provider, elem.Project, elem.ChainId, elem.SessionId)
 	}
 	// Set all the providerPaymentStorage
 	for _, elem := range genState.ProviderEpochCus {
@@ -45,9 +40,17 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 
 	epochs, uniqueEpochSessions := k.GetAllUniqueEpochSessionStore(ctx)
 	for i := range epochs {
+		provider, project, chainID, sessionID, err := types.DecodeUniqueEpochSessionKey(uniqueEpochSessions[i])
+		if err != nil {
+			utils.LavaFormatError("could not decode UniqueEpochSessionKey", err, utils.LogAttr("key", uniqueEpochSessions[i]))
+			continue
+		}
 		ues := types.UniqueEpochSessionGenesis{
-			Epoch:              epochs[i],
-			UniqueEpochSession: uniqueEpochSessions[i],
+			Epoch:     epochs[i],
+			Provider:  provider,
+			Project:   project,
+			ChainId:   chainID,
+			SessionId: sessionID,
 		}
 		genesis.UniqueEpochSessions = append(genesis.UniqueEpochSessions, ues)
 	}

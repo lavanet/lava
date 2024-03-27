@@ -24,12 +24,18 @@ func TestGenesisState_Validate(t *testing.T) {
 				Params: types.DefaultParams(),
 				UniqueEpochSessions: []types.UniqueEpochSessionGenesis{
 					{
-						Epoch:              0,
-						UniqueEpochSession: "0",
+						Epoch:     0,
+						Provider:  "0",
+						Project:   "0",
+						ChainId:   "0",
+						SessionId: 0,
 					},
 					{
-						Epoch:              1,
-						UniqueEpochSession: "1",
+						Epoch:     1,
+						Provider:  "1",
+						Project:   "1",
+						ChainId:   "1",
+						SessionId: 1,
 					},
 				},
 				ProviderEpochCus: []types.ProviderEpochCuGenesis{
@@ -72,12 +78,18 @@ func TestGenesisState_Validate(t *testing.T) {
 				Params: types.DefaultParams(),
 				UniqueEpochSessions: []types.UniqueEpochSessionGenesis{
 					{
-						Epoch:              0,
-						UniqueEpochSession: "0",
+						Epoch:     0,
+						Provider:  "0",
+						Project:   "0",
+						ChainId:   "0",
+						SessionId: 0,
 					},
 					{
-						Epoch:              0,
-						UniqueEpochSession: "0",
+						Epoch:     0,
+						Provider:  "0",
+						Project:   "0",
+						ChainId:   "0",
+						SessionId: 0,
 					},
 				},
 			},

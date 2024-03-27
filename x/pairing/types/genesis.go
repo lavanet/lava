@@ -31,10 +31,11 @@ func (gs GenesisState) Validate() error {
 	UniqueEpochSessionsProviderIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.UniqueEpochSessions {
-		if _, ok := UniqueEpochSessionsProviderIndexMap[elem.UniqueEpochSession]; ok {
+		index := string(UniqueEpochSessionKey(elem.Provider, elem.Project, elem.ChainId, elem.SessionId))
+		if _, ok := UniqueEpochSessionsProviderIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for UniqueEpochSession")
 		}
-		UniqueEpochSessionsProviderIndexMap[elem.UniqueEpochSession] = struct{}{}
+		UniqueEpochSessionsProviderIndexMap[index] = struct{}{}
 	}
 	// Check for duplicated index in ProviderEpochCu
 	providerEpochCusIndexMap := make(map[string]struct{})

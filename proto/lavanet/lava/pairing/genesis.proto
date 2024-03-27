@@ -33,7 +33,10 @@ message GenesisState {
 
 message UniqueEpochSessionGenesis {
   uint64 epoch = 1;
-  string unique_epoch_session = 2;
+  string provider = 2;
+  string project = 3;
+  string chain_id = 4;
+  uint64 session_id = 5;
 }
 
 message ProviderEpochCuGenesis {
