@@ -151,7 +151,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			continue
 		}
 
-		if k.GetUniqueEpochSession(ctx, epochStart, relay.Provider, project.Index, relay.SpecId, relay.SessionId) {
+		if k.IsUniqueEpochSessionExists(ctx, epochStart, relay.Provider, project.Index, relay.SpecId, relay.SessionId) {
 			utils.LavaFormatWarning("double spending detected", err,
 				utils.Attribute{Key: "epoch", Value: epochStart},
 				utils.Attribute{Key: "client", Value: clientAddr.String()},

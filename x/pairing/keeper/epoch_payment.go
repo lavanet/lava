@@ -32,7 +32,7 @@ func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, p
 }
 
 // Function to remove epoch payment objects from deleted epochs (older than the chain's memory)
-func (k Keeper) RemoveOldEpochPayment(ctx sdk.Context) {
+func (k Keeper) RemoveOldEpochPayments(ctx sdk.Context) {
 	epochsToDelete := k.epochStorageKeeper.GetDeletedEpochs(ctx)
 	for _, epoch := range epochsToDelete {
 		k.RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx, epoch)
@@ -41,11 +41,11 @@ func (k Keeper) RemoveOldEpochPayment(ctx sdk.Context) {
 
 // Function to remove all epoch payments objects from a specific epoch
 func (k Keeper) RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx sdk.Context, epochToDelete uint64) {
-	// remove unique epoch sessions
-	k.RemoveUniqueEpochSessions(ctx, epochToDelete)
+	// remove all unique epoch sessions
+	k.RemoveAllUniqueEpochSession(ctx, epochToDelete)
 
 	// remove all provider epoch cu
-	k.RemoveProviderEpochCus(ctx, epochToDelete)
+	k.RemoveAllProviderEpochCu(ctx, epochToDelete)
 
 	keys, pcecs := k.GetAllProviderConsumerEpochCu(ctx, epochToDelete)
 
@@ -73,7 +73,6 @@ func (k Keeper) RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx sdk.Context,
 		consumerUsage[project] += pcecs[i].Cu
 		couplingUsage[coupling] += pcecs[i].Cu
 
-		// after we're done deleting the uniquePaymentStorageClientProvider objects, delete the providerPaymentStorage object
 		k.RemoveProviderConsumerEpochCu(ctx, epochToDelete, provider, project, chainID)
 	}
 	for _, coupling := range iterationOrder {

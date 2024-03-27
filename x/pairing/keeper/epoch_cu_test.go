@@ -31,7 +31,7 @@ func TestUniqueEpochSessionGet(t *testing.T) {
 	items := createNUniqueEpochSession(keeper, ctx, 10)
 	for i := range items {
 		item := strconv.Itoa(i)
-		found := keeper.GetUniqueEpochSession(ctx, uint64(i), item, item, item, uint64(i))
+		found := keeper.IsUniqueEpochSessionExists(ctx, uint64(i), item, item, item, uint64(i))
 		require.True(t, found)
 	}
 }
@@ -40,9 +40,9 @@ func TestUniqueEpochSessionRemove(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	items := createNUniqueEpochSession(keeper, ctx, 10)
 	for i := range items {
-		keeper.RemoveUniqueEpochSessions(ctx, uint64(i))
+		keeper.RemoveAllUniqueEpochSession(ctx, uint64(i))
 		item := strconv.Itoa(i)
-		found := keeper.GetUniqueEpochSession(ctx, uint64(i), item, item, item, uint64(i))
+		found := keeper.IsUniqueEpochSessionExists(ctx, uint64(i), item, item, item, uint64(i))
 		require.False(t, found)
 	}
 }
@@ -55,7 +55,7 @@ func TestUniqueEpochSessionGetAll(t *testing.T) {
 	for i, item := range items {
 		key := string(types.UniqueEpochSessionKey(item, item, item, uint64(i)))
 		expectedKeys = append(expectedKeys, key)
-		keys = append(keys, keeper.GetAllUniqueEpochSession(ctx, uint64(i))...)
+		keys = append(keys, keeper.GetAllUniqueEpochSessionForEpoch(ctx, uint64(i))...)
 	}
 	require.ElementsMatch(t, nullify.Fill(expectedKeys), nullify.Fill(keys))
 }
@@ -100,7 +100,7 @@ func TestProviderEpochCuRemove(t *testing.T) {
 	items := createNProviderEpochCu(keeper, ctx, 10)
 	for i := range items {
 		name := strconv.Itoa(i)
-		keeper.RemoveProviderEpochCus(ctx, uint64(i))
+		keeper.RemoveAllProviderEpochCu(ctx, uint64(i))
 		_, found := keeper.GetProviderEpochCu(ctx, uint64(i), name, name)
 		require.False(t, found)
 	}

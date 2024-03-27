@@ -468,7 +468,7 @@ func TestEpochPaymentDeletion(t *testing.T) {
 	ts.AdvanceEpochs(ts.EpochsToSave() + 1)
 
 	epoch := ts.EpochStart(ts.BlockHeight())
-	listA := ts.Keepers.Pairing.GetAllUniqueEpochSession(ts.Ctx, epoch)
+	listA := ts.Keepers.Pairing.GetAllUniqueEpochSessionForEpoch(ts.Ctx, epoch)
 	require.Len(t, listA, 0)
 
 	_, found := ts.Keepers.Pairing.GetProviderEpochCu(ts.Ctx, epoch, providerAddr, ts.spec.Index)

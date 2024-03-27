@@ -256,7 +256,7 @@ func (ts *tester) verifyRelayPayment(relaySession *pairingtypes.RelaySession, ex
 	project, err := ts.GetProjectForDeveloper(consumer, epoch)
 	require.NoError(ts.T, err)
 
-	found := ts.Keepers.Pairing.GetUniqueEpochSession(ts.Ctx, epoch, provider, project.Index, chainID, sessionID)
+	found := ts.Keepers.Pairing.IsUniqueEpochSessionExists(ts.Ctx, epoch, provider, project.Index, chainID, sessionID)
 	require.Equal(ts.T, exists, found)
 
 	pec, found := ts.Keepers.Pairing.GetProviderEpochCu(ts.Ctx, epoch, provider, chainID)

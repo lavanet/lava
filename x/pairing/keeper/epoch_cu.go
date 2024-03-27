@@ -28,15 +28,15 @@ func (k Keeper) SetUniqueEpochSession(ctx sdk.Context, epoch uint64, provider st
 	store.Set(types.UniqueEpochSessionKey(provider, project, chainID, sessionID), []byte{0})
 }
 
-// GetUniqueEpochSession checks if a UniqueEpochSession exists
-func (k Keeper) GetUniqueEpochSession(ctx sdk.Context, epoch uint64, provider string, project string, chainID string, sessionID uint64) bool {
+// IsUniqueEpochSessionExists checks if a UniqueEpochSession exists
+func (k Keeper) IsUniqueEpochSessionExists(ctx sdk.Context, epoch uint64, provider string, project string, chainID string, sessionID uint64) bool {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UniqueEpochSessionKeyPrefix(epoch))
 	b := store.Get(types.UniqueEpochSessionKey(provider, project, chainID, sessionID))
 	return b != nil
 }
 
-// RemoveUniqueEpochSessions removes all the UniqueEpochSession objects from the store for a specific epoch
-func (k Keeper) RemoveUniqueEpochSessions(ctx sdk.Context, epoch uint64) {
+// RemoveAllUniqueEpochSession removes all the UniqueEpochSession objects from the store for a specific epoch
+func (k Keeper) RemoveAllUniqueEpochSession(ctx sdk.Context, epoch uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UniqueEpochSessionKeyPrefix(epoch))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
 	defer iterator.Close()
@@ -45,8 +45,8 @@ func (k Keeper) RemoveUniqueEpochSessions(ctx sdk.Context, epoch uint64) {
 	}
 }
 
-// GetAllUniqueEpochSession gets all the UniqueEpochSession objects from the store for a specific epoch
-func (k Keeper) GetAllUniqueEpochSession(ctx sdk.Context, epoch uint64) []string {
+// GetAllUniqueEpochSessionForEpoch gets all the UniqueEpochSession objects from the store for a specific epoch
+func (k Keeper) GetAllUniqueEpochSessionForEpoch(ctx sdk.Context, epoch uint64) []string {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UniqueEpochSessionKeyPrefix(epoch))
 
 	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
@@ -105,7 +105,7 @@ func (k Keeper) GetProviderEpochCu(ctx sdk.Context, epoch uint64, provider strin
 }
 
 // RemoveProviderEpochCu removes a ProviderEpochCu from the store
-func (k Keeper) RemoveProviderEpochCus(ctx sdk.Context, epoch uint64) {
+func (k Keeper) RemoveAllProviderEpochCu(ctx sdk.Context, epoch uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochCuKeyPrefix(epoch))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
 	defer iterator.Close()
