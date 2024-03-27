@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cosmos/cosmos-sdk/store/cachekv"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -208,4 +209,54 @@ func (k Keeper) GetAllProviderConsumerEpochCuStore(ctx sdk.Context) []types.Prov
 	}
 
 	return info
+}
+
+/* ########## EpochCuCache ############ */
+type EpochCuCache struct {
+	Keeper
+	ProviderEpochCuCache         *cachekv.Store
+	ProviderConsumerEpochCuCache *cachekv.Store
+}
+
+func (k Keeper) NewEpochCuCacheHandler(ctx sdk.Context) EpochCuCache {
+	return EpochCuCache{
+		Keeper:                       k,
+		ProviderEpochCuCache:         cachekv.NewStore(prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochCuKeyPrefix())),
+		ProviderConsumerEpochCuCache: cachekv.NewStore(prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix())),
+	}
+}
+
+func (k EpochCuCache) SetProviderEpochCuCached(ctx sdk.Context, epoch uint64, provider string, chainID string, providerEpochCu types.ProviderEpochCu) {
+	b := k.cdc.MustMarshal(&providerEpochCu)
+	k.ProviderEpochCuCache.Set(types.ProviderEpochCuKey(epoch, provider, chainID), b)
+}
+
+func (k EpochCuCache) GetProviderEpochCuCached(ctx sdk.Context, epoch uint64, provider string, chainID string) (val types.ProviderEpochCu, found bool) {
+	b := k.ProviderEpochCuCache.Get(types.ProviderEpochCuKey(epoch, provider, chainID))
+	if b == nil {
+		return val, false
+	}
+
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+func (k EpochCuCache) SetProviderConsumerEpochCuCached(ctx sdk.Context, epoch uint64, provider string, project string, chainID string, providerConsumerEpochCu types.ProviderConsumerEpochCu) {
+	b := k.cdc.MustMarshal(&providerConsumerEpochCu)
+	k.ProviderConsumerEpochCuCache.Set(types.ProviderConsumerEpochCuKey(epoch, provider, project, chainID), b)
+}
+
+func (k EpochCuCache) GetProviderConsumerEpochCuCached(ctx sdk.Context, epoch uint64, provider string, project string, chainID string) (val types.ProviderConsumerEpochCu, found bool) {
+	b := k.ProviderConsumerEpochCuCache.Get(types.ProviderConsumerEpochCuKey(epoch, provider, project, chainID))
+	if b == nil {
+		return val, false
+	}
+
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+func (k EpochCuCache) Flush() {
+	k.ProviderEpochCuCache.Write()
+	k.ProviderConsumerEpochCuCache.Write()
 }

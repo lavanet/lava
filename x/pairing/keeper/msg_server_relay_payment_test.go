@@ -969,3 +969,53 @@ func TestIntOverflow(t *testing.T) {
 		ts.AdvanceEpoch()
 	}
 }
+
+func TestPairingCaching(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(3, 3, 0) // 3 provider, 3 client, default providers-to-pair
+
+	ts.AdvanceEpoch()
+
+	relayNum := uint64(0)
+	totalCU := uint64(0)
+	// trigger relay payment with cache
+	for i := 0; i < 3; i++ {
+		relays := []*types.RelaySession{}
+		_, provider1Addr := ts.GetAccount(common.PROVIDER, i)
+		for i := 0; i < 3; i++ {
+			consumerAcct, _ := ts.GetAccount(common.CONSUMER, i)
+			totalCU = 0
+			for i := 0; i < 50; i++ {
+				totalCU += uint64(i)
+				relaySession := ts.newRelaySession(provider1Addr, relayNum, uint64(i), ts.BlockHeight(), 0)
+				sig, err := sigs.Sign(consumerAcct.SK, *relaySession)
+				relaySession.Sig = sig
+				require.NoError(t, err)
+				relays = append(relays, relaySession)
+				relayNum++
+			}
+		}
+		_, err := ts.TxPairingRelayPayment(provider1Addr, relays...)
+		require.NoError(t, err)
+	}
+
+	pecs := ts.Keepers.Pairing.GetAllProviderEpochCuStore(ts.Ctx)
+	require.Len(t, pecs, 3)
+
+	UniquePayments := ts.Keepers.Pairing.GetAllUniqueEpochSessionStore(ts.Ctx)
+	require.Len(t, UniquePayments, 3*3*50)
+
+	storages := ts.Keepers.Pairing.GetAllProviderConsumerEpochCuStore(ts.Ctx)
+	require.Len(t, storages, 3*3)
+
+	for i := 0; i < 3; i++ {
+		consumerAcct, _ := ts.GetAccount(common.CONSUMER, i)
+		project, err := ts.GetProjectForDeveloper(consumerAcct.Addr.String(), ts.BlockHeight())
+		require.NoError(t, err)
+		require.Equal(t, totalCU*3, project.UsedCu)
+
+		sub, err := ts.QuerySubscriptionCurrent(consumerAcct.Addr.String())
+		require.NoError(t, err)
+		require.Equal(t, totalCU*3, sub.Sub.MonthCuTotal-sub.Sub.MonthCuLeft)
+	}
+}

@@ -40,6 +40,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Logger(ctx)
+	epochCuCache := k.NewEpochCuCacheHandler(ctx)
 	lavaChainID := ctx.BlockHeader().ChainID
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
@@ -165,7 +166,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// if they failed (one relay should affect all of them). From here on, every check will
 		// fail the TX ***
 
-		totalCUInEpochForUserProvider := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, relay.Provider, relay.CuSum, relay.SessionId)
+		totalCUInEpochForUserProvider := epochCuCache.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, relay.Provider, relay.CuSum, relay.SessionId)
 		if badgeFound {
 			k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
 		}
@@ -281,7 +282,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProvidersComplainerCU(ctx, relay.UnresponsiveProviders, epochStart, relay.SpecId, cuAfterQos, providers, project.Index)
+		err = epochCuCache.updateProvidersComplainerCU(ctx, relay.UnresponsiveProviders, epochStart, relay.SpecId, cuAfterQos, providers, project.Index)
 		if err != nil {
 			var reportedProviders []string
 			for _, p := range relay.UnresponsiveProviders {
@@ -324,6 +325,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
 
+	epochCuCache.Flush()
+
 	return &types.MsgRelayPaymentResponse{RejectedRelays: rejected_relays}, nil
 }
 
@@ -338,7 +341,7 @@ func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr sdk.Ac
 	}
 }
 
-func (k msgServer) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, epoch uint64, chainID string, cu uint64, pairedProviders []epochstoragetypes.StakeEntry, project string) error {
+func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, epoch uint64, chainID string, cu uint64, pairedProviders []epochstoragetypes.StakeEntry, project string) error {
 	// check that unresponsiveData exists and that the paired providers list is larger than 1
 	if len(unresponsiveProviders) == 0 || len(pairedProviders) <= 1 {
 		return nil
@@ -364,13 +367,13 @@ func (k msgServer) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveProv
 			continue
 		}
 
-		pec, found := k.GetProviderEpochCu(ctx, epoch, unresponsiveProvider.Address, chainID)
+		pec, found := k.GetProviderEpochCuCached(ctx, epoch, unresponsiveProvider.Address, chainID)
 		if !found {
 			pec = types.ProviderEpochCu{ComplainersCu: complainerCuToAdd}
 		} else {
 			pec.ComplainersCu += complainerCuToAdd
 		}
-		k.SetProviderEpochCu(ctx, epoch, unresponsiveProvider.Address, chainID, pec)
+		k.SetProviderEpochCuCached(ctx, epoch, unresponsiveProvider.Address, chainID, pec)
 
 		timestamp := time.Unix(unresponsiveProvider.TimestampS, 0)
 		details := map[string]string{

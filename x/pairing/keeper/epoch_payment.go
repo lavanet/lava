@@ -7,27 +7,27 @@ import (
 )
 
 // AddEpochPayment adds a new epoch payment and returns the updated CU used between provider and project
-func (k Keeper) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, project string, provider string, cu uint64, sessionID uint64) uint64 {
-	// register new epoch session (not checking double spend because it's alreday checked before calling this function)
+func (k EpochCuCache) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, project string, provider string, cu uint64, sessionID uint64) uint64 {
+	// register new epoch session (not checking double spend because it's already checked before calling this function)
 	k.SetUniqueEpochSession(ctx, epoch, provider, project, chainID, sessionID)
 
 	// update provider serviced CU
-	pec, found := k.GetProviderEpochCu(ctx, epoch, provider, chainID)
+	pec, found := k.GetProviderEpochCuCached(ctx, epoch, provider, chainID)
 	if !found {
 		pec = types.ProviderEpochCu{ServicedCu: cu}
 	} else {
 		pec.ServicedCu += cu
 	}
-	k.SetProviderEpochCu(ctx, epoch, provider, chainID, pec)
+	k.SetProviderEpochCuCached(ctx, epoch, provider, chainID, pec)
 
 	// update provider CU for the specific project
-	pcec, found := k.GetProviderConsumerEpochCu(ctx, epoch, provider, project, chainID)
+	pcec, found := k.GetProviderConsumerEpochCuCached(ctx, epoch, provider, project, chainID)
 	if !found {
 		pcec = types.ProviderConsumerEpochCu{Cu: cu}
 	} else {
 		pcec.Cu += cu
 	}
-	k.SetProviderConsumerEpochCu(ctx, epoch, provider, project, chainID, pcec)
+	k.SetProviderConsumerEpochCuCached(ctx, epoch, provider, project, chainID, pcec)
 	return pcec.Cu
 }
 
