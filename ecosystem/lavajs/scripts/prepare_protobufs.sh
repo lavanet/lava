@@ -78,7 +78,7 @@ function prepare() {
         exit 1
     fi
 
-    cosmosprotosdir="$GOPATH/pkg/mod/github.com/cosmos/cosmos-proto@v1.0.0-beta.4"
+    cosmosprotosdir="$gopath/pkg/mod/github.com/cosmos/cosmos-proto@v1.0.0-beta.4"
 
     if [[ ! -d "$cosmosprotosdir" ]]; then
         echo "Error: The cosmosprotosdir directory ('$cosmosprotosdir') does not exist under '$GOPATH/pkg/mod'." >&2
