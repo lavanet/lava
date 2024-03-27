@@ -50,5 +50,10 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 
 	// check that both payments were deleted
 	ts.AdvanceEpochs(epochsToSave)
-	// TODO: add check here
+
+	res, err := ts.QueryProjectDeveloper(clientAcct.Addr.String())
+	require.NoError(t, err)
+	res2, err := ts.QueryPairingProviderEpochCu(providerAddr, res.Project.Index, ts.spec.Index)
+	require.NoError(t, err)
+	require.Len(t, res2.Info, 0)
 }
