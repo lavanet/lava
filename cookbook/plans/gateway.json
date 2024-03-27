@@ -17,12 +17,12 @@
                 "annual_discount_percentage": 0,
                 "allow_overuse": false,
                 "overuse_rate": 0,
-                "projects": 8,
+                "projects": 50,
                 "plan_policy": {
                     "geolocation_profile": "GL",
                     "total_cu_limit": 9223372036854775807,
                     "epoch_cu_limit": 9223372036854775807,
-                    "max_providers_to_pair": 12,
+                    "max_providers_to_pair": 24,
                     "selected_providers": [],
                     "selected_providers_mode": "ALLOWED",
                     "chain_policies": [
