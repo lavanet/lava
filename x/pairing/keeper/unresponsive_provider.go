@@ -83,32 +83,41 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 		}
 	}
 	// Go over the staked provider entries (on all chains)
-	for _, providerStakeStorage := range providerStakeStorageList {
-		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
-		for _, providerStakeEntry := range providerStakeEntriesForChain {
-			if minHistoryBlock < providerStakeEntry.StakeAppliedBlock {
-				// this staked provider has too short history (either since staking
-				// or since it was last unfrozen) - do not consider for jailing
-				continue
-			}
-			// update the CU count for this provider in providerCuCounterForUnreponsivenessMap
-			epochs, complaintCU, servicedCU, err := k.countCuForUnresponsiveness(ctx, minPaymentBlock, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, providerStakeEntry)
-			if err != nil {
-				utils.LavaFormatError("unstake unresponsive providers failed to count CU", err,
-					utils.Attribute{Key: "provider", Value: providerStakeEntry.Address},
-				)
-				continue
-			}
+	pecsDetailed := k.GetAllProviderEpochCuStore(ctx)
+	for _, pec := range pecsDetailed {
+		if pec.ProviderEpochCu.ComplainersCu == 0 {
+			continue
+		}
+		providerAddr, err := sdk.AccAddressFromBech32(pec.Provider)
+		if err != nil {
+			continue
+		}
+		stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, pec.ChainId, providerAddr)
+		if !found {
+			continue
+		}
+		if minHistoryBlock < stakeEntry.StakeAppliedBlock {
+			// this staked provider has too short history (either since staking
+			// or since it was last unfrozen) - do not consider for jailing
+			continue
+		}
+		// update the CU count for this provider in providerCuCounterForUnreponsivenessMap
+		epochs, complaintCU, servicedCU, err := k.countCuForUnresponsiveness(ctx, minPaymentBlock, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, stakeEntry)
+		if err != nil {
+			utils.LavaFormatError("unstake unresponsive providers failed to count CU", err,
+				utils.Attribute{Key: "provider", Value: stakeEntry.Address},
+			)
+			continue
+		}
 
-			// providerPaymentStorageKeyList is not empty -> provider should be punished
-			if len(epochs) != 0 && existingProviders[providerStakeEntry.GetChain()] > minProviders {
-				err = k.punishUnresponsiveProvider(ctx, epochs, providerStakeEntry.GetAddress(), providerStakeEntry.GetChain(), complaintCU, servicedCU)
-				existingProviders[providerStakeEntry.GetChain()]--
-				if err != nil {
-					utils.LavaFormatError("unstake unresponsive providers failed to punish provider", err,
-						utils.Attribute{Key: "provider", Value: providerStakeEntry.Address},
-					)
-				}
+		// providerPaymentStorageKeyList is not empty -> provider should be punished
+		if len(epochs) != 0 && existingProviders[stakeEntry.GetChain()] > minProviders {
+			err = k.punishUnresponsiveProvider(ctx, epochs, stakeEntry.GetAddress(), stakeEntry.GetChain(), complaintCU, servicedCU)
+			existingProviders[stakeEntry.GetChain()]--
+			if err != nil {
+				utils.LavaFormatError("unstake unresponsive providers failed to punish provider", err,
+					utils.Attribute{Key: "provider", Value: stakeEntry.Address},
+				)
 			}
 		}
 	}
