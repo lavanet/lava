@@ -8,10 +8,10 @@ endpoints:
     - chain-id: LAV1
       api-interface: grpc
       network-address: 127.0.0.1:3352
-    - chain-id: COS3
+    - chain-id: OSMOSIS
       api-interface: tendermintrpc
       network-address: 127.0.0.1:3335
-    - chain-id: COS3
+    - chain-id: OSMOSIS
       api-interface: rest
       network-address: 127.0.0.1:3334
     - chain-id: ETH1
