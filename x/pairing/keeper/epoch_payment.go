@@ -59,7 +59,7 @@ func (k Keeper) RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx sdk.Context,
 	iterationOrder := []couplingConsumerProvider{}
 	couplingUsage := map[couplingConsumerProvider]uint64{}
 	for i := range keys {
-		provider, project, chainID, err := types.DecodeProviderConsumerEpochCuKey(keys[i])
+		_, provider, project, chainID, err := types.DecodeProviderConsumerEpochCuKey(keys[i])
 		if err != nil {
 			utils.LavaFormatError("invalid provider consumer epoch cu key", err, utils.LogAttr("key", keys[i]))
 			continue

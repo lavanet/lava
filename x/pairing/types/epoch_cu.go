@@ -12,54 +12,66 @@ const (
 	ProviderConsumerEpochCuPrefix = "ProviderConsumerEpochCu/"
 )
 
-func UniqueEpochSessionKey(provider string, chainID string, project string, sessionID uint64) []byte {
-	return []byte(strings.Join([]string{provider, chainID, project, strconv.FormatUint(sessionID, 10)}, " "))
+func UniqueEpochSessionKey(epoch uint64, provider string, chainID string, project string, sessionID uint64) []byte {
+	return []byte(strings.Join([]string{strconv.FormatUint(epoch, 10), provider, chainID, project, strconv.FormatUint(sessionID, 10)}, " "))
 }
 
-func ProviderEpochCuKey(provider string, chainID string) []byte {
-	return []byte(strings.Join([]string{provider, chainID}, " "))
+func ProviderEpochCuKey(epoch uint64, provider string, chainID string) []byte {
+	return []byte(strings.Join([]string{strconv.FormatUint(epoch, 10), provider, chainID}, " "))
 }
 
-func ProviderConsumerEpochCuKey(provider string, project string, chainID string) []byte {
-	return []byte(strings.Join([]string{provider, project, chainID}, " "))
+func ProviderConsumerEpochCuKey(epoch uint64, provider string, project string, chainID string) []byte {
+	return []byte(strings.Join([]string{strconv.FormatUint(epoch, 10), provider, project, chainID}, " "))
 }
 
-func DecodeUniqueEpochSessionKey(key string) (provider string, chainID string, project string, sessionID uint64, err error) {
+func DecodeUniqueEpochSessionKey(key string) (epoch uint64, provider string, chainID string, project string, sessionID uint64, err error) {
 	split := strings.Split(key, " ")
-	if len(split) != 4 {
-		return "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key")
+	if len(split) != 5 {
+		return 0, "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key: bad structure. key: %s", key)
 	}
-	sessionID, err = strconv.ParseUint(split[3], 10, 64)
+	epoch, err = strconv.ParseUint(split[0], 10, 64)
 	if err != nil {
-		return "", "", "", 0, err
+		return 0, "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key: bad epoch. key: %s", key)
 	}
-	return split[0], split[1], split[2], sessionID, nil
+	sessionID, err = strconv.ParseUint(split[4], 10, 64)
+	if err != nil {
+		return 0, "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key: bad session ID. key: %s", key)
+	}
+	return epoch, split[1], split[2], split[3], sessionID, nil
 }
 
-func DecodeProviderEpochCuKey(key string) (provider string, chainID string, err error) {
-	split := strings.Split(key, " ")
-	if len(split) != 2 {
-		return "", "", fmt.Errorf("invalid ProviderEpochCu key")
-	}
-	return split[0], split[1], nil
-}
-
-func DecodeProviderConsumerEpochCuKey(key string) (provider string, project string, chainID string, err error) {
+func DecodeProviderEpochCuKey(key string) (epoch uint64, provider string, chainID string, err error) {
 	split := strings.Split(key, " ")
 	if len(split) != 3 {
-		return "", "", "", fmt.Errorf("invalid ProviderConsumerEpochCu key")
+		return 0, "", "", fmt.Errorf("invalid ProviderEpochCu key: bad structure. key: %s", key)
 	}
-	return split[0], split[1], split[2], nil
+	epoch, err = strconv.ParseUint(split[0], 10, 64)
+	if err != nil {
+		return 0, "", "", fmt.Errorf("invalid ProviderEpochCu key: bad epoch. key: %s", key)
+	}
+	return epoch, split[1], split[2], nil
 }
 
-func UniqueEpochSessionKeyPrefix(epoch uint64) []byte {
-	return []byte(UniqueEpochSessionPrefix + strconv.FormatUint(epoch, 10) + "/")
+func DecodeProviderConsumerEpochCuKey(key string) (epoch uint64, provider string, project string, chainID string, err error) {
+	split := strings.Split(key, " ")
+	if len(split) != 4 {
+		return 0, "", "", "", fmt.Errorf("invalid ProviderConsumerEpochCu key: bad structure. key: %s", key)
+	}
+	epoch, err = strconv.ParseUint(split[0], 10, 64)
+	if err != nil {
+		return 0, "", "", "", fmt.Errorf("invalid ProviderConsumerEpochCu key: bad epoch. key: %s", key)
+	}
+	return epoch, split[1], split[2], split[3], nil
 }
 
-func ProviderEpochCuKeyPrefix(epoch uint64) []byte {
-	return []byte(ProviderEpochCuPrefix + strconv.FormatUint(epoch, 10) + "/")
+func UniqueEpochSessionKeyPrefix() []byte {
+	return []byte(UniqueEpochSessionPrefix)
 }
 
-func ProviderConsumerEpochCuKeyPrefix(epoch uint64) []byte {
-	return []byte(ProviderConsumerEpochCuPrefix + strconv.FormatUint(epoch, 10) + "/")
+func ProviderEpochCuKeyPrefix() []byte {
+	return []byte(ProviderEpochCuPrefix)
+}
+
+func ProviderConsumerEpochCuKeyPrefix() []byte {
+	return []byte(ProviderConsumerEpochCuPrefix)
 }

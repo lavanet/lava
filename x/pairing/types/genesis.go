@@ -31,7 +31,7 @@ func (gs GenesisState) Validate() error {
 	UniqueEpochSessionsProviderIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.UniqueEpochSessions {
-		index := string(UniqueEpochSessionKey(elem.Provider, elem.ChainId, elem.Project, elem.SessionId))
+		index := string(UniqueEpochSessionKey(elem.Epoch, elem.Provider, elem.ChainId, elem.Project, elem.SessionId))
 		if _, ok := UniqueEpochSessionsProviderIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for UniqueEpochSession")
 		}
@@ -41,7 +41,7 @@ func (gs GenesisState) Validate() error {
 	providerEpochCusIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.ProviderEpochCus {
-		index := string(ProviderEpochCuKey(elem.Provider, elem.ChainId))
+		index := string(ProviderEpochCuKey(elem.Epoch, elem.Provider, elem.ChainId))
 		if _, ok := providerEpochCusIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for ProviderEpochCu")
 		}
@@ -51,7 +51,7 @@ func (gs GenesisState) Validate() error {
 	providerConsumerEpochCuIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.ProviderConsumerEpochCus {
-		index := string(ProviderConsumerEpochCuKey(elem.Provider, elem.Project, elem.ChainId))
+		index := string(ProviderConsumerEpochCuKey(elem.Epoch, elem.Provider, elem.Project, elem.ChainId))
 		if _, ok := providerConsumerEpochCuIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for ProviderConsumerEpochCu")
 		}

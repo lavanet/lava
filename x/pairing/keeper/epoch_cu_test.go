@@ -53,7 +53,7 @@ func TestUniqueEpochSessionGetAll(t *testing.T) {
 	expectedKeys := []string{}
 	keys := []string{}
 	for i, item := range items {
-		key := string(types.UniqueEpochSessionKey(item, item, item, uint64(i)))
+		key := string(types.UniqueEpochSessionKey(uint64(i), item, item, item, uint64(i)))
 		expectedKeys = append(expectedKeys, key)
 		keys = append(keys, keeper.GetAllUniqueEpochSessionForEpoch(ctx, uint64(i))...)
 	}
@@ -170,7 +170,7 @@ func TestProviderConsumerEpochCuGetAll(t *testing.T) {
 	actualPecs := []types.ProviderConsumerEpochCu{}
 	for i := range items {
 		name := strconv.Itoa(i)
-		key := string(types.ProviderConsumerEpochCuKey(name, name, name))
+		key := string(types.ProviderConsumerEpochCuKey(uint64(i), name, name, name))
 		expectedKeys = append(expectedKeys, key)
 		keys, pecs := keeper.GetAllProviderConsumerEpochCu(ctx, uint64(i))
 		actualKeys = append(actualKeys, keys...)
