@@ -2,7 +2,6 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 
@@ -47,7 +46,7 @@ func (k Keeper) RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx sdk.Context,
 	// remove all provider epoch cu
 	k.RemoveAllProviderEpochCu(ctx, epochToDelete)
 
-	keys, pcecs := k.GetAllProviderConsumerEpochCu(ctx, epochToDelete)
+	pcecs := k.GetAllProviderConsumerEpochCu(ctx, epochToDelete)
 
 	// TODO: update Qos in providerQosFS. new consumers (cluster.subUsage = 0) get default QoS (what is default?)
 	consumerUsage := map[string]uint64{}
@@ -58,22 +57,16 @@ func (k Keeper) RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx sdk.Context,
 	// we are keeping the iteration keys to keep determinism when going over the map
 	iterationOrder := []couplingConsumerProvider{}
 	couplingUsage := map[couplingConsumerProvider]uint64{}
-	for i := range keys {
-		_, provider, project, chainID, err := types.DecodeProviderConsumerEpochCuKey(keys[i])
-		if err != nil {
-			utils.LavaFormatError("invalid provider consumer epoch cu key", err, utils.LogAttr("key", keys[i]))
-			continue
-		}
-
-		coupling := couplingConsumerProvider{consumer: project, provider: provider}
+	for _, pcec := range pcecs {
+		coupling := couplingConsumerProvider{consumer: pcec.Project, provider: pcec.Provider}
 		if _, ok := couplingUsage[coupling]; !ok {
 			// only add it if it doesn't exist
 			iterationOrder = append(iterationOrder, coupling)
 		}
-		consumerUsage[project] += pcecs[i].Cu
-		couplingUsage[coupling] += pcecs[i].Cu
+		consumerUsage[pcec.Project] += pcec.ProviderConsumerEpochCu.Cu
+		couplingUsage[coupling] += pcec.ProviderConsumerEpochCu.Cu
 
-		k.RemoveProviderConsumerEpochCu(ctx, epochToDelete, provider, project, chainID)
+		k.RemoveProviderConsumerEpochCu(ctx, epochToDelete, pcec.Provider, pcec.Project, pcec.ChainId)
 	}
 	for _, coupling := range iterationOrder {
 		k.subscriptionKeeper.AppendAdjustment(ctx, coupling.consumer, coupling.provider, consumerUsage[coupling.consumer], couplingUsage[coupling])

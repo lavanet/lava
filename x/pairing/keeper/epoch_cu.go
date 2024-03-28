@@ -171,18 +171,29 @@ func (k Keeper) RemoveProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, pro
 }
 
 // GetAllProviderConsumerEpochCuStore returns all the ProviderConsumerEpochCu from the store (used for genesis)
-func (k Keeper) GetAllProviderConsumerEpochCu(ctx sdk.Context, epoch uint64) (keys []string, providerConsumerEpochCus []types.ProviderConsumerEpochCu) {
+func (k Keeper) GetAllProviderConsumerEpochCu(ctx sdk.Context, epoch uint64) []types.ProviderConsumerEpochCuGenesis {
+	providerConsumerEpochCus := []types.ProviderConsumerEpochCuGenesis{}
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix())
 	iterator := sdk.KVStorePrefixIterator(store, []byte(strconv.FormatUint(epoch, 10)))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
-		keys = append(keys, string(iterator.Key()))
+		epoch, provider, project, chainID, err := types.DecodeProviderConsumerEpochCuKey(string(iterator.Key()))
+		if err != nil {
+			utils.LavaFormatError("could not decode ProviderConsumerEpochCu with epoch", err, utils.LogAttr("key", string(iterator.Key())))
+			continue
+		}
 		var pcec types.ProviderConsumerEpochCu
 		k.cdc.MustUnmarshal(iterator.Value(), &pcec)
-		providerConsumerEpochCus = append(providerConsumerEpochCus, pcec)
+		providerConsumerEpochCus = append(providerConsumerEpochCus, types.ProviderConsumerEpochCuGenesis{
+			Epoch:                   epoch,
+			Provider:                provider,
+			Project:                 project,
+			ChainId:                 chainID,
+			ProviderConsumerEpochCu: pcec,
+		})
 	}
 
-	return keys, providerConsumerEpochCus
+	return providerConsumerEpochCus
 }
 
 // GetAllProviderConsumerEpochCuStore returns all the ProviderConsumerEpochCu from the store (used for genesis)

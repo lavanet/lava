@@ -165,20 +165,24 @@ func TestProviderConsumerEpochCuRemove(t *testing.T) {
 func TestProviderConsumerEpochCuGetAll(t *testing.T) {
 	keeper, ctx := keepertest.PairingKeeper(t)
 	items := createNProviderConsumerEpochCu(keeper, ctx, 10)
-	expectedKeys := []string{}
-	actualKeys := []string{}
-	actualPecs := []types.ProviderConsumerEpochCu{}
+	expectedPcecs := []types.ProviderConsumerEpochCuGenesis{}
+	actualPcecs := []types.ProviderConsumerEpochCuGenesis{}
 	for i := range items {
 		name := strconv.Itoa(i)
-		key := string(types.ProviderConsumerEpochCuKey(uint64(i), name, name, name))
-		expectedKeys = append(expectedKeys, key)
-		keys, pecs := keeper.GetAllProviderConsumerEpochCu(ctx, uint64(i))
-		actualKeys = append(actualKeys, keys...)
-		actualPecs = append(actualPecs, pecs...)
+		expectedPcecs = append(expectedPcecs, types.ProviderConsumerEpochCuGenesis{
+			Epoch:    uint64(i),
+			Provider: name,
+			Project:  name,
+			ChainId:  name,
+			ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{
+				Cu: uint64(i),
+			},
+		})
+		pecs := keeper.GetAllProviderConsumerEpochCu(ctx, uint64(i))
+		actualPcecs = append(actualPcecs, pecs...)
 	}
 
-	require.ElementsMatch(t, nullify.Fill(expectedKeys), nullify.Fill(actualKeys))
-	require.ElementsMatch(t, items, actualPecs)
+	require.ElementsMatch(t, expectedPcecs, actualPcecs)
 }
 
 func TestProviderConsumerEpochCuGetAllStore(t *testing.T) {
