@@ -278,7 +278,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		cuAfterQos := rewardedCUDec.TruncateInt().Uint64()
 		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, project, relay, cuAfterQos)
-
 		if err != nil {
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 		}
