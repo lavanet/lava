@@ -14,6 +14,10 @@ telescope({
     tsDisable: {
       files: [
         'cosmos/authz/v1beta1/tx.amino.ts',
+        'cosmos/auth/v1beta1/query.ts',
+        'cosmos/authz/v1beta1/authz.ts',
+        'cosmos/gov/v1beta1/tx.ts',
+        'cosmos/gov/v1beta1/gov.ts',
         'cosmos/staking/v1beta1/tx.amino.ts'
       ],
       patterns: ['**/*amino.ts', '**/*registry.ts']
