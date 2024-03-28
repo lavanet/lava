@@ -13,6 +13,7 @@ import (
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -276,7 +277,8 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 
 		cuAfterQos := rewardedCUDec.TruncateInt().Uint64()
-		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, clientAddr, relay, cuAfterQos)
+		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, project, relay, cuAfterQos)
+
 		if err != nil {
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 		}
@@ -392,15 +394,10 @@ func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveP
 	return nil
 }
 
-func (k Keeper) chargeCuToSubscriptionAndCreditProvider(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession, cuAfterQos uint64) error {
+func (k Keeper) chargeCuToSubscriptionAndCreditProvider(ctx sdk.Context, project projectstypes.Project, relay *types.RelaySession, cuAfterQos uint64) error {
 	epoch := uint64(relay.Epoch)
 
-	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), epoch)
-	if err != nil {
-		return fmt.Errorf("failed to get project for client")
-	}
-
-	err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, epoch, relay.CuSum)
+	err := k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, epoch, relay.CuSum)
 	if err != nil {
 		return fmt.Errorf("failed to add CU to the project")
 	}
