@@ -198,7 +198,7 @@ func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (pa
 		utils.LavaFormatDebug("transaction results", utils.Attribute{Key: "jsonParsedResult", Value: jsonParsedResult})
 	}
 	resultData, err := common.ParseTransactionResult(jsonParsedResult)
-	utils.LavaFormatDebug("Sent Transaction", utils.LogAttr("Hash", hex.EncodeToString(resultData.Txhash)))
+	utils.LavaFormatInfo("Sent Transaction", utils.LogAttr("Hash", hex.EncodeToString(resultData.Txhash)))
 	if err != nil {
 		return common.TxResultData{}, err
 	}
@@ -218,6 +218,8 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 	timeOutReached := false
 	go func() {
 		for {
+			// we will never catch the tx hash in the first attempt as not enough time have passed, so we sleep at the beginning of the loop
+			time.Sleep(5 * time.Second)
 			if timeOutReached {
 				utils.LavaFormatWarning("Timeout waiting for transaction", nil, utils.LogAttr("hash", resultData.Txhash))
 				return
@@ -234,7 +236,6 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 			if debug {
 				utils.LavaFormatWarning("Tx query got error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "resultData", Value: resultData})
 			}
-			time.Sleep(5 * time.Second)
 		}
 	}()
 	select {

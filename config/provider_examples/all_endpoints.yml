@@ -66,37 +66,37 @@ endpoints:
       node-urls:
         - url: <enter-here>
     - api-interface: rest
-      chain-id: COS3
+      chain-id: OSMOSIS
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: tendermintrpc
-      chain-id: COS3
+      chain-id: OSMOSIS
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: grpc
-      chain-id: COS3
+      chain-id: OSMOSIS
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: rest
-      chain-id: COS4
+      chain-id: OSMOSIST
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: tendermintrpc
-      chain-id: COS4
+      chain-id: OSMOSIST
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: grpc
-      chain-id: COS4
+      chain-id: OSMOSIST
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
@@ -120,19 +120,19 @@ endpoints:
       node-urls:
         - url: <enter-here>
     - api-interface: rest
-      chain-id: COS5
+      chain-id: COSMOSHUB
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: tendermintrpc
-      chain-id: COS5
+      chain-id: COSMOSHUB
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
         - url: <enter-here>
     - api-interface: grpc
-      chain-id: COS5
+      chain-id: COSMOSHUB
       network-address:
         address: "127.0.0.1:2221"
       node-urls:

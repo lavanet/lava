@@ -32,7 +32,7 @@ func TestReferrerClientFlows(t *testing.T) {
 		endpoint := mockServer.URL
 		serverClient := NewConsumerReferrerClient(endpoint, 100*time.Millisecond)
 		serverClient.AppendReferrer(NewReferrerRequest("banana", "ETH1", "Message-1", "https://referer.com", "https://origin.com", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"))
-		serverClient.AppendReferrer(NewReferrerRequest("banana", "COS5", "Message-2", "https://referer.com", "https://origin.com", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"))
+		serverClient.AppendReferrer(NewReferrerRequest("banana", "COSMOSHUB", "Message-2", "https://referer.com", "https://origin.com", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"))
 		serverClient.AppendReferrer(NewReferrerRequest("papaya", "ETH1", "Message-3", "https://referer.com", "https://origin.com", "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0"))
 		time.Sleep(110 * time.Millisecond)
 		require.Len(t, messages, 2)

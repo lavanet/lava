@@ -85,9 +85,15 @@ ecosystem/lavajs/proto/cosmos
 ecosystem/lavajs/proto/gogoproto
 ecosystem/lavajs/proto/google
 ecosystem/lavajs/proto/tendermint
+ecosystem/lavajs/proto/cosmos_proto/LICENSE
+ecosystem/lavajs/proto/cosmos_proto/README.md
+
+
 
 testutil/e2e/sdk/tests/package-lock.json
 testutil/e2e/sdk/tests/node_modules.json
 config/health_examples/health_template_gen.yml
 # Yarn
 .yarn/
+
+**/dist/

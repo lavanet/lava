@@ -1,142 +1,141 @@
-name: 'Release'
+name: Publish Lava Release
 
 on:
-  release:
-    types: [created, edited, prereleased]
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "The desired tag for the release (e.g. v1.1.0)."
+        required: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   release:
     name: 'release'
-    runs-on: ubuntu-20.04
-    timeout-minutes: 10
-    environment: default
-    defaults:
-      run:
-        shell: bash
+    runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+      
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event.inputs.release_tag != '' && github.event.inputs.release_tag || github.ref_name }}
+
+    - name: Fetch all tags
+      run: |
+        git fetch --force --tags
 
     - name: Configure Go
-      uses: actions/setup-go@v3
+      uses: actions/setup-go@v5
       with:
-        go-version: 1.20.5
-        check-latest: true
-        cache: true
+        go-version-file: go.mod
+        cache-dependency-path: go.sum
 
-    - name: Set Environment Variable
-      run: |
-        echo "LAVA_BUILD_OPTIONS=\"release\"" >> $GITHUB_ENV
+    - name: Run GoReleaser
+      id: releaser
+      uses: goreleaser/goreleaser-action@v5
+      with:
+        version: latest
+        args: release --clean --timeout 90m
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build
-      run: |
-        make build-all
+    # - name: Check for existing assests
+    #   id: existing_asset
+    #   run: |
+    #     if [ "${{ github.event.release.assets[0].name }}" = "lavad" ]; then
+    #       echo "URL=${{ github.event.release.assets[0].id }}" >> $GITHUB_OUTPUT
+    #       echo "URL=${{ github.event.release.assets[0].url }}" >> $GITHUB_OUTPUT
+    #       echo "CHECK=true" >> $GITHUB_OUTPUT
+    #     else
+    #       echo "CHECK=false" >> $GITHUB_OUTPUT
+    #     fi
 
-    - name: Test build
-      continue-on-error: true
-      run: |
-        response=$(build/lavad status --node http://public-rpc.lavanet.xyz:80/rpc/ | jq '.NodeInfo')
-        if [ -z "${response}" ]; then
-          echo "The binary fails to connect to a node."
-          exit 1
-        else
-          echo $response
-          echo "The binary is working as expected."
-        fi
+    # - name: Upload build to release
+    #   run: |
+    #     upload_binary () {
+    #       echo "Uploading binary to: $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad/g')"
+    #       curl \
+    #       -X POST \
+    #       -H "Accept: application/vnd.github+json" \
+    #       -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+    #       -H "Content-Type: $(file -b --mime-type build/lavad)" \
+    #       --data-binary @build/lavad \
+    #       $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad-${{ github.event.release.tag_name }}-linux-amd64/g')
 
-    - name: Check for existing assests
-      id: existing_asset
-      run: |
-        if [ "${{ github.event.release.assets[0].name }}" = "lavad" ]; then
-          echo "URL=${{ github.event.release.assets[0].id }}" >> $GITHUB_OUTPUT
-          echo "URL=${{ github.event.release.assets[0].url }}" >> $GITHUB_OUTPUT
-          echo "CHECK=true" >> $GITHUB_OUTPUT
-        else
-          echo "CHECK=false" >> $GITHUB_OUTPUT
-        fi
+    #       curl \
+    #       -X POST \
+    #       -H "Accept: application/vnd.github+json" \
+    #       -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+    #       -H "Content-Type: $(file -b --mime-type build/lavap)" \
+    #       --data-binary @build/lavap \
+    #       $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavap-${{ github.event.release.tag_name }}-linux-amd64/g')
 
-    - name: Upload build to release
-      run: |
-        upload_binary () {
-          echo "Uploading binary to: $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad/g')"
-          curl \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: $(file -b --mime-type build/lavad)" \
-          --data-binary @build/lavad \
-          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad-${{ github.event.release.tag_name }}-linux-amd64/g')
+    #       curl \
+    #       -X POST \
+    #       -H "Accept: application/vnd.github+json" \
+    #       -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+    #       -H "Content-Type: $(file -b --mime-type build/lavavisor)" \
+    #       --data-binary @build/lavavisor \
+    #       $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavavisor-${{ github.event.release.tag_name }}-linux-amd64/g')
+    #     }
 
-          curl \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: $(file -b --mime-type build/lavap)" \
-          --data-binary @build/lavap \
-          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavap-${{ github.event.release.tag_name }}-linux-amd64/g')
+    #     delete_binary(){
+    #       echo "Deleting existing binary"
+    #       curl \
+    #         -X DELETE \
+    #         -H "Accept: application/vnd.github+json" \
+    #         -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+    #         ${{ steps.existing_asset.outputs.URL }}
+    #     }
 
-          curl \
-          -X POST \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: $(file -b --mime-type build/lavavisor)" \
-          --data-binary @build/lavavisor \
-          $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavavisor-${{ github.event.release.tag_name }}-linux-amd64/g')
-        }
+    #     if ${{ steps.existing_asset.outputs.CHECK }}; then
+    #       delete_binary
+    #       upload_binary
+    #     else 
+    #       upload_binary
+    #     fi
 
-        delete_binary(){
-          echo "Deleting existing binary"
-          curl \
-            -X DELETE \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            ${{ steps.existing_asset.outputs.URL }}
-        }
+    # - name: Check for existing Checksum
+    #   id: existing_checksum
+    #   run: |
+    #     #Get Checksum of new build
+    #     export CHECKSUM=$(sha256sum build/lavad | cut -d " " -f1)
 
-        if ${{ steps.existing_asset.outputs.CHECK }}; then
-          delete_binary
-          upload_binary
-        else 
-          upload_binary
-        fi
-
-    - name: Check for existing Checksum
-      id: existing_checksum
-      run: |
-        #Get Checksum of new build
-        export CHECKSUM=$(sha256sum build/lavad | cut -d " " -f1)
-
-        #Get the existing body
-        existing_body=$(curl \
-          -H "Accept: application/vnd.github+json" \
-          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: $(file -b --mime-type build/lavad)" \
-          ${{ github.event.release.url }} | jq '.body')
+    #     #Get the existing body
+    #     existing_body=$(curl \
+    #       -H "Accept: application/vnd.github+json" \
+    #       -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+    #       -H "Content-Type: $(file -b --mime-type build/lavad)" \
+    #       ${{ github.event.release.url }} | jq '.body')
         
-        if [[ $existing_body == *"$CHECKSUM"* ]]; then
-          echo "CHECK=true" >> $GITHUB_OUTPUT
-          echo "Checksum hasn't changed."
-        else
-          echo "CHECK=false" >> $GITHUB_OUTPUT
-        cat <<EOF >> /tmp/body
-        $(echo $existing_body | sed '$s/.$//')\r\nChecksum $CHECKSUM"
-        EOF
-          echo -E "NEW_BODY=$(cat /tmp/body)" >> $GITHUB_OUTPUT
-        fi
+    #     if [[ $existing_body == *"$CHECKSUM"* ]]; then
+    #       echo "CHECK=true" >> $GITHUB_OUTPUT
+    #       echo "Checksum hasn't changed."
+    #     else
+    #       echo "CHECK=false" >> $GITHUB_OUTPUT
+    #     cat <<EOF >> /tmp/body
+    #     $(echo $existing_body | sed '$s/.$//')\r\nChecksum $CHECKSUM"
+    #     EOF
+    #       echo -E "NEW_BODY=$(cat /tmp/body)" >> $GITHUB_OUTPUT
+    #     fi
 
-    - name: Append Binary Checksum
-      uses: actions/github-script@v6
-      if: ${{ steps.existing_checksum.outputs.CHECK }} == 'false'
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          const { data } = await github.rest.repos.updateRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            release_id: context.payload.release.id,
-            body: ${{ steps.existing_checksum.outputs.NEW_BODY }}
-          });
+    # - name: Append Binary Checksum
+    #   uses: actions/github-script@v6
+    #   if: ${{ steps.existing_checksum.outputs.CHECK }} == 'false'
+    #   with:
+    #     github-token: ${{ secrets.GITHUB_TOKEN }}
+    #     script: |
+    #       const { data } = await github.rest.repos.updateRelease({
+    #         owner: context.repo.owner,
+    #         repo: context.repo.repo,
+    #         release_id: context.payload.release.id,
+    #         body: ${{ steps.existing_checksum.outputs.NEW_BODY }}
+    #       });

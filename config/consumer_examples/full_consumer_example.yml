@@ -32,22 +32,22 @@ endpoints:
     - chain-id: BASET
       api-interface: jsonrpc
       network-address: 127.0.0.1:3353
-    - chain-id: COS3
+    - chain-id: OSMOSIS
       api-interface: rest
       network-address: 127.0.0.1:3354
-    - chain-id: COS3
+    - chain-id: OSMOSIS
       api-interface: tendermintrpc
       network-address: 127.0.0.1:3355
-    - chain-id: COS3
+    - chain-id: OSMOSIS
       api-interface: grpc
       network-address: 127.0.0.1:3356
-    - chain-id: COS4
+    - chain-id: OSMOSIST
       api-interface: rest
       network-address: 127.0.0.1:3357
-    - chain-id: COS4
+    - chain-id: OSMOSIST
       api-interface: tendermintrpc
       network-address: 127.0.0.1:3358
-    - chain-id: COS4
+    - chain-id: OSMOSIST
       api-interface: grpc
       network-address: 127.0.0.1:3359
     - chain-id: LAV1
@@ -59,13 +59,13 @@ endpoints:
     - chain-id: LAV1
       api-interface: grpc
       network-address: 127.0.0.1:3362
-    - chain-id: COS5
+    - chain-id: COSMOSHUB
       api-interface: rest
       network-address: 127.0.0.1:3363
-    - chain-id: COS5
+    - chain-id: COSMOSHUB
       api-interface: tendermintrpc
       network-address: 127.0.0.1:3364
-    - chain-id: COS5
+    - chain-id: COSMOSHUB
       api-interface: grpc
       network-address: 127.0.0.1:3365
     - chain-id: JUN1
