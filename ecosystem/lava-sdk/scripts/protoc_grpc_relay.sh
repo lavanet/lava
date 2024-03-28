@@ -40,12 +40,10 @@ protoc \
     "$LAVA_PROTO_DIR/lavanet/lava/pairing/badges.proto" \
     "$LAVA_PROTO_DIR/lavanet/lava/pairing/params.proto" \
     "$LAVA_PROTO_DIR/lavanet/lava/pairing/query.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/pairing/provider_payment_storage.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/pairing/unique_payment_storage_client_provider.proto" \
     "$LAVA_PROTO_DIR/lavanet/lava/subscription/subscription.proto" \
     "$LAVA_PROTO_DIR/lavanet/lava/projects/project.proto" \
     "$LAVA_PROTO_DIR/lavanet/lava/plans/policy.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/pairing/epoch_payments.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/pairing/epoch_cu.proto" \
     "$LAVA_PROTO_DIR/lavanet/lava/spec/spec.proto" \
     "$LAVA_PROTO_DIR/lavanet/lava/spec/api_collection.proto" \
     "$LAVA_PROTO_DIR/lavanet/lava/epochstorage/stake_entry.proto" \

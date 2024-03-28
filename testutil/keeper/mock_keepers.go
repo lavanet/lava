@@ -161,8 +161,17 @@ type MockBlockStore struct {
 	blockHistory map[int64]*tenderminttypes.Block
 }
 
+var (
+	fixedTime bool
+	fixedDate = time.Date(2024, time.March, 1, 1, 1, 1, 1, time.UTC)
+)
+
 func (b *MockBlockStore) SetHeight(height int64) {
 	b.height = height
+}
+
+func SetFixedTime() {
+	fixedTime = true
 }
 
 func (b *MockBlockStore) AdvanceBlock(blockTime time.Duration) {
@@ -175,8 +184,10 @@ func (b *MockBlockStore) AdvanceBlock(blockTime time.Duration) {
 	blockHeader.Height = blockInt64
 	if prevBlock, ok := b.blockHistory[b.height-1]; ok {
 		blockHeader.Time = prevBlock.Time.Add(blockTime)
-	} else {
+	} else if !fixedTime {
 		blockHeader.Time = time.Now().Add(blockTime)
+	} else {
+		blockHeader.Time = fixedDate.Add(blockTime)
 	}
 
 	// update the blockstore's block history with current block

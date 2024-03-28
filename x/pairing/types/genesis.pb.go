@@ -79,13 +79,13 @@ func (m *BadgeUsedCu) GetUsedCu() uint64 {
 
 // GenesisState defines the pairing module's genesis state.
 type GenesisState struct {
-	Params                                 Params                               `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
-	UniquePaymentStorageClientProviderList []UniquePaymentStorageClientProvider `protobuf:"bytes,2,rep,name=uniquePaymentStorageClientProviderList,proto3" json:"uniquePaymentStorageClientProviderList"`
-	ProviderPaymentStorageList             []ProviderPaymentStorage             `protobuf:"bytes,3,rep,name=providerPaymentStorageList,proto3" json:"providerPaymentStorageList"`
-	EpochPaymentsList                      []EpochPayments                      `protobuf:"bytes,4,rep,name=epochPaymentsList,proto3" json:"epochPaymentsList"`
-	BadgeUsedCuList                        []BadgeUsedCu                        `protobuf:"bytes,5,rep,name=badgeUsedCuList,proto3" json:"badgeUsedCuList"`
-	BadgesTS                               types.GenesisState                   `protobuf:"bytes,6,opt,name=badgesTS,proto3" json:"badgesTS"`
-	ProviderQosFS                          types1.GenesisState                  `protobuf:"bytes,7,opt,name=providerQosFS,proto3" json:"providerQosFS"`
+	Params                   Params                           `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	BadgeUsedCuList          []BadgeUsedCu                    `protobuf:"bytes,5,rep,name=badgeUsedCuList,proto3" json:"badgeUsedCuList"`
+	BadgesTS                 types.GenesisState               `protobuf:"bytes,6,opt,name=badgesTS,proto3" json:"badgesTS"`
+	ProviderQosFS            types1.GenesisState              `protobuf:"bytes,7,opt,name=providerQosFS,proto3" json:"providerQosFS"`
+	UniqueEpochSessions      []UniqueEpochSessionGenesis      `protobuf:"bytes,8,rep,name=unique_epoch_sessions,json=uniqueEpochSessions,proto3" json:"unique_epoch_sessions"`
+	ProviderEpochCus         []ProviderEpochCuGenesis         `protobuf:"bytes,9,rep,name=provider_epoch_cus,json=providerEpochCus,proto3" json:"provider_epoch_cus"`
+	ProviderConsumerEpochCus []ProviderConsumerEpochCuGenesis `protobuf:"bytes,10,rep,name=provider_consumer_epoch_cus,json=providerConsumerEpochCus,proto3" json:"provider_consumer_epoch_cus"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
@@ -128,27 +128,6 @@ func (m *GenesisState) GetParams() Params {
 	return Params{}
 }
 
-func (m *GenesisState) GetUniquePaymentStorageClientProviderList() []UniquePaymentStorageClientProvider {
-	if m != nil {
-		return m.UniquePaymentStorageClientProviderList
-	}
-	return nil
-}
-
-func (m *GenesisState) GetProviderPaymentStorageList() []ProviderPaymentStorage {
-	if m != nil {
-		return m.ProviderPaymentStorageList
-	}
-	return nil
-}
-
-func (m *GenesisState) GetEpochPaymentsList() []EpochPayments {
-	if m != nil {
-		return m.EpochPaymentsList
-	}
-	return nil
-}
-
 func (m *GenesisState) GetBadgeUsedCuList() []BadgeUsedCu {
 	if m != nil {
 		return m.BadgeUsedCuList
@@ -170,9 +149,253 @@ func (m *GenesisState) GetProviderQosFS() types1.GenesisState {
 	return types1.GenesisState{}
 }
 
+func (m *GenesisState) GetUniqueEpochSessions() []UniqueEpochSessionGenesis {
+	if m != nil {
+		return m.UniqueEpochSessions
+	}
+	return nil
+}
+
+func (m *GenesisState) GetProviderEpochCus() []ProviderEpochCuGenesis {
+	if m != nil {
+		return m.ProviderEpochCus
+	}
+	return nil
+}
+
+func (m *GenesisState) GetProviderConsumerEpochCus() []ProviderConsumerEpochCuGenesis {
+	if m != nil {
+		return m.ProviderConsumerEpochCus
+	}
+	return nil
+}
+
+type UniqueEpochSessionGenesis struct {
+	Epoch     uint64 `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	Provider  string `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	Project   string `protobuf:"bytes,3,opt,name=project,proto3" json:"project,omitempty"`
+	ChainId   string `protobuf:"bytes,4,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	SessionId uint64 `protobuf:"varint,5,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+}
+
+func (m *UniqueEpochSessionGenesis) Reset()         { *m = UniqueEpochSessionGenesis{} }
+func (m *UniqueEpochSessionGenesis) String() string { return proto.CompactTextString(m) }
+func (*UniqueEpochSessionGenesis) ProtoMessage()    {}
+func (*UniqueEpochSessionGenesis) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dbd1e49b8b57595b, []int{2}
+}
+func (m *UniqueEpochSessionGenesis) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UniqueEpochSessionGenesis) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UniqueEpochSessionGenesis.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UniqueEpochSessionGenesis) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UniqueEpochSessionGenesis.Merge(m, src)
+}
+func (m *UniqueEpochSessionGenesis) XXX_Size() int {
+	return m.Size()
+}
+func (m *UniqueEpochSessionGenesis) XXX_DiscardUnknown() {
+	xxx_messageInfo_UniqueEpochSessionGenesis.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UniqueEpochSessionGenesis proto.InternalMessageInfo
+
+func (m *UniqueEpochSessionGenesis) GetEpoch() uint64 {
+	if m != nil {
+		return m.Epoch
+	}
+	return 0
+}
+
+func (m *UniqueEpochSessionGenesis) GetProvider() string {
+	if m != nil {
+		return m.Provider
+	}
+	return ""
+}
+
+func (m *UniqueEpochSessionGenesis) GetProject() string {
+	if m != nil {
+		return m.Project
+	}
+	return ""
+}
+
+func (m *UniqueEpochSessionGenesis) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *UniqueEpochSessionGenesis) GetSessionId() uint64 {
+	if m != nil {
+		return m.SessionId
+	}
+	return 0
+}
+
+type ProviderEpochCuGenesis struct {
+	Epoch           uint64          `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	Provider        string          `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	ChainId         string          `protobuf:"bytes,3,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ProviderEpochCu ProviderEpochCu `protobuf:"bytes,4,opt,name=provider_epoch_cu,json=providerEpochCu,proto3" json:"provider_epoch_cu"`
+}
+
+func (m *ProviderEpochCuGenesis) Reset()         { *m = ProviderEpochCuGenesis{} }
+func (m *ProviderEpochCuGenesis) String() string { return proto.CompactTextString(m) }
+func (*ProviderEpochCuGenesis) ProtoMessage()    {}
+func (*ProviderEpochCuGenesis) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dbd1e49b8b57595b, []int{3}
+}
+func (m *ProviderEpochCuGenesis) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ProviderEpochCuGenesis) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ProviderEpochCuGenesis.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ProviderEpochCuGenesis) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProviderEpochCuGenesis.Merge(m, src)
+}
+func (m *ProviderEpochCuGenesis) XXX_Size() int {
+	return m.Size()
+}
+func (m *ProviderEpochCuGenesis) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProviderEpochCuGenesis.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProviderEpochCuGenesis proto.InternalMessageInfo
+
+func (m *ProviderEpochCuGenesis) GetEpoch() uint64 {
+	if m != nil {
+		return m.Epoch
+	}
+	return 0
+}
+
+func (m *ProviderEpochCuGenesis) GetProvider() string {
+	if m != nil {
+		return m.Provider
+	}
+	return ""
+}
+
+func (m *ProviderEpochCuGenesis) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *ProviderEpochCuGenesis) GetProviderEpochCu() ProviderEpochCu {
+	if m != nil {
+		return m.ProviderEpochCu
+	}
+	return ProviderEpochCu{}
+}
+
+type ProviderConsumerEpochCuGenesis struct {
+	Epoch                   uint64                  `protobuf:"varint,1,opt,name=epoch,proto3" json:"epoch,omitempty"`
+	Provider                string                  `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	Project                 string                  `protobuf:"bytes,3,opt,name=project,proto3" json:"project,omitempty"`
+	ChainId                 string                  `protobuf:"bytes,4,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
+	ProviderConsumerEpochCu ProviderConsumerEpochCu `protobuf:"bytes,5,opt,name=provider_consumer_epoch_cu,json=providerConsumerEpochCu,proto3" json:"provider_consumer_epoch_cu"`
+}
+
+func (m *ProviderConsumerEpochCuGenesis) Reset()         { *m = ProviderConsumerEpochCuGenesis{} }
+func (m *ProviderConsumerEpochCuGenesis) String() string { return proto.CompactTextString(m) }
+func (*ProviderConsumerEpochCuGenesis) ProtoMessage()    {}
+func (*ProviderConsumerEpochCuGenesis) Descriptor() ([]byte, []int) {
+	return fileDescriptor_dbd1e49b8b57595b, []int{4}
+}
+func (m *ProviderConsumerEpochCuGenesis) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ProviderConsumerEpochCuGenesis) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ProviderConsumerEpochCuGenesis.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ProviderConsumerEpochCuGenesis) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProviderConsumerEpochCuGenesis.Merge(m, src)
+}
+func (m *ProviderConsumerEpochCuGenesis) XXX_Size() int {
+	return m.Size()
+}
+func (m *ProviderConsumerEpochCuGenesis) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProviderConsumerEpochCuGenesis.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProviderConsumerEpochCuGenesis proto.InternalMessageInfo
+
+func (m *ProviderConsumerEpochCuGenesis) GetEpoch() uint64 {
+	if m != nil {
+		return m.Epoch
+	}
+	return 0
+}
+
+func (m *ProviderConsumerEpochCuGenesis) GetProvider() string {
+	if m != nil {
+		return m.Provider
+	}
+	return ""
+}
+
+func (m *ProviderConsumerEpochCuGenesis) GetProject() string {
+	if m != nil {
+		return m.Project
+	}
+	return ""
+}
+
+func (m *ProviderConsumerEpochCuGenesis) GetChainId() string {
+	if m != nil {
+		return m.ChainId
+	}
+	return ""
+}
+
+func (m *ProviderConsumerEpochCuGenesis) GetProviderConsumerEpochCu() ProviderConsumerEpochCu {
+	if m != nil {
+		return m.ProviderConsumerEpochCu
+	}
+	return ProviderConsumerEpochCu{}
+}
+
 func init() {
 	proto.RegisterType((*BadgeUsedCu)(nil), "lavanet.lava.pairing.BadgeUsedCu")
 	proto.RegisterType((*GenesisState)(nil), "lavanet.lava.pairing.GenesisState")
+	proto.RegisterType((*UniqueEpochSessionGenesis)(nil), "lavanet.lava.pairing.UniqueEpochSessionGenesis")
+	proto.RegisterType((*ProviderEpochCuGenesis)(nil), "lavanet.lava.pairing.ProviderEpochCuGenesis")
+	proto.RegisterType((*ProviderConsumerEpochCuGenesis)(nil), "lavanet.lava.pairing.ProviderConsumerEpochCuGenesis")
 }
 
 func init() {
@@ -180,39 +403,47 @@ func init() {
 }
 
 var fileDescriptor_dbd1e49b8b57595b = []byte{
-	// 500 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0xcd, 0x6e, 0xd3, 0x40,
-	0x10, 0xc7, 0xe3, 0x36, 0x4d, 0xd1, 0xa6, 0x80, 0xba, 0xaa, 0x84, 0x15, 0x21, 0x93, 0xa6, 0x02,
-	0x52, 0x09, 0xd9, 0x52, 0x7b, 0x41, 0xdc, 0x9a, 0x0a, 0x7a, 0x80, 0x43, 0x3e, 0x5a, 0x21, 0x71,
-	0xb1, 0x36, 0xc9, 0xe0, 0xae, 0x68, 0xbc, 0xc6, 0xbb, 0xae, 0x9a, 0xb7, 0xe0, 0xc4, 0x03, 0xf0,
-	0x34, 0x3d, 0xf6, 0xc8, 0x09, 0xa1, 0xe4, 0x45, 0x90, 0xc7, 0x93, 0x34, 0x2e, 0xcb, 0xc7, 0xc9,
-	0xde, 0xf8, 0x37, 0xbf, 0xff, 0x66, 0x66, 0x97, 0xb5, 0x2e, 0xc4, 0xa5, 0x88, 0xc1, 0x04, 0xf9,
-	0x33, 0x48, 0x84, 0x4c, 0x65, 0x1c, 0x05, 0x11, 0xc4, 0xa0, 0xa5, 0xf6, 0x93, 0x54, 0x19, 0xc5,
-	0x77, 0x88, 0xf1, 0xf3, 0xa7, 0x4f, 0x4c, 0x63, 0x27, 0x52, 0x91, 0x42, 0x20, 0xc8, 0xdf, 0x0a,
-	0xb6, 0xb1, 0x6b, 0xf5, 0x25, 0x22, 0x15, 0x13, 0xd2, 0x35, 0x8e, 0xac, 0x48, 0x16, 0xcb, 0xcf,
-	0x19, 0x84, 0x89, 0x98, 0x4e, 0x20, 0x36, 0xa1, 0x36, 0x2a, 0x15, 0x11, 0x84, 0xa3, 0x0b, 0x99,
-	0x2f, 0x93, 0x54, 0x5d, 0xca, 0x31, 0xa4, 0xa4, 0x38, 0xb4, 0xa7, 0x10, 0x74, 0x57, 0x42, 0x45,
-	0xfb, 0xd6, 0x22, 0x48, 0xd4, 0xe8, 0x7c, 0x51, 0xa1, 0xad, 0xe8, 0x47, 0x79, 0x25, 0x8c, 0x54,
-	0x71, 0xae, 0x83, 0xe5, 0x8a, 0xd0, 0xbd, 0x12, 0x6a, 0xe4, 0x04, 0xd2, 0x82, 0xc3, 0xd7, 0x02,
-	0x6a, 0xf5, 0x58, 0xbd, 0x23, 0xc6, 0x11, 0x9c, 0x69, 0x18, 0x1f, 0x67, 0x7c, 0x9f, 0x6d, 0x0f,
-	0xf3, 0x65, 0x98, 0x69, 0x18, 0x87, 0xa3, 0x2c, 0xfc, 0x04, 0x53, 0xd7, 0x69, 0x3a, 0xed, 0xad,
-	0xfe, 0x83, 0xe1, 0x2d, 0xf7, 0x16, 0xa6, 0xfc, 0x11, 0xdb, 0x24, 0xc8, 0x5d, 0x6b, 0x3a, 0xed,
-	0x6a, 0xbf, 0x96, 0xe1, 0xb7, 0xd6, 0xb7, 0x0d, 0xb6, 0x75, 0x52, 0x8c, 0x69, 0x60, 0x84, 0x01,
-	0xfe, 0x8a, 0xd5, 0x8a, 0x36, 0xa3, 0xa9, 0x7e, 0xf0, 0xd8, 0xb7, 0x8d, 0xcd, 0xef, 0x22, 0xd3,
-	0xa9, 0x5e, 0xff, 0x78, 0x52, 0xe9, 0x53, 0x05, 0xff, 0xea, 0xb0, 0x67, 0xc5, 0x00, 0xba, 0x45,
-	0x23, 0x06, 0x45, 0xe7, 0x8e, 0xb1, 0xfb, 0x5d, 0xea, 0xeb, 0x3b, 0xa9, 0x8d, 0xbb, 0xd6, 0x5c,
-	0x6f, 0xd7, 0x0f, 0x5e, 0xda, 0xe5, 0x67, 0xff, 0x74, 0x50, 0xf0, 0x7f, 0xa6, 0xf1, 0x94, 0x35,
-	0x16, 0x53, 0x2d, 0xb3, 0xb8, 0x97, 0x75, 0xdc, 0xcb, 0x8b, 0x3f, 0xfc, 0x51, 0x6b, 0x1d, 0xe5,
-	0xff, 0xc5, 0xca, 0xdf, 0xb3, 0x6d, 0x3c, 0x14, 0xf4, 0x49, 0x63, 0x54, 0x15, 0xa3, 0xf6, 0xec,
-	0x51, 0xaf, 0x57, 0x71, 0x4a, 0xf8, 0xdd, 0xc1, 0x7b, 0xec, 0xe1, 0xca, 0x74, 0x51, 0xbb, 0x81,
-	0xda, 0x5d, 0xbb, 0x76, 0xe5, 0xc8, 0x90, 0xf4, 0x6e, 0x3d, 0x3f, 0x61, 0xf7, 0xf0, 0x27, 0x7d,
-	0x3a, 0x70, 0x6b, 0x38, 0xf6, 0xa7, 0x65, 0xd7, 0xed, 0x81, 0xf4, 0x57, 0x4f, 0x0b, 0xf9, 0x96,
-	0xc5, 0xfc, 0x94, 0xdd, 0x5f, 0xb4, 0xa4, 0xa7, 0xf4, 0x9b, 0x81, 0xbb, 0x89, 0xb6, 0x76, 0xd9,
-	0x56, 0xba, 0x09, 0x36, 0x61, 0x59, 0xd2, 0x39, 0xba, 0x9e, 0x79, 0xce, 0xcd, 0xcc, 0x73, 0x7e,
-	0xce, 0x3c, 0xe7, 0xcb, 0xdc, 0xab, 0xdc, 0xcc, 0xbd, 0xca, 0xf7, 0xb9, 0x57, 0xf9, 0xf0, 0x3c,
-	0x92, 0xe6, 0x3c, 0x1b, 0xfa, 0x23, 0x35, 0x09, 0x4a, 0x37, 0xe8, 0x6a, 0x79, 0x33, 0xcd, 0x34,
-	0x01, 0x3d, 0xac, 0xe1, 0x0d, 0x3a, 0xfc, 0x15, 0x00, 0x00, 0xff, 0xff, 0x86, 0x08, 0xe8, 0x13,
-	0xa9, 0x04, 0x00, 0x00,
+	// 628 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x54, 0x3f, 0x6f, 0xd3, 0x40,
+	0x14, 0x8f, 0x1b, 0x27, 0x75, 0x5f, 0x0a, 0xa4, 0x47, 0xa1, 0x6e, 0x00, 0xd3, 0x1a, 0x21, 0x52,
+	0x09, 0x6c, 0x29, 0x30, 0xb1, 0x91, 0x08, 0xaa, 0x06, 0x06, 0x92, 0xb4, 0x42, 0x62, 0x31, 0x8e,
+	0x7d, 0x38, 0x07, 0xc4, 0x67, 0x7c, 0x76, 0xd5, 0x7c, 0x0b, 0x26, 0x76, 0xbe, 0x08, 0x73, 0xc7,
+	0x8e, 0x4c, 0x08, 0x25, 0x9f, 0x82, 0x0d, 0xf9, 0x7c, 0x49, 0xe3, 0xc6, 0xa9, 0x04, 0x03, 0x93,
+	0xfd, 0xee, 0xfd, 0xde, 0xef, 0xf7, 0xfe, 0xdd, 0x81, 0xfe, 0xc9, 0x3e, 0xb6, 0x7d, 0x1c, 0x99,
+	0xc9, 0xd7, 0x0c, 0x6c, 0x12, 0x12, 0xdf, 0x33, 0x3d, 0xec, 0x63, 0x46, 0x98, 0x11, 0x84, 0x34,
+	0xa2, 0x68, 0x53, 0x60, 0x8c, 0xe4, 0x6b, 0x08, 0x4c, 0x6d, 0xd3, 0xa3, 0x1e, 0xe5, 0x00, 0x33,
+	0xf9, 0x4b, 0xb1, 0xb5, 0xdd, 0x5c, 0xbe, 0xc0, 0x0e, 0xed, 0xa1, 0xa0, 0xab, 0xdd, 0xcb, 0x85,
+	0xe0, 0x80, 0x3a, 0x03, 0xcb, 0x89, 0x05, 0x68, 0x2f, 0x03, 0x7a, 0x4f, 0x4e, 0xec, 0x88, 0x50,
+	0x9f, 0x45, 0x34, 0xc4, 0x33, 0x2b, 0x97, 0x2f, 0x22, 0x43, 0x1c, 0xa6, 0x38, 0xfe, 0x9b, 0x82,
+	0xf4, 0x0e, 0x54, 0x9a, 0xb6, 0xeb, 0xe1, 0x23, 0x86, 0xdd, 0x56, 0x8c, 0xf6, 0x60, 0xa3, 0x9f,
+	0x98, 0x56, 0xcc, 0xb0, 0x6b, 0x39, 0xb1, 0xf5, 0x11, 0x8f, 0x54, 0x69, 0x47, 0xaa, 0xaf, 0x77,
+	0xaf, 0xf6, 0xcf, 0x71, 0x2f, 0xf1, 0x08, 0x6d, 0xc1, 0xaa, 0x00, 0xa9, 0x2b, 0x3b, 0x52, 0x5d,
+	0xee, 0x96, 0x63, 0xee, 0xd3, 0xbf, 0x96, 0x60, 0x7d, 0x3f, 0x6d, 0x54, 0x2f, 0xb2, 0x23, 0x8c,
+	0x9e, 0x42, 0x39, 0x2d, 0x94, 0x33, 0x55, 0x1a, 0xb7, 0x8d, 0xbc, 0xc6, 0x19, 0xaf, 0x39, 0xa6,
+	0x29, 0x9f, 0xfe, 0xbc, 0x5b, 0xe8, 0x8a, 0x08, 0xd4, 0x81, 0x6b, 0x73, 0xba, 0xaf, 0x08, 0x8b,
+	0xd4, 0xd2, 0x4e, 0xb1, 0x5e, 0x69, 0xec, 0xe6, 0x93, 0xcc, 0x15, 0x23, 0x98, 0x2e, 0xc6, 0xa3,
+	0x7d, 0x50, 0xf8, 0x11, 0x3b, 0xec, 0xa9, 0x65, 0x9e, 0xd0, 0xfd, 0x2c, 0xd7, 0x79, 0xab, 0x8c,
+	0xf9, 0x3a, 0x04, 0xdf, 0x2c, 0x18, 0x1d, 0xc2, 0x95, 0x20, 0xa4, 0xc7, 0xc4, 0xc5, 0x61, 0x87,
+	0xb2, 0x17, 0x3d, 0x75, 0x95, 0xb3, 0xd5, 0xb3, 0x6c, 0x99, 0x19, 0xe5, 0x11, 0x66, 0x49, 0x10,
+	0x81, 0x1b, 0xb1, 0x4f, 0x3e, 0xc7, 0xd8, 0x4a, 0x47, 0xcf, 0x30, 0x63, 0x49, 0xb8, 0xaa, 0xf0,
+	0xba, 0xcd, 0xfc, 0xba, 0x8f, 0x78, 0xc8, 0xf3, 0x24, 0xa2, 0x97, 0x06, 0x08, 0x25, 0x21, 0x72,
+	0x3d, 0x5e, 0x00, 0x30, 0xf4, 0x0e, 0xd0, 0x54, 0xdb, 0x9a, 0xee, 0x19, 0x53, 0xd7, 0xb8, 0xce,
+	0xc3, 0x25, 0x43, 0x12, 0x78, 0x4e, 0xd4, 0x8a, 0xb3, 0x22, 0xd5, 0x20, 0xeb, 0x65, 0x68, 0x04,
+	0xb7, 0x66, 0x0a, 0x0e, 0xf5, 0x59, 0x3c, 0xcc, 0x48, 0x01, 0x97, 0x7a, 0x72, 0xb9, 0x54, 0x4b,
+	0xc4, 0xe5, 0x4a, 0xaa, 0x41, 0x3e, 0x8a, 0xb5, 0x65, 0x65, 0xa5, 0x5a, 0x6c, 0xcb, 0x4a, 0xb1,
+	0x2a, 0xb7, 0x65, 0x45, 0xae, 0x96, 0xf4, 0x6f, 0x12, 0x6c, 0x2f, 0xed, 0x13, 0xda, 0x84, 0x12,
+	0x4f, 0x8c, 0x2f, 0xa9, 0xdc, 0x4d, 0x0d, 0x54, 0x03, 0x65, 0xaa, 0xc0, 0xd7, 0x7c, 0xad, 0x3b,
+	0xb3, 0x91, 0x0a, 0xab, 0x41, 0x48, 0x3f, 0x60, 0x27, 0x52, 0x8b, 0xdc, 0x35, 0x35, 0xd1, 0x36,
+	0x28, 0xce, 0xc0, 0x26, 0xbe, 0x45, 0x5c, 0x55, 0x4e, 0x5d, 0xdc, 0x3e, 0x70, 0xd1, 0x1d, 0x00,
+	0x31, 0xd1, 0xc4, 0x59, 0xe2, 0x5a, 0x6b, 0xe2, 0xe4, 0xc0, 0xd5, 0xbf, 0x4b, 0x70, 0x33, 0xbf,
+	0xc7, 0xff, 0x90, 0xe0, 0x7c, 0x1a, 0xc5, 0x6c, 0x1a, 0x6f, 0x60, 0x63, 0x61, 0xf4, 0x3c, 0xd5,
+	0x85, 0xdb, 0xb0, 0x64, 0xf2, 0xd3, 0xdb, 0x75, 0x61, 0xe4, 0xfa, 0x6f, 0x09, 0xb4, 0xcb, 0x27,
+	0xf7, 0xbf, 0x3a, 0x1d, 0x40, 0x6d, 0xf9, 0xee, 0xf1, 0xce, 0x57, 0x1a, 0x8f, 0xfe, 0x6a, 0xf5,
+	0x44, 0xcd, 0x5b, 0x4b, 0x76, 0xae, 0xf9, 0xec, 0x74, 0xac, 0x49, 0x67, 0x63, 0x4d, 0xfa, 0x35,
+	0xd6, 0xa4, 0x2f, 0x13, 0xad, 0x70, 0x36, 0xd1, 0x0a, 0x3f, 0x26, 0x5a, 0xe1, 0xed, 0x03, 0x8f,
+	0x44, 0x83, 0xb8, 0x6f, 0x38, 0x74, 0x68, 0x66, 0x9e, 0xe5, 0x93, 0xd9, 0x43, 0x1f, 0x8d, 0x02,
+	0xcc, 0xfa, 0x65, 0xfe, 0x2c, 0x3f, 0xfe, 0x13, 0x00, 0x00, 0xff, 0xff, 0x16, 0x73, 0xa7, 0xf7,
+	0x80, 0x06, 0x00, 0x00,
 }
 
 func (m *BadgeUsedCu) Marshal() (dAtA []byte, err error) {
@@ -270,6 +501,48 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.ProviderConsumerEpochCus) > 0 {
+		for iNdEx := len(m.ProviderConsumerEpochCus) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ProviderConsumerEpochCus[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x52
+		}
+	}
+	if len(m.ProviderEpochCus) > 0 {
+		for iNdEx := len(m.ProviderEpochCus) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ProviderEpochCus[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x4a
+		}
+	}
+	if len(m.UniqueEpochSessions) > 0 {
+		for iNdEx := len(m.UniqueEpochSessions) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.UniqueEpochSessions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x42
+		}
+	}
 	{
 		size, err := m.ProviderQosFS.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -304,48 +577,6 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x2a
 		}
 	}
-	if len(m.EpochPaymentsList) > 0 {
-		for iNdEx := len(m.EpochPaymentsList) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.EpochPaymentsList[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenesis(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x22
-		}
-	}
-	if len(m.ProviderPaymentStorageList) > 0 {
-		for iNdEx := len(m.ProviderPaymentStorageList) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.ProviderPaymentStorageList[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenesis(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1a
-		}
-	}
-	if len(m.UniquePaymentStorageClientProviderList) > 0 {
-		for iNdEx := len(m.UniquePaymentStorageClientProviderList) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.UniquePaymentStorageClientProviderList[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintGenesis(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
 	{
 		size, err := m.Params.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -356,6 +587,171 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *UniqueEpochSessionGenesis) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UniqueEpochSessionGenesis) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UniqueEpochSessionGenesis) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.SessionId != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.SessionId))
+		i--
+		dAtA[i] = 0x28
+	}
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Project) > 0 {
+		i -= len(m.Project)
+		copy(dAtA[i:], m.Project)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Project)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Provider) > 0 {
+		i -= len(m.Provider)
+		copy(dAtA[i:], m.Provider)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Provider)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Epoch != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Epoch))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ProviderEpochCuGenesis) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ProviderEpochCuGenesis) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ProviderEpochCuGenesis) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.ProviderEpochCu.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenesis(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x22
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Provider) > 0 {
+		i -= len(m.Provider)
+		copy(dAtA[i:], m.Provider)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Provider)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Epoch != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Epoch))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ProviderConsumerEpochCuGenesis) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ProviderConsumerEpochCuGenesis) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ProviderConsumerEpochCuGenesis) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.ProviderConsumerEpochCu.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenesis(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x2a
+	if len(m.ChainId) > 0 {
+		i -= len(m.ChainId)
+		copy(dAtA[i:], m.ChainId)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.ChainId)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.Project) > 0 {
+		i -= len(m.Project)
+		copy(dAtA[i:], m.Project)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Project)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Provider) > 0 {
+		i -= len(m.Provider)
+		copy(dAtA[i:], m.Provider)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Provider)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Epoch != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Epoch))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -394,24 +790,6 @@ func (m *GenesisState) Size() (n int) {
 	_ = l
 	l = m.Params.Size()
 	n += 1 + l + sovGenesis(uint64(l))
-	if len(m.UniquePaymentStorageClientProviderList) > 0 {
-		for _, e := range m.UniquePaymentStorageClientProviderList {
-			l = e.Size()
-			n += 1 + l + sovGenesis(uint64(l))
-		}
-	}
-	if len(m.ProviderPaymentStorageList) > 0 {
-		for _, e := range m.ProviderPaymentStorageList {
-			l = e.Size()
-			n += 1 + l + sovGenesis(uint64(l))
-		}
-	}
-	if len(m.EpochPaymentsList) > 0 {
-		for _, e := range m.EpochPaymentsList {
-			l = e.Size()
-			n += 1 + l + sovGenesis(uint64(l))
-		}
-	}
 	if len(m.BadgeUsedCuList) > 0 {
 		for _, e := range m.BadgeUsedCuList {
 			l = e.Size()
@@ -421,6 +799,99 @@ func (m *GenesisState) Size() (n int) {
 	l = m.BadgesTS.Size()
 	n += 1 + l + sovGenesis(uint64(l))
 	l = m.ProviderQosFS.Size()
+	n += 1 + l + sovGenesis(uint64(l))
+	if len(m.UniqueEpochSessions) > 0 {
+		for _, e := range m.UniqueEpochSessions {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.ProviderEpochCus) > 0 {
+		for _, e := range m.ProviderEpochCus {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.ProviderConsumerEpochCus) > 0 {
+		for _, e := range m.ProviderConsumerEpochCus {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *UniqueEpochSessionGenesis) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Epoch != 0 {
+		n += 1 + sovGenesis(uint64(m.Epoch))
+	}
+	l = len(m.Provider)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.Project)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	if m.SessionId != 0 {
+		n += 1 + sovGenesis(uint64(m.SessionId))
+	}
+	return n
+}
+
+func (m *ProviderEpochCuGenesis) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Epoch != 0 {
+		n += 1 + sovGenesis(uint64(m.Epoch))
+	}
+	l = len(m.Provider)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = m.ProviderEpochCu.Size()
+	n += 1 + l + sovGenesis(uint64(l))
+	return n
+}
+
+func (m *ProviderConsumerEpochCuGenesis) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Epoch != 0 {
+		n += 1 + sovGenesis(uint64(m.Epoch))
+	}
+	l = len(m.Provider)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.Project)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.ChainId)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = m.ProviderConsumerEpochCu.Size()
 	n += 1 + l + sovGenesis(uint64(l))
 	return n
 }
@@ -596,108 +1067,6 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field UniquePaymentStorageClientProviderList", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenesis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.UniquePaymentStorageClientProviderList = append(m.UniquePaymentStorageClientProviderList, UniquePaymentStorageClientProvider{})
-			if err := m.UniquePaymentStorageClientProviderList[len(m.UniquePaymentStorageClientProviderList)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProviderPaymentStorageList", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenesis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ProviderPaymentStorageList = append(m.ProviderPaymentStorageList, ProviderPaymentStorage{})
-			if err := m.ProviderPaymentStorageList[len(m.ProviderPaymentStorageList)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EpochPaymentsList", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowGenesis
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthGenesis
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.EpochPaymentsList = append(m.EpochPaymentsList, EpochPayments{})
-			if err := m.EpochPaymentsList[len(m.EpochPaymentsList)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BadgeUsedCuList", wireType)
@@ -795,6 +1164,656 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.ProviderQosFS.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UniqueEpochSessions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UniqueEpochSessions = append(m.UniqueEpochSessions, UniqueEpochSessionGenesis{})
+			if err := m.UniqueEpochSessions[len(m.UniqueEpochSessions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderEpochCus", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderEpochCus = append(m.ProviderEpochCus, ProviderEpochCuGenesis{})
+			if err := m.ProviderEpochCus[len(m.ProviderEpochCus)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderConsumerEpochCus", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProviderConsumerEpochCus = append(m.ProviderConsumerEpochCus, ProviderConsumerEpochCuGenesis{})
+			if err := m.ProviderConsumerEpochCus[len(m.ProviderConsumerEpochCus)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UniqueEpochSessionGenesis) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UniqueEpochSessionGenesis: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UniqueEpochSessionGenesis: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Epoch", wireType)
+			}
+			m.Epoch = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Epoch |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Provider", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Provider = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Project", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Project = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SessionId", wireType)
+			}
+			m.SessionId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SessionId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ProviderEpochCuGenesis) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ProviderEpochCuGenesis: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ProviderEpochCuGenesis: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Epoch", wireType)
+			}
+			m.Epoch = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Epoch |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Provider", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Provider = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderEpochCu", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ProviderEpochCu.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ProviderConsumerEpochCuGenesis) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ProviderConsumerEpochCuGenesis: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ProviderConsumerEpochCuGenesis: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Epoch", wireType)
+			}
+			m.Epoch = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Epoch |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Provider", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Provider = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Project", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Project = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChainId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChainId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProviderConsumerEpochCu", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.ProviderConsumerEpochCu.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

@@ -14,28 +14,50 @@ func TestGenesis(t *testing.T) {
 	genesisState := types.GenesisState{
 		Params: types.DefaultParams(),
 
-		UniquePaymentStorageClientProviderList: []types.UniquePaymentStorageClientProvider{
+		UniqueEpochSessions: []types.UniqueEpochSessionGenesis{
 			{
-				Index: "0",
+				Epoch:     0,
+				Provider:  "0",
+				Project:   "0",
+				ChainId:   "0",
+				SessionId: 0,
 			},
 			{
-				Index: "1",
+				Epoch:     1,
+				Provider:  "1",
+				Project:   "1",
+				ChainId:   "1",
+				SessionId: 1,
 			},
 		},
-		ProviderPaymentStorageList: []types.ProviderPaymentStorage{
+		ProviderEpochCus: []types.ProviderEpochCuGenesis{
 			{
-				Index: "0",
+				Epoch:           0,
+				Provider:        "0",
+				ChainId:         "0",
+				ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10, ComplainersCu: 100},
 			},
 			{
-				Index: "1",
+				Epoch:           1,
+				Provider:        "1",
+				ChainId:         "1",
+				ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 20, ComplainersCu: 200},
 			},
 		},
-		EpochPaymentsList: []types.EpochPayments{
+		ProviderConsumerEpochCus: []types.ProviderConsumerEpochCuGenesis{
 			{
-				Index: "0",
+				Epoch:                   0,
+				Provider:                "0",
+				Project:                 "0",
+				ChainId:                 "0",
+				ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
 			},
 			{
-				Index: "1",
+				Epoch:                   1,
+				Provider:                "1",
+				Project:                 "1",
+				ChainId:                 "1",
+				ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 20},
 			},
 		},
 		BadgeUsedCuList: []types.BadgeUsedCu{
@@ -57,9 +79,9 @@ func TestGenesis(t *testing.T) {
 	nullify.Fill(&genesisState)
 	nullify.Fill(got)
 
-	require.ElementsMatch(t, genesisState.UniquePaymentStorageClientProviderList, got.UniquePaymentStorageClientProviderList)
-	require.ElementsMatch(t, genesisState.ProviderPaymentStorageList, got.ProviderPaymentStorageList)
-	require.ElementsMatch(t, genesisState.EpochPaymentsList, got.EpochPaymentsList)
+	require.ElementsMatch(t, genesisState.UniqueEpochSessions, got.UniqueEpochSessions)
+	require.ElementsMatch(t, genesisState.ProviderEpochCus, got.ProviderEpochCus)
+	require.ElementsMatch(t, genesisState.ProviderConsumerEpochCus, got.ProviderConsumerEpochCus)
 	require.ElementsMatch(t, genesisState.BadgeUsedCuList, got.BadgeUsedCuList)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

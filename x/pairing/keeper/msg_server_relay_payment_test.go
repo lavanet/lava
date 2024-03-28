@@ -467,9 +467,15 @@ func TestEpochPaymentDeletion(t *testing.T) {
 
 	ts.AdvanceEpochs(ts.EpochsToSave() + 1)
 
-	res, err := ts.QueryPairingListEpochPayments()
-	require.NoError(t, err)
-	require.Equal(t, 0, len(res.EpochPayments))
+	epoch := ts.EpochStart(ts.BlockHeight())
+	listA := ts.Keepers.Pairing.GetAllUniqueEpochSessionForEpoch(ts.Ctx, epoch)
+	require.Len(t, listA, 0)
+
+	_, found := ts.Keepers.Pairing.GetProviderEpochCu(ts.Ctx, epoch, providerAddr, ts.spec.Index)
+	require.False(t, found)
+
+	listB := ts.Keepers.Pairing.GetAllProviderConsumerEpochCu(ts.Ctx, epoch)
+	require.Len(t, listB, 0)
 }
 
 // Test that after the consumer uses some CU it's updated in its project and subscription
@@ -992,17 +998,14 @@ func TestPairingCaching(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	epochPayment, found, _ := ts.Keepers.Pairing.GetEpochPaymentsFromBlock(ts.Ctx, ts.EpochStart())
-	require.True(t, found)
-	require.Len(t, epochPayment.ProviderPaymentStorageKeys, 3)
+	pecs := ts.Keepers.Pairing.GetAllProviderEpochCuStore(ts.Ctx)
+	require.Len(t, pecs, 3)
 
-	UniquePayments := ts.Keepers.Pairing.GetAllUniquePaymentStorageClientProvider(ts.Ctx)
+	UniquePayments := ts.Keepers.Pairing.GetAllUniqueEpochSessionStore(ts.Ctx)
 	require.Len(t, UniquePayments, 3*3*50)
 
-	storages := ts.Keepers.Pairing.GetAllProviderPaymentStorage(ts.Ctx)
-	for _, storage := range storages {
-		require.Len(t, storage.UniquePaymentStorageClientProviderKeys, 3*50)
-	}
+	storages := ts.Keepers.Pairing.GetAllProviderConsumerEpochCuStore(ts.Ctx)
+	require.Len(t, storages, 3*3)
 
 	for i := 0; i < 3; i++ {
 		consumerAcct, _ := ts.GetAccount(common.CONSUMER, i)

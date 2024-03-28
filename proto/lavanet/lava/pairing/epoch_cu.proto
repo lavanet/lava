@@ -1,0 +1,24 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+// UniqueEpochSession is used to detect double spend attacks
+// It's kept in a epoch-prefixed store with a unique index: provider, project ID, chain ID and session ID
+message UniqueEpochSession {
+}
+
+// ProviderEpochCu is used to track the CU of a specific provider in a specific epoch
+// It's kept in a epoch-prefixed store with a unique index: provider address
+message ProviderEpochCu {
+	uint64 serviced_cu = 1;
+	uint64 complainers_cu = 2;
+}
+
+// ProviderConsumerEpochCu is used to track the CU between a specific provider and 
+// consumer in a specific epoch
+// It's kept in a epoch-prefixed store with a unique index: provider and project ID
+message ProviderConsumerEpochCu {
+	uint64 cu = 1;
+}
+
