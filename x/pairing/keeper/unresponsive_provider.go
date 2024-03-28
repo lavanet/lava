@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -73,50 +74,69 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 
 	// check all supported providers from all geolocations prior to making decisions
 	existingProviders := map[string]uint64{}
+	stakeAppliedBlockProviders := map[string]uint64{}
 	for _, providerStakeStorage := range providerStakeStorageList {
 		providerStakeEntriesForChain := providerStakeStorage.GetStakeEntries()
 		// count providers per geolocation
 		for _, providerStakeEntry := range providerStakeEntriesForChain {
 			if !providerStakeEntry.IsFrozen() {
 				existingProviders[providerStakeEntry.GetChain()]++
+				stakeAppliedBlockProviders[providerStakeEntry.Address] = providerStakeEntry.StakeAppliedBlock
 			}
 		}
 	}
-	// Go over the staked provider entries (on all chains)
+
+	// Go over the staked provider entries (on all chains) that has complaints
+	// build a map that has all the relevant details: provider address, chain, epoch and ProviderEpochCu object
 	pecsDetailed := k.GetAllProviderEpochCuStore(ctx)
+	complainedProviders := map[string]map[uint64]types.ProviderEpochCu{} // map[provider chainID]map[epoch]ProviderEpochCu
 	for _, pec := range pecsDetailed {
-		if pec.ProviderEpochCu.ComplainersCu == 0 {
-			continue
-		}
-		providerAddr, err := sdk.AccAddressFromBech32(pec.Provider)
-		if err != nil {
-			continue
-		}
-		stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, pec.ChainId, providerAddr)
-		if !found {
-			continue
-		}
-		if minHistoryBlock < stakeEntry.StakeAppliedBlock {
+		if minHistoryBlock < stakeAppliedBlockProviders[pec.Provider] {
 			// this staked provider has too short history (either since staking
 			// or since it was last unfrozen) - do not consider for jailing
 			continue
 		}
+		if _, ok := complainedProviders[pec.Provider+" "+pec.ChainId]; !ok {
+			complainedProviders[pec.Provider+" "+pec.ChainId] = map[uint64]types.ProviderEpochCu{pec.Epoch: pec.ProviderEpochCu}
+		} else {
+			if _, ok := complainedProviders[pec.Provider+" "+pec.ChainId][pec.Epoch]; !ok {
+				complainedProviders[pec.Provider+" "+pec.ChainId][pec.Epoch] = pec.ProviderEpochCu
+			} else {
+				utils.LavaFormatError("duplicate ProviderEpochCu key", fmt.Errorf("did not aggregate complainers CU"),
+					utils.LogAttr("key", types.ProviderEpochCuKey(pec.Epoch, pec.Provider, pec.ChainId)),
+				)
+				continue
+			}
+		}
+	}
+
+	// sort the keys so the iteration on the map will be deterministic
+	iterationOrder := []string{}
+	for key := range complainedProviders {
+		iterationOrder = append(iterationOrder, key)
+	}
+
+	// go over all the providers, count the complainers CU and punish providers
+	for _, key := range iterationOrder {
+		components := strings.Split(key, " ")
+		provider := components[0]
+		chainID := components[1]
 		// update the CU count for this provider in providerCuCounterForUnreponsivenessMap
-		epochs, complaintCU, servicedCU, err := k.countCuForUnresponsiveness(ctx, minPaymentBlock, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, stakeEntry)
+		epochs, complaintCU, servicedCU, err := k.countCuForUnresponsiveness(ctx, minPaymentBlock, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, complainedProviders[key])
 		if err != nil {
 			utils.LavaFormatError("unstake unresponsive providers failed to count CU", err,
-				utils.Attribute{Key: "provider", Value: stakeEntry.Address},
+				utils.Attribute{Key: "provider", Value: provider},
 			)
 			continue
 		}
 
 		// providerPaymentStorageKeyList is not empty -> provider should be punished
-		if len(epochs) != 0 && existingProviders[stakeEntry.GetChain()] > minProviders {
-			err = k.punishUnresponsiveProvider(ctx, epochs, stakeEntry.GetAddress(), stakeEntry.GetChain(), complaintCU, servicedCU)
-			existingProviders[stakeEntry.GetChain()]--
+		if len(epochs) != 0 && existingProviders[chainID] > minProviders {
+			err = k.punishUnresponsiveProvider(ctx, epochs, provider, chainID, complaintCU, servicedCU, complainedProviders[key])
+			existingProviders[chainID]--
 			if err != nil {
 				utils.LavaFormatError("unstake unresponsive providers failed to punish provider", err,
-					utils.Attribute{Key: "provider", Value: stakeEntry.Address},
+					utils.Attribute{Key: "provider", Value: provider},
 				)
 			}
 		}
@@ -137,7 +157,7 @@ func (k Keeper) getBlockEpochsAgo(ctx sdk.Context, blockHeight, numEpochs uint64
 }
 
 // Function to count the CU serviced by the unresponsive provider and the CU of the complainers. The function returns the keys of the objects containing complainer CU
-func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers uint64, providerStakeEntry epochstoragetypes.StakeEntry) (epochs []uint64, complainersCu uint64, servicedCu uint64, errRet error) {
+func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers uint64, providerEpochCuMap map[uint64]types.ProviderEpochCu) (epochs []uint64, complainersCu uint64, servicedCu uint64, errRet error) {
 	// check which of the epoch consts is larger
 	max := epochsNumToCheckCUForComplainers
 	if epochsNumToCheckCUForUnresponsiveProvider > epochsNumToCheckCUForComplainers {
@@ -146,8 +166,8 @@ func (k Keeper) countCuForUnresponsiveness(ctx sdk.Context, epoch, epochsNumToCh
 
 	// count the CU serviced by the unersponsive provider and used CU of the complainers
 	for counter := uint64(0); counter < max; counter++ {
-		pec, found := k.GetProviderEpochCu(ctx, epoch, providerStakeEntry.Address, providerStakeEntry.Chain)
-		if found {
+		pec, ok := providerEpochCuMap[epoch]
+		if ok {
 			// counter is smaller than epochsNumToCheckCUForComplainers -> count complainer CU
 			if counter < epochsNumToCheckCUForComplainers {
 				complainersCu += pec.ComplainersCu
@@ -200,7 +220,7 @@ func (k Keeper) getCurrentProviderStakeStorageList(ctx sdk.Context) []epochstora
 }
 
 // Function that punishes providers. Current punishment is freeze
-func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, provider, chainID string, complaintCU uint64, servicedCU uint64) error {
+func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, provider, chainID string, complaintCU uint64, servicedCU uint64, providerEpochCuMap map[uint64]types.ProviderEpochCu) error {
 	// freeze the unresponsive provider
 	err := k.FreezeProvider(ctx, provider, []string{chainID}, "unresponsiveness")
 	if err != nil {
@@ -219,16 +239,16 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, pro
 		"Unresponsive provider was freezed due to unresponsiveness")
 
 	// reset the provider's complainer CU (so he won't get punished for the same complaints twice)
-	k.resetComplainersCU(ctx, epochs, provider, chainID)
+	k.resetComplainersCU(ctx, epochs, provider, chainID, providerEpochCuMap)
 
 	return nil
 }
 
 // resetComplainersCU resets the complainers CU for a specific provider and chain
-func (k Keeper) resetComplainersCU(ctx sdk.Context, epochs []uint64, provider string, chainID string) {
+func (k Keeper) resetComplainersCU(ctx sdk.Context, epochs []uint64, provider string, chainID string, providerEpochCuMap map[uint64]types.ProviderEpochCu) {
 	for _, epoch := range epochs {
-		pec, found := k.GetProviderEpochCu(ctx, epoch, provider, chainID)
-		if !found {
+		pec, ok := providerEpochCuMap[epoch]
+		if !ok {
 			continue
 		}
 
