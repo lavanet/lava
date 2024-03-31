@@ -97,6 +97,7 @@ func (k msgServer) handleTwoProvidersConflict(ctx sdk.Context, conflict *types.F
 
 	return eventData, nil
 }
+
 func (k msgServer) handleSameProviderConflict(ctx sdk.Context, conflict *types.FinalizationConflict, clientAddr sdk.AccAddress) (eventData map[string]string, err error) {
 	mismatchingBlockHeight, mismatchingBlockHashes, err := k.Keeper.ValidateSameProviderConflict(ctx, conflict, clientAddr)
 	if err != nil {
