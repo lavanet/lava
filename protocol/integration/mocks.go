@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
+	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
@@ -21,7 +22,11 @@ import (
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
 )
 
-type mockConsumerStateTracker struct{}
+type TxConflictDetectionMock func(context.Context, *conflicttypes.FinalizationConflict, *conflicttypes.ResponseConflict, common.ConflictHandlerInterface) error
+
+type mockConsumerStateTracker struct {
+	txConflictDetectionMock TxConflictDetectionMock
+}
 
 func (m *mockConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
 }
@@ -40,7 +45,14 @@ func (m *mockConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.
 	return nil
 }
 
+func (m *mockConsumerStateTracker) SetTxConflictDetectionWrapper(txConflictDetectionWrapper TxConflictDetectionMock) {
+	m.txConflictDetectionMock = txConflictDetectionWrapper
+}
+
 func (m *mockConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
+	if m.txConflictDetectionMock != nil {
+		return m.txConflictDetectionMock(ctx, finalizationConflict, responseConflict, conflictHandler)
+	}
 	return nil
 }
 
@@ -258,4 +270,32 @@ func (ug *uniqueAddressGenerator) GetAddress() string {
 		return "localhost:111" + strconv.Itoa(ug.seed)
 	}
 	return "localhost:11" + strconv.Itoa(ug.seed)
+}
+
+type GetLatestBlockDataWrapper func(rpcprovider.ReliabilityManagerInf, int64, int64, int64) (int64, []*chaintracker.BlockStore, time.Time, error)
+
+type MockReliabilityManager struct {
+	ReliabilityManager        rpcprovider.ReliabilityManagerInf
+	getLatestBlockDataWrapper GetLatestBlockDataWrapper
+}
+
+func NewMockReliabilityManager(reliabilityManager rpcprovider.ReliabilityManagerInf) *MockReliabilityManager {
+	return &MockReliabilityManager{
+		ReliabilityManager: reliabilityManager,
+	}
+}
+
+func (mrm *MockReliabilityManager) SetGetLatestBlockDataWrapper(wrapper GetLatestBlockDataWrapper) {
+	mrm.getLatestBlockDataWrapper = wrapper
+}
+
+func (mrm *MockReliabilityManager) GetLatestBlockData(fromBlock, toBlock, specificBlock int64) (latestBlock int64, requestedHashes []*chaintracker.BlockStore, changeTime time.Time, err error) {
+	if mrm.getLatestBlockDataWrapper != nil {
+		return mrm.getLatestBlockDataWrapper(mrm.ReliabilityManager, fromBlock, toBlock, specificBlock)
+	}
+	return mrm.ReliabilityManager.GetLatestBlockData(fromBlock, toBlock, specificBlock)
+}
+
+func (mrm *MockReliabilityManager) GetLatestBlockNum() (int64, time.Time) {
+	return mrm.ReliabilityManager.GetLatestBlockNum()
 }
