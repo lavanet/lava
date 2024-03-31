@@ -627,7 +627,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	err := csm.removeAddressFromValidAddresses(address)
 	if err != nil {
 		if AddressIndexWasNotFoundError.Is(err) {
-			// in case index wasnt found just continue with the method
+			// in case index wasn't found just continue with the method
 			utils.LavaFormatError("address was not found in valid addresses", err, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses})
 		} else {
 			return err
@@ -681,7 +681,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		}
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
-	// latency, isHangingApi, syncScore arent updated when there is a failure
+	// latency, isHangingApi, syncScore aren't updated when there is a failure
 	go csm.providerOptimizer.AppendRelayFailure(consumerSession.Parent.PublicLavaAddress)
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
 	consecutiveErrors := uint64(len(consumerSession.ConsecutiveErrors))
