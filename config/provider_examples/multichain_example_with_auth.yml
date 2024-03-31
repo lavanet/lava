@@ -35,7 +35,7 @@ endpoints:
             key-pem: /home/user/key.pem
             cert-pem: /home/user/cert.pem
     - api-interface: grpc
-      chain-id: COS3
+      chain-id: OSMOSIS
       network-address:
         address: "127.0.0.1:2221"
       node-urls: 
@@ -44,7 +44,7 @@ endpoints:
             # default tls cert
             use-tls: true 
     - api-interface: grpc
-      chain-id: COS5
+      chain-id: COSMOSHUB
       network-address:
         address: "127.0.0.1:2221"
       node-urls: 

@@ -354,7 +354,7 @@ func CreateRPCConsumerCobraCommand() *cobra.Command {
 		Example: `required flags: --geolocation 1 --from alice
 rpcconsumer <flags>
 rpcconsumer rpcconsumer_conf <flags>
-rpcconsumer 127.0.0.1:3333 COS3 tendermintrpc 127.0.0.1:3334 COS3 rest <flags>
+rpcconsumer 127.0.0.1:3333 OSMOSIS tendermintrpc 127.0.0.1:3334 OSMOSIS rest <flags>
 rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:7778" --geolocation 1 [--debug-relays] --log_level <debug|warn|...> --from <wallet> --chain-id <lava-chain> --strategy latency`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Optionally run one of the validators provided by cobra

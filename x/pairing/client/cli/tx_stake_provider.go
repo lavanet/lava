@@ -124,9 +124,9 @@ func CmdBulkStakeProvider() *cobra.Command {
 		{repeat for another bulk} - creates a new Msg within the transaction with different arguments, can be used to run many changes in many chains without waiting for a new block
 		[validator] validator address to delegate, if not provided the validator will be chosen for you for best match`,
 		Example: `lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-		bulk send: two bulks, listen for ETH1,LAV1 in one endpoint and COS3,COS5 in another
-		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 COS3,COS5 500000ulava "my-other-grpc-addr.com:1111,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 COS3,COS5 500000ulava "my-other-grpc-addr.com:1111,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
+		bulk send: two bulks, listen for ETH1,LAV1 in one endpoint and OSMOSIS,COSMOSHUB in another
+		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 OSMOSIS,COSMOSHUB 500000ulava "my-other-grpc-addr.com:1111,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 OSMOSIS,COSMOSHUB 500000ulava "my-other-grpc-addr.com:1111,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
 
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args)%BULK_ARG_COUNT != 1 {

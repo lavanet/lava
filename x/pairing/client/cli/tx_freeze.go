@@ -22,7 +22,7 @@ func CmdFreeze() *cobra.Command {
 		Example: `required flags: --from alice. optional flags: --reason
 		lavad tx pairing freeze [chain-ids] --from <provider_address>
 		lavad tx pairing freeze [chain-ids] --from <provider_address> --reason <freeze_reason>
-		lavad tx pairing freeze ETH1,COS3 --from alice --reason "maintenance"`,
+		lavad tx pairing freeze ETH1,OSMOSIS --from alice --reason "maintenance"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argChainIds := strings.Split(args[0], listSeparator)

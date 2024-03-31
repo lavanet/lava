@@ -137,7 +137,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
-			return nil, utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("reason", err), utils.Attribute{Key: "method", Value: msg.Method})
+			return nil, utils.LavaFormatWarning("getSupportedApi jsonrpc failed", err, utils.LogAttr("method", msg.Method))
 		}
 
 		apiCollectionForMessage, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
@@ -482,6 +482,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 
 		if err != nil {
+			if common.APINotSupportedError.Is(err) {
+				return fiberCtx.Status(fiber.StatusOK).JSON(common.JsonRpcMethodNotFoundError)
+			}
+
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 

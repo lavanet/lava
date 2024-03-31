@@ -11,6 +11,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/parser"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -89,7 +90,8 @@ func TestRestGetSupportedApi(t *testing.T) {
 	}
 	_, err = apip.getSupportedApi("API2", connectionType_test)
 	assert.Error(t, err)
-	assert.Equal(t, "rest api not supported API2", err.Error())
+	assert.ErrorIs(t, err, common.APINotSupportedError)
+	assert.Equal(t, "rest api not supported ErrMsg: api not supported {name:API2,connectionType:test}: api not supported", err.Error())
 
 	// Test case 3: Returns error if the API is disabled
 	apip = &RestChainParser{
