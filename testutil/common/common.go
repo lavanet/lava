@@ -7,7 +7,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
@@ -202,13 +201,6 @@ func finalizeConflictRelayData(consumer, provider sigs.Account, conflictData *co
 	if err != nil {
 		return nil, err
 	}
-	relayFinalization.SigBlocks = sigBlocks
-	pubKey, _ := sigs.RecoverPubKey(relayFinalization)
-	derived_providerAccAddress, _ := sdk.AccAddressFromHexUnsafe(pubKey.Address().String())
-	utils.LavaFormatDebug("ELAD",
-		utils.LogAttr("original_address", provider.Addr.String()),
-		utils.LogAttr("derived_address", derived_providerAccAddress.String()),
-	)
 
 	reply.SigBlocks = sigBlocks
 
