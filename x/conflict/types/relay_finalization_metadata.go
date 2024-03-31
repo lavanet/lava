@@ -15,7 +15,7 @@ func NewRelayFinalizationMetaDataFromReplyMetadataAndRelayRequest(reply ReplyMet
 	return RelayFinalization{
 		FinalizedBlocksHashes: reply.FinalizedBlocksHashes,
 		LatestBlock:           reply.LatestBlock,
-		ConsumerAddress:       string(consumerAddr.Bytes()),
+		ConsumerAddress:       consumerAddr.String(),
 		RelaySession:          req.RelaySession,
 		SigBlocks:             reply.SigBlocks,
 	}
@@ -25,7 +25,7 @@ func NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relaySession *pai
 	return RelayFinalization{
 		FinalizedBlocksHashes: relayReply.FinalizedBlocksHashes,
 		LatestBlock:           relayReply.LatestBlock,
-		ConsumerAddress:       string(consumerAddr.Bytes()),
+		ConsumerAddress:       consumerAddr.String(),
 		RelaySession:          relaySession,
 		SigBlocks:             relayReply.SigBlocks,
 	}

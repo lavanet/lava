@@ -6,8 +6,11 @@ import (
 	"sync"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/maps"
@@ -137,15 +140,17 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	var otherBlockHash string
 	for blockHash, agreeingProviders := range blockToHashesToAgreeingProviders[discrepancyBlock] {
 		if providerPrevReply, ok := agreeingProviders[providerAddress]; ok {
-			// Same provider conflict found
-			relayFinalization, err := fc.createRelayFinalizationFromProviderDataContainer(providerPrevReply, consumerAddress)
-			if err != nil {
-				return nil, err
+			// Same provider conflict found - Report and block provider
+			relayFinalization, errWrapped := fc.createRelayFinalizationFromProviderDataContainer(providerPrevReply, consumerAddress)
+			if errWrapped != nil {
+				return nil, errWrapped
 			}
 
 			logSuccessUpdate()
 			finalizationConflict.RelayReply1 = relayFinalization
-			return finalizationConflict, fmt.Errorf("found same provider conflict on block [%d], provider address [%s]", discrepancyBlock, providerAddress)
+
+			errWrapped = sdkerrors.Wrap(lavasession.BlockProviderError, fmt.Sprintf("found same provider conflict on block [%d], provider address [%s]", discrepancyBlock, providerAddress))
+			return finalizationConflict, errWrapped
 		} else if otherBlockHash == "" {
 			// Use some other hash to create proof, in case of no same provider conflict
 			otherBlockHash = blockHash
@@ -199,6 +204,7 @@ func (fc *FinalizationConsensus) createRelayFinalizationFromProviderDataContaine
 		LatestBlock:           dataContainer.LatestBlock,
 		ConsumerAddress:       consumerAddr.String(),
 		RelaySession:          &dataContainer.RelaySession,
+		SigBlocks:             dataContainer.SigBlocks,
 	}, nil
 }
 

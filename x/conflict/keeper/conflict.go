@@ -194,22 +194,22 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 	// Validate Sig of provider and compare addresses
 	provider0PubKey, err := sigs.RecoverPubKey(conflictData.RelayReply0)
 	if err != nil {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to recover public key: %w", err)
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to recover public key from RelayReply0: %w", err)
 	}
 
 	providerAddress0, err := sdk.AccAddressFromHexUnsafe(provider0PubKey.Address().String())
 	if err != nil {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to get provider address: %w", err)
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to get provider address from RelayReply0: %w", err)
 	}
 
 	provider1PubKey, err := sigs.RecoverPubKey(conflictData.RelayReply1)
 	if err != nil {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to recover public key: %w", err)
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to recover public key from RelayReply1: %w", err)
 	}
 
 	providerAddress1, err := sdk.AccAddressFromHexUnsafe(provider1PubKey.Address().String())
 	if err != nil {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to get provider address: %w", err)
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to get provider address from RelayReply1: %w", err)
 	}
 
 	if !providerAddress0.Equals(providerAddress1) {
@@ -218,7 +218,7 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 
 	// Validate client address
 	if conflictData.RelayReply0.ConsumerAddress != clientAddr.String() || conflictData.RelayReply1.ConsumerAddress != clientAddr.String() {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Mismatching client addresses %s, %s", conflictData.RelayReply0.ConsumerAddress, conflictData.RelayReply1.ConsumerAddress)
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Mismatching client addresses %v, %v", conflictData.RelayReply0.ConsumerAddress, conflictData.RelayReply1.ConsumerAddress)
 	}
 
 	// Validate matching spec and epoch
