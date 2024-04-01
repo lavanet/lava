@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/store/cachekv"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -55,10 +54,7 @@ func (k Keeper) GetAllUniqueEpochSessionForEpoch(ctx sdk.Context, epoch uint64) 
 
 	var keys []string
 	for ; iterator.Valid(); iterator.Next() {
-		key := iterator.Key()
-		// Remove the prefix to get the actual UniqueEpochSession key
-		uniqueEpochSessionKey := strings.TrimPrefix(string(key), string(types.UniqueEpochSessionKeyPrefix()))
-		keys = append(keys, uniqueEpochSessionKey)
+		keys = append(keys, string(iterator.Key()))
 	}
 
 	return keys
@@ -121,7 +117,7 @@ func (k Keeper) RemoveAllProviderEpochCu(ctx sdk.Context, epoch uint64) {
 // GetAllProviderEpochCuStore returns all the ProviderEpochCu from the store (used for genesis)
 func (k Keeper) GetAllProviderEpochCuStore(ctx sdk.Context) []types.ProviderEpochCuGenesis {
 	info := []types.ProviderEpochCuGenesis{}
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), []byte(types.ProviderEpochCuPrefix))
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochCuKeyPrefix())
 	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
