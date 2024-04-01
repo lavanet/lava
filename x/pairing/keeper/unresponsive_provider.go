@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -115,6 +116,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 	for key := range complainedProviders {
 		iterationOrder = append(iterationOrder, key)
 	}
+	sort.Strings(iterationOrder)
 
 	// go over all the providers, count the complainers CU and punish providers
 	for _, key := range iterationOrder {
