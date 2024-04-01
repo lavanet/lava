@@ -56,4 +56,10 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	res2, err := ts.QueryPairingProviderEpochCu(providerAddr, res.Project.Index, ts.spec.Index)
 	require.NoError(t, err)
 	require.Len(t, res2.Info, 0)
+
+	list1 := ts.Keepers.Pairing.GetAllUniqueEpochSessionStore(ts.Ctx)
+	require.Len(t, list1, 0)
+
+	list2 := ts.Keepers.Pairing.GetAllProviderConsumerEpochCuStore(ts.Ctx)
+	require.Len(t, list2, 0)
 }
