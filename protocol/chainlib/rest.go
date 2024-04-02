@@ -173,7 +173,10 @@ func (apip *RestChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, errors.New("rest api not supported " + name)
+		return nil, utils.LavaFormatWarning("rest api not supported", common.APINotSupportedError,
+			utils.LogAttr("name", name),
+			utils.LogAttr("connectionType", connectionType),
+		)
 	}
 	api := apiCont.api
 
@@ -379,6 +382,10 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(analytics, err, fiberCtx.GetReqHeaders())
 		if err != nil {
+			if common.APINotSupportedError.Is(err) {
+				return common.CreateRestMethodNotFoundError(fiberCtx, chainID)
+			}
+
 			// Get unique GUID response
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	epochstorage "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -299,7 +300,7 @@ func (apip *BaseChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatInfo("api not supported", utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, common.APINotSupportedError
 	}
 
 	// Return an error if api is disabled
