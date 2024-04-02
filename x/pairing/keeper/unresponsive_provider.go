@@ -3,7 +3,6 @@ package keeper
 import (
 	"fmt"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -89,6 +88,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 
 	// Go over the staked provider entries (on all chains) that has complaints
 	// build a map that has all the relevant details: provider address, chain, epoch and ProviderEpochCu object
+	keys := []string{}
 	pecsDetailed := k.GetAllProviderEpochCuStore(ctx)
 	complainedProviders := map[string]map[uint64]types.ProviderEpochCu{} // map[provider chainID]map[epoch]ProviderEpochCu
 	for _, pec := range pecsDetailed {
@@ -97,11 +97,14 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 			// or since it was last unfrozen) - do not consider for jailing
 			continue
 		}
-		if _, ok := complainedProviders[pec.Provider+" "+pec.ChainId]; !ok {
-			complainedProviders[pec.Provider+" "+pec.ChainId] = map[uint64]types.ProviderEpochCu{pec.Epoch: pec.ProviderEpochCu}
+
+		key := pec.Provider + " " + pec.ChainId
+		if _, ok := complainedProviders[key]; !ok {
+			complainedProviders[key] = map[uint64]types.ProviderEpochCu{pec.Epoch: pec.ProviderEpochCu}
+			keys = append(keys, key)
 		} else {
-			if _, ok := complainedProviders[pec.Provider+" "+pec.ChainId][pec.Epoch]; !ok {
-				complainedProviders[pec.Provider+" "+pec.ChainId][pec.Epoch] = pec.ProviderEpochCu
+			if _, ok := complainedProviders[key][pec.Epoch]; !ok {
+				complainedProviders[key][pec.Epoch] = pec.ProviderEpochCu
 			} else {
 				utils.LavaFormatError("duplicate ProviderEpochCu key", fmt.Errorf("did not aggregate complainers CU"),
 					utils.LogAttr("key", types.ProviderEpochCuKey(pec.Epoch, pec.Provider, pec.ChainId)),
@@ -111,15 +114,8 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 		}
 	}
 
-	// sort the keys so the iteration on the map will be deterministic
-	iterationOrder := []string{}
-	for key := range complainedProviders {
-		iterationOrder = append(iterationOrder, key)
-	}
-	sort.Strings(iterationOrder)
-
 	// go over all the providers, count the complainers CU and punish providers
-	for _, key := range iterationOrder {
+	for _, key := range keys {
 		components := strings.Split(key, " ")
 		provider := components[0]
 		chainID := components[1]
