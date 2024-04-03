@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidateBlockHeights(t *testing.T) {
+func TestValidateSameProviderConflict(t *testing.T) {
 	initTester := func() (tester *tester, keeper *keeper.Keeper, ctx sdk.Context) {
 		tester = newTester(t)
 		keeper = &tester.Keepers.Conflict
