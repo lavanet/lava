@@ -61,7 +61,7 @@ func TestSignAndExtractResponse(t *testing.T) {
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
-	_, _, err = VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0)
+	_, _, err = VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 	require.NoError(t, err)
 }
 
@@ -111,6 +111,6 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
-	_, _, err = VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0)
+	_, _, err = VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 	require.NoError(t, err)
 }

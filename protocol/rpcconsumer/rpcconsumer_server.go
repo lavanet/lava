@@ -716,7 +716,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	// Update relay request requestedBlock to the provided one in case it was arbitrary
 	lavaprotocol.UpdateRequestedBlock(relayRequest.RelayData, reply)
 
-	_, _, blockDistanceForFinalizedData, _ := rpccs.chainParser.ChainBlockStats()
+	_, _, blockDistanceForFinalizedData, blocksInFinalizationProof := rpccs.chainParser.ChainBlockStats()
 	isFinalized := spectypes.IsFinalizedBlock(relayRequest.RelayData.RequestBlock, reply.LatestBlock, int64(blockDistanceForFinalizedData))
 
 	filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
@@ -732,7 +732,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	enabled, _ := rpccs.chainParser.DataReliabilityParams()
 	if enabled {
 		// TODO: DETECTION instead of existingSessionLatestBlock, we need proof of last reply to send the previous reply and the current reply
-		finalizedBlocks, finalizationAccountabilityError, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData))
+		finalizedBlocks, finalizationAccountabilityError, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
 		if err != nil {
 			if lavaprotocol.ProviderFinalizationDataAccountabilityError.Is(err) && finalizationAccountabilityError != nil {
 				// TODO: Send to consensus when it will support single reply finalization error. When this happens, the type of finalizationAccountabilityError will be different.

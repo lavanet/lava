@@ -309,7 +309,7 @@ func InterpolateBlocks(timeNow, latestBlockTime time.Time, averageBlockTime time
 	return int64(timeNow.Sub(latestBlockTime) / averageBlockTime) // interpolation
 }
 
-func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock, blockDistanceForFinalization int64) (finalizedBlocks map[int64]string, finalizationConflict *conflicttypes.FinalizationConflict, errRet error) {
+func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock, blockDistanceForFinalization, blocksInFinalizationProof int64) (finalizedBlocks map[int64]string, finalizationConflict *conflicttypes.FinalizationConflict, errRet error) {
 	// TODO: Should block provider and report
 
 	relayFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relayRequest.RelaySession, reply, consumerAcc)
@@ -339,7 +339,7 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 		)
 	}
 
-	finalizationConflict, err = verifyFinalizationDataIntegrity(relayRequest.RelaySession, reply, latestSessionBlock, finalizedBlocks, blockDistanceForFinalization, consumerAcc, providerAddr)
+	finalizationConflict, err = verifyFinalizationDataIntegrity(relayRequest.RelaySession, reply, latestSessionBlock, finalizedBlocks, blockDistanceForFinalization, blocksInFinalizationProof, consumerAcc, providerAddr)
 	if err != nil {
 		return nil, finalizationConflict, err
 	}
@@ -360,12 +360,19 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	return finalizedBlocks, finalizationConflict, errRet
 }
 
-func verifyFinalizationDataIntegrity(relaySession *pairingtypes.RelaySession, reply *pairingtypes.RelayReply, latestSessionBlock int64, finalizedBlocks map[int64]string, blockDistanceForFinalization int64, consumerAddr sdk.AccAddress, providerAddr string) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
+func verifyFinalizationDataIntegrity(relaySession *pairingtypes.RelaySession, reply *pairingtypes.RelayReply, latestSessionBlock int64, finalizedBlocks map[int64]string, blockDistanceForFinalization, blocksInFinalizationProof int64, consumerAddr sdk.AccAddress, providerAddr string) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
 	latestBlock := reply.LatestBlock
 	sorted := make([]int64, len(finalizedBlocks))
 	idx := 0
 	maxBlockNum := int64(0)
-	// TODO: compare finalizedBlocks len vs chain parser len to validate (get from same place as blockDistanceForFinalization arrives)
+	if int64(len(finalizedBlocks)) != blocksInFinalizationProof {
+		return nil, utils.LavaFormatError("Simulation: provider returned incorrect number of finalized blocks", ProviderFinalizationDataAccountabilityError,
+			utils.LogAttr("Provider", providerAddr),
+			utils.LogAttr("blocksInFinalizationProof", blocksInFinalizationProof),
+			utils.LogAttr("len(finalizedBlocks)", len(finalizedBlocks)),
+			utils.LogAttr("finalizedBlocks", finalizedBlocks),
+		)
+	}
 
 	replyFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relaySession, reply, consumerAddr)
 
