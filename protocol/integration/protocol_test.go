@@ -573,6 +573,12 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 			numOfLyingProviders: 1,
 			shouldGetError:      false,
 		},
+		{
+			name:                "multiple providers - everyone is returning fake block hashes - return conflict error",
+			numOfProviders:      3,
+			numOfLyingProviders: 3,
+			shouldGetError:      true,
+		},
 	}
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
