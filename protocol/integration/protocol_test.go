@@ -633,7 +633,7 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 			rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
 			require.NotNil(t, rpcconsumerServer)
 
-			// Set first provider as a "lier", to return wrong block hashes
+			// Set first provider as a "liar", to return wrong block hashes
 			getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
 				latestBlock, requestedHashes, changeTime, err := rmi.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 
@@ -765,7 +765,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 		mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
 		require.NotNil(t, rpcconsumerServer)
 
-		// Set first provider as a "lier", to return wrong block hashes
+		// Set first provider as a "liar", to return wrong block hashes
 		getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
 			latestBlock, requestedHashes, changeTime, err := rmi.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 
@@ -834,7 +834,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 		mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
 		require.NotNil(t, rpcconsumerServer)
 
-		// Set first provider as a "lier", to return wrong block hashes
+		// Set first provider as a "liar", to return wrong block hashes
 		getLatestBlockDataWrapper := func(rmi rpcprovider.ReliabilityManagerInf, fromBlock, toBlock, specificBlock int64) (int64, []*chaintracker.BlockStore, time.Time, error) {
 			latestBlock, requestedHashes, changeTime, err := rmi.GetLatestBlockData(fromBlock, toBlock, specificBlock)
 
