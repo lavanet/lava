@@ -310,8 +310,6 @@ func InterpolateBlocks(timeNow, latestBlockTime time.Time, averageBlockTime time
 }
 
 func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock, blockDistanceForFinalization, blocksInFinalizationProof int64) (finalizedBlocks map[int64]string, finalizationConflict *conflicttypes.FinalizationConflict, errRet error) {
-	// TODO: Should block provider and report
-
 	relayFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relayRequest.RelaySession, reply, consumerAcc)
 	recoveredProviderPubKey, err := sigs.RecoverPubKey(relayFinalization)
 	if err != nil {
