@@ -181,7 +181,6 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 }
 
 func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) (mismatchingBlockHeight int64, mismatchingBlockHashes map[string]string, err error) {
-	// TODO: Validate BlockDistanceFromFinalization with spec
 	// Nil check
 	if conflictData == nil {
 		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Conflict data is nil")
