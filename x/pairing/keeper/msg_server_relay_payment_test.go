@@ -447,13 +447,15 @@ func TestRelayPaymentQoS(t *testing.T) {
 
 func TestEpochPaymentDeletion(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+	ts.setupForPayments(2, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, unresponsiveprovider := ts.GetAccount(common.PROVIDER, 1)
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
+	relaySession.UnresponsiveProviders = []*types.ReportedProvider{{Address: unresponsiveprovider, Disconnections: 5, Errors: 2}}
 	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 	relaySession.Sig = sig
 	require.NoError(t, err)
@@ -467,15 +469,17 @@ func TestEpochPaymentDeletion(t *testing.T) {
 
 	ts.AdvanceEpochs(ts.EpochsToSave() + 1)
 
-	epoch := ts.EpochStart(ts.BlockHeight())
-	listA := ts.Keepers.Pairing.GetAllUniqueEpochSessionForEpoch(ts.Ctx, epoch)
+	listA := ts.Keepers.Pairing.GetAllUniqueEpochSessionStore(ts.Ctx)
 	require.Len(t, listA, 0)
 
-	_, found := ts.Keepers.Pairing.GetProviderEpochCu(ts.Ctx, epoch, providerAddr, ts.spec.Index)
-	require.False(t, found)
+	list0 := ts.Keepers.Pairing.GetAllProviderEpochCuStore(ts.Ctx)
+	require.Len(t, list0, 0)
 
-	listB := ts.Keepers.Pairing.GetAllProviderConsumerEpochCu(ts.Ctx, epoch)
-	require.Len(t, listB, 0)
+	list1 := ts.Keepers.Pairing.GetAllProviderEpochComplainerCuStore(ts.Ctx)
+	require.Len(t, list1, 0)
+
+	list2 := ts.Keepers.Pairing.GetAllProviderConsumerEpochCuStore(ts.Ctx)
+	require.Len(t, list2, 0)
 }
 
 // Test that after the consumer uses some CU it's updated in its project and subscription

@@ -57,6 +57,9 @@ func TestEpochPaymentDeletionWithMemoryShortening(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, res2.Info, 0)
 
+	list0 := ts.Keepers.Pairing.GetAllProviderEpochComplainerCuStore(ts.Ctx)
+	require.Len(t, list0, 0)
+
 	list1 := ts.Keepers.Pairing.GetAllUniqueEpochSessionStore(ts.Ctx)
 	require.Len(t, list1, 0)
 
