@@ -1,0 +1,90 @@
+---
+name: lava
+
+services:
+  cache:
+    image: svetekllc/lava:v1.0.4-cache
+    labels:
+      network: testnet
+    env_file:
+      - cache.env
+    ports:
+      - '23101:23101'
+    networks:
+      - lava
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "1"
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: '16gb'
+    restart: unless-stopped
+
+  node:
+    image: svetekllc/lava:v1.0.1-node
+    labels:
+      network: testnet
+    env_file:
+      - node.env
+    volumes:
+      - /opt/testnet/lava:/root/.lava
+    ports:
+      - '23656:23656'
+      - '23660:23660'
+    networks:
+      - lava
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "1"
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: '16gb'
+    restart: unless-stopped
+
+  provider:
+    image: svetekllc/lava:v1.0.4-provider
+    labels:
+      network: testnet
+    env_file:
+      - provider.env
+    volumes:
+      - /opt/testnet/lava:/root/.lava
+    ports:
+      - '23001:23001'
+    networks:
+      - canto
+      - cosmos
+      - evmos
+      - lava
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "1"
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: '16gb'
+    restart: unless-stopped
+
+networks:
+  canto:
+    name: canto
+    external: true
+  cosmos:
+    name: cosmos
+    external: true
+  evmos:
+    name: evmos
+    external: true
+  lava:
+    name: lava
