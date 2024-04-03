@@ -46,6 +46,9 @@ func (k Keeper) RemoveAllEpochPaymentsForBlockAppendAdjustments(ctx sdk.Context,
 	// remove all provider epoch cu
 	k.RemoveAllProviderEpochCu(ctx, epochToDelete)
 
+	// remove all provider epoch complainer cu
+	k.RemoveAllProviderEpochComplainerCu(ctx, epochToDelete)
+
 	pcecs := k.GetAllProviderConsumerEpochCu(ctx, epochToDelete)
 
 	// TODO: update Qos in providerQosFS. new consumers (cluster.subUsage = 0) get default QoS (what is default?)

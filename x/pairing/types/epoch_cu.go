@@ -7,9 +7,10 @@ import (
 )
 
 const (
-	UniqueEpochSessionPrefix      = "UniqueEpochSession/"
-	ProviderEpochCuPrefix         = "ProviderEpochCu/"
-	ProviderConsumerEpochCuPrefix = "ProviderConsumerEpochCu/"
+	UniqueEpochSessionPrefix        = "UniqueEpochSession/"
+	ProviderEpochCuPrefix           = "ProviderEpochCu/"
+	ProviderEpochComplainerCuPrefix = "ProviderEpochComplainerCu/"
+	ProviderConsumerEpochCuPrefix   = "ProviderConsumerEpochCu/"
 )
 
 func UniqueEpochSessionKey(epoch uint64, provider string, chainID string, project string, sessionID uint64) []byte {
@@ -70,6 +71,10 @@ func UniqueEpochSessionKeyPrefix() []byte {
 
 func ProviderEpochCuKeyPrefix() []byte {
 	return []byte(ProviderEpochCuPrefix)
+}
+
+func ProviderEpochComplainerCuKeyPrefix() []byte {
+	return []byte(ProviderEpochComplainerCuPrefix)
 }
 
 func ProviderConsumerEpochCuKeyPrefix() []byte {

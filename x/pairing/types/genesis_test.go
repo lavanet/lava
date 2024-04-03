@@ -43,13 +43,27 @@ func TestGenesisState_Validate(t *testing.T) {
 						Epoch:           0,
 						Provider:        "0",
 						ChainId:         "0",
-						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10, ComplainersCu: 100},
+						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10},
 					},
 					{
 						Epoch:           1,
 						Provider:        "1",
 						ChainId:         "1",
-						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 20, ComplainersCu: 200},
+						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 20},
+					},
+				},
+				ProviderEpochComplainedCus: []types.ProviderEpochComplainerCuGenesis{
+					{
+						Epoch:                     0,
+						Provider:                  "0",
+						ChainId:                   "0",
+						ProviderEpochComplainerCu: types.ProviderEpochComplainerCu{ComplainersCu: 100},
+					},
+					{
+						Epoch:                     1,
+						Provider:                  "1",
+						ChainId:                   "1",
+						ProviderEpochComplainerCu: types.ProviderEpochComplainerCu{ComplainersCu: 200},
 					},
 				},
 				ProviderConsumerEpochCus: []types.ProviderConsumerEpochCuGenesis{
@@ -104,13 +118,35 @@ func TestGenesisState_Validate(t *testing.T) {
 						Epoch:           0,
 						Provider:        "0",
 						ChainId:         "0",
-						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10, ComplainersCu: 100},
+						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10},
 					},
 					{
 						Epoch:           0,
 						Provider:        "0",
 						ChainId:         "0",
-						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10, ComplainersCu: 100},
+						ProviderEpochCu: types.ProviderEpochCu{ServicedCu: 10},
+					},
+				},
+			},
+			valid: false,
+		},
+
+		{
+			desc: "duplicated ProviderEpochCus",
+			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
+				ProviderEpochComplainedCus: []types.ProviderEpochComplainerCuGenesis{
+					{
+						Epoch:                     0,
+						Provider:                  "0",
+						ChainId:                   "0",
+						ProviderEpochComplainerCu: types.ProviderEpochComplainerCu{ComplainersCu: 200},
+					},
+					{
+						Epoch:                     0,
+						Provider:                  "0",
+						ChainId:                   "0",
+						ProviderEpochComplainerCu: types.ProviderEpochComplainerCu{ComplainersCu: 200},
 					},
 				},
 			},

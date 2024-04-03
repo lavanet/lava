@@ -368,13 +368,13 @@ func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveP
 			continue
 		}
 
-		pec, found := k.GetProviderEpochCuCached(ctx, epoch, unresponsiveProvider.Address, chainID)
+		pec, found := k.GetProviderEpochComplainerCuCached(ctx, epoch, unresponsiveProvider.Address, chainID)
 		if !found {
-			pec = types.ProviderEpochCu{ComplainersCu: complainerCuToAdd}
+			pec = types.ProviderEpochComplainerCu{ComplainersCu: complainerCuToAdd}
 		} else {
 			pec.ComplainersCu += complainerCuToAdd
 		}
-		k.SetProviderEpochCuCached(ctx, epoch, unresponsiveProvider.Address, chainID, pec)
+		k.SetProviderEpochComplainerCuCached(ctx, epoch, unresponsiveProvider.Address, chainID, pec)
 
 		timestamp := time.Unix(unresponsiveProvider.TimestampS, 0)
 		details := map[string]string{

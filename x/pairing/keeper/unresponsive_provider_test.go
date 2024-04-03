@@ -26,7 +26,7 @@ func (ts *tester) checkProviderFreeze(provider sdk.AccAddress, shouldFreeze bool
 func (ts *tester) checkComplainerReset(provider string, epoch uint64) {
 	// validate the complainers CU field in the unresponsive provider's providerPaymentStorage
 	// was reset after being punished (use the epoch from the relay - when it got reported)
-	pec, found := ts.Keepers.Pairing.GetProviderEpochCu(ts.Ctx, epoch, provider, ts.spec.Name)
+	pec, found := ts.Keepers.Pairing.GetProviderEpochComplainerCu(ts.Ctx, epoch, provider, ts.spec.Name)
 	require.Equal(ts.T, true, found)
 	require.Equal(ts.T, uint64(0), pec.ComplainersCu)
 }

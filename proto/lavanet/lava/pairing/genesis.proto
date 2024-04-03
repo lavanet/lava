@@ -27,7 +27,8 @@ message GenesisState {
   lavanet.lava.fixationstore.GenesisState providerQosFS = 7 [(gogoproto.nullable) = false];
   repeated UniqueEpochSessionGenesis unique_epoch_sessions = 8 [(gogoproto.nullable) = false];
   repeated ProviderEpochCuGenesis provider_epoch_cus = 9 [(gogoproto.nullable) = false];
-  repeated ProviderConsumerEpochCuGenesis provider_consumer_epoch_cus = 10 [(gogoproto.nullable) = false];
+  repeated ProviderEpochComplainerCuGenesis provider_epoch_complained_cus = 10 [(gogoproto.nullable) = false];
+  repeated ProviderConsumerEpochCuGenesis provider_consumer_epoch_cus = 11 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }
 
@@ -44,6 +45,13 @@ message ProviderEpochCuGenesis {
   string provider = 2;
   string chain_id = 3;
   ProviderEpochCu provider_epoch_cu = 4 [(gogoproto.nullable) = false];
+}
+
+message ProviderEpochComplainerCuGenesis {
+  uint64 epoch = 1;
+  string provider = 2;
+  string chain_id = 3;
+  ProviderEpochComplainerCu provider_epoch_complainer_cu = 4 [(gogoproto.nullable) = false];
 }
 
 message ProviderConsumerEpochCuGenesis {

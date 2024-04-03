@@ -12,7 +12,12 @@ message UniqueEpochSession {
 // It's kept in a epoch-prefixed store with a unique index: provider address
 message ProviderEpochCu {
 	uint64 serviced_cu = 1;
-	uint64 complainers_cu = 2;
+}
+
+// ProviderEpochComplainerCu is used to track the CU complained of a specific provider in a specific epoch
+// It's kept in a epoch-prefixed store with a unique index: provider address
+message ProviderEpochComplainerCu {
+	uint64 complainers_cu = 1;
 }
 
 // ProviderConsumerEpochCu is used to track the CU between a specific provider and 

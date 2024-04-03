@@ -139,6 +139,62 @@ func (k Keeper) GetAllProviderEpochCuStore(ctx sdk.Context) []types.ProviderEpoc
 	return info
 }
 
+/* ########## ProviderEpochComplainerCu ############ */
+
+// SetProviderEpochComplainerCu sets a ProviderEpochComplainerCu in the store
+func (k Keeper) SetProviderEpochComplainerCu(ctx sdk.Context, epoch uint64, provider string, chainID string, providerEpochCu types.ProviderEpochComplainerCu) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochComplainerCuKeyPrefix())
+	b := k.cdc.MustMarshal(&providerEpochCu)
+	store.Set(types.ProviderEpochCuKey(epoch, provider, chainID), b)
+}
+
+// GetProviderEpochComplainerCu returns a ProviderEpochCu for a specific epoch and provider
+func (k Keeper) GetProviderEpochComplainerCu(ctx sdk.Context, epoch uint64, provider string, chainID string) (val types.ProviderEpochComplainerCu, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochComplainerCuKeyPrefix())
+	b := store.Get(types.ProviderEpochCuKey(epoch, provider, chainID))
+	if b == nil {
+		return val, false
+	}
+
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+// RemoveProviderEpochComplainerCu removes a ProviderEpochCu from the store
+func (k Keeper) RemoveAllProviderEpochComplainerCu(ctx sdk.Context, epoch uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochComplainerCuKeyPrefix())
+	iterator := sdk.KVStorePrefixIterator(store, []byte(strconv.FormatUint(epoch, 10)))
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		store.Delete(iterator.Key())
+	}
+}
+
+// GetAllProviderEpochComplainerCuStore returns all the ProviderEpochCu from the store (used for genesis)
+func (k Keeper) GetAllProviderEpochComplainerCuStore(ctx sdk.Context) []types.ProviderEpochComplainerCuGenesis {
+	info := []types.ProviderEpochComplainerCuGenesis{}
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochComplainerCuKeyPrefix())
+	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		epoch, provider, chainID, err := types.DecodeProviderEpochCuKey(string(iterator.Key()))
+		if err != nil {
+			utils.LavaFormatError("could not decode ProviderEpochComplainerCuKey with epoch", err, utils.LogAttr("key", string(iterator.Key())))
+			continue
+		}
+		var pec types.ProviderEpochComplainerCu
+		k.cdc.MustUnmarshal(iterator.Value(), &pec)
+		info = append(info, types.ProviderEpochComplainerCuGenesis{
+			Epoch:                     epoch,
+			Provider:                  provider,
+			ChainId:                   chainID,
+			ProviderEpochComplainerCu: pec,
+		})
+	}
+
+	return info
+}
+
 /* ########## ProviderConsumerEpochCu ############ */
 
 // SetProviderConsumerEpochCu sets a ProviderConsumerEpochCu in the store
@@ -221,15 +277,17 @@ func (k Keeper) GetAllProviderConsumerEpochCuStore(ctx sdk.Context) []types.Prov
 /* ########## EpochCuCache ############ */
 type EpochCuCache struct {
 	Keeper
-	ProviderEpochCuCache         *cachekv.Store
-	ProviderConsumerEpochCuCache *cachekv.Store
+	ProviderEpochCuCache           *cachekv.Store
+	ProviderEpochComplainerCuCache *cachekv.Store
+	ProviderConsumerEpochCuCache   *cachekv.Store
 }
 
 func (k Keeper) NewEpochCuCacheHandler(ctx sdk.Context) EpochCuCache {
 	return EpochCuCache{
-		Keeper:                       k,
-		ProviderEpochCuCache:         cachekv.NewStore(prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochCuKeyPrefix())),
-		ProviderConsumerEpochCuCache: cachekv.NewStore(prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix())),
+		Keeper:                         k,
+		ProviderEpochCuCache:           cachekv.NewStore(prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochCuKeyPrefix())),
+		ProviderEpochComplainerCuCache: cachekv.NewStore(prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochComplainerCuKeyPrefix())),
+		ProviderConsumerEpochCuCache:   cachekv.NewStore(prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix())),
 	}
 }
 
@@ -240,6 +298,21 @@ func (k EpochCuCache) SetProviderEpochCuCached(ctx sdk.Context, epoch uint64, pr
 
 func (k EpochCuCache) GetProviderEpochCuCached(ctx sdk.Context, epoch uint64, provider string, chainID string) (val types.ProviderEpochCu, found bool) {
 	b := k.ProviderEpochCuCache.Get(types.ProviderEpochCuKey(epoch, provider, chainID))
+	if b == nil {
+		return val, false
+	}
+
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+func (k EpochCuCache) SetProviderEpochComplainerCuCached(ctx sdk.Context, epoch uint64, provider string, chainID string, providerEpochCu types.ProviderEpochComplainerCu) {
+	b := k.cdc.MustMarshal(&providerEpochCu)
+	k.ProviderEpochComplainerCuCache.Set(types.ProviderEpochCuKey(epoch, provider, chainID), b)
+}
+
+func (k EpochCuCache) GetProviderEpochComplainerCuCached(ctx sdk.Context, epoch uint64, provider string, chainID string) (val types.ProviderEpochComplainerCu, found bool) {
+	b := k.ProviderEpochComplainerCuCache.Get(types.ProviderEpochCuKey(epoch, provider, chainID))
 	if b == nil {
 		return val, false
 	}
@@ -265,5 +338,6 @@ func (k EpochCuCache) GetProviderConsumerEpochCuCached(ctx sdk.Context, epoch ui
 
 func (k EpochCuCache) Flush() {
 	k.ProviderEpochCuCache.Write()
+	k.ProviderEpochComplainerCuCache.Write()
 	k.ProviderConsumerEpochCuCache.Write()
 }
