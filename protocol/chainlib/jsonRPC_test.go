@@ -223,7 +223,7 @@ func TestExtensions(t *testing.T) {
 	for _, ext := range spec.ApiCollections[0].Extensions {
 		_, ok := configuredExtensions[ext.Name]
 		if ok {
-			cuCostExt = cuCost * uint64(ext.CuMultiplier)
+			cuCostExt = cuCost * ext.CuMultiplier
 			break
 		}
 	}
