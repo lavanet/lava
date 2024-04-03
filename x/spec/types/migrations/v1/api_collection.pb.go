@@ -948,26 +948,10 @@ func (m *SpecCategory) GetHangingApi() bool {
 }
 
 func init() {
-	proto.RegisterEnum("lavanet.lava.spec.EXTENSION", EXTENSION_name, EXTENSION_value)
-	proto.RegisterEnum("lavanet.lava.spec.FUNCTION_TAG", FUNCTION_TAG_name, FUNCTION_TAG_value)
-	proto.RegisterEnum("lavanet.lava.spec.PARSER_FUNC", PARSER_FUNC_name, PARSER_FUNC_value)
-	proto.RegisterEnum("lavanet.lava.spec.ParseValue_VerificationSeverity", ParseValue_VerificationSeverity_name, ParseValue_VerificationSeverity_value)
-	proto.RegisterEnum("lavanet.lava.spec.Header_HeaderType", Header_HeaderType_name, Header_HeaderType_value)
-	proto.RegisterType((*ApiCollection)(nil), "lavanet.lava.spec.ApiCollection")
-	proto.RegisterType((*Extension)(nil), "lavanet.lava.spec.Extension")
-	proto.RegisterType((*Rule)(nil), "lavanet.lava.spec.Rule")
-	proto.RegisterType((*Verification)(nil), "lavanet.lava.spec.Verification")
-	proto.RegisterType((*ParseValue)(nil), "lavanet.lava.spec.ParseValue")
-	proto.RegisterType((*CollectionData)(nil), "lavanet.lava.spec.CollectionData")
-	proto.RegisterType((*Header)(nil), "lavanet.lava.spec.Header")
-	proto.RegisterType((*Api)(nil), "lavanet.lava.spec.Api")
-	proto.RegisterType((*ParseDirective)(nil), "lavanet.lava.spec.ParseDirective")
-	proto.RegisterType((*BlockParser)(nil), "lavanet.lava.spec.BlockParser")
-	proto.RegisterType((*SpecCategory)(nil), "lavanet.lava.spec.SpecCategory")
 }
 
 func init() {
-	proto.RegisterFile("lavanet/lava/spec/api_collection.proto", fileDescriptor_c9f7567a181f534f)
+	
 }
 
 var fileDescriptor_c9f7567a181f534f = []byte{

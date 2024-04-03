@@ -216,11 +216,9 @@ func (m *Spec) GetShares() uint64 {
 }
 
 func init() {
-	proto.RegisterEnum("lavanet.lava.spec.Spec_ProvidersTypes", Spec_ProvidersTypes_name, Spec_ProvidersTypes_value)
-	proto.RegisterType((*Spec)(nil), "lavanet.lava.spec.Spec")
 }
 
-func init() { proto.RegisterFile("lavanet/lava/spec/spec.proto", fileDescriptor_789140b95c48dfce) }
+func init() { }
 
 var fileDescriptor_789140b95c48dfce = []byte{
 	// 702 bytes of a gzipped FileDescriptorProto
