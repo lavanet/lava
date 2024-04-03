@@ -50,12 +50,14 @@ func (h Hooks) BeforeDelegationSharesModified(ctx sdk.Context, delAddr sdk.AccAd
 // create new delegation period record
 // add description
 func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) error {
-	originalGas := ctx.GasMeter().GasConsumed()
+	originalGasMeter := ctx.GasMeter()
+	ctx = ctx.WithGasMeter(sdk.NewInfiniteGasMeter())
 	providers := 0
 	defer func() {
-		endGas := ctx.GasMeter().GasConsumed()
-		if endGas > originalGas && providers < PROVIDERS_NUM_GAS_REFUND {
-			ctx.GasMeter().RefundGas(endGas-originalGas, "refund hooks gas")
+		consumedGas := ctx.GasMeter().GasConsumed()
+		ctx = ctx.WithGasMeter(originalGasMeter)
+		if providers >= PROVIDERS_NUM_GAS_REFUND {
+			ctx.GasMeter().ConsumeGas(consumedGas, "consume hooks gas")
 		}
 	}()
 

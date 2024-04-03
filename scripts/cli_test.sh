@@ -143,9 +143,7 @@ trace lavad q pairing params >/dev/null
 trace lavad q pairing account-info $(lavad keys show alice -a) >/dev/null
 trace lavad q pairing effective-policy ETH1 $(lavad keys show alice -a) >/dev/null
 trace lavad q pairing get-pairing STRK $(lavad keys show alice -a) >/dev/null
-trace lavad q pairing list-epoch-payments >/dev/null
-trace lavad q pairing list-provider-payment-storage >/dev/null
-trace lavad q pairing list-unique-payment-storage-client-provider >/dev/null
+trace lavad q pairing provider-epoch-cu $(lavad keys show servicer1) >/dev/null
 trace lavad q pairing providers STRK >/dev/null
 trace lavad q pairing sdk-pairing STRK $(lavad keys show alice -a) >/dev/null
 trace lavad q pairing provider-monthly-payout $(lavad keys show servicer1 -a) >/dev/null
