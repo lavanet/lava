@@ -758,6 +758,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 
 func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endpointClient pairingtypes.RelayerClient, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult) (err error) {
 	replyServer, err := endpointClient.RelaySubscribe(ctx, relayResult.Request)
+	// relayLatency := time.Since(relaySentTime) // TODO: use subscription QoS
 	if err != nil {
 		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
