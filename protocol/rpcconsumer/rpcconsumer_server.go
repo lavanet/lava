@@ -280,11 +280,6 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if err != nil {
 		return nil, err
 	}
-	// temporarily disable subscriptions
-	isSubscription := chainlib.IsSubscription(chainMessage)
-	if isSubscription {
-		return &common.RelayResult{ProviderInfo: common.ProviderInfo{ProviderAddress: ""}}, utils.LavaFormatError("Subscriptions are not supported at the moment", nil)
-	}
 
 	rpccs.HandleDirectiveHeadersForMessage(chainMessage, directiveHeaders)
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
@@ -463,7 +458,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// if necessary send detection tx for hashes consensus mismatch
 	// handle QoS updates
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
-	isSubscription := chainlib.IsSubscription(chainMessage)
 	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
 	if rpccs.sharedState {
 		sharedStateId = rpccs.consumerConsistency.Key(dappID, consumerIp) // use same key as we use for consistency, (for better consistency :-D)
@@ -608,12 +602,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(chainId, apiInterface)
 			defer func() { go rpccs.rpcConsumerLogs.SetRelayReturnedFromProviderMetric(chainId, apiInterface) }()
 
-			if isSubscription {
+			if chainlib.IsSubscription(chainMessage) {
 				errResponse = rpccs.relaySubscriptionInner(goroutineCtx, endpointClient, singleConsumerSession, localRelayResult)
 				if errResponse != nil {
 					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse, utils.LogAttr("Request data", localRelayRequestData))
-					return
 				}
+
+				return
 			}
 
 			// unique per dappId and ip

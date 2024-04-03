@@ -112,7 +112,7 @@ func (rpccl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error,
 }
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
-// We dont want to alert error monitoring for that purpses.
+// We don't want to alert error monitoring for that purpses.
 func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string, timeTaken time.Duration) {
 	if err != nil {
 		errMessage := err.Error()

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -396,6 +397,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 				for {
 					err = (*replyServer).RecvMsg(&reply)
 					if err != nil {
+						if err == io.EOF {
+							break
+						}
 						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 						break
 					}
@@ -745,6 +749,10 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 
 	if ch != nil {
+		if replyMsg.Error != nil {
+			return reply, "", nil, nil
+		}
+
 		subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
 		if err != nil {
 			return nil, "", nil, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
