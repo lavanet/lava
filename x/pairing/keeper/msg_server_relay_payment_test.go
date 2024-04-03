@@ -447,13 +447,15 @@ func TestRelayPaymentQoS(t *testing.T) {
 
 func TestEpochPaymentDeletion(t *testing.T) {
 	ts := newTester(t)
-	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+	ts.setupForPayments(2, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	client1Acct, _ := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, unresponsiveprovider := ts.GetAccount(common.PROVIDER, 1)
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 	relaySession := ts.newRelaySession(providerAddr, 0, cuSum, ts.BlockHeight(), 0)
+	relaySession.UnresponsiveProviders = []*types.ReportedProvider{{Address: unresponsiveprovider, Disconnections: 5, Errors: 2}}
 	sig, err := sigs.Sign(client1Acct.SK, *relaySession)
 	relaySession.Sig = sig
 	require.NoError(t, err)
@@ -467,9 +469,17 @@ func TestEpochPaymentDeletion(t *testing.T) {
 
 	ts.AdvanceEpochs(ts.EpochsToSave() + 1)
 
-	res, err := ts.QueryPairingListEpochPayments()
-	require.NoError(t, err)
-	require.Equal(t, 0, len(res.EpochPayments))
+	listA := ts.Keepers.Pairing.GetAllUniqueEpochSessionStore(ts.Ctx)
+	require.Len(t, listA, 0)
+
+	list0 := ts.Keepers.Pairing.GetAllProviderEpochCuStore(ts.Ctx)
+	require.Len(t, list0, 0)
+
+	list1 := ts.Keepers.Pairing.GetAllProviderEpochComplainerCuStore(ts.Ctx)
+	require.Len(t, list1, 0)
+
+	list2 := ts.Keepers.Pairing.GetAllProviderConsumerEpochCuStore(ts.Ctx)
+	require.Len(t, list2, 0)
 }
 
 // Test that after the consumer uses some CU it's updated in its project and subscription
@@ -992,17 +1002,14 @@ func TestPairingCaching(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	epochPayment, found, _ := ts.Keepers.Pairing.GetEpochPaymentsFromBlock(ts.Ctx, ts.EpochStart())
-	require.True(t, found)
-	require.Len(t, epochPayment.ProviderPaymentStorageKeys, 3)
+	pecs := ts.Keepers.Pairing.GetAllProviderEpochCuStore(ts.Ctx)
+	require.Len(t, pecs, 3)
 
-	UniquePayments := ts.Keepers.Pairing.GetAllUniquePaymentStorageClientProvider(ts.Ctx)
+	UniquePayments := ts.Keepers.Pairing.GetAllUniqueEpochSessionStore(ts.Ctx)
 	require.Len(t, UniquePayments, 3*3*50)
 
-	storages := ts.Keepers.Pairing.GetAllProviderPaymentStorage(ts.Ctx)
-	for _, storage := range storages {
-		require.Len(t, storage.UniquePaymentStorageClientProviderKeys, 3*50)
-	}
+	storages := ts.Keepers.Pairing.GetAllProviderConsumerEpochCuStore(ts.Ctx)
+	require.Len(t, storages, 3*3)
 
 	for i := 0; i < 3; i++ {
 		consumerAcct, _ := ts.GetAccount(common.CONSUMER, i)
