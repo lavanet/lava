@@ -116,7 +116,7 @@ archives:
     builds:
       - lavavisor
     format: binary
-    name_template: '{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    name_template: '{{ .Binary }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}-{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     format_overrides:
       - goos: windows
         format: zip
@@ -124,7 +124,7 @@ archives:
     builds:
       - lavap
     format: binary
-    name_template: '{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    name_template: '{{ .Binary }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}-{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     format_overrides:
       - goos: windows
         format: zip
@@ -132,7 +132,7 @@ archives:
     builds:
       - lavad
     format: binary
-    name_template: '{{ .Binary }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    name_template: '{{ .Binary }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}-{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     format_overrides:
       - goos: windows
         format: zip
