@@ -391,8 +391,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			// to an error happening on another relay processor's routine. this can cause a race condition that returns to the user
 			// if we don't release the case, we it will cause the success case condition to not be executed
 			// scenario:
-			// sending first relay -> waiting -> sending second relay -> getting an error (not returning yet) ->
-			// -> (in parallel) first relay finished, removing from CurrentlyUsed providers -> checking currently used -> returning error instead of the successful relay.
+			// sending first relay -> waiting -> sending second relay -> getting an error on the second relay (not returning yet) ->
+			// -> (in parallel) first relay finished, removing from CurrentlyUsed providers -> checking currently used (on second failed relay) -> returning error instead of the successful relay.
 			// by releasing the case we allow the channel to be chosen again by the successful case.
 			return relayProcessor, returnErr
 		}
