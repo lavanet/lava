@@ -13,6 +13,9 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
 builds:
   - id: lavavisor
     binary: lavavisor
@@ -40,6 +43,7 @@ builds:
     flags:
       - -mod=readonly
       - -trimpath
+    mod_timestamp: "{{ .CommitTimestamp }}"
   
   - id: lavad
     binary: lavad
@@ -77,6 +81,7 @@ builds:
     tags:
       - netgo
       - ledger
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
   - id: lavap
     binary: lavap
@@ -104,6 +109,7 @@ builds:
     flags:
       - -mod=readonly
       - -trimpath
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
   - id: lavavisor
