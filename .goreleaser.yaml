@@ -169,3 +169,6 @@ release:
   name_template: "Lava v{{.Version}} 🌋"
   mode: replace
   draft: true
+  header:
+    from_file:
+      path: "dist/CHANGELOG.md"
