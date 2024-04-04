@@ -140,26 +140,37 @@ changelog:
     github
   sort: asc
   abbrev: 0
-  groups: # Regex use RE2 syntax as defined here: https://github.com/google/re2/wiki/Syntax.
-    - title: 'Features'
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
-      order: 100
-    - title: 'Bug fixes'
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
-      order: 200
-    - title: 'Documentation'
-      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+  groups:
+    - title: Dependency updates
+      regexp: '^.*?(feat|fix|chore)\(deps\)!?:.+$'
       order: 300
-    - title: 'Dependency updates'
-      regexp: '^.*?(feat|fix|chore)\(deps?.+\)!?:.+$'
+    - title: "New Features"
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 100
+    - title: "Security updates"
+      regexp: '^.*?sec(\(.+\))??!?:.+$'
+      order: 150
+    - title: "Bug fixes"
+      regexp: '^.*?(fix|refactor)(\(.+\))??!?:.+$'
+      order: 200
+    - title: "Documentation updates"
+      regexp: ^.*?docs?(\(.+\))??!?:.+$
       order: 400
-    - title: 'Other work'
-      order: 999
+    - title: "Build process updates"
+      regexp: ^.*?(build|ci)(\(.+\))??!?:.+$
+      order: 400
+    - title: Other work
+      order: 9999
   filters:
     exclude:
-      - '^test:'
-      - '^.*?Bump(\([[:word:]]+\))?.+$'
-      - '^.*?[Bot](\([[:word:]]+\))?.+$'
+      - "^test:"
+      - "^test\\("
+      - "^chore"
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+      - go mod tidy
 
 release:
   github:
@@ -169,6 +180,3 @@ release:
   name_template: "Lava v{{.Version}} 🌋"
   mode: replace
   draft: true
-  header:
-    from_file:
-      path: "dist/CHANGELOG.md"
