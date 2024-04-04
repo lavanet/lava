@@ -133,6 +133,7 @@ func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap, err error) {
 	up.selecting = false
 }
 
+// called when already locked.
 func (up *UsedProviders) setUnwanted(provider string) {
 	if up == nil {
 		return

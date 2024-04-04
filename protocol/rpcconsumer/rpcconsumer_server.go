@@ -30,7 +30,8 @@ import (
 )
 
 const (
-	MaxRelayRetries = 6
+	MaxRelayRetries                          = 6
+	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
 )
 
 var NoResponseTimeout = sdkerrors.New("NoResponseTimeout Error", 685, "timeout occurred while waiting for providers responses")
@@ -350,6 +351,24 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 		}
 	}
 	go readResultsFromProcessor()
+
+	returnCondition := make(chan error)
+	// used for checking whether to return an error to the user or to allow other channels return their result first see detailed description on the switch case below
+	validateReturnCondition := func(err error) {
+		currentlyUsedIsEmptyCounter := 0
+		if err != nil {
+			for validateNoProvidersAreUsed := 0; validateNoProvidersAreUsed < numberOfTimesToCheckCurrentlyUsedIsEmpty; validateNoProvidersAreUsed++ {
+				if relayProcessor.usedProviders.CurrentlyUsed() == 0 {
+					currentlyUsedIsEmptyCounter++
+				}
+				time.Sleep(time.Millisecond)
+			}
+			// we failed to send a batch of relays, if there are no active sends we can terminate after validating X amount of times to make sure no racing channels
+			if currentlyUsedIsEmptyCounter >= numberOfTimesToCheckCurrentlyUsedIsEmpty {
+				returnCondition <- err
+			}
+		}
+	}
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
 	for {
@@ -359,20 +378,23 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 				return relayProcessor, nil
 			}
 			err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
-			if err != nil && relayProcessor.usedProviders.CurrentlyUsed() == 0 {
-				// we failed to send a batch of relays, if there are no active sends we can terminate
-				return relayProcessor, err
-			}
+			go validateReturnCondition(err)
 			go readResultsFromProcessor()
 		case <-startNewBatchTicker.C:
 			// only trigger another batch for non BestResult relays
 			if relayProcessor.selection != BestResult {
 				err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
-				if err != nil && relayProcessor.usedProviders.CurrentlyUsed() == 0 {
-					// we failed to send a batch of relays, if there are no active sends we can terminate
-					return relayProcessor, err
-				}
+				go validateReturnCondition(err)
 			}
+		case returnErr := <-returnCondition:
+			// we use this channel because there could be a race condition between us releasing the provider and about to send the return
+			// to an error happening on another relay processor's routine. this can cause a race condition that returns to the user
+			// if we don't release the case, we it will cause the success case condition to not be executed
+			// scenario:
+			// sending first relay -> waiting -> sending second relay -> getting an error (not returning yet) ->
+			// -> (in parallel) first relay finished, removing from CurrentlyUsed providers -> checking currently used -> returning error instead of the successful relay.
+			// by releasing the case we allow the channel to be chosen again by the successful case.
+			return relayProcessor, returnErr
 		}
 	}
 }
@@ -397,12 +419,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// handle QoS updates
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
 	isSubscription := chainlib.IsSubscription(chainMessage)
-	if isSubscription {
-		// temporarily disable subscriptions
-		// TODO: fix subscription and disable this case.
-		return utils.LavaFormatError("Subscriptions are disabled currently", nil)
-	}
-
 	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
 	if rpccs.sharedState {
 		sharedStateId = rpccs.consumerConsistency.Key(dappID, consumerIp) // use same key as we use for consistency, (for better consistency :-D)
@@ -417,63 +433,65 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// try using cache before sending relay
 	var cacheError error
-	if reqBlock != spectypes.NOT_APPLICABLE || !chainMessage.GetForceCacheRefresh() {
-		var cacheReply *pairingtypes.CacheRelayReply
-		hashKey, outputFormatter, err := chainlib.HashCacheRequest(relayRequestData, chainID)
-		if err != nil {
-			utils.LavaFormatError("sendRelayToProvider Failed getting Hash for cache request", err)
-		} else {
-			cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
-			cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
-				RequestHash:    hashKey,
-				RequestedBlock: relayRequestData.RequestBlock,
-				ChainId:        chainID,
-				BlockHash:      nil,
-				Finalized:      false,
-				SharedStateId:  sharedStateId,
-				SeenBlock:      relayRequestData.SeenBlock,
-			}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
-			cancel()
-			reply := cacheReply.GetReply()
+	if rpccs.cache.CacheActive() { // use cache only if its defined.
+		if reqBlock != spectypes.NOT_APPLICABLE || !chainMessage.GetForceCacheRefresh() {
+			var cacheReply *pairingtypes.CacheRelayReply
+			hashKey, outputFormatter, err := chainlib.HashCacheRequest(relayRequestData, chainID)
+			if err != nil {
+				utils.LavaFormatError("sendRelayToProvider Failed getting Hash for cache request", err)
+			} else {
+				cacheCtx, cancel := context.WithTimeout(ctx, common.CacheTimeout)
+				cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
+					RequestHash:    hashKey,
+					RequestedBlock: relayRequestData.RequestBlock,
+					ChainId:        chainID,
+					BlockHash:      nil,
+					Finalized:      false,
+					SharedStateId:  sharedStateId,
+					SeenBlock:      relayRequestData.SeenBlock,
+				}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
+				cancel()
+				reply := cacheReply.GetReply()
 
-			// read seen block from cache even if we had a miss we still want to get the seen block so we can use it to get the right provider.
-			cacheSeenBlock := cacheReply.GetSeenBlock()
-			// check if the cache seen block is greater than my local seen block, this means the user requested this
-			// request spoke with another consumer instance and use that block for inter consumer consistency.
-			if rpccs.sharedState && cacheSeenBlock > relayRequestData.SeenBlock {
-				utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", relayRequestData.SeenBlock))
-				relayRequestData.SeenBlock = cacheSeenBlock
-				// setting the fetched seen block from the cache server to our local cache as well.
-				rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, dappID, consumerIp)
-			}
-
-			// handle cache reply
-			if cacheError == nil && reply != nil {
-				// Info was fetched from cache, so we don't need to change the state
-				// so we can return here, no need to update anything and calculate as this info was fetched from the cache
-				reply.Data = outputFormatter(reply.Data)
-				relayResult := common.RelayResult{
-					Reply: reply,
-					Request: &pairingtypes.RelayRequest{
-						RelayData: relayRequestData,
-					},
-					Finalized:    false, // set false to skip data reliability
-					StatusCode:   200,
-					ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
+				// read seen block from cache even if we had a miss we still want to get the seen block so we can use it to get the right provider.
+				cacheSeenBlock := cacheReply.GetSeenBlock()
+				// check if the cache seen block is greater than my local seen block, this means the user requested this
+				// request spoke with another consumer instance and use that block for inter consumer consistency.
+				if rpccs.sharedState && cacheSeenBlock > relayRequestData.SeenBlock {
+					utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", relayRequestData.SeenBlock))
+					relayRequestData.SeenBlock = cacheSeenBlock
+					// setting the fetched seen block from the cache server to our local cache as well.
+					rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, dappID, consumerIp)
 				}
-				relayProcessor.SetResponse(&relayResponse{
-					relayResult: relayResult,
-					err:         nil,
-				})
-				return nil
+
+				// handle cache reply
+				if cacheError == nil && reply != nil {
+					// Info was fetched from cache, so we don't need to change the state
+					// so we can return here, no need to update anything and calculate as this info was fetched from the cache
+					reply.Data = outputFormatter(reply.Data)
+					relayResult := common.RelayResult{
+						Reply: reply,
+						Request: &pairingtypes.RelayRequest{
+							RelayData: relayRequestData,
+						},
+						Finalized:    false, // set false to skip data reliability
+						StatusCode:   200,
+						ProviderInfo: common.ProviderInfo{ProviderAddress: ""},
+					}
+					relayProcessor.SetResponse(&relayResponse{
+						relayResult: relayResult,
+						err:         nil,
+					})
+					return nil
+				}
+				// cache failed, move on to regular relay
+				if performance.NotConnectedError.Is(cacheError) {
+					utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
+				}
 			}
-			// cache failed, move on to regular relay
-			if performance.NotConnectedError.Is(cacheError) {
-				utils.LavaFormatDebug("cache not connected", utils.LogAttr("error", cacheError))
-			}
+		} else {
+			utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: chainMessage.GetApi().Name})
 		}
-	} else {
-		utils.LavaFormatDebug("skipping cache due to requested block being NOT_APPLICABLE", utils.Attribute{Key: "api name", Value: chainMessage.GetApi().Name})
 	}
 
 	if reqBlock == spectypes.LATEST_BLOCK && relayRequestData.SeenBlock != 0 {
@@ -484,7 +502,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	addon := chainlib.GetAddon(chainMessage)
 	extensions := chainMessage.GetExtensions()
-	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), relayProcessor.GetUsedProviders(), reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
+	usedProviders := relayProcessor.GetUsedProviders()
+	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
 			// if we have no providers for a specific addon or extension, return an indicative error
