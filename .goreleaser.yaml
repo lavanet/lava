@@ -132,7 +132,7 @@ archives:
         format: zip
 
 checksum:
-  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+  name_template: "sha256sum.txt"
   algorithm: sha256
 
 changelog:
