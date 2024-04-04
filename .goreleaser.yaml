@@ -70,9 +70,13 @@ builds:
       - -X github.com/cosmos/cosmos-sdk/version.Version={{ .Version }}
       - -X github.com/cosmos/cosmos-sdk/version.Commit={{ .Commit }}
       - -X github.com/cosmos/cosmos-sdk/version.BuildTags=netgo,ledger
+      - -w -s
     flags:
       - -mod=readonly
       - -trimpath
+    tags:
+      - netgo
+      - ledger
 
   - id: lavap
     binary: lavap
