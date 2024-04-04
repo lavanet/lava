@@ -139,7 +139,6 @@ changelog:
   use:
     github
   sort: asc
-  abbrev: 0
   groups:
     - title: Dependency updates
       regexp: '^.*?(feat|fix|chore)\(deps\)!?:.+$'
