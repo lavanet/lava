@@ -3,7 +3,10 @@ package keeper
 import (
 	"strings"
 
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/x/spec/types"
+	typesv1 "github.com/lavanet/lava/x/spec/types/migrations/v1"
 )
 
 type Migrator struct {
@@ -20,5 +23,30 @@ func (m Migrator) Migrate2to3(ctx sdk.Context) error {
 		spec.Name = strings.ToLower(spec.Name)
 		m.keeper.SetSpec(ctx, spec)
 	}
+	return nil
+}
+
+func (m Migrator) Migrate3to4(ctx sdk.Context) error {
+	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var specV1 typesv1.Spec
+		m.keeper.cdc.MustUnmarshal(iterator.Value(), &specV1)
+
+		var spec types.Spec
+		m.keeper.cdc.MustUnmarshal(iterator.Value(), &spec)
+
+		for acIndex, apiCollection := range specV1.ApiCollections {
+			for eIndex, extension := range apiCollection.Extensions {
+				spec.ApiCollections[acIndex].Extensions[eIndex].CuMultiplier = uint64(extension.CuMultiplier)
+			}
+		}
+
+		m.keeper.SetSpec(ctx, spec)
+	}
+
 	return nil
 }
