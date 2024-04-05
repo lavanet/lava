@@ -50,7 +50,7 @@ func DecodeUniqueEpochSessionKey(key string) (epoch uint64, provider string, cha
 	if err != nil {
 		return 0, "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key: bad session ID. key: %s", key)
 	}
-	return epoch, split[1], split[2], split[3], sessionID, nil
+	return epoch, split[0], split[1], split[2], sessionID, nil
 }
 
 func DecodeProviderEpochCuKey(key string) (epoch uint64, provider string, chainID string, err error) {
@@ -62,7 +62,7 @@ func DecodeProviderEpochCuKey(key string) (epoch uint64, provider string, chainI
 		return 0, "", "", fmt.Errorf("invalid ProviderEpochCu key: bad structure. key: %s", key)
 	}
 	epoch = DecodeBlock([]byte(key[0:8]))
-	return epoch, split[1], split[2], nil
+	return epoch, split[0], split[1], nil
 }
 
 func DecodeProviderConsumerEpochCuKey(key string) (epoch uint64, provider string, project string, chainID string, err error) {
@@ -74,7 +74,7 @@ func DecodeProviderConsumerEpochCuKey(key string) (epoch uint64, provider string
 		return 0, "", "", "", fmt.Errorf("invalid ProviderConsumerEpochCu key: bad structure. key: %s", key)
 	}
 	epoch = DecodeBlock([]byte(key[0:8]))
-	return epoch, split[1], split[2], split[3], nil
+	return epoch, split[0], split[1], split[2], nil
 }
 
 func UniqueEpochSessionKeyPrefix() []byte {
