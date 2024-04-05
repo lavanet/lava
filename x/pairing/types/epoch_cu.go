@@ -46,7 +46,7 @@ func DecodeUniqueEpochSessionKey(key string) (epoch uint64, provider string, cha
 		return 0, "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key: bad structure. key: %s", key)
 	}
 	epoch = DecodeBlock([]byte(key[0:8]))
-	sessionID, err = strconv.ParseUint(split[4], 10, 64)
+	sessionID, err = strconv.ParseUint(split[3], 10, 64)
 	if err != nil {
 		return 0, "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key: bad session ID. key: %s", key)
 	}
