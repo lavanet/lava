@@ -1,0 +1,115 @@
+{
+    "proposal": {
+      "title": "Add Specs: Manta",
+      "description": "Adding new specification support for relaying data on Manta",
+      "specs": [
+        {
+          "index": "MANTA",
+          "name": "Manta mainnet",
+          "enabled": true,
+          "imports": ["ETH1"],
+          "reliability_threshold": 268435455,
+          "data_reliability_enabled": true,
+          "block_distance_for_finalized_data": 1,
+          "blocks_in_finalization_proof": 3,
+          "average_block_time": 10000,
+          "allowed_block_lag_for_qos_sync": 5,
+          "shares": 1,
+          "min_stake_provider": {
+            "denom": "ulava",
+            "amount": "47500000000"
+          },
+          "api_collections": [
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "jsonrpc",
+                "internal_path": "",
+                "type": "POST",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "0xa9"
+                    }
+                  ]
+                },
+                {
+                  "name": "pruning",
+                  "values": [
+                    {
+                      "latest_distance": 0
+                    },
+                    {
+                      "extension": "archive",
+                      "expected_value": "0x0"
+                    }
+                  ]
+                }
+              ],
+              "extensions": [
+                {
+                  "name": "archive",
+                  "cu_multiplier": 5,
+                  "rule": {
+                    "block": 0
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "index": "MANTAT",
+          "name": "manta pacific sepolia testnet",
+          "enabled": true,
+          "imports": ["MANTA"],
+          "reliability_threshold": 268435455,
+          "data_reliability_enabled": true,
+          "block_distance_for_finalized_data": 1,
+          "blocks_in_finalization_proof": 2,
+          "average_block_time": 10000,
+          "allowed_block_lag_for_qos_sync": 5,
+          "shares": 1,
+          "min_stake_provider": {
+            "denom": "ulava",
+            "amount": "47500000000"
+          },
+          "api_collections": [
+            {
+              "enabled": true,
+              "collection_data": {
+                "api_interface": "jsonrpc",
+                "internal_path": "",
+                "type": "POST",
+                "add_on": ""
+              },
+              "apis": [],
+              "headers": [],
+              "inheritance_apis": [],
+              "parse_directives": [],
+              "verifications": [
+                {
+                  "name": "chain-id",
+                  "values": [
+                    {
+                      "expected_value": "0x34816e"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "deposit": "10000000ulava"
+  }
+  
