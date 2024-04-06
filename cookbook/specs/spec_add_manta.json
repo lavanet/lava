@@ -5,7 +5,7 @@
       "specs": [
         {
           "index": "MANTA",
-          "name": "Manta mainnet",
+          "name": "manta mainnet",
           "enabled": true,
           "imports": ["ETH1"],
           "reliability_threshold": 268435455,
