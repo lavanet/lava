@@ -69,13 +69,13 @@ $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain
 # $PROVIDER2_LISTENER LAV1 rest '$LAVA_REST' \
 # $PROVIDER2_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
 # $PROVIDER2_LISTENER LAV1 grpc '$LAVA_GRPC' \
-# $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 --chain-id lava --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+# $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer2 --chain-id lava --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER2.log" && sleep 0.25
 
-# screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider \
-# $PROVIDER3_LISTENER LAV1 rest '$LAVA_REST' \
-# $PROVIDER3_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
-# $PROVIDER3_LISTENER LAV1 grpc '$LAVA_GRPC' \
-# $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --chain-id lava --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+screen -d -m -S provider3 bash -c "source ~/.bashrc; lavap rpcprovider \
+$PROVIDER3_LISTENER LAV1 rest '$LAVA_REST' \
+$PROVIDER3_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
+$PROVIDER3_LISTENER LAV1 grpc '$LAVA_GRPC' \
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --chain-id lava --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER3.log" && sleep 0.25
 
 wait_next_block
 
@@ -85,3 +85,5 @@ wait_next_block
 
 echo "--- setting up screens done ---"
 screen -ls
+
+echo "lavap rpcprovider $PROVIDER3_LISTENER LAV1 rest '$LAVA_REST' $PROVIDER3_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' $PROVIDER3_LISTENER LAV1 grpc '$LAVA_GRPC' $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer3 --chain-id lava"

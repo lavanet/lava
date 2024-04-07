@@ -563,6 +563,10 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 	// csm.currentlyBlockedProviderAddresses is sorted by the provider with the highest cu used this epoch to the lowest
 	// meaning if we fetch the first successful index this is probably the highest success ratio to get a response.
 	for _, providerAddress := range csm.currentlyBlockedProviderAddresses {
+		// check if we have this provider already.
+		if _, providerExistInIgnoredProviders := ignoredProviders.providers[providerAddress]; providerExistInIgnoredProviders {
+			continue
+		}
 		consumerSessionsWithProvider := csm.pairing[providerAddress]
 		// Add to ignored (no matter what)
 		ignoredProviders.providers[providerAddress] = struct{}{}
@@ -578,14 +582,14 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 			continue
 		}
 
-		// If no error, add provider session map
-		sessionWithProviderMap[providerAddress] = &SessionWithProvider{
-			SessionsWithProvider: consumerSessionsWithProvider,
-			CurrentEpoch:         currentEpoch,
-		}
 		consumerSessionsWithProvider.atomicWriteBlockedStatus(BlockedProviderSessionUsedStatus) // will add to valid addresses if successful
-
-		return sessionWithProviderMap, nil
+		// If no error, return session map
+		return SessionWithProviderMap{
+			providerAddress: &SessionWithProvider{
+				SessionsWithProvider: consumerSessionsWithProvider,
+				CurrentEpoch:         currentEpoch,
+			},
+		}, nil
 	}
 
 	// if we got here we failed to fetch a valid provider meaning no pairing available.
