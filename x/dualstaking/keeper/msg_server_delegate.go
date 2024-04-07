@@ -46,10 +46,18 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
+	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
+
+	delegationBefore, _ := k.GetDelegation(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, nextEpoch)
+
 	_, err = k.stakingKeeper.Delegate(ctx, delegatorAddress, amount.Amount, stakingtypes.Unbonded, validatorType, true)
 	if err != nil {
 		return err
 	}
+
+	delegationAfter, _ := k.GetDelegation(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, nextEpoch)
+
+	amount = delegationAfter.Amount.Sub(delegationBefore.Amount)
 
 	err = k.Redelegate(
 		ctx,
