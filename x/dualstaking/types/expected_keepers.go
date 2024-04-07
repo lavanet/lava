@@ -56,6 +56,7 @@ type SpecKeeper interface {
 }
 
 type StakingKeeper interface {
+	ValidatorByConsAddr(sdk.Context, sdk.ConsAddress) stakingtypes.ValidatorI
 	UnbondingTime(ctx sdk.Context) time.Duration
 	GetAllDelegatorDelegations(ctx sdk.Context, delegator sdk.AccAddress) []stakingtypes.Delegation
 	GetDelegatorValidator(ctx sdk.Context, delegatorAddr sdk.AccAddress, validatorAddr sdk.ValAddress) (validator stakingtypes.Validator, err error)

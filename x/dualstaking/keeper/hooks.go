@@ -7,10 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
-	"golang.org/x/exp/slices"
 )
 
 // Wrapper struct
@@ -104,48 +102,7 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 	return nil
 }
 
-// BeforeValidatorSlashed hook unbonds funds from providers so the providers-validators delegations balance will preserve
 func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, fraction sdk.Dec) error {
-	val, found := h.k.stakingKeeper.GetValidator(ctx, valAddr)
-	if !found {
-		return utils.LavaFormatError("slash hook failed", fmt.Errorf("validator not found"),
-			utils.Attribute{Key: "validator_address", Value: valAddr.String()},
-		)
-	}
-
-	// unbond from providers according to slash
-	// sort the delegations from lowest to highest so if there's a remainder,
-	// remove it from the highest delegation in the last iteration
-	remainingTokensToSlash := fraction.MulInt(val.Tokens).TruncateInt()
-	delegations := h.k.stakingKeeper.GetValidatorDelegations(ctx, valAddr)
-	slices.SortFunc(delegations, func(i, j stakingtypes.Delegation) bool {
-		return val.TokensFromShares(i.Shares).LT(val.TokensFromShares(j.Shares))
-	})
-	for i, d := range delegations {
-		tokens := val.TokensFromShares(d.Shares)
-		tokensToSlash := fraction.Mul(tokens).TruncateInt()
-		if i == len(delegations)-1 {
-			tokensToSlash = remainingTokensToSlash
-		}
-		if tokensToSlash.IsPositive() {
-			err := h.k.UnbondUniformProviders(ctx, d.DelegatorAddress, sdk.NewCoin(commontypes.TokenDenom, tokensToSlash))
-			if err != nil {
-				utils.LavaFormatError("slash hook failed", err,
-					utils.Attribute{Key: "validator_address", Value: valAddr.String()},
-					utils.Attribute{Key: "delegator_address", Value: d.DelegatorAddress},
-					utils.Attribute{Key: "slash_amount", Value: tokensToSlash.String()},
-				)
-			}
-
-			remainingTokensToSlash = remainingTokensToSlash.Sub(tokensToSlash)
-		}
-	}
-
-	details := make(map[string]string)
-	details["validator_address"] = valAddr.String()
-	details["slash_fraction"] = fraction.String()
-
-	utils.LogLavaEvent(ctx, h.k.Logger(ctx), types.ValidatorSlashEventName, details, "Validator slash hook event")
 	return nil
 }
 
