@@ -353,7 +353,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 		if PairingListEmptyError.Is(err) {
 			// got no pairing available, try to recover a session from the currently banned providers
 			var errOnRetry error
-			sessionWithProviderMap, errOnRetry = csm.tryGetConsumerSessionWithProviderFromBlockedProviderList(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch)
+			sessionWithProviderMap, errOnRetry = csm.tryGetConsumerSessionWithProviderFromBlockedProviderList(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, usedProviders)
 			if errOnRetry != nil {
 				return nil, err // return original error (getValidConsumerSessionsWithProvider)
 			}
@@ -541,7 +541,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 // On cases where the valid provider list is empty, by being already used in this attempt, and we got to a point
 // where we need another session (for retry or a timeout happened) we want to try fetching a blocked provider for the list.
 // the list will be sorted by most cu served giving the best provider that was blocked a second chance to get back to valid addresses.
-func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedProviderList(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, virtualEpoch uint64) (sessionWithProviderMap SessionWithProviderMap, err error) {
+func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedProviderList(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, virtualEpoch uint64, usedProviders UsedProvidersInf) (sessionWithProviderMap SessionWithProviderMap, err error) {
 	csm.lock.RLock() // we Lock instead of RLock because we need to make changes to the blocked provider list.
 	// we do not defer yet as we might need to unlock due to an epoch change
 
@@ -570,6 +570,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 		consumerSessionsWithProvider := csm.pairing[providerAddress]
 		// Add to ignored (no matter what)
 		ignoredProviders.providers[providerAddress] = struct{}{}
+		usedProviders.AddUnwantedAddresses(providerAddress) // add the address to our unwanted providers to avoid infinite recursion
 
 		// validate this provider has enough cu to be used
 		if err := consumerSessionsWithProvider.validateComputeUnits(cuNeededForSession, virtualEpoch); err != nil {

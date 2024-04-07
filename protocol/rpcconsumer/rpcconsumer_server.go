@@ -361,7 +361,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 				if relayProcessor.usedProviders.CurrentlyUsed() == 0 {
 					currentlyUsedIsEmptyCounter++
 				}
-				time.Sleep(time.Millisecond)
+				time.Sleep(5 * time.Millisecond)
 			}
 			// we failed to send a batch of relays, if there are no active sends we can terminate after validating X amount of times to make sure no racing channels
 			if currentlyUsedIsEmptyCounter >= numberOfTimesToCheckCurrentlyUsedIsEmpty {

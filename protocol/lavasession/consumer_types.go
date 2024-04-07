@@ -26,6 +26,7 @@ type UsedProvidersInf interface {
 	TryLockSelection(context.Context) bool
 	AddUsed(ConsumerSessionsMap, error)
 	GetUnwantedProvidersToSend() map[string]struct{}
+	AddUnwantedAddresses(address string)
 }
 
 type SessionInfo struct {
