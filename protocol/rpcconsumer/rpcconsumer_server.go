@@ -388,9 +388,9 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			}
 		case returnErr := <-returnCondition:
 			// we use this channel because there could be a race condition between us releasing the provider and about to send the return
-			// to an error happening on another relay processor's routine. this can cause a race condition that returns to the user
-			// if we don't release the case, we it will cause the success case condition to not be executed
-			// scenario:
+			// to an error happening on another relay processor's routine. this can cause an error that returns to the user
+			// if we don't release the case, it will cause the success case condition to not be executed
+			// detailed scenario:
 			// sending first relay -> waiting -> sending second relay -> getting an error on the second relay (not returning yet) ->
 			// -> (in parallel) first relay finished, removing from CurrentlyUsed providers -> checking currently used (on second failed relay) -> returning error instead of the successful relay.
 			// by releasing the case we allow the channel to be chosen again by the successful case.
