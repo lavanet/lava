@@ -736,6 +736,11 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	if err := consumerSession.VerifyLock(); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionFailure, consumerSession.lock must be locked before accessing this method, additional info:")
 	}
+	// redemptionSession = true, if we got this provider from the blocked provider list.
+	// if so, it means we already reported this provider and blocked it we do not need to do it again.
+	// due to session failure we also don't need to remove it from the blocked provider list.
+	// we will just update the QOS info, and return
+	redemptionSession := consumerSession.Parent.atomicReadBlockedStatus() == BlockedProviderSessionUsedStatus
 
 	// consumer Session should be locked here. so we can just apply the session failure here.
 	if consumerSession.BlockListed {
@@ -759,14 +764,18 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	if len(consumerSession.ConsecutiveErrors) > MaximumNumberOfFailuresAllowedPerConsumerSession || IsSessionSyncLoss(errorReceived) {
 		utils.LavaFormatDebug("Blocking consumer session", utils.LogAttr("ConsecutiveErrors", consumerSession.ConsecutiveErrors), utils.LogAttr("errorsCount", consumerSession.errorsCount), utils.Attribute{Key: "id", Value: consumerSession.SessionId})
 		consumerSession.BlockListed = true // block this session from future usages
-		// we will check the total number of cu for this provider and decide if we need to report it.
-		if consumerSession.Parent.atomicReadUsedComputeUnits() <= consumerSession.LatestRelayCu { // if we had 0 successful relays and we reached block session we need to report this provider
-			blockProvider = true
-			reportProvider = true
-		}
-		if reportProvider {
-			providerAddr := consumerSession.Parent.PublicLavaAddress
-			go csm.reportedProviders.AppendReport(metrics.NewReportsRequest(providerAddr, consumerSession.ConsecutiveErrors, csm.rpcEndpoint.ChainID))
+
+		// check if this session is a redemption session meaning we already blocked and reported the provider if it was necessary.
+		if !redemptionSession {
+			// we will check the total number of cu for this provider and decide if we need to report it.
+			if consumerSession.Parent.atomicReadUsedComputeUnits() <= consumerSession.LatestRelayCu { // if we had 0 successful relays and we reached block session we need to report this provider
+				blockProvider = true
+				reportProvider = true
+			}
+			if reportProvider {
+				providerAddr := consumerSession.Parent.PublicLavaAddress
+				go csm.reportedProviders.AppendReport(metrics.NewReportsRequest(providerAddr, consumerSession.ConsecutiveErrors, csm.rpcEndpoint.ChainID))
+			}
 		}
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
@@ -784,7 +793,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		return err
 	}
 
-	if blockProvider {
+	if !redemptionSession && blockProvider {
 		publicProviderAddress, pairingEpoch := parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch()
 		err = csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch, 0, consecutiveErrors, nil)
 		if err != nil {
