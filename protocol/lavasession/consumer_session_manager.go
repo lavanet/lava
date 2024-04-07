@@ -800,7 +800,20 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 // validating if the provider is currently not in valid addresses list. if the session was successful we can return the provider
 // to our valid addresses list and resume its usage
 func (csm *ConsumerSessionManager) validateAndReturnBlockedProviderToValidAddressesList(providerAddress string) {
-
+	csm.lock.Lock()
+	defer csm.lock.Unlock()
+	for idx, addr := range csm.currentlyBlockedProviderAddresses {
+		if addr == providerAddress {
+			// remove it from the csm.currentlyBlockedProviderAddresses
+			csm.currentlyBlockedProviderAddresses = append(csm.currentlyBlockedProviderAddresses[:idx], csm.currentlyBlockedProviderAddresses[idx+1:]...)
+			// reapply it to the valid addresses.
+			csm.validAddresses = append(csm.validAddresses, addr)
+			// purge the current addon addresses so it will be created again next time get session is called.
+			csm.RemoveAddonAddresses("", nil)
+			return
+		}
+	}
+	// if we didn't find it, we might had two sessions in parallel and thats ok. the first one dealt with it we can just return
 }
 
 // On a successful session this function will update all necessary fields in the consumerSession. and unlock it when it finishes
@@ -821,6 +834,8 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	}
 
 	if consumerSession.Parent.atomicReadBlockedStatus() == BlockedProviderSessionUsedStatus {
+		// we will deal with the removal of this provider from the blocked list so we can for now set it as default
+		consumerSession.Parent.atomicWriteBlockedStatus(BlockedProviderSessionUnusedStatus)
 		// this provider is probably in the ignored provider list. we need to validate and return it to valid addresses
 		providerAddress := consumerSession.Parent.PublicLavaAddress
 		// we want this method to run last after we unlock the consumer session
