@@ -125,6 +125,10 @@ type ConsumerSessionsWithProvider struct {
 	// whether we already reported this provider this epoch, we can only report one conflict per provider per epoch
 	conflictFoundAndReported uint32   // 0 == not reported, 1 == reported
 	stakeSize                sdk.Coin // the stake size the provider staked
+
+	// blocked provider recovery status if 0 currently not used, if 1 a session has tried resume communication with this provider
+	// if the provider is not blocked at all this field is irrelevant
+	blockedAndUsedWithChanceForRecoveryStatus uint32
 }
 
 func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints []*Endpoint, maxCu uint64, epoch uint64, stakeSize sdk.Coin) *ConsumerSessionsWithProvider {
@@ -136,6 +140,14 @@ func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints [
 		PairingEpoch:      epoch,
 		stakeSize:         stakeSize,
 	}
+}
+
+func (cswp *ConsumerSessionsWithProvider) atomicReadBlockedStatus() uint32 {
+	return atomic.LoadUint32(&cswp.blockedAndUsedWithChanceForRecoveryStatus)
+}
+
+func (cswp *ConsumerSessionsWithProvider) atomicWriteBlockedStatus(status uint32) {
+	atomic.StoreUint32(&cswp.blockedAndUsedWithChanceForRecoveryStatus, status) // we can only set conflict to "reported".
 }
 
 func (cswp *ConsumerSessionsWithProvider) atomicReadConflictReported() bool {
