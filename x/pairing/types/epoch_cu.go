@@ -25,27 +25,27 @@ func DecodeBlock(encodedKey []byte) uint64 {
 }
 
 func UniqueEpochSessionKey(epoch uint64, provider string, chainID string, project string, sessionID uint64) []byte {
-	return []byte(strings.Join([]string{string(EncodeBlock(epoch)), provider, chainID, project, strconv.FormatUint(sessionID, 10)}, " "))
+	return append(EncodeBlock(epoch), []byte(strings.Join([]string{provider, chainID, project, strconv.FormatUint(sessionID, 10)}, " "))...)
 }
 
 func ProviderEpochCuKey(epoch uint64, provider string, chainID string) []byte {
-	return []byte(strings.Join([]string{string(EncodeBlock(epoch)), provider, chainID}, " "))
+	return append(EncodeBlock(epoch), []byte(strings.Join([]string{provider, chainID}, " "))...)
 }
 
 func ProviderConsumerEpochCuKey(epoch uint64, provider string, project string, chainID string) []byte {
-	return []byte(strings.Join([]string{string(EncodeBlock(epoch)), provider, project, chainID}, " "))
+	return append(EncodeBlock(epoch), []byte(strings.Join([]string{provider, project, chainID}, " "))...)
 }
 
 func DecodeUniqueEpochSessionKey(key string) (epoch uint64, provider string, chainID string, project string, sessionID uint64, err error) {
-	if len(key) < 9 {
+	if len(key) < 8 {
 		return 0, "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key: bad structure. key: %s", key)
 	}
 
-	split := strings.Split(key[9:], " ")
+	split := strings.Split(key[8:], " ")
 	if len(split) != 4 {
 		return 0, "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key: bad structure. key: %s", key)
 	}
-	epoch = DecodeBlock([]byte(key[0:8]))
+	epoch = DecodeBlock([]byte(key[:8]))
 	sessionID, err = strconv.ParseUint(split[3], 10, 64)
 	if err != nil {
 		return 0, "", "", "", 0, fmt.Errorf("invalid UniqueEpochSession key: bad session ID. key: %s", key)
@@ -54,26 +54,26 @@ func DecodeUniqueEpochSessionKey(key string) (epoch uint64, provider string, cha
 }
 
 func DecodeProviderEpochCuKey(key string) (epoch uint64, provider string, chainID string, err error) {
-	if len(key) < 9 {
+	if len(key) < 8 {
 		return 0, "", "", fmt.Errorf("invalid ProviderEpochCu key: bad structure. key: %s", key)
 	}
-	split := strings.Split(key[9:], " ")
+	split := strings.Split(key[8:], " ")
 	if len(split) != 2 {
 		return 0, "", "", fmt.Errorf("invalid ProviderEpochCu key: bad structure. key: %s", key)
 	}
-	epoch = DecodeBlock([]byte(key[0:8]))
+	epoch = DecodeBlock([]byte(key[:8]))
 	return epoch, split[0], split[1], nil
 }
 
 func DecodeProviderConsumerEpochCuKey(key string) (epoch uint64, provider string, project string, chainID string, err error) {
-	if len(key) < 9 {
+	if len(key) < 8 {
 		return 0, "", "", "", fmt.Errorf("invalid ProviderConsumerEpochCu key: bad structure. key: %s", key)
 	}
-	split := strings.Split(key[9:], " ")
+	split := strings.Split(key[8:], " ")
 	if len(split) != 3 {
 		return 0, "", "", "", fmt.Errorf("invalid ProviderConsumerEpochCu key: bad structure. key: %s", key)
 	}
-	epoch = DecodeBlock([]byte(key[0:8]))
+	epoch = DecodeBlock([]byte(key[:8]))
 	return epoch, split[0], split[1], split[2], nil
 }
 
