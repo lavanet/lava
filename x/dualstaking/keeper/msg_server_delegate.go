@@ -57,7 +57,7 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 
 	delegationAfter, _ := k.GetDelegation(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, nextEpoch)
 
-	amount = delegationAfter.Amount.Sub(delegationBefore.Amount)
+	amount.Amount = delegationAfter.Amount.Amount.Sub(delegationBefore.Amount.Amount)
 
 	err = k.Redelegate(
 		ctx,
