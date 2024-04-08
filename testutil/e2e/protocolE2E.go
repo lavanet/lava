@@ -52,7 +52,7 @@ var (
 	checkedPlansE2E         = []string{"DefaultPlan", "EmergencyModePlan"}
 	checkedSubscriptions    = []string{"user1", "user2", "user3", "user5"}
 	checkedSpecsE2E         = []string{"LAV1", "ETH1"}
-	checkedSpecsE2ELOL      = []string{"HOL1"}
+	checkedSpecsE2ELOL      = []string{"SEP1"}
 	checkedSubscriptionsLOL = []string{"user4"}
 )
 
