@@ -27,6 +27,7 @@ echo; echo "#### Starting provider 1 ####"
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
 $PROVIDER1_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
+$PROVIDER1_LISTENER HOL1 jsonrpc '$HOL_RPC_WS' \
 $PROVIDER1_LISTENER FTM250 jsonrpc '$FTM_RPC_HTTP' \
 $PROVIDER1_LISTENER CELO jsonrpc '$CELO_HTTP' \
 $PROVIDER1_LISTENER ALFAJORES jsonrpc '$CELO_ALFAJORES_HTTP' \
