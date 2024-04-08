@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ReconnectCandidateTime = 2 * time.Minute
+	ReconnectCandidateTime = 30 * time.Second
 	debugReportedProviders = false
 )
 

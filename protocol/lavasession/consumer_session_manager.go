@@ -938,7 +938,11 @@ func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *
 func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWithProvider *ConsumerSessionsWithProvider) func() error {
 	return func() error {
 		ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier()) // unique identifier for retries
-		_, _, err := csm.probeProvider(ctx, consumerSessionsWithProvider, csm.atomicReadCurrentEpoch(), true)
+		_, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, csm.atomicReadCurrentEpoch(), true)
+		if err == nil {
+			utils.LavaFormatDebug("Reconnecting provider succeeded returning provider to valid addresses list", utils.LogAttr("provider", providerAddress))
+			csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress)
+		}
 		return err
 	}
 }

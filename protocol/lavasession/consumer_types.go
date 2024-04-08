@@ -393,6 +393,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				continue
 			}
 			cswp.Endpoints[idx] = endpoint
+			cswp.Endpoints[idx].Enabled = true // return enabled once we successfully reconnect
 			return true, endpoint, false
 		}
 
