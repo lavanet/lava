@@ -339,13 +339,15 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 
 // fetching an endpoint from a ConsumerSessionWithProvider and establishing a connection,
 // can fail without an error if trying to connect once to each endpoint but none of them are active.
-func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context) (connected bool, endpointPtr *Endpoint, providerAddress string, err error) {
+func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, retryDisabledEndpoints bool) (connected bool, endpointPtr *Endpoint, providerAddress string, err error) {
 	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr *Endpoint, allDisabled bool) {
 		cswp.Lock.Lock()
 		defer cswp.Lock.Unlock()
 
 		for idx, endpoint := range cswp.Endpoints {
-			if !endpoint.Enabled {
+			// retryDisabledEndpoints will attempt to reconnect to the provider even though we have disabled the endpoint
+			// this is used on a routine that tries to reconnect to a provider that has been disabled due to being unable to connect to it.
+			if !retryDisabledEndpoints && !endpoint.Enabled {
 				continue
 			}
 			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (connected_ bool) {

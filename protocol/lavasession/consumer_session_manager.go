@@ -168,7 +168,7 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 		go func(consumerSessionsWithProvider *ConsumerSessionsWithProvider) {
 			// Call the probeProvider function and defer the WaitGroup Done call
 			defer wg.Done()
-			latency, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, epoch)
+			latency, providerAddress, err := csm.probeProvider(ctx, consumerSessionsWithProvider, epoch, false)
 			success := err == nil // if failure then regard it in availability
 			csm.providerOptimizer.AppendProbeRelayData(providerAddress, latency, success)
 		}(consumerSessionWithProvider)
@@ -194,9 +194,9 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 }
 
 // this code needs to be thread safe
-func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSessionsWithProvider *ConsumerSessionsWithProvider, epoch uint64) (latency time.Duration, providerAddress string, err error) {
+func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSessionsWithProvider *ConsumerSessionsWithProvider, epoch uint64, tryReconnectToDisabledEndpoints bool) (latency time.Duration, providerAddress string, err error) {
 	// TODO: fetch all endpoints not just one
-	connected, endpoint, providerAddress, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx)
+	connected, endpoint, providerAddress, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, tryReconnectToDisabledEndpoints)
 	if err != nil || !connected {
 		if AllProviderEndpointsDisabledError.Is(err) {
 			csm.blockProvider(providerAddress, true, epoch, MaxConsecutiveConnectionAttempts, 0, csm.GenerateReconnectCallback(consumerSessionsWithProvider)) // reporting and blocking provider this epoch
@@ -374,7 +374,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			sessionEpoch := sessionWithProvider.CurrentEpoch
 
 			// Get a valid Endpoint from the provider chosen
-			connected, endpoint, _, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx)
+			connected, endpoint, _, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, false)
 			if err != nil {
 				// verify err is AllProviderEndpointsDisabled and report.
 				if AllProviderEndpointsDisabledError.Is(err) {
@@ -937,7 +937,7 @@ func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *
 
 func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWithProvider *ConsumerSessionsWithProvider) func() error {
 	return func() error {
-		_, _, err := csm.probeProvider(context.Background(), consumerSessionsWithProvider, csm.atomicReadCurrentEpoch())
+		_, _, err := csm.probeProvider(context.Background(), consumerSessionsWithProvider, csm.atomicReadCurrentEpoch(), true)
 		return err
 	}
 }

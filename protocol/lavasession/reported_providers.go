@@ -11,6 +11,7 @@ import (
 
 const (
 	ReconnectCandidateTime = 2 * time.Minute
+	debugReportedProviders = false
 )
 
 type ReportedProviders struct {
@@ -29,6 +30,9 @@ type ReportedProviderEntry struct {
 func (rp *ReportedProviders) Reset() {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
+	if debugReportedProviders {
+		utils.LavaFormatDebug("[debugReportedProviders] Reset called")
+	}
 	rp.addedToPurgeAndReport = make(map[string]*ReportedProviderEntry, 0)
 }
 
@@ -61,12 +65,18 @@ func (rp *ReportedProviders) ReportProvider(address string, errors uint64, disco
 	if reconnectCB != nil {
 		rp.addedToPurgeAndReport[address].reconnectCB = reconnectCB
 	}
+	if debugReportedProviders {
+		utils.LavaFormatDebug("[debugReportedProviders] adding provider to reported providers", utils.LogAttr("rp.addedToPurgeAndReport", rp.addedToPurgeAndReport))
+	}
 }
 
 // will be called after a disconnected provider got a valid connection
 func (rp *ReportedProviders) RemoveReport(address string) {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
+	if debugReportedProviders {
+		utils.LavaFormatDebug("[debugReportedProviders] Removing Report", utils.LogAttr("address", address))
+	}
 	delete(rp.addedToPurgeAndReport, address)
 }
 
@@ -86,6 +96,9 @@ func (rp *ReportedProviders) ReconnectCandidates() []reconnectCandidate {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	candidates := []reconnectCandidate{}
+	if debugReportedProviders {
+		utils.LavaFormatDebug("[debugReportedProviders] Reconnect candidates", utils.LogAttr("candidate list", rp.addedToPurgeAndReport))
+	}
 	for address, entry := range rp.addedToPurgeAndReport {
 		// only reconnect providers that didn't have consecutive errors
 		if entry.Errors == 0 && time.Since(entry.addedTime) > ReconnectCandidateTime {
@@ -103,6 +116,9 @@ func (rp *ReportedProviders) ReconnectProviders() {
 	candidates := rp.ReconnectCandidates()
 	for _, candidate := range candidates {
 		if candidate.reconnectCB != nil {
+			if debugReportedProviders {
+				utils.LavaFormatDebug("[debugReportedProviders] Trying to reconnect candidate", utils.LogAttr("candidate", candidate.address))
+			}
 			err := candidate.reconnectCB()
 			if err == nil {
 				rp.RemoveReport(candidate.address)
@@ -118,7 +134,9 @@ func (rp *ReportedProviders) AppendReport(report metrics.ReportsRequest) {
 	if rp == nil || rp.reporter == nil {
 		return
 	}
-	utils.LavaFormatDebug("sending report on provider", utils.LogAttr("provider", report.Provider))
+	if debugReportedProviders {
+		utils.LavaFormatDebug("[debugReportedProviders] Sending report on provider", utils.LogAttr("provider", report.Provider))
+	}
 	rp.reporter.AppendReport(report)
 }
 
