@@ -26,7 +26,7 @@ screen -d -m -S cache-consumer bash -c "source ~/.bashrc; lavap cache 127.0.0.1:
 echo; echo "#### Starting provider 1 ####"
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER ETH1 jsonrpc '$ETH_RPC_WS' \
-$PROVIDER1_LISTENER GTH1 jsonrpc '$GTH_RPC_WS' \
+$PROVIDER1_LISTENER SEP1 jsonrpc '$SEP_RPC_WS' \
 $PROVIDER1_LISTENER HOL1 jsonrpc '$HOL_RPC_WS' \
 $PROVIDER1_LISTENER FTM250 jsonrpc '$FTM_RPC_HTTP' \
 $PROVIDER1_LISTENER CELO jsonrpc '$CELO_HTTP' \
@@ -36,7 +36,7 @@ $PROVIDER1_LISTENER APT1 rest '$APTOS_REST' \
 $PROVIDER1_LISTENER STRK jsonrpc '$STARKNET_RPC' \
 $PROVIDER1_LISTENER POLYGON1 jsonrpc '$POLYGON_MAINNET_RPC' \
 $PROVIDER1_LISTENER OPTM jsonrpc '$OPTIMISM_RPC' \
-$PROVIDER1_LISTENER BASET jsonrpc '$BASE_GOERLI_RPC' \
+$PROVIDER1_LISTENER BASE jsonrpc '$BASE_RPC' \
 $PROVIDER1_LISTENER BSC jsonrpc '$BSC_RPC' \
 $PROVIDER1_LISTENER SOLANA jsonrpc '$SOLANA_RPC' \
 $PROVIDER1_LISTENER SUIT jsonrpc '$SUI_RPC' \

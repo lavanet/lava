@@ -2,7 +2,7 @@ endpoints:
     - chain-id: ETH1
       api-interface: jsonrpc
       network-address: 127.0.0.1:3333
-    - chain-id: GTH1
+    - chain-id: SEP1
       api-interface: jsonrpc
       network-address: 127.0.0.1:3334
     - chain-id: FTM250
@@ -29,7 +29,7 @@ endpoints:
     - chain-id: OPTM
       api-interface: jsonrpc
       network-address: 127.0.0.1:3352
-    - chain-id: BASET
+    - chain-id: BASES
       api-interface: jsonrpc
       network-address: 127.0.0.1:3353
     - chain-id: OSMOSIS
