@@ -485,7 +485,16 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 
 		// If error happens, and we do not have any sessions return error
 		if err != nil {
-			return nil, err
+			if PairingListEmptyError.Is(err) {
+				// got no pairing available, try to recover a session from the currently banned providers
+				var errOnRetry error
+				sessionWithProviderMap, errOnRetry = csm.tryGetConsumerSessionWithProviderFromBlockedProviderList(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, usedProviders)
+				if errOnRetry != nil {
+					return nil, err // return original error (getValidConsumerSessionsWithProvider)
+				}
+			} else {
+				return nil, err
+			}
 		}
 	}
 }
