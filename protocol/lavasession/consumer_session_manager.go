@@ -47,7 +47,7 @@ type ConsumerSessionManager struct {
 	currentlyBlockedProviderAddresses []string
 
 	addonAddresses    map[RouterKey][]string
-	reportedProviders ReportedProviders
+	reportedProviders *ReportedProviders
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
 	pairingPurge           map[string]*ConsumerSessionsWithProvider
@@ -937,14 +937,15 @@ func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *
 
 func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWithProvider *ConsumerSessionsWithProvider) func() error {
 	return func() error {
-		_, _, err := csm.probeProvider(context.Background(), consumerSessionsWithProvider, csm.atomicReadCurrentEpoch(), true)
+		ctx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier()) // unique identifier for retries
+		_, _, err := csm.probeProvider(ctx, consumerSessionsWithProvider, csm.atomicReadCurrentEpoch(), true)
 		return err
 	}
 }
 
 func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
-		reportedProviders:      *NewReportedProviders(reporter),
+		reportedProviders:      NewReportedProviders(reporter),
 		consumerMetricsManager: consumerMetricsManager,
 	}
 	csm.rpcEndpoint = rpcEndpoint
