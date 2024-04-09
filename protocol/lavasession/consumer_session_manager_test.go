@@ -203,6 +203,7 @@ func TestNoPairingAvailableFlow(t *testing.T) {
 
 	runOnSessionDoneForConsumerSessionMap(t, css, csm)
 	runOnSessionDoneForConsumerSessionMap(t, css2, csm)
+	time.Sleep(time.Second)
 	require.Equal(t, len(csm.validAddresses), 2)
 
 	css3, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
