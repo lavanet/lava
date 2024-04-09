@@ -551,7 +551,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 // where we need another session (for retry or a timeout happened) we want to try fetching a blocked provider for the list.
 // the list will be sorted by most cu served giving the best provider that was blocked a second chance to get back to valid addresses.
 func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedProviderList(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, virtualEpoch uint64, usedProviders UsedProvidersInf) (sessionWithProviderMap SessionWithProviderMap, err error) {
-	csm.lock.RLock() // we Lock instead of RLock because we need to make changes to the blocked provider list.
+	csm.lock.RLock()
 	// we do not defer yet as we might need to unlock due to an epoch change
 
 	// reading the epoch here while locked, to get the epoch of the pairing.
