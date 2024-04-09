@@ -863,7 +863,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 		providerAddress := consumerSession.Parent.PublicLavaAddress
 		// we want this method to run last after we unlock the consumer session
 		// golang defer operates in a Last-In-First-Out (LIFO) order, meaning this defer will run last.
-		defer csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress)
+		defer func() { go csm.validateAndReturnBlockedProviderToValidAddressesList(providerAddress) }()
 	}
 
 	defer consumerSession.Free(nil)                        // we need to be locked here, if we didn't get it locked we try lock anyway
