@@ -784,8 +784,11 @@ func TestSameProviderConflictReport(t *testing.T) {
 
 		providers[0].mockReliabilityManager.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
 
-		client := http.Client{Timeout: 1 * time.Second}
-		req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress+"/cosmos/tx/v1beta1/txs", nil)
+		client := http.Client{Timeout: 1 * time.Minute}
+		clientCtx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(clientCtx, http.MethodPost, "http://"+consumerListenAddress+"/cosmos/tx/v1beta1/txs", nil)
 		require.NoError(t, err)
 
 		resp, err := client.Do(req)
