@@ -91,8 +91,9 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 				retInfo.jailed++
 			}
 			var pk cryptotypes.PubKey
-			if err := clientCtx.Codec.UnmarshalInterfaceJSON(validatorResp.Validator.ConsensusPubkey.GetValue(), &pk); err != nil {
-				return err
+			err = clientCtx.Codec.UnpackAny(validatorResp.Validator.ConsensusPubkey, &pk)
+			if err != nil {
+				return utils.LavaFormatError("failed unpacking", err)
 			}
 			valcons, err := bech32.ConvertAndEncode(hrp, pk.Address())
 			if err != nil {
@@ -104,7 +105,7 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 			})
 			cancel()
 			if err != nil {
-				utils.LavaFormatError("failed reading signing info at height", err, utils.LogAttr("block", block))
+				utils.LavaFormatError("failed reading signing info at height", err, utils.LogAttr("block", block), utils.LogAttr("valCons", valcons))
 				continue
 			}
 			retInfo.missedBlocks += signingInfo.ValSigningInfo.MissedBlocksCounter
