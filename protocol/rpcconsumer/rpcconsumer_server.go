@@ -397,6 +397,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			// by releasing the case we allow the channel to be chosen again by the successful case.
 			return relayProcessor, returnErr
 		case <-processingCtx.Done():
+			// in case we got a processing timeout we return context deadline exceeded to the user.
 			utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
 				utils.LogAttr("dappId", dappID),
 				utils.LogAttr("consumerIp", consumerIp),
