@@ -65,7 +65,7 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 		return retInfo, utils.LavaFormatError("error decoding hrp", err)
 	}
 	ticker := time.NewTicker(3 * time.Second)
-	readEventsFromBlock := func(blockFrom int64, blockTo int64, hash string) error {
+	readEventsFromBlock := func(blockFrom int64, blockTo int64) error {
 		for block := blockFrom; block < blockTo; block += jumpBlocks {
 			select {
 			case <-signalChan:
@@ -91,7 +91,7 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 				retInfo.jailed++
 			}
 			var pk cryptotypes.PubKey
-			if err := clientCtx.Codec.UnmarshalInterfaceJSON([]byte(validatorResp.Validator.ConsensusPubkey.GetValue()), &pk); err != nil {
+			if err := clientCtx.Codec.UnmarshalInterfaceJSON(validatorResp.Validator.ConsensusPubkey.GetValue(), &pk); err != nil {
 				return err
 			}
 			valcons, err := bech32.ConvertAndEncode(hrp, pk.Address())
@@ -121,7 +121,7 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 			fromBlock = latestHeight - blocks
 		}
 		utils.LavaFormatInfo("Reading validator performance on blocks", utils.Attribute{Key: "from", Value: fromBlock}, utils.Attribute{Key: "to", Value: fromBlock + blocks})
-		readEventsFromBlock(fromBlock, fromBlock+blocks, "")
+		readEventsFromBlock(fromBlock, fromBlock+blocks)
 	}
 	return retInfo, nil
 }
