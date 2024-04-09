@@ -185,3 +185,4 @@ release:
   name_template: "Lava v{{.Version}} 🌋"
   mode: replace
   draft: true
+  prerelease: "true"

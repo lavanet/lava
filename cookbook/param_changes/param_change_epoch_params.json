@@ -2,16 +2,11 @@
     "title": "Protocol Version Change",
     "description": "Update version",
     "changes": [
-        {
-          "subspace": "protocol",
-          "key": "Version",
-          "value": {
-            "provider_target": "1.18.2",
-            "consumer_target": "1.18.2",
-            "provider_min": "1.16.2",
-            "consumer_min": "1.16.2"
-          }
-        }
+      {
+        "subspace": "epochstorage",
+        "key": "EpochBlocks",
+        "value": "3600"
+      }
     ],
     "deposit": "10000000ulava"
 }

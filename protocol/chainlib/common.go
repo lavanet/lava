@@ -182,7 +182,7 @@ func verifyRPCEndpoint(endpoint string) {
 	case "ws", "wss":
 		return
 	default:
-		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil)
+		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme+", By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score. if subscriptions are not applicable for this chain you can ignore this warning", nil)
 	}
 }
 
