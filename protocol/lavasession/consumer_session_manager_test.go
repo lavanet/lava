@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/utils/lavaslices"
+
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
@@ -152,6 +154,89 @@ func TestHappyFlow(t *testing.T) {
 		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
 		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)
 		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
+	}
+}
+
+func TestNoPairingAvailableFlow(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	require.NoError(t, err)
+
+	addCu := 10
+	// adding cu to each pairing (highest is last)
+	for _, pairing := range csm.pairing {
+		pairing.addUsedComputeUnits(uint64(addCu), 0)
+		addCu += 10
+	}
+
+	// remove all providers except for the first one
+	validAddressessLength := len(csm.validAddresses)
+	copyValidAddressess := append([]string{}, csm.validAddresses...)
+	for index := 1; index < validAddressessLength; index++ {
+		csm.removeAddressFromValidAddresses(copyValidAddressess[index])
+	}
+
+	// get the address of the highest cu provider
+	highestProviderCu := ""
+	highestCu := uint64(0)
+	for _, pairing := range csm.pairing {
+		if pairing.PublicLavaAddress != csm.validAddresses[0] {
+			if pairing.UsedComputeUnits > highestCu {
+				highestCu = pairing.UsedComputeUnits
+				highestProviderCu = pairing.PublicLavaAddress
+			}
+		}
+	}
+
+	usedProviders := NewUsedProviders(nil)
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	require.NoError(t, err)
+	_, expectedProviderAddress := css[csm.validAddresses[0]]
+	require.True(t, expectedProviderAddress)
+
+	css2, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	require.NoError(t, err)
+	_, expectedProviderAddress2 := css2[highestProviderCu]
+	require.True(t, expectedProviderAddress2)
+
+	runOnSessionDoneForConsumerSessionMap(t, css, csm)
+	runOnSessionDoneForConsumerSessionMap(t, css2, csm)
+	time.Sleep(time.Second)
+	require.Equal(t, len(csm.validAddresses), 2)
+
+	css3, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	require.NoError(t, err)
+	runOnSessionFailureForConsumerSessionMap(t, css3, csm)
+	// check we still have only 2 valid addresses as this one failed
+	for _, addr := range css3 {
+		require.False(t, lavaslices.Contains(csm.validAddresses, addr.Session.Parent.PublicLavaAddress))
+	}
+	require.Equal(t, len(csm.validAddresses), 2)
+}
+
+func runOnSessionDoneForConsumerSessionMap(t *testing.T, css ConsumerSessionsMap, csm *ConsumerSessionManager) {
+	for _, cs := range css {
+		require.NotNil(t, cs)
+		require.Equal(t, cs.Epoch, csm.currentEpoch)
+		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
+		err := csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		require.NoError(t, err)
+		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
+		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
+		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)
+		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
+	}
+}
+
+func runOnSessionFailureForConsumerSessionMap(t *testing.T, css ConsumerSessionsMap, csm *ConsumerSessionManager) {
+	for _, cs := range css {
+		require.NotNil(t, cs)
+		require.Equal(t, cs.Epoch, csm.currentEpoch)
+		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
+		err := csm.OnSessionFailure(cs.Session, fmt.Errorf("testError"))
+		require.NoError(t, err)
 	}
 }
 

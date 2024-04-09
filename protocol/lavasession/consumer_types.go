@@ -26,6 +26,7 @@ type UsedProvidersInf interface {
 	TryLockSelection(context.Context) bool
 	AddUsed(ConsumerSessionsMap, error)
 	GetUnwantedProvidersToSend() map[string]struct{}
+	AddUnwantedAddresses(address string)
 }
 
 type SessionInfo struct {
@@ -125,6 +126,10 @@ type ConsumerSessionsWithProvider struct {
 	// whether we already reported this provider this epoch, we can only report one conflict per provider per epoch
 	conflictFoundAndReported uint32   // 0 == not reported, 1 == reported
 	stakeSize                sdk.Coin // the stake size the provider staked
+
+	// blocked provider recovery status if 0 currently not used, if 1 a session has tried resume communication with this provider
+	// if the provider is not blocked at all this field is irrelevant
+	blockedAndUsedWithChanceForRecoveryStatus uint32
 }
 
 func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints []*Endpoint, maxCu uint64, epoch uint64, stakeSize sdk.Coin) *ConsumerSessionsWithProvider {
@@ -136,6 +141,14 @@ func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints [
 		PairingEpoch:      epoch,
 		stakeSize:         stakeSize,
 	}
+}
+
+func (cswp *ConsumerSessionsWithProvider) atomicReadBlockedStatus() uint32 {
+	return atomic.LoadUint32(&cswp.blockedAndUsedWithChanceForRecoveryStatus)
+}
+
+func (cswp *ConsumerSessionsWithProvider) atomicWriteBlockedStatus(status uint32) {
+	atomic.StoreUint32(&cswp.blockedAndUsedWithChanceForRecoveryStatus, status) // we can only set conflict to "reported".
 }
 
 func (cswp *ConsumerSessionsWithProvider) atomicReadConflictReported() bool {
@@ -326,13 +339,15 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 
 // fetching an endpoint from a ConsumerSessionWithProvider and establishing a connection,
 // can fail without an error if trying to connect once to each endpoint but none of them are active.
-func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context) (connected bool, endpointPtr *Endpoint, providerAddress string, err error) {
+func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, retryDisabledEndpoints bool) (connected bool, endpointPtr *Endpoint, providerAddress string, err error) {
 	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr *Endpoint, allDisabled bool) {
 		cswp.Lock.Lock()
 		defer cswp.Lock.Unlock()
 
 		for idx, endpoint := range cswp.Endpoints {
-			if !endpoint.Enabled {
+			// retryDisabledEndpoints will attempt to reconnect to the provider even though we have disabled the endpoint
+			// this is used on a routine that tries to reconnect to a provider that has been disabled due to being unable to connect to it.
+			if !retryDisabledEndpoints && !endpoint.Enabled {
 				continue
 			}
 			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (connected_ bool) {
@@ -388,6 +403,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				continue
 			}
 			cswp.Endpoints[idx] = endpoint
+			cswp.Endpoints[idx].Enabled = true // return enabled once we successfully reconnect
 			return true, endpoint, false
 		}
 
