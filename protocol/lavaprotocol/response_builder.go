@@ -28,7 +28,7 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 
 	if signDataReliability {
 		// update sig blocks signature
-		relayFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(request.RelaySession, reply, consumerAddress)
+		relayFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(request.RelaySession, reply, consumerAddress)
 		sigBlocks, err := sigs.Sign(pkey, relayFinalization)
 		if err != nil {
 			return nil, utils.LavaFormatError("failed signing finalization data", err,

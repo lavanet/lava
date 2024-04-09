@@ -11,7 +11,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
-func NewRelayFinalizationMetaDataFromReplyMetadataAndRelayRequest(reply ReplyMetadata, req pairingtypes.RelayRequest, consumerAddr sdk.AccAddress) RelayFinalization {
+func NewRelayFinalizationFromReplyMetadataAndRelayRequest(reply ReplyMetadata, req pairingtypes.RelayRequest, consumerAddr sdk.AccAddress) RelayFinalization {
 	return RelayFinalization{
 		FinalizedBlocksHashes: reply.FinalizedBlocksHashes,
 		LatestBlock:           reply.LatestBlock,
@@ -21,7 +21,7 @@ func NewRelayFinalizationMetaDataFromReplyMetadataAndRelayRequest(reply ReplyMet
 	}
 }
 
-func NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relaySession *pairingtypes.RelaySession, relayReply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress) RelayFinalization {
+func NewRelayFinalizationFromRelaySessionAndRelayReply(relaySession *pairingtypes.RelaySession, relayReply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress) RelayFinalization {
 	return RelayFinalization{
 		FinalizedBlocksHashes: relayReply.FinalizedBlocksHashes,
 		LatestBlock:           relayReply.LatestBlock,

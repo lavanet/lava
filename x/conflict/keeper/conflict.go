@@ -143,7 +143,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 			print_st = "second"
 		}
 
-		relayFinalization := types.NewRelayFinalizationMetaDataFromReplyMetadataAndRelayRequest(*replyMetadata, *request, clientAddr)
+		relayFinalization := types.NewRelayFinalizationFromReplyMetadataAndRelayRequest(*replyMetadata, *request, clientAddr)
 		pubKey, err := sigs.RecoverPubKey(relayFinalization)
 		if err != nil {
 			return fmt.Errorf("RecoverPubKey %s provider ResponseFinalizationData: %w", print_st, err)

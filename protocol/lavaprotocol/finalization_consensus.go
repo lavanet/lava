@@ -134,7 +134,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 		}
 	}
 
-	replyFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relaySession, reply, consumerAddress)
+	replyFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(relaySession, reply, consumerAddress)
 	finalizationConflict = &conflicttypes.FinalizationConflict{RelayReply0: &replyFinalization}
 
 	var otherBlockHash string
@@ -310,7 +310,7 @@ func InterpolateBlocks(timeNow, latestBlockTime time.Time, averageBlockTime time
 }
 
 func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock, blockDistanceForFinalization, blocksInFinalizationProof int64) (finalizedBlocks map[int64]string, finalizationConflict *conflicttypes.FinalizationConflict, errRet error) {
-	relayFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relayRequest.RelaySession, reply, consumerAcc)
+	relayFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(relayRequest.RelaySession, reply, consumerAcc)
 	recoveredProviderPubKey, err := sigs.RecoverPubKey(relayFinalization)
 	if err != nil {
 		return nil, nil, err
@@ -372,7 +372,7 @@ func verifyFinalizationDataIntegrity(relaySession *pairingtypes.RelaySession, re
 		)
 	}
 
-	replyFinalization := conflicttypes.NewRelayFinalizationMetaDataFromRelaySessionAndRelayReply(relaySession, reply, consumerAddr)
+	replyFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(relaySession, reply, consumerAddr)
 
 	for blockNum := range finalizedBlocks {
 		// Check if finalized
