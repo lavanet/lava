@@ -337,10 +337,11 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	// a channel to be notified processing was done, true means we have results and can return
 	gotResults := make(chan bool)
 	processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
+	// create the processing timeout prior to entering the method so it wont reset every time
+	processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
+	defer cancel()
 
 	readResultsFromProcessor := func() {
-		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
-		defer cancel()
 		// ProcessResults is reading responses while blocking until the conditions are met
 		relayProcessor.WaitForResults(processingCtx)
 		// decide if we need to resend or not
@@ -395,6 +396,15 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			// -> (in parallel) first relay finished, removing from CurrentlyUsed providers -> checking currently used (on second failed relay) -> returning error instead of the successful relay.
 			// by releasing the case we allow the channel to be chosen again by the successful case.
 			return relayProcessor, returnErr
+		case <-processingCtx.Done():
+			utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
+				utils.LogAttr("dappId", dappID),
+				utils.LogAttr("consumerIp", consumerIp),
+				utils.LogAttr("chainMessage.GetApi().Name", chainMessage.GetApi().Name),
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("relayProcessor", relayProcessor),
+			)
+			return relayProcessor, processingCtx.Err() // returning the context error
 		}
 	}
 }
