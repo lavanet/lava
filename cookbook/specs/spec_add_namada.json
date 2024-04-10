@@ -6,7 +6,7 @@
     "specs": [
       {
         "index": "NAMTSE",
-        "name": "NAMADA SE testnet",
+        "name": "namada se testnet",
         "enabled": true,
         "reliability_threshold": 268435455,
         "data_reliability_enabled": false,
