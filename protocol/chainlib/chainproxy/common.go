@@ -81,7 +81,7 @@ func (dri DefaultRPCInput) GetParams() interface{} {
 }
 
 func (dri DefaultRPCInput) GetMethod() string {
-	return dri.LatestBlockHeaderSetter.ApiName
+	return ""
 }
 
 func (dri DefaultRPCInput) GetResult() json.RawMessage {

@@ -22,7 +22,7 @@ func (pri ParsableRPCInput) GetParams() interface{} {
 }
 
 func (pri ParsableRPCInput) GetMethod() string {
-	return pri.LatestBlockHeaderSetter.ApiName
+	return ""
 }
 
 func (pri ParsableRPCInput) GetResult() json.RawMessage {
