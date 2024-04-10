@@ -30,6 +30,18 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	switch msg.Conflict.(type) {
 	case *types.MsgDetection_FinalizationConflict:
 		conflict := msg.GetFinalizationConflict()
+		if conflict == nil {
+			return nil, utils.LavaFormatWarning("finalization conflict is nil", nil)
+		}
+
+		if conflict.RelayFinalization0 == nil || conflict.RelayFinalization1 == nil {
+			return nil, utils.LavaFormatWarning("conflict finalization is nil", nil)
+		}
+
+		if conflict.RelayFinalization0.RelaySession == nil || conflict.RelayFinalization1.RelaySession == nil {
+			return nil, utils.LavaFormatWarning("conflict relay session is nil", nil)
+		}
+
 		if conflict.RelayFinalization0.RelaySession.Provider == conflict.RelayFinalization1.RelaySession.Provider {
 			eventData, err := k.handleSameProviderFinalizationConflict(ctx, conflict, clientAddr)
 			if err != nil {
