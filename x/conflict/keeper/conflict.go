@@ -231,12 +231,12 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 	}
 
 	// Validate block nums are ordered && Finalization distance is right
-	finalizedBlocksMap0, earliestFinalizedBlock0, latestFinalizedBlock0, err := k.validateBlockHeights(ctx, conflictData.RelayFinalization0)
+	finalizedBlocksMap0, earliestFinalizedBlock0, latestFinalizedBlock0, err := k.validateBlockHeights(conflictData.RelayFinalization0, &spec)
 	if err != nil {
 		return providerAddress0, 0, nil, err
 	}
 
-	finalizedBlocksMap1, earliestFinalizedBlock1, latestFinalizedBlock1, err := k.validateBlockHeights(ctx, conflictData.RelayFinalization1)
+	finalizedBlocksMap1, earliestFinalizedBlock1, latestFinalizedBlock1, err := k.validateBlockHeights(conflictData.RelayFinalization1, &spec)
 	if err != nil {
 		return providerAddress0, 0, nil, err
 	}
@@ -273,7 +273,7 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 	return providerAddress0, mismatchingBlockHeight, mismatchingBlockHashes, nil
 }
 
-func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.RelayFinalization) (finalizedBlocksMarshalled map[int64]string, earliestFinalizedBlock int64, latestFinalizedBlock int64, err error) {
+func (k Keeper) validateBlockHeights(relayFinalization *types.RelayFinalization, spec *spectypes.Spec) (finalizedBlocksMarshalled map[int64]string, earliestFinalizedBlock int64, latestFinalizedBlock int64, err error) {
 	EMPTY_MAP := map[int64]string{}
 
 	// Unmarshall finalized blocks
@@ -299,7 +299,7 @@ func (k Keeper) validateBlockHeights(ctx sdk.Context, relayFinalization *types.R
 
 	// Validate that all finalized blocks are finalized
 	for _, blockNum := range blockHeights {
-		if !k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.RelaySession.SpecId, blockNum, relayFinalization.GetLatestBlock()) {
+		if !spectypes.IsFinalizedBlock(blockNum, relayFinalization.GetLatestBlock(), int64(spec.BlockDistanceForFinalizedData)) {
 			return EMPTY_MAP, 0, 0, fmt.Errorf("ValidateSameProviderConflict: Finalized block is not finalized: %d", blockNum)
 		}
 	}
