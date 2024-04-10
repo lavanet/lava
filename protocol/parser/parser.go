@@ -17,6 +17,7 @@ import (
 const (
 	PARSE_PARAMS = 0
 	PARSE_RESULT = 1
+	debug        = false
 )
 
 var ValueNotSetError = sdkerrors.New("Value Not Set ", 6662, "when trying to parse, the value that we attempted to parse did not exist")
@@ -138,7 +139,7 @@ func parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 	case spectypes.PARSER_FUNC_PARSE_DICTIONARY_OR_ORDERED:
 		retval, err = parseDictionaryOrOrdered(rpcInput, blockParser.ParserArg, dataSource)
 	case spectypes.PARSER_FUNC_DEFAULT:
-		retval = parseDefault(rpcInput, blockParser.ParserArg, dataSource)
+		retval = parseDefault(blockParser.ParserArg)
 	default:
 		return nil, fmt.Errorf("unsupported block parser parserFunc")
 	}
@@ -152,10 +153,14 @@ func parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 		}
 	}
 
+	if debug {
+		utils.LavaFormatDebug("parsed block:", utils.LogAttr("retval", retval))
+	}
+
 	return retval, nil
 }
 
-func parseDefault(rpcInput RPCInput, input []string, dataSource int) []interface{} {
+func parseDefault(input []string) []interface{} {
 	retArr := make([]interface{}, 0)
 	retArr = append(retArr, input[0])
 	return retArr
@@ -214,7 +219,6 @@ func blockInterfaceToString(block interface{}) string {
 		return castedBlock
 	case float64:
 		return strconv.FormatFloat(castedBlock, 'f', -1, 64)
-
 	case int64:
 		return strconv.FormatInt(castedBlock, 10)
 	case uint64:
