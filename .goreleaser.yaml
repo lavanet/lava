@@ -13,6 +13,9 @@ before:
     # you may remove this if you don't need go generate
     - go generate ./...
 
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
 builds:
   - id: lavavisor
     binary: lavavisor
@@ -40,6 +43,7 @@ builds:
     flags:
       - -mod=readonly
       - -trimpath
+    mod_timestamp: "{{ .CommitTimestamp }}"
   
   - id: lavad
     binary: lavad
@@ -64,9 +68,20 @@ builds:
         goarch: ppc64le
       - goos: windows
         goarch: arm64
+    ldflags:
+      - -X github.com/cosmos/cosmos-sdk/version.Name=lava
+      - -X github.com/cosmos/cosmos-sdk/version.AppName=lavad
+      - -X github.com/cosmos/cosmos-sdk/version.Version={{ .Version }}
+      - -X github.com/cosmos/cosmos-sdk/version.Commit={{ .Commit }}
+      - -X github.com/cosmos/cosmos-sdk/version.BuildTags=netgo,ledger
+      - -w -s
     flags:
       - -mod=readonly
       - -trimpath
+    tags:
+      - netgo
+      - ledger
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
   - id: lavap
     binary: lavap
@@ -94,51 +109,73 @@ builds:
     flags:
       - -mod=readonly
       - -trimpath
+    mod_timestamp: "{{ .CommitTimestamp }}"
 
 archives:
-  - format: tar.gz
-    # this name template makes the OS and Arch compatible with the results of `uname`.
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
+  - id: lavavisor
+    builds:
+      - lavavisor
+    format: binary
+    name_template: '{{ .Binary }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}-{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    format_overrides:
+      - goos: windows
+        format: zip
+  - id: lavap
+    builds:
+      - lavap
+    format: binary
+    name_template: '{{ .Binary }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}-{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    format_overrides:
+      - goos: windows
+        format: zip
+  - id: lavad
+    builds:
+      - lavad
+    format: binary
+    name_template: '{{ .Binary }}-v{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}-{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     format_overrides:
       - goos: windows
         format: zip
 
 checksum:
-  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+  name_template: "sha256sum.txt"
   algorithm: sha256
 
 changelog:
   use:
     github
   sort: asc
-  abbrev: 0
-  groups: # Regex use RE2 syntax as defined here: https://github.com/google/re2/wiki/Syntax.
-    - title: 'Features'
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
-      order: 100
-    - title: 'Bug fixes'
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
-      order: 200
-    - title: 'Documentation'
-      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+  groups:
+    - title: Dependency updates
+      regexp: '^.*?(feat|fix|chore)\(deps\)!?:.+$'
       order: 300
-    - title: 'Dependency updates'
-      regexp: '^.*?(feat|fix|chore)\(deps?.+\)!?:.+$'
+    - title: "New Features"
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 100
+    - title: "Security updates"
+      regexp: '^.*?sec(\(.+\))??!?:.+$'
+      order: 150
+    - title: "Bug fixes"
+      regexp: '^.*?(fix|refactor)(\(.+\))??!?:.+$'
+      order: 200
+    - title: "Documentation updates"
+      regexp: ^.*?docs?(\(.+\))??!?:.+$
       order: 400
-    - title: 'Other work'
-      order: 999
+    - title: "Build process updates"
+      regexp: ^.*?(build|ci)(\(.+\))??!?:.+$
+      order: 400
+    - title: Other work
+      order: 9999
   filters:
     exclude:
-      - '^test:'
-      - '^.*?Bump(\([[:word:]]+\))?.+$'
-      - '^.*?[Bot](\([[:word:]]+\))?.+$'
+      - "^test:"
+      - "^test\\("
+      - "^chore"
+      - "merge conflict"
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+      - go mod tidy
 
 release:
   github:
@@ -148,3 +185,4 @@ release:
   name_template: "Lava v{{.Version}} 🌋"
   mode: replace
   draft: true
+  prerelease: "true"
