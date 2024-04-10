@@ -394,8 +394,6 @@ func verifyFinalizationDataIntegrity(relaySession *pairingtypes.RelaySession, re
 			maxBlockNum = blockNum
 		}
 		idx++
-
-		// TODO: check block hash length and format
 	}
 
 	lavaslices.SortStable(sorted)
