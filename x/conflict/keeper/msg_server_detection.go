@@ -99,7 +99,7 @@ func (k msgServer) handleTwoProvidersFinalizationConflict(ctx sdk.Context, confl
 }
 
 func (k msgServer) handleSameProviderFinalizationConflict(ctx sdk.Context, conflict *types.FinalizationConflict, clientAddr sdk.AccAddress) (eventData map[string]string, err error) {
-	mismatchingBlockHeight, mismatchingBlockHashes, err := k.Keeper.ValidateSameProviderConflict(ctx, conflict, clientAddr)
+	providerAddress, mismatchingBlockHeight, mismatchingBlockHashes, err := k.Keeper.ValidateSameProviderConflict(ctx, conflict, clientAddr)
 	if err != nil {
 		return nil, utils.LavaFormatWarning("Simulation: invalid same provider conflict detection", err,
 			utils.LogAttr("client", clientAddr.String()),
@@ -108,7 +108,7 @@ func (k msgServer) handleSameProviderFinalizationConflict(ctx sdk.Context, confl
 
 	eventData = map[string]string{"client": clientAddr.String()}
 	eventData["chainID"] = conflict.RelayFinalization0.RelaySession.SpecId
-	eventData["provider"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
+	eventData["provider"] = fmt.Sprintf("%+v", providerAddress)
 	eventData["mismatching_block_height"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
 	eventData["mismatching_block_hashes"] = fmt.Sprintf("%+v", mismatchingBlockHashes)
 

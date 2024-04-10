@@ -20,11 +20,11 @@ func TestValidateSameProviderConflict(t *testing.T) {
 
 	t.Run("nil check", func(t *testing.T) {
 		_, keeper, ctx := initTester()
-		_, _, err := keeper.ValidateSameProviderConflict(ctx, nil, sdk.AccAddress{})
+		_, _, _, err := keeper.ValidateSameProviderConflict(ctx, nil, sdk.AccAddress{})
 		require.Error(t, err)
 
 		finalizationConflict := &types.FinalizationConflict{}
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, sdk.AccAddress{})
+		_, _, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, sdk.AccAddress{})
 		require.Error(t, err)
 	})
 
@@ -34,7 +34,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 			RelayFinalization0: &types.RelayFinalization{},
 			RelayFinalization1: &types.RelayFinalization{},
 		}
-		_, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, sdk.AccAddress{})
+		_, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, sdk.AccAddress{})
 		require.Error(t, err)
 	})
 
@@ -53,7 +53,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		_, _, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
 	})
 
@@ -75,8 +75,9 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		providerAddr, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
+		require.Equal(t, providerAcc.Addr.String(), providerAddr.String())
 	})
 
 	t.Run("different spec", func(t *testing.T) {
@@ -98,8 +99,9 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		providerAddr, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
+		require.Equal(t, providerAcc.Addr.String(), providerAddr.String())
 	})
 
 	t.Run("provider not staked", func(t *testing.T) {
@@ -116,8 +118,9 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		providerAddr, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
+		require.Equal(t, providerAcc.Addr.String(), providerAddr.String())
 	})
 
 	t.Run("empty finalized block hashes", func(t *testing.T) {
@@ -134,8 +137,9 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		providerAddr, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
+		require.Equal(t, providerAcc.Addr.String(), providerAddr.String())
 	})
 
 	t.Run("non consecutive block hashes", func(t *testing.T) {
@@ -157,8 +161,9 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		providerAddr, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
+		require.Equal(t, providerAcc.Addr.String(), providerAddr.String())
 	})
 
 	t.Run("finalization distance is not right", func(t *testing.T) {
@@ -182,8 +187,9 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		providerAddr, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
+		require.Equal(t, providerAcc.Addr.String(), providerAddr.String())
 	})
 
 	t.Run("all overlapping blocks are equal", func(t *testing.T) {
@@ -207,8 +213,9 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		providerAddr, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
+		require.Equal(t, providerAcc.Addr.String(), providerAddr.String())
 	})
 
 	t.Run("no overlapping", func(t *testing.T) {
@@ -240,8 +247,9 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		providerAddr, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
+		require.Equal(t, providerAcc.Addr.String(), providerAddr.String())
 	})
 
 	t.Run("overlapping blocks match", func(t *testing.T) {
@@ -273,8 +281,9 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		providerAddr, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
+		require.Equal(t, providerAcc.Addr.String(), providerAddr.String())
 	})
 
 	t.Run("overlapping blocks don't match", func(t *testing.T) {
@@ -306,7 +315,8 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
-		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
+		providerAddr, _, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.NoError(t, err)
+		require.Equal(t, providerAcc.Addr.String(), providerAddr.String())
 	})
 }
