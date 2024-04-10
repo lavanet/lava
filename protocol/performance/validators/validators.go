@@ -248,7 +248,7 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 			rand.InitRandomSeed()
 			retInfo, err := checkValidatorPerformance(ctx, clientCtx, valAddress, regex, blocks, fromBlock)
 			if err == nil {
-				fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n🔹 unbonded: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n🔹tokens: %s\n\n", retInfo.checks, retInfo.unbonded, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone, retInfo.tokens.String())
+				fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n🔹unbonded: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n🔹tokens: %s\n\n", retInfo.checks, retInfo.unbonded, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone, retInfo.tokens.String())
 			}
 			return err
 		},
