@@ -241,11 +241,11 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 		return providerAddress0, 0, nil, err
 	}
 
-	if err := k.validateFinalizedBlock(ctx, conflictData.RelayFinalization0, latestFinalizedBlock0, &spec); err != nil {
+	if err := k.validateFinalizedBlock(conflictData.RelayFinalization0, latestFinalizedBlock0, &spec); err != nil {
 		return providerAddress0, 0, nil, err
 	}
 
-	if err := k.validateFinalizedBlock(ctx, conflictData.RelayFinalization1, latestFinalizedBlock1, &spec); err != nil {
+	if err := k.validateFinalizedBlock(conflictData.RelayFinalization1, latestFinalizedBlock1, &spec); err != nil {
 		return providerAddress0, 0, nil, err
 	}
 
@@ -307,7 +307,7 @@ func (k Keeper) validateBlockHeights(relayFinalization *types.RelayFinalization,
 	return finalizedBlocks, blockHeights[0], blockHeights[len(blockHeights)-1], nil
 }
 
-func (k Keeper) validateFinalizedBlock(ctx sdk.Context, relayFinalization *types.RelayFinalization, latestFinalizedBlock int64, spec *spectypes.Spec) error {
+func (k Keeper) validateFinalizedBlock(relayFinalization *types.RelayFinalization, latestFinalizedBlock int64, spec *spectypes.Spec) error {
 	latestBlock := relayFinalization.GetLatestBlock()
 	blockDistanceToFinalization := int64(spec.BlockDistanceForFinalizedData)
 
@@ -316,7 +316,7 @@ func (k Keeper) validateFinalizedBlock(ctx sdk.Context, relayFinalization *types
 		return fmt.Errorf("ValidateSameProviderConflict: Missing blocks from finalization blocks: latestFinalizedBlock[%d], latestBlock[%d]-blockDistanceToFinalization[%d]=expectedLatestFinalizedBlock[%d]", latestFinalizedBlock, latestBlock, blockDistanceToFinalization, latestBlock-blockDistanceToFinalization)
 	}
 
-	if k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.RelaySession.SpecId, latestFinalizedBlock+1, latestBlock) {
+	if spectypes.IsFinalizedBlock(latestFinalizedBlock+1, latestBlock, int64(spec.BlockDistanceForFinalizedData)) {
 		return fmt.Errorf("ValidateSameProviderConflict: Non finalized block marked as finalized. Block height: %d", latestFinalizedBlock+1)
 	}
 
