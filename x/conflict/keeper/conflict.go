@@ -251,7 +251,7 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 
 	// Check the hashes between responses
 	firstOverlappingBlock := utils.Max(earliestFinalizedBlock0, earliestFinalizedBlock1)
-	lastOverlappingBlock := utils.Max(latestFinalizedBlock0, latestFinalizedBlock1)
+	lastOverlappingBlock := utils.Min(latestFinalizedBlock0, latestFinalizedBlock1)
 	if firstOverlappingBlock > lastOverlappingBlock {
 		return providerAddress0, 0, nil, fmt.Errorf("ValidateSameProviderConflict: No overlapping blocks between providers: provider0: %d, provider1: %d", earliestFinalizedBlock0, earliestFinalizedBlock1)
 	}
