@@ -3,7 +3,7 @@ name: lava
 
 services:
   cache:
-    image: svetekllc/lava:v1.0.4-cache
+    image: svetekllc/lava:v1.2.1-cache
     labels:
       network: testnet
     env_file:
@@ -25,7 +25,7 @@ services:
     restart: unless-stopped
 
   node:
-    image: svetekllc/lava:v1.0.1-node
+    image: svetekllc/lava:v1.2.0-node
     labels:
       network: testnet
     env_file:
@@ -50,7 +50,7 @@ services:
     restart: unless-stopped
 
   provider:
-    image: svetekllc/lava:v1.0.4-provider
+    image: svetekllc/lava:v1.2.1-provider
     labels:
       network: testnet
     env_file:

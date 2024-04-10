@@ -3,8 +3,8 @@
 [[ -z $CHAIN_ID ]] && CHAIN_ID="lava-testnet-2"
 [[ -z $CONFIG_PATH ]] && CONFIG_PATH="/root/.lava"
 [[ -z $PUBLIC_RPC ]] && PUBLIC_RPC="https://public-rpc-testnet2.lavanet.xyz:443/rpc/"
-[[ -z $NODE_RPC_PORT ]] && RPC_PORT="26657"
-[[ -z $NODE_P2P_PORT ]] && P2P_PORT="26656"
+[[ -z $NODE_RPC_PORT ]] && NODE_RPC_PORT="26657"
+[[ -z $NODE_P2P_PORT ]] && NODE_P2P_PORT="26656"
 
 init_node() {
   echo -e "\e[32m### Initialization node ###\e[0m\n"
@@ -15,7 +15,7 @@ init_node() {
   # Set keyring-backend and chain-id configuration
   $BIN config chain-id $CHAIN_ID --home $CONFIG_PATH
   $BIN config keyring-backend $KEYRING --home $CONFIG_PATH
-  $BIN config node http://0.0.0.0:$RPC_PORT --home $CONFIG_PATH
+  $BIN config node http://0.0.0.0:$NODE_RPC_PORT --home $CONFIG_PATH
 
   # Download addrbook and genesis files
   if [[ -n $ADDRBOOK_URL ]]
@@ -54,9 +54,9 @@ init_node() {
 
   # Set ports P2P and Prometheus
   sed -i \
-    -e "s|^laddr = \"tcp://127.0.0.1:26657\"|laddr = \"tcp://0.0.0.0:$RPC_PORT\"|" \
-    -e "s|^laddr = \"tcp://0.0.0.0:26656\"|laddr = \"tcp://0.0.0.0:$P2P_PORT\"|" \
-    -e "s|^external_address *=.*|external_address = \"$(wget -qO- eth0.me):$P2P_PORT\"|" \
+    -e "s|^laddr = \"tcp://127.0.0.1:26657\"|laddr = \"tcp://0.0.0.0:$NODE_RPC_PORT\"|" \
+    -e "s|^laddr = \"tcp://0.0.0.0:26656\"|laddr = \"tcp://0.0.0.0:$NODE_P2P_PORT\"|" \
+    -e "s|^external_address *=.*|external_address = \"$(wget -qO- eth0.me):$NODE_P2P_PORT\"|" \
     -e "s|^prometheus =.*|prometheus = true|" \
     -e "s|^prometheus_listen_addr =.*|prometheus_listen_addr = \":${METRICS_PORT:-26660}\"|" \
     $CONFIG_PATH/config/config.toml
@@ -123,11 +123,11 @@ start_node() {
   case ${NODE_TYPE,,} in
     "cache")
       echo -e "\n\e[32m### Run Cache ###\e[0m\n"
-      $BIN cache "$CACHE_ADDRESS" \
+      $BIN cache "0.0.0.0:${CACHE_PORT:-23100}" \
                   ${EXPIRATION:+--expiration $EXPIRATION} \
                   ${LOGLEVEL:+--log_level $LOGLEVEL} \
                   ${MAX_ITEMS:+--max-items $MAX_ITEMS} \
-                  ${METRICS_ADDRESS:+--metrics_address $METRICS_ADDRESS}
+                  ${METRICS_PORT:+--metrics_address 0.0.0.0:$METRICS_PORT}
       ;;
 
     "node")
@@ -146,7 +146,7 @@ start_node() {
             "--home $CONFIG_PATH" \
             "--keyring-backend $KEYRING" \
             "--log_level $LOGLEVEL" \
-            "--metrics-listen-address $METRICS_LISTEN_ADDRESS:${METRICS_PORT:-23001}" \
+            "--metrics-listen-address 0.0.0.0:${METRICS_PORT:-23001}" \
             "--node $PUBLIC_RPC" \
             "--parallel-connections $TOTAL_CONNECTIONS" \
             "--reward-server-storage $CONFIG_PATH/$REWARDS_STORAGE_DIR" \
