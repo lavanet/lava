@@ -567,6 +567,7 @@ func (ts *Tester) TxPairingStakeProvider(
 		Moniker:            moniker,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
 		DelegateCommission: 100,
+		Vault:              addr,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
@@ -581,6 +582,7 @@ func (ts *Tester) TxPairingStakeProviderFull(
 	moniker string,
 	commission uint64,
 	delegateLimit uint64,
+	vault string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	// if geoloc left zero, use default 1
@@ -616,6 +618,7 @@ func (ts *Tester) TxPairingStakeProviderFull(
 		Moniker:            moniker,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.NewIntFromUint64(delegateLimit)),
 		DelegateCommission: commission,
+		Vault:              vault,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }

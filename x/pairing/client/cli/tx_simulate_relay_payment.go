@@ -156,9 +156,6 @@ func newRelaySession(
 }
 
 func extractQoSFlag(qosValues []string) (qosReport *types.QualityOfServiceReport, err error) {
-	if err != nil {
-		return nil, err
-	}
 	// Check if we have exactly 3 values
 	if len(qosValues) != 3 {
 		return nil, utils.LavaFormatError("expected 3 values for QoSValuesFlag", nil, utils.Attribute{Key: "QoSValues", Value: qosValues})
