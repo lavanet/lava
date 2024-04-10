@@ -93,7 +93,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
-		_, _, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 
 		relayResult := &common.RelayResult{
@@ -126,7 +126,7 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
-		_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
 			Request:      relayDR,
@@ -251,7 +251,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.NoError(t, err)
 		err = lavaprotocol.VerifyRelayReply(ts.Ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
-		_, _, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 
 		relayResult := &common.RelayResult{
@@ -295,7 +295,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		err = lavaprotocol.VerifyRelayReply(ts.Ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
 
-		_, _, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
 			Request:      relayDR,

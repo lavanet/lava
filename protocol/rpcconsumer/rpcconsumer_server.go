@@ -762,19 +762,15 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	enabled, _ := rpccs.chainParser.DataReliabilityParams()
 	if enabled {
 		// TODO: DETECTION instead of existingSessionLatestBlock, we need proof of last reply to send the previous reply and the current reply
-		finalizedBlocks, finalizationAccountabilityError, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
+		finalizedBlocks, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
 		if err != nil {
-			if lavaprotocol.ProviderFinalizationDataAccountabilityError.Is(err) && finalizationAccountabilityError != nil {
-				// TODO: Send to consensus when it will support single reply finalization error. When this happens, the type of finalizationAccountabilityError will be different.
-				utils.LavaFormatInfo("provider finalization data accountability error",
-					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
-					utils.LogAttr("finalizationConflict", finalizationAccountabilityError),
-				)
+			if lavaprotocol.ProviderFinalizationDataAccountabilityError.Is(err) {
+				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider))
 			}
 			return 0, err, false
 		}
 
-		finalizationAccountabilityError, err = rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), rpccs.ConsumerAddress, providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
+		finalizationAccountabilityError, err := rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), rpccs.ConsumerAddress, providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
 		if err != nil {
 			if finalizationAccountabilityError != nil {
 				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationAccountabilityError, nil, singleConsumerSession.Parent)
