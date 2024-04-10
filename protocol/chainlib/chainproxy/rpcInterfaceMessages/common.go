@@ -21,6 +21,10 @@ func (pri ParsableRPCInput) GetParams() interface{} {
 	return nil
 }
 
+func (pri ParsableRPCInput) GetMethod() string {
+	return pri.LatestBlockHeaderSetter.ApiName
+}
+
 func (pri ParsableRPCInput) GetResult() json.RawMessage {
 	return pri.Result
 }
