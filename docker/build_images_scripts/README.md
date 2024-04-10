@@ -78,7 +78,7 @@ docker run --name lava-node \
 **Lava RPC Provider**
 ```ini
 docker run --name lava-provider \
-           --env-file node.env \
+           --env-file provider.env \
            -p 22001:22001 \
            -v ~/.lava/:/root/.lava \
            -d <image:tag>
