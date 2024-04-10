@@ -31,8 +31,8 @@ func NewRelayFinalizationFromRelaySessionAndRelayReply(relaySession *pairingtype
 	}
 }
 
-func (rfm RelayFinalization) GetSignature() []byte {
-	return rfm.SigBlocks
+func (rf RelayFinalization) GetSignature() []byte {
+	return rf.SigBlocks
 }
 
 func (rf RelayFinalization) DataToSign() []byte {
