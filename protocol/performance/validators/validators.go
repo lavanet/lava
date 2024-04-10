@@ -11,6 +11,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -32,6 +33,20 @@ type RetInfo struct {
 	jailed       int64
 	missedBlocks int64
 	checks       int64
+	unbonded     int64
+}
+
+func extractValcons(codec codec.Codec, validator stakingtypes.Validator, hrp string) (valCons string, err error) {
+	var pk cryptotypes.PubKey
+	err = codec.UnpackAny(validator.ConsensusPubkey, &pk)
+	if err != nil {
+		return "", utils.LavaFormatError("failed unpacking", err)
+	}
+	valcons, err := bech32.ConvertAndEncode(hrp, pk.Address())
+	if err != nil {
+		return "", utils.LavaFormatError("failed to encode cons Address", err)
+	}
+	return valcons, nil
 }
 
 func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, valAddr string, regex bool, blocks int64, fromBlock int64) (retInfo RetInfo, err error) {
@@ -71,8 +86,9 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 	if err != nil {
 		return retInfo, utils.LavaFormatError("error decoding hrp", err)
 	}
+	valCons := ""
+	stakingQueryClient := stakingtypes.NewQueryClient(clientCtx)
 	if regex {
-		stakingQueryClient := stakingtypes.NewQueryClient(clientCtx)
 		timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
 		allValidators, err := stakingQueryClient.Validators(timeoutCtx, &stakingtypes.QueryValidatorsRequest{})
 		cancel()
@@ -90,6 +106,10 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 				if valAddr == "" {
 					foundMoniker = validator.Description.Moniker
 					valAddr = validator.OperatorAddress
+					valCons, err = extractValcons(clientCtx.Codec, validator, hrp)
+					if err != nil {
+						continue
+					}
 				} else {
 					return retInfo, utils.LavaFormatError("regex matched two validators", nil, utils.LogAttr("first", foundMoniker), utils.LogAttr("second", validator.Description.Moniker))
 				}
@@ -98,7 +118,17 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 		if valAddr == "" {
 			return retInfo, utils.LavaFormatError("failed to match a validator with regex", err, utils.LogAttr("regex", valAddr))
 		}
+		utils.LavaFormatInfo("found validator moniker", utils.LogAttr("moniker", foundMoniker), utils.LogAttr("address", valAddr))
 	}
+	utils.LavaFormatInfo("looking for validator signing info", utils.LogAttr("valAddr", valAddr), utils.LogAttr("valCons", valCons))
+	// timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
+	// validator, err := stakingQueryClient.Validator(timeoutCtx, &stakingtypes.QueryValidatorRequest{
+	// 	ValidatorAddr: valAddr,
+	// })
+	// cancel()
+	// if err != nil {
+	// 	return retInfo, utils.LavaFormatError("error reading validator", err)
+	// }
 	ticker := time.NewTicker(3 * time.Second)
 	readEventsFromBlock := func(blockFrom int64, blockTo int64) error {
 		for block := blockFrom; block < blockTo; block += jumpBlocks {
@@ -125,28 +155,30 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 			if validatorResp.Validator.Jailed {
 				retInfo.jailed++
 			}
-			var pk cryptotypes.PubKey
-			err = clientCtx.Codec.UnpackAny(validatorResp.Validator.ConsensusPubkey, &pk)
-			if err != nil {
-				return utils.LavaFormatError("failed unpacking", err)
+			if validatorResp.Validator.Status == stakingtypes.Bonded {
+				if valCons == "" {
+					valCons, err = extractValcons(clientCtx.Codec, validatorResp.Validator, hrp)
+					if err != nil {
+						return err
+					}
+				}
+				timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
+				signingInfo, err := slashingQueryClient.SigningInfo(timeoutCtx, &slashingtypes.QuerySigningInfoRequest{
+					ConsAddress: valCons,
+				})
+				cancel()
+				if err != nil {
+					utils.LavaFormatError("failed reading signing info at height", err, utils.LogAttr("block", block), utils.LogAttr("valCons", valCons))
+					continue
+				}
+				retInfo.missedBlocks += signingInfo.ValSigningInfo.MissedBlocksCounter
+				if signingInfo.ValSigningInfo.Tombstoned {
+					retInfo.tombstone += 1
+				}
+			} else {
+				retInfo.unbonded++
 			}
-			valcons, err := bech32.ConvertAndEncode(hrp, pk.Address())
-			if err != nil {
-				return utils.LavaFormatError("failed to encode cons Address", err)
-			}
-			timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
-			signingInfo, err := slashingQueryClient.SigningInfo(timeoutCtx, &slashingtypes.QuerySigningInfoRequest{
-				ConsAddress: valcons,
-			})
-			cancel()
-			if err != nil {
-				utils.LavaFormatError("failed reading signing info at height", err, utils.LogAttr("block", block), utils.LogAttr("valCons", valcons))
-				continue
-			}
-			retInfo.missedBlocks += signingInfo.ValSigningInfo.MissedBlocksCounter
-			if signingInfo.ValSigningInfo.Tombstoned {
-				retInfo.tombstone += 1
-			}
+
 			retInfo.checks += 1
 		}
 		return nil
@@ -208,7 +240,7 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 			rand.InitRandomSeed()
 			retInfo, err := checkValidatorPerformance(ctx, clientCtx, valAddress, regex, blocks, fromBlock)
 			if err == nil {
-				fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n\n", retInfo.checks, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone)
+				fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n unbonded: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n\n", retInfo.checks, retInfo.unbonded, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone)
 			}
 			return err
 		},
