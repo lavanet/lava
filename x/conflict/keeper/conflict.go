@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/maps"
 	"github.com/lavanet/lava/utils/sigs"
@@ -250,8 +250,8 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 	}
 
 	// Check the hashes between responses
-	firstOverlappingBlock := int64(math.Max(float64(earliestFinalizedBlock0), float64(earliestFinalizedBlock1)))
-	lastOverlappingBlock := int64(math.Min(float64(latestFinalizedBlock0), float64(latestFinalizedBlock1)))
+	firstOverlappingBlock := utils.Max(earliestFinalizedBlock0, earliestFinalizedBlock1)
+	lastOverlappingBlock := utils.Max(latestFinalizedBlock0, latestFinalizedBlock1)
 	if firstOverlappingBlock > lastOverlappingBlock {
 		return providerAddress0, 0, nil, fmt.Errorf("ValidateSameProviderConflict: No overlapping blocks between providers: provider0: %d, provider1: %d", earliestFinalizedBlock0, earliestFinalizedBlock1)
 	}
@@ -317,7 +317,7 @@ func (k Keeper) validateFinalizedBlock(ctx sdk.Context, relayFinalization *types
 	}
 
 	if k.specKeeper.IsFinalizedBlock(ctx, relayFinalization.RelaySession.SpecId, latestFinalizedBlock+1, latestBlock) {
-		return fmt.Errorf("ValidateSameProviderConflict: Finalized block is not in FinalizedBlocksHashes map. Block height: %d", latestFinalizedBlock+1)
+		return fmt.Errorf("ValidateSameProviderConflict: Non finalized block marked as finalized. Block height: %d", latestFinalizedBlock+1)
 	}
 
 	return nil
