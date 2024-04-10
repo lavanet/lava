@@ -43,10 +43,10 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		)
 	}
 
-	err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.GetAddress(), validator, existingEntry.GetAddress(), existingEntry.GetChain(), existingEntry.Stake, true)
+	err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.GetOperator(), validator, existingEntry.GetOperator(), existingEntry.GetChain(), existingEntry.Stake, true)
 	if err != nil {
 		return utils.LavaFormatWarning("can't unbond seld delegation", err,
-			utils.Attribute{Key: "address", Value: existingEntry.Address},
+			utils.Attribute{Key: "address", Value: existingEntry.Operator},
 			utils.Attribute{Key: "spec", Value: chainID},
 		)
 	}
@@ -64,7 +64,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 	}
 
 	details := map[string]string{
-		"address":     existingEntry.GetAddress(),
+		"address":     existingEntry.GetOperator(),
 		"chainID":     existingEntry.GetChain(),
 		"geolocation": strconv.FormatInt(int64(existingEntry.GetGeolocation()), 10),
 		"moniker":     existingEntry.GetMoniker(),
@@ -109,10 +109,10 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			amount = totalAmount
 		}
 		totalAmount = totalAmount.Sub(amount)
-		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.GetAddress(), validator.OperatorAddress, existingEntry.GetAddress(), existingEntry.GetChain(), sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount), true)
+		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.GetOperator(), validator.OperatorAddress, existingEntry.GetOperator(), existingEntry.GetChain(), sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount), true)
 		if err != nil {
 			return utils.LavaFormatWarning("can't unbond seld delegation", err,
-				utils.Attribute{Key: "address", Value: existingEntry.Address},
+				utils.Attribute{Key: "address", Value: existingEntry.Operator},
 				utils.Attribute{Key: "spec", Value: chainID},
 			)
 		}
@@ -128,7 +128,7 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			}
 
 			details := map[string]string{
-				"address":     existingEntry.GetAddress(),
+				"address":     existingEntry.GetOperator(),
 				"chainID":     existingEntry.GetChain(),
 				"geolocation": strconv.FormatInt(int64(existingEntry.GetGeolocation()), 10),
 				"moniker":     existingEntry.GetMoniker(),

@@ -59,7 +59,7 @@ func (k Keeper) UserEntry(goCtx context.Context, req *types.QueryUserEntryReques
 
 	return &types.QueryUserEntryResponse{Consumer: epochstoragetypes.StakeEntry{
 		Geolocation: geolocation,
-		Address:     req.Address,
+		Operator:    req.Address,
 		Chain:       req.ChainID,
 	}, MaxCU: allowedCU}, nil
 }

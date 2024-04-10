@@ -164,7 +164,7 @@ func GeneratePairingList(grpcConn *grpc.ClientConn, ctx context.Context) {
 		}
 		pairingList.TestNet.One[i] = Pair{
 			RPCAddress:    tendermintEndpoint,
-			PublicAddress: entry.Address,
+			PublicAddress: entry.Operator,
 		}
 	}
 

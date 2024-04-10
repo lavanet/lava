@@ -355,7 +355,7 @@ func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveP
 	for _, unresponsiveProvider := range unresponsiveProviders {
 		found := false
 		for _, provider := range pairedProviders {
-			if provider.Address == unresponsiveProvider.Address {
+			if provider.Operator == unresponsiveProvider.Address {
 				found = true
 				break
 			}

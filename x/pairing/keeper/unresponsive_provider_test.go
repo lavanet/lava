@@ -75,7 +75,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[clientIndex].Addr.String())
 		require.NoError(t, err)
 		providerIndex := rand.Intn(len(pairing.Providers))
-		providerAddress := pairing.Providers[providerIndex].Address
+		providerAddress := pairing.Providers[providerIndex].Operator
 		// NOTE: the following loop contains a random factor in it. We make sure that we pick
 		// a provider in random that is not one of the defined unresponsive providers
 		// If we did, we pick one of the providers in random again and check whether it's
@@ -95,7 +95,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 				break
 			}
 			providerIndex = rand.Intn(len(pairing.Providers))
-			providerAddress = pairing.Providers[providerIndex].Address
+			providerAddress = pairing.Providers[providerIndex].Operator
 		}
 
 		cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex)
@@ -156,8 +156,8 @@ func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 	// find two providers in the pairing
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 	require.NoError(t, err)
-	provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Address)
-	provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
+	provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Operator)
+	provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Operator)
 
 	// get provider1's balance before the stake
 	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
@@ -215,8 +215,8 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 	// find two providers in the pairing
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 	require.NoError(t, err)
-	provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Address)
-	provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
+	provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Operator)
+	provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Operator)
 
 	// create relay requests for provider0 that contain complaints about provider1
 	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
@@ -308,8 +308,8 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		// find two providers in the pairing
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 		require.NoError(t, err)
-		provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Address)
-		provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
+		provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Operator)
+		provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Operator)
 
 		// create unresponsive data that includes provider1 being unresponsive
 		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}

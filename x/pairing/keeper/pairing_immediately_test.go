@@ -24,7 +24,7 @@ func TestStakeClientPairingimmediately(t *testing.T) {
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
 	require.NoError(t, err)
 
-	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, client1Addr, pairing.Providers[0].Address, epoch)
+	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, client1Addr, pairing.Providers[0].Operator, epoch)
 	require.NoError(t, err)
 }
 
@@ -68,7 +68,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 	require.NoError(t, err)
 	pairing := res2.Providers
 
-	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, pairing[0].Address, ts.EpochStart())
+	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, pairing[0].Operator, ts.EpochStart())
 	require.NoError(t, err)
 }
 
@@ -112,6 +112,6 @@ func TestAddKeyCreateProject(t *testing.T) {
 	require.NoError(t, err)
 	pairing := res2.Providers
 
-	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, pairing[0].Address, ts.BlockHeight())
+	_, err = ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, pairing[0].Operator, ts.BlockHeight())
 	require.NoError(t, err)
 }

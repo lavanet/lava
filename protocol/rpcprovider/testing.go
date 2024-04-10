@@ -336,7 +336,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 					})
 					if err == nil && len(response.StakeEntry) > 0 {
 						for _, provider := range response.StakeEntry {
-							if provider.Address == address {
+							if provider.Operator == address {
 								if provider.StakeAppliedBlock > uint64(currentBlock+1) {
 									utils.LavaFormatWarning("provider is Frozen", nil, utils.Attribute{Key: "chainID", Value: provider.Chain})
 								}

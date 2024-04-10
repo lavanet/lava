@@ -150,12 +150,12 @@ func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.Sta
 	// the following finds the address of stakeEntry and returns it
 	entries := stakeStorage.StakeEntries
 	for idx, entry := range entries {
-		entryAddr, err := sdk.AccAddressFromBech32(entry.Address)
+		entryAddr, err := sdk.AccAddressFromBech32(entry.Operator)
 		if err != nil {
 			// this should not happen; to avoid panic we simply skip this one (thus
 			// freeze the situation so it can be investigated and orderly resolved).
 			utils.LavaFormatError("critical: invalid account address inside StakeStorage", err,
-				utils.LogAttr("address", entry.Address),
+				utils.LogAttr("address", entry.Operator),
 				utils.LogAttr("chainID", entry.Chain),
 			)
 			continue
@@ -247,7 +247,7 @@ func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEn
 		// do nothing and return to avoid panic.
 		utils.LavaFormatError("critical: ModifyStakeEntryCurrent with unknown chain", legacyerrors.ErrNotFound,
 			utils.LogAttr("chainID", chainID),
-			utils.LogAttr("stakeAddr", stakeEntry.Address),
+			utils.LogAttr("stakeAddr", stakeEntry.Operator),
 		)
 		return
 	}
@@ -308,7 +308,7 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry,
 	if !found {
 		// should not happen since stake storage must always exist; do nothing to avoid panic
 		utils.LavaFormatError("critical: ModifyUnstakeEntry failed to get stakeStorage", legacyerrors.ErrNotFound,
-			utils.LogAttr("stakeAddr", stakeEntry.Address),
+			utils.LogAttr("stakeAddr", stakeEntry.Operator),
 		)
 		return
 	}

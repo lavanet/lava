@@ -287,8 +287,8 @@ func (lt *lavaTest) checkStakeLava(
 			panic(fmt.Errorf("staking Failed PROVIDER count %d, wanted %d", len(providerQueryRes.StakeEntry), providerCount))
 		}
 		for _, providerStakeEntry := range providerQueryRes.StakeEntry {
-			fmt.Println("provider", providerStakeEntry.Address, providerStakeEntry.Endpoints)
-			lt.providerType[providerStakeEntry.Address] = providerStakeEntry.Endpoints
+			fmt.Println("provider", providerStakeEntry.Operator, providerStakeEntry.Endpoints)
+			lt.providerType[providerStakeEntry.Operator] = providerStakeEntry.Endpoints
 		}
 	}
 	utils.LavaFormatInfo(successMessage)
