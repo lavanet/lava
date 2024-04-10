@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -19,6 +20,11 @@ import (
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+)
+
+const (
+	validatorMonikerFlagName = "regex"
 )
 
 type RetInfo struct {
@@ -28,7 +34,7 @@ type RetInfo struct {
 	checks       int64
 }
 
-func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, valAddr string, blocks int64, fromBlock int64) (retInfo RetInfo, err error) {
+func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, valAddr string, regex bool, blocks int64, fromBlock int64) (retInfo RetInfo, err error) {
 	retInfo = RetInfo{}
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
@@ -64,6 +70,34 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 	hrp, _, err := bech32.DecodeAndConvert(exampleConsAddress)
 	if err != nil {
 		return retInfo, utils.LavaFormatError("error decoding hrp", err)
+	}
+	if regex {
+		stakingQueryClient := stakingtypes.NewQueryClient(clientCtx)
+		timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
+		allValidators, err := stakingQueryClient.Validators(timeoutCtx, &stakingtypes.QueryValidatorsRequest{})
+		cancel()
+		if err != nil {
+			return retInfo, utils.LavaFormatError("error reading validators", err)
+		}
+		re, err := regexp.Compile(valAddr)
+		if err != nil {
+			return retInfo, utils.LavaFormatError("failed compiling regex", err, utils.LogAttr("regex", valAddr))
+		}
+		valAddr = ""
+		foundMoniker := ""
+		for _, validator := range allValidators.GetValidators() {
+			if re.MatchString(validator.Description.Moniker) {
+				if valAddr == "" {
+					foundMoniker = validator.Description.Moniker
+					valAddr = validator.OperatorAddress
+				} else {
+					return retInfo, utils.LavaFormatError("regex matched two validators", nil, utils.LogAttr("first", foundMoniker), utils.LogAttr("second", validator.Description.Moniker))
+				}
+			}
+		}
+		if valAddr == "" {
+			return retInfo, utils.LavaFormatError("failed to match a validator with regex", err, utils.LogAttr("regex", valAddr))
+		}
 	}
 	ticker := time.NewTicker(3 * time.Second)
 	readEventsFromBlock := func(blockFrom int64, blockTo int64) error {
@@ -130,11 +164,12 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 
 func CreateValidatorsPerformanceCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     `validator-performance <address(string)> <blocks(int)> [start_block(int)] [--node tmRPC]`,
-		Short:   `validator-performance checks and prints the statistics of a validator`,
-		Long:    `validator-performance checks and prints the statistics of a validator`,
-		Example: `validator-performance lava@valcons1abcdefg 100 --node https://public-rpc.lavanet.xyz`,
-		Args:    cobra.RangeArgs(2, 3),
+		Use:   `validator-performance <address(string)| regex> <blocks(int)> [start_block(int)] [--node tmRPC]`,
+		Short: `validator-performance checks and prints the statistics of a validator, either by an operator address or a regex`,
+		Long:  `validator-performance checks and prints the statistics of a validator`,
+		Example: `validator-performance lava@valoper1abcdefg 100 --node https://public-rpc.lavanet.xyz
+validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavanet.xyz`,
+		Args: cobra.RangeArgs(2, 3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -167,10 +202,11 @@ func CreateValidatorsPerformanceCommand() *cobra.Command {
 				}
 			}
 
+			regex := viper.GetBool(validatorMonikerFlagName)
 			utils.SetGlobalLoggingLevel(logLevel)
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.InitRandomSeed()
-			retInfo, err := checkValidatorPerformance(ctx, clientCtx, valAddress, blocks, fromBlock)
+			retInfo, err := checkValidatorPerformance(ctx, clientCtx, valAddress, regex, blocks, fromBlock)
 			if err == nil {
 				fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n\n", retInfo.checks, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone)
 			}
@@ -180,5 +216,6 @@ func CreateValidatorsPerformanceCommand() *cobra.Command {
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddKeyringFlags(cmd.Flags())
 	cmd.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmd.Flags().Bool(validatorMonikerFlagName, false, "turn on regex parsing for the validator moniker instead of accepting a valoper")
 	return cmd
 }
