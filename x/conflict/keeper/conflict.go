@@ -186,29 +186,29 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Conflict data is nil")
 	}
 
-	if conflictData.RelayReply0 == nil || conflictData.RelayReply1 == nil {
+	if conflictData.RelayFinalization0 == nil || conflictData.RelayFinalization1 == nil {
 		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Reply metadata is nil")
 	}
 
 	// Validate Sig of provider and compare addresses
-	provider0PubKey, err := sigs.RecoverPubKey(conflictData.RelayReply0)
+	provider0PubKey, err := sigs.RecoverPubKey(conflictData.RelayFinalization0)
 	if err != nil {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to recover public key from RelayReply0: %w", err)
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to recover public key from RelayFinalization0: %w", err)
 	}
 
 	providerAddress0, err := sdk.AccAddressFromHexUnsafe(provider0PubKey.Address().String())
 	if err != nil {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to get provider address from RelayReply0: %w", err)
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to get provider address from RelayFinalization0: %w", err)
 	}
 
-	provider1PubKey, err := sigs.RecoverPubKey(conflictData.RelayReply1)
+	provider1PubKey, err := sigs.RecoverPubKey(conflictData.RelayFinalization1)
 	if err != nil {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to recover public key from RelayReply1: %w", err)
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to recover public key from RelayFinalization1: %w", err)
 	}
 
 	providerAddress1, err := sdk.AccAddressFromHexUnsafe(provider1PubKey.Address().String())
 	if err != nil {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to get provider address from RelayReply1: %w", err)
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Failed to get provider address from RelayFinalization1: %w", err)
 	}
 
 	if !providerAddress0.Equals(providerAddress1) {
@@ -216,36 +216,36 @@ func (k Keeper) ValidateSameProviderConflict(ctx sdk.Context, conflictData *type
 	}
 
 	// Validate client address
-	if conflictData.RelayReply0.ConsumerAddress != clientAddr.String() || conflictData.RelayReply1.ConsumerAddress != clientAddr.String() {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Mismatching client addresses %v, %v", conflictData.RelayReply0.ConsumerAddress, conflictData.RelayReply1.ConsumerAddress)
+	if conflictData.RelayFinalization0.ConsumerAddress != clientAddr.String() || conflictData.RelayFinalization1.ConsumerAddress != clientAddr.String() {
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Mismatching client addresses %v, %v", conflictData.RelayFinalization0.ConsumerAddress, conflictData.RelayFinalization1.ConsumerAddress)
 	}
 
 	// Validate matching spec and epoch
-	if conflictData.RelayReply0.RelaySession.SpecId != conflictData.RelayReply1.RelaySession.SpecId {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Mismatching spec id %s, %s", conflictData.RelayReply0.RelaySession.SpecId, conflictData.RelayReply1.RelaySession.SpecId)
+	if conflictData.RelayFinalization0.RelaySession.SpecId != conflictData.RelayFinalization1.RelaySession.SpecId {
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Mismatching spec id %s, %s", conflictData.RelayFinalization0.RelaySession.SpecId, conflictData.RelayFinalization1.RelaySession.SpecId)
 	}
 
-	spec, _ := k.specKeeper.GetSpec(ctx, conflictData.RelayReply0.RelaySession.SpecId)
-	if uint64(conflictData.RelayReply0.RelaySession.Epoch) <= spec.BlockLastUpdated {
-		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Epoch %d is less than spec last updated block %d", conflictData.RelayReply0.RelaySession.Epoch, spec.BlockLastUpdated)
+	spec, _ := k.specKeeper.GetSpec(ctx, conflictData.RelayFinalization0.RelaySession.SpecId)
+	if uint64(conflictData.RelayFinalization0.RelaySession.Epoch) <= spec.BlockLastUpdated {
+		return 0, nil, fmt.Errorf("ValidateSameProviderConflict: Epoch %d is less than spec last updated block %d", conflictData.RelayFinalization0.RelaySession.Epoch, spec.BlockLastUpdated)
 	}
 
 	// Validate block nums are ordered && Finalization distance is right
-	finalizedBlocksMap0, earliestFinalizedBlock0, latestFinalizedBlock0, err := k.validateBlockHeights(ctx, conflictData.RelayReply0)
+	finalizedBlocksMap0, earliestFinalizedBlock0, latestFinalizedBlock0, err := k.validateBlockHeights(ctx, conflictData.RelayFinalization0)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	finalizedBlocksMap1, earliestFinalizedBlock1, latestFinalizedBlock1, err := k.validateBlockHeights(ctx, conflictData.RelayReply1)
+	finalizedBlocksMap1, earliestFinalizedBlock1, latestFinalizedBlock1, err := k.validateBlockHeights(ctx, conflictData.RelayFinalization1)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply0, latestFinalizedBlock0, &spec); err != nil {
+	if err := k.validateFinalizedBlock(ctx, conflictData.RelayFinalization0, latestFinalizedBlock0, &spec); err != nil {
 		return 0, nil, err
 	}
 
-	if err := k.validateFinalizedBlock(ctx, conflictData.RelayReply1, latestFinalizedBlock1, &spec); err != nil {
+	if err := k.validateFinalizedBlock(ctx, conflictData.RelayFinalization1, latestFinalizedBlock1, &spec); err != nil {
 		return 0, nil, err
 	}
 

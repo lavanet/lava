@@ -31,8 +31,8 @@ func TestValidateSameProviderConflict(t *testing.T) {
 	t.Run("empty reply", func(t *testing.T) {
 		_, keeper, ctx := initTester()
 		finalizationConflict := &types.FinalizationConflict{
-			RelayReply0: &types.RelayFinalization{},
-			RelayReply1: &types.RelayFinalization{},
+			RelayFinalization0: &types.RelayFinalization{},
+			RelayFinalization1: &types.RelayFinalization{},
 		}
 		_, _, err := keeper.ValidateSameProviderConflict(ctx, finalizationConflict, sdk.AccAddress{})
 		require.Error(t, err)
@@ -51,7 +51,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, provider1Acc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
@@ -73,7 +73,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
@@ -96,7 +96,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
@@ -114,7 +114,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
@@ -132,7 +132,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
@@ -155,7 +155,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
@@ -180,7 +180,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
@@ -205,7 +205,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight, finalizationBlockHashes, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
@@ -238,7 +238,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight1, finalizationBlockHashes1, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
@@ -271,7 +271,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight1, finalizationBlockHashes1, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.Error(t, err)
@@ -304,7 +304,7 @@ func TestValidateSameProviderConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply1, err := common.CreateRelayFinalizationForTest(ts.Ctx, ts.consumer, providerAcc, latestBlockHeight1, finalizationBlockHashes1, &ts.spec)
 		require.NoError(t, err)
-		finalizationConflict := &types.FinalizationConflict{RelayReply0: reply0, RelayReply1: reply1}
+		finalizationConflict := &types.FinalizationConflict{RelayFinalization0: reply0, RelayFinalization1: reply1}
 
 		_, _, err = keeper.ValidateSameProviderConflict(ctx, finalizationConflict, ts.consumer.Addr)
 		require.NoError(t, err)

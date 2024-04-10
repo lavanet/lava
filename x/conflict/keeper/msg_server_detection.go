@@ -30,7 +30,7 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	switch msg.Conflict.(type) {
 	case *types.MsgDetection_FinalizationConflict:
 		conflict := msg.GetFinalizationConflict()
-		if conflict.RelayReply0.RelaySession.Provider == conflict.RelayReply1.RelaySession.Provider {
+		if conflict.RelayFinalization0.RelaySession.Provider == conflict.RelayFinalization1.RelaySession.Provider {
 			eventData, err := k.handleSameProviderConflict(ctx, conflict, clientAddr)
 			if err != nil {
 				return nil, err
@@ -89,9 +89,9 @@ func (k msgServer) handleTwoProvidersConflict(ctx sdk.Context, conflict *types.F
 	}
 
 	eventData = map[string]string{"client": clientAddr.String()}
-	eventData["chainID"] = conflict.RelayReply0.RelaySession.SpecId
-	eventData["provider0"] = fmt.Sprintf("%+v", conflict.RelayReply0.RelaySession.Provider)
-	eventData["provider1"] = fmt.Sprintf("%+v", conflict.RelayReply1.RelaySession.Provider)
+	eventData["chainID"] = conflict.RelayFinalization0.RelaySession.SpecId
+	eventData["provider0"] = fmt.Sprintf("%+v", conflict.RelayFinalization0.RelaySession.Provider)
+	eventData["provider1"] = fmt.Sprintf("%+v", conflict.RelayFinalization1.RelaySession.Provider)
 	// eventData["mismatching_block_height"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
 	// eventData["mismatching_block_hashes"] = fmt.Sprintf("%+v", mismatchingBlockHashes)
 
@@ -107,7 +107,7 @@ func (k msgServer) handleSameProviderConflict(ctx sdk.Context, conflict *types.F
 	}
 
 	eventData = map[string]string{"client": clientAddr.String()}
-	eventData["chainID"] = conflict.RelayReply0.RelaySession.SpecId
+	eventData["chainID"] = conflict.RelayFinalization0.RelaySession.SpecId
 	eventData["provider"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
 	eventData["mismatching_block_height"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
 	eventData["mismatching_block_hashes"] = fmt.Sprintf("%+v", mismatchingBlockHashes)

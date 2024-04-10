@@ -26,8 +26,8 @@ message ReplyMetadata {
 }
 
 message FinalizationConflict {
-    RelayFinalization relayReply0 = 1;
-    RelayFinalization relayReply1 = 2;
+    RelayFinalization relayFinalization0 = 1;
+    RelayFinalization relayFinalization1 = 2;
 }
 
 message RelayFinalization {
