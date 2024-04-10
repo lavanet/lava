@@ -499,6 +499,30 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	}
 }
 
+// csm must be rlocked here
+func (csm *ConsumerSessionManager) getTopTenProvidersForStatefulCalls(validAddresses []string, ignoredProvidersList map[string]struct{}) []string {
+	// sort by cu used, easiest to sort by that factor as it probably means highest QOS and easily read by atomic
+	customSort := func(i, j int) bool {
+		return csm.pairing[validAddresses[i]].atomicReadUsedComputeUnits() > csm.pairing[validAddresses[j]].atomicReadUsedComputeUnits()
+	}
+	// Sort the slice using the custom sorting rule
+	sort.Slice(validAddresses, customSort)
+	validAddressesMaxIndex := len(validAddresses) - 1
+	addresses := []string{}
+	for i := 0; i < 10; i++ {
+		// do not overflow
+		if i > validAddressesMaxIndex {
+			break
+		}
+		// skip ignored providers
+		if _, foundInIgnoredProviderList := ignoredProvidersList[validAddresses[i]]; foundInIgnoredProviderList {
+			continue
+		}
+		addresses = append(addresses, validAddresses[i])
+	}
+	return addresses
+}
+
 // Get a valid provider address.
 func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
@@ -522,7 +546,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	}
 	var providers []string
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
-		providers = GetAllProviders(validAddresses, ignoredProvidersList)
+		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else {
 		providers = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
 	}
