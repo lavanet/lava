@@ -9,11 +9,13 @@ import (
 	"strconv"
 	"time"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/cosmos/cosmos-sdk/version"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -34,6 +36,7 @@ type RetInfo struct {
 	missedBlocks int64
 	checks       int64
 	unbonded     int64
+	tokens       math.Int
 }
 
 func extractValcons(codec codec.Codec, validator stakingtypes.Validator, hrp string) (valCons string, err error) {
@@ -89,8 +92,12 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 	valCons := ""
 	stakingQueryClient := stakingtypes.NewQueryClient(clientCtx)
 	if regex {
-		timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
-		allValidators, err := stakingQueryClient.Validators(timeoutCtx, &stakingtypes.QueryValidatorsRequest{})
+		timeoutCtx, cancel = context.WithTimeout(ctx, 60*time.Second)
+		allValidators, err := stakingQueryClient.Validators(timeoutCtx, &stakingtypes.QueryValidatorsRequest{
+			Pagination: &query.PageRequest{
+				Limit: 10000,
+			},
+		})
 		cancel()
 		if err != nil {
 			return retInfo, utils.LavaFormatError("error reading validators", err)
@@ -116,19 +123,20 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 			}
 		}
 		if valAddr == "" {
-			return retInfo, utils.LavaFormatError("failed to match a validator with regex", err, utils.LogAttr("regex", valAddr))
+			return retInfo, utils.LavaFormatError("failed to match a validator with regex", err, utils.LogAttr("regex", re.String()))
 		}
 		utils.LavaFormatInfo("found validator moniker", utils.LogAttr("moniker", foundMoniker), utils.LogAttr("address", valAddr))
 	}
 	utils.LavaFormatInfo("looking for validator signing info", utils.LogAttr("valAddr", valAddr), utils.LogAttr("valCons", valCons))
-	// timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
-	// validator, err := stakingQueryClient.Validator(timeoutCtx, &stakingtypes.QueryValidatorRequest{
-	// 	ValidatorAddr: valAddr,
-	// })
-	// cancel()
-	// if err != nil {
-	// 	return retInfo, utils.LavaFormatError("error reading validator", err)
-	// }
+	timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
+	validator, err := stakingQueryClient.Validator(timeoutCtx, &stakingtypes.QueryValidatorRequest{
+		ValidatorAddr: valAddr,
+	})
+	cancel()
+	if err != nil {
+		return retInfo, utils.LavaFormatError("error reading validator", err)
+	}
+	retInfo.tokens = validator.Validator.Tokens
 	ticker := time.NewTicker(3 * time.Second)
 	readEventsFromBlock := func(blockFrom int64, blockTo int64) error {
 		for block := blockFrom; block < blockTo; block += jumpBlocks {
@@ -240,7 +248,7 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 			rand.InitRandomSeed()
 			retInfo, err := checkValidatorPerformance(ctx, clientCtx, valAddress, regex, blocks, fromBlock)
 			if err == nil {
-				fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n unbonded: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n\n", retInfo.checks, retInfo.unbonded, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone)
+				fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n🔹 unbonded: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n🔹tokens: %s\n\n", retInfo.checks, retInfo.unbonded, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone, retInfo.tokens.String())
 			}
 			return err
 		},
