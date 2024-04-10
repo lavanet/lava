@@ -31,14 +31,14 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 	case *types.MsgDetection_FinalizationConflict:
 		conflict := msg.GetFinalizationConflict()
 		if conflict.RelayFinalization0.RelaySession.Provider == conflict.RelayFinalization1.RelaySession.Provider {
-			eventData, err := k.handleSameProviderConflict(ctx, conflict, clientAddr)
+			eventData, err := k.handleSameProviderFinalizationConflict(ctx, conflict, clientAddr)
 			if err != nil {
 				return nil, err
 			}
 
 			utils.LogLavaEvent(ctx, logger, types.ConflictDetectionSameProviderEventName, eventData, "Simulation: Got a new valid conflict detection from consumer on same provider")
 		} else {
-			eventData, err := k.handleTwoProvidersConflict(ctx, conflict, clientAddr)
+			eventData, err := k.handleTwoProvidersFinalizationConflict(ctx, conflict, clientAddr)
 			if err != nil {
 				return nil, err
 			}
@@ -80,7 +80,7 @@ func (k Keeper) LotteryVoters(goCtx context.Context, epoch uint64, chainID strin
 	return voters
 }
 
-func (k msgServer) handleTwoProvidersConflict(ctx sdk.Context, conflict *types.FinalizationConflict, clientAddr sdk.AccAddress) (eventData map[string]string, err error) {
+func (k msgServer) handleTwoProvidersFinalizationConflict(ctx sdk.Context, conflict *types.FinalizationConflict, clientAddr sdk.AccAddress) (eventData map[string]string, err error) {
 	err = k.Keeper.ValidateFinalizationConflict(ctx, conflict, clientAddr)
 	if err != nil {
 		return nil, utils.LavaFormatWarning("Simulation: invalid finalization conflict detection", err,
@@ -98,7 +98,7 @@ func (k msgServer) handleTwoProvidersConflict(ctx sdk.Context, conflict *types.F
 	return eventData, nil
 }
 
-func (k msgServer) handleSameProviderConflict(ctx sdk.Context, conflict *types.FinalizationConflict, clientAddr sdk.AccAddress) (eventData map[string]string, err error) {
+func (k msgServer) handleSameProviderFinalizationConflict(ctx sdk.Context, conflict *types.FinalizationConflict, clientAddr sdk.AccAddress) (eventData map[string]string, err error) {
 	mismatchingBlockHeight, mismatchingBlockHashes, err := k.Keeper.ValidateSameProviderConflict(ctx, conflict, clientAddr)
 	if err != nil {
 		return nil, utils.LavaFormatWarning("Simulation: invalid same provider conflict detection", err,
