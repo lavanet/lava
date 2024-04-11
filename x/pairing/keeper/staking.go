@@ -81,7 +81,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		moniker = moniker[:50]
 	}
 
-	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
+	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, creator)
 	if entryExists {
 		// modify the entry
 		if existingEntry.Address != creator {
@@ -134,7 +134,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		existingEntry.DelegateLimit = delegationLimit
 		existingEntry.LastChange = uint64(ctx.BlockTime().UTC().Unix())
 
-		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry, indexInStakeStorage)
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry)
 
 		if amount.Amount.GT(existingEntry.Stake.Amount) {
 			// delegate the difference
@@ -301,14 +301,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(endpoints []epochstoragetype
 }
 
 func (k Keeper) GetStakeEntry(ctx sdk.Context, chainID string, provider string) (epochstoragetypes.StakeEntry, error) {
-	providerAcc, err := sdk.AccAddressFromBech32(provider)
-	if err != nil {
-		return epochstoragetypes.StakeEntry{}, utils.LavaFormatWarning("invalid provider address", fmt.Errorf("cannot get stake entry"),
-			utils.Attribute{Key: "provider", Value: provider},
-		)
-	}
-
-	stakeEntry, found, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAcc)
+	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
 	if !found {
 		return epochstoragetypes.StakeEntry{}, utils.LavaFormatWarning("provider not staked on chain", fmt.Errorf("cannot get stake entry"),
 			utils.Attribute{Key: "chainID", Value: chainID},

@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -92,17 +91,16 @@ func (ts *tester) addValidators(count int) {
 }
 
 // getStakeEntry find the stake entry of a given provider + chainID
-func (ts *tester) getStakeEntry(provider sdk.AccAddress, chainID string) epochstoragetypes.StakeEntry {
+func (ts *tester) getStakeEntry(provider string, chainID string) epochstoragetypes.StakeEntry {
 	epoch := ts.EpochStart()
 	keeper := ts.Keepers.Epochstorage
 
-	stakeEntry, err := keeper.GetStakeEntryForProviderEpoch(ts.Ctx, chainID, provider, epoch)
-	if err != nil {
-		panic("getStakeEntry: no stake entry: " +
-			err.Error() + ": " + provider.String() + " " + chainID)
+	stakeEntry, found := keeper.GetStakeEntryForProviderEpoch(ts.Ctx, chainID, provider, epoch)
+	if !found {
+		panic("getStakeEntry: no stake entry: " + provider + " " + chainID)
 	}
 
-	return *stakeEntry
+	return stakeEntry
 }
 
 func (ts *tester) verifyDelegatorsBalance() {

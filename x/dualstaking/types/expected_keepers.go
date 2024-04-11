@@ -32,17 +32,17 @@ type BankKeeper interface {
 }
 
 type EpochstorageKeeper interface {
-	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
-	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
+	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (value epochstoragetypes.StakeEntry, found bool)
+	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry)
 	UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64)
 	UnstakeHoldBlocksStatic(ctx sdk.Context, block uint64) (res uint64)
-	GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider sdk.AccAddress, epoch uint64) (entry *epochstoragetypes.StakeEntry, err error)
+	GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider string, epoch uint64) (entry epochstoragetypes.StakeEntry, found bool)
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
 	SetStakeStorageCurrent(ctx sdk.Context, chainID string, stakeStorage epochstoragetypes.StakeStorage)
-	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, idx uint64) error
-	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64) error
+	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string) error
+	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64)
 	GetUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64
 	// Methods imported from epochstorage should be defined here
 }

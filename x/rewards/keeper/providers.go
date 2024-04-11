@@ -84,16 +84,12 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 					return
 				}
 				// now give the reward the provider contributor and delegators
-				providerAddr, err := sdk.AccAddressFromBech32(basepay.Provider)
-				if err != nil {
-					continue
-				}
-				_, _, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
+				_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
 
-				details[providerAddr.String()+" "+spec.ChainID] = reward.String()
+				details[basepay.Provider+" "+spec.ChainID] = reward.String()
 			}
 
 			// count iprpc cu
