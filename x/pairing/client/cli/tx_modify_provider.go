@@ -191,7 +191,7 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.Moniker,
 				providerEntry.DelegateLimit,
 				providerEntry.DelegateCommission,
-				providerEntry.Vault,
+				providerEntry.Operator,
 			)
 
 			if msg.DelegateLimit.Denom != commontypes.TokenDenom {

@@ -567,14 +567,14 @@ func (ts *Tester) TxPairingStakeProvider(
 		Moniker:            moniker,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
 		DelegateCommission: 100,
-		Vault:              addr,
+		Operator:           addr,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
 
 // TxPairingStakeProvider: implement 'tx pairing stake-provider'
 func (ts *Tester) TxPairingStakeProviderFull(
-	addr string,
+	vault string,
 	chainID string,
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
@@ -582,7 +582,7 @@ func (ts *Tester) TxPairingStakeProviderFull(
 	moniker string,
 	commission uint64,
 	delegateLimit uint64,
-	vault string,
+	operator string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	// if geoloc left zero, use default 1
@@ -609,7 +609,7 @@ func (ts *Tester) TxPairingStakeProviderFull(
 	}
 
 	msg := &pairingtypes.MsgStakeProvider{
-		Creator:            addr,
+		Creator:            vault,
 		Validator:          sdk.ValAddress(val.Addr).String(),
 		ChainID:            chainID,
 		Amount:             amount,
@@ -618,7 +618,7 @@ func (ts *Tester) TxPairingStakeProviderFull(
 		Moniker:            moniker,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.NewIntFromUint64(delegateLimit)),
 		DelegateCommission: commission,
-		Vault:              vault,
+		Operator:           operator,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }

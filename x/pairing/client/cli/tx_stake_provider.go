@@ -28,7 +28,7 @@ var _ = strconv.Itoa(0)
 
 func CmdStakeProvider() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation] [validator] --from <address> --provider-moniker <moniker> --vault <vault_address> (optional)",
+		Use:   "stake-provider [chain-id] [amount] [endpoint endpoint ...] [geolocation] [validator] --from <vault_address> --provider-moniker <moniker> --operator <operator_address> (optional)",
 		Short: `stake a provider on the lava blockchain on a specific specification`,
 		Long: `args:
 		[chain-id] is the spec the provider wishes to support
@@ -37,13 +37,13 @@ func CmdStakeProvider() *cobra.Command {
 		[geolocation] should be the geolocation codes to be staked for. You can also use the geolocation codes syntax: EU,AU,AF,etc. Note that this geolocation should be a union of the endpoints' geolocations.
 		[validator] delegate to a validator with the same amount with dualstaking, if not provided the validator will be chosen for best fit, when amount is decreasing to unbond, this determines the validator to extract funds from
 		
-		Note: The vault address can be hardcoded or will be derived automatically from the keyring. If a vault address is not specified, the vault address will be the provider's operator address
+		Note: The operator address can be hardcoded or derived automatically from the keyring. If a operator address is not specified, the operator address will be the provider's vault address (that stakes)
 		IMPORTANT: endpoint should not contain your node URL, it should point to the grpc listener of your provider service defined in your provider config or cli args`,
 		Example: `
 		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com:2221,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com:2221,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from provider-wallet --provider-moniker "my-moniker" --vault lava@1mugd5um8csmrcuw8d69tvptrz6e5e5avxsrmz8 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com:2221,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from provider-wallet --provider-moniker "my-moniker" --vault alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com:2221,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from provider-wallet --provider-moniker "my-moniker" --operator lava@1mugd5um8csmrcuw8d69tvptrz6e5e5avxsrmz8 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com:2221,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from provider-wallet --provider-moniker "my-moniker" --operator alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider-africa.com:2221,AF my-provider-europe.com:2221,EU" AF,EU lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 		lavad tx pairing stake-provider "LAV1" 500000ulava "my-provider.com:2221,1,tendermintrpc,rest,grpc" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -73,11 +73,11 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
-			vaultFromFlag, err := cmd.Flags().GetString(types.FlagVault)
+			operatorFromFlag, err := cmd.Flags().GetString(types.FlagOperator)
 			if err != nil {
 				return err
 			}
-			vault, err := parseVault(clientCtx, vaultFromFlag)
+			operator, err := parseOperator(clientCtx, operatorFromFlag)
 			if err != nil {
 				return err
 			}
@@ -108,7 +108,7 @@ func CmdStakeProvider() *cobra.Command {
 				moniker,
 				delegationLimit,
 				commission,
-				vault,
+				operator,
 			)
 
 			if err := msg.ValidateBasic(); err != nil {
@@ -120,7 +120,7 @@ func CmdStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
-	cmd.Flags().String(types.FlagVault, "", "The provider's vault (address that holds the funds, default operator address)")
+	cmd.Flags().String(types.FlagOperator, "", "The provider's operator (address used to operate the provider process, default vault address)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
@@ -130,7 +130,7 @@ func CmdStakeProvider() *cobra.Command {
 
 func CmdBulkStakeProvider() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "bulk-stake-provider [chain-id,chain-id,chain-id...] [amount] [endpoint-url,geolocation endpoint-url,geolocation] [geolocation] {repeat arguments for another bulk} [validator] --from <address> --provider-moniker <moniker> --vault [vault1,vault2,...] (optional)",
+		Use:   "bulk-stake-provider [chain-id,chain-id,chain-id...] [amount] [endpoint-url,geolocation endpoint-url,geolocation] [geolocation] {repeat arguments for another bulk} [validator] --from <vault_address> --provider-moniker <moniker> --operator [operator1,operator2,...] (optional)",
 		Short: "used to stake with a provider on a given endpoint in all of it's api interfaces and all chains with the same stake, each chain will require it's own stake, this command can be run in bulk, by repeating the arguments. for dual staking you can optionaly choose a validator to delegate",
 		Long: `args:
 		[chain-id,chain-id] is the specs the provider wishes to support separated by a ','
@@ -138,15 +138,16 @@ func CmdBulkStakeProvider() *cobra.Command {
 		[endpoint-url,geolocation endpoint-url,geolocation...] are a space separated list of HOST:PORT,geolocation, should be defined within "quotes"
 		[geolocation] should be the geolocation code to be staked for
 		{repeat for another bulk} - creates a new Msg within the transaction with different arguments, can be used to run many changes in many chains without waiting for a new block
-		[validator] validator address to delegate, if not provided the validator will be chosen for you for best match`,
+		[validator] validator address to delegate, if not provided the validator will be chosen for you for best match
+		Note: The operator address can be hardcoded or derived automatically from the keyring. If a operator address is not specified, the operator address will be the provider's vault address (that stakes)`,
 		Example: `lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 		bulk send: two bulks, listen for ETH1,LAV1 in one endpoint and OSMOSIS,COSMOSHUB in another
 		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 OSMOSIS,COSMOSHUB 500000ulava "my-other-grpc-addr.com:1111,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 OSMOSIS,COSMOSHUB 500000ulava "my-other-grpc-addr.com:1111,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 OSMOSIS,COSMOSHUB 500000ulava "my-other-grpc-addr.com:1111,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from servicer1 --provider-moniker "my-moniker" --vault lava@1jkg2l9k6h9yk0hsqvfamj6g7ehnkve3d6kvf7t,alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
+		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 OSMOSIS,COSMOSHUB 500000ulava "my-other-grpc-addr.com:1111,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from servicer1 --provider-moniker "my-moniker" --operator lava@1jkg2l9k6h9yk0hsqvfamj6g7ehnkve3d6kvf7t,alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE`,
 
 		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args)%BULK_ARG_COUNT != 1 {
+			if len(args)%BULK_ARG_COUNT != 0 {
 				return fmt.Errorf("invalid number of arguments, needs to be a multiple of %d, arg count: %d", BULK_ARG_COUNT, len(args))
 			}
 			return nil
@@ -161,13 +162,13 @@ func CmdBulkStakeProvider() *cobra.Command {
 				return err
 			}
 
-			vaultsFromFlag, err := cmd.Flags().GetString(types.FlagVault)
+			operatorsFromFlag, err := cmd.Flags().GetString(types.FlagOperator)
 			if err != nil {
 				return err
 			}
-			customVaults := false
-			if vaultsFromFlag != "" {
-				customVaults = true
+			customOperators := false
+			if operatorsFromFlag != "" {
+				customOperators = true
 			}
 
 			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
@@ -191,18 +192,18 @@ func CmdBulkStakeProvider() *cobra.Command {
 				argChainIDs := args[0]
 				chainIDs := strings.Split(argChainIDs, ",")
 
-				vaults := []string{}
-				if customVaults {
-					unparsedVaults := strings.Split(vaultsFromFlag, ",")
-					if len(unparsedVaults) != len(chainIDs) {
-						return nil, fmt.Errorf("vaults amount (length %d) must match chain IDs amount (length %d)", len(unparsedVaults), len(chainIDs))
+				operators := []string{}
+				if customOperators {
+					unparsedOperators := strings.Split(operatorsFromFlag, ",")
+					if len(unparsedOperators) != len(chainIDs) {
+						return nil, fmt.Errorf("operators amount (length %d) must match chain IDs amount (length %d)", len(unparsedOperators), len(chainIDs))
 					}
-					for _, v := range unparsedVaults {
-						vault, err := parseVault(clientCtx, v)
+					for _, o := range unparsedOperators {
+						operator, err := parseOperator(clientCtx, o)
 						if err != nil {
 							return nil, err
 						}
-						vaults = append(vaults, vault)
+						operators = append(operators, operator)
 					}
 				}
 
@@ -221,9 +222,9 @@ func CmdBulkStakeProvider() *cobra.Command {
 						continue
 					}
 
-					vault := clientCtx.GetFromAddress().String()
-					if customVaults {
-						vault = vaults[i]
+					operator := clientCtx.GetFromAddress().String()
+					if customOperators {
+						operator = operators[i]
 					}
 					msg := types.NewMsgStakeProvider(
 						clientCtx.GetFromAddress().String(),
@@ -235,7 +236,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 						moniker,
 						delegationLimit,
 						commission,
-						vault,
+						operator,
 					)
 
 					if msg.DelegateLimit.Denom != commontypes.TokenDenom {
@@ -267,7 +268,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
-	cmd.Flags().String(types.FlagVault, "", "The provider's vaults (addresses that holds the funds, default operator address)")
+	cmd.Flags().String(types.FlagOperator, "", "The provider's operators (addresses that are used to operate the provider process. default operator address)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
@@ -361,16 +362,16 @@ func getValidator(clientCtx client.Context, provider string) string {
 	return validatorBiggest.OperatorAddress
 }
 
-func parseVault(clientCtx client.Context, vault string) (string, error) {
-	if vault == "" {
-		// empty vault flag --> vault = operator
-		vault = clientCtx.GetFromAddress().String()
+func parseOperator(clientCtx client.Context, operator string) (string, error) {
+	if operator == "" {
+		// empty operator flag --> operator = vault
+		operator = clientCtx.GetFromAddress().String()
 	} else {
-		// check if vault flag is a valid address
-		_, err := sdk.AccAddressFromBech32(vault)
+		// check if operator flag is a valid address
+		_, err := sdk.AccAddressFromBech32(operator)
 		if err != nil {
-			// vault is not a valid address --> try to fetch from the keyring
-			keyringRecord, err := clientCtx.Keyring.Key(vault)
+			// operator is not a valid address --> try to fetch from the keyring
+			keyringRecord, err := clientCtx.Keyring.Key(operator)
 			if err != nil {
 				return "", err
 			}
@@ -378,8 +379,8 @@ func parseVault(clientCtx client.Context, vault string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			vault = addr.String()
+			operator = addr.String()
 		}
 	}
-	return vault, nil
+	return operator, nil
 }

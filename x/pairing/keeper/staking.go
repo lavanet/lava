@@ -18,7 +18,7 @@ const (
 	CHANGE_WINDOW   = time.Hour * 24
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64, vault string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, vault, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64, operator string) error {
 	logger := k.Logger(ctx)
 	specChainID := chainID
 
@@ -33,15 +33,15 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	if amount.IsLT(k.dualstakingKeeper.MinSelfDelegation(ctx)) { // we count on this to also check the denom
 		return utils.LavaFormatWarning("insufficient stake amount", fmt.Errorf("stake amount smaller than MinSelfDelegation"),
 			utils.Attribute{Key: "spec", Value: specChainID},
-			utils.Attribute{Key: "provider", Value: creator},
+			utils.Attribute{Key: "provider", Value: vault},
 			utils.Attribute{Key: "stake", Value: amount},
 			utils.Attribute{Key: "minSelfDelegation", Value: k.dualstakingKeeper.MinSelfDelegation(ctx).String()},
 		)
 	}
-	senderAddr, err := sdk.AccAddressFromBech32(creator)
+	senderAddr, err := sdk.AccAddressFromBech32(vault)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid address", err,
-			utils.Attribute{Key: "provider", Value: creator},
+			utils.Attribute{Key: "provider", Value: vault},
 		)
 	}
 
@@ -56,7 +56,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	endpointsVerified, err := k.validateGeoLocationAndApiInterfaces(endpoints, geolocation, spec)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid endpoints implementation for the given spec", err,
-			utils.Attribute{Key: "provider", Value: creator},
+			utils.Attribute{Key: "provider", Value: vault},
 			utils.Attribute{Key: "endpoints", Value: endpoints},
 			utils.Attribute{Key: "chain", Value: chainID},
 			utils.Attribute{Key: "geolocation", Value: geolocation},
@@ -66,7 +66,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	// validate there are no more than 5 endpoints per geolocation
 	if len(endpoints) > len(planstypes.GetGeolocationsFromUint(geolocation))*types.MAX_ENDPOINTS_AMOUNT_PER_GEO {
 		return utils.LavaFormatWarning("stake provider failed", fmt.Errorf("number of endpoint for geolocation exceeded limit"),
-			utils.LogAttr("creator", creator),
+			utils.LogAttr("creator", vault),
 			utils.LogAttr("chain_id", chainID),
 			utils.LogAttr("moniker", moniker),
 			utils.LogAttr("geolocation", geolocation),
@@ -84,7 +84,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
 	if entryExists {
 		// modify the entry
-		if existingEntry.Operator != creator {
+		// TODO: check who is modifying: vault or operator
+		if existingEntry.Operator != vault {
 			return utils.LavaFormatWarning("returned stake entry by address doesn't match sender address", fmt.Errorf("sender and stake entry address mismatch"),
 				utils.Attribute{Key: "spec", Value: specChainID},
 				utils.Attribute{Key: "provider", Value: senderAddr.String()},
@@ -206,7 +207,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	stakeEntry := epochstoragetypes.StakeEntry{
 		Stake:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
-		Operator:           creator,
+		Operator:           operator,
 		StakeAppliedBlock:  stakeAppliedBlock,
 		Endpoints:          endpointsVerified,
 		Geolocation:        geolocation,

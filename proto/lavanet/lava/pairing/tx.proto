@@ -29,7 +29,7 @@ message MsgStakeProvider {
   cosmos.base.v1beta1.Coin delegate_limit = 7 [(gogoproto.nullable) = false];
   uint64 delegate_commission = 8; // delegation commission (precentage 0-100)
   string validator = 9;
-  string vault = 10;
+  string operator = 10;
 }
 
 message MsgStakeProviderResponse {
