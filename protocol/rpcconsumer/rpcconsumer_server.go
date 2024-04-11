@@ -399,6 +399,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 		case <-processingCtx.Done():
 			// in case we got a processing timeout we return context deadline exceeded to the user.
 			utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
+				utils.LogAttr("processingTimeout", processingTimeout),
 				utils.LogAttr("dappId", dappID),
 				utils.LogAttr("consumerIp", consumerIp),
 				utils.LogAttr("chainMessage.GetApi().Name", chainMessage.GetApi().Name),

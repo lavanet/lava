@@ -2,7 +2,7 @@ endpoints:
     - chain-id: ETH1
       api-interface: jsonrpc
       network-address: 127.0.0.1:3333
-    - chain-id: GTH1
+    - chain-id: SEP1
       api-interface: jsonrpc
       network-address: 127.0.0.1:3334
     - chain-id: FTM250
@@ -29,7 +29,7 @@ endpoints:
     - chain-id: OPTM
       api-interface: jsonrpc
       network-address: 127.0.0.1:3352
-    - chain-id: BASET
+    - chain-id: BASES
       api-interface: jsonrpc
       network-address: 127.0.0.1:3353
     - chain-id: OSMOSIS
@@ -152,6 +152,9 @@ endpoints:
     - chain-id: AVAXT
       api-interface: jsonrpc
       network-address: 127.0.0.1:3393
+    - chain-id: HOL1
+      api-interface: jsonrpc
+      network-address: 127.0.0.1:3394
 metrics-listen-address: ":7779"
 # referer-be-address: "http://127.0.0.1:6500"
 # reports-be-address: "http://127.0.0.1:6501"
