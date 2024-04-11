@@ -14,7 +14,7 @@ Policy:
           extensions:
             - "archive"
           mixed: true
-    - chain_id: GTH1
+    - chain_id: SEP1
       requirements:
         - collection:
             api_interface: "jsonrpc"

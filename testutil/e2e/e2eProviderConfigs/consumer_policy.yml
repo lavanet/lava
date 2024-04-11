@@ -27,7 +27,7 @@ Policy:
             type: "POST"
             add_on: "debug"
           mixed: true
-    - chain_id: GTH1
+    - chain_id: SEP1
       requirements:
         - collection:
             api_interface: "jsonrpc"
