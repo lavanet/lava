@@ -126,7 +126,7 @@ wait_count_blocks 1 >/dev/null
 (trace lavad tx pairing stake-provider ETH1 $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) --provider-moniker "provider" $txoptions)>/dev/null
 wait_count_blocks 1 >/dev/null
 
-CHAINS="GTH1,OSMOSIS,FTM250,CELO,LAV1,OSMOSIST,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN1,COSMOSHUB,POLYGON1,EVMOS,OPTM,BASET,CANTO,SUIT,SOLANA,BSC,AXELAR,AVAX,FVM,NEAR"
+CHAINS="SEP1,OSMOSIS,FTM250,CELO,LAV1,OSMOSIST,ALFAJORES,ARB1,ARBN,APT1,STRK,JUN1,COSMOSHUB,POLYGON1,EVMOS,OPTM,BASET,CANTO,SUIT,SOLANA,BSC,AXELAR,AVAX,FVM,NEAR"
 (trace lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) --provider-moniker "provider" $txoptions)>/dev/null
 
 sleep_until_next_epoch >/dev/null
@@ -143,9 +143,7 @@ trace lavad q pairing params >/dev/null
 trace lavad q pairing account-info $(lavad keys show alice -a) >/dev/null
 trace lavad q pairing effective-policy ETH1 $(lavad keys show alice -a) >/dev/null
 trace lavad q pairing get-pairing STRK $(lavad keys show alice -a) >/dev/null
-trace lavad q pairing list-epoch-payments >/dev/null
-trace lavad q pairing list-provider-payment-storage >/dev/null
-trace lavad q pairing list-unique-payment-storage-client-provider >/dev/null
+trace lavad q pairing provider-epoch-cu $(lavad keys show servicer1) >/dev/null
 trace lavad q pairing providers STRK >/dev/null
 trace lavad q pairing sdk-pairing STRK $(lavad keys show alice -a) >/dev/null
 trace lavad q pairing provider-monthly-payout $(lavad keys show servicer1 -a) >/dev/null

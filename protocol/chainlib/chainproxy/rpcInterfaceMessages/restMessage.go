@@ -78,6 +78,10 @@ func (cp RestMessage) GetResult() json.RawMessage {
 	return nil
 }
 
+func (cp RestMessage) GetMethod() string {
+	return cp.Path
+}
+
 // ParseBlock parses default block number from string to int
 func (cp RestMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)

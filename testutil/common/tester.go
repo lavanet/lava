@@ -788,12 +788,6 @@ func (ts *Tester) QueryPairingGetPairing(chainID, client string) (*pairingtypes.
 	return ts.Keepers.Pairing.GetPairing(ts.GoCtx, msg)
 }
 
-// QueryPairingListEpochPayments implements 'q pairing list-epoch-payments'
-func (ts *Tester) QueryPairingListEpochPayments() (*pairingtypes.QueryAllEpochPaymentsResponse, error) {
-	msg := &pairingtypes.QueryAllEpochPaymentsRequest{}
-	return ts.Keepers.Pairing.EpochPaymentsAll(ts.GoCtx, msg)
-}
-
 // QueryPairingProviders: implement 'q pairing providers'
 func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingtypes.QueryProvidersResponse, error) {
 	msg := &pairingtypes.QueryProvidersRequest{
@@ -829,6 +823,12 @@ func (ts *Tester) QueryPairingProviderMonthlyPayout(provider string) (*pairingty
 		Provider: provider,
 	}
 	return ts.Keepers.Pairing.ProviderMonthlyPayout(ts.GoCtx, msg)
+}
+
+// QueryPairingProviderEpochCu implements 'q pairing provider-epoch-cu'
+func (ts *Tester) QueryPairingProviderEpochCu(provider string, project string, chainID string) (*pairingtypes.QueryProvidersEpochCuResponse, error) {
+	msg := &pairingtypes.QueryProvidersEpochCuRequest{}
+	return ts.Keepers.Pairing.ProvidersEpochCu(ts.GoCtx, msg)
 }
 
 // QueryPairingSubscriptionMonthlyPayout implements 'q pairing subscription-monthly-payout'

@@ -81,6 +81,16 @@ func (up *UsedProviders) UnwantedAddresses() []string {
 	return addresses
 }
 
+func (up *UsedProviders) AddUnwantedAddresses(address string) {
+	if up == nil {
+		utils.LavaFormatError("UsedProviders.AddUnwantedAddresses is nil, misuse detected", nil)
+		return
+	}
+	up.lock.Lock()
+	defer up.lock.Unlock()
+	up.unwantedProviders[address] = struct{}{}
+}
+
 func (up *UsedProviders) RemoveUsed(provider string, err error) {
 	if up == nil {
 		return
@@ -133,6 +143,7 @@ func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap, err error) {
 	up.selecting = false
 }
 
+// called when already locked.
 func (up *UsedProviders) setUnwanted(provider string) {
 	if up == nil {
 		return
