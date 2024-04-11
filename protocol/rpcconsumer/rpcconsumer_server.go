@@ -140,7 +140,6 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 
 func (rpccs *RPCConsumerServer) waitForPairing() error {
 	reinitializedChan := make(chan bool)
-
 	go func() {
 		for {
 			if rpccs.consumerSessionManager.Initialized() {
@@ -379,7 +378,10 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	sendAnotherRelay := func() {
 		err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 		go validateReturnCondition(err)
-		go readResultsFromProcessor()
+		// if we didn't get an error read results from processor
+		if err == nil {
+			go readResultsFromProcessor()
+		}
 	}
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
