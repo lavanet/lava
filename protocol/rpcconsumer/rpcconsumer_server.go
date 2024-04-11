@@ -372,7 +372,10 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			}
 		}
 	}
-
+	// the steps we need when sending another relay
+	// 1. send the relay.
+	// 2. validate the return condition with the information returned
+	// 3. read the results from relayProcessor and decide if its valid
 	sendAnotherRelay := func() {
 		err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 		go validateReturnCondition(err)
