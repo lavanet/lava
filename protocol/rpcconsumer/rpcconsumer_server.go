@@ -31,6 +31,7 @@ import (
 
 const (
 	MaxRelayRetries                          = 6
+	SendRelayAttempts                        = 3
 	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
 )
 
@@ -328,7 +329,16 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(directiveHeaders), rpccs.requiredResponses, chainMessage, rpccs.consumerConsistency, dappID, consumerIp)
-	err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
+	var err error
+	// try sending a relay 3 times. if failed return the error
+	for retryFirstRelayAttempt := 0; retryFirstRelayAttempt < SendRelayAttempts; retryFirstRelayAttempt++ {
+		err = rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
+		// check if we had an error. if we did, try again.
+		if err == nil {
+			break
+		}
+		utils.LavaFormatWarning("Failed retryFirstRelayAttempt, will retry.", err, utils.LogAttr("attempt", retryFirstRelayAttempt))
+	}
 	if err != nil && relayProcessor.usedProviders.CurrentlyUsed() == 0 {
 		// we failed to send a batch of relays, if there are no active sends we can terminate
 		return relayProcessor, err
@@ -375,11 +385,10 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	// 1. send the relay.
 	// 2. validate the return condition with the information returned
 	// 3. read the results from relayProcessor and decide if its valid
-	sendAnotherRelay := func() {
+	sendAnotherRelay := func(readResults bool) {
 		err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 		go validateReturnCondition(err)
-		// if we didn't get an error read results from processor
-		if err == nil {
+		if readResults {
 			go readResultsFromProcessor()
 		}
 	}
@@ -391,11 +400,11 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			if success {
 				return relayProcessor, nil
 			}
-			sendAnotherRelay()
+			sendAnotherRelay(true) // launch read results again because the routine ended with gotResults
 		case <-startNewBatchTicker.C:
 			// only trigger another batch for non BestResult relays
 			if relayProcessor.selection != BestResult {
-				sendAnotherRelay()
+				sendAnotherRelay(false) // do not launch read results again because we already have one running
 			}
 		case returnErr := <-returnCondition:
 			// we use this channel because there could be a race condition between us releasing the provider and about to send the return
