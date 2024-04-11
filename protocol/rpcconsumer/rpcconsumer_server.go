@@ -336,6 +336,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	}
 	// a channel to be notified processing was done, true means we have results and can return
 	gotResults := make(chan bool)
+	defer close(gotResults)
 	processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
 	// create the processing timeout prior to entering the method so it wont reset every time
 	processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
@@ -354,6 +355,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	go readResultsFromProcessor()
 
 	returnCondition := make(chan error)
+	defer close(returnCondition)
 	// used for checking whether to return an error to the user or to allow other channels return their result first see detailed description on the switch case below
 	validateReturnCondition := func(err error) {
 		currentlyUsedIsEmptyCounter := 0
@@ -370,6 +372,12 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			}
 		}
 	}
+
+	sendAnotherRelay := func() {
+		err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
+		go validateReturnCondition(err)
+		go readResultsFromProcessor()
+	}
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
 	for {
@@ -378,14 +386,11 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			if success {
 				return relayProcessor, nil
 			}
-			err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
-			go validateReturnCondition(err)
-			go readResultsFromProcessor()
+			sendAnotherRelay()
 		case <-startNewBatchTicker.C:
 			// only trigger another batch for non BestResult relays
 			if relayProcessor.selection != BestResult {
-				err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
-				go validateReturnCondition(err)
+				sendAnotherRelay()
 			}
 		case returnErr := <-returnCondition:
 			// we use this channel because there could be a race condition between us releasing the provider and about to send the return
