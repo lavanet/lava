@@ -3,6 +3,8 @@ package rpcprovider
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -524,6 +526,11 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if viper.GetBool(common.PprofileProcess) {
+				go func() {
+					log.Println(http.ListenAndServe("localhost:6060", nil))
+				}()
+			}
 			utils.LavaFormatInfo(common.ProcessStartLogText)
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -722,6 +729,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
 	cmdRPCProvider.Flags().String(HealthCheckURLPathFlagName, HealthCheckURLPathFlagDefault, "the url path for the provider's grpc health check")
 	cmdRPCProvider.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
+	cmdRPCProvider.Flags().Bool(common.PprofileProcess, false, "if set to true will listen on port 6060. you can query it using this example: go tool pprof -png http://localhost:6060/debug/pprof/goroutine > out2.png")
 
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider

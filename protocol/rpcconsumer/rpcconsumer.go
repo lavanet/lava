@@ -3,6 +3,8 @@ package rpcconsumer
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -368,6 +370,11 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if viper.GetBool(common.PprofileProcess) {
+				go func() {
+					log.Println(http.ListenAndServe("localhost:6060", nil))
+				}()
+			}
 			utils.LavaFormatInfo(common.ProcessStartLogText)
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -565,6 +572,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCConsumer.Flags().Bool(common.DisableConflictTransactionsFlag, false, "disabling conflict transactions, this flag should not be used as it harms the network's data reliability and therefore the service.")
+	cmdRPCConsumer.Flags().Bool(common.PprofileProcess, false, "if set to true will listen on port 6060. you can query it using this example: go tool pprof -png http://localhost:6060/debug/pprof/goroutine > out2.png")
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 
 	common.AddRollingLogConfig(cmdRPCConsumer)

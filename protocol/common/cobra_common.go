@@ -29,6 +29,7 @@ const (
 	RelayHealthIntervalFlag         = "relays-health-interval" // interval between each relay health check, default 5m
 	SharedStateFlag                 = "shared-state"
 	DisableConflictTransactionsFlag = "disable-conflict-transactions" // disable conflict transactions, this will hard the network's data reliability and therefore will harm the service.
+	PprofileProcess                 = "go-pprof"                      // listening to pprof queries
 )
 
 const (
