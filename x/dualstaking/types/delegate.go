@@ -50,10 +50,12 @@ func NewDelegator(delegator, provider string) Delegator {
 	}
 }
 
-func (delegator *Delegator) AddProvider(provider string) {
-	if !lavaslices.Contains(delegator.Providers, provider) {
+func (delegator *Delegator) AddProvider(provider string) bool {
+	contains := lavaslices.Contains(delegator.Providers, provider)
+	if !contains {
 		delegator.Providers = append(delegator.Providers, provider)
 	}
+	return contains
 }
 
 func (delegator *Delegator) DelProvider(provider string) {
