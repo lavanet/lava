@@ -18,7 +18,7 @@ const (
 	CHANGE_WINDOW   = time.Hour * 24
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, vault, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64, operator string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64, operator string) error {
 	logger := k.Logger(ctx)
 	specChainID := chainID
 
@@ -33,15 +33,15 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, vault, chainID string,
 	if amount.IsLT(k.dualstakingKeeper.MinSelfDelegation(ctx)) { // we count on this to also check the denom
 		return utils.LavaFormatWarning("insufficient stake amount", fmt.Errorf("stake amount smaller than MinSelfDelegation"),
 			utils.Attribute{Key: "spec", Value: specChainID},
-			utils.Attribute{Key: "provider", Value: vault},
+			utils.Attribute{Key: "provider", Value: creator},
 			utils.Attribute{Key: "stake", Value: amount},
 			utils.Attribute{Key: "minSelfDelegation", Value: k.dualstakingKeeper.MinSelfDelegation(ctx).String()},
 		)
 	}
-	senderAddr, err := sdk.AccAddressFromBech32(vault)
+	senderAddr, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid address", err,
-			utils.Attribute{Key: "provider", Value: vault},
+			utils.Attribute{Key: "provider", Value: creator},
 		)
 	}
 
@@ -56,7 +56,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, vault, chainID string,
 	endpointsVerified, err := k.validateGeoLocationAndApiInterfaces(endpoints, geolocation, spec)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid endpoints implementation for the given spec", err,
-			utils.Attribute{Key: "provider", Value: vault},
+			utils.Attribute{Key: "provider", Value: creator},
 			utils.Attribute{Key: "endpoints", Value: endpoints},
 			utils.Attribute{Key: "chain", Value: chainID},
 			utils.Attribute{Key: "geolocation", Value: geolocation},
@@ -66,7 +66,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, vault, chainID string,
 	// validate there are no more than 5 endpoints per geolocation
 	if len(endpoints) > len(planstypes.GetGeolocationsFromUint(geolocation))*types.MAX_ENDPOINTS_AMOUNT_PER_GEO {
 		return utils.LavaFormatWarning("stake provider failed", fmt.Errorf("number of endpoint for geolocation exceeded limit"),
-			utils.LogAttr("creator", vault),
+			utils.LogAttr("creator", creator),
 			utils.LogAttr("chain_id", chainID),
 			utils.LogAttr("moniker", moniker),
 			utils.LogAttr("geolocation", geolocation),
@@ -83,14 +83,45 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, vault, chainID string,
 
 	existingEntry, entryExists, indexInStakeStorage := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, senderAddr)
 	if entryExists {
-		// modify the entry
-		// TODO: check who is modifying: vault or operator
-		if existingEntry.Operator != vault {
-			return utils.LavaFormatWarning("returned stake entry by address doesn't match sender address", fmt.Errorf("sender and stake entry address mismatch"),
-				utils.Attribute{Key: "spec", Value: specChainID},
-				utils.Attribute{Key: "provider", Value: senderAddr.String()},
+		// modify the entry (check who's modifying - vault/operator)
+		isOperator := false
+		isVault := false
+		if creator == existingEntry.Operator {
+			isOperator = true
+		}
+		if creator == existingEntry.Vault {
+			isVault = true
+		}
+
+		if !isOperator && !isVault {
+			return utils.LavaFormatWarning("stake entry modification request was not created by operator/vault", fmt.Errorf("invalid creator address"),
+				utils.LogAttr("spec", specChainID),
+				utils.LogAttr("creator", creator),
+				utils.LogAttr("operator", existingEntry.Operator),
+				utils.LogAttr("vault", existingEntry.Vault),
 			)
 		}
+
+		// verify that the operator only tries to change non-stake related traits of the stake entry
+		// an operator can be the same as the vault, so we verify it's not the case
+		if isOperator && !isVault {
+			if delegationCommission != existingEntry.DelegateCommission ||
+				delegationLimit != existingEntry.DelegateLimit ||
+				!amount.Amount.Equal(existingEntry.Stake.Amount) {
+				return utils.LavaFormatWarning("operator cannnot change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
+					utils.LogAttr("creator", creator),
+					utils.LogAttr("vault", existingEntry.Vault),
+					utils.LogAttr("operator", operator),
+					utils.LogAttr("current_delegation_limit", existingEntry.DelegateLimit),
+					utils.LogAttr("req_delegation_limit", delegationLimit),
+					utils.LogAttr("current_delegation_commission", existingEntry.DelegateCommission),
+					utils.LogAttr("req_delegation_commission", delegationCommission),
+					utils.LogAttr("current_stake", existingEntry.Stake.String()),
+					utils.LogAttr("req_stake", amount.String()),
+				)
+			}
+		}
+
 		details := []utils.Attribute{
 			{Key: "spec", Value: specChainID},
 			{Key: "provider", Value: senderAddr.String()},
@@ -216,7 +247,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, vault, chainID string,
 		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
 		DelegateLimit:      delegationLimit,
 		DelegateCommission: delegationCommission,
-		Vault:              vault,
+		Vault:              creator,
 		LastChange:         uint64(ctx.BlockTime().UTC().Unix()),
 	}
 

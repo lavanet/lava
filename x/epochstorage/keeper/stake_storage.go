@@ -146,11 +146,21 @@ func (k Keeper) SetStakeStorageCurrent(ctx sdk.Context, chainID string, stakeSto
 	k.SetStakeStorage(ctx, stakeStorage)
 }
 
-func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.StakeStorage, address sdk.AccAddress) (index uint64, found bool) {
+func (k Keeper) stakeEntryIndexByAddress(stakeStorage types.StakeStorage, address sdk.AccAddress) (index uint64, found bool) {
 	// the following finds the address of stakeEntry and returns it
 	entries := stakeStorage.StakeEntries
 	for idx, entry := range entries {
-		entryAddr, err := sdk.AccAddressFromBech32(entry.Operator)
+		entryVault, err := sdk.AccAddressFromBech32(entry.Vault)
+		if err != nil {
+			// this should not happen; to avoid panic we simply skip this one (thus
+			// freeze the situation so it can be investigated and orderly resolved).
+			utils.LavaFormatError("critical: invalid account address inside StakeStorage", err,
+				utils.LogAttr("address", entry.Vault),
+				utils.LogAttr("chainID", entry.Chain),
+			)
+			continue
+		}
+		entryOperator, err := sdk.AccAddressFromBech32(entry.Operator)
 		if err != nil {
 			// this should not happen; to avoid panic we simply skip this one (thus
 			// freeze the situation so it can be investigated and orderly resolved).
@@ -160,7 +170,7 @@ func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.Sta
 			)
 			continue
 		}
-		if entryAddr.Equals(address) {
+		if entryVault.Equals(address) || entryOperator.Equals(address) {
 			// found the right thing
 			return uint64(idx), true
 		}
@@ -169,7 +179,7 @@ func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.Sta
 }
 
 func (k Keeper) GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage types.StakeStorage, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
-	idx, found := k.stakeEntryIndexByAddress(ctx, stakeStorage, address)
+	idx, found := k.stakeEntryIndexByAddress(stakeStorage, address)
 	if !found {
 		return types.StakeEntry{}, false, 0
 	}
@@ -186,7 +196,7 @@ func (k Keeper) GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, a
 		return types.StakeEntry{}, false, 0
 	}
 	// the following finds the address of stakeEntry and returns it
-	idx, found := k.stakeEntryIndexByAddress(ctx, stakeStorage, address)
+	idx, found := k.stakeEntryIndexByAddress(stakeStorage, address)
 	if !found {
 		return types.StakeEntry{}, false, 0
 	}
@@ -291,7 +301,7 @@ func (k Keeper) UnstakeEntryByAddress(ctx sdk.Context, address sdk.AccAddress) (
 		return types.StakeEntry{}, false, 0
 	}
 	// the following finds the address of stakeEntry and returns it
-	idx, found := k.stakeEntryIndexByAddress(ctx, stakeStorage, address)
+	idx, found := k.stakeEntryIndexByAddress(stakeStorage, address)
 	if !found {
 		return types.StakeEntry{}, false, 0
 	}

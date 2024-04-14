@@ -190,11 +190,19 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 	}
 
 	// Sanity check
-	if stakeEntry.Operator != provider {
-		return utils.LavaFormatError("critical: delegate/un-delegate with provider address mismatch", sdkerrors.ErrInvalidAddress,
-			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "address", Value: stakeEntry.Operator},
-		)
+	if stakeEntry.Vault != provider {
+		if stakeEntry.Operator == provider {
+			return utils.LavaFormatWarning("cannot modify stake entry delegation, opreator should not delegate/un-delegate", sdkerrors.ErrInvalidAddress,
+				utils.LogAttr("address", provider),
+				utils.LogAttr("operator", stakeEntry.Operator),
+				utils.LogAttr("vault", stakeEntry.Vault),
+			)
+		} else {
+			return utils.LavaFormatError("critical: delegate/un-delegate with provider address mismatch", sdkerrors.ErrInvalidAddress,
+				utils.Attribute{Key: "address", Value: provider},
+				utils.Attribute{Key: "vault", Value: stakeEntry.Vault},
+			)
+		}
 	}
 
 	if delegator == provider {
@@ -218,11 +226,12 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 	}
 
 	details := map[string]string{
-		"provider":        stakeEntry.Operator,
-		"chain_id":        stakeEntry.Chain,
-		"moniker":         stakeEntry.Moniker,
-		"stake":           stakeEntry.Stake.String(),
-		"effective_stake": stakeEntry.EffectiveStake().String() + stakeEntry.Stake.Denom,
+		"provider_vault":    stakeEntry.Vault,
+		"provider_operator": stakeEntry.Operator,
+		"chain_id":          stakeEntry.Chain,
+		"moniker":           stakeEntry.Moniker,
+		"stake":             stakeEntry.Stake.String(),
+		"effective_stake":   stakeEntry.EffectiveStake().String() + stakeEntry.Stake.Denom,
 	}
 
 	if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
