@@ -8,7 +8,7 @@
                 "name": "lava testnet",
                 "enabled": true,
                 "imports": [
-                    "COSMOSSDK"
+                    "COSMOSSDKFULL"
                 ],
                 "providers_types": 1,
                 "reliability_threshold": 268435455,
@@ -1249,9 +1249,26 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "*"
+                                        "expected_value": "lava-testnet-2"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 5800
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 5200
+                                }
                             }
                         ]
                     },
@@ -2444,9 +2461,26 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "*"
+                                        "expected_value": "lava-testnet-2"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 5760
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 5200
+                                }
                             }
                         ]
                     },
@@ -2467,9 +2501,30 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "*"
+                                        "expected_value": "lava-testnet-2"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 5760
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "340778"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 5200
+                                }
                             }
                         ]
                     }
