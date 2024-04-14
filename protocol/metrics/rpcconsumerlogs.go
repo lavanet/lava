@@ -211,14 +211,16 @@ func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, user
 	return true
 }
 
-func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(chainid string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainid, apiInterface)
+func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
 }
-func (rpccl *RPCConsumerLogs) SetRelayReturnedFromProviderMetric(chainid string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetRelayReturnedFromProviderMetric(chainid, apiInterface)
+
+func (rpccl *RPCConsumerLogs) SetRelayReturnedFromProviderMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelayReturnedFromProviderMetric(chainId, apiInterface)
 }
-func (rpccl *RPCConsumerLogs) SetRelaySentByNewBatchTickerMetric(chainid string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetRelaySentByNewBatchTickerMetric(chainid, apiInterface)
+
+func (rpccl *RPCConsumerLogs) SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelaySentByNewBatchTickerMetric(chainId, apiInterface)
 }
 
 func (rpccl *RPCConsumerLogs) SendMetrics(data *RelayMetrics, err error, origin string) {

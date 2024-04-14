@@ -538,7 +538,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
-
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			// add ticker launch metrics
