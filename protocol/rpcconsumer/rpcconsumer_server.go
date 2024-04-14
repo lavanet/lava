@@ -31,6 +31,7 @@ import (
 
 const (
 	MaxRelayRetries                          = 6
+	SendRelayAttempts                        = 3
 	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
 )
 
@@ -329,10 +330,15 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(directiveHeaders), rpccs.requiredResponses, chainMessage, rpccs.consumerConsistency, dappID, consumerIp)
-	err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
-	if err != nil && relayProcessor.usedProviders.CurrentlyUsed() == 0 {
-		// we failed to send a batch of relays, if there are no active sends we can terminate
-		return relayProcessor, err
+	var err error
+	// try sending a relay 3 times. if failed return the error
+	for retryFirstRelayAttempt := 0; retryFirstRelayAttempt < SendRelayAttempts; retryFirstRelayAttempt++ {
+		err = rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
+		// check if we had an error. if we did, try again.
+		if err == nil {
+			break
+		}
+		utils.LavaFormatWarning("Failed retryFirstRelayAttempt, will retry.", err, utils.LogAttr("attempt", retryFirstRelayAttempt))
 	}
 	// a channel to be notified processing was done, true means we have results and can return
 	gotResults := make(chan bool)
