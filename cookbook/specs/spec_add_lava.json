@@ -2469,7 +2469,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
+                                        "latest_distance": 5800
                                     }
                                 ]
                             }
@@ -2509,7 +2509,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 5760
+                                        "latest_distance": 5800
                                     },
                                     {
                                         "extension": "archive",
