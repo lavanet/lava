@@ -1224,7 +1224,7 @@ func runProtocolE2E(timeout time.Duration) {
 	// - produce 1 staked client (for each of ETH1, LAV1)
 	// - produce 1 subscription (for both ETH1, LAV1)
 
-	lt.checkStakeLava(2, 6, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	lt.checkStakeLava(2, 8, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
