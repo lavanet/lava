@@ -611,6 +611,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.LavaFormatWarning("Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil, utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("Request data", localRelayRequestData))
 					return
 				}
+				// to prevent absurdly short context timeout set the shortest timeout to be the expected latency for qos time.
+				if processingTimeout < expectedRelayTimeoutForQOS {
+					processingTimeout = expectedRelayTimeoutForQOS
+				}
 			}
 			// send relay
 			relayLatency, errResponse, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, chainMessage, consumerToken)
