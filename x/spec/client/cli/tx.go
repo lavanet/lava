@@ -101,6 +101,16 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 					if spec.Index == "LAV1" {
 						utilslib.LavaFormatInfo("modified lava spec time for dev tests")
 						content.Specs[idx].AverageBlockTime = (1 * time.Second).Milliseconds()
+						for collection := range content.Specs[idx].ApiCollections {
+							for verification := range content.Specs[idx].ApiCollections[collection].Verifications {
+								if content.Specs[idx].ApiCollections[collection].Verifications[verification].Name == "chain-id" {
+									content.Specs[idx].ApiCollections[collection].Verifications[verification].Values[0].ExpectedValue = "*"
+								}
+								if content.Specs[idx].ApiCollections[collection].Verifications[verification].Name == "pruning" {
+									content.Specs[idx].ApiCollections[collection].Verifications = append(content.Specs[idx].ApiCollections[collection].Verifications[:verification], content.Specs[idx].ApiCollections[collection].Verifications[verification+1:]...)
+								}
+							}
+						}
 					}
 				}
 			}
