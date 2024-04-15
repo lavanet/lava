@@ -30,10 +30,25 @@ func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chain
 
 // AddTrackedCu adds CU to the CU counters in relevant trackedCu entry
 // Also, it counts the IPRPC CU if the subscription is IPRPC eligible
-func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cuToAdd uint64, block uint64) error {
-	k.rewardsKeeper.AggregateCU(ctx, sub, provider, chainID, cuToAdd)
+func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, operator string, chainID string, cuToAdd uint64, block uint64) error {
+	operatorAcc, err := sdk.AccAddressFromBech32(operator)
+	if err != nil {
+		return utils.LavaFormatError("cannot create new tracked CU entry. Invalid address", err,
+			utils.LogAttr("operator", operator),
+		)
+	}
 
-	cu, found, key := k.GetTrackedCu(ctx, sub, provider, chainID, block)
+	stakeEntry, found, _ := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, operatorAcc)
+	if !found {
+		return utils.LavaFormatError("critical: cannot create new tracked CU entry. Provider stake entry not found", err,
+			utils.LogAttr("operator", operator),
+			utils.LogAttr("chain_id", chainID),
+		)
+	}
+
+	k.rewardsKeeper.AggregateCU(ctx, sub, stakeEntry.Vault, chainID, cuToAdd)
+
+	cu, found, key := k.GetTrackedCu(ctx, sub, stakeEntry.Vault, chainID, block)
 
 	// Note that the trackedCu entry usually has one version since we used
 	// the subscription's block which is constant during a specific month
@@ -56,7 +71,8 @@ func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chain
 
 	utils.LavaFormatDebug("adding tracked cu",
 		utils.LogAttr("sub", sub),
-		utils.LogAttr("provider", provider),
+		utils.LogAttr("provider_vault", stakeEntry.Vault),
+		utils.LogAttr("provider_operator", stakeEntry.Operator),
 		utils.LogAttr("chain_id", chainID),
 		utils.LogAttr("added_cu", cuToAdd),
 		utils.LogAttr("block", block))

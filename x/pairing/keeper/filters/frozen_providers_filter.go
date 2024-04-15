@@ -20,7 +20,7 @@ func (f *FrozenProvidersFilter) InitFilter(strictestPolicy planstypes.Policy) bo
 func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, currentEpoch uint64) []bool {
 	filterResult := make([]bool, len(providers))
 	for i := range providers {
-		if !isProviderFrozen(ctx, providers[i], currentEpoch) {
+		if !isProviderFrozen(providers[i], currentEpoch) {
 			filterResult[i] = true
 		}
 	}
@@ -28,6 +28,6 @@ func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstorage
 	return filterResult
 }
 
-func isProviderFrozen(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, currentEpoch uint64) bool {
+func isProviderFrozen(stakeEntry epochstoragetypes.StakeEntry, currentEpoch uint64) bool {
 	return stakeEntry.StakeAppliedBlock > currentEpoch
 }
