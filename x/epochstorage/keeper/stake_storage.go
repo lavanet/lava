@@ -146,34 +146,6 @@ func (k Keeper) SetStakeStorageCurrent(ctx sdk.Context, chainID string, stakeSto
 	k.SetStakeStorage(ctx, stakeStorage)
 }
 
-func (k Keeper) GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage types.StakeStorage, address string) (types.StakeEntry, bool) {
-	if !utils.IsBech32Address(address) {
-		utils.LavaFormatWarning("address is not Bech32", fmt.Errorf("invalid address"),
-			utils.LogAttr("address", address),
-		)
-		return types.StakeEntry{}, false
-	}
-
-	for _, entry := range stakeStorage.StakeEntries {
-		if !utils.IsBech32Address(entry.Address) {
-			// this should not happen; to avoid panic we simply skip this one (thus
-			// freeze the situation so it can be investigated and orderly resolved).
-			utils.LavaFormatError("critical: invalid account address inside StakeStorage", fmt.Errorf("invalid address"),
-				utils.LogAttr("address", entry.Address),
-				utils.LogAttr("chainID", entry.Chain),
-			)
-			continue
-		}
-
-		if entry.Address == address {
-			// found the right entry
-			return entry, true
-		}
-	}
-
-	return types.StakeEntry{}, false
-}
-
 func (k Keeper) GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (types.StakeEntry, bool) {
 	if !utils.IsBech32Address(address) {
 		utils.LavaFormatWarning("cannot get stake entry of invalid address", fmt.Errorf("invalid address"),
@@ -185,7 +157,7 @@ func (k Keeper) GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, a
 		return types.StakeEntry{}, false
 	}
 
-	return k.GetStakeEntryByAddressFromStorage(ctx, stakeStorage, address)
+	return stakeStorage.GetStakeEntryByAddressFromStorage(address)
 }
 
 func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string) error {
@@ -312,7 +284,7 @@ func (k Keeper) UnstakeEntryByAddress(ctx sdk.Context, address string) (value ty
 	if !found {
 		return types.StakeEntry{}, false
 	}
-	return k.GetStakeEntryByAddressFromStorage(ctx, stakeStorage, address)
+	return stakeStorage.GetStakeEntryByAddressFromStorage(address)
 }
 
 func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry) {
@@ -396,7 +368,7 @@ func (k Keeper) GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, a
 	if !found {
 		return types.StakeEntry{}, false
 	}
-	return k.GetStakeEntryByAddressFromStorage(ctx, stakeStorage, address)
+	return stakeStorage.GetStakeEntryByAddressFromStorage(address)
 }
 
 func (k Keeper) GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID string, epoch uint64) (entrys *[]types.StakeEntry, err error) {
