@@ -321,7 +321,7 @@ func runPaymentE2E(timeout time.Duration) {
 	// - produce 1 staked client (for LAV1)
 	// - produce 1 subscription (for LAV1)
 
-	lt.checkStakeLava(1, 3, 1, 2, checkedPlansE2E, []string{"LAV1"}, []string{"user1"}, "Staking Lava OK")
+	lt.checkStakeLava(1, 5, 1, 2, checkedPlansE2E, []string{"LAV1"}, []string{"user1"}, "Staking Lava OK")
 
 	// get balance of providers right after stake for payment check later
 	providers, err := lt.getProvidersAddresses()

@@ -10,7 +10,7 @@
 2. Build the lava docker image locally
   ```
   # to build from the current checked-out code:
-  make docker-build
+  LAVA_BINARY=all make docker-build
 
   # to build a specific lava version
   LAVA_BUILD_OPTIONS="release" LAVA_VERSION=0.4.3 make docker-build
