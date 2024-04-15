@@ -22,7 +22,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	lavaslices "github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/x/dualstaking/types"
@@ -172,15 +171,15 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 }
 
 // modifyStakeEntryDelegation modifies the (epochstorage) stake-entry of the provider for a chain based on the action (increase or decrease).
-func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, increase bool) error {
-	providerAddr, err := sdk.AccAddressFromBech32(provider)
+func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator string, operator string, chainID string, amount sdk.Coin, increase bool) (err error) {
+	operatorAcc, err := sdk.AccAddressFromBech32(operator)
 	if err != nil {
 		utils.LavaFormatPanic("modifyStakeEntryDelegation: invalid provider address", err,
-			utils.Attribute{Key: "provider", Value: provider},
+			utils.Attribute{Key: "provider", Value: operator},
 		)
 	}
 
-	stakeEntry, exists, index := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
+	stakeEntry, exists, index := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, operatorAcc)
 	if !exists {
 		if increase {
 			return epochstoragetypes.ErrProviderNotStaked
@@ -189,23 +188,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		return nil
 	}
 
-	// Sanity check
-	if stakeEntry.Vault != provider {
-		if stakeEntry.Operator == provider {
-			return utils.LavaFormatWarning("cannot modify stake entry delegation, opreator should not delegate/un-delegate", sdkerrors.ErrInvalidAddress,
-				utils.LogAttr("address", provider),
-				utils.LogAttr("operator", stakeEntry.Operator),
-				utils.LogAttr("vault", stakeEntry.Vault),
-			)
-		} else {
-			return utils.LavaFormatError("critical: delegate/un-delegate with provider address mismatch", sdkerrors.ErrInvalidAddress,
-				utils.Attribute{Key: "address", Value: provider},
-				utils.Attribute{Key: "vault", Value: stakeEntry.Vault},
-			)
-		}
-	}
-
-	if delegator == provider {
+	if delegator == stakeEntry.Vault {
 		if increase {
 			stakeEntry.Stake = stakeEntry.Stake.Add(amount)
 		} else {
@@ -250,7 +233,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, chainID).String()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
 		stakeEntry.Freeze()
-	} else if delegator == provider && stakeEntry.IsFrozen() {
+	} else if delegator == stakeEntry.Vault && stakeEntry.IsFrozen() {
 		stakeEntry.UnFreeze(k.epochstorageKeeper.GetCurrentNextEpoch(ctx) + 1)
 	}
 
