@@ -945,7 +945,22 @@ func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) []*pairing
 	if epoch != csm.atomicReadCurrentEpoch() {
 		return nil // if epochs are not equal, we will return an empty list.
 	}
-	return csm.reportedProviders.GetReportedProviders()
+	reportedProviders := csm.reportedProviders.GetReportedProviders()
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+	filteredReportedProviders := []*pairingtypes.ReportedProvider{}
+	for _, reportedProvider := range reportedProviders {
+		provider, ok := csm.pairing[reportedProvider.Address]
+		if !ok {
+			// that shouldn't happen
+			utils.LavaFormatError("Failed to find a reported provider in pairing list", nil, utils.LogAttr("provider_address", reportedProvider.Address), utils.LogAttr("epoch", csm.currentEpoch))
+			continue
+		}
+		if provider.doesProviderEndpointsContainGeolocation(csm.RPCEndpoint().Geolocation) {
+			filteredReportedProviders = append(filteredReportedProviders, reportedProvider)
+		}
+	}
+	return filteredReportedProviders
 }
 
 // Atomically read csm.pairingAddressesLength for data reliability.
