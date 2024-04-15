@@ -13,21 +13,26 @@ import (
 )
 
 type ConsumerMetricsManager struct {
-	totalCURequestedMetric        *prometheus.CounterVec
-	totalRelaysRequestedMetric    *prometheus.CounterVec
-	totalErroredMetric            *prometheus.CounterVec
-	blockMetric                   *prometheus.GaugeVec
-	latencyMetric                 *prometheus.GaugeVec
-	qosMetric                     *prometheus.GaugeVec
-	qosExcellenceMetric           *prometheus.GaugeVec
-	LatestBlockMetric             *prometheus.GaugeVec
-	LatestProviderRelay           *prometheus.GaugeVec
-	virtualEpochMetric            *prometheus.GaugeVec
-	endpointsHealthChecksOkMetric prometheus.Gauge
-	endpointsHealthChecksOk       uint64
-	lock                          sync.Mutex
-	protocolVersionMetric         *prometheus.GaugeVec
-	providerRelays                map[string]uint64
+	totalCURequestedMetric                 *prometheus.CounterVec
+	totalRelaysRequestedMetric             *prometheus.CounterVec
+	totalErroredMetric                     *prometheus.CounterVec
+	totalRelaysSentToProvidersMetric       *prometheus.CounterVec
+	totalRelaysReturnedFromProvidersMetric *prometheus.CounterVec
+	totalRelaysSentByNewBatchTickerMetric  *prometheus.CounterVec
+	currentNumberOfOpenSessionsMetric      *prometheus.GaugeVec
+	currentNumberOfBlockedSessionsMetric   *prometheus.GaugeVec
+	blockMetric                            *prometheus.GaugeVec
+	latencyMetric                          *prometheus.GaugeVec
+	qosMetric                              *prometheus.GaugeVec
+	qosExcellenceMetric                    *prometheus.GaugeVec
+	LatestBlockMetric                      *prometheus.GaugeVec
+	LatestProviderRelay                    *prometheus.GaugeVec
+	virtualEpochMetric                     *prometheus.GaugeVec
+	endpointsHealthChecksOkMetric          prometheus.Gauge
+	endpointsHealthChecksOk                uint64
+	lock                                   sync.Mutex
+	protocolVersionMetric                  *prometheus.GaugeVec
+	providerRelays                         map[string]uint64
 }
 
 func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
@@ -45,6 +50,27 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		Name: "lava_consumer_total_relays_serviced",
 		Help: "The total number of relays serviced by the consumer over time.",
 	}, []string{"spec", "apiInterface"})
+
+	totalRelaysSentToProvidersMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_relays_sent_to_providers",
+		Help: "The total number of relays sent to providers",
+	}, []string{"spec", "apiInterface"})
+	totalRelaysReturnedFromProvidersMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_relays_returned_from_providers",
+		Help: "The total number of relays returned from providers",
+	}, []string{"spec", "apiInterface"})
+	totalRelaysSentByNewBatchTickerMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_relays_sent_by_batch_ticker",
+		Help: "The total number of relays sent by the batch ticker",
+	}, []string{"spec", "apiInterface"})
+	currentNumberOfOpenSessionsMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_current_number_of_open_sessions",
+		Help: "The total number of currently open sessions",
+	}, []string{"spec", "apiInterface", "provider"})
+	currentNumberOfBlockedSessionsMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_current_number_of_blocked_sessions",
+		Help: "The total number of currently blocked sessions",
+	}, []string{"spec", "apiInterface", "provider"})
 
 	// Create a new GaugeVec metric to represent the TotalErrored over time.
 	totalErroredMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -106,22 +132,33 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	prometheus.MustRegister(virtualEpochMetric)
 	prometheus.MustRegister(endpointsHealthChecksOkMetric)
 	prometheus.MustRegister(protocolVersionMetric)
+	// metrics related to session management
+	prometheus.MustRegister(totalRelaysSentToProvidersMetric)
+	prometheus.MustRegister(totalRelaysReturnedFromProvidersMetric)
+	prometheus.MustRegister(totalRelaysSentByNewBatchTickerMetric)
+	prometheus.MustRegister(currentNumberOfOpenSessionsMetric)
+	prometheus.MustRegister(currentNumberOfBlockedSessionsMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
-		totalCURequestedMetric:        totalCURequestedMetric,
-		totalRelaysRequestedMetric:    totalRelaysRequestedMetric,
-		totalErroredMetric:            totalErroredMetric,
-		blockMetric:                   blockMetric,
-		latencyMetric:                 latencyMetric,
-		qosMetric:                     qosMetric,
-		qosExcellenceMetric:           qosExcellenceMetric,
-		LatestBlockMetric:             latestBlockMetric,
-		LatestProviderRelay:           latestProviderRelay,
-		providerRelays:                map[string]uint64{},
-		virtualEpochMetric:            virtualEpochMetric,
-		endpointsHealthChecksOkMetric: endpointsHealthChecksOkMetric,
-		endpointsHealthChecksOk:       1,
-		protocolVersionMetric:         protocolVersionMetric,
+		totalCURequestedMetric:                 totalCURequestedMetric,
+		totalRelaysRequestedMetric:             totalRelaysRequestedMetric,
+		totalErroredMetric:                     totalErroredMetric,
+		blockMetric:                            blockMetric,
+		latencyMetric:                          latencyMetric,
+		qosMetric:                              qosMetric,
+		qosExcellenceMetric:                    qosExcellenceMetric,
+		LatestBlockMetric:                      latestBlockMetric,
+		LatestProviderRelay:                    latestProviderRelay,
+		providerRelays:                         map[string]uint64{},
+		virtualEpochMetric:                     virtualEpochMetric,
+		endpointsHealthChecksOkMetric:          endpointsHealthChecksOkMetric,
+		endpointsHealthChecksOk:                1,
+		protocolVersionMetric:                  protocolVersionMetric,
+		totalRelaysSentToProvidersMetric:       totalRelaysSentToProvidersMetric,
+		totalRelaysReturnedFromProvidersMetric: totalRelaysReturnedFromProvidersMetric,
+		totalRelaysSentByNewBatchTickerMetric:  totalRelaysSentByNewBatchTickerMetric,
+		currentNumberOfOpenSessionsMetric:      currentNumberOfOpenSessionsMetric,
+		currentNumberOfBlockedSessionsMetric:   currentNumberOfBlockedSessionsMetric,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -168,6 +205,54 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, er
 	if !relayMetric.Success {
 		pme.totalErroredMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(1)
 	}
+}
+
+func (pme *ConsumerMetricsManager) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalRelaysSentToProvidersMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetRelayReturnedFromProviderMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalRelaysReturnedFromProvidersMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalRelaysSentByNewBatchTickerMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) AddOpenSessionMetric(chainId string, apiInterface string, provider string) {
+	if pme == nil {
+		return
+	}
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
+	pme.currentNumberOfOpenSessionsMetric.WithLabelValues(chainId, apiInterface, provider).Inc()
+}
+
+func (pme *ConsumerMetricsManager) DecrementOpenSessionMetric(chainId string, apiInterface string, provider string) {
+	if pme == nil {
+		return
+	}
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
+	pme.currentNumberOfOpenSessionsMetric.WithLabelValues(chainId, apiInterface, provider).Dec()
+}
+
+func (pme *ConsumerMetricsManager) AddNumberOfBlockedSessionMetric(chainId string, apiInterface string, provider string) {
+	if pme == nil {
+		return
+	}
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
+	pme.currentNumberOfBlockedSessionsMetric.WithLabelValues(chainId, apiInterface, provider).Inc()
 }
 
 func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos *pairingtypes.QualityOfServiceReport, qosExcellence *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64) {
@@ -239,7 +324,7 @@ func (pme *ConsumerMetricsManager) UpdateHealthCheckStatus(status bool) {
 	atomic.StoreUint64(&pme.endpointsHealthChecksOk, uint64(value))
 }
 
-func (pme *ConsumerMetricsManager) ResetQOSMetrics() {
+func (pme *ConsumerMetricsManager) ResetSessionRelatedMetrics() {
 	if pme == nil {
 		return
 	}
@@ -247,6 +332,8 @@ func (pme *ConsumerMetricsManager) ResetQOSMetrics() {
 	defer pme.lock.Unlock()
 	pme.qosMetric.Reset()
 	pme.qosExcellenceMetric.Reset()
+	pme.currentNumberOfBlockedSessionsMetric.Reset()
+	pme.currentNumberOfOpenSessionsMetric.Reset()
 	pme.providerRelays = map[string]uint64{}
 }
 

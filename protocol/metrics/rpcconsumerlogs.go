@@ -211,6 +211,18 @@ func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, user
 	return true
 }
 
+func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
+}
+
+func (rpccl *RPCConsumerLogs) SetRelayReturnedFromProviderMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelayReturnedFromProviderMetric(chainId, apiInterface)
+}
+
+func (rpccl *RPCConsumerLogs) SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelaySentByNewBatchTickerMetric(chainId, apiInterface)
+}
+
 func (rpccl *RPCConsumerLogs) SendMetrics(data *RelayMetrics, err error, origin string) {
 	data.Success = err == nil
 	data.Origin = origin
