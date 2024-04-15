@@ -97,7 +97,8 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		csm.pairing[provider.PublicLavaAddress] = provider
 	}
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
-	csm.resetMetricsManager()
+	// reset session related metrics
+	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
 }
@@ -440,6 +441,11 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			} else {
 				// consumer session is locked and valid, we need to set the relayNumber and the relay cu. before returning.
 
+				// add metric to currently open sessions metric
+				info := csm.RPCEndpoint()
+				apiInterface := info.ApiInterface
+				chainId := info.ChainID
+				go csm.consumerMetricsManager.AddOpenSessionMetric(chainId, apiInterface, providerAddress)
 				// Successfully created/got a consumerSession.
 				if debug {
 					utils.LavaFormatDebug("Consumer get session",
@@ -921,16 +927,17 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 		qosEx := *consumerSession.QoSInfo.LastExcellenceQoSReport
 		lastQosExcellence = &qosEx
 	}
+	blockedSession := consumerSession.BlockListed
+	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
 
-	go csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, consumerSession.Parent.PublicLavaAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum)
-}
-
-// consumerSession should still be locked when accessing this method as it fetches information from the session it self
-func (csm *ConsumerSessionManager) resetMetricsManager() {
-	if csm.consumerMetricsManager == nil {
-		return
-	}
-	csm.consumerMetricsManager.ResetQOSMetrics()
+	go func() {
+		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum)
+		// in case we blocked the session add it to our block sessions metric
+		if blockedSession {
+			csm.consumerMetricsManager.AddNumberOfBlockedSessionMetric(chainId, apiInterface, publicProviderAddress)
+		}
+		csm.consumerMetricsManager.DecrementOpenSessionMetric(chainId, apiInterface, publicProviderAddress)
+	}()
 }
 
 // Get the reported providers currently stored in the session manager.
