@@ -6,7 +6,7 @@ endpoints:
       node-urls:
         - url: <enter-here>
     - api-interface: jsonrpc
-      chain-id: GTH1
+      chain-id: SEP1
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
@@ -60,7 +60,7 @@ endpoints:
       node-urls:
         - url: <enter-here>
     - api-interface: jsonrpc
-      chain-id: BASET
+      chain-id: BASES
       network-address:
         address: "127.0.0.1:2221"
       node-urls:
