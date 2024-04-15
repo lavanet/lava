@@ -228,6 +228,7 @@ func (k Keeper) ModifyStakeEntryCurrentFromStorage(ctx sdk.Context, stakeStorage
 		if entry.Address == stakeEntry.Address {
 			entries = append(entries, stakeStorage.StakeEntries[:i]...)
 			entries = append(entries, stakeStorage.StakeEntries[i+1:]...)
+			break
 		}
 	}
 	// the following code inserts stakeEntry into the existing entries by stake
