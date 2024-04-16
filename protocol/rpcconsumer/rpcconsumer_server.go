@@ -296,7 +296,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, directiveHeaders, chainMessage, relayRequestData, dappID, consumerIp)
 	if err != nil && !relayProcessor.HasResults() {
 		// we can't send anymore, and we don't have any responses
-		return nil, utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
+		return nil, utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", consumerIp))
 	}
 	// Handle Data Reliability
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
@@ -536,7 +536,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
 			// if we have no providers for a specific addon or extension, return an indicative error
-			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions))
+			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
 		}
 		return err
 	}
@@ -608,7 +608,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				processingTimeout = time.Until(deadline)
 				if processingTimeout <= 0 {
 					// no need to send we are out of time
-					utils.LavaFormatWarning("Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil, utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("Request data", localRelayRequestData))
+					utils.LavaFormatWarning("Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil, utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("ApiUrl", localRelayRequestData.ApiUrl))
 					return
 				}
 				// to prevent absurdly short context timeout set the shortest timeout to be the expected latency for qos time.

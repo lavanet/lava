@@ -154,12 +154,21 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		response.relayResult.Finalized = false // shut down data reliability
 		// }
 	}
-	if response.err == nil && response.relayResult.Reply != nil {
-		// no error, update the seen block
-		blockSeen := response.relayResult.Reply.LatestBlock
-		// nil safe
-		rp.consumerConsistency.SetSeenBlock(blockSeen, rp.dappID, rp.consumerIp)
+	if response.relayResult.Reply == nil {
+		utils.LavaFormatError("got to setValidResponse with nil Reply",
+			response.err,
+			utils.LogAttr("ProviderInfo", response.relayResult.ProviderInfo),
+			utils.LogAttr("StatusCode", response.relayResult.StatusCode),
+			utils.LogAttr("Finalized", response.relayResult.Finalized),
+			utils.LogAttr("Quorum", response.relayResult.Quorum),
+		)
+		return
 	}
+	// no error, update the seen block
+	blockSeen := response.relayResult.Reply.LatestBlock
+	// nil safe
+	rp.consumerConsistency.SetSeenBlock(blockSeen, rp.dappID, rp.consumerIp)
+	// check response error
 	foundError, errorMessage := rp.chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
 	if foundError {
 		// this is a node error, meaning we still didn't get a good response.

@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/utils/lavaslices"
 
 	"github.com/dgraph-io/ristretto"
@@ -72,7 +73,8 @@ func (cs *CacheServer) Serve(ctx context.Context,
 	if err != nil {
 		utils.LavaFormatFatal("cache server failure setting up listener", err, utils.Attribute{Key: "listenAddr", Value: listenAddr})
 	}
-	s := grpc.NewServer()
+	serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(chainproxy.MaxCallRecvMsgSize) // setting receive size to 32mb instead of 4mb default
+	s := grpc.NewServer(serverReceiveMaxMessageSize)
 
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
