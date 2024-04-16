@@ -218,7 +218,8 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 	fullProviderReward := providerReward.Add(leftoverRewards...)
 
 	if !calcOnlyProvider {
-		k.rewardDelegator(ctx, types.Delegation{Provider: providerAddr.String(), ChainID: chainID, Delegator: providerAddr.String()}, fullProviderReward, senderModule)
+		// reward provider's vault
+		k.rewardDelegator(ctx, types.Delegation{Provider: stakeEntry.Operator, ChainID: chainID, Delegator: stakeEntry.Vault}, fullProviderReward, senderModule)
 	}
 
 	return fullProviderReward, claimableRewards, nil
