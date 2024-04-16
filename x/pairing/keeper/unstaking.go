@@ -43,7 +43,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		)
 	}
 
-	if creator == existingEntry.Operator {
+	if creator == existingEntry.Operator && creator != existingEntry.Vault {
 		return utils.LavaFormatWarning("can't unstake Entry, only vault address is allowed to unstake", fmt.Errorf("operator unstake failed"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("operator", existingEntry.Operator),
