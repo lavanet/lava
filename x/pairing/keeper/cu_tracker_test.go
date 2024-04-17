@@ -378,6 +378,91 @@ func TestTrackedCuPlanPriceChange(t *testing.T) {
 	require.Equal(t, balanceBeforePay+originalPlanPrice, balance)
 }
 
+// TestVaultOperatorTrackedCu tests that a relay payment sent by the operator get its CU
+// tracked for the vault address
+// Scenarios:
+//  1. normal tracked CU pipeline -> tracked CU should be registered to the vault address
+//  2. after that, advance a month + unbonding time and verify that there are claimable rewards of the vault
+//     and not operator
+//  3. operator tries to claim rewards -> fails
+//  4. claim rewards with vault -> success
+//  5. vault address tries to send relay payment -> should fail
+func TestVaultOperatorTrackedCu(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 0) // 1 providers, 1 client, default providers-to-pair
+
+	providerAcc, _ := ts.GetAccount(common.PROVIDER, 0)
+	operator := providerAcc.Addr.String()
+	vault := providerAcc.Vault.Addr.String()
+
+	// send relay payment with operator to have tracked CU
+	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	relaySession := ts.newRelaySession(operator, 0, relayCuSum, ts.BlockHeight(), 0)
+	sig, err := sigs.Sign(clientAcc.SK, *relaySession)
+	require.NoError(t, err)
+	relaySession.Sig = sig
+	relayPaymentMessage := types.MsgRelayPayment{
+		Creator: operator,
+		Relays:  lavaslices.Slice(relaySession),
+	}
+	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
+
+	// send relay payment with vault - should fail
+	relaySession = ts.newRelaySession(vault, 0, relayCuSum, ts.BlockHeight(), 0)
+	sig, err = sigs.Sign(clientAcc.SK, *relaySession)
+	require.NoError(t, err)
+	relaySession.Sig = sig
+	relayPaymentMessage = types.MsgRelayPayment{
+		Creator: vault,
+		Relays:  lavaslices.Slice(relaySession),
+	}
+	ts.relayPaymentWithoutPay(relayPaymentMessage, false)
+
+	// verify tracked CU - vault should have none and operator should have some rewards
+	res, err := ts.QueryPairingProviderMonthlyPayout(operator)
+	require.NoError(t, err)
+	require.Len(t, res.Details, 1)
+	require.NotEqual(t, uint64(0), res.Total)
+
+	res, err = ts.QueryPairingProviderMonthlyPayout(vault)
+	require.NoError(t, err)
+	require.Len(t, res.Details, 0)
+	require.Equal(t, uint64(0), res.Total)
+
+	// advance month + blocksToSave + 1 to trigger the provider monthly payment
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	// claim rewards (operator should have none, vault should have some)
+	tests := []struct {
+		name     string
+		creator  string
+		operator string
+		rewarded bool // should the creator get reward
+	}{
+		{"operator creator", operator, operator, false},
+		{"vault operator (bad)", operator, vault, false},
+		{"vault creator happy flow", vault, operator, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			creatorAcc, err := sdk.AccAddressFromBech32(tt.creator)
+			require.NoError(t, err)
+
+			res, err := ts.QueryDualstakingDelegatorRewards(tt.creator, tt.operator, ts.spec.Index)
+			require.NoError(t, err)
+			require.Equal(t, tt.rewarded, len(res.Rewards) > 0)
+
+			before := ts.GetBalance(creatorAcc)
+			_, err = ts.TxDualstakingClaimRewards(tt.creator, tt.operator)
+			require.NoError(t, err)
+			after := ts.GetBalance(creatorAcc)
+			require.Equal(t, tt.rewarded, after > before)
+		})
+	}
+}
+
 // TestProviderMonthlyPayoutQuery tests the monthly-payout query
 // Scenario: the provider provided service on two chains and in one of them he has a delegator
 func TestProviderMonthlyPayoutQuery(t *testing.T) {

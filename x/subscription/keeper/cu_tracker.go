@@ -154,13 +154,13 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 	totalTokenRewarded := sdk.ZeroInt()
 	for _, trackedCuInfo := range trackedCuList {
 		trackedCu := trackedCuInfo.trackedCu
-		provider := trackedCuInfo.provider
+		operator := trackedCuInfo.provider
 		chainID := trackedCuInfo.chainID
 
-		providerAddr, err := sdk.AccAddressFromBech32(provider)
+		operatorAddr, err := sdk.AccAddressFromBech32(operator)
 		if err != nil {
 			utils.LavaFormatError("invalid provider address", err,
-				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "provider", Value: operator},
 			)
 			continue
 		}
@@ -168,7 +168,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		err = k.resetCuTracker(ctx, sub, trackedCuInfo, block)
 		if err != nil {
 			utils.LavaFormatError("removing/reseting tracked CU entry failed", err,
-				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "provider", Value: operator},
 				utils.Attribute{Key: "tracked_cu", Value: trackedCu},
 				utils.Attribute{Key: "chain_id", Value: chainID},
 				utils.Attribute{Key: "sub", Value: sub},
@@ -178,7 +178,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		}
 
 		// provider monthly reward = (tracked_CU / total_CU_used_in_sub_this_month) * totalTokenAmount
-		providerAdjustment, ok := adjustmentFactorForProvider[provider]
+		providerAdjustment, ok := adjustmentFactorForProvider[operator]
 		if !ok {
 			maxRewardBoost := k.rewardsKeeper.MaxRewardBoost(ctx)
 			if maxRewardBoost == 0 {
@@ -196,16 +196,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		creditToSub := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyRewardAmount)
 		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyRewardAmount)
 
-		// aggregate the reward for the provider's vault
-		stakeEntry, found, _ := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
-		if !found {
-			utils.LavaFormatError("could not aggregate providers bonus rewards", fmt.Errorf("provider stake entry not found"),
-				utils.LogAttr("provider", provider),
-				utils.LogAttr("chain_id", chainID),
-			)
-			return
-		}
-		k.rewardsKeeper.AggregateRewards(ctx, stakeEntry.Vault, chainID, providerAdjustment, totalMonthlyRewardAmount)
+		k.rewardsKeeper.AggregateRewards(ctx, operator, chainID, providerAdjustment, totalMonthlyRewardAmount)
 
 		// Transfer some of the total monthly reward to validators contribution and community pool
 		creditToSub, err = k.rewardsKeeper.ContributeToValidatorsAndCommunityPool(ctx, creditToSub, types.ModuleName)
@@ -216,16 +207,16 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 		// Note: if the reward function doesn't reward the provider
 		// because he was unstaked, we only print an error and not returning
-		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, sdk.NewCoins(creditToSub), types.ModuleName, false, false, false)
+		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, operatorAddr, chainID, sdk.NewCoins(creditToSub), types.ModuleName, false, false, false)
 		if errors.Is(err, epochstoragetypes.ErrProviderNotStaked) || errors.Is(err, epochstoragetypes.ErrStakeStorageNotFound) {
 			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
-				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "provider", Value: operator},
 				utils.Attribute{Key: "chain_id", Value: chainID},
 				utils.Attribute{Key: "block", Value: strconv.FormatInt(ctx.BlockHeight(), 10)},
 			)
 		} else if err != nil {
 			utils.LavaFormatError("sending provider reward with delegations failed", err,
-				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "provider", Value: operator},
 				utils.Attribute{Key: "tracked_cu", Value: trackedCu},
 				utils.Attribute{Key: "chain_id", Value: chainID},
 				utils.Attribute{Key: "sub", Value: sub},
@@ -234,7 +225,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 			)
 		} else {
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.MonthlyCuTrackerProviderRewardEventName, map[string]string{
-				"provider":       provider,
+				"provider":       operator,
 				"sub":            sub,
 				"tracked_cu":     strconv.FormatUint(trackedCu, 10),
 				"credit_used":    creditToSub.String(),
