@@ -210,7 +210,6 @@ func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 		// no active sessions, and we read all the responses, we can return
 		return true
 	}
-
 	return false
 }
 

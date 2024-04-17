@@ -387,6 +387,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	}
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
+	defer startNewBatchTicker.Stop()
 	for {
 		select {
 		case success := <-gotResults:
@@ -824,6 +825,12 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endp
 }
 
 func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, dappID string, consumerIp string, chainMessage chainlib.ChainMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
+	processingTimeout, expectedRelayTimeout := rpccs.getProcessingTimeout(chainMessage)
+	// Wait another relayTimeout duration to maybe get additional relay results
+	if relayProcessor.usedProviders.CurrentlyUsed() > 0 {
+		time.Sleep(expectedRelayTimeout)
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	specCategory := chainMessage.GetApi().Category
@@ -863,7 +870,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
-		processingTimeout, _ := rpccs.getProcessingTimeout(chainMessage)
+
 		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
 		defer cancel()
 		err = relayProcessorDataReliability.WaitForResults(processingCtx)
