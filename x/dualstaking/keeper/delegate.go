@@ -60,16 +60,17 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	index = types.DelegatorKey(delegator)
 	_ = k.delegatorFS.FindEntry(ctx, index, nextEpoch, &delegatorEntry)
 
-	delegatorEntry.AddProvider(provider)
-
-	err = k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
-	if err != nil {
-		// append should never fail here
-		return utils.LavaFormatError("critical: append delegator entry", err,
-			utils.Attribute{Key: "delegator", Value: delegator},
-			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "chainID", Value: chainID},
-		)
+	contains := delegatorEntry.AddProvider(provider)
+	if !contains {
+		err = k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
+		if err != nil {
+			// append should never fail here
+			return utils.LavaFormatError("critical: append delegator entry", err,
+				utils.Attribute{Key: "delegator", Value: delegator},
+				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "chainID", Value: chainID},
+			)
+		}
 	}
 
 	if provider != types.EMPTY_PROVIDER {
@@ -140,27 +141,29 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	// entry; and if the delegator entry becomes entry then remove it altogether.
 	// otherwise just append the new version (for next epoch).
 	if delegationEntry.Amount.IsZero() {
-		delegatorEntry.DelProvider(provider)
-	}
-	if delegatorEntry.IsEmpty() {
-		err := k.delegatorFS.DelEntry(ctx, index, nextEpoch)
-		if err != nil {
-			// delete should never fail here
-			return utils.LavaFormatError("critical: delete delegator entry", err,
-				utils.Attribute{Key: "delegator", Value: delegator},
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chainID", Value: chainID},
-			)
-		}
-	} else {
-		err := k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
-		if err != nil {
-			// append should never fail here
-			return utils.LavaFormatError("failed to update delegator entry", err,
-				utils.Attribute{Key: "delegator", Value: delegator},
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chainID", Value: chainID},
-			)
+		if len(k.GetAllProviderDelegatorDelegations(ctx, delegator, provider, nextEpoch)) == 0 {
+			delegatorEntry.DelProvider(provider)
+			if delegatorEntry.IsEmpty() {
+				err := k.delegatorFS.DelEntry(ctx, index, nextEpoch)
+				if err != nil {
+					// delete should never fail here
+					return utils.LavaFormatError("critical: delete delegator entry", err,
+						utils.Attribute{Key: "delegator", Value: delegator},
+						utils.Attribute{Key: "provider", Value: provider},
+						utils.Attribute{Key: "chainID", Value: chainID},
+					)
+				}
+			} else {
+				err := k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
+				if err != nil {
+					// append should never fail here
+					return utils.LavaFormatError("failed to update delegator entry", err,
+						utils.Attribute{Key: "delegator", Value: delegator},
+						utils.Attribute{Key: "provider", Value: provider},
+						utils.Attribute{Key: "chainID", Value: chainID},
+					)
+				}
+			}
 		}
 	}
 
@@ -468,14 +471,16 @@ func (k Keeper) GetAllProviderDelegatorDelegations(ctx sdk.Context, delegator, p
 	var delegations []types.Delegation
 	for _, ind := range indices {
 		var delegation types.Delegation
-		found := k.delegationFS.FindEntry(ctx, ind, epoch, &delegation)
+		_, deleted, _, found := k.delegationFS.FindEntryDetailed(ctx, ind, epoch, &delegation)
 		if !found {
-			provider, delegator, chainID := types.DelegationKeyDecode(ind)
-			utils.LavaFormatError("delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
-				utils.Attribute{Key: "delegator", Value: delegator},
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chainID", Value: chainID},
-			)
+			if !deleted {
+				provider, delegator, chainID := types.DelegationKeyDecode(ind)
+				utils.LavaFormatError("delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
+					utils.Attribute{Key: "delegator", Value: delegator},
+					utils.Attribute{Key: "provider", Value: provider},
+					utils.Attribute{Key: "chainID", Value: chainID},
+				)
+			}
 			continue
 		}
 		delegations = append(delegations, delegation)

@@ -377,15 +377,25 @@ func TestUnbond(t *testing.T) {
 
 	// 1 delegator, 2 provider staked, 0 provider unstaked, 0 provider unstaking
 	ts.setupForDelegation(1, 2, 0, 0)
+	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+
+	spec2 := ts.spec
+	spec2.Index = "mock2"
+	spec2.Name = spec2.Index
+	ts.AddSpec(spec2.Index, spec2)
+	err := ts.StakeProvider(provider1Addr, spec2, testStake)
+	require.NoError(t, err)
 
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)
-	provider1Acct, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 
 	delegated := zeroCoin
 
 	// delegate once
 	amount := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10000))
-	_, err := ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, ts.spec.Name, amount)
+	require.NoError(t, err)
+
+	_, err = ts.TxDualstakingDelegate(client1Addr, provider1Addr, spec2.Index, amount)
 	require.NoError(t, err)
 
 	// advance epoch to digest the delegate
@@ -394,6 +404,10 @@ func TestUnbond(t *testing.T) {
 	delegated = delegated.Add(amount)
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
 	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+
+	res, err := ts.QueryDualstakingDelegatorProviders(client1Addr, true)
+	require.NoError(t, err)
+	require.Len(t, res.Delegations, 2)
 
 	// unbond once
 	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1000))
@@ -437,6 +451,12 @@ func TestUnbond(t *testing.T) {
 	require.NoError(t, err)
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
 	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	delegated = delegated.Sub(amount)
+
+	// unbond from unstaking provider everything
+	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, ts.spec.Name, delegated)
+	require.NoError(t, err)
+	stakeEntry = ts.getStakeEntry(provider1Acct.Addr, ts.spec.Name)
 
 	// advance half the blocks for the unbond hold-period (for sure > epoch)
 	ts.AdvanceBlocks(105)
@@ -448,6 +468,11 @@ func TestUnbond(t *testing.T) {
 	// not-blablacoins will have been returned to their delegator by now
 
 	ts.verifyDelegatorsBalance()
+
+	res, err = ts.QueryDualstakingDelegatorProviders(client1Addr, true)
+	require.NoError(t, err)
+	require.Len(t, res.Delegations, 1)
+	require.Equal(t, provider1Addr, res.Delegations[0].Provider)
 }
 
 func TestBondUnbondBond(t *testing.T) {
