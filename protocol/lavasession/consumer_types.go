@@ -242,6 +242,20 @@ func (cswp *ConsumerSessionsWithProvider) addUsedComputeUnits(cu, virtualEpoch u
 	return nil
 }
 
+// check whether the provider has a specific geolocation
+// used to filter reports. if the provider does not have our geolocation we do not report it
+func (cswp *ConsumerSessionsWithProvider) doesProviderEndpointsContainGeolocation(geolocation uint64) bool {
+	cswp.Lock.RLock()
+	defer cswp.Lock.RUnlock()
+	// add additional CU for virtual epochs
+	for _, endpoint := range cswp.Endpoints {
+		if uint64(endpoint.Geolocation) == geolocation {
+			return true
+		}
+	}
+	return false
+}
+
 // Validate and add the compute units for this provider
 func (cswp *ConsumerSessionsWithProvider) getProviderStakeSize() sdk.Coin {
 	cswp.Lock.RLock()

@@ -296,7 +296,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, directiveHeaders, chainMessage, relayRequestData, dappID, consumerIp)
 	if err != nil && !relayProcessor.HasResults() {
 		// we can't send anymore, and we don't have any responses
-		return nil, utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
+		return nil, utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", consumerIp))
 	}
 	// Handle Data Reliability
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
@@ -387,6 +387,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	}
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
+	defer startNewBatchTicker.Stop()
 	for {
 		select {
 		case success := <-gotResults:
@@ -536,7 +537,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
 			// if we have no providers for a specific addon or extension, return an indicative error
-			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions))
+			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
 		}
 		return err
 	}
@@ -608,7 +609,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				processingTimeout = time.Until(deadline)
 				if processingTimeout <= 0 {
 					// no need to send we are out of time
-					utils.LavaFormatWarning("Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil, utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("Request data", localRelayRequestData))
+					utils.LavaFormatWarning("Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil, utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("ApiUrl", localRelayRequestData.ApiUrl))
 					return
 				}
 				// to prevent absurdly short context timeout set the shortest timeout to be the expected latency for qos time.
@@ -824,6 +825,12 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endp
 }
 
 func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, dappID string, consumerIp string, chainMessage chainlib.ChainMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
+	processingTimeout, expectedRelayTimeout := rpccs.getProcessingTimeout(chainMessage)
+	// Wait another relayTimeout duration to maybe get additional relay results
+	if relayProcessor.usedProviders.CurrentlyUsed() > 0 {
+		time.Sleep(expectedRelayTimeout)
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	specCategory := chainMessage.GetApi().Category
@@ -863,7 +870,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
-		processingTimeout, _ := rpccs.getProcessingTimeout(chainMessage)
+
 		processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
 		defer cancel()
 		err = relayProcessorDataReliability.WaitForResults(processingCtx)
