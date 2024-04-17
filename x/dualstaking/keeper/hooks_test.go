@@ -412,12 +412,12 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	for _, d := range res.Delegations {
 		totalDelegations = totalDelegations.Add(d.Amount.Amount)
 	}
-	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(consensusPowerTokens.MulRaw(245)).TruncateInt(), totalDelegations)
+	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(consensusPowerTokens.MulRaw(245)).RoundInt(), totalDelegations)
 
 	// verify once again that the delegator's delegations balance is preserved
 	diff, _, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.NoError(t, err)
-	require.Equal(t, sdk.OneInt(), diff)
+	require.True(t, diff.IsZero())
 }
 
 // TestCancelUnbond checks that the providers-validators delegations balance is preserved when
