@@ -9,6 +9,7 @@ import (
 
 	"cosmossdk.io/math"
 	tmdb "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/rpc/core"
@@ -110,6 +111,10 @@ type Servers struct {
 	SlashingServer     slashingtypes.MsgServer
 	RewardsServer      rewardstypes.MsgServer
 	DistributionServer distributiontypes.MsgServer
+}
+
+type KeeperBeginBlockerWithRequest interface {
+	BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock)
 }
 
 type KeeperBeginBlocker interface {
@@ -489,6 +494,10 @@ func NewBlock(ctx sdk.Context, ks *Keepers) {
 
 		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlocker); ok {
 			beginBlocker.BeginBlock(ctx)
+		}
+
+		if beginBlocker, ok := fieldValue.Interface().(KeeperBeginBlockerWithRequest); ok {
+			beginBlocker.BeginBlock(ctx, abci.RequestBeginBlock{})
 		}
 	}
 }
