@@ -113,7 +113,12 @@ func (ts *Tester) SetupAccounts(numSub, numAdm, numDev int) *Tester {
 
 func (ts *Tester) AddAccount(kind string, idx int, balance int64) (sigs.Account, string) {
 	name := kind + strconv.Itoa(idx)
-	ts.accounts[name] = CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
+	acc := CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
+	if kind == PROVIDER {
+		vault := CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
+		acc.Vault = &vault
+	}
+	ts.accounts[name] = acc
 	return ts.Account(name)
 }
 
@@ -149,12 +154,13 @@ func (ts *Tester) AccountsMap() map[string]sigs.Account {
 	return ts.accounts
 }
 
-func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
-	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "prov")
+func (ts *Tester) StakeProvider(operator string, vault string, spec spectypes.Spec, amount int64) error {
+	return ts.StakeProviderExtra(operator, vault, spec, amount, nil, 0, "prov")
 }
 
 func (ts *Tester) StakeProviderExtra(
-	addr string,
+	operator string,
+	vault string,
 	spec spectypes.Spec,
 	amount int64,
 	endpoints []epochstoragetypes.Endpoint,
@@ -185,7 +191,7 @@ func (ts *Tester) StakeProviderExtra(
 	}
 
 	stake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(amount))
-	_, err := ts.TxPairingStakeProvider(addr, spec.Index, stake, endpoints, geoloc, moniker)
+	_, err := ts.TxPairingStakeProvider(vault, operator, spec.Index, stake, endpoints, geoloc, moniker)
 
 	return err
 }
@@ -416,7 +422,7 @@ func (ts *Tester) TxDualstakingRedelegate(
 // TxDualstakingUnbond: implement 'tx dualstaking unbond'
 func (ts *Tester) TxDualstakingUnbond(
 	creator string,
-	provider string,
+	operator string,
 	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgUnbondResponse, error) {
@@ -424,7 +430,7 @@ func (ts *Tester) TxDualstakingUnbond(
 	return ts.TxDualstakingUnbondValidator(
 		creator,
 		sdk.ValAddress(validator.Addr).String(),
-		provider,
+		operator,
 		chainID,
 		amount,
 	)
@@ -451,11 +457,11 @@ func (ts *Tester) TxDualstakingUnbondValidator(
 // TxDualstakingClaimRewards: implement 'tx dualstaking claim-rewards'
 func (ts *Tester) TxDualstakingClaimRewards(
 	creator string,
-	provider string,
+	operator string,
 ) (*dualstakingtypes.MsgClaimRewardsResponse, error) {
 	msg := &dualstakingtypes.MsgClaimRewards{
 		Creator:  creator,
-		Provider: provider,
+		Provider: operator,
 	}
 	return ts.Servers.DualstakingServer.ClaimRewards(ts.GoCtx, msg)
 }
@@ -549,7 +555,8 @@ func (ts *Tester) TxProjectSetPolicy(projectID, subkey string, policy *planstype
 
 // TxPairingStakeProvider: implement 'tx pairing stake-provider'
 func (ts *Tester) TxPairingStakeProvider(
-	addr string,
+	vault string,
+	operator string,
 	chainID string,
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
@@ -558,7 +565,7 @@ func (ts *Tester) TxPairingStakeProvider(
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgStakeProvider{
-		Creator:            addr,
+		Creator:            vault,
 		Validator:          sdk.ValAddress(val.Addr).String(),
 		ChainID:            chainID,
 		Amount:             amount,
@@ -567,7 +574,7 @@ func (ts *Tester) TxPairingStakeProvider(
 		Moniker:            moniker,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
 		DelegateCommission: 100,
-		Operator:           addr,
+		Operator:           operator,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
@@ -625,22 +632,22 @@ func (ts *Tester) TxPairingStakeProviderFull(
 
 // TxPairingUnstakeProvider: implement 'tx pairing unstake-provider'
 func (ts *Tester) TxPairingUnstakeProvider(
-	addr string,
+	vault string,
 	chainID string,
 ) (*pairingtypes.MsgUnstakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgUnstakeProvider{
 		Validator: sdk.ValAddress(val.Addr).String(),
-		Creator:   addr,
+		Creator:   vault,
 		ChainID:   chainID,
 	}
 	return ts.Servers.PairingServer.UnstakeProvider(ts.GoCtx, msg)
 }
 
 // TxPairingRelayPayment: implement 'tx pairing relay-payment'
-func (ts *Tester) TxPairingRelayPayment(addr string, rs ...*pairingtypes.RelaySession) (*pairingtypes.MsgRelayPaymentResponse, error) {
+func (ts *Tester) TxPairingRelayPayment(operator string, rs ...*pairingtypes.RelaySession) (*pairingtypes.MsgRelayPaymentResponse, error) {
 	msg := &pairingtypes.MsgRelayPayment{
-		Creator:           addr,
+		Creator:           operator,
 		Relays:            rs,
 		DescriptionString: "test",
 	}
@@ -1127,8 +1134,8 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 	// setup providers
 	start = len(ts.Accounts(PROVIDER))
 	for i := 0; i < providers; i++ {
-		_, addr := ts.AddAccount(PROVIDER, start+i, balance)
-		err := ts.StakeProviderExtra(addr, spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, "prov"+strconv.Itoa(start+i))
+		acc, operator := ts.AddAccount(PROVIDER, start+i, balance)
+		err := ts.StakeProviderExtra(operator, acc.Vault.Addr.String(), spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, "prov"+strconv.Itoa(start+i))
 		if err != nil {
 			return err
 		}

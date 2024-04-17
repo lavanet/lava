@@ -43,7 +43,7 @@ func (k Keeper) IprpcProviderRewardEstimation(goCtx context.Context, req *types.
 			continue
 		}
 
-		providerBpIndex := types.BasePayIndex{Provider: stakeEntry.Vault, ChainID: specFund.Spec}
+		providerBpIndex := types.BasePayIndex{Provider: stakeEntry.Operator, ChainID: specFund.Spec}
 		for _, bp := range bps {
 			if bp.BasePayIndex.String() == providerBpIndex.String() {
 				providerIprpcCu = bp.IprpcCu

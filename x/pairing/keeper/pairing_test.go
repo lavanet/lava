@@ -36,8 +36,8 @@ func TestPairingUniqueness(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 1; i <= 1000; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, ts.spec, stake)
+		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(addr, acc.Vault.Addr.String(), ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -102,8 +102,8 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 1; i <= 10; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, ts.spec, stake)
+		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(addr, acc.Vault.Addr.String(), ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -252,8 +252,8 @@ func TestPairingStatic(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 0; i < int(ts.plan.PlanPolicy.MaxProvidersToPair)*2; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, i, testBalance)
-		err := ts.StakeProvider(addr, ts.spec, testStake+int64(i))
+		acc, addr := ts.AddAccount(common.PROVIDER, i, testBalance)
+		err := ts.StakeProvider(addr, acc.Vault.Addr.String(), ts.spec, testStake+int64(i))
 		require.NoError(t, err)
 	}
 
@@ -621,7 +621,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	err = ts.addProvider(200)
 	require.NoError(t, err)
 
-	_, p1 := ts.GetAccount(common.PROVIDER, 0)
+	p1Acc, p1 := ts.GetAccount(common.PROVIDER, 0)
 	_, p2 := ts.GetAccount(common.PROVIDER, 1)
 	_, p3 := ts.GetAccount(common.PROVIDER, 2)
 	_, p4 := ts.GetAccount(common.PROVIDER, 3)
@@ -752,11 +752,11 @@ func TestSelectedProvidersPairing(t *testing.T) {
 
 			if tt.name == "EXCLUSIVE mode provider unstakes after first pairing" {
 				// unstake p1 and remove from expected providers
-				_, err = ts.TxPairingUnstakeProvider(p1, ts.spec.Index)
+				_, err = ts.TxPairingUnstakeProvider(p1Acc.Vault.Addr.String(), ts.spec.Index)
 				require.NoError(t, err)
 				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:]
 			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
-				err := ts.StakeProvider(p1, ts.spec, testBalance/2)
+				err := ts.StakeProvider(p1, p1Acc.Vault.Addr.String(), ts.spec, testBalance/2)
 				require.NoError(t, err)
 			}
 
@@ -894,7 +894,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	// double the stake of the first provider
 	p := allProviders.StakeEntry[0]
-	_, err = ts.TxDualstakingDelegate(p.Operator, p.Operator, ts.spec.Index, p.Stake)
+	_, err = ts.TxDualstakingDelegate(p.Vault, p.Operator, ts.spec.Index, p.Stake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -2243,8 +2243,8 @@ func TestPairingPerformance(t *testing.T) {
 	require.NoError(t, err)
 
 	for i := 1; i <= 1000; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, ts.spec, stake)
+		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(addr, acc.Vault.Addr.String(), ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -2282,9 +2282,10 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	}
 
 	// try staking with 2*MAX_ENDPOINTS_AMOUNT_PER_GEO+1 endpoint in USE, should fail
-	_, addr := ts.AddAccount(common.PROVIDER, 0, testStake)
+	acc, addr := ts.AddAccount(common.PROVIDER, 0, testStake)
 	err := ts.StakeProviderExtra(
 		addr,
+		acc.Vault.Addr.String(),
 		ts.spec,
 		testStake/2,
 		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],
@@ -2297,6 +2298,7 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	validEndpointsArray := endpoints[types.MAX_ENDPOINTS_AMOUNT_PER_GEO : 3*types.MAX_ENDPOINTS_AMOUNT_PER_GEO]
 	err = ts.StakeProviderExtra(
 		addr,
+		acc.Vault.Addr.String(),
 		ts.spec,
 		testStake/2,
 		validEndpointsArray,
@@ -2309,6 +2311,7 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	// note, calling StakeProviderExtra for an existing stake entry will run the modify stake entry code flow
 	err = ts.StakeProviderExtra(
 		addr,
+		acc.Vault.Addr.String(),
 		ts.spec,
 		testStake/2,
 		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],

@@ -80,7 +80,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			// ** check provider reward without delegators ** //
 
 			relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-			ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 100)
+			ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 100)
 
 			// ** check provider reward with delegators ** //
 
@@ -118,7 +118,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 
 			// send relay and check provider balance according to expected providerRewardPerc (done inside payAndVerifyBalance)
 			relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-			ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, tt.providerReward)
+			ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, tt.providerReward)
 
 			// Get the delegator rewards from the delegatorRewardsMap
 			resRewards1, err := ts.QueryDualstakingDelegatorRewards(delegator1, provider, stakeEntry.Chain)
@@ -232,7 +232,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	require.Equal(t, 3, len(res.Delegations))
 
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 70)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 70)
 
 	// modify the stake entry to have a delegation limit lower than the total delegations
 	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
@@ -240,7 +240,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 76)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 76)
 }
 
 func TestProviderRewardWithCommission(t *testing.T) {
@@ -292,7 +292,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	// check that the expected reward equals to the provider's new balance minus old balance
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 100)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 100)
 
 	// the delegator should get no rewards
 	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
@@ -307,7 +307,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	// the expected reward for the provider with 0% commission is half of the total rewards
 	// (in this test specifically, effectiveDelegations = delegateTotal = providerStake)
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 50)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 50)
 
 	// the delegator should get the total rewards
 	resRewards, err = ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
@@ -369,7 +369,7 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	spec1.Index = "mock1"
 	spec1.Name = "mock1"
 	ts.AddSpec(spec1.Index, spec1)
-	err = ts.StakeProvider(provider1, spec1, testStake)
+	err = ts.StakeProvider(provider1, provider1Acc.Vault.Addr.String(), spec1, testStake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -389,10 +389,10 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	ts.AdvanceEpoch() // apply delegations
 
 	relayPaymentMessage := sendRelay(ts, provider1, client1Acc, []string{ts.spec.Index, spec1.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, client1Acc.Addr, provider1Acc.Addr, true, true, 50)
+	ts.payAndVerifyBalance(relayPaymentMessage, client1Acc.Addr, provider1Acc.Vault.Addr, true, true, 50)
 
 	relayPaymentMessage = sendRelay(ts, provider2, client1Acc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, client1Acc.Addr, provider2Acc.Addr, true, true, 50)
+	ts.payAndVerifyBalance(relayPaymentMessage, client1Acc.Addr, provider2Acc.Vault.Addr, true, true, 50)
 
 	planPrice := ts.plan.Price.Amount.Int64()
 

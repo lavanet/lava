@@ -209,7 +209,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 
 	relevantDelegations := lavaslices.Filter(delegations,
 		func(d types.Delegation) bool {
-			return d.ChainID == chainID && d.IsFirstMonthPassed(ctx.BlockTime().UTC().Unix()) && d.Delegator != d.Provider
+			return d.ChainID == chainID && d.IsFirstMonthPassed(ctx.BlockTime().UTC().Unix()) && (d.Delegator != stakeEntry.Vault && d.Provider == stakeEntry.Operator)
 		})
 
 	providerReward, delegatorsReward := k.CalcRewards(ctx, *stakeEntry, claimableRewards, relevantDelegations)

@@ -16,9 +16,9 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	ts.AddSpec("mock", ts.spec)
 
 	balance := 5 * ts.spec.MinStakeProvider.Amount.Int64()
-	providerAcct, providerAddr := ts.AddAccount(common.PROVIDER, 0, balance)
+	providerAcct, operator := ts.AddAccount(common.PROVIDER, 0, balance)
 
-	err := ts.StakeProvider(providerAddr, ts.spec, balance/2)
+	err := ts.StakeProvider(operator, providerAcct.Vault.Addr.String(), ts.spec, balance/2)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -26,7 +26,7 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	unstakeHoldBlocks := ts.Keepers.Epochstorage.UnstakeHoldBlocks(ts.Ctx, ts.BlockHeight())
 	unstakeHoldBlocksStatic := ts.Keepers.Epochstorage.UnstakeHoldBlocksStatic(ts.Ctx, ts.BlockHeight())
 
-	_, err = ts.TxPairingUnstakeProvider(providerAddr, ts.spec.Index)
+	_, err = ts.TxPairingUnstakeProvider(providerAcct.Vault.Addr.String(), ts.spec.Index)
 	require.NoError(t, err)
 
 	ts.AdvanceBlocks(unstakeHoldBlocks)

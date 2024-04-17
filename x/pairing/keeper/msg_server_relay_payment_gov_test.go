@@ -97,17 +97,17 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPayment, true)
 
-	balance := ts.GetBalance(providerAcct.Addr)
+	balance := ts.GetBalance(providerAcct.Vault.Addr)
 
 	// advance month + blocksToSave + 1 to trigger the provider monthly payment
 	ts.AdvanceMonths(1)
 	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
-	_, err = ts.TxDualstakingClaimRewards(providerAcct.Addr.String(), providerAcct.Addr.String())
+	_, err = ts.TxDualstakingClaimRewards(providerAcct.Vault.Addr.String(), providerAcct.Addr.String())
 	require.NoError(t, err)
 
-	newBalance := ts.GetBalance(providerAcct.Addr)
+	newBalance := ts.GetBalance(providerAcct.Vault.Addr)
 
 	// check that the provider's balance is increased by planPrice * 60 / 160 (both relay with QosWeight=0.7)
 	// and not by planPrice * (30 + 50) / 160 (reward with QosWeight=0.7 and reward with QosWeight=0.5)
@@ -173,7 +173,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Vault.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -246,7 +246,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Vault.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -323,7 +323,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 				Relays:  lavaslices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Vault.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -394,7 +394,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
-			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Vault.Addr, true, tt.valid, 100)
 		})
 	}
 }
@@ -517,12 +517,12 @@ func TestStakePaymentUnstake(t *testing.T) {
 		Relays:  lavaslices.Slice(relaySession),
 	}
 
-	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
+	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Vault.Addr, true, true, 100)
 
 	// advance another epoch and unstake the provider
 	ts.AdvanceEpoch()
 
-	_, err = ts.TxPairingUnstakeProvider(providerAddr, ts.spec.Index)
+	_, err = ts.TxPairingUnstakeProvider(providerAcct.Vault.Addr.String(), ts.spec.Index)
 	require.NoError(t, err)
 
 	// advance enough epochs to make the provider get its money back:

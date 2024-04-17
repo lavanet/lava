@@ -308,28 +308,29 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		// find two providers in the pairing
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 		require.NoError(t, err)
-		provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Operator)
-		provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Operator)
+		provider0_operator := sdk.MustAccAddressFromBech32(pairing.Providers[0].Operator)
+		provider1_operator := sdk.MustAccAddressFromBech32(pairing.Providers[1].Operator)
+		provider0_vault := sdk.MustAccAddressFromBech32(pairing.Providers[0].Vault)
 
 		// create unresponsive data that includes provider1 being unresponsive
-		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
+		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_operator.String()}}
 		// create relay requests for provider0 that contain complaints about provider1
 		relayEpoch := ts.BlockHeight()
 		for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex)
 
-			relaySession := ts.newRelaySession(provider0_addr.String(), 0, cuSum, relayEpoch, 0)
+			relaySession := ts.newRelaySession(provider0_operator.String(), 0, cuSum, relayEpoch, 0)
 			relaySession.UnresponsiveProviders = unresponsiveProvidersData
 			sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 			relaySession.Sig = sig
 			require.NoError(t, err)
 
 			relayPaymentMessage := types.MsgRelayPayment{
-				Creator: provider0_addr.String(),
+				Creator: provider0_operator.String(),
 				Relays:  lavaslices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, 100)
+			ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_vault, true, true, 100)
 		}
 
 		// advance enough epochs so the unresponsive provider will be punished
@@ -340,6 +341,6 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		ts.AdvanceEpochs(largerConst)
 
 		// test the unresponsive provider1 hasn't froze
-		ts.checkProviderFreeze(provider1_addr, play.shouldBeFrozen)
+		ts.checkProviderFreeze(provider1_operator, play.shouldBeFrozen)
 	}
 }

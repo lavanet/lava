@@ -220,17 +220,17 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
-	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, senderAddr.String(), nextEpoch)
+	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, operator, nextEpoch)
 	if err != nil {
 		utils.LavaFormatWarning("cannot get provider's delegators", err,
-			utils.LogAttr("provider", senderAddr.String()),
+			utils.LogAttr("provider", operator),
 			utils.LogAttr("block", nextEpoch),
 		)
 	}
 
 	for _, d := range delegations {
-		if d.Delegator == senderAddr.String() {
-			// ignore provider self delegation
+		if d.Delegator == creator && d.Provider == operator {
+			// ignore provider self delegation (delegator = vault, provider = operator)
 			continue
 		}
 		delegateTotal = delegateTotal.Add(d.Amount.Amount)

@@ -142,15 +142,15 @@ func TestNewVoterOldVote(t *testing.T) {
 
 	// add a staked provider
 	balance := int64(10000)
-	_, notVoterProvider := ts.AddAccount(common.PROVIDER, 10, balance)
-	err := ts.StakeProvider(notVoterProvider, ts.spec, balance/10)
+	notVoterAcc, notVoterOperator := ts.AddAccount(common.PROVIDER, 10, balance)
+	err := ts.StakeProvider(notVoterOperator, notVoterAcc.Vault.Addr.String(), ts.spec, balance/10)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
 	// try to vote with the new provider: will be on the next voting list but not in the old one
 	msg := conflicttypes.MsgConflictVoteCommit{}
-	msg.Creator = notVoterProvider
+	msg.Creator = notVoterOperator
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
@@ -166,7 +166,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
-	msgReveal.Creator = notVoterProvider
+	msgReveal.Creator = notVoterOperator
 	msgReveal.VoteID = voteID
 	msgReveal.Hash = sigs.HashMsg(relayExchange.DataToSign())
 	msgReveal.Nonce = 0

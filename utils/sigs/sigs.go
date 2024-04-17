@@ -35,6 +35,7 @@ type Account struct {
 	PubKey  cryptotypes.PubKey
 	Addr    sdk.AccAddress
 	ConsKey cryptotypes.PrivKey
+	Vault   *Account // provider vault account (only for provider)
 }
 
 type Signable interface {

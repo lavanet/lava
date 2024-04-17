@@ -71,7 +71,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 
 	// modify moniker
 	moniker = "anotherExampleMoniker"
-	err = ts.StakeProviderExtra(providerAddr, ts.spec, testStake, nil, 0, moniker)
+	err = ts.StakeProviderExtra(providerAddr, providerAcct.Vault.Addr.String(), ts.spec, testStake, nil, 0, moniker)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -85,7 +85,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 1)
-	_, provider := ts.AddAccount(common.PROVIDER, 50, testBalance)
+	acc, provider := ts.AddAccount(common.PROVIDER, 50, testBalance)
 
 	buildEndpoint := func(geoloc string) []string {
 		hostip := "127.0.0.1:3351"
@@ -246,7 +246,7 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 					endpoints[i].ApiInterfaces = []string{"stub"}
 					endpoints[i].Addons = []string{}
 				}
-				_, err = ts.TxPairingStakeProvider(provider, ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, "prov")
+				_, err = ts.TxPairingStakeProvider(provider, acc.Vault.Addr.String(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, "prov")
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
@@ -696,7 +696,7 @@ func TestStakeEndpoints(t *testing.T) {
 
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
-			_, err := ts.TxPairingStakeProvider(providerAddr, ts.spec.Index, amount, play.endpoints, play.geolocation, "prov")
+			_, err := ts.TxPairingStakeProvider(providerAddr, providerAcc.Vault.Addr.String(), ts.spec.Index, amount, play.endpoints, play.geolocation, "prov")
 			if play.success {
 				require.NoError(t, err)
 
@@ -753,7 +753,7 @@ func TestStakeProviderLimits(t *testing.T) {
 	for it, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			providerAcct, addr := ts.AddAccount(common.PROVIDER, it+1, tt.stake)
-			err := ts.StakeProviderExtra(addr, ts.spec, tt.stake, nil, 0, "")
+			err := ts.StakeProviderExtra(addr, providerAcct.Vault.Addr.String(), ts.spec, tt.stake, nil, 0, "")
 			if !tt.isStaked {
 				require.Error(t, err)
 				return
@@ -778,9 +778,9 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	ts.Keepers.Spec.SetSpec(ts.Ctx, ts.spec)
 	ts.AdvanceEpoch()
 
-	// stake minSelfDelegation+1 -> provider staked but frozen
-	providerAcc, provider := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
-	err := ts.StakeProviderExtra(provider, ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
+	// stake minSelfDelegation+1 -> operator staked but frozen
+	providerAcc, operator := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
+	err := ts.StakeProviderExtra(operator, providerAcc.Vault.Addr.String(), ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
 	require.NoError(t, err)
 	stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
 	require.True(t, found)
@@ -788,7 +788,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	require.Equal(t, minSelfDelegation.Amount.AddRaw(1), stakeEntry.EffectiveStake())
 
 	// try to unfreeze -> should fail
-	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
+	_, err = ts.TxPairingUnfreezeProvider(operator, ts.spec.Index)
 	require.Error(t, err)
 
 	// increase delegation limit of stake entry from 0 to MinStakeProvider + 100
@@ -801,7 +801,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	// add delegator and delegate to provider so its effective stake is MinStakeProvider+MinSelfDelegation+1
 	// provider should still be frozen
 	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.Index, ts.spec.MinStakeProvider)
+	_, err = ts.TxDualstakingDelegate(consumer, operator, ts.spec.Index, ts.spec.MinStakeProvider)
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegation
 	stakeEntry, found, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
@@ -810,7 +810,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	require.Equal(t, ts.spec.MinStakeProvider.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.EffectiveStake())
 
 	// try to unfreeze -> should succeed
-	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
+	_, err = ts.TxPairingUnfreezeProvider(operator, ts.spec.Index)
 	require.NoError(t, err)
 }
 

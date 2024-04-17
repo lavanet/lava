@@ -107,15 +107,15 @@ func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
 	ts.specs = append(ts.specs, ts.AddSpec(mockSpec2, spec2).Spec(mockSpec2))
 
 	// add two providers and stake them both on the two specs
-	_, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	_, provider2 := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err = ts.StakeProvider(provider, ts.specs[0], testStake)
+	pAcc, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	p2Acc, provider2 := ts.AddAccount(common.PROVIDER, 1, testBalance)
+	err = ts.StakeProvider(provider, pAcc.Vault.Addr.String(), ts.specs[0], testStake)
 	require.NoError(ts.T, err)
-	err = ts.StakeProvider(provider, ts.specs[1], testStake)
+	err = ts.StakeProvider(provider, pAcc.Vault.Addr.String(), ts.specs[1], testStake)
 	require.NoError(ts.T, err)
-	err = ts.StakeProvider(provider2, ts.specs[0], testStake)
+	err = ts.StakeProvider(provider2, p2Acc.Vault.Addr.String(), ts.specs[0], testStake)
 	require.NoError(ts.T, err)
-	err = ts.StakeProvider(provider2, ts.specs[1], testStake)
+	err = ts.StakeProvider(provider2, p2Acc.Vault.Addr.String(), ts.specs[1], testStake)
 	require.NoError(ts.T, err)
 
 	ts.AdvanceEpoch() // apply pairing
