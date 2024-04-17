@@ -103,9 +103,13 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		if err != nil {
 			return nil, fmt.Errorf("AccAddressFromHex %s provider: %w", print_st, err)
 		}
-		_, err = k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddress, epochStart)
+		stakeEntry, err := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddress, epochStart)
 		if err != nil {
 			return nil, fmt.Errorf("did not find a stake entry for %s provider %s on epoch %d, chainID %s error: %s", print_st, providerAddress, epochStart, chainID, err.Error())
+		}
+
+		if providerAddress.String() == stakeEntry.Vault {
+			return nil, fmt.Errorf("provider vault address should not be used in conflict. vault: %s, operator: %s, chainID: %s, epoch: %d", stakeEntry.Vault, stakeEntry.Operator, chainID, epochStart)
 		}
 		return providerAddress, nil
 	}

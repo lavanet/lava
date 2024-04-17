@@ -497,3 +497,39 @@ func TestNoDecisionVote(t *testing.T) {
 	LastEvent := events[len(events)-1]
 	require.Equal(t, utils.EventPrefix+conflicttypes.ConflictVoteUnresolvedEventName, LastEvent.Type)
 }
+
+// TestVaultOperatorConflictVote tests that conflicts are using the operator addresses
+// Scenarios:
+//  1. conflict are between operator addresses, voting can be done only by operators, punishment
+//     is done to operator address. Usage of vault addresses should fail the process
+func TestVaultOperatorConflictVote(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForConflict(2)
+
+	tests := []struct {
+		name  string
+		p1    sigs.Account
+		p2    sigs.Account
+		valid bool
+	}{
+		{"HappyFlow", ts.providers[0], ts.providers[1], true},
+		{"Provider0Vault", *ts.providers[0].Vault, ts.providers[1], false},
+		{"Provider1Vault", ts.providers[0], *ts.providers[1].Vault, false},
+		{"BothVault", *ts.providers[0].Vault, *ts.providers[1].Vault, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg, _, _, err := common.CreateMsgDetectionTest(ts.GoCtx, ts.consumer, tt.p1, tt.p2, ts.spec)
+			require.NoError(t, err)
+
+			_, err = ts.txConflictDetection(msg)
+			if tt.valid {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+			ts.AdvanceEpoch()
+		})
+	}
+}
