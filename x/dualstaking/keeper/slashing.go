@@ -14,7 +14,10 @@ func (k Keeper) HandleSlashedValidators(ctx sdk.Context, req abci.RequestBeginBl
 		switch tmEvidence.Type {
 		case abci.MisbehaviorType_DUPLICATE_VOTE, abci.MisbehaviorType_LIGHT_CLIENT_ATTACK:
 			evidence := evidenceTypes.FromABCIEvidence(tmEvidence)
-			k.BalanceValidatorsDelegators(ctx, evidence.(*evidenceTypes.Equivocation))
+			evidenceEq, ok := evidence.(*evidenceTypes.Equivocation)
+			if ok {
+				k.BalanceValidatorsDelegators(ctx, evidenceEq)
+			}
 
 		default:
 			k.Logger(ctx).Error(fmt.Sprintf("ignored unknown evidence type: %s", tmEvidence.Type))
