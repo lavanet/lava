@@ -325,6 +325,10 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	return returnedResult, nil
 }
 
+func (rpccs *RPCConsumerServer) getChainIdAndApiInterface() (string, string) {
+	return rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface
+}
+
 func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveHeaders map[string]string, chainMessage chainlib.ChainMessage, relayRequestData *pairingtypes.RelayPrivateData, dappID string, consumerIp string) (*RelayProcessor, error) {
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
@@ -340,6 +344,11 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 		}
 		utils.LavaFormatWarning("Failed retryFirstRelayAttempt, will retry.", err, utils.LogAttr("attempt", retryFirstRelayAttempt))
 	}
+
+	if err != nil {
+		return relayProcessor, err
+	}
+
 	// a channel to be notified processing was done, true means we have results and can return
 	gotResults := make(chan bool)
 	processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
@@ -384,14 +393,16 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			if success {
 				return relayProcessor, nil
 			}
-			err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
+			err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 			go validateReturnCondition(err)
 			go readResultsFromProcessor()
 		case <-startNewBatchTicker.C:
 			// only trigger another batch for non BestResult relays
 			if relayProcessor.selection != BestResult {
-				err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
+				err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 				go validateReturnCondition(err)
+				// add ticker launch metrics
+				go rpccs.rpcConsumerLogs.SetRelaySentByNewBatchTickerMetric(rpccs.getChainIdAndApiInterface())
 			}
 		case returnErr := <-returnCondition:
 			// we use this channel because there could be a race condition between us releasing the provider and about to send the return
@@ -443,7 +454,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	}
 
 	privKey := rpccs.privKey
-	chainID := rpccs.listenEndpoint.ChainID
+	chainId, apiInterface := rpccs.getChainIdAndApiInterface()
 	lavaChainID := rpccs.lavaChainID
 
 	// Get Session. we get session here so we can use the epoch in the callbacks
@@ -454,7 +465,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if rpccs.cache.CacheActive() { // use cache only if its defined.
 		if reqBlock != spectypes.NOT_APPLICABLE || !chainMessage.GetForceCacheRefresh() {
 			var cacheReply *pairingtypes.CacheRelayReply
-			hashKey, outputFormatter, err := chainlib.HashCacheRequest(relayRequestData, chainID)
+			hashKey, outputFormatter, err := chainlib.HashCacheRequest(relayRequestData, chainId)
 			if err != nil {
 				utils.LavaFormatError("sendRelayToProvider Failed getting Hash for cache request", err)
 			} else {
@@ -462,7 +473,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				cacheReply, cacheError = rpccs.cache.GetEntry(cacheCtx, &pairingtypes.RelayCacheGet{
 					RequestHash:    hashKey,
 					RequestedBlock: relayRequestData.RequestBlock,
-					ChainId:        chainID,
+					ChainId:        chainId,
 					BlockHash:      nil,
 					Finalized:      false,
 					SharedStateId:  sharedStateId,
@@ -534,6 +545,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	for providerPublicAddress, sessionInfo := range sessions {
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
+			// add ticker launch metrics
 			localRelayResult := &common.RelayResult{
 				ProviderInfo: common.ProviderInfo{ProviderAddress: providerPublicAddress, ProviderStake: sessionInfo.StakeSize, ProviderQoSExcellenceSummery: sessionInfo.QoSSummeryResult},
 				Finalized:    false,
@@ -549,6 +561,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			if found {
 				goroutineCtx = utils.WithUniqueIdentifier(goroutineCtx, guid)
 			}
+
 			defer func() {
 				// Return response
 				relayProcessor.SetResponse(&relayResponse{
@@ -567,13 +580,17 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			epoch := sessionInfo.Epoch
 			reportedProviders := sessionInfo.ReportedProviders
 
-			relayRequest, errResponse := lavaprotocol.ConstructRelayRequest(goroutineCtx, privKey, lavaChainID, chainID, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
+			relayRequest, errResponse := lavaprotocol.ConstructRelayRequest(goroutineCtx, privKey, lavaChainID, chainId, &localRelayRequestData, providerPublicAddress, singleConsumerSession, int64(epoch), reportedProviders)
 			if errResponse != nil {
 				utils.LavaFormatError("Failed ConstructRelayRequest", errResponse, utils.LogAttr("Request data", localRelayRequestData))
 				return
 			}
 			localRelayResult.Request = relayRequest
 			endpointClient := *singleConsumerSession.Endpoint.Client
+
+			// add metrics (send and receive)
+			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(chainId, apiInterface)
+			defer func() { go rpccs.rpcConsumerLogs.SetRelayReturnedFromProviderMetric(chainId, apiInterface) }()
 
 			if isSubscription {
 				errResponse = rpccs.relaySubscriptionInner(goroutineCtx, endpointClient, singleConsumerSession, localRelayResult)
@@ -585,7 +602,21 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 			// unique per dappId and ip
 			consumerToken := common.GetUniqueToken(dappID, consumerIp)
-			processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
+			processingTimeout, expectedRelayTimeoutForQOS := rpccs.getProcessingTimeout(chainMessage)
+			deadline, ok := ctx.Deadline()
+			if ok { // we have ctx deadline. we cant go past it.
+				processingTimeout = time.Until(deadline)
+				if processingTimeout <= 0 {
+					// no need to send we are out of time
+					utils.LavaFormatWarning("Creating context deadline for relay attempt ran out of time, processingTimeout <= 0 ", nil, utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("Request data", localRelayRequestData))
+					return
+				}
+				// to prevent absurdly short context timeout set the shortest timeout to be the expected latency for qos time.
+				if processingTimeout < expectedRelayTimeoutForQOS {
+					processingTimeout = expectedRelayTimeoutForQOS
+				}
+			}
+			// send relay
 			relayLatency, errResponse, backoff := rpccs.relayInner(goroutineCtx, singleConsumerSession, localRelayResult, processingTimeout, chainMessage, consumerToken)
 			if errResponse != nil {
 				failRelaySession := func(origErr error, backoff_ bool) {
@@ -632,7 +663,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				)
 			}
 
-			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(chainMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(relayTimeout), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
+			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(chainMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
 				// copy reply data so if it changes it doesn't panic mid async send
@@ -642,7 +673,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 				requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
 				seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
-				hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainID) // get the hash (this changes the data)
+				hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
 
 				go func() {
 					// deal with copying error.
@@ -665,7 +696,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 						RequestHash:      hashKey,
-						ChainId:          chainID,
+						ChainId:          chainId,
 						RequestedBlock:   requestedBlock,
 						SeenBlock:        seenBlock,
 						BlockHash:        nil, // consumer cache doesn't care about block hashes
