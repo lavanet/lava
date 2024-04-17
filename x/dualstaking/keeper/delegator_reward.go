@@ -172,7 +172,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
 	block := uint64(ctx.BlockHeight())
 	zeroCoins := sdk.NewCoins()
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
@@ -181,12 +181,12 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 			utils.Attribute{Key: "block", Value: block},
 		)
 	}
-	stakeEntry, err := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddr, epoch)
-	if err != nil {
+	stakeEntry, found := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, provider, epoch)
+	if !found {
 		return zeroCoins, zeroCoins, err
 	}
 
-	delegations, err := k.GetProviderDelegators(ctx, providerAddr.String(), epoch)
+	delegations, err := k.GetProviderDelegators(ctx, provider, epoch)
 	if err != nil {
 		return zeroCoins, zeroCoins, utils.LavaFormatError("cannot get provider's delegators", err)
 	}
@@ -212,13 +212,13 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.A
 			return d.ChainID == chainID && d.IsFirstMonthPassed(ctx.BlockTime().UTC().Unix()) && d.Delegator != d.Provider
 		})
 
-	providerReward, delegatorsReward := k.CalcRewards(ctx, *stakeEntry, claimableRewards, relevantDelegations)
+	providerReward, delegatorsReward := k.CalcRewards(ctx, stakeEntry, claimableRewards, relevantDelegations)
 
 	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
 	fullProviderReward := providerReward.Add(leftoverRewards...)
 
 	if !calcOnlyProvider {
-		k.rewardDelegator(ctx, types.Delegation{Provider: providerAddr.String(), ChainID: chainID, Delegator: providerAddr.String()}, fullProviderReward, senderModule)
+		k.rewardDelegator(ctx, types.Delegation{Provider: provider, ChainID: chainID, Delegator: provider}, fullProviderReward, senderModule)
 	}
 
 	return fullProviderReward, claimableRewards, nil
