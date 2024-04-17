@@ -3,7 +3,6 @@ package keeper
 import (
 	"fmt"
 
-	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -63,43 +62,9 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 		return nil
 	}
 
-	var diff math.Int
 	var err error
-	diff, providers, err = h.k.VerifyDelegatorBalance(ctx, delAddr)
-	if err != nil {
-		return err
-	}
-
-	// if diff is zero, do nothing, this is a redelegate
-	if diff.IsZero() {
-		return nil
-	} else if diff.IsPositive() {
-		// less provider delegations,a delegation operation was done, delegate to empty provider
-		err = h.k.delegate(ctx, delAddr.String(), types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID,
-			sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), diff))
-		if err != nil {
-			return err
-		}
-	} else if diff.IsNegative() {
-		// more provider delegation, unbond operation was done, unbond from providers
-		err = h.k.UnbondUniformProviders(ctx, delAddr.String(), sdk.NewCoin(h.k.stakingKeeper.BondDenom(ctx), diff.Neg()))
-		if err != nil {
-			return err
-		}
-	}
-
-	diff, _, err = h.k.VerifyDelegatorBalance(ctx, delAddr)
-	if err != nil {
-		return err
-	}
-	// now it needs to be zero
-	if !diff.IsZero() {
-		return utils.LavaFormatError("validator and provider balances are not balanced", nil,
-			utils.Attribute{Key: "delegator", Value: delAddr.String()},
-			utils.Attribute{Key: "diff", Value: diff.String()},
-		)
-	}
-	return nil
+	providers, err = h.k.BalanceDelegator(ctx, delAddr)
+	return err
 }
 
 func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, fraction sdk.Dec) error {
