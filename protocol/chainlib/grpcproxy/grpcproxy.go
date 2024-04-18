@@ -16,6 +16,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const MaxCallRecvMsgSize = 1024 * 1024 * 32
+
 type ProxyCallBack = func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error)
 
 type HealthReporter interface {
@@ -23,7 +25,8 @@ type HealthReporter interface {
 }
 
 func NewGRPCProxy(cb ProxyCallBack, healthCheckPath string, cmdFlags common.ConsumerCmdFlags, healthReporter HealthReporter) (*grpc.Server, *http.Server, error) {
-	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(RawBytesCodec{}))
+	serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(MaxCallRecvMsgSize) // setting receive size to 32mb instead of 4mb default
+	s := grpc.NewServer(grpc.UnknownServiceHandler(makeProxyFunc(cb)), grpc.ForceServerCodec(RawBytesCodec{}), serverReceiveMaxMessageSize)
 	wrappedServer := grpcweb.WrapServer(s)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
