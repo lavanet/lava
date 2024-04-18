@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
@@ -389,37 +390,72 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 	// i is days
 	// j are blocks in that day
 	// starting from current day and going backwards
-	totalTxPerDay := map[int64]int{}
+	var wg sync.WaitGroup
+	totalTxPerDay := sync.Map{}
+
+	// Process each day from the earliest to the latest
 	for i := int64(1); i <= numberOfDays; i++ {
-		utils.LavaFormatInfo("Parsing day", utils.LogAttr("Day", i), utils.LogAttr("starting block", latestHeight-(numberOfBlocksInADay*i)), utils.LogAttr("ending block", latestHeight-(numberOfBlocksInADay*(i-1))))
-		for j := latestHeight - (numberOfBlocksInADay * i); j < latestHeight-(numberOfBlocksInADay*(i-1)); j++ {
-			ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
-			blockResults, err := tmClient.BlockResults(ctxWithTimeout, &j)
-			cancel()
-			if err != nil {
-				utils.LavaFormatError("invalid blockResults status", err)
-				continue
+		startBlock := latestHeight - (numberOfBlocksInADay * numberOfDays) + (numberOfBlocksInADay * (i - 1)) + 1
+		endBlock := latestHeight - (numberOfBlocksInADay * numberOfDays) + (numberOfBlocksInADay * i)
+
+		utils.LavaFormatInfo("Parsing day", utils.LogAttr("Day", i), utils.LogAttr("starting block", startBlock), utils.LogAttr("ending block", endBlock))
+
+		// Process blocks in batches of 20
+		for j := startBlock; j < endBlock; j += 20 {
+			// Calculate the end of the batch
+			end := j + 20
+			if end > endBlock {
+				end = endBlock
 			}
-			transactionResults := blockResults.TxsResults
-			utils.LavaFormatInfo("Number of tx for block", utils.LogAttr("block_number", j), utils.LogAttr("number_of_tx", len(transactionResults)))
-			if _, ok := totalTxPerDay[i]; ok {
-				newLength := totalTxPerDay[i] + len(transactionResults)
-				totalTxPerDay[i] = newLength
-			} else {
-				totalTxPerDay[i] = len(transactionResults)
+
+			// Determine how many routines to start (could be less than 20 near the end of the loop)
+			count := (end - j)
+
+			// Add the count of goroutines to be waited on
+			wg.Add(int(count))
+
+			// Launch goroutines for each block in the current batch
+			for k := j; k < end; k++ {
+				go func(k int64) {
+					defer wg.Done()
+					ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+					defer cancel()
+					blockResults, err := tmClient.BlockResults(ctxWithTimeout, &k)
+					if err != nil {
+						utils.LavaFormatError("invalid blockResults status", err)
+						return
+					}
+					transactionResults := blockResults.TxsResults
+					utils.LavaFormatInfo("Number of tx for block", utils.LogAttr("_routine", end-k), utils.LogAttr("block_number", k), utils.LogAttr("number_of_tx", len(transactionResults)))
+					// Update totalTxPerDay safely
+					actual, _ := totalTxPerDay.LoadOrStore(i, len(transactionResults))
+					if actual != nil {
+						totalTxPerDay.Store(i, actual.(int)+len(transactionResults))
+					}
+				}(k)
 			}
+
+			// Wait for all goroutines of the current batch to complete
+			utils.LavaFormatInfo("Waiting routine batch to finish", utils.LogAttr("block_from", j), utils.LogAttr("block_to", end))
+			wg.Wait()
 		}
 	}
-	utils.LavaFormatInfo("transactions per day results", utils.LogAttr("totalTxPerDay", totalTxPerDay))
 
-	// Create a map to hold the JSON data
+	// Log the transactions per day results
+	totalTxPerDay.Range(func(key, value interface{}) bool {
+		utils.LavaFormatInfo("transactions per day results", utils.LogAttr("Day", key), utils.LogAttr("totalTx", value))
+		return true // continue iteration
+	})
+
+	// Prepare the JSON data
 	jsonData := make(map[string]int)
-	for key, value := range totalTxPerDay {
-		// Calculate the date for each key
-		date := time.Now().AddDate(0, 0, -int(key)+1).Format("2006-01-02")
+	totalTxPerDay.Range(func(key, value interface{}) bool {
+		day := key.(int64)
+		date := time.Now().AddDate(0, 0, -int(day)+1).Format("2006-01-02")
 		dateKey := fmt.Sprintf("date_%s", date)
-		jsonData[dateKey] = value
-	}
+		jsonData[dateKey] = value.(int)
+		return true
+	})
 
 	// Convert the JSON data to JSON format
 	jsonBytes, err := json.MarshalIndent(jsonData, "", "    ")
@@ -446,5 +482,5 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 	utils.LavaFormatInfo("JSON data has been written to:" + fileName)
 	return nil
 
-	// http://testnet2-rpc.lavapro.xyz/
+	// "https://testnet2-rpc.lavapro.xyz:443/"
 }
