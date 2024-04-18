@@ -445,6 +445,51 @@ func TestRelayPaymentQoS(t *testing.T) {
 	}
 }
 
+// TestVaultOperatorRelayPayment tests that relay payment is sent by the operator and not vault
+// Scenarios:
+// 1. only operator (not vault) should send relay payments
+func TestVaultOperatorRelayPayment(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+
+	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcc, operator := ts.GetAccount(common.PROVIDER, 0)
+	vault := providerAcc.Vault.Addr.String()
+	qos := &types.QualityOfServiceReport{
+		Latency:      sdk.OneDec(),
+		Availability: sdk.OneDec(),
+		Sync:         sdk.OneDec(),
+	}
+
+	tests := []struct {
+		name            string
+		creator         string
+		providerInRelay string
+		valid           bool
+	}{
+		{"creator=operator, providerInRelay=operator", operator, operator, true},
+		{"creator=vault, providerInRelay=operator", vault, operator, false},
+		{"creator=operator, providerInRelay=vault", operator, vault, false},
+		{"creator=vault, providerInRelay=vault", vault, vault, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			relaySession := ts.newRelaySession(tt.providerInRelay, 0, 100, ts.BlockHeight(), 0)
+			relaySession.QosReport = qos
+			sig, err := sigs.Sign(clientAcc.SK, *relaySession)
+			require.NoError(t, err)
+			relaySession.Sig = sig
+
+			payment := types.MsgRelayPayment{
+				Creator: tt.creator,
+				Relays:  lavaslices.Slice(relaySession),
+			}
+			ts.relayPaymentWithoutPay(payment, tt.valid)
+		})
+	}
+}
+
 func TestEpochPaymentDeletion(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(2, 1, 0) // 1 provider, 1 client, default providers-to-pair
