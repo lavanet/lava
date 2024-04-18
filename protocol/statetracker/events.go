@@ -430,7 +430,12 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 					// Update totalTxPerDay safely
 					actual, _ := totalTxPerDay.LoadOrStore(i, len(transactionResults))
 					if actual != nil {
-						totalTxPerDay.Store(i, actual.(int)+len(transactionResults))
+						val, ok := actual.(int)
+						if !ok {
+							utils.LavaFormatError("Failed converting int", nil)
+							return
+						}
+						totalTxPerDay.Store(i, val+len(transactionResults))
 					}
 				}(k)
 			}
@@ -450,10 +455,15 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 	// Prepare the JSON data
 	jsonData := make(map[string]int)
 	totalTxPerDay.Range(func(key, value interface{}) bool {
-		day := key.(int64)
-		date := time.Now().AddDate(0, 0, -int(day)+1).Format("2006-01-02")
-		dateKey := fmt.Sprintf("date_%s", date)
-		jsonData[dateKey] = value.(int)
+		day, ok := key.(int64)
+		if ok {
+			date := time.Now().AddDate(0, 0, -int(day)+1).Format("2006-01-02")
+			dateKey := fmt.Sprintf("date_%s", date)
+			val, ok2 := value.(int)
+			if ok2 {
+				jsonData[dateKey] = val
+			}
+		}
 		return true
 	})
 
