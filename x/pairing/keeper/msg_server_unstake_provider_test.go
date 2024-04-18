@@ -39,3 +39,36 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, operator)
 	require.False(t, found)
 }
+
+// TestVaultOperatorUnstake tests that only the vault address can unstake.
+// Scenarios:
+// 1. unstake with vault -> should work
+// 2. try with operator -> should fail
+func TestVaultOperatorUnstake(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 0, 0)
+
+	acc, _ := ts.GetAccount(common.PROVIDER, 0)
+	operator := acc.Addr.String()
+	vault := acc.Vault.Addr.String()
+
+	tests := []struct {
+		name    string
+		creator string
+		valid   bool
+	}{
+		{"operator unstakes", operator, false},
+		{"vault unstakes", vault, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ts.TxPairingUnstakeProvider(tt.creator, ts.spec.Index)
+			if tt.valid {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}

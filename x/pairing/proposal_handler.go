@@ -52,15 +52,6 @@ func handleUnstakeProposal(ctx sdk.Context, k keeper.Keeper, p *types.UnstakePro
 				continue
 			}
 
-			if providerUnstakeInfo.Provider != stakeEntry.Operator {
-				providersNotStaked = append(providersNotStaked, strings.Join([]string{
-					providerUnstakeInfo.Provider,
-					chainID,
-					"unstake proposal should contain the provider's operator address",
-				}, ","))
-				continue
-			}
-
 			err = k.UnstakeEntryForce(ctx, stakeEntry.Chain, stakeEntry.Operator, "unstaked via gov proposal")
 			if err != nil {
 				providersFailedUnstaking = append(providersFailedUnstaking, strings.Join([]string{
