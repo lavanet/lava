@@ -5,9 +5,11 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/client/cli"
+	"github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -862,4 +864,276 @@ func TestCommisionChange(t *testing.T) {
 
 	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 68, 100, provider)
 	require.Error(t, err)
+}
+
+// TestVaultOperatorNewStakeEntry tests that staking (or "self delegation") is actually the provider's vault
+// delegating to the provider's operator address.
+// For each scenario, we'll check the vault's balance, the stake entry's stake/delegate total fields and the delegations
+// fixation store.
+// Scenarios:
+// 1. stake new entry with operator = vault
+// 2. stake new entry with different addresses for operator and vault
+// 3. stake new entry with operator -> should fail since operator is already registered to a stake entry
+// 4. stake new entry with operator on different chain -> should work
+// 5. stake to an existing entry with vault -> should succeed
+// 6. stake to an existing entry with operator -> should fail
+func TestVaultOperatorNewStakeEntry(t *testing.T) {
+	ts := newTester(t)
+
+	p1Acc, _ := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	p2Acc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
+
+	spec1 := ts.spec
+	spec1.Index = "spec1"
+	ts.AddSpec("spec1", spec1)
+
+	tests := []struct {
+		name     string
+		vault    sdk.AccAddress
+		operator sdk.AccAddress
+		spec     spectypes.Spec
+		valid    bool
+	}{
+		{"stake operator = vault", p1Acc.Addr, p1Acc.Addr, ts.spec, true},
+		{"stake operator != vault", p2Acc.Vault.Addr, p2Acc.Addr, ts.spec, true},
+		{"stake existing operator", p1Acc.Vault.Addr, p1Acc.Addr, ts.spec, false},
+		{"stake existing operator different chain", p1Acc.Vault.Addr, p1Acc.Addr, spec1, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			beforeVault := ts.GetBalance(tt.vault)
+			beforeOperator := ts.GetBalance(tt.operator)
+			err := ts.StakeProviderExtra(tt.operator.String(), tt.vault.String(), tt.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+			afterVault := ts.GetBalance(tt.vault)
+			afterOperator := ts.GetBalance(tt.operator)
+
+			ts.AdvanceEpoch()
+
+			if !tt.valid {
+				require.Error(t, err)
+
+				// balance
+				require.Equal(t, beforeVault, afterVault)
+				require.Equal(t, beforeOperator, afterOperator)
+
+				// stake entry
+				_, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.operator.String())
+				require.True(t, found) // should be found because operator is registered in a vaild stake entry
+
+				// delegations
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				require.NoError(t, err)
+				require.Len(t, res.Delegations, 0)
+			} else {
+				require.NoError(t, err)
+
+				// balance
+				require.Equal(t, beforeVault-testStake, afterVault)
+				if !tt.operator.Equals(tt.vault) {
+					require.Equal(t, beforeOperator, afterOperator)
+				} else {
+					require.Equal(t, beforeOperator-testStake, afterOperator)
+				}
+
+				// stake entry
+				stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.operator.String())
+				require.True(t, found)
+				require.Equal(t, testStake, stakeEntry.Stake.Amount.Int64())
+				require.Equal(t, int64(0), stakeEntry.DelegateTotal.Amount.Int64())
+
+				// delegations
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				require.NoError(t, err)
+				require.Len(t, res.Delegations, 1)
+				require.Equal(t, tt.operator.String(), res.Delegations[0].Provider)
+				require.Equal(t, testStake, res.Delegations[0].Amount.Amount.Int64())
+			}
+		})
+	}
+}
+
+// TestVaultOperatorExistingStakeEntry tests that staking (or "self delegation") to an existing stake entry
+// only works when the creator is the vault and not the operator.
+// For each scenario, we'll check the vault's balance, the stake entry's stake/delegate total fields and the delegations
+// fixation store.
+// Scenarios:
+// 1. stake with vault to an existing stake entry -> should work
+// 2. try with operator -> should fail
+func TestVaultOperatorExistingStakeEntry(t *testing.T) {
+	ts := newTester(t)
+
+	p1Acc, _ := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	err := ts.StakeProviderExtra(p1Acc.Addr.String(), p1Acc.Vault.Addr.String(), ts.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name     string
+		vault    sdk.AccAddress
+		operator sdk.AccAddress
+		spec     spectypes.Spec
+		valid    bool
+	}{
+		{"stake with vault", p1Acc.Vault.Addr, p1Acc.Addr, ts.spec, true},
+		{"stake with operator", p1Acc.Addr, p1Acc.Addr, ts.spec, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			beforeVault := ts.GetBalance(tt.vault)
+			beforeOperator := ts.GetBalance(tt.operator)
+			err := ts.StakeProviderExtra(tt.operator.String(), tt.vault.String(), tt.spec, testStake+100, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+			afterVault := ts.GetBalance(tt.vault)
+			afterOperator := ts.GetBalance(tt.operator)
+
+			ts.AdvanceEpoch()
+
+			if !tt.valid {
+				require.Error(t, err)
+
+				// balance
+				require.Equal(t, beforeVault, afterVault)
+				require.Equal(t, beforeOperator, afterOperator)
+
+				// stake entry
+				_, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.operator.String())
+				require.True(t, found) // should be found because operator is registered in a vaild stake entry
+
+				// delegations
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				require.NoError(t, err)
+				require.Len(t, res.Delegations, 0)
+			} else {
+				require.NoError(t, err)
+
+				// balance
+				require.Equal(t, beforeVault-100, afterVault)
+				if !tt.operator.Equals(tt.vault) {
+					require.Equal(t, beforeOperator, afterOperator)
+				} else {
+					require.Equal(t, beforeOperator-100, afterOperator)
+				}
+
+				// stake entry
+				stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.operator.String())
+				require.True(t, found)
+				require.Equal(t, testStake+100, stakeEntry.Stake.Amount.Int64())
+				require.Equal(t, int64(0), stakeEntry.DelegateTotal.Amount.Int64())
+
+				// delegations
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				require.NoError(t, err)
+				require.Len(t, res.Delegations, 1)
+				require.Equal(t, tt.operator.String(), res.Delegations[0].Provider)
+				require.Equal(t, testStake+100, res.Delegations[0].Amount.Amount.Int64())
+			}
+		})
+	}
+}
+
+// TestVaultOperatorModifyStakeEntry tests that the operator can change non-stake related properties of the stake entry
+// and the vault address can change anything
+// Scenarios:
+// 1. operator modifies all non-stake related properties -> should work
+// 2. operator modifies all stake related properties -> should fail
+// 3. vault can change anything in the stake entry
+func TestVaultOperatorModifyStakeEntry(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 0)
+	acc, _ := ts.GetAccount(common.PROVIDER, 0)
+	_, dummy := ts.GetAccount(common.CONSUMER, 0)
+
+	operator := acc.Addr.String()
+	vault := acc.Vault.Addr.String()
+	valAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
+
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, acc.Addr.String())
+	require.True(t, found)
+
+	// consts for stake entry changes
+	var (
+		STAKE                 = 1
+		ENDPOINTS_GEOLOCATION = 2
+		MONIKER               = 3
+		DELEGATE_LIMIT        = 4
+		DELEGATE_COMISSION    = 5
+		OPERATOR              = 6
+	)
+
+	tests := []struct {
+		name        string
+		creator     string
+		stakeChange int
+		valid       bool
+	}{
+		// vault can change anything
+		{"stake change vault", vault, STAKE, true},
+		{"endpoints_geo change vault", vault, ENDPOINTS_GEOLOCATION, true},
+		{"moniker change vault", vault, MONIKER, true},
+		{"delegate total change vault", vault, DELEGATE_LIMIT, true},
+		{"delegate commission change vault", vault, DELEGATE_COMISSION, true},
+		{"operator change vault", vault, OPERATOR, true},
+
+		// operator can't change stake/delegation related properties
+		{"stake change operator", operator, STAKE, false},
+		{"endpoints_geo change operator", operator, ENDPOINTS_GEOLOCATION, true},
+		{"moniker change operator", operator, MONIKER, true},
+		{"delegate total change operator", operator, DELEGATE_LIMIT, false},
+		{"delegate commission change operator", operator, DELEGATE_COMISSION, false},
+		{"operator change operator", operator, OPERATOR, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg := types.MsgStakeProvider{
+				Creator:            tt.creator,
+				Validator:          sdk.ValAddress(valAcc.Addr).String(),
+				ChainID:            stakeEntry.Chain,
+				Amount:             stakeEntry.Stake,
+				Geolocation:        stakeEntry.Geolocation,
+				Endpoints:          stakeEntry.Endpoints,
+				Moniker:            stakeEntry.Moniker,
+				DelegateLimit:      stakeEntry.DelegateLimit,
+				DelegateCommission: stakeEntry.DelegateCommission,
+				Operator:           stakeEntry.Operator,
+			}
+
+			switch tt.stakeChange {
+			case STAKE:
+				msg.Amount = msg.Amount.AddAmount(math.NewInt(100))
+			case ENDPOINTS_GEOLOCATION:
+				msg.Endpoints = []epochstoragetypes.Endpoint{{Geolocation: 2}}
+				msg.Geolocation = 2
+			case MONIKER:
+				msg.Moniker = "test2"
+			case DELEGATE_LIMIT:
+				msg.DelegateLimit = msg.DelegateLimit.AddAmount(math.NewInt(100))
+			case DELEGATE_COMISSION:
+				msg.DelegateCommission = msg.DelegateCommission - 10
+			case OPERATOR:
+				operator = dummy
+			}
+
+			_, err := ts.TxPairingStakeProviderFull(
+				msg.Creator,
+				msg.ChainID,
+				msg.Amount,
+				msg.Endpoints,
+				msg.Geolocation,
+				msg.Moniker,
+				msg.DelegateCommission,
+				msg.DelegateLimit.Amount.Uint64(),
+				msg.Operator,
+			)
+			if tt.valid {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+
+			// reset stake entry
+			ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry)
+			ts.AdvanceEpoch()
+		})
+	}
 }

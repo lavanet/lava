@@ -106,9 +106,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		// an operator can be the same as the vault, so we verify it's not the case
 		if isOperator && !isVault {
 			if delegationCommission != existingEntry.DelegateCommission ||
-				delegationLimit != existingEntry.DelegateLimit ||
-				!amount.Amount.Equal(existingEntry.Stake.Amount) {
-				return utils.LavaFormatWarning("operator cannnot change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
+				!delegationLimit.Equal(existingEntry.DelegateLimit) ||
+				!amount.Equal(existingEntry.Stake) {
+				return utils.LavaFormatWarning("operator cannot change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
 					utils.LogAttr("creator", creator),
 					utils.LogAttr("vault", existingEntry.Vault),
 					utils.LogAttr("operator", operator),
@@ -201,6 +201,16 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		return nil
 	}
 
+	// check that the configured operator is not used by another vault
+	operatorStakeEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, operator)
+	if entryExists {
+		return utils.LavaFormatWarning("configured operator exists", fmt.Errorf("new provider not staked"),
+			utils.LogAttr("operator", operator),
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("existing_vault", operatorStakeEntry.Vault),
+		)
+	}
+
 	// entry isn't staked so add him
 	details := []utils.Attribute{
 		{Key: "spec", Value: specChainID},
@@ -229,8 +239,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	for _, d := range delegations {
-		if d.Delegator == creator && d.Provider == operator {
-			// ignore provider self delegation (delegator = vault, provider = operator)
+		if (d.Delegator == creator && d.Provider == operator) || d.ChainID != chainID {
+			// ignore provider self delegation (delegator = vault, provider = operator) or delegations from other chains
 			continue
 		}
 		delegateTotal = delegateTotal.Add(d.Amount.Amount)
