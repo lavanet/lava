@@ -90,7 +90,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		return fmt.Errorf("conflict data 1: %s", err)
 	}
 	// 3. validate providers signatures and stakeEntry for that epoch
-	providerAddressFromRelayReplyAndVerifyStakeEntry := func(requestData *pairingtypes.RelayPrivateData, reply *types.ReplyMetadata, first bool) (providerAddress sdk.AccAddress, err error) {
+	providerAddressFromRelayReplyAndVerifyStakeEntry := func(reply *types.ReplyMetadata, first bool) (providerAddress sdk.AccAddress, err error) {
 		print_st := "first"
 		if !first {
 			print_st = "second"
@@ -103,9 +103,9 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		if err != nil {
 			return nil, fmt.Errorf("AccAddressFromHex %s provider: %w", print_st, err)
 		}
-		stakeEntry, err := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddress, epochStart)
-		if err != nil {
-			return nil, fmt.Errorf("did not find a stake entry for %s provider %s on epoch %d, chainID %s error: %s", print_st, providerAddress, epochStart, chainID, err.Error())
+		stakeEntry, found := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, providerAddress.String(), epochStart)
+		if !found {
+			return nil, fmt.Errorf("did not find a stake entry for %s provider %s on epoch %d, chainID %s", print_st, providerAddress, epochStart, chainID)
 		}
 
 		if providerAddress.String() == stakeEntry.Vault {
@@ -113,11 +113,11 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		}
 		return providerAddress, nil
 	}
-	providerAccAddress0, err := providerAddressFromRelayReplyAndVerifyStakeEntry(conflictData.ConflictRelayData0.Request.RelayData, conflictData.ConflictRelayData0.Reply, true)
+	providerAccAddress0, err := providerAddressFromRelayReplyAndVerifyStakeEntry(conflictData.ConflictRelayData0.Reply, true)
 	if err != nil {
 		return err
 	}
-	providerAccAddress1, err := providerAddressFromRelayReplyAndVerifyStakeEntry(conflictData.ConflictRelayData1.Request.RelayData, conflictData.ConflictRelayData1.Reply, false)
+	providerAccAddress1, err := providerAddressFromRelayReplyAndVerifyStakeEntry(conflictData.ConflictRelayData1.Reply, false)
 	if err != nil {
 		return err
 	}

@@ -145,16 +145,16 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 	ts.setupForPayments(providersCount, clientsCount, providersCount) // set providers-to-pair
 	clients := ts.Accounts(common.CONSUMER)
 
-	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
-	provider2Acct, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
+	_, provider1 := ts.GetAccount(common.PROVIDER, 0)
+	_, provider2 := ts.GetAccount(common.PROVIDER, 1)
 
-	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider2Addr}}
+	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider2}}
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 
 	var relays []*types.RelaySession
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
-		relaySession := ts.newRelaySession(provider1Addr, 0, cuSum, ts.BlockHeight(), 0)
+		relaySession := ts.newRelaySession(provider1, 0, cuSum, ts.BlockHeight(), 0)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData // create the complaint
 		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
@@ -162,13 +162,13 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 		relays = append(relays, relaySession)
 	}
 
-	_, err := ts.TxPairingRelayPayment(provider1Addr, relays...)
+	_, err := ts.TxPairingRelayPayment(provider1, relays...)
 	require.NoError(t, err)
 
 	// test that the provider was not unstaked
-	_, unStakeStoragefound, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider2Acct.Addr)
+	_, unStakeStoragefound := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider2)
 	require.False(t, unStakeStoragefound)
-	_, stakeStorageFound, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider2Acct.Addr)
+	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider2)
 	require.True(t, stakeStorageFound)
 }
 
@@ -238,27 +238,27 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 	ts.setupForPayments(providersCount, clientsCount, providersCount) // set providers-to-pair
 	clients := ts.Accounts(common.CONSUMER)
 
-	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
-	provider2Acct, provider2Addr := ts.GetAccount(common.PROVIDER, 1)
+	_, provider1 := ts.GetAccount(common.PROVIDER, 0)
+	_, provider2 := ts.GetAccount(common.PROVIDER, 1)
 
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 
 	for i := 0; i < 2; i++ {
-		relaySession := ts.newRelaySession(provider2Addr, 0, cuSum, ts.BlockHeight(), 0)
+		relaySession := ts.newRelaySession(provider2, 0, cuSum, ts.BlockHeight(), 0)
 		sig, err := sigs.Sign(clients[i].SK, *relaySession)
 		relaySession.Sig = sig
 		require.NoError(t, err)
-		_, err = ts.TxPairingRelayPayment(provider2Addr, relaySession)
+		_, err = ts.TxPairingRelayPayment(provider2, relaySession)
 		require.NoError(t, err)
 
 		ts.AdvanceEpoch() // after payment move one epoch
 	}
 
-	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider2Addr}}
+	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider2}}
 
 	var relays []*types.RelaySession
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
-		relaySession := ts.newRelaySession(provider1Addr, 0, cuSum, ts.BlockHeight(), 0)
+		relaySession := ts.newRelaySession(provider1, 0, cuSum, ts.BlockHeight(), 0)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData
 		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
@@ -266,13 +266,13 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 		relays = append(relays, relaySession)
 	}
 
-	_, err := ts.TxPairingRelayPayment(provider1Addr, relays...)
+	_, err := ts.TxPairingRelayPayment(provider1, relays...)
 	require.NoError(t, err)
 
 	// test that the provider was not unstaked.
-	_, unStakeStoragefound, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider2Acct.Addr)
+	_, unStakeStoragefound := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider2)
 	require.False(t, unStakeStoragefound)
-	_, stakeStorageFound, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider2Acct.Addr)
+	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider2)
 	require.True(t, stakeStorageFound)
 }
 

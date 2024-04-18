@@ -123,8 +123,8 @@ func TestReDelegateToProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	epoch := ts.EpochStart()
-	entry, err := ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, acc.Addr, epoch)
-	require.NoError(t, err)
+	entry, found := ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, operator, epoch)
+	require.True(t, found)
 	require.Equal(t, amount, entry.Stake.Amount)
 
 	providersRes, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
@@ -154,8 +154,8 @@ func TestReDelegateToProvider(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	epoch = ts.EpochStart()
-	entry, err = ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, acc.Addr, epoch)
-	require.NoError(t, err)
+	entry, found = ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, acc.Addr.String(), epoch)
+	require.True(t, found)
 	require.Equal(t, amount, entry.DelegateTotal.Amount)
 	require.Equal(t, amount, entry.Stake.Amount)
 }
@@ -416,12 +416,12 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	for _, d := range res.Delegations {
 		totalDelegations = totalDelegations.Add(d.Amount.Amount)
 	}
-	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(consensusPowerTokens.MulRaw(245)).TruncateInt(), totalDelegations)
+	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(consensusPowerTokens.MulRaw(245)).RoundInt(), totalDelegations)
 
 	// verify once again that the delegator's delegations balance is preserved
 	diff, _, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
 	require.NoError(t, err)
-	require.Equal(t, sdk.OneInt(), diff)
+	require.True(t, diff.IsZero())
 }
 
 // TestCancelUnbond checks that the providers-validators delegations balance is preserved when
@@ -582,7 +582,7 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 	require.Error(t, err)
 
 	// checking that provider is not found
-	_, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	_, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.False(t, found)
 
 	_, err = ts.QueryDualstakingProviderDelegators(provider, true)
@@ -652,18 +652,18 @@ func TestUndelegateProvider(t *testing.T) {
 
 	ts.AdvanceBlocks(unstakeHoldBlocks)
 
-	_, found, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Vault.Addr)
+	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Vault.Addr.String())
 	require.True(t, found)
 
 	ts.AdvanceBlocks(unstakeHoldBlocksStatic - unstakeHoldBlocks)
 
 	// checking that provider can't be found
-	_, found, _ = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Vault.Addr)
+	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Vault.Addr.String())
 	require.False(t, found)
 
 	ts.AdvanceEpoch()
 
-	_, found, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	_, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.False(t, found)
 
 	// delegation of the removed provider
@@ -676,7 +676,7 @@ func TestUndelegateProvider(t *testing.T) {
 	err = ts.StakeProvider(providerAcct.Addr.String(), providerAcct.Vault.Addr.String(), ts.spec, sdk.NewIntFromUint64(1000).Int64())
 	require.NoError(t, err)
 
-	stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	fmt.Println("Stake entry of re-staked provider", stakeEntry.String())
 
@@ -689,7 +689,7 @@ func TestUndelegateProvider(t *testing.T) {
 		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)))
 	require.NoError(t, err)
 
-	stakeEntry, found, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	fmt.Println("Stake entry of re-staked provider after del1 9999 redelegation", stakeEntry.String())
 

@@ -34,12 +34,12 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 			// Note: using the same "ts" means each provider added gets a new index ("it")
 			err := ts.addProviderMoniker(1, tt.moniker)
 			require.Equal(t, tt.validStake, err == nil, err)
-			providerAcct, _ := ts.GetAccount(common.PROVIDER, it)
+			_, provider := ts.GetAccount(common.PROVIDER, it)
 
 			ts.AdvanceEpoch()
 
 			// Get the stake entry and check the provider is staked
-			stakeEntry, foundProvider, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+			stakeEntry, foundProvider := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 			require.Equal(t, tt.validStake, foundProvider)
 
 			// Check the assigned moniker
@@ -65,7 +65,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	stakeEntry, foundProvider := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAddr)
 	require.True(t, foundProvider)
 	require.Equal(t, moniker, stakeEntry.Moniker)
 
@@ -76,7 +76,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	stakeEntry, foundProvider = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAddr)
 	require.True(t, foundProvider)
 
 	require.Equal(t, moniker, stakeEntry.Moniker)
@@ -700,7 +700,7 @@ func TestStakeEndpoints(t *testing.T) {
 			if play.success {
 				require.NoError(t, err)
 
-				providerEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+				providerEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAddr)
 				require.True(t, found)
 				addons := 0
 				extensions := 0
@@ -759,7 +759,7 @@ func TestStakeProviderLimits(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+			stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, addr)
 			require.True(t, found)
 			require.Equal(t, tt.isFrozen, stakeEntry.IsFrozen())
 		})
@@ -782,7 +782,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	providerAcc, operator := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
 	err := ts.StakeProviderExtra(operator, providerAcc.Vault.Addr.String(), ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
 	require.NoError(t, err)
-	stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, operator)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
 	require.Equal(t, minSelfDelegation.Amount.AddRaw(1), stakeEntry.EffectiveStake())
@@ -792,10 +792,10 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	require.Error(t, err)
 
 	// increase delegation limit of stake entry from 0 to MinStakeProvider + 100
-	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, operator)
 	require.True(t, found)
 	stakeEntry.DelegateLimit = ts.spec.MinStakeProvider.AddAmount(math.NewInt(100))
-	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
+	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry)
 	ts.AdvanceEpoch()
 
 	// add delegator and delegate to provider so its effective stake is MinStakeProvider+MinSelfDelegation+1
@@ -804,7 +804,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	_, err = ts.TxDualstakingDelegate(consumer, operator, ts.spec.Index, ts.spec.MinStakeProvider)
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegation
-	stakeEntry, found, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, operator)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
 	require.Equal(t, ts.spec.MinStakeProvider.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.EffectiveStake())

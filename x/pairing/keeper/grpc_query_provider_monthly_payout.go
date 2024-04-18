@@ -18,13 +18,6 @@ func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryPro
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	operatorAddr, err := sdk.AccAddressFromBech32(req.Provider)
-	if err != nil {
-		return nil, utils.LavaFormatError("invalid provider address", err,
-			utils.Attribute{Key: "provider", Value: req.Provider},
-		)
-	}
-
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	var total uint64
 
@@ -74,7 +67,7 @@ func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryPro
 			totalMonthlyReward := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, totalTokenAmount, providerCu, totalCuTracked)
 
 			// calculate only the provider reward
-			providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, operatorAddr, chainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward)), subsciptiontypes.ModuleName, true, true, true)
+			providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, req.Provider, chainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward)), subsciptiontypes.ModuleName, true, true, true)
 			if err != nil {
 				return nil, err
 			}

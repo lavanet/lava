@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -211,6 +212,10 @@ func (ts *Tester) SlashValidator(valAcc sigs.Account, fraction math.LegacyDec, p
 	// slash
 	valConsAddr := sdk.GetConsAddress(valAcc.PubKey)
 	ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, fraction, power, ts.Ctx.BlockHeight())
+
+	var req abci.RequestBeginBlock
+	req.ByzantineValidators = []abci.Misbehavior{{Type: abci.MisbehaviorType_DUPLICATE_VOTE, Validator: abci.Validator{Address: valConsAddr}}}
+	ts.Keepers.Dualstaking.BeginBlock(ts.Ctx, req)
 
 	// calculate expected burned tokens
 	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, power)

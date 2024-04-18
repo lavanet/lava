@@ -36,7 +36,7 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 	for _, chainID := range chains {
 		storage, found := m.keeper.epochstorageKeeper.GetStakeStorageCurrent(ctx, chainID)
 		if found {
-			for i, entry := range storage.StakeEntries {
+			for _, entry := range storage.StakeEntries {
 				// return the providers all their coins
 				addr, err := sdk.AccAddressFromBech32(entry.Operator)
 				if err != nil {
@@ -58,7 +58,7 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 				// create self delegation, this will increase the stake entry, we need to fix that by reseting the stake before delegating
 				stake := entry.Stake
 				entry.Stake.Amount = sdk.ZeroInt()
-				m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, entry, uint64(i))
+				m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, entry)
 				err = m.keeper.DelegateFull(ctx, entry.Operator, highestVal.OperatorAddress, entry.Operator, chainID, stake)
 				if err != nil {
 					return err
@@ -117,11 +117,6 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 			continue
 		}
 
-		providerAddr, err := sdk.AccAddressFromBech32(d.Provider)
-		if err != nil {
-			return err
-		}
-
 		originalAmount := d.Amount
 
 		// zero the delegation amount in the fixation store
@@ -144,12 +139,12 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 			return err
 		}
 
-		entry, found, index := m.keeper.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, d.ChainID, providerAddr)
+		entry, found := m.keeper.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, d.ChainID, d.Provider)
 		if !found {
 			continue
 		}
 		entry.DelegateTotal = entry.DelegateTotal.Sub(originalAmount)
-		m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, d.ChainID, entry, index)
+		m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, d.ChainID, entry)
 
 		originalDelegations = append(originalDelegations, d)
 	}

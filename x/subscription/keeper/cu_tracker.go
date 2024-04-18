@@ -157,14 +157,6 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		operator := trackedCuInfo.provider
 		chainID := trackedCuInfo.chainID
 
-		operatorAddr, err := sdk.AccAddressFromBech32(operator)
-		if err != nil {
-			utils.LavaFormatError("invalid provider address", err,
-				utils.Attribute{Key: "provider", Value: operator},
-			)
-			continue
-		}
-
 		err = k.resetCuTracker(ctx, sub, trackedCuInfo, block)
 		if err != nil {
 			utils.LavaFormatError("removing/reseting tracked CU entry failed", err,
@@ -207,7 +199,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 		// Note: if the reward function doesn't reward the provider
 		// because he was unstaked, we only print an error and not returning
-		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, operatorAddr, chainID, sdk.NewCoins(creditToSub), types.ModuleName, false, false, false)
+		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, operator, chainID, sdk.NewCoins(creditToSub), types.ModuleName, false, false, false)
 		if errors.Is(err, epochstoragetypes.ErrProviderNotStaked) || errors.Is(err, epochstoragetypes.ErrStakeStorageNotFound) {
 			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
 				utils.Attribute{Key: "provider", Value: operator},

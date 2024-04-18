@@ -322,7 +322,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 	for _, report := range msg.LatestBlockReports {
 		latestBlockReports[report.GetSpecId()] = strconv.FormatUint(report.GetLatestBlock(), 10)
-		k.setStakeEntryBlockReport(ctx, creator, report.GetSpecId(), report.GetLatestBlock())
+		k.setStakeEntryBlockReport(ctx, msg.Creator, report.GetSpecId(), report.GetLatestBlock())
 	}
 	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
 
@@ -331,14 +331,14 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	return &types.MsgRelayPaymentResponse{RejectedRelays: rejected_relays}, nil
 }
 
-func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, latestBlock uint64) {
-	stakeEntry, found, ind := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
+func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr string, chainID string, latestBlock uint64) {
+	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
 	if found {
 		stakeEntry.BlockReport = &epochstoragetypes.BlockReport{
 			Epoch:       k.epochStorageKeeper.GetEpochStart(ctx),
 			LatestBlock: latestBlock,
 		}
-		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, ind)
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry)
 	}
 }
 

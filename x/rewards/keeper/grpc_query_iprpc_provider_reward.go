@@ -17,11 +17,6 @@ func (k Keeper) IprpcProviderRewardEstimation(goCtx context.Context, req *types.
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	providerAcc, err := sdk.AccAddressFromBech32(req.Provider)
-	if err != nil {
-		return nil, err
-	}
-
 	// get current month IPRPC reward
 	id := k.GetIprpcRewardsCurrentId(ctx)
 	iprpcReward, found := k.GetIprpcReward(ctx, id)
@@ -38,7 +33,7 @@ func (k Keeper) IprpcProviderRewardEstimation(goCtx context.Context, req *types.
 		totalIprpcCu := uint64(0)
 
 		// if input is operator, switch to vault
-		stakeEntry, found, _ := k.epochstorage.GetStakeEntryByAddressCurrent(ctx, specFund.Spec, providerAcc)
+		stakeEntry, found := k.epochstorage.GetStakeEntryByAddressCurrent(ctx, specFund.Spec, req.Provider)
 		if !found {
 			continue
 		}

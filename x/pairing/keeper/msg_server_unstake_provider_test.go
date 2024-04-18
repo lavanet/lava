@@ -31,11 +31,11 @@ func TestUnstakeStaticProvider(t *testing.T) {
 
 	ts.AdvanceBlocks(unstakeHoldBlocks)
 
-	_, found, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Addr)
+	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, operator)
 	require.True(t, found)
 
 	ts.AdvanceBlocks(unstakeHoldBlocksStatic - unstakeHoldBlocks)
 
-	_, found, _ = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Addr)
+	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, operator)
 	require.False(t, found)
 }

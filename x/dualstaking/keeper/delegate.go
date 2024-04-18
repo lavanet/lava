@@ -59,16 +59,17 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	index = types.DelegatorKey(delegator)
 	_ = k.delegatorFS.FindEntry(ctx, index, nextEpoch, &delegatorEntry)
 
-	delegatorEntry.AddProvider(provider)
-
-	err = k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
-	if err != nil {
-		// append should never fail here
-		return utils.LavaFormatError("critical: append delegator entry", err,
-			utils.Attribute{Key: "delegator", Value: delegator},
-			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "chainID", Value: chainID},
-		)
+	contains := delegatorEntry.AddProvider(provider)
+	if !contains {
+		err = k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
+		if err != nil {
+			// append should never fail here
+			return utils.LavaFormatError("critical: append delegator entry", err,
+				utils.Attribute{Key: "delegator", Value: delegator},
+				utils.Attribute{Key: "provider", Value: provider},
+				utils.Attribute{Key: "chainID", Value: chainID},
+			)
+		}
 	}
 
 	if provider != types.EMPTY_PROVIDER {
@@ -139,27 +140,29 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 	// entry; and if the delegator entry becomes entry then remove it altogether.
 	// otherwise just append the new version (for next epoch).
 	if delegationEntry.Amount.IsZero() {
-		delegatorEntry.DelProvider(provider)
-	}
-	if delegatorEntry.IsEmpty() {
-		err := k.delegatorFS.DelEntry(ctx, index, nextEpoch)
-		if err != nil {
-			// delete should never fail here
-			return utils.LavaFormatError("critical: delete delegator entry", err,
-				utils.Attribute{Key: "delegator", Value: delegator},
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chainID", Value: chainID},
-			)
-		}
-	} else {
-		err := k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
-		if err != nil {
-			// append should never fail here
-			return utils.LavaFormatError("failed to update delegator entry", err,
-				utils.Attribute{Key: "delegator", Value: delegator},
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chainID", Value: chainID},
-			)
+		if len(k.GetAllProviderDelegatorDelegations(ctx, delegator, provider, nextEpoch)) == 0 {
+			delegatorEntry.DelProvider(provider)
+			if delegatorEntry.IsEmpty() {
+				err := k.delegatorFS.DelEntry(ctx, index, nextEpoch)
+				if err != nil {
+					// delete should never fail here
+					return utils.LavaFormatError("critical: delete delegator entry", err,
+						utils.Attribute{Key: "delegator", Value: delegator},
+						utils.Attribute{Key: "provider", Value: provider},
+						utils.Attribute{Key: "chainID", Value: chainID},
+					)
+				}
+			} else {
+				err := k.delegatorFS.AppendEntry(ctx, index, nextEpoch, &delegatorEntry)
+				if err != nil {
+					// append should never fail here
+					return utils.LavaFormatError("failed to update delegator entry", err,
+						utils.Attribute{Key: "delegator", Value: delegator},
+						utils.Attribute{Key: "provider", Value: provider},
+						utils.Attribute{Key: "chainID", Value: chainID},
+					)
+				}
+			}
 		}
 	}
 
@@ -171,15 +174,8 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 }
 
 // modifyStakeEntryDelegation modifies the (epochstorage) stake-entry of the provider for a chain based on the action (increase or decrease).
-func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator string, operator string, chainID string, amount sdk.Coin, increase bool) (err error) {
-	operatorAcc, err := sdk.AccAddressFromBech32(operator)
-	if err != nil {
-		utils.LavaFormatPanic("modifyStakeEntryDelegation: invalid provider address", err,
-			utils.Attribute{Key: "provider", Value: operator},
-		)
-	}
-
-	stakeEntry, exists, index := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, operatorAcc)
+func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, operator, chainID string, amount sdk.Coin, increase bool) (err error) {
+	stakeEntry, exists := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, operator)
 	if !exists {
 		if increase {
 			return epochstoragetypes.ErrProviderNotStaked
@@ -218,17 +214,18 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator string, op
 	}
 
 	if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
-		err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, index)
+		err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Operator)
 		if err != nil {
 			return utils.LavaFormatError("can't remove stake Entry after decreasing provider self delegation", err,
-				utils.Attribute{Key: "index", Value: index},
+				utils.Attribute{Key: "provider", Value: stakeEntry.Operator},
 				utils.Attribute{Key: "spec", Value: chainID},
 			)
 		}
 		details["min_self_delegation"] = k.GetParams(ctx).MinSelfDelegation.String()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeFromUnbond, details, "unstaking provider due to unbond that lowered its stake below min self delegation")
 		unstakeHoldBlocks := k.epochstorageKeeper.GetUnstakeHoldBlocks(ctx, stakeEntry.Chain)
-		return k.epochstorageKeeper.AppendUnstakeEntry(ctx, stakeEntry, unstakeHoldBlocks)
+		k.epochstorageKeeper.AppendUnstakeEntry(ctx, stakeEntry, unstakeHoldBlocks)
+		return nil
 	} else if stakeEntry.EffectiveStake().LT(k.specKeeper.GetMinStake(ctx, chainID).Amount) {
 		details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, chainID).String()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
@@ -237,7 +234,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator string, op
 		stakeEntry.UnFreeze(k.epochstorageKeeper.GetCurrentNextEpoch(ctx) + 1)
 	}
 
-	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, index)
+	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry)
 
 	return nil
 }
@@ -460,14 +457,16 @@ func (k Keeper) GetAllProviderDelegatorDelegations(ctx sdk.Context, delegator, p
 	var delegations []types.Delegation
 	for _, ind := range indices {
 		var delegation types.Delegation
-		found := k.delegationFS.FindEntry(ctx, ind, epoch, &delegation)
+		_, deleted, _, found := k.delegationFS.FindEntryDetailed(ctx, ind, epoch, &delegation)
 		if !found {
-			provider, delegator, chainID := types.DelegationKeyDecode(ind)
-			utils.LavaFormatError("delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
-				utils.Attribute{Key: "delegator", Value: delegator},
-				utils.Attribute{Key: "provider", Value: provider},
-				utils.Attribute{Key: "chainID", Value: chainID},
-			)
+			if !deleted {
+				provider, delegator, chainID := types.DelegationKeyDecode(ind)
+				utils.LavaFormatError("delegationFS entry index has no entry", fmt.Errorf("provider delegation not found"),
+					utils.Attribute{Key: "delegator", Value: delegator},
+					utils.Attribute{Key: "provider", Value: provider},
+					utils.Attribute{Key: "chainID", Value: chainID},
+				)
+			}
 			continue
 		}
 		delegations = append(delegations, delegation)
