@@ -32,6 +32,7 @@ import (
 	"golang.org/x/exp/slices"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -134,7 +135,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 
 				if plainTextConnection {
 					utils.LavaFormatWarning("You are using plain text connection (disabled tls), no consumer can connect to it as all consumers use tls. this should be used for testing purposes only", nil)
-					conn, err = grpc.DialContext(ctx, endpoint.IPPORT, grpc.WithBlock(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
+					conn, err = grpc.DialContext(ctx, endpoint.IPPORT, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
 					if err != nil {
 						return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 					}
