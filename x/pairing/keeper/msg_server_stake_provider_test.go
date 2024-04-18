@@ -978,11 +978,11 @@ func TestVaultOperatorExistingStakeEntry(t *testing.T) {
 		{"stake with operator", p1Acc.Addr, p1Acc.Addr, ts.spec, false},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			beforeVault := ts.GetBalance(tt.vault)
 			beforeOperator := ts.GetBalance(tt.operator)
-			err := ts.StakeProviderExtra(tt.operator.String(), tt.vault.String(), tt.spec, testStake+100, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+			err := ts.StakeProviderExtra(tt.operator.String(), tt.vault.String(), tt.spec, testStake+(100*int64(i+1)), []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
 			afterVault := ts.GetBalance(tt.vault)
 			afterOperator := ts.GetBalance(tt.operator)
 
