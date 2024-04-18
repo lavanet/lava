@@ -130,6 +130,26 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	}
 }
 
+// TestVaultOperatorValidatePairing tests that validating pairing works with operator address
+// and not vault
+func TestVaultOperatorValidatePairing(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 3)
+
+	ts.AdvanceEpoch()
+
+	provider, _ := ts.GetAccount(common.PROVIDER, 0)
+	consumer, _ := ts.GetAccount(common.CONSUMER, 0)
+
+	res, err := ts.QueryPairingVerifyPairing(ts.spec.Index, consumer.Addr.String(), provider.Addr.String(), ts.BlockHeight())
+	require.NoError(t, err)
+	require.True(t, res.Valid)
+
+	res, err = ts.QueryPairingVerifyPairing(ts.spec.Index, consumer.Addr.String(), provider.Vault.Addr.String(), ts.BlockHeight())
+	require.NoError(t, err)
+	require.False(t, res.Valid)
+}
+
 func TestGetPairing(t *testing.T) {
 	ts := newTester(t)
 
@@ -818,6 +838,55 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	}
 }
 
+// TestVaultOperatorSelectedProviders tests that selected providers only work with operator addresses
+// Scenarios:
+//  1. put vault addresses and operator address in the selected providers policy -> expect only
+//     operator addresses can be picked
+func TestVaultOperatorSelectedProviders(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(2, 1, 2)
+
+	cAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	pAcc1, _ := ts.GetAccount(common.PROVIDER, 0)
+	pAcc2, _ := ts.GetAccount(common.PROVIDER, 1)
+	policy := ts.plan.PlanPolicy
+
+	operator1 := pAcc1.Addr.String()
+	vault2 := pAcc2.Vault.Addr.String()
+	operator2 := pAcc2.Addr.String()
+
+	res, err := ts.QueryProjectDeveloper(cAcc.Addr.String())
+	require.NoError(t, err)
+
+	tests := []struct {
+		name                    string
+		selectedProviders       []string
+		expectedPairedProviders []string
+	}{
+		{"both operators", []string{operator1, operator2}, []string{operator1, operator2}},
+		{"one operator one vault", []string{operator1, vault2}, []string{operator1}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempPolicy := policy
+			tempPolicy.SelectedProvidersMode = planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE
+			tempPolicy.SelectedProviders = tt.selectedProviders
+			_, err := ts.TxProjectSetPolicy(res.Project.Index, res.Project.Subscription, &tempPolicy)
+			require.NoError(t, err)
+
+			ts.AdvanceEpoch()
+			res, err := ts.QueryPairingGetPairing(ts.spec.Index, cAcc.Addr.String())
+			require.NoError(t, err)
+			pairedProviders := []string{}
+			for _, p := range res.Providers {
+				pairedProviders = append(pairedProviders, p.Operator)
+			}
+			require.ElementsMatch(t, tt.expectedPairedProviders, pairedProviders)
+		})
+	}
+}
+
 func (ts *tester) verifyPairingDistribution(desc, client string, providersToPair int, weight func(epochstoragetypes.StakeEntry) int64) {
 	const iterations = 10000
 	const epsilon = 0.15
@@ -905,22 +974,6 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	weightFunc := func(p epochstoragetypes.StakeEntry) int64 { return p.Stake.Amount.Int64() }
 	ts.verifyPairingDistribution("uniform distribution", clientAddr, providersToPair, weightFunc)
-}
-
-func unorderedEqual(first, second []string) bool {
-	if len(first) != len(second) {
-		return false
-	}
-	exists := make(map[string]bool)
-	for _, value := range first {
-		exists[value] = true
-	}
-	for _, value := range second {
-		if !exists[value] {
-			return false
-		}
-	}
-	return true
 }
 
 func IsSubset(subset, superset []string) bool {
@@ -1130,15 +1183,6 @@ func TestGeolocationPairingScores(t *testing.T) {
 			}
 		})
 	}
-}
-
-func isGeoInList(geo uint64, geoList []uint64) bool {
-	for _, geoElem := range geoList {
-		if geoElem == geo {
-			return true
-		}
-	}
-	return false
 }
 
 // verifyGeoScoreForTesting is used to testing purposes only!
