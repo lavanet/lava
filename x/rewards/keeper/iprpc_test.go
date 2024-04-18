@@ -211,6 +211,30 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 	}
 }
 
+// TestVaultOperatorIprpcProviderRewardQuery tests that the query works as expected for both operator and vault
+// using both vault and operator should work
+func TestVaultOperatorIprpcProviderRewardQuery(t *testing.T) {
+	ts := newTester(t, true)
+	ts.setupForIprpcTests(true)
+
+	pAcc, _ := ts.GetAccount(common.PROVIDER, 0)
+	cAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	operator := pAcc.Addr.String()
+	vault := pAcc.Vault.Addr.String()
+
+	msg := ts.SendRelay(operator, cAcc, []string{ts.specs[1].Index}, 100)
+	_, err := ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &msg)
+	require.NoError(t, err)
+
+	res, err := ts.QueryRewardsIprpcProviderRewardEstimation(operator)
+	require.NoError(t, err)
+	require.Len(t, res.SpecFunds, 1)
+
+	res, err = ts.QueryRewardsIprpcProviderRewardEstimation(vault)
+	require.NoError(t, err)
+	require.Len(t, res.SpecFunds, 1)
+}
+
 // TestIprpcSpecRewardQuery tests the IprpcSpecReward query functionality
 // Scenarios:
 // 0. assume IPRPC pool is funded with two denoms over different periods of vesting with two specs
