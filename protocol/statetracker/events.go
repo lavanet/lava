@@ -52,6 +52,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 		return utils.LavaFormatError("requested blocks is bigger than latest block height", nil, utils.Attribute{Key: "requested", Value: blocks}, utils.Attribute{Key: "latestHeight", Value: latestHeight})
 	}
 	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 	readEventsFromBlock := func(blockFrom int64, blockTo int64, hash string) {
 		for block := blockFrom; block < blockTo; block++ {
 			brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)

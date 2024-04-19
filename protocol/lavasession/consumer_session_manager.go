@@ -97,7 +97,8 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 		csm.pairing[provider.PublicLavaAddress] = provider
 	}
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
-	csm.resetMetricsManager()
+	// reset session related metrics
+	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
 }
@@ -440,6 +441,11 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			} else {
 				// consumer session is locked and valid, we need to set the relayNumber and the relay cu. before returning.
 
+				// add metric to currently open sessions metric
+				info := csm.RPCEndpoint()
+				apiInterface := info.ApiInterface
+				chainId := info.ChainID
+				go csm.consumerMetricsManager.AddOpenSessionMetric(chainId, apiInterface, providerAddress)
 				// Successfully created/got a consumerSession.
 				if debug {
 					utils.LavaFormatDebug("Consumer get session",
@@ -499,6 +505,30 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	}
 }
 
+// csm must be rlocked here
+func (csm *ConsumerSessionManager) getTopTenProvidersForStatefulCalls(validAddresses []string, ignoredProvidersList map[string]struct{}) []string {
+	// sort by cu used, easiest to sort by that factor as it probably means highest QOS and easily read by atomic
+	customSort := func(i, j int) bool {
+		return csm.pairing[validAddresses[i]].atomicReadUsedComputeUnits() > csm.pairing[validAddresses[j]].atomicReadUsedComputeUnits()
+	}
+	// Sort the slice using the custom sorting rule
+	sort.Slice(validAddresses, customSort)
+	validAddressesMaxIndex := len(validAddresses) - 1
+	addresses := []string{}
+	for i := 0; i < 10; i++ {
+		// do not overflow
+		if i > validAddressesMaxIndex {
+			break
+		}
+		// skip ignored providers
+		if _, foundInIgnoredProviderList := ignoredProvidersList[validAddresses[i]]; foundInIgnoredProviderList {
+			continue
+		}
+		addresses = append(addresses, validAddresses[i])
+	}
+	return addresses
+}
+
 // Get a valid provider address.
 func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersList map[string]struct{}, cu uint64, requestedBlock int64, addon string, extensions []string, stateful uint32) (addresses []string, err error) {
 	// cs.Lock must be Rlocked here.
@@ -522,7 +552,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	}
 	var providers []string
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
-		providers = GetAllProviders(validAddresses, ignoredProvidersList)
+		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else {
 		providers = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
 	}
@@ -603,7 +633,7 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 	}
 
 	// if we got here we failed to fetch a valid provider meaning no pairing available.
-	return nil, utils.LavaFormatError(csm.rpcEndpoint.ChainID+" could not get a provider address from blocked provider list", PairingListEmptyError, utils.LogAttr("csm.currentlyBlockedProviderAddresses", csm.currentlyBlockedProviderAddresses), utils.LogAttr("addons", addon), utils.LogAttr("extensions", extensions))
+	return nil, utils.LavaFormatError(csm.rpcEndpoint.ChainID+" could not get a provider address from blocked provider list", PairingListEmptyError, utils.LogAttr("csm.currentlyBlockedProviderAddresses", csm.currentlyBlockedProviderAddresses), utils.LogAttr("addons", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("ignoredProviders", ignoredProviders.providers))
 }
 
 func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensions []string, stateful uint32, virtualEpoch uint64) (sessionWithProviderMap SessionWithProviderMap, err error) {
@@ -897,16 +927,17 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 		qosEx := *consumerSession.QoSInfo.LastExcellenceQoSReport
 		lastQosExcellence = &qosEx
 	}
+	blockedSession := consumerSession.BlockListed
+	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
 
-	go csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, consumerSession.Parent.PublicLavaAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum)
-}
-
-// consumerSession should still be locked when accessing this method as it fetches information from the session it self
-func (csm *ConsumerSessionManager) resetMetricsManager() {
-	if csm.consumerMetricsManager == nil {
-		return
-	}
-	csm.consumerMetricsManager.ResetQOSMetrics()
+	go func() {
+		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum)
+		// in case we blocked the session add it to our block sessions metric
+		if blockedSession {
+			csm.consumerMetricsManager.AddNumberOfBlockedSessionMetric(chainId, apiInterface, publicProviderAddress)
+		}
+		csm.consumerMetricsManager.DecrementOpenSessionMetric(chainId, apiInterface, publicProviderAddress)
+	}()
 }
 
 // Get the reported providers currently stored in the session manager.
@@ -914,7 +945,22 @@ func (csm *ConsumerSessionManager) GetReportedProviders(epoch uint64) []*pairing
 	if epoch != csm.atomicReadCurrentEpoch() {
 		return nil // if epochs are not equal, we will return an empty list.
 	}
-	return csm.reportedProviders.GetReportedProviders()
+	reportedProviders := csm.reportedProviders.GetReportedProviders()
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+	filteredReportedProviders := []*pairingtypes.ReportedProvider{}
+	for _, reportedProvider := range reportedProviders {
+		provider, ok := csm.pairing[reportedProvider.Address]
+		if !ok {
+			// that shouldn't happen
+			utils.LavaFormatError("Failed to find a reported provider in pairing list", nil, utils.LogAttr("provider_address", reportedProvider.Address), utils.LogAttr("epoch", csm.currentEpoch))
+			continue
+		}
+		if provider.doesProviderEndpointsContainGeolocation(csm.RPCEndpoint().Geolocation) {
+			filteredReportedProviders = append(filteredReportedProviders, reportedProvider)
+		}
+	}
+	return filteredReportedProviders
 }
 
 // Atomically read csm.pairingAddressesLength for data reliability.

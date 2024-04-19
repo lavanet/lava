@@ -25,8 +25,8 @@ import (
 
 const (
 	MaxConsecutiveConnectionAttempts                 = 5
-	TimeoutForEstablishingAConnection                = 1 * time.Second
-	MaxSessionsAllowedPerProvider                    = 1000 // Max number of sessions allowed per provider
+	TimeoutForEstablishingAConnection                = 1500 * time.Millisecond // 1.5 seconds
+	MaxSessionsAllowedPerProvider                    = 1000                    // Max number of sessions allowed per provider
 	MaxAllowedBlockListedSessionPerProvider          = 3
 	MaximumNumberOfFailuresAllowedPerConsumerSession = 3
 	RelayNumberIncrement                             = 1
@@ -139,17 +139,6 @@ func GetTlsConfig(networkAddress NetworkAddressData) *tls.Config {
 		}
 	}
 	return tlsConfig
-}
-
-func GetAllProviders(allAddresses []string, ignoredProviders map[string]struct{}) (returnedProviders []string) {
-	for _, providerAddress := range allAddresses {
-		if _, ok := ignoredProviders[providerAddress]; ok {
-			// ignored provider, skip it
-			continue
-		}
-		returnedProviders = append(returnedProviders, providerAddress)
-	}
-	return returnedProviders
 }
 
 func SortByGeolocations(pairingEndpoints []*Endpoint, currentGeo planstypes.Geolocation) {

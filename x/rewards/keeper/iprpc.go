@@ -149,10 +149,6 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 		UsedReward := sdk.NewCoins()
 		// distribute IPRPC reward for spec
 		for _, providerCU := range specCu.ProvidersCu {
-			providerAddr, err := sdk.AccAddressFromBech32(providerCU.Provider)
-			if err != nil {
-				continue
-			}
 			if specCu.TotalCu == 0 {
 				// spec was not serviced by any provider, continue
 				continue
@@ -168,7 +164,7 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			UsedReward = UsedRewardTemp
 
 			// reward the provider
-			_, _, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
+			_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
 			if err != nil {
 				utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
 			}
