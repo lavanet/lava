@@ -19,7 +19,6 @@ func CmdQueryDelegatorProviders() *cobra.Command {
 		Short: "shows all the providers the delegator delegated to",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err

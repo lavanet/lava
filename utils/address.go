@@ -31,7 +31,6 @@ func ParseCLIAddress(clientCtx client.Context, address string) (string, error) {
 			return "", err
 		}
 		address = addr.String()
-
 	}
 	return address, nil
 }
