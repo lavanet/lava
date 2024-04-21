@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +19,7 @@ func TestAllGeos(t *testing.T) {
 		geosFromMap = append(geosFromMap, geo)
 	}
 
-	require.True(t, slices.UnorderedEqual(geos, geosFromMap))
+	require.True(t, lavaslices.UnorderedEqual(geos, geosFromMap))
 }
 
 func TestGetGeoFromUint(t *testing.T) {

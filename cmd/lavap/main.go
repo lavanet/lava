@@ -4,7 +4,9 @@ import (
 	"fmt"
 	_ "net/http/pprof"
 	"os"
+	"strings"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	"github.com/lavanet/lava/app"
@@ -14,6 +16,7 @@ import (
 	"github.com/lavanet/lava/protocol/badgeserver"
 	"github.com/lavanet/lava/protocol/monitoring"
 	"github.com/lavanet/lava/protocol/performance/connection"
+	validators "github.com/lavanet/lava/protocol/performance/validators"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/protocol/statetracker"
@@ -40,6 +43,8 @@ func main() {
 	// badge generator cobra command
 	badgeServer := badgeserver.CreateBadgeServerCobraCommand()
 
+	validatorsCmd := validators.CreateValidatorsPerformanceCommand()
+
 	// Add Version Command
 	rootCmd.AddCommand(cmdVersion)
 	// Add RPC Consumer Command
@@ -50,6 +55,9 @@ func main() {
 	rootCmd.AddCommand(badgeGenerator)
 	// Add Badge Generator Command
 	rootCmd.AddCommand(badgeServer)
+
+	// add command to test validators
+	rootCmd.AddCommand(validatorsCmd)
 
 	testCmd := &cobra.Command{
 		Use:   "test",
@@ -63,6 +71,13 @@ func main() {
 	testCmd.AddCommand(connection.CreateTestConnectionProbeCobraCommand())
 	testCmd.AddCommand(monitoring.CreateHealthCobraCommand())
 	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
+
+	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
+		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
+		flags.FlagKeyringBackend: "test",
+		flags.FlagGasAdjustment:  statetracker.DefaultGasAdjustment,
+	})
+
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:

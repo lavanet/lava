@@ -126,6 +126,8 @@ func ReplaceRequestedBlock(requestedBlock, latestBlock int64) int64 {
 		return latestBlock
 	case spectypes.FINALIZED_BLOCK:
 		return latestBlock
+	case spectypes.PENDING_BLOCK:
+		return latestBlock
 	case spectypes.EARLIEST_BLOCK:
 		return spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
 	}
@@ -163,7 +165,7 @@ func compareRelaysFindConflict(ctx context.Context, reply1 pairingtypes.RelayRep
 		secondAsString := string(reply2.Data)
 		_, idxDiff := findFirstDifferentChar(firstAsString, secondAsString)
 		if idxDiff > 0 && idxDiff+100 < len(firstAsString) && idxDiff+100 < len(secondAsString) {
-			utils.LavaFormatDebug("different in responses detected", utils.Attribute{Key: "index", Value: idxDiff}, utils.Attribute{Key: "first_diff", Value: firstAsString[idxDiff : idxDiff+100]}, utils.Attribute{Key: "second_diff", Value: secondAsString[idxDiff : idxDiff+100]})
+			utils.LavaFormatDebug("difference in responses detected", utils.Attribute{Key: "index", Value: idxDiff}, utils.Attribute{Key: "first_diff", Value: firstAsString[idxDiff : idxDiff+100]}, utils.Attribute{Key: "second_diff", Value: secondAsString[idxDiff : idxDiff+100]})
 		}
 	}
 	return true, responseConflict

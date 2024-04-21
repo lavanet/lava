@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -32,6 +33,8 @@ const (
 	DefaultRewardsSnapshotTimeoutSec    = 30
 	MaxPaymentRequestsRetiresForSession = 3
 	RewardServerMaxRelayRetires         = 3
+	splitRewardsIntoChunksSize          = 500 // if the reward array is larger than this it will split it into chunks and send multiple requests instead of a huge one
+	debug                               = false
 )
 
 type PaymentRequest struct {
@@ -58,8 +61,8 @@ type ConsumerRewards struct {
 }
 
 func (csrw *ConsumerRewards) PrepareRewardsForClaim() (retProofs []*pairingtypes.RelaySession, errRet error) {
+	utils.LavaFormatDebug("Adding reward ids for claim", utils.LogAttr("number_of_proofs", len(csrw.proofs)))
 	for _, proof := range csrw.proofs {
-		utils.LavaFormatDebug("Adding reward id for claim", utils.LogAttr("Id", proof.SessionId))
 		retProofs = append(retProofs, proof)
 	}
 	return
@@ -73,6 +76,11 @@ type EpochRewards struct {
 type RelaySessionsToRetryAttempts struct {
 	relaySession                *pairingtypes.RelaySession
 	paymentRequestRetryAttempts uint64
+}
+
+type PaymentConfiguration struct {
+	relaySessionChunks       [][]*pairingtypes.RelaySession // small chunks of relay session to request payments for
+	shouldAddExpectedPayment bool
 }
 
 type RewardServer struct {
@@ -223,62 +231,100 @@ func (rws *RewardServer) sendRewardsClaim(ctx context.Context, epoch uint64) err
 		return utils.LavaFormatError("sendRewardsClaim failed to get earliest block in memory", err)
 	}
 
+	// Handle Failed rewards claim with retry
 	failedRewardRequestsToRetry := rws.gatherFailedRequestPaymentsToRetry(earliestSavedEpoch)
 	if len(failedRewardRequestsToRetry) > 0 {
 		utils.LavaFormatDebug("Found failed reward claims, retrying", utils.LogAttr("number_of_rewards", len((failedRewardRequestsToRetry))))
-		specs := map[string]struct{}{}
-		for _, relay := range failedRewardRequestsToRetry {
-			utils.LavaFormatDebug("[sendRewardsClaim] retrying failed id", utils.LogAttr("id", relay.SessionId))
-			specs[relay.SpecId] = struct{}{}
-		}
-
-		err = rws.rewardsTxSender.TxRelayPayment(ctx, failedRewardRequestsToRetry, strconv.FormatUint(rws.serverID, 10), rws.latestBlockReports(specs))
-		if err != nil {
-			rws.updatePaymentRequestAttempt(failedRewardRequestsToRetry, false)
-			utils.LavaFormatError("failed sending previously failed payment requests", err)
-		} else {
-			rws.updatePaymentRequestAttempt(failedRewardRequestsToRetry, true)
-		}
+	}
+	failedRewardsToClaimChunks := lavaslices.SplitGenericSliceIntoChunks(failedRewardRequestsToRetry, splitRewardsIntoChunksSize)
+	failedRewardsLength := len(failedRewardsToClaimChunks)
+	if failedRewardsLength > 1 {
+		utils.LavaFormatDebug("Splitting Failed Reward claims into chunks", utils.LogAttr("chunk_size", splitRewardsIntoChunksSize), utils.LogAttr("number_of_chunks", failedRewardsLength))
 	}
 
-	rewardsToClaim, err := rws.gatherRewardsForClaim(ctx, epoch, earliestSavedEpoch)
+	// Handle new claims
+	gatheredRewardsToClaim, err := rws.gatherRewardsForClaim(ctx, epoch, earliestSavedEpoch)
 	if err != nil {
 		return err
 	}
-
-	specs := map[string]struct{}{}
-	for _, relay := range rewardsToClaim {
-		consumerAddr, err := sigs.ExtractSignerAddress(relay)
-		if err != nil {
-			utils.LavaFormatError("invalid consumer address extraction from relay", err, utils.Attribute{Key: "relay", Value: relay})
-			continue
-		}
-		expectedPay := PaymentRequest{
-			ChainID:             relay.SpecId,
-			CU:                  relay.CuSum,
-			BlockHeightDeadline: relay.Epoch,
-			Amount:              sdk.Coin{},
-			Client:              consumerAddr,
-			UniqueIdentifier:    relay.SessionId,
-			Description:         strconv.FormatUint(rws.serverID, 10),
-			ConsumerRewardsKey:  getKeyForConsumerRewards(relay.SpecId, consumerAddr.String()),
-		}
-		rws.addExpectedPayment(expectedPay)
-		rws.updateCUServiced(relay.CuSum)
-		specs[relay.SpecId] = struct{}{}
+	rewardsToClaimChunks := lavaslices.SplitGenericSliceIntoChunks(gatheredRewardsToClaim, splitRewardsIntoChunksSize)
+	newRewardsLength := len(rewardsToClaimChunks)
+	if newRewardsLength > 1 {
+		utils.LavaFormatDebug("Splitting Reward claims into chunks", utils.LogAttr("chunk_size", splitRewardsIntoChunksSize), utils.LogAttr("number_of_chunks", newRewardsLength))
 	}
-	if len(rewardsToClaim) > 0 {
-		err = rws.rewardsTxSender.TxRelayPayment(ctx, rewardsToClaim, strconv.FormatUint(rws.serverID, 10), rws.latestBlockReports(specs))
-		if err != nil {
-			rws.updatePaymentRequestAttempt(rewardsToClaim, false)
-			return utils.LavaFormatError("failed sending rewards claim", err)
-		}
-		rws.updatePaymentRequestAttempt(rewardsToClaim, true)
 
-		utils.LavaFormatDebug("Sent rewards claim", utils.Attribute{Key: "number_of_relay_sessions_sent", Value: len(rewardsToClaim)})
-	} else {
-		utils.LavaFormatDebug("no rewards to claim")
+	// payment chunk configurations
+	paymentConfiguration := []*PaymentConfiguration{
+		{ // adding the new rewards.
+			relaySessionChunks:       rewardsToClaimChunks,
+			shouldAddExpectedPayment: true,
+		},
+		{ // adding the failed rewards.
+			relaySessionChunks:       failedRewardsToClaimChunks,
+			shouldAddExpectedPayment: false,
+		},
 	}
+
+	paymentWaitGroup := sync.WaitGroup{}
+	paymentWaitGroup.Add(newRewardsLength + failedRewardsLength)
+
+	// add expected pay and ask for rewards
+	for _, paymentConfig := range paymentConfiguration {
+		for _, rewardsToClaim := range paymentConfig.relaySessionChunks {
+			if len(rewardsToClaim) == 0 {
+				if paymentConfig.shouldAddExpectedPayment {
+					utils.LavaFormatDebug("no new rewards to claim")
+				} else {
+					utils.LavaFormatDebug("no failed rewards to claim")
+				}
+				continue
+			}
+			go func(rewards []*pairingtypes.RelaySession, payment *PaymentConfiguration) { // send rewards asynchronously
+				defer paymentWaitGroup.Done()
+				specs := map[string]struct{}{}
+				if payment.shouldAddExpectedPayment {
+					for _, relay := range rewards {
+						consumerAddr, err := sigs.ExtractSignerAddress(relay)
+						if err != nil {
+							utils.LavaFormatError("invalid consumer address extraction from relay", err, utils.Attribute{Key: "relay", Value: relay})
+							continue
+						}
+						expectedPay := PaymentRequest{
+							ChainID:             relay.SpecId,
+							CU:                  relay.CuSum,
+							BlockHeightDeadline: relay.Epoch,
+							Amount:              sdk.Coin{},
+							Client:              consumerAddr,
+							UniqueIdentifier:    relay.SessionId,
+							Description:         strconv.FormatUint(rws.serverID, 10),
+							ConsumerRewardsKey:  getKeyForConsumerRewards(relay.SpecId, consumerAddr.String()),
+						}
+						rws.addExpectedPayment(expectedPay)
+						rws.updateCUServiced(relay.CuSum)
+						specs[relay.SpecId] = struct{}{}
+						if debug {
+							utils.LavaFormatDebug("Adding Payment for Spec", utils.LogAttr("spec", relay.SpecId), utils.LogAttr("Cu Sum", relay.CuSum), utils.LogAttr("epoch", relay.Epoch), utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("number_of_relays_served", relay.RelayNum), utils.LogAttr("sessionId", relay.SessionId))
+						}
+					}
+				} else { // just add the specs
+					for _, relay := range failedRewardRequestsToRetry {
+						utils.LavaFormatDebug("[sendRewardsClaim] retrying failed id", utils.LogAttr("id", relay.SessionId))
+						specs[relay.SpecId] = struct{}{}
+					}
+				}
+				err = rws.rewardsTxSender.TxRelayPayment(ctx, rewards, strconv.FormatUint(rws.serverID, 10), rws.latestBlockReports(specs))
+				if err != nil {
+					rws.updatePaymentRequestAttempt(rewards, false)
+					utils.LavaFormatError("failed sending rewards claim", err)
+					return
+				}
+				rws.updatePaymentRequestAttempt(rewards, true)
+				utils.LavaFormatDebug("Sent rewards claim", utils.Attribute{Key: "number_of_relay_sessions_sent", Value: len(rewards)})
+			}(rewardsToClaim, paymentConfig)
+		}
+	}
+	utils.LavaFormatDebug("Waiting for all Payment groups to finish", utils.LogAttr("wait_group_size", newRewardsLength+failedRewardsLength))
+	paymentWaitGroup.Wait()
 	return nil
 }
 
@@ -444,14 +490,9 @@ func (rws *RewardServer) PaymentHandler(payment *PaymentRequest) {
 		if !removedPayment {
 			utils.LavaFormatWarning("tried removing payment that wasn't expected", nil, utils.Attribute{Key: "payment", Value: payment})
 		}
-
-		utils.LavaFormatDebug("Reward Server detected successful payment request, deleting claimed rewards", utils.Attribute{Key: "payment-uid", Value: payment.UniqueIdentifier})
-
 		err = rws.rewardDB.DeleteClaimedRewards(payment.PaymentEpoch, payment.Client.String(), payment.UniqueIdentifier, payment.ConsumerRewardsKey)
 		if err != nil {
 			utils.LavaFormatWarning("failed deleting claimed rewards", err)
-		} else {
-			utils.LavaFormatDebug("deleted claimed rewards successfully", utils.Attribute{Key: "payment-uid", Value: payment.UniqueIdentifier})
 		}
 	}
 }
@@ -621,13 +662,11 @@ func (rws *RewardServer) gatherFailedRequestPaymentsToRetry(earliestSavedEpoch u
 func (rws *RewardServer) updatePaymentRequestAttempt(paymentRequests []*pairingtypes.RelaySession, success bool) {
 	rws.lock.Lock()
 	defer rws.lock.Unlock()
-
 	for _, relaySession := range paymentRequests {
 		sessionId := relaySession.SessionId
 		sessionWithAttempts, found := rws.failedRewardsPaymentRequests[sessionId]
 		if !found {
 			if !success {
-				utils.LavaFormatDebug("Adding new session to failedRewardsPaymentRequests", utils.Attribute{Key: "sessionId", Value: sessionId})
 				rws.failedRewardsPaymentRequests[sessionId] = &RelaySessionsToRetryAttempts{
 					relaySession:                relaySession,
 					paymentRequestRetryAttempts: 1,
@@ -637,7 +676,6 @@ func (rws *RewardServer) updatePaymentRequestAttempt(paymentRequests []*pairingt
 		}
 
 		if success {
-			utils.LavaFormatDebug("Removing session from failedRewardsPaymentRequests", utils.Attribute{Key: "sessionId", Value: sessionId})
 			delete(rws.failedRewardsPaymentRequests, sessionId)
 			continue
 		}
@@ -648,7 +686,6 @@ func (rws *RewardServer) updatePaymentRequestAttempt(paymentRequests []*pairingt
 				utils.Attribute{Key: "sessionIds", Value: sessionId},
 				utils.Attribute{Key: "maxRetriesAllowed", Value: MaxPaymentRequestsRetiresForSession},
 			)
-
 			delete(rws.failedRewardsPaymentRequests, sessionId)
 			rws.deleteRelaySessionFromRewardDB(relaySession)
 			continue

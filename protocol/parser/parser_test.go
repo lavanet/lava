@@ -19,6 +19,10 @@ type RPCInputTest struct {
 	GetHeadersFunc func() []pairingtypes.Metadata
 }
 
+func (rpcInputTest *RPCInputTest) GetMethod() string {
+	return ""
+}
+
 func (rpcInputTest *RPCInputTest) GetParams() interface{} {
 	return rpcInputTest.Params
 }

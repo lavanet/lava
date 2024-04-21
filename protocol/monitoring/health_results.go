@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -88,7 +88,7 @@ func (healthResults *HealthResults) updateLatestBlock(specId string, latestBlock
 	if !ok {
 		healthResults.LatestBlocks[specId] = latestBlock
 	} else {
-		healthResults.LatestBlocks[specId] = slices.Max([]int64{existing, latestBlock})
+		healthResults.LatestBlocks[specId] = lavaslices.Max([]int64{existing, latestBlock})
 	}
 }
 
@@ -150,9 +150,9 @@ func (healthResults *HealthResults) SetProviderData(providerKey LavaEntity, late
 		if existing.Block == 0 {
 			existing.Block = latestData.Block
 		} else {
-			latestData.Block = slices.Min([]int64{existing.Block, latestData.Block})
+			latestData.Block = lavaslices.Min([]int64{existing.Block, latestData.Block})
 		}
-		latestData.Latency = slices.Max([]time.Duration{existing.Latency, latestData.Latency})
+		latestData.Latency = lavaslices.Max([]time.Duration{existing.Latency, latestData.Latency})
 	}
 	healthResults.ProviderData[providerKey] = latestData
 }

@@ -310,7 +310,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		grpcHeaders := convertToMetadataMapOfSlices(metadataValues)
 		utils.LavaFormatDebug("in <<< GRPC Relay ",
 			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("method", method),
+			utils.LogAttr("_method", method),
 			utils.LogAttr("headers", grpcHeaders),
 		)
 		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
@@ -360,14 +360,14 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		serveExecutor = func() error { return httpServer.Serve(lis) }
 	}
 
-	fmt.Printf(fmt.Sprintf(`
+	fmt.Printf(`
  ┌───────────────────────────────────────────────────┐ 
  │               Lava's Grpc Server                  │ 
  │               %s│ 
  │               Lavap Version: %s│ 
  └───────────────────────────────────────────────────┘
 
-`, truncateAndPadString(apil.endpoint.NetworkAddress, 36), truncateAndPadString(protocoltypes.DefaultVersion.ConsumerTarget, 21)))
+`, truncateAndPadString(apil.endpoint.NetworkAddress, 36), truncateAndPadString(protocoltypes.DefaultVersion.ConsumerTarget, 21))
 	if err := serveExecutor(); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
 	}
@@ -395,10 +395,10 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	if err != nil {
 		return nil, err
 	}
-	return newGrpcChainProxy(ctx, nodeUrl.Url, averageBlockTime, parser, conn, rpcProviderEndpoint)
+	return newGrpcChainProxy(ctx, averageBlockTime, parser, conn, rpcProviderEndpoint)
 }
 
-func newGrpcChainProxy(ctx context.Context, nodeUrl string, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface, rpcProviderEndpoint lavasession.RPCProviderEndpoint) (ChainProxy, error) {
+func newGrpcChainProxy(ctx context.Context, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface, rpcProviderEndpoint lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
 		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
 		descriptorsCache: &grpcDescriptorCache{},
@@ -520,14 +520,14 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	if debug {
 		utils.LavaFormatDebug("provider sending node message",
-			utils.Attribute{Key: "method", Value: nodeMessage.Path},
+			utils.Attribute{Key: "_method", Value: nodeMessage.Path},
 			utils.Attribute{Key: "headers", Value: metadataMap},
 			utils.Attribute{Key: "apiInterface", Value: "grpc"},
 		)
 	}
 	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
-	connectCtx, cancel := cp.NodeUrl.LowerContextTimeout(ctx, chainMessage, cp.averageBlockTime)
+	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
 	defer cancel()
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
 	if err != nil {

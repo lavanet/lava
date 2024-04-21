@@ -10,8 +10,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -51,11 +51,11 @@ func TestPairingUniqueness(t *testing.T) {
 
 	mapFunc := func(p epochstoragetypes.StakeEntry) string { return p.Address }
 
-	providerAddrs1 := slices.Map(pairing1.Providers, mapFunc)
-	providerAddrs2 := slices.Map(pairing2.Providers, mapFunc)
+	providerAddrs1 := lavaslices.Map(pairing1.Providers, mapFunc)
+	providerAddrs2 := lavaslices.Map(pairing2.Providers, mapFunc)
 
 	require.Equal(t, len(pairing1.Providers), len(pairing2.Providers))
-	require.False(t, slices.UnorderedEqual(providerAddrs1, providerAddrs2))
+	require.False(t, lavaslices.UnorderedEqual(providerAddrs1, providerAddrs2))
 
 	ts.AdvanceEpoch()
 
@@ -63,10 +63,10 @@ func TestPairingUniqueness(t *testing.T) {
 	pairing11, err := ts.QueryPairingGetPairing(ts.spec.Index, sub1Addr)
 	require.NoError(t, err)
 
-	providerAddrs11 := slices.Map(pairing11.Providers, mapFunc)
+	providerAddrs11 := lavaslices.Map(pairing11.Providers, mapFunc)
 
 	require.Equal(t, len(pairing1.Providers), len(pairing11.Providers))
-	require.False(t, slices.UnorderedEqual(providerAddrs1, providerAddrs11))
+	require.False(t, lavaslices.UnorderedEqual(providerAddrs1, providerAddrs11))
 
 	// test that get pairing gives the same results for the whole epoch
 	epochBlocks := ts.EpochBlocks()
@@ -453,7 +453,7 @@ func TestAddonPairing(t *testing.T) {
 		Addons:        []string{mandatoryAddon.AddOn},
 		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
 	}}
-	mandatoryAndMandatoryAddonSupportingEndpoints := slices.Concat(
+	mandatoryAndMandatoryAddonSupportingEndpoints := lavaslices.Concat(
 		mandatorySupportingEndpoints, mandatoryAddonSupportingEndpoints)
 
 	optionalSupportingEndpoints := []epochstoragetypes.Endpoint{{
@@ -462,12 +462,12 @@ func TestAddonPairing(t *testing.T) {
 		Addons:        []string{optional.AddOn},
 		ApiInterfaces: []string{optional.ApiInterface},
 	}}
-	optionalAndMandatorySupportingEndpoints := slices.Concat(
+	optionalAndMandatorySupportingEndpoints := lavaslices.Concat(
 		mandatorySupportingEndpoints, optionalSupportingEndpoints)
-	optionalAndMandatoryAddonSupportingEndpoints := slices.Concat(
+	optionalAndMandatoryAddonSupportingEndpoints := lavaslices.Concat(
 		mandatoryAddonSupportingEndpoints, optionalSupportingEndpoints)
 
-	allSupportingEndpoints := slices.Concat(
+	allSupportingEndpoints := lavaslices.Concat(
 		mandatorySupportingEndpoints, optionalAndMandatoryAddonSupportingEndpoints)
 
 	mandatoryAndOptionalSingleEndpoint := []epochstoragetypes.Endpoint{{
@@ -780,14 +780,14 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				count := countSelectedAddresses(providerAddresses1, expectedSelectedProviders[tt.expectedProviders])
 				require.GreaterOrEqual(t, count, len(providerAddresses1)/2)
 			case "ALLOWED mode normal pairing", "DISABLED mode normal pairing":
-				require.False(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
+				require.False(t, lavaslices.UnorderedEqual(providerAddresses1, providerAddresses2))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses1)))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses2)))
 
 			case "EXCLUSIVE mode selected MaxProvidersToPair providers":
-				require.True(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
+				require.True(t, lavaslices.UnorderedEqual(providerAddresses1, providerAddresses2))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses2)))
-				require.True(t, slices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
+				require.True(t, lavaslices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
 
 			case "EXCLUSIVE mode selected less than MaxProvidersToPair providers",
 				"EXCLUSIVE mode selected less than MaxProvidersToPair different providers",
@@ -795,24 +795,24 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				"EXCLUSIVE mode intersection between plan/proj policies",
 				"EXCLUSIVE mode intersection between sub/proj policies",
 				"EXCLUSIVE mode intersection between all policies":
-				require.True(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
+				require.True(t, lavaslices.UnorderedEqual(providerAddresses1, providerAddresses2))
 				require.Less(t, uint64(len(providerAddresses1)), maxProvidersToPair)
-				require.True(t, slices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
+				require.True(t, lavaslices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
 			case "EXCLUSIVE mode selected more than MaxProvidersToPair providers":
-				require.True(t, slices.IsSubset(providerAddresses1, expectedSelectedProviders[tt.expectedProviders]))
-				require.True(t, slices.IsSubset(providerAddresses2, expectedSelectedProviders[tt.expectedProviders]))
+				require.True(t, lavaslices.IsSubset(providerAddresses1, expectedSelectedProviders[tt.expectedProviders]))
+				require.True(t, lavaslices.IsSubset(providerAddresses2, expectedSelectedProviders[tt.expectedProviders]))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses1)))
 				require.Equal(t, maxProvidersToPair, uint64(len(providerAddresses2)))
 
 			case "EXCLUSIVE mode provider unstakes after first pairing":
-				require.False(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
-				require.True(t, slices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
-				require.True(t, slices.UnorderedEqual(expectedProvidersAfterUnstake, providerAddresses2))
+				require.False(t, lavaslices.UnorderedEqual(providerAddresses1, providerAddresses2))
+				require.True(t, lavaslices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses1))
+				require.True(t, lavaslices.UnorderedEqual(expectedProvidersAfterUnstake, providerAddresses2))
 
 			case "EXCLUSIVE mode non-staked provider stakes after first pairing":
-				require.False(t, slices.UnorderedEqual(providerAddresses1, providerAddresses2))
-				require.True(t, slices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses2))
-				require.True(t, slices.UnorderedEqual(expectedProvidersAfterUnstake, providerAddresses1))
+				require.False(t, lavaslices.UnorderedEqual(providerAddresses1, providerAddresses2))
+				require.True(t, lavaslices.UnorderedEqual(expectedSelectedProviders[tt.expectedProviders], providerAddresses2))
+				require.True(t, lavaslices.UnorderedEqual(expectedProvidersAfterUnstake, providerAddresses1))
 			}
 		})
 	}
@@ -1285,7 +1285,7 @@ func TestGeoSlotCalc(t *testing.T) {
 	geoReqName := pairingscores.GeoReq{}.GetName()
 
 	allGeos := planstypes.GetAllGeolocations()
-	maxGeo := slices.Max(allGeos)
+	maxGeo := lavaslices.Max(allGeos)
 
 	// iterate over all possible geolocations, create a policy and calc slots
 	// not checking 0 because there can never be a policy with geo=0
@@ -1786,7 +1786,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		Addons:        []string{mandatoryAddon.AddOn},
 		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
 	}}
-	mandatoryAndMandatoryAddonSupportingEndpoints := slices.Concat(
+	mandatoryAndMandatoryAddonSupportingEndpoints := lavaslices.Concat(
 		mandatorySupportingEndpoints, mandatoryAddonSupportingEndpoints)
 
 	optionalSupportingEndpoints := []epochstoragetypes.Endpoint{{
@@ -1795,12 +1795,12 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		Addons:        []string{optional.AddOn},
 		ApiInterfaces: []string{optional.ApiInterface},
 	}}
-	optionalAndMandatorySupportingEndpoints := slices.Concat(
+	optionalAndMandatorySupportingEndpoints := lavaslices.Concat(
 		mandatorySupportingEndpoints, optionalSupportingEndpoints)
-	optionalAndMandatoryAddonSupportingEndpoints := slices.Concat(
+	optionalAndMandatoryAddonSupportingEndpoints := lavaslices.Concat(
 		mandatoryAddonSupportingEndpoints, optionalSupportingEndpoints)
 
-	allSupportingEndpoints := slices.Concat(
+	allSupportingEndpoints := lavaslices.Concat(
 		mandatorySupportingEndpoints, optionalAndMandatoryAddonSupportingEndpoints)
 
 	mandatoryAndOptionalSingleEndpoint := []epochstoragetypes.Endpoint{{
@@ -1851,7 +1851,7 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		ApiInterfaces: []string{mandatoryAddon.ApiInterface},
 		Extensions:    []string{"ext1"},
 	}}
-	mandatoryExtAndMandatoryAddonSupportingEndpoints := slices.Concat(
+	mandatoryExtAndMandatoryAddonSupportingEndpoints := lavaslices.Concat(
 		mandatoryExtSupportingEndpoints, mandatoryExtAddonSupportingEndpoints)
 
 	optionalExtSupportingEndpoints := []epochstoragetypes.Endpoint{{
@@ -1861,12 +1861,12 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 		ApiInterfaces: []string{optional.ApiInterface},
 		Extensions:    []string{"ext1"},
 	}}
-	optionalExtAndMandatorySupportingEndpoints := slices.Concat(
+	optionalExtAndMandatorySupportingEndpoints := lavaslices.Concat(
 		mandatoryExtSupportingEndpoints, optionalExtSupportingEndpoints)
-	optionalExtAndMandatoryAddonSupportingEndpoints := slices.Concat(
+	optionalExtAndMandatoryAddonSupportingEndpoints := lavaslices.Concat(
 		mandatoryExtAddonSupportingEndpoints, optionalExtSupportingEndpoints)
 
-	allExtSupportingEndpoints := slices.Concat(
+	allExtSupportingEndpoints := lavaslices.Concat(
 		mandatoryExtSupportingEndpoints, optionalExtAndMandatoryAddonSupportingEndpoints, mandatoryExt2AddonSupportingEndpoint)
 	// mandatory
 	err := ts.addProviderEndpoints(2, mandatoryExtSupportingEndpoints) // ext1 - 2
@@ -2215,7 +2215,7 @@ func TestPairingConsistency(t *testing.T) {
 			currentPairingAddrs = append(currentPairingAddrs, res.Providers[i].Address)
 		}
 
-		require.True(t, slices.UnorderedEqual(prevPairingAddrs, currentPairingAddrs))
+		require.True(t, lavaslices.UnorderedEqual(prevPairingAddrs, currentPairingAddrs))
 
 		prevPairing = res.Providers
 	}

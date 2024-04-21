@@ -10,13 +10,14 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	dualstakingante "github.com/lavanet/lava/x/dualstaking/ante"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -206,6 +207,10 @@ func (ts *Tester) SlashValidator(valAcc sigs.Account, fraction math.LegacyDec, p
 	valConsAddr := sdk.GetConsAddress(valAcc.PubKey)
 	ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, fraction, power, ts.Ctx.BlockHeight())
 
+	var req abci.RequestBeginBlock
+	req.ByzantineValidators = []abci.Misbehavior{{Type: abci.MisbehaviorType_DUPLICATE_VOTE, Validator: abci.Validator{Address: valConsAddr}}}
+	ts.Keepers.Dualstaking.BeginBlock(ts.Ctx, req)
+
 	// calculate expected burned tokens
 	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, power)
 	return fraction.MulInt(consensusPowerTokens).TruncateInt()
@@ -297,7 +302,7 @@ func NewCoin(tokenDenom string, amount int64) sdk.Coin {
 }
 
 func NewCoins(tokenDenom string, amount ...int64) []sdk.Coin {
-	return slices.Map(amount, func(a int64) sdk.Coin { return NewCoin(tokenDenom, a) })
+	return lavaslices.Map(amount, func(a int64) sdk.Coin { return NewCoin(tokenDenom, a) })
 }
 
 // keeper helpers
@@ -648,7 +653,7 @@ func (ts *Tester) TxPairingRelayPayment(addr string, rs ...*pairingtypes.RelaySe
 func (ts *Tester) TxPairingFreezeProvider(addr, chainID string) (*pairingtypes.MsgFreezeProviderResponse, error) {
 	msg := &pairingtypes.MsgFreezeProvider{
 		Creator:  addr,
-		ChainIds: slices.Slice(chainID),
+		ChainIds: lavaslices.Slice(chainID),
 		Reason:   "test",
 	}
 	return ts.Servers.PairingServer.FreezeProvider(ts.GoCtx, msg)
@@ -658,7 +663,7 @@ func (ts *Tester) TxPairingFreezeProvider(addr, chainID string) (*pairingtypes.M
 func (ts *Tester) TxPairingUnfreezeProvider(addr, chainID string) (*pairingtypes.MsgUnfreezeProviderResponse, error) {
 	msg := &pairingtypes.MsgUnfreezeProvider{
 		Creator:  addr,
-		ChainIds: slices.Slice(chainID),
+		ChainIds: lavaslices.Slice(chainID),
 	}
 	return ts.Servers.PairingServer.UnfreezeProvider(ts.GoCtx, msg)
 }
@@ -788,12 +793,6 @@ func (ts *Tester) QueryPairingGetPairing(chainID, client string) (*pairingtypes.
 	return ts.Keepers.Pairing.GetPairing(ts.GoCtx, msg)
 }
 
-// QueryPairingListEpochPayments implements 'q pairing list-epoch-payments'
-func (ts *Tester) QueryPairingListEpochPayments() (*pairingtypes.QueryAllEpochPaymentsResponse, error) {
-	msg := &pairingtypes.QueryAllEpochPaymentsRequest{}
-	return ts.Keepers.Pairing.EpochPaymentsAll(ts.GoCtx, msg)
-}
-
 // QueryPairingProviders: implement 'q pairing providers'
 func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingtypes.QueryProvidersResponse, error) {
 	msg := &pairingtypes.QueryProvidersRequest{
@@ -829,6 +828,12 @@ func (ts *Tester) QueryPairingProviderMonthlyPayout(provider string) (*pairingty
 		Provider: provider,
 	}
 	return ts.Keepers.Pairing.ProviderMonthlyPayout(ts.GoCtx, msg)
+}
+
+// QueryPairingProviderEpochCu implements 'q pairing provider-epoch-cu'
+func (ts *Tester) QueryPairingProviderEpochCu(provider string, project string, chainID string) (*pairingtypes.QueryProvidersEpochCuResponse, error) {
+	msg := &pairingtypes.QueryProvidersEpochCuRequest{}
+	return ts.Keepers.Pairing.ProvidersEpochCu(ts.GoCtx, msg)
 }
 
 // QueryPairingSubscriptionMonthlyPayout implements 'q pairing subscription-monthly-payout'

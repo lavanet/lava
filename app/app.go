@@ -187,6 +187,8 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_0_35_0,
 	upgrades.Upgrade_1_0_0,
 	upgrades.Upgrade_1_0_1,
+	upgrades.Upgrade_1_1_0,
+	upgrades.Upgrade_1_2_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -753,6 +755,7 @@ func New(
 		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
+		dualstakingmoduletypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
 		group.ModuleName,
@@ -760,7 +763,6 @@ func New(
 		icatypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
-		dualstakingmoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName, // conflict needs to change state before pairing changes stakes
 		downtimemoduletypes.ModuleName, // downtime needs to run before pairing

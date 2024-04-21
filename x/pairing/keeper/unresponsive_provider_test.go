@@ -5,16 +5,16 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
-func (ts *tester) checkProviderFreeze(provider sdk.AccAddress, shouldFreeze bool) {
-	stakeEntry, stakeStorageFound, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
+func (ts *tester) checkProviderFreeze(provider string, shouldFreeze bool) {
+	stakeEntry, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
 	require.True(ts.T, stakeStorageFound)
 	if shouldFreeze {
 		require.Equal(ts.T, uint64(epochstoragetypes.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
@@ -23,19 +23,18 @@ func (ts *tester) checkProviderFreeze(provider sdk.AccAddress, shouldFreeze bool
 	}
 }
 
-func (ts *tester) checkComplainerReset(provider sdk.AccAddress, epoch uint64) {
+func (ts *tester) checkComplainerReset(provider string, epoch uint64) {
 	// validate the complainers CU field in the unresponsive provider's providerPaymentStorage
 	// was reset after being punished (use the epoch from the relay - when it got reported)
-	providerPaymentStorageKey := ts.Keepers.Pairing.GetProviderPaymentStorageKey(ts.Ctx, ts.spec.Name, epoch, provider)
-	providerPaymentStorage, found := ts.Keepers.Pairing.GetProviderPaymentStorage(ts.Ctx, providerPaymentStorageKey)
+	pec, found := ts.Keepers.Pairing.GetProviderEpochComplainerCu(ts.Ctx, epoch, provider, ts.spec.Name)
 	require.Equal(ts.T, true, found)
-	require.Equal(ts.T, uint64(0), providerPaymentStorage.ComplainersTotalCu)
+	require.Equal(ts.T, uint64(0), pec.ComplainersCu)
 }
 
-func (ts *tester) checkProviderStaked(provider sdk.AccAddress) {
-	_, unstakeStoragefound, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
+func (ts *tester) checkProviderStaked(provider string) {
+	_, unstakeStoragefound := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
 	require.False(ts.T, unstakeStoragefound)
-	_, stakeStorageFound, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
+	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
 	require.True(ts.T, stakeStorageFound)
 }
 
@@ -108,7 +107,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		require.NoError(t, err)
 		relayPaymentMessage := types.MsgRelayPayment{
 			Creator: providerAddress,
-			Relays:  slices.Slice(relaySession),
+			Relays:  lavaslices.Slice(relaySession),
 		}
 
 		// send relay payment and check the funds did transfer normally
@@ -123,12 +122,12 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	ts.AdvanceEpochs(largerConst)
 
 	for i := 0; i < unresponsiveCount; i++ {
-		ts.checkProviderFreeze(providers[i].Addr, true)
-		ts.checkComplainerReset(providers[i].Addr, relayEpoch)
+		ts.checkProviderFreeze(providers[i].Addr.String(), true)
+		ts.checkComplainerReset(providers[i].Addr.String(), relayEpoch)
 	}
 
 	for i := unresponsiveCount; i < providersCount; i++ {
-		ts.checkProviderStaked(providers[i].Addr)
+		ts.checkProviderStaked(providers[i].Addr.String())
 	}
 }
 
@@ -157,25 +156,25 @@ func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 	// find two providers in the pairing
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 	require.NoError(t, err)
-	provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Address)
-	provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
+	provider0 := pairing.Providers[0].Address
+	provider1 := pairing.Providers[1].Address
 
 	// get provider1's balance before the stake
-	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
+	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1}}
 
 	// create relay requests for provider0 that contain complaints about provider1
 	relayEpoch := ts.BlockHeight()
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 		cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex)
 
-		relaySession := ts.newRelaySession(provider0_addr.String(), 0, cuSum, relayEpoch, 0)
+		relaySession := ts.newRelaySession(provider0, 0, cuSum, relayEpoch, 0)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData
 		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
 		require.NoError(t, err)
 		relayPaymentMessage := types.MsgRelayPayment{
-			Creator: provider0_addr.String(),
-			Relays:  slices.Slice(relaySession),
+			Creator: provider0,
+			Relays:  lavaslices.Slice(relaySession),
 		}
 
 		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
@@ -188,9 +187,9 @@ func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 
 	ts.AdvanceEpochs(largerConst)
 
-	ts.checkProviderFreeze(provider1_addr, true)
-	ts.checkComplainerReset(provider1_addr, relayEpoch)
-	ts.checkProviderStaked(provider0_addr)
+	ts.checkProviderFreeze(provider1, true)
+	ts.checkComplainerReset(provider1, relayEpoch)
+	ts.checkProviderStaked(provider0)
 }
 
 func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *testing.T) {
@@ -216,24 +215,24 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 	// find two providers in the pairing
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 	require.NoError(t, err)
-	provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Address)
-	provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
+	provider0 := pairing.Providers[0].Address
+	provider1 := pairing.Providers[1].Address
 
 	// create relay requests for provider0 that contain complaints about provider1
-	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
+	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1}}
 
 	relayEpoch := ts.BlockHeight()
 	cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
 
-	relaySession := ts.newRelaySession(provider0_addr.String(), 0, cuSum, relayEpoch, 0)
+	relaySession := ts.newRelaySession(provider0, 0, cuSum, relayEpoch, 0)
 
 	relaySession.UnresponsiveProviders = unresponsiveProvidersData
 	sig, err := sigs.Sign(clients[0].SK, *relaySession)
 	relaySession.Sig = sig
 	require.NoError(t, err)
 	relayPaymentMessage := types.MsgRelayPayment{
-		Creator: provider0_addr.String(),
-		Relays:  slices.Slice(relaySession),
+		Creator: provider0,
+		Relays:  lavaslices.Slice(relaySession),
 	}
 
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
@@ -245,29 +244,29 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 
 	ts.AdvanceEpochs(largerConst)
 
-	ts.checkProviderFreeze(provider1_addr, true)
-	ts.checkComplainerReset(provider1_addr, relayEpoch)
+	ts.checkProviderFreeze(provider1, true)
+	ts.checkComplainerReset(provider1, relayEpoch)
 
 	ts.AdvanceEpochs(2)
 
 	// create more relay requests for provider0 that contain complaints about provider1
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
-		relaySession := ts.newRelaySession(provider0_addr.String(), 2, cuSum, ts.BlockHeight(), 0)
+		relaySession := ts.newRelaySession(provider0, 2, cuSum, ts.BlockHeight(), 0)
 		relaySession.UnresponsiveProviders = unresponsiveProvidersData
 		sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 		relaySession.Sig = sig
 		require.NoError(t, err)
 
 		relayPaymentMessage := types.MsgRelayPayment{
-			Creator: provider0_addr.String(),
-			Relays:  slices.Slice(relaySession),
+			Creator: provider0,
+			Relays:  lavaslices.Slice(relaySession),
 		}
 
 		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 	}
 
 	// test the provider is still frozen
-	ts.checkProviderFreeze(provider1_addr, true)
+	ts.checkProviderFreeze(provider1, true)
 }
 
 func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
@@ -310,10 +309,10 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 		require.NoError(t, err)
 		provider0_addr := sdk.MustAccAddressFromBech32(pairing.Providers[0].Address)
-		provider1_addr := sdk.MustAccAddressFromBech32(pairing.Providers[1].Address)
+		provider1 := pairing.Providers[1].Address
 
 		// create unresponsive data that includes provider1 being unresponsive
-		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1_addr.String()}}
+		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1}}
 		// create relay requests for provider0 that contain complaints about provider1
 		relayEpoch := ts.BlockHeight()
 		for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
@@ -327,7 +326,7 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: provider0_addr.String(),
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0_addr, true, true, 100)
@@ -341,6 +340,6 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		ts.AdvanceEpochs(largerConst)
 
 		// test the unresponsive provider1 hasn't froze
-		ts.checkProviderFreeze(provider1_addr, play.shouldBeFrozen)
+		ts.checkProviderFreeze(provider1, play.shouldBeFrozen)
 	}
 }

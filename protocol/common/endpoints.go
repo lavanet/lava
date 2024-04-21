@@ -22,6 +22,7 @@ const (
 	IP_FORWARDING_HEADER_NAME                       = "X-Forwarded-For"
 	PROVIDER_ADDRESS_HEADER_NAME                    = "Lava-Provider-Address"
 	RETRY_COUNT_HEADER_NAME                         = "Lava-Retries"
+	PROVIDER_LATEST_BLOCK_HEADER_NAME               = "Provider-Latest-Block"
 	GUID_HEADER_NAME                                = "Lava-Guid"
 	// these headers need to be lowercase
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
@@ -89,27 +90,15 @@ func (url *NodeUrl) LowerContextTimeoutWithDuration(ctx context.Context, timeout
 	return CapContextTimeout(ctx, timeout+url.Timeout)
 }
 
-func (url *NodeUrl) LowerContextTimeout(ctx context.Context, chainMessage ChainMessageGetApiInterface, averageBlockTime time.Duration) (context.Context, context.CancelFunc) {
-	var timeout time.Duration
-	specOverwriteTimeout := chainMessage.GetApi().TimeoutMs
-	if specOverwriteTimeout > 0 {
-		timeout = time.Millisecond * time.Duration(specOverwriteTimeout)
-	} else {
-		timeout = LocalNodeTimePerCu(chainMessage.GetApi().ComputeUnits)
-	}
-
-	// check if this API is hanging (waiting for block confirmation)
-	if chainMessage.GetApi().Category.HangingApi {
-		timeout += averageBlockTime
-	}
+func (url *NodeUrl) LowerContextTimeout(ctx context.Context, processingTimeout time.Duration) (context.Context, context.CancelFunc) {
 	// allowing the consumer's context to increase the timeout by up to x2
 	// this allows the consumer to get extra timeout than the spec up to a threshold so
 	// the provider wont be attacked by infinite context timeout
-	timeout *= MAXIMUM_ALLOWED_TIMEOUT_EXTEND_MULTIPLIER_BY_THE_CONSUMER
+	processingTimeout *= MAXIMUM_ALLOWED_TIMEOUT_EXTEND_MULTIPLIER_BY_THE_CONSUMER
 	if url == nil || url.Timeout <= 0 {
-		return CapContextTimeout(ctx, timeout)
+		return CapContextTimeout(ctx, processingTimeout)
 	}
-	return CapContextTimeout(ctx, timeout+url.Timeout)
+	return CapContextTimeout(ctx, processingTimeout+url.Timeout)
 }
 
 type AuthConfig struct {
@@ -221,6 +210,7 @@ type RelayResult struct {
 	Finalized       bool
 	ConflictHandler ConflictHandlerInterface
 	StatusCode      int
+	Quorum          int
 }
 
 func (rr *RelayResult) GetReplyServer() *pairingtypes.Relayer_RelaySubscribeClient {

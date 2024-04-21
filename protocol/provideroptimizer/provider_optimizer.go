@@ -10,9 +10,9 @@ import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/score"
-	"github.com/lavanet/lava/utils/slices"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"gonum.org/v1/gonum/mathext"
 )
@@ -188,7 +188,7 @@ func (po *ProviderOptimizer) calculateSyncLag(latestSync uint64, timeSync time.T
 	}
 	// lag on first block
 	timeLag := sampleTime.Sub(timeSync) // received the latest block at time X, this provider provided the entry at time Y, which is X-Y time after
-	firstBlockLag := slices.Min([]time.Duration{po.averageBlockTime, timeLag})
+	firstBlockLag := lavaslices.Min([]time.Duration{po.averageBlockTime, timeLag})
 	blocksGap := latestSync - providerBlock - 1                     // latestSync > providerBlock
 	blocksGapTime := time.Duration(blocksGap) * po.averageBlockTime // the provider is behind by X blocks, so is expected to catch up in averageBlockTime * X
 	timeLag = firstBlockLag + blocksGapTime

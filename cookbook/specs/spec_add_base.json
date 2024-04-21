@@ -69,8 +69,8 @@
                 ]
             },
             {
-                "index": "BASET",
-                "name": "base goerli testnet",
+                "index": "BASES",
+                "name": "base sepolia testnet",
                 "enabled": true,
                 "imports": [
                     "BASE"
@@ -104,7 +104,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "0x14a33"
+                                        "expected_value": "0x14a34"
                                     }
                                 ]
                             }

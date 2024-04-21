@@ -85,6 +85,7 @@ type ChainMessage interface {
 }
 
 type ChainMessageForSend interface {
+	TimeoutOverride(...time.Duration) time.Duration
 	GetApi() *spectypes.Api
 	GetRPCMessage() rpcInterfaceMessages.GenericMessage
 	GetApiCollection() *spectypes.ApiCollection

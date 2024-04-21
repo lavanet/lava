@@ -35,7 +35,7 @@ var QueryRetries = uint64(3)
 const (
 	BasicQueryRetries = 3
 	QuerySleepTime    = 100 * time.Millisecond
-	NiceOutputLength  = 40
+	NiceOutputLength  = 100
 )
 
 type LavaEntity struct {
@@ -533,9 +533,6 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 		return err
 	}
 	lavaVersion := param.GetParams().Version
-	if err != nil {
-		return err
-	}
 	targetVersion := lvutil.ParseToSemanticVersion(lavaVersion.ProviderTarget)
 	var wg sync.WaitGroup
 	wg.Add(len(providerEntries))

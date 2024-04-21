@@ -6,8 +6,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
@@ -169,7 +169,7 @@ func TestRelayPaymentGovEpochBlocksDecrease(t *testing.T) {
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
@@ -242,7 +242,7 @@ func TestRelayPaymentGovEpochBlocksIncrease(t *testing.T) {
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
@@ -320,7 +320,7 @@ func TestRelayPaymentGovEpochToSaveDecrease(t *testing.T) {
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
@@ -390,7 +390,7 @@ func TestRelayPaymentGovEpochToSaveIncrease(t *testing.T) {
 
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
@@ -471,7 +471,7 @@ func TestRelayPaymentGovEpochBlocksMultipleChanges(t *testing.T) {
 			require.NoError(t, err)
 			payment := pairingtypes.MsgRelayPayment{
 				Creator: providerAddr,
-				Relays:  slices.Slice(relaySession),
+				Relays:  lavaslices.Slice(relaySession),
 			}
 
 			// Request payment (helper function validates the balances and verifies if we should get an error through valid)
@@ -514,7 +514,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 
 	payment := pairingtypes.MsgRelayPayment{
 		Creator: providerAddr,
-		Relays:  slices.Slice(relaySession),
+		Relays:  lavaslices.Slice(relaySession),
 	}
 
 	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
@@ -578,7 +578,7 @@ func TestRelayPaymentMemoryTransferAfterEpochChangeWithGovParamChange(t *testing
 
 		payment := pairingtypes.MsgRelayPayment{
 			Creator: providerAddr,
-			Relays:  slices.Slice(relaySession),
+			Relays:  lavaslices.Slice(relaySession),
 		}
 
 		ts.relayPaymentWithoutPay(payment, true)

@@ -250,8 +250,8 @@
                 ]
             },
             {
-                "index": "POLYGON1T",
-                "name": "polygon testnet",
+                "index": "POLYGON1A",
+                "name": "polygon amoy testnet",
                 "enabled": true,
                 "imports": [
                     "POLYGON1"
@@ -285,7 +285,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "0x13881"
+                                        "expected_value": "0x13882"
                                     }
                                 ]
                             }

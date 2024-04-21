@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	tmtypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
@@ -91,11 +90,6 @@ func NewRootCmd() (*cobra.Command, appparams.EncodingConfig) {
 	}
 
 	initRootCmd(rootCmd, encodingConfig)
-	overwriteFlagDefaults(rootCmd, map[string]string{
-		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
-		flags.FlagKeyringBackend: "test",
-	})
-
 	addLogFlagsToSubCommands(rootCmd)
 	return rootCmd, encodingConfig
 }
@@ -144,11 +138,6 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 	}
 
 	initLavaProtocolRootCmd(rootCmd)
-	overwriteFlagDefaults(rootCmd, map[string]string{
-		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
-		flags.FlagKeyringBackend: "test",
-	})
-
 	addLogFlagsToSubCommands(rootCmd)
 
 	return rootCmd
@@ -325,7 +314,7 @@ func addModuleInitFlags(startCmd *cobra.Command) {
 	// this line is used by starport scaffolding # root/arguments
 }
 
-func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
+func OverwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
 	set := func(s *pflag.FlagSet, key, val string) {
 		if f := s.Lookup(key); f != nil {
 			f.DefValue = val
@@ -337,7 +326,7 @@ func overwriteFlagDefaults(c *cobra.Command, defaults map[string]string) {
 		set(c.PersistentFlags(), key, val)
 	}
 	for _, c := range c.Commands() {
-		overwriteFlagDefaults(c, defaults)
+		OverwriteFlagDefaults(c, defaults)
 	}
 }
 

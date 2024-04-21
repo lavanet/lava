@@ -1,0 +1,52 @@
+name: Lava Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: ${{ matrix.binary }}-${{ matrix.targetos }}-${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+        targetos: [darwin, linux]
+        binary: [lavad, lavap, lavavisor]
+        include:
+          - targetos: darwin
+            arch: arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+        env:
+          GOOS: ${{ matrix.targetos }}
+          GOARCH: ${{ matrix.arch }}
+
+      - name: Download Dependencies
+        run: go mod download
+
+      - name: Build ${{ matrix.binary }}
+        run: |
+          GOWRK=off go build -o out/${{ matrix.binary }} cmd/${{ matrix.binary }}/main.go
+      
+      - name: Upload Lava Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.binary }}-${{ matrix.targetos }}-${{ matrix.arch }}
+          path: out/${{ matrix.binary }}

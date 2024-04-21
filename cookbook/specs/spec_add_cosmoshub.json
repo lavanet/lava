@@ -4,7 +4,7 @@
         "description": "Adding new specification support for relaying cosmoshub data on Lava",
         "specs": [
             {
-                "index": "COS5",
+                "index": "COSMOSHUB",
                 "name": "cosmos hub mainnet",
                 "enabled": true,
                 "imports": [
@@ -150,11 +150,11 @@
                 ]
             },
             {
-                "index": "COS5T",
+                "index": "COSMOSHUBT",
                 "name": "cosmos hub testnet",
                 "enabled": true,
                 "imports": [
-                    "COS5"
+                    "COSMOSHUB"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,

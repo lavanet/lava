@@ -222,7 +222,7 @@ func TestHandleConsistency(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				fmt.Fprint(w, string(replyDataBuf))
 			})
-			chainParser, chainProxy, _, closeServer, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+			chainParser, chainProxy, _, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
 			if closeServer != nil {
 				defer closeServer()
 			}
@@ -251,7 +251,7 @@ func TestHandleConsistency(t *testing.T) {
 				}
 			}()
 			ctx, cancel := context.WithTimeout(context.Background(), play.timeout)
-			latestBlock, _, timeSlept, err := rpcproviderServer.handleConsistency(ctx, seenBlock, requestBlock, averageBlockTime, blockLagForQosSync, blocksInFinalizationData, blockDistanceToFinalization)
+			latestBlock, _, timeSlept, err := rpcproviderServer.handleConsistency(ctx, play.timeout, seenBlock, requestBlock, averageBlockTime, blockLagForQosSync, blocksInFinalizationData, blockDistanceToFinalization)
 			cancel()
 			require.Equal(t, play.err == nil, err == nil, err, strconv.Itoa(calls))
 			require.Less(t, timeSlept, play.timeout)

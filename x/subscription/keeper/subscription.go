@@ -9,7 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/lavanet/lava/x/subscription/types"
@@ -176,7 +176,7 @@ func (k Keeper) verifySubscriptionBuyInputAndGetPlan(ctx sdk.Context, block uint
 	}
 
 	if len(plan.AllowedBuyers) != 0 {
-		if !slices.Contains(plan.AllowedBuyers, creator) {
+		if !lavaslices.Contains(plan.AllowedBuyers, creator) {
 			allowedBuyers := strings.Join(plan.AllowedBuyers, ",")
 			return nil, EMPTY_PLAN, utils.LavaFormatWarning("subscription buy input is invalid", fmt.Errorf("creator is not part of the allowed buyers list"),
 				utils.LogAttr("creator", creator),
@@ -311,7 +311,7 @@ func (k Keeper) renewSubscription(ctx sdk.Context, sub *types.Subscription) erro
 	}
 
 	if len(plan.AllowedBuyers) != 0 {
-		if !slices.Contains(plan.AllowedBuyers, sub.Creator) {
+		if !lavaslices.Contains(plan.AllowedBuyers, sub.Creator) {
 			allowedBuyers := strings.Join(plan.AllowedBuyers, ",")
 			return utils.LavaFormatWarning("cannot auto-renew subscription", fmt.Errorf("creator is not part of the allowed buyers list"),
 				utils.LogAttr("creator", sub.Creator),

@@ -80,6 +80,10 @@ func (dri DefaultRPCInput) GetParams() interface{} {
 	return nil
 }
 
+func (dri DefaultRPCInput) GetMethod() string {
+	return ""
+}
+
 func (dri DefaultRPCInput) GetResult() json.RawMessage {
 	return dri.Result
 }

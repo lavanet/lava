@@ -20,7 +20,7 @@ func CmdUnfreeze() *cobra.Command {
 		Long:  `The unfreeze command allows a provider to unfreeze its service, effective next epoch. This reverts the effect of a previous freeze transaction. Once executed, the provider will be again paired with consumers and expected to render its services.`,
 		Example: `required flags: --from alice
 		lavad tx pairing unfreeze [chain-ids] --from <provider_address>
-		lavad tx pairing unfreeze ETH1,COS3 --from alice`,
+		lavad tx pairing unfreeze ETH1,OSMOSIS --from alice`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argChainIds := strings.Split(args[0], listSeparator)

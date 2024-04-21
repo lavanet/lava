@@ -14,6 +14,18 @@ telescope({
     tsDisable: {
       files: [
         'cosmos/authz/v1beta1/tx.amino.ts',
+        'cosmos/auth/v1beta1/query.ts',
+        'cosmos/authz/v1beta1/authz.ts',
+        'cosmos/gov/v1beta1/tx.ts',
+        'cosmos/gov/v1beta1/gov.ts',
+        'cosmos/staking/v1beta1/staking.ts',
+        'tendermint/types/evidence.ts',
+        'cosmos/staking/v1beta1/tx.ts',
+        'cosmos/orm/query/v1alpha1/query.ts',
+        'tendermint/types/types.ts',
+        'tendermint/abci/types.ts',
+        'lavanet/lava/downtime/v1/genesis.ts',
+        'cosmos/upgrade/v1beta1/upgrade.ts',
         'cosmos/staking/v1beta1/tx.amino.ts'
       ],
       patterns: ['**/*amino.ts', '**/*registry.ts']
@@ -60,8 +72,8 @@ telescope({
         ]
       },
       methods: {
-        fromJSON: false,
-        toJSON: false,
+        fromJSON: true,
+        toJSON: true,
         encode: true,
         decode: true,
         fromPartial: true,

@@ -23,6 +23,8 @@ const (
 	BlockResultRetry = 20
 )
 
+var TimeOutForFetchingLavaBlocks = time.Second * 5
+
 type EventTracker struct {
 	lock               sync.RWMutex
 	ClientCtx          client.Context
@@ -36,7 +38,7 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 	if latestBlock == 0 {
 		var res *ctypes.ResultStatus
 		for i := 0; i < 3; i++ {
-			timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+			timeoutCtx, cancel := context.WithTimeout(ctx, TimeOutForFetchingLavaBlocks)
 			res, err = et.ClientCtx.Client.Status(timeoutCtx)
 			cancel()
 			if err == nil {
@@ -55,7 +57,7 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 	}
 	var blockResults *ctypes.ResultBlockResults
 	for i := 0; i < BlockResultRetry; i++ {
-		timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
+		timeoutCtx, cancel := context.WithTimeout(ctx, TimeOutForFetchingLavaBlocks)
 		blockResults, err = brp.BlockResults(timeoutCtx, &latestBlock)
 		cancel()
 		if err == nil {

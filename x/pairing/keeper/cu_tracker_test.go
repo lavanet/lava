@@ -8,8 +8,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/utils/slices"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/stretchr/testify/require"
@@ -87,7 +87,7 @@ func TestAddingTrackedCuWithoutPay(t *testing.T) {
 
 				relayPaymentMessage := types.MsgRelayPayment{
 					Creator: provider1Addr,
-					Relays:  slices.Slice(relaySession),
+					Relays:  lavaslices.Slice(relaySession),
 				}
 
 				ts.relayPaymentWithoutPay(relayPaymentMessage, true)
@@ -145,11 +145,11 @@ func TestTrackedCuWithDelegations(t *testing.T) {
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
 	// change the provider's delegation limit and commission
-	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
+	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
@@ -242,13 +242,13 @@ func TestTrackedCuWithQos(t *testing.T) {
 
 			relayPaymentMessage := types.MsgRelayPayment{
 				Creator: provider1,
-				Relays:  slices.Slice(relaySession1),
+				Relays:  lavaslices.Slice(relaySession1),
 			}
 			ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
 			relayPaymentMessage2 := types.MsgRelayPayment{
 				Creator: provider2,
-				Relays:  slices.Slice(relaySession2),
+				Relays:  lavaslices.Slice(relaySession2),
 			}
 			ts.relayPaymentWithoutPay(relayPaymentMessage2, true)
 
@@ -314,7 +314,7 @@ func TestTrackedCuMultipleChains(t *testing.T) {
 
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider1,
-		Relays:  slices.Slice(relaySession, relaySession1),
+		Relays:  lavaslices.Slice(relaySession, relaySession1),
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
@@ -327,7 +327,7 @@ func TestTrackedCuMultipleChains(t *testing.T) {
 
 	relayPaymentMessage2 := types.MsgRelayPayment{
 		Creator: provider2,
-		Relays:  slices.Slice(relaySession2),
+		Relays:  lavaslices.Slice(relaySession2),
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage2, true)
 
@@ -401,11 +401,11 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// change the provider's delegation limit and commission
-	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
+	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
@@ -428,7 +428,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	relaySession2.Sig = sig
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider,
-		Relays:  slices.Slice(relaySession, relaySession2),
+		Relays:  lavaslices.Slice(relaySession, relaySession2),
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
@@ -446,7 +446,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	for _, p := range res.Details {
 		details = append(details, *p)
 	}
-	require.True(t, slices.UnorderedEqual(expectedPayouts, details))
+	require.True(t, lavaslices.UnorderedEqual(expectedPayouts, details))
 
 	// check the expected subscrription payout
 	subRes, err := ts.QueryPairingSubscriptionMonthlyPayout(client)
@@ -521,11 +521,11 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// change the provider's delegation limit and commission
-	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
+	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
@@ -555,7 +555,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	relaySession2.Sig = sig
 	relayPaymentMessage := types.MsgRelayPayment{
 		Creator: provider,
-		Relays:  slices.Slice(relaySession, relaySession2),
+		Relays:  lavaslices.Slice(relaySession, relaySession2),
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
@@ -574,7 +574,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	for _, p := range res.Details {
 		details = append(details, *p)
 	}
-	require.True(t, slices.UnorderedEqual(expectedPayouts, details))
+	require.True(t, lavaslices.UnorderedEqual(expectedPayouts, details))
 
 	// check the expected subscrription payout
 	subRes, err := ts.QueryPairingSubscriptionMonthlyPayout(client)

@@ -17,3 +17,5 @@ ecosystem/**/package-lock.json
 .idea/
 .vscode/
 .storage/
+
+Dockerfile

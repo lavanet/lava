@@ -128,12 +128,12 @@ func (sv *SpecValidator) validateAllChains(ctx context.Context) {
 }
 
 func (sv *SpecValidator) validateAllDisabledChains(ctx context.Context) {
-	for chainId := range sv.getDisabledChains(ctx) {
+	for chainId := range sv.getDisabledChains() {
 		sv.validateChain(ctx, chainId)
 	}
 }
 
-func (sv *SpecValidator) getDisabledChains(ctx context.Context) map[string]struct{} {
+func (sv *SpecValidator) getDisabledChains() map[string]struct{} {
 	disabledChains := map[string]struct{}{}
 	for _, chainFetchersList := range sv.chainFetchers {
 		for _, chainFetcher := range chainFetchersList {

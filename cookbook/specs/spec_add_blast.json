@@ -7,9 +7,7 @@
         "index": "BLAST",
         "name": "blast mainnet",
         "enabled": true,
-        "imports": [
-          "ETH1"
-        ],
+        "imports": ["ETH1"],
         "reliability_threshold": 268435455,
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 6,
@@ -19,7 +17,7 @@
         "shares": 1,
         "min_stake_provider": {
           "denom": "ulava",
-          "amount": "50000000000"
+          "amount": "47500000000"
         },
         "api_collections": [
           {
@@ -72,9 +70,7 @@
         "index": "BLASTSP",
         "name": "blast sepolia testnet",
         "enabled": true,
-        "imports": [
-          "BLAST"
-        ],
+        "imports": ["BLAST"],
         "reliability_threshold": 268435455,
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 6,
@@ -84,7 +80,7 @@
         "shares": 1,
         "min_stake_provider": {
           "denom": "ulava",
-          "amount": "50000000000"
+          "amount": "47500000000"
         },
         "api_collections": [
           {

@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cometbft/cometbft/libs/log"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
+	projectstypes "github.com/lavanet/lava/x/projects/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
@@ -41,6 +41,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	logger := k.Logger(ctx)
+	epochCuCache := k.NewEpochCuCacheHandler(ctx)
 	lavaChainID := ctx.BlockHeader().ChainID
 	creator, err := sdk.AccAddressFromBech32(msg.Creator)
 	if err != nil {
@@ -143,7 +144,16 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			continue
 		}
 
-		if k.IsDoubleSpend(ctx, relay.SpecId, epochStart, project.Index, providerAddr, strconv.FormatUint(relay.SessionId, 16)) {
+		// check the epoch is within the chain's memory
+		if epochStart < k.epochStorageKeeper.GetEarliestEpochStart(ctx) {
+			utils.LavaFormatWarning("relay epoch is older than earliest epohc", fmt.Errorf("invalid relay payment request"),
+				utils.Attribute{Key: "relayEpoch", Value: relay.Epoch},
+				utils.Attribute{Key: "epochStart", Value: epochStart},
+			)
+			continue
+		}
+
+		if k.IsUniqueEpochSessionExists(ctx, epochStart, relay.Provider, project.Index, relay.SpecId, relay.SessionId) {
 			utils.LavaFormatWarning("double spending detected", err,
 				utils.Attribute{Key: "epoch", Value: epochStart},
 				utils.Attribute{Key: "client", Value: clientAddr.String()},
@@ -157,8 +167,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// if they failed (one relay should affect all of them). From here on, every check will
 		// fail the TX ***
 
-		totalCUInEpochForUserProvider := k.Keeper.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, providerAddr, relay.CuSum, strconv.FormatUint(relay.SessionId, 16))
-		ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "")
+		totalCUInEpochForUserProvider := epochCuCache.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, relay.Provider, relay.CuSum, relay.SessionId)
 		if badgeFound {
 			k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
 		}
@@ -268,13 +277,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 
 		cuAfterQos := rewardedCUDec.TruncateInt().Uint64()
-		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, clientAddr, relay, cuAfterQos)
+		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, project, relay, cuAfterQos)
 		if err != nil {
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 		}
 
 		// update provider payment storage with complainer's CU
-		err = k.updateProviderPaymentStorageWithComplainerCU(ctx, relay.UnresponsiveProviders, logger, epochStart, relay.SpecId, cuAfterQos, providers, project.Index)
+		err = epochCuCache.updateProvidersComplainerCU(ctx, relay.UnresponsiveProviders, epochStart, relay.SpecId, cuAfterQos, providers, project.Index)
 		if err != nil {
 			var reportedProviders []string
 			for _, p := range relay.UnresponsiveProviders {
@@ -313,112 +322,81 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 	}
 	for _, report := range msg.LatestBlockReports {
 		latestBlockReports[report.GetSpecId()] = strconv.FormatUint(report.GetLatestBlock(), 10)
-		k.setStakeEntryBlockReport(ctx, creator, report.GetSpecId(), report.GetLatestBlock())
+		k.setStakeEntryBlockReport(ctx, msg.Creator, report.GetSpecId(), report.GetLatestBlock())
 	}
 	utils.LogLavaEvent(ctx, logger, types.LatestBlocksReportEventName, latestBlockReports, "New LatestBlocks Report for provider")
 
-	// consume constant gas (dependent on the number of relays)
-	ctx.GasMeter().RefundGas(ctx.GasMeter().GasConsumed(), "")
-	ctx.GasMeter().ConsumeGas(uint64(10000+100000*len(msg.Relays)), "")
+	epochCuCache.Flush()
 
 	return &types.MsgRelayPaymentResponse{RejectedRelays: rejected_relays}, nil
 }
 
-func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, latestBlock uint64) {
-	stakeEntry, found, ind := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
+func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr string, chainID string, latestBlock uint64) {
+	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
 	if found {
 		stakeEntry.BlockReport = &epochstoragetypes.BlockReport{
 			Epoch:       k.epochStorageKeeper.GetEpochStart(ctx),
 			LatestBlock: latestBlock,
 		}
-		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry, ind)
+		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry)
 	}
 }
 
-func (k msgServer) updateProviderPaymentStorageWithComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, logger log.Logger, epoch uint64, chainID string, cuSum uint64, providersToPair []epochstoragetypes.StakeEntry, projectID string) error {
-	// check that unresponsiveData exists
-	if len(unresponsiveProviders) == 0 {
+func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveProviders []*types.ReportedProvider, epoch uint64, chainID string, cu uint64, pairedProviders []epochstoragetypes.StakeEntry, project string) error {
+	// check that unresponsiveData exists and that the paired providers list is larger than 1
+	if len(unresponsiveProviders) == 0 || len(pairedProviders) <= 1 {
 		return nil
 	}
 
-	// check that servicersToPair is bigger than 1
-	if len(providersToPair) <= 1 {
-		return nil
-	}
+	// the added complainer CU takes into account the number of providers the client complained on and the number of paired providers
+	complainerCuToAdd := cu / (uint64(len(unresponsiveProviders)) * uint64(len(pairedProviders)-1))
 
-	// the added complainer CU takes into account the number of providers the client complained on and the number
-	complainerCuToAdd := cuSum / (uint64(len(unresponsiveProviders)) * uint64(len(providersToPair)-1))
-
-	// iterate over the unresponsive providers list and update their complainers_total_cu
+	// iterate over the unresponsive providers list and update their complainers total cu
 	for _, unresponsiveProvider := range unresponsiveProviders {
-		// get provider address
-		sdkUnresponsiveProviderAddress, err := sdk.AccAddressFromBech32(unresponsiveProvider.GetAddress())
-		if err != nil { // if bad data was given, we cant parse it so we ignote it and continue this protects from spamming wrong information.
-			utils.LavaFormatError("unable to sdk.AccAddressFromBech32(unresponsive_provider)", err, utils.Attribute{Key: "unresponsive_provider_address", Value: unresponsiveProvider})
-			continue
-		}
-
 		found := false
-		for _, provider := range providersToPair {
+		for _, provider := range pairedProviders {
 			if provider.Address == unresponsiveProvider.Address {
 				found = true
 				break
 			}
 		}
 		if !found {
-			utils.LavaFormatError("reported provider that is not in the pairing list of the client", err, utils.Attribute{Key: "unresponsive_provider_address", Value: unresponsiveProvider})
+			utils.LavaFormatError("reported provider that is not in the pairing list of the client",
+				fmt.Errorf("cannot update unresponsive provider complainer CU"),
+				utils.Attribute{Key: "unresponsive_provider", Value: unresponsiveProvider},
+			)
 			continue
 		}
 
-		// get this epoch's epochPayments object
-		epochPayments, found, key := k.GetEpochPaymentsFromBlock(ctx, epoch)
+		pec, found := k.GetProviderEpochComplainerCuCached(ctx, epoch, unresponsiveProvider.Address, chainID)
 		if !found {
-			// the epochPayments object should exist since we already paid. if not found, print an error and continue
-			utils.LavaFormatError("did not find epochPayments object", err, utils.Attribute{Key: "epochPaymentsKey", Value: key})
-			continue
+			pec = types.ProviderEpochComplainerCu{ComplainersCu: complainerCuToAdd}
+		} else {
+			pec.ComplainersCu += complainerCuToAdd
 		}
+		k.SetProviderEpochComplainerCuCached(ctx, epoch, unresponsiveProvider.Address, chainID, pec)
 
-		// get the providerPaymentStorage object using the providerStorageKey
-		providerStorageKey := k.GetProviderPaymentStorageKey(ctx, chainID, epoch, sdkUnresponsiveProviderAddress)
-		providerPaymentStorage, found := k.GetProviderPaymentStorage(ctx, providerStorageKey)
-
-		if !found {
-			// providerPaymentStorage not found (this provider has no payments in this epoch and also no complaints) -> we need to add one complaint
-			emptyProviderPaymentStorageWithComplaint := types.ProviderPaymentStorage{
-				Index:                                  providerStorageKey,
-				UniquePaymentStorageClientProviderKeys: []string{},
-				Epoch:                                  epoch,
-				ComplainersTotalCu:                     uint64(0),
-			}
-
-			// append the emptyProviderPaymentStorageWithComplaint to the epochPayments object's providerPaymentStorages
-			epochPayments.ProviderPaymentStorageKeys = append(epochPayments.GetProviderPaymentStorageKeys(), emptyProviderPaymentStorageWithComplaint.GetIndex())
-			k.SetEpochPayments(ctx, epochPayments)
-
-			// assign providerPaymentStorage with the new empty providerPaymentStorage
-			providerPaymentStorage = emptyProviderPaymentStorageWithComplaint
-		}
-
-		// add complainer's used CU to providerPaymentStorage
-		providerPaymentStorage.ComplainersTotalCu += complainerCuToAdd
 		timestamp := time.Unix(unresponsiveProvider.TimestampS, 0)
-		utils.LogLavaEvent(ctx, logger, types.ProviderReportedEventName, map[string]string{"provider": unresponsiveProvider.GetAddress(), "timestamp": timestamp.Format(time.DateTime), "disconnections": strconv.FormatUint(unresponsiveProvider.GetDisconnections(), 10), "errors": strconv.FormatUint(unresponsiveProvider.GetErrors(), 10), "project": projectID, "cu": strconv.FormatUint(complainerCuToAdd, 10), "epoch": strconv.FormatUint(epoch, 10), "total_complaint_this_epoch": strconv.FormatUint(providerPaymentStorage.ComplainersTotalCu, 10)}, "provider got reported by consumer")
-		// set the final provider payment storage state including the complaints
-		k.SetProviderPaymentStorage(ctx, providerPaymentStorage)
+		details := map[string]string{
+			"provider":                   unresponsiveProvider.Address,
+			"timestamp":                  timestamp.Format(time.DateTime),
+			"disconnections":             strconv.FormatUint(unresponsiveProvider.GetDisconnections(), 10),
+			"errors":                     strconv.FormatUint(unresponsiveProvider.GetErrors(), 10),
+			"project":                    project,
+			"cu":                         strconv.FormatUint(complainerCuToAdd, 10),
+			"epoch":                      strconv.FormatUint(epoch, 10),
+			"total_complaint_this_epoch": strconv.FormatUint(pec.ComplainersCu, 10),
+		}
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderReportedEventName, details, "provider got reported by consumer")
 	}
 
 	return nil
 }
 
-func (k Keeper) chargeCuToSubscriptionAndCreditProvider(ctx sdk.Context, clientAddr sdk.AccAddress, relay *types.RelaySession, cuAfterQos uint64) error {
+func (k Keeper) chargeCuToSubscriptionAndCreditProvider(ctx sdk.Context, project projectstypes.Project, relay *types.RelaySession, cuAfterQos uint64) error {
 	epoch := uint64(relay.Epoch)
 
-	project, err := k.projectsKeeper.GetProjectForDeveloper(ctx, clientAddr.String(), epoch)
-	if err != nil {
-		return fmt.Errorf("failed to get project for client")
-	}
-
-	err = k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, epoch, relay.CuSum)
+	err := k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, epoch, relay.CuSum)
 	if err != nil {
 		return fmt.Errorf("failed to add CU to the project")
 	}

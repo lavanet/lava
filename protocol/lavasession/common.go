@@ -14,6 +14,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/keeper/scores"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -24,8 +25,8 @@ import (
 
 const (
 	MaxConsecutiveConnectionAttempts                 = 5
-	TimeoutForEstablishingAConnection                = 1 * time.Second
-	MaxSessionsAllowedPerProvider                    = 1000 // Max number of sessions allowed per provider
+	TimeoutForEstablishingAConnection                = 1500 * time.Millisecond // 1.5 seconds
+	MaxSessionsAllowedPerProvider                    = 1000                    // Max number of sessions allowed per provider
 	MaxAllowedBlockListedSessionPerProvider          = 3
 	MaximumNumberOfFailuresAllowedPerConsumerSession = 3
 	RelayNumberIncrement                             = 1
@@ -63,7 +64,7 @@ func ConnectgRPCClient(ctx context.Context, address string, allowInsecure bool) 
 		tlsConf.InsecureSkipVerify = true // this will allow us to use self signed certificates in development.
 	}
 	credentials := credentials.NewTLS(&tlsConf)
-	conn, err := grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithTransportCredentials(credentials))
+	conn, err := grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithTransportCredentials(credentials), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
 	return conn, err
 }
 
@@ -138,17 +139,6 @@ func GetTlsConfig(networkAddress NetworkAddressData) *tls.Config {
 		}
 	}
 	return tlsConfig
-}
-
-func GetAllProviders(allAddresses []string, ignoredProviders map[string]struct{}) (returnedProviders []string) {
-	for _, providerAddress := range allAddresses {
-		if _, ok := ignoredProviders[providerAddress]; ok {
-			// ignored provider, skip it
-			continue
-		}
-		returnedProviders = append(returnedProviders, providerAddress)
-	}
-	return returnedProviders
 }
 
 func SortByGeolocations(pairingEndpoints []*Endpoint, currentGeo planstypes.Geolocation) {

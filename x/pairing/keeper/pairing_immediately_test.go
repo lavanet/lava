@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/utils/slices"
+	"github.com/lavanet/lava/utils/lavaslices"
 	projectTypes "github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
@@ -50,7 +50,7 @@ func TestCreateProjectAddKey(t *testing.T) {
 	projectData := projectTypes.ProjectData{
 		Name:        "test",
 		Enabled:     true,
-		ProjectKeys: slices.Slice(projectTypes.ProjectDeveloperKey(dev1Addr)),
+		ProjectKeys: lavaslices.Slice(projectTypes.ProjectDeveloperKey(dev1Addr)),
 		Policy:      nil,
 	}
 
@@ -89,7 +89,7 @@ func TestAddKeyCreateProject(t *testing.T) {
 	projectData := projectTypes.ProjectData{
 		Name:        "test",
 		Enabled:     true,
-		ProjectKeys: slices.Slice(devkey),
+		ProjectKeys: lavaslices.Slice(devkey),
 		Policy:      nil,
 	}
 

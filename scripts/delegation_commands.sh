@@ -12,7 +12,7 @@ source $__dir/useful_commands.sh
 . ${__dir}/vars/variables.sh
 
 # Provider delegations (dualstaking module)
-lavad tx dualstaking delegate $(lavad keys show servicer1 -a) COS3 $(operator_address) 1000ulava -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
+lavad tx dualstaking delegate $(lavad keys show servicer1 -a) OSMOSIS $(operator_address) 1000ulava -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
 wait_count_blocks 1
 lavad tx dualstaking delegate $(lavad keys show servicer3 -a) LAV1 $(operator_address) 1000ulava -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
 wait_count_blocks 1

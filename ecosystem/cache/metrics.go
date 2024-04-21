@@ -17,14 +17,13 @@ const (
 )
 
 type CacheMetrics struct {
-	lock                         sync.RWMutex
-	totalHits                    *prometheus.CounterVec
-	totalMisses                  *prometheus.CounterVec
-	apiSpecifics                 *prometheus.GaugeVec
-	useMethodInApiSpecificMetric bool
+	lock         sync.RWMutex
+	totalHits    *prometheus.CounterVec
+	totalMisses  *prometheus.CounterVec
+	apiSpecifics *prometheus.GaugeVec
 }
 
-func NewCacheMetricsServer(listenAddress string, useMethodInApiSpecificMetric bool) *CacheMetrics {
+func NewCacheMetricsServer(listenAddress string) *CacheMetrics {
 	if listenAddress == DisabledFlagOption {
 		utils.LavaFormatWarning("prometheus endpoint inactive, option is disabled", nil)
 		return nil
@@ -39,14 +38,7 @@ func NewCacheMetricsServer(listenAddress string, useMethodInApiSpecificMetric bo
 		Help: "The total number of misses the cache server could not reply.",
 	}, []string{totalMissesKey})
 
-	var apiSpecificsLabelNames []string
-
-	if useMethodInApiSpecificMetric {
-		apiSpecificsLabelNames = []string{"requested_block", "chain_id", "method", "api_interface", "result"}
-	} else {
-		apiSpecificsLabelNames = []string{"requested_block", "chain_id", "api_interface", "result"}
-	}
-
+	apiSpecificsLabelNames := []string{"requested_block", "chain_id", "result"}
 	apiSpecifics := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "cache_api_specifics",
 		Help: "api specific information",
@@ -61,10 +53,9 @@ func NewCacheMetricsServer(listenAddress string, useMethodInApiSpecificMetric bo
 		http.ListenAndServe(listenAddress, nil)
 	}()
 	return &CacheMetrics{
-		totalHits:                    totalHits,
-		totalMisses:                  totalMisses,
-		apiSpecifics:                 apiSpecifics,
-		useMethodInApiSpecificMetric: useMethodInApiSpecificMetric,
+		totalHits:    totalHits,
+		totalMisses:  totalMisses,
+		apiSpecifics: apiSpecifics,
 	}
 }
 
@@ -82,11 +73,10 @@ func (c *CacheMetrics) addMiss() {
 	c.totalMisses.WithLabelValues(totalMissesKey).Add(1)
 }
 
-func (c *CacheMetrics) AddApiSpecific(block int64, chainId string, method string, apiInterface string, hit bool) {
+func (c *CacheMetrics) AddApiSpecific(block int64, chainId string, hit bool) {
 	if c == nil {
 		return
 	}
-
 	requestedBlock := "specific"
 	if spectypes.LATEST_BLOCK == block {
 		requestedBlock = "latest"
@@ -97,18 +87,14 @@ func (c *CacheMetrics) AddApiSpecific(block int64, chainId string, method string
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	if hit {
-		c.apiSpecificWithMethodIfNeeded(requestedBlock, chainId, method, apiInterface, "hit")
+		c.apiSpecificWithMethodIfNeeded(requestedBlock, chainId, "hit")
 		c.addHit()
 	} else {
-		c.apiSpecificWithMethodIfNeeded(requestedBlock, chainId, method, apiInterface, "miss")
+		c.apiSpecificWithMethodIfNeeded(requestedBlock, chainId, "miss")
 		c.addMiss()
 	}
 }
 
-func (c *CacheMetrics) apiSpecificWithMethodIfNeeded(requestedBlock, chainId, method, apiInterface, hitOrMiss string) {
-	if c.useMethodInApiSpecificMetric {
-		c.apiSpecifics.WithLabelValues(requestedBlock, chainId, method, apiInterface, hitOrMiss).Add(1) // Removed "specifics" label
-	} else {
-		c.apiSpecifics.WithLabelValues(requestedBlock, chainId, apiInterface, hitOrMiss).Add(1) // Removed "specifics" and "method" label
-	}
+func (c *CacheMetrics) apiSpecificWithMethodIfNeeded(requestedBlock, chainId, hitOrMiss string) {
+	c.apiSpecifics.WithLabelValues(requestedBlock, chainId, hitOrMiss).Add(1) // Removed "specifics" label
 }
