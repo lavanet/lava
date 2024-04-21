@@ -390,7 +390,6 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
 	defer startNewBatchTicker.Stop()
-
 	numberOfRetriesLaunched := 0
 	for {
 		select {
