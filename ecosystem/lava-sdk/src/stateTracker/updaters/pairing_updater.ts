@@ -179,7 +179,7 @@ export class PairingUpdater {
       }
 
       const newPairing = new ConsumerSessionsWithProvider(
-        provider.getAddress(),
+        provider.getOperator(),
         endpointListToStore,
         {},
         pairing.maxCu,
