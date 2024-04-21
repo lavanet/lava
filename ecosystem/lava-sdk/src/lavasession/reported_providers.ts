@@ -18,7 +18,7 @@ export class ReportedProviders {
       reportedProviderEntry,
     ] of this.addedToPurgeAndReport.entries()) {
       const reportedProvider = new ReportedProvider();
-      reportedProvider.setAddress(provider);
+      reportedProvider.setOperator(provider);
       reportedProvider.setDisconnections(reportedProviderEntry.disconnections);
       reportedProvider.setErrors(reportedProviderEntry.errors);
       reportedProvider.setTimestampS(reportedProviderEntry.addedTime);
