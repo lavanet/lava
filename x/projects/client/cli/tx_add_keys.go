@@ -4,6 +4,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/decoder"
 	"github.com/lavanet/lava/x/projects/types"
 	"github.com/spf13/cobra"
@@ -25,6 +26,11 @@ func CmdAddKeys() *cobra.Command {
 			projectID := args[0]
 			var projectKeys []types.ProjectKey
 
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
 			if len(args) > 1 {
 				projectKeysFilePath := args[1]
 				err = decoder.DecodeFile(projectKeysFilePath, "Project-Keys", &projectKeys, nil, nil, nil)
@@ -38,7 +44,11 @@ func CmdAddKeys() *cobra.Command {
 				}
 				var developerKeys []types.ProjectKey
 				for _, developerFlagValue := range developerFlagsValue {
-					developerKeys = append(developerKeys, types.ProjectDeveloperKey(developerFlagValue))
+					developer, err := utils.ParseCLIAddress(clientCtx, developerFlagValue)
+					if err != nil {
+						return err
+					}
+					developerKeys = append(developerKeys, types.ProjectDeveloperKey(developer))
 				}
 
 				adminAddresses, err := cmd.Flags().GetStringSlice("admin-key")
@@ -47,17 +57,16 @@ func CmdAddKeys() *cobra.Command {
 				}
 				var adminKeys []types.ProjectKey
 				for _, adminAddress := range adminAddresses {
-					adminKeys = append(adminKeys, types.ProjectAdminKey(adminAddress))
+					admin, err := utils.ParseCLIAddress(clientCtx, adminAddress)
+					if err != nil {
+						return err
+					}
+					adminKeys = append(adminKeys, types.ProjectAdminKey(admin))
 				}
 
 				// doing this redundant line to avoid lint issues
 				developerKeys = append(developerKeys, adminKeys...)
 				projectKeys = developerKeys
-			}
-
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
 			}
 
 			msg := types.NewMsgAddKeys(

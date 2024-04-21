@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/conflict/types"
 	"github.com/spf13/cobra"
 )
@@ -20,8 +21,12 @@ func CmdConsumerConflicts() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
+			consumer, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
 			params := &types.QueryConsumerConflictsRequest{
-				Consumer: args[0],
+				Consumer: consumer,
 			}
 
 			res, err := queryClient.ConsumerConflicts(cmd.Context(), params)
