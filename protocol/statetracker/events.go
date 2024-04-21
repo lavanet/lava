@@ -309,9 +309,10 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 
 func CreateTxCounterCobraCommand() *cobra.Command {
 	cmdTxCounter := &cobra.Command{
-		Use:     `txcounter  [number_of_days_to_count(int)] [average_block_time_in_seconds(int)]`,
-		Short:   `tx counter  [number_of_days_to_count(int)] [average_block_time_in_seconds(int)]`,
-		Long:    `tx counter  [number_of_days_to_count(int)] [average_block_time_in_seconds(int)]`,
+		Use:   `txcounter  [number_of_days_to_count(int)] [average_block_time_in_seconds(int)]`,
+		Short: `txcounter  [number_of_days_to_count(int)] [average_block_time_in_seconds(int)]`,
+		Long: `txcounter  [number_of_days_to_count(int)] [average_block_time_in_seconds(int)] counting the number of
+transactions for a certain amount of days given the average block time for that chain`,
 		Example: `lavad test txcounter 1 15 -- will count 1 day worth of blocks where each block is 15 seconds`,
 		Args:    cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
