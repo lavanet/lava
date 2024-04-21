@@ -30,6 +30,8 @@ import (
 )
 
 const (
+	// maximum number of retries to send due to the ticker, if we didn't get a response after 10 different attempts then just wait.
+	MaximumNumberOfTickerRelayRetries        = 10
 	MaxRelayRetries                          = 6
 	SendRelayAttempts                        = 3
 	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
@@ -388,22 +390,34 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
 	defer startNewBatchTicker.Stop()
+
+	numberOfRetriesLaunched := 0
 	for {
 		select {
 		case success := <-gotResults:
-			if success {
+			if success { // check wether we can return the valid results or we need to send another relay
 				return relayProcessor, nil
 			}
+			// if we don't need to retry return what we currently have
+			if !relayProcessor.ShouldRetry() {
+				return relayProcessor, nil
+			}
+			// otherwise continue sending another relay
 			err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 			go validateReturnCondition(err)
 			go readResultsFromProcessor()
 		case <-startNewBatchTicker.C:
 			// only trigger another batch for non BestResult relays
-			if relayProcessor.selection != BestResult {
-				err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
-				go validateReturnCondition(err)
-				// add ticker launch metrics
-				go rpccs.rpcConsumerLogs.SetRelaySentByNewBatchTickerMetric(rpccs.getChainIdAndApiInterface())
+			if relayProcessor.ShouldRetry() {
+				// limit the number of retries called from the new batch ticker flow.
+				// if we pass the limit we just wait for the relays we sent to return.
+				if numberOfRetriesLaunched < MaximumNumberOfTickerRelayRetries {
+					err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
+					go validateReturnCondition(err)
+					// add ticker launch metrics
+					go rpccs.rpcConsumerLogs.SetRelaySentByNewBatchTickerMetric(rpccs.getChainIdAndApiInterface())
+				}
+				numberOfRetriesLaunched++
 			}
 		case returnErr := <-returnCondition:
 			// we use this channel because there could be a race condition between us releasing the provider and about to send the return
