@@ -399,24 +399,23 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 				return relayProcessor, nil
 			}
 			// if we don't need to retry return what we currently have
-			if !relayProcessor.ShouldRetry() {
+			if !relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
 				return relayProcessor, nil
 			}
 			// otherwise continue sending another relay
 			err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 			go validateReturnCondition(err)
 			go readResultsFromProcessor()
+			numberOfRetriesLaunched++
 		case <-startNewBatchTicker.C:
 			// only trigger another batch for non BestResult relays
-			if relayProcessor.ShouldRetry() {
+			if relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
 				// limit the number of retries called from the new batch ticker flow.
 				// if we pass the limit we just wait for the relays we sent to return.
-				if numberOfRetriesLaunched < MaximumNumberOfTickerRelayRetries {
-					err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
-					go validateReturnCondition(err)
-					// add ticker launch metrics
-					go rpccs.rpcConsumerLogs.SetRelaySentByNewBatchTickerMetric(rpccs.getChainIdAndApiInterface())
-				}
+				err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
+				go validateReturnCondition(err)
+				// add ticker launch metrics
+				go rpccs.rpcConsumerLogs.SetRelaySentByNewBatchTickerMetric(rpccs.getChainIdAndApiInterface())
 				numberOfRetriesLaunched++
 			}
 		case returnErr := <-returnCondition:
