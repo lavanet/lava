@@ -513,18 +513,18 @@ func (csm *ConsumerSessionManager) getTopTenProvidersForStatefulCalls(validAddre
 	}
 	// Sort the slice using the custom sorting rule
 	sort.Slice(validAddresses, customSort)
-	validAddressesMaxIndex := len(validAddresses) - 1
 	addresses := []string{}
-	for i := 0; i < 10; i++ {
-		// do not overflow
-		if i > validAddressesMaxIndex {
-			break
-		}
+	wantedLength := 10
+	for _, sortedAddress := range validAddresses {
 		// skip ignored providers
-		if _, foundInIgnoredProviderList := ignoredProvidersList[validAddresses[i]]; foundInIgnoredProviderList {
+		if _, foundInIgnoredProviderList := ignoredProvidersList[sortedAddress]; foundInIgnoredProviderList {
 			continue
 		}
-		addresses = append(addresses, validAddresses[i])
+		// fill the slice until we have 10 providers who are not ignored
+		addresses = append(addresses, sortedAddress)
+		if len(addresses) >= wantedLength {
+			break
+		}
 	}
 	return addresses
 }
@@ -589,9 +589,12 @@ func (csm *ConsumerSessionManager) tryGetConsumerSessionWithProviderFromBlockedP
 
 	// if len(csm.currentlyBlockedProviderAddresses) == 0 we probably reset the state so we can fetch it normally OR ||
 	// on a very rare case epoch change can happen. in this case we should just fetch a provider from the new pairing list.
+	// we also enter this case if all validAddresses are inside ignoredProviders
 	if len(csm.currentlyBlockedProviderAddresses) == 0 || ignoredProviders.currentEpoch < currentEpoch {
 		// epoch changed just now (between the getValidConsumerSessionsWithProvider to tryGetConsumerSessionWithProviderFromBlockedProviderList)
-		utils.LavaFormatDebug("Epoch changed between getValidConsumerSessionsWithProvider to tryGetConsumerSessionWithProviderFromBlockedProviderList getting pairing from new epoch list")
+		if ignoredProviders.currentEpoch < currentEpoch {
+			utils.LavaFormatDebug("Epoch changed between getValidConsumerSessionsWithProvider to tryGetConsumerSessionWithProviderFromBlockedProviderList getting pairing from new epoch list")
+		}
 		csm.lock.RUnlock() // unlock because getValidConsumerSessionsWithProvider is locking.
 		return csm.getValidConsumerSessionsWithProvider(ignoredProviders, cuNeededForSession, requestedBlock, addon, extensions, stateful, virtualEpoch)
 	}
