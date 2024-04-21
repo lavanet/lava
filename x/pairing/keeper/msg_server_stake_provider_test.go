@@ -1056,7 +1056,7 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 		ENDPOINTS_GEOLOCATION = 2
 		MONIKER               = 3
 		DELEGATE_LIMIT        = 4
-		DELEGATE_COMISSION    = 5
+		DELEGATE_COMMISSION   = 5
 		OPERATOR              = 6
 	)
 
@@ -1071,7 +1071,7 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 		{"endpoints_geo change vault", vault, ENDPOINTS_GEOLOCATION, true},
 		{"moniker change vault", vault, MONIKER, true},
 		{"delegate total change vault", vault, DELEGATE_LIMIT, true},
-		{"delegate commission change vault", vault, DELEGATE_COMISSION, true},
+		{"delegate commission change vault", vault, DELEGATE_COMMISSION, true},
 		{"operator change vault", vault, OPERATOR, true},
 
 		// operator can't change stake/delegation related properties
@@ -1079,7 +1079,7 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 		{"endpoints_geo change operator", operator, ENDPOINTS_GEOLOCATION, true},
 		{"moniker change operator", operator, MONIKER, true},
 		{"delegate total change operator", operator, DELEGATE_LIMIT, false},
-		{"delegate commission change operator", operator, DELEGATE_COMISSION, false},
+		{"delegate commission change operator", operator, DELEGATE_COMMISSION, false},
 		{"operator change operator", operator, OPERATOR, true},
 	}
 
@@ -1108,8 +1108,8 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 				msg.Moniker = "test2"
 			case DELEGATE_LIMIT:
 				msg.DelegateLimit = msg.DelegateLimit.AddAmount(math.NewInt(100))
-			case DELEGATE_COMISSION:
-				msg.DelegateCommission = msg.DelegateCommission - 10
+			case DELEGATE_COMMISSION:
+				msg.DelegateCommission -= 10
 			case OPERATOR:
 				operator = dummy
 			}

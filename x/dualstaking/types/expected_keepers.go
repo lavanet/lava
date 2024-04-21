@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/x/epochstorage/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -45,7 +44,7 @@ type EpochstorageKeeper interface {
 	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string) error
 	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64)
 	GetUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64
-	UnstakeEntryByAddress(ctx sdk.Context, address string) (value types.StakeEntry, found bool)
+	UnstakeEntryByAddress(ctx sdk.Context, address string) (value epochstoragetypes.StakeEntry, found bool)
 	// Methods imported from epochstorage should be defined here
 }
 
