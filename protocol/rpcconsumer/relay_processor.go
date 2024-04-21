@@ -67,6 +67,10 @@ type RelayProcessor struct {
 	consumerIp             string
 }
 
+func (rp *RelayProcessor) ShouldRetry() bool {
+	return rp.selection != BestResult
+}
+
 func (rp *RelayProcessor) String() string {
 	if rp == nil {
 		return ""
