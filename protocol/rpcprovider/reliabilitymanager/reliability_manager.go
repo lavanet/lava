@@ -111,7 +111,8 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 				utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "chainID", Value: voteParams.ChainID})
 		}
 		// TODO: get extensions and addons from the request
-		reply, _, _, _, _, err := rm.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
+		replyWrapper, _, _, _, _, err := rm.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
+		reply := replyWrapper.RelayReply
 		if err != nil {
 			return utils.LavaFormatError("vote relay send has failed", err,
 				utils.Attribute{Key: "ApiURL", Value: voteParams.ApiURL}, utils.Attribute{Key: "RequestData", Value: voteParams.RequestData})
