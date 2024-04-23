@@ -426,7 +426,7 @@ func newGrpcChainProxy(ctx context.Context, averageBlockTime time.Duration, pars
 	return cp, nil
 }
 
-func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on grpc", nil, utils.Attribute{Key: "GUID", Value: ctx})
 	}
@@ -530,6 +530,21 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
 	defer cancel()
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
+	// Extract status code from response headers
+	statusCodeHeader := respHeaders.Get("grpc-status")
+	if len(statusCodeHeader) > 0 {
+		statusCodeTest, err := strconv.Atoi(statusCodeHeader[0])
+		if err != nil {
+			// Handle error
+			utils.LavaFormatError("Error:", err, utils.LogAttr("statusCode", statusCodeTest))
+		} else {
+			// Use the status code
+			utils.LavaFormatDebug("Status Code:", utils.LogAttr("statusCode", statusCodeTest))
+		}
+	} else {
+		utils.LavaFormatDebug("NO Status Code:")
+		// No status code found in response headers
+	}
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
 		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
@@ -537,13 +552,16 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, parsedError
 		}
 		// return the node's error back to the client as the error type is a invalid request which is cu deductible
-		respBytes, handlingError := parseGrpcNodeErrorToReply(ctx, err)
+		respBytes, statusCode, handlingError := parseGrpcNodeErrorToReply(ctx, err)
 		if handlingError != nil {
 			return nil, "", nil, handlingError
 		}
-		reply := &pairingtypes.RelayReply{
-			Data:     respBytes,
-			Metadata: convertToMetadataMapOfSlices(respHeaders),
+		reply := &RelayReplyWrapper{
+			StatusCode: int(statusCode),
+			RelayReply: &pairingtypes.RelayReply{
+				Data:     respBytes,
+				Metadata: convertToMetadataMapOfSlices(respHeaders),
+			},
 		}
 		return reply, "", nil, nil
 	}
@@ -553,10 +571,12 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
-
-	reply := &pairingtypes.RelayReply{
-		Data:     respBytes,
-		Metadata: convertToMetadataMapOfSlices(respHeaders),
+	reply := &RelayReplyWrapper{
+		StatusCode: 200, // status code is used only for rest at the moment
+		RelayReply: &pairingtypes.RelayReply{
+			Data:     respBytes,
+			Metadata: convertToMetadataMapOfSlices(respHeaders),
+		},
 	}
 	return reply, "", nil, nil
 }
@@ -564,21 +584,24 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 // This method assumes that the error is due to misuse of the request arguments, meaning the user would like to get
 // the response from the server to fix the request arguments. this method will make sure the user will get the response
 // from the node in the same format as expected.
-func parseGrpcNodeErrorToReply(ctx context.Context, err error) ([]byte, error) {
+func parseGrpcNodeErrorToReply(ctx context.Context, err error) ([]byte, uint32, error) {
 	var respBytes []byte
 	var marshalingError error
+	var errorCode uint32 = 0
 	if statusError, ok := status.FromError(err); ok {
-		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: statusError.Message(), ErrorCode: uint32(statusError.Code())})
+		errorCode = uint32(statusError.Code())
+		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: statusError.Message(), ErrorCode: errorCode})
 		if marshalingError != nil {
-			return nil, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 1", err, utils.Attribute{Key: "GUID", Value: ctx})
+			return nil, errorCode, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 1", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	} else {
-		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: err.Error(), ErrorCode: uint32(32)})
+		errorCode = 32
+		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: err.Error(), ErrorCode: errorCode})
 		if marshalingError != nil {
-			return nil, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 2", err, utils.Attribute{Key: "GUID", Value: ctx})
+			return nil, errorCode, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 2", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}
-	return respBytes, nil
+	return respBytes, errorCode, nil
 }
 
 func marshalJSON(msg proto.Message) ([]byte, error) {
