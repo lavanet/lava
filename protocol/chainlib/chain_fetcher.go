@@ -170,7 +170,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		return utils.LavaFormatWarning("[-] verify failed sending chainMessage", err, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
 
-	parserInput, err := FormatResponseForParsing(reply, chainMessage)
+	parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 	if err != nil {
 		return utils.LavaFormatWarning("[-] verify failed to parse result", err,
 			utils.LogAttr("chain_id", chainId),
@@ -184,7 +184,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.GetApiName()},
-			{Key: "Response", Value: string(reply.Data)},
+			{Key: "Response", Value: string(reply.RelayReply.Data)},
 		}...)
 	}
 	if verification.LatestDistance != 0 && latestBlock != 0 && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
@@ -194,7 +194,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				{Key: "chainId", Value: chainId},
 				{Key: "nodeUrl", Value: proxyUrl.Url},
 				{Key: "Method", Value: parsing.GetApiName()},
-				{Key: "Response", Value: string(reply.Data)},
+				{Key: "Response", Value: string(reply.RelayReply.Data)},
 				{Key: "parsedResult", Value: parsedResult},
 			}...)
 		}
@@ -271,13 +271,13 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}, {Key: "error", Value: err}}...)
 	}
-	parserInput, err := FormatResponseForParsing(reply, chainMessage)
+	parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 	if err != nil {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatDebug(tagName+" Failed formatResponseForParsing", []utils.Attribute{
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.Data)},
+			{Key: "Response", Value: string(reply.RelayReply.Data)},
 			{Key: "error", Value: err},
 		}...)
 	}
@@ -287,7 +287,7 @@ func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) 
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.Data)},
+			{Key: "Response", Value: string(reply.RelayReply.Data)},
 			{Key: "error", Value: err},
 		}...)
 	}
@@ -331,14 +331,14 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 		timeTaken := time.Since(start)
 		return "", utils.LavaFormatDebug(tagName+" failed sending chainMessage", []utils.Attribute{{Key: "sendTime", Value: timeTaken}, {Key: "error", Value: err}, {Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
-	parserInput, err := FormatResponseForParsing(reply, chainMessage)
+	parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 	if err != nil {
 		return "", utils.LavaFormatDebug(tagName+" Failed formatResponseForParsing", []utils.Attribute{
 			{Key: "error", Value: err},
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.Data)},
+			{Key: "Response", Value: string(reply.RelayReply.Data)},
 		}...)
 	}
 
@@ -349,14 +349,14 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 			{Key: "chainId", Value: chainId},
 			{Key: "nodeUrl", Value: proxyUrl.Url},
 			{Key: "Method", Value: parsing.ApiName},
-			{Key: "Response", Value: string(reply.Data)},
+			{Key: "Response", Value: string(reply.RelayReply.Data)},
 		}...)
 	}
 	_, _, blockDistanceToFinalization, _ := cf.chainParser.ChainBlockStats()
 	latestBlock := atomic.LoadInt64(&cf.latestBlock) // assuming FetchLatestBlockNum is called before this one it's always true
 	if latestBlock > 0 {
 		finalized := spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceToFinalization)
-		cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply, []byte(res), finalized)
+		cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply.RelayReply, []byte(res), finalized)
 	}
 	return res, nil
 }
