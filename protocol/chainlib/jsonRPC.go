@@ -586,7 +586,7 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 	return nil
 }
 
-func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, err error) {
+func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, err error) {
 	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
 	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
 	if err != nil {
@@ -627,13 +627,15 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 	if err != nil {
 		return nil, err
 	}
-	reply := &pairingtypes.RelayReply{
-		Data: retData,
-	}
+	reply := &RelayReplyWrapper{
+		StatusCode: 200, // TODO_RAN
+		RelayReply: &pairingtypes.RelayReply{
+			Data: retData,
+		}}
 	return reply, nil
 }
 
-func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
@@ -725,9 +727,11 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		return nil, "", nil, err
 	}
 
-	reply := &pairingtypes.RelayReply{
-		Data: retData,
-	}
+	reply := &RelayReplyWrapper{
+		StatusCode: -1, // status code is used only for rest at the moment
+		RelayReply: &pairingtypes.RelayReply{
+			Data: retData,
+		}}
 
 	if ch != nil {
 		subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
