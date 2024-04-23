@@ -32,6 +32,11 @@ const (
 
 var InvalidResponses = []string{"null", "", "nil", "undefined"}
 
+type RelayReplyWrapper struct {
+	StatusCode int
+	RelayReply *pairingtypes.RelayReply
+}
+
 type VerificationKey struct {
 	Extension string
 	Addon     string
