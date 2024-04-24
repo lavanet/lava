@@ -277,7 +277,6 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	metadata, directiveHeaders := rpccs.LavaDirectiveHeaders(metadata)
 	relaySentTime := time.Now()
 	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders))
-
 	if err != nil {
 		return nil, err
 	}
