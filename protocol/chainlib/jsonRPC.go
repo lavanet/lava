@@ -628,10 +628,10 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 		return nil, err
 	}
 	reply := &RelayReplyWrapper{
-		StatusCode: 200, // TODO_RAN
 		RelayReply: &pairingtypes.RelayReply{
 			Data: retData,
-		}}
+		},
+	}
 	return reply, nil
 }
 
@@ -728,10 +728,10 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 
 	reply := &RelayReplyWrapper{
-		StatusCode: -1, // status code is used only for rest at the moment
 		RelayReply: &pairingtypes.RelayReply{
 			Data: retData,
-		}}
+		},
+	}
 
 	if ch != nil {
 		subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
