@@ -53,7 +53,8 @@ type providerDataContainer struct {
 func NewFinalizationConsensus(specId string) *FinalizationConsensus {
 	return &FinalizationConsensus{
 		specId: specId,
-		currentEpochBlockToHashesToAgreeingProviders: BlockToHashesToAgreeingProviders{},
+		currentEpochBlockToHashesToAgreeingProviders: make(BlockToHashesToAgreeingProviders),
+		prevEpochBlockToHashesToAgreeingProviders:    make(BlockToHashesToAgreeingProviders),
 	}
 }
 
