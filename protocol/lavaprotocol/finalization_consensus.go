@@ -34,7 +34,7 @@ func (b BlockToHashesToAgreeingProviders) String() string {
 type FinalizationConsensus struct {
 	currentEpochBlockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders
 	prevEpochBlockToHashesToAgreeingProviders    BlockToHashesToAgreeingProviders
-	providerDataContainersMu                     sync.RWMutex
+	lock                                         sync.RWMutex
 	currentEpoch                                 uint64
 	prevLatestBlockByMedian                      uint64 // for caching
 	specId                                       string
@@ -64,8 +64,8 @@ func GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData int64) i
 
 // print the current status
 func (fc *FinalizationConsensus) String() string {
-	fc.providerDataContainersMu.RLock()
-	defer fc.providerDataContainersMu.RUnlock()
+	fc.lock.RLock()
+	defer fc.lock.RUnlock()
 	mapExpectedBlockHeights := fc.getExpectedBlockHeightsOfProviders(10 * time.Millisecond) // it's not super important so we hardcode this
 	return fmt.Sprintf("{FinalizationConsensus: {mapExpectedBlockHeights:%v} epoch: %d latestBlockByMedian %d}", mapExpectedBlockHeights, fc.currentEpoch, &fc.prevLatestBlockByMedian)
 }
@@ -101,10 +101,10 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 // check for discrepancy with old epoch
 // checks if there is a consensus mismatch between hashes provided by different providers
 func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalizedData int64, consumerAddress sdk.AccAddress, providerAddress string, finalizedBlocks map[int64]string, relaySession *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
-	fc.providerDataContainersMu.Lock()
+	fc.lock.Lock()
 	defer func() {
 		fc.insertProviderToConsensus(reply.LatestBlock, blockDistanceForFinalizedData, finalizedBlocks, reply, relaySession, providerAddress)
-		fc.providerDataContainersMu.Unlock()
+		fc.lock.Unlock()
 	}()
 
 	logSuccessUpdate := func() {
@@ -207,8 +207,8 @@ func (fc *FinalizationConsensus) createRelayFinalizationFromProviderDataContaine
 }
 
 func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
-	fc.providerDataContainersMu.Lock()
-	defer fc.providerDataContainersMu.Unlock()
+	fc.lock.Lock()
+	defer fc.lock.Unlock()
 
 	if fc.currentEpoch < epoch {
 		if debug {
@@ -255,8 +255,8 @@ func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlock
 // Returns the expected latest block to be at based on the current finalization data, and the number of providers we have information for.
 // It does the calculation on finalized entries then extrapolates the ending based on blockDistance
 func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
-	fc.providerDataContainersMu.RLock()
-	defer fc.providerDataContainersMu.RUnlock()
+	fc.lock.RLock()
+	defer fc.lock.RUnlock()
 
 	allowedBlockLagForQosSync, averageBlockTime_ms, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
 	mapExpectedBlockHeights := fc.getExpectedBlockHeightsOfProviders(averageBlockTime_ms)
