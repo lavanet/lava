@@ -731,10 +731,10 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 
 	// create a new relay reply struct with the response body as the data
 	reply := &RelayReplyWrapper{
-		StatusCode: res.StatusCode,
 		RelayReply: &pairingtypes.RelayReply{
 			Data: body,
-		}}
+		},
+	}
 
 	// checking if rest reply data is in json format
 	err = cp.HandleJSONFormatError(reply.RelayReply.Data)
@@ -839,10 +839,10 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 
 	// create a new relay reply struct
 	reply := &RelayReplyWrapper{
-		StatusCode: -1, // status code is used only for rest
 		RelayReply: &pairingtypes.RelayReply{
 			Data: data,
-		}}
+		},
+	}
 
 	if ch != nil {
 		// get the params for the rpc call
