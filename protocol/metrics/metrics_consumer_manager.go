@@ -28,14 +28,16 @@ type ConsumerMetricsManager struct {
 	LatestBlockMetric                      *prometheus.GaugeVec
 	LatestProviderRelay                    *prometheus.GaugeVec
 	virtualEpochMetric                     *prometheus.GaugeVec
+	apiSpecificsMetric                     *prometheus.GaugeVec
 	endpointsHealthChecksOkMetric          prometheus.Gauge
 	endpointsHealthChecksOk                uint64
 	lock                                   sync.Mutex
 	protocolVersionMetric                  *prometheus.GaugeVec
 	providerRelays                         map[string]uint64
+	addMethodsApiGauge                     bool
 }
 
-func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
+func NewConsumerMetricsManager(networkAddress string, addMethodsApiGauge bool) *ConsumerMetricsManager {
 	if networkAddress == DisabledFlagOption {
 		utils.LavaFormatWarning("prometheus endpoint inactive, option is disabled", nil)
 		return nil
@@ -114,6 +116,11 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		Name: "lava_consumer_overall_health",
 		Help: "At least one endpoint is healthy",
 	})
+	apiSpecificsMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_api_specifics",
+		Help: "api usage specifics",
+	}, []string{"spec", "apiInterface", "method"})
+
 	endpointsHealthChecksOkMetric.Set(1)
 	protocolVersionMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_provider_protocol_version",
@@ -138,6 +145,7 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 	prometheus.MustRegister(totalRelaysSentByNewBatchTickerMetric)
 	prometheus.MustRegister(currentNumberOfOpenSessionsMetric)
 	prometheus.MustRegister(currentNumberOfBlockedSessionsMetric)
+	prometheus.MustRegister(apiSpecificsMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                 totalCURequestedMetric,
@@ -159,6 +167,8 @@ func NewConsumerMetricsManager(networkAddress string) *ConsumerMetricsManager {
 		totalRelaysSentByNewBatchTickerMetric:  totalRelaysSentByNewBatchTickerMetric,
 		currentNumberOfOpenSessionsMetric:      currentNumberOfOpenSessionsMetric,
 		currentNumberOfBlockedSessionsMetric:   currentNumberOfBlockedSessionsMetric,
+		apiSpecificsMetric:                     apiSpecificsMetric,
+		addMethodsApiGauge:                     addMethodsApiGauge,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -202,6 +212,9 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, er
 	pme.latencyMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Set(float64(relayMetric.Latency))
 	pme.totalCURequestedMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(float64(relayMetric.ComputeUnits))
 	pme.totalRelaysRequestedMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(1)
+	if pme.addMethodsApiGauge && relayMetric.ApiMethod != "" { // pme.addMethodsApiGauge never changes so its safe to read concurrently
+		pme.apiSpecificsMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType, relayMetric.ApiMethod).Add(1)
+	}
 	if !relayMetric.Success {
 		pme.totalErroredMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(1)
 	}
