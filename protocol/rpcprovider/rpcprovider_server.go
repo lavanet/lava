@@ -675,7 +675,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	var modifiedReqBlock int64
 	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
 	relayTimeout := chainlib.GetRelayTimeout(chainMsg, averageBlockTime)
-	updatedChainMessage := false
+	var updatedChainMessage bool
 	if dataReliabilityEnabled {
 		var err error
 		specificBlock := request.RelayData.RequestBlock
