@@ -223,6 +223,10 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 }
 
 func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlockTime_ms time.Duration) map[string]int64 {
+	// This function calculates the expected block heights for providers based on their last known activity and the average block time.
+	// It accounts for both the current and previous epochs, determining the maximum block height from both and adjusting the expected heights accordingly to not exceed this maximum.
+	// The method merges results from both epochs, with the previous epoch's data processed first.
+
 	currentEpochMaxBlockHeight := maps.GetMaxKey(fc.currentEpochBlockToHashesToAgreeingProviders)
 	prevEpochMaxBlockHeight := maps.GetMaxKey(fc.prevEpochBlockToHashesToAgreeingProviders)
 	highestBlockNumber := utils.Max(currentEpochMaxBlockHeight, prevEpochMaxBlockHeight)
