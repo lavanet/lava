@@ -136,7 +136,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	}
 
 	replyFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(relaySession, reply, consumerAddress)
-	finalizationConflict = &conflicttypes.FinalizationConflict{RelayFinalization0: &replyFinalization}
+	finalizationConflict = &conflicttypes.FinalizationConflict{RelayFinalization_0: &replyFinalization}
 
 	var otherBlockHash string
 	for blockHash, agreeingProviders := range blockToHashesToAgreeingProviders[discrepancyBlock] {
@@ -148,7 +148,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 			}
 
 			logSuccessUpdate()
-			finalizationConflict.RelayFinalization1 = relayFinalization
+			finalizationConflict.RelayFinalization_1 = relayFinalization
 
 			errWrapped = sdkerrors.Wrap(lavasession.BlockProviderError, fmt.Sprintf("found same provider conflict on block [%d], provider address [%s]", discrepancyBlock, providerAddress))
 			return finalizationConflict, errWrapped
@@ -167,7 +167,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 			return nil, err
 		}
 
-		finalizationConflict.RelayFinalization1 = relayFinalization
+		finalizationConflict.RelayFinalization_1 = relayFinalization
 		otherProviderAddress = providerAddress
 		// TODO: Should we send a conflict proof for all providers?
 		break

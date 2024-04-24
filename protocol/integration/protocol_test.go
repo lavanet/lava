@@ -757,11 +757,11 @@ func TestSameProviderConflictReport(t *testing.T) {
 				return nil
 			}
 
-			if finalizationConflict.RelayFinalization0.RelaySession.Provider != finalizationConflict.RelayFinalization1.RelaySession.Provider {
+			if finalizationConflict.RelayFinalization_0.RelaySession.Provider != finalizationConflict.RelayFinalization_1.RelaySession.Provider {
 				require.FailNow(t, "Finalization conflict should not have different provider addresses")
 			}
 
-			if finalizationConflict.RelayFinalization0.RelaySession.Provider != providers[0].account.Addr.String() {
+			if finalizationConflict.RelayFinalization_0.RelaySession.Provider != providers[0].account.Addr.String() {
 				require.FailNow(t, "Finalization conflict provider address is not the provider address")
 			}
 
@@ -825,15 +825,15 @@ func TestSameProviderConflictReport(t *testing.T) {
 				return nil
 			}
 
-			if finalizationConflict.RelayFinalization0.RelaySession.Provider == finalizationConflict.RelayFinalization1.RelaySession.Provider {
+			if finalizationConflict.RelayFinalization_0.RelaySession.Provider == finalizationConflict.RelayFinalization_1.RelaySession.Provider {
 				sameProviderConflictSent = true
 			}
 
-			if finalizationConflict.RelayFinalization0.RelaySession.Provider != providers[0].account.Addr.String() {
+			if finalizationConflict.RelayFinalization_0.RelaySession.Provider != providers[0].account.Addr.String() {
 				require.FailNow(t, "Finalization conflict provider 0 address is not the first provider")
 			}
 
-			if !sameProviderConflictSent && finalizationConflict.RelayFinalization1.RelaySession.Provider != providers[1].account.Addr.String() {
+			if !sameProviderConflictSent && finalizationConflict.RelayFinalization_1.RelaySession.Provider != providers[1].account.Addr.String() {
 				require.FailNow(t, "Finalization conflict provider 1 address is not the first provider")
 			}
 

@@ -34,15 +34,15 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 			return nil, utils.LavaFormatWarning("finalization conflict is nil", nil)
 		}
 
-		if conflict.RelayFinalization0 == nil || conflict.RelayFinalization1 == nil {
+		if conflict.RelayFinalization_0 == nil || conflict.RelayFinalization_1 == nil {
 			return nil, utils.LavaFormatWarning("conflict finalization is nil", nil)
 		}
 
-		if conflict.RelayFinalization0.RelaySession == nil || conflict.RelayFinalization1.RelaySession == nil {
+		if conflict.RelayFinalization_0.RelaySession == nil || conflict.RelayFinalization_1.RelaySession == nil {
 			return nil, utils.LavaFormatWarning("conflict relay session is nil", nil)
 		}
 
-		if conflict.RelayFinalization0.RelaySession.Provider == conflict.RelayFinalization1.RelaySession.Provider {
+		if conflict.RelayFinalization_0.RelaySession.Provider == conflict.RelayFinalization_1.RelaySession.Provider {
 			eventData, err := k.handleSameProviderFinalizationConflict(ctx, conflict, clientAddr)
 			if err != nil {
 				return nil, err
@@ -101,9 +101,9 @@ func (k msgServer) handleTwoProvidersFinalizationConflict(ctx sdk.Context, confl
 	}
 
 	eventData = map[string]string{"client": clientAddr.String()}
-	eventData["chainID"] = conflict.RelayFinalization0.RelaySession.SpecId
-	eventData["provider0"] = fmt.Sprintf("%+v", conflict.RelayFinalization0.RelaySession.Provider)
-	eventData["provider1"] = fmt.Sprintf("%+v", conflict.RelayFinalization1.RelaySession.Provider)
+	eventData["chainID"] = conflict.RelayFinalization_0.RelaySession.SpecId
+	eventData["provider0"] = fmt.Sprintf("%+v", conflict.RelayFinalization_0.RelaySession.Provider)
+	eventData["provider1"] = fmt.Sprintf("%+v", conflict.RelayFinalization_1.RelaySession.Provider)
 	// eventData["mismatching_block_height"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
 	// eventData["mismatching_block_hashes"] = fmt.Sprintf("%+v", mismatchingBlockHashes)
 
@@ -119,7 +119,7 @@ func (k msgServer) handleSameProviderFinalizationConflict(ctx sdk.Context, confl
 	}
 
 	eventData = map[string]string{"client": clientAddr.String()}
-	eventData["chainID"] = conflict.RelayFinalization0.RelaySession.SpecId
+	eventData["chainID"] = conflict.RelayFinalization_0.RelaySession.SpecId
 	eventData["provider"] = fmt.Sprintf("%+v", providerAddress)
 	eventData["mismatching_block_height"] = fmt.Sprintf("%+v", mismatchingBlockHeight)
 	eventData["mismatching_block_hashes"] = fmt.Sprintf("%+v", mismatchingBlockHashes)
