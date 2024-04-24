@@ -32,12 +32,12 @@ func (b BlockToHashesToAgreeingProviders) String() string {
 }
 
 type FinalizationConsensus struct {
-	currentBlockToHashesToAgreeingProviders   BlockToHashesToAgreeingProviders
-	prevEpochBlockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders
-	providerDataContainersMu                  sync.RWMutex
-	currentEpoch                              uint64
-	prevLatestBlockByMedian                   uint64 // for caching
-	specId                                    string
+	currentEpochBlockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders
+	prevEpochBlockToHashesToAgreeingProviders    BlockToHashesToAgreeingProviders
+	providerDataContainersMu                     sync.RWMutex
+	currentEpoch                                 uint64
+	prevLatestBlockByMedian                      uint64 // for caching
+	specId                                       string
 }
 
 type providerDataContainer struct {
@@ -52,8 +52,8 @@ type providerDataContainer struct {
 
 func NewFinalizationConsensus(specId string) *FinalizationConsensus {
 	return &FinalizationConsensus{
-		specId:                                  specId,
-		currentBlockToHashesToAgreeingProviders: BlockToHashesToAgreeingProviders{},
+		specId: specId,
+		currentEpochBlockToHashesToAgreeingProviders: BlockToHashesToAgreeingProviders{},
 	}
 }
 
@@ -82,15 +82,15 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 	}
 
 	for blockNum, blockHash := range finalizedBlocks {
-		if _, ok := fc.currentBlockToHashesToAgreeingProviders[blockNum]; !ok {
-			fc.currentBlockToHashesToAgreeingProviders[blockNum] = map[string]map[string]providerDataContainer{}
+		if _, ok := fc.currentEpochBlockToHashesToAgreeingProviders[blockNum]; !ok {
+			fc.currentEpochBlockToHashesToAgreeingProviders[blockNum] = map[string]map[string]providerDataContainer{}
 		}
 
-		if _, ok := fc.currentBlockToHashesToAgreeingProviders[blockNum][blockHash]; !ok {
-			fc.currentBlockToHashesToAgreeingProviders[blockNum][blockHash] = map[string]providerDataContainer{}
+		if _, ok := fc.currentEpochBlockToHashesToAgreeingProviders[blockNum][blockHash]; !ok {
+			fc.currentEpochBlockToHashesToAgreeingProviders[blockNum][blockHash] = map[string]providerDataContainer{}
 		}
 
-		fc.currentBlockToHashesToAgreeingProviders[blockNum][blockHash][providerAcc] = newProviderDataContainer
+		fc.currentEpochBlockToHashesToAgreeingProviders[blockNum][blockHash][providerAcc] = newProviderDataContainer
 	}
 }
 
@@ -106,7 +106,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 			utils.LavaFormatDebug("finalization information update successfully",
 				utils.LogAttr("specId", fc.specId),
 				utils.LogAttr("finalizationData", finalizedBlocks),
-				utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentBlockToHashesToAgreeingProviders),
+				utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentEpochBlockToHashesToAgreeingProviders),
 			)
 		}
 	}
@@ -120,9 +120,9 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	}()
 
 	var blockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders
-	foundDiscrepancy, discrepancyBlock := fc.findDiscrepancy(finalizedBlocks, fc.currentBlockToHashesToAgreeingProviders)
+	foundDiscrepancy, discrepancyBlock := fc.findDiscrepancy(finalizedBlocks, fc.currentEpochBlockToHashesToAgreeingProviders)
 	if foundDiscrepancy {
-		blockToHashesToAgreeingProviders = fc.currentBlockToHashesToAgreeingProviders
+		blockToHashesToAgreeingProviders = fc.currentEpochBlockToHashesToAgreeingProviders
 	} else {
 		// Could not find discrepancy, let's check with previous epoch
 		foundDiscrepancy, discrepancyBlock = fc.findDiscrepancy(finalizedBlocks, fc.prevEpochBlockToHashesToAgreeingProviders)
@@ -218,14 +218,14 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 			utils.LavaFormatDebug("finalization information epoch changed", utils.Attribute{Key: "specId", Value: fc.specId}, utils.Attribute{Key: "epoch", Value: epoch})
 		}
 		// means it's time to refresh the epoch
-		fc.prevEpochBlockToHashesToAgreeingProviders = fc.currentBlockToHashesToAgreeingProviders
-		fc.currentBlockToHashesToAgreeingProviders = BlockToHashesToAgreeingProviders{}
+		fc.prevEpochBlockToHashesToAgreeingProviders = fc.currentEpochBlockToHashesToAgreeingProviders
+		fc.currentEpochBlockToHashesToAgreeingProviders = BlockToHashesToAgreeingProviders{}
 		fc.currentEpoch = epoch
 	}
 }
 
 func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlockTime_ms time.Duration) map[string]int64 {
-	currentEpochMaxBlockHeight := maps.GetMaxKey(fc.currentBlockToHashesToAgreeingProviders)
+	currentEpochMaxBlockHeight := maps.GetMaxKey(fc.currentEpochBlockToHashesToAgreeingProviders)
 	prevEpochMaxBlockHeight := maps.GetMaxKey(fc.prevEpochBlockToHashesToAgreeingProviders)
 	highestBlockNumber := utils.Max(currentEpochMaxBlockHeight, prevEpochMaxBlockHeight)
 
@@ -251,7 +251,7 @@ func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlock
 	mapExpectedBlockHeights := map[string]int64{}
 	// prev must be before current because we overwrite
 	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.prevEpochBlockToHashesToAgreeingProviders)
-	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.currentBlockToHashesToAgreeingProviders)
+	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.currentEpochBlockToHashesToAgreeingProviders)
 	return mapExpectedBlockHeights
 }
 
@@ -290,7 +290,7 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser chainlib.Cha
 			utils.LavaFormatError("uncontinuous jump in finalization data", nil,
 				utils.LogAttr("specId", fc.specId),
 				utils.LogAttr("prevEpochBlockToHashesToAgreeingProviders", fc.prevEpochBlockToHashesToAgreeingProviders),
-				utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentBlockToHashesToAgreeingProviders),
+				utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentEpochBlockToHashesToAgreeingProviders),
 				utils.LogAttr("latestBlock", fc.prevLatestBlockByMedian),
 				utils.LogAttr("providersMedianOfLatestBlock", providersMedianOfLatestBlock),
 			)

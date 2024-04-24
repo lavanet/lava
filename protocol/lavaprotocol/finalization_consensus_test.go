@@ -164,12 +164,12 @@ func TestConsensusHashesInsertion(t *testing.T) {
 					}
 				}
 
-				require.Len(t, finalizationConsensus.currentBlockToHashesToAgreeingProviders, play.consensusBlocksCount,
-					fmt.Sprintf("wrong number of consensus blocks. expected %d, got %d", play.consensusBlocksCount, len(finalizationConsensus.currentBlockToHashesToAgreeingProviders)))
+				require.Len(t, finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders, play.consensusBlocksCount,
+					fmt.Sprintf("wrong number of consensus blocks. expected %d, got %d", play.consensusBlocksCount, len(finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders)))
 
 				// count all block hashes
 				blockHashes := 0
-				for _, hashes := range finalizationConsensus.currentBlockToHashesToAgreeingProviders {
+				for _, hashes := range finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders {
 					blockHashes += len(hashes)
 				}
 
@@ -237,9 +237,9 @@ func TestQoS(t *testing.T) {
 					require.NoError(t, err, "failed insertion when was supposed to succeed, provider %s, latest block %d", insertion.providerAddr, insertion.latestBlock)
 				}
 
-				require.Len(t, finalizationConsensus.currentBlockToHashesToAgreeingProviders, int(blocksInFinalizationProof+2))
+				require.Len(t, finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders, int(blocksInFinalizationProof+2))
 				blockHashes := 0
-				for _, hashes := range finalizationConsensus.currentBlockToHashesToAgreeingProviders {
+				for _, hashes := range finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders {
 					blockHashes += len(hashes)
 				}
 				require.Equal(t, int(blocksInFinalizationProof+2), blockHashes)
@@ -332,7 +332,7 @@ func TestQoS(t *testing.T) {
 				}
 
 				plannedExpectedBH = int64(201) // this is the most advanced in all finalizations
-				require.Len(t, finalizationConsensus.currentBlockToHashesToAgreeingProviders, int(blocksInFinalizationProof+2))
+				require.Len(t, finalizationConsensus.currentEpochBlockToHashesToAgreeingProviders, int(blocksInFinalizationProof+2))
 				expectedBH, numOfProviders = finalizationConsensus.GetExpectedBlockHeight(chainParser)
 				require.Equal(t, 5, numOfProviders)
 				require.Equal(t, plannedExpectedBH-allowedBlockLagForQosSync, expectedBH)
