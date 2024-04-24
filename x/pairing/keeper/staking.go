@@ -270,6 +270,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
+	// use feegrant module to let vault pay for the operator's gas fees
+
 	details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 
 	detailsMap := map[string]string{}

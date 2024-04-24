@@ -12,6 +12,13 @@ import (
 // account keeper mock
 type mockAccountKeeper struct{}
 
+func (k mockAccountKeeper) NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
+	return nil
+}
+
+func (k mockAccountKeeper) SetAccount(ctx sdk.Context, acc authtypes.AccountI) {
+}
+
 func (k mockAccountKeeper) IterateAccounts(ctx sdk.Context, process func(authtypes.AccountI) (stop bool)) {
 }
 
