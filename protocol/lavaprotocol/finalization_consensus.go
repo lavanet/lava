@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -294,7 +295,7 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser chainlib.Cha
 				utils.LogAttr("providersMedianOfLatestBlock", providersMedianOfLatestBlock),
 			)
 		}
-		fc.prevLatestBlockByMedian = uint64(providersMedianOfLatestBlock) // we can only set conflict to "reported".
+		atomic.StoreUint64(&fc.prevLatestBlockByMedian, uint64(providersMedianOfLatestBlock)) // we can only set conflict to "reported".
 	}
 
 	// median of all latest blocks after interpolation minus allowedBlockLagForQosSync is the lowest block in the finalization proof
