@@ -167,7 +167,6 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 
 		finalizationConflict.RelayFinalization_1 = relayFinalization
 		otherProviderAddress = providerAddress
-		// TODO: Should we send a conflict proof for all providers?
 		break
 	}
 
