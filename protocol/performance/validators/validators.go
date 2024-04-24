@@ -37,6 +37,7 @@ type RetInfo struct {
 	checks       int64
 	unbonded     int64
 	tokens       math.Int
+	power        math.LegacyDec
 }
 
 func extractValcons(codec codec.Codec, validator stakingtypes.Validator, hrp string) (valCons string, err error) {
@@ -137,6 +138,14 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 		return retInfo, utils.LavaFormatError("error reading validator", err)
 	}
 	retInfo.tokens = validator.Validator.Tokens
+	timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
+	pool, err := stakingQueryClient.Pool(ctx, &stakingtypes.QueryPoolRequest{})
+	cancel()
+	if err != nil {
+		return retInfo, utils.LavaFormatError("error reading total pool", err)
+	}
+	retInfo.power = math.LegacyNewDecFromInt(validator.Validator.Tokens).QuoInt(pool.Pool.BondedTokens)
+
 	ticker := time.NewTicker(3 * time.Second)
 	readEventsFromBlock := func(blockFrom int64, blockTo int64) error {
 		for block := blockFrom; block < blockTo; block += jumpBlocks {
@@ -248,7 +257,7 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 			rand.InitRandomSeed()
 			retInfo, err := checkValidatorPerformance(ctx, clientCtx, valAddress, regex, blocks, fromBlock)
 			if err == nil {
-				fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n🔹unbonded: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n🔹tokens: %s\n\n", retInfo.checks, retInfo.unbonded, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone, retInfo.tokens.String())
+				fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n🔹unbonded: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n🔹tokens: %s\n🔹power: %s\n\n", retInfo.checks, retInfo.unbonded, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone, retInfo.tokens.String(), retInfo.power.String())
 			}
 			return err
 		},
