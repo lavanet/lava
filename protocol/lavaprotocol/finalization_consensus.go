@@ -101,6 +101,12 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 // check for discrepancy with old epoch
 // checks if there is a consensus mismatch between hashes provided by different providers
 func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalizedData int64, consumerAddress sdk.AccAddress, providerAddress string, finalizedBlocks map[int64]string, relaySession *pairingtypes.RelaySession, reply *pairingtypes.RelayReply) (finalizationConflict *conflicttypes.FinalizationConflict, err error) {
+	fc.providerDataContainersMu.Lock()
+	defer func() {
+		fc.insertProviderToConsensus(reply.LatestBlock, blockDistanceForFinalizedData, finalizedBlocks, reply, relaySession, providerAddress)
+		fc.providerDataContainersMu.Unlock()
+	}()
+
 	logSuccessUpdate := func() {
 		if debug {
 			utils.LavaFormatDebug("finalization information update successfully",
@@ -110,14 +116,6 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 			)
 		}
 	}
-
-	latestBlock := reply.LatestBlock
-
-	fc.providerDataContainersMu.Lock()
-	defer func() {
-		fc.insertProviderToConsensus(latestBlock, blockDistanceForFinalizedData, finalizedBlocks, reply, relaySession, providerAddress)
-		fc.providerDataContainersMu.Unlock()
-	}()
 
 	var blockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders
 	foundDiscrepancy, discrepancyBlock := fc.findDiscrepancy(finalizedBlocks, fc.currentEpochBlockToHashesToAgreeingProviders)
