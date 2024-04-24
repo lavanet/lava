@@ -98,9 +98,10 @@ type ConsumerStateTrackerInf interface {
 }
 
 type AnalyticsServerAddressess struct {
-	MetricsListenAddress string
-	RelayServerAddress   string
-	ReportsAddressFlag   string
+	AddApiMethodMetricsFlagName bool
+	MetricsListenAddress        string
+	RelayServerAddress          string
+	ReportsAddressFlag          string
 }
 type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
@@ -127,8 +128,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 	options.refererData.ReferrerClient = metrics.NewConsumerReferrerClient(options.refererData.Address)
 	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddressess.ReportsAddressFlag)
-	consumerMetricsManager := metrics.NewConsumerMetricsManager(options.analyticsServerAddressess.MetricsListenAddress)     // start up prometheus metrics
-	consumerUsageserveManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddressess.RelayServerAddress) // start up relay server reporting
+	consumerMetricsManager := metrics.NewConsumerMetricsManager(options.analyticsServerAddressess.MetricsListenAddress, options.analyticsServerAddressess.AddApiMethodMetricsFlagName) // start up prometheus metrics
+	consumerUsageserveManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddressess.RelayServerAddress)                                                            // start up relay server reporting
 	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageserveManager)
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
@@ -502,9 +503,10 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			analyticsServerAddressess := AnalyticsServerAddressess{
-				MetricsListenAddress: viper.GetString(metrics.MetricsListenFlagName),
-				RelayServerAddress:   viper.GetString(metrics.RelayServerFlagName),
-				ReportsAddressFlag:   viper.GetString(reportsSendBEAddress),
+				AddApiMethodMetricsFlagName: viper.GetBool(metrics.AddApiMethodMetricsFlagName),
+				MetricsListenAddress:        viper.GetString(metrics.MetricsListenFlagName),
+				RelayServerAddress:          viper.GetString(metrics.RelayServerFlagName),
+				ReportsAddressFlag:          viper.GetString(reportsSendBEAddress),
 			}
 
 			var refererData *chainlib.RefererData
@@ -548,6 +550,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")
 	cmdRPCConsumer.Flags().Var(&strategyFlag, "strategy", fmt.Sprintf("the strategy to use to pick providers (%s)", strings.Join(strategyNames, "|")))
 	cmdRPCConsumer.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
+	cmdRPCConsumer.Flags().Bool(metrics.AddApiMethodMetricsFlagName, false, "adding a counter gauge for each method called per chain per api interface")
 	cmdRPCConsumer.Flags().String(metrics.RelayServerFlagName, metrics.DisabledFlagOption, "the http address of the relay usage server api endpoint (example http://127.0.0.1:8080)")
 	cmdRPCConsumer.Flags().Bool(DebugRelaysFlagName, false, "adding debug information to relays")
 	// CORS related flags
