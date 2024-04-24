@@ -277,6 +277,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	metadata, directiveHeaders := rpccs.LavaDirectiveHeaders(metadata)
 	relaySentTime := time.Now()
 	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders))
+
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +322,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if analytics != nil {
 		currentLatency := time.Since(relaySentTime)
 		analytics.Latency = currentLatency.Milliseconds()
-		analytics.ComputeUnits = chainMessage.GetApi().ComputeUnits
+		api := chainMessage.GetApi()
+		analytics.ComputeUnits = api.ComputeUnits
+		analytics.ApiMethod = api.Name
 	}
 	rpccs.relaysMonitor.LogRelay()
 	return returnedResult, nil
