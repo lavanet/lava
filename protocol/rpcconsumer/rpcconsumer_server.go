@@ -706,7 +706,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 					defer cancel()
 					_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
-
 					// we don't want to cache node errors for too long. what can happen is a finalized block gets an error
 					// and we cache it for a long period of time.
 					isNodeError, _ := chainMessage.CheckResponseError(copyReply.Data, statusCode)
