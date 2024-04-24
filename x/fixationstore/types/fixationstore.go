@@ -736,7 +736,7 @@ func (fs *FixationStore) FindEntryDetailed(ctx sdk.Context, index string, block 
 	// true in this case.
 
 	if !found || entry.IsDeletedBy(block) {
-		return 0, false, false, false
+		return 0, entry.IsDeletedBy(block), false, false
 	}
 
 	fs.cdc.MustUnmarshal(entry.GetData(), entryData)

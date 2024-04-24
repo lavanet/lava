@@ -34,12 +34,12 @@ func TestStakeProviderWithMoniker(t *testing.T) {
 			// Note: using the same "ts" means each provider added gets a new index ("it")
 			err := ts.addProviderMoniker(1, tt.moniker)
 			require.Equal(t, tt.validStake, err == nil, err)
-			providerAcct, _ := ts.GetAccount(common.PROVIDER, it)
+			_, provider := ts.GetAccount(common.PROVIDER, it)
 
 			ts.AdvanceEpoch()
 
 			// Get the stake entry and check the provider is staked
-			stakeEntry, foundProvider, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+			stakeEntry, foundProvider := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 			require.Equal(t, tt.validStake, foundProvider)
 
 			// Check the assigned moniker
@@ -62,21 +62,21 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
-	providerAcct, providerAddr := ts.GetAccount(common.PROVIDER, 0)
+	_, provider := ts.GetAccount(common.PROVIDER, 0)
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	stakeEntry, foundProvider := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, foundProvider)
 	require.Equal(t, moniker, stakeEntry.Moniker)
 
 	// modify moniker
 	moniker = "anotherExampleMoniker"
-	err = ts.StakeProviderExtra(providerAddr, ts.spec, testStake, nil, 0, moniker)
+	err = ts.StakeProviderExtra(provider, ts.spec, testStake, nil, 0, moniker)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	// Get the stake entry and check the provider is staked
-	stakeEntry, foundProvider, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+	stakeEntry, foundProvider = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, foundProvider)
 
 	require.Equal(t, moniker, stakeEntry.Moniker)
@@ -343,7 +343,7 @@ func TestStakeEndpoints(t *testing.T) {
 	ts.spec.ApiCollections = apiCollections
 	ts.AddSpec("mock", ts.spec)
 
-	providerAcc, providerAddr := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	_, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)
 
 	getEndpoint := func(
 		host string,
@@ -696,11 +696,11 @@ func TestStakeEndpoints(t *testing.T) {
 
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
-			_, err := ts.TxPairingStakeProvider(providerAddr, ts.spec.Index, amount, play.endpoints, play.geolocation, "prov")
+			_, err := ts.TxPairingStakeProvider(provider, ts.spec.Index, amount, play.endpoints, play.geolocation, "prov")
 			if play.success {
 				require.NoError(t, err)
 
-				providerEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+				providerEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 				require.True(t, found)
 				addons := 0
 				extensions := 0
@@ -752,14 +752,14 @@ func TestStakeProviderLimits(t *testing.T) {
 
 	for it, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			providerAcct, addr := ts.AddAccount(common.PROVIDER, it+1, tt.stake)
-			err := ts.StakeProviderExtra(addr, ts.spec, tt.stake, nil, 0, "")
+			_, provider := ts.AddAccount(common.PROVIDER, it+1, tt.stake)
+			err := ts.StakeProviderExtra(provider, ts.spec, tt.stake, nil, 0, "")
 			if !tt.isStaked {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
-			stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcct.Addr)
+			stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 			require.True(t, found)
 			require.Equal(t, tt.isFrozen, stakeEntry.IsFrozen())
 		})
@@ -779,10 +779,10 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// stake minSelfDelegation+1 -> provider staked but frozen
-	providerAcc, provider := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
+	_, provider := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
 	err := ts.StakeProviderExtra(provider, ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
 	require.NoError(t, err)
-	stakeEntry, found, _ := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
 	require.Equal(t, minSelfDelegation.Amount.AddRaw(1), stakeEntry.EffectiveStake())
@@ -792,10 +792,10 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	require.Error(t, err)
 
 	// increase delegation limit of stake entry from 0 to MinStakeProvider + 100
-	stakeEntry, found, stakeEntryIndex := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	stakeEntry.DelegateLimit = ts.spec.MinStakeProvider.AddAmount(math.NewInt(100))
-	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry, stakeEntryIndex)
+	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry)
 	ts.AdvanceEpoch()
 
 	// add delegator and delegate to provider so its effective stake is MinStakeProvider+MinSelfDelegation+1
@@ -804,7 +804,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.Index, ts.spec.MinStakeProvider)
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegation
-	stakeEntry, found, _ = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAcc.Addr)
+	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
 	require.Equal(t, ts.spec.MinStakeProvider.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.EffectiveStake())

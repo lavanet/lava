@@ -755,6 +755,7 @@ func New(
 		crisistypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
+		dualstakingmoduletypes.ModuleName,
 		ibctransfertypes.ModuleName,
 		ibcexported.ModuleName,
 		group.ModuleName,
@@ -762,7 +763,6 @@ func New(
 		icatypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
-		dualstakingmoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
 		conflictmoduletypes.ModuleName, // conflict needs to change state before pairing changes stakes
 		downtimemoduletypes.ModuleName, // downtime needs to run before pairing
