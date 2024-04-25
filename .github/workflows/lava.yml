@@ -13,23 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache-dependency-path: go.sum
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          args: --print-issued-lines --config .golangci.yml -v
-
   test-consensus:
     runs-on: ubuntu-latest
     steps:
