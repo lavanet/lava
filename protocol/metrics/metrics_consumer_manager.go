@@ -28,7 +28,7 @@ type ConsumerMetricsManager struct {
 	LatestBlockMetric                      *prometheus.GaugeVec
 	LatestProviderRelay                    *prometheus.GaugeVec
 	virtualEpochMetric                     *prometheus.GaugeVec
-	apiSpecificsMetric                     *prometheus.GaugeVec
+	apiMethodCalls                         *prometheus.GaugeVec
 	endpointsHealthChecksOkMetric          prometheus.Gauge
 	endpointsHealthChecksOk                uint64
 	lock                                   sync.Mutex
@@ -167,7 +167,7 @@ func NewConsumerMetricsManager(networkAddress string, addMethodsApiGauge bool) *
 		totalRelaysSentByNewBatchTickerMetric:  totalRelaysSentByNewBatchTickerMetric,
 		currentNumberOfOpenSessionsMetric:      currentNumberOfOpenSessionsMetric,
 		currentNumberOfBlockedSessionsMetric:   currentNumberOfBlockedSessionsMetric,
-		apiSpecificsMetric:                     apiSpecificsMetric,
+		apiMethodCalls:                         apiSpecificsMetric,
 		addMethodsApiGauge:                     addMethodsApiGauge,
 	}
 
@@ -213,7 +213,7 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, er
 	pme.totalCURequestedMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(float64(relayMetric.ComputeUnits))
 	pme.totalRelaysRequestedMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(1)
 	if pme.addMethodsApiGauge && relayMetric.ApiMethod != "" { // pme.addMethodsApiGauge never changes so its safe to read concurrently
-		pme.apiSpecificsMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType, relayMetric.ApiMethod).Add(1)
+		pme.apiMethodCalls.WithLabelValues(relayMetric.ChainID, relayMetric.APIType, relayMetric.ApiMethod).Add(1)
 	}
 	if !relayMetric.Success {
 		pme.totalErroredMetric.WithLabelValues(relayMetric.ChainID, relayMetric.APIType).Add(1)
