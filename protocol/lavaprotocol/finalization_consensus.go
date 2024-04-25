@@ -92,6 +92,12 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 		}
 
 		fc.currentEpochBlockToHashesToAgreeingProviders[blockNum][blockHash][providerAcc] = newProviderDataContainer
+
+		utils.LavaFormatTrace("Added provider to block hash consensus",
+			utils.LogAttr("blockNum", blockNum),
+			utils.LogAttr("blockHash", blockHash),
+			utils.LogAttr("provider", providerAcc),
+		)
 	}
 }
 
@@ -119,11 +125,25 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	var blockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders
 	foundDiscrepancy, discrepancyBlock := fc.findDiscrepancy(finalizedBlocks, fc.currentEpochBlockToHashesToAgreeingProviders)
 	if foundDiscrepancy {
+		utils.LavaFormatTrace("found discrepancy for provider",
+			utils.LogAttr("specId", fc.specId),
+			utils.LogAttr("currentEpoch", fc.currentEpoch),
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("discrepancyBlock", discrepancyBlock),
+			utils.LogAttr("finalizedBlocks", finalizedBlocks),
+		)
 		blockToHashesToAgreeingProviders = fc.currentEpochBlockToHashesToAgreeingProviders
 	} else {
 		// Could not find discrepancy, let's check with previous epoch
 		foundDiscrepancy, discrepancyBlock = fc.findDiscrepancy(finalizedBlocks, fc.prevEpochBlockToHashesToAgreeingProviders)
 		if foundDiscrepancy {
+			utils.LavaFormatTrace("found discrepancy for provider with previous epoch",
+				utils.LogAttr("specId", fc.specId),
+				utils.LogAttr("currentEpoch", fc.currentEpoch),
+				utils.LogAttr("provider", providerAddress),
+				utils.LogAttr("discrepancyBlock", discrepancyBlock),
+				utils.LogAttr("finalizedBlocks", finalizedBlocks),
+			)
 			blockToHashesToAgreeingProviders = fc.prevEpochBlockToHashesToAgreeingProviders
 		} else {
 			// No discrepancy found, log and return nil
@@ -139,6 +159,11 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	for blockHash, agreeingProviders := range blockToHashesToAgreeingProviders[discrepancyBlock] {
 		if providerPrevReply, ok := agreeingProviders[providerAddress]; ok {
 			// Same provider conflict found - Report and block provider
+			utils.LavaFormatTrace("found same provider conflict, creating relay finalization from provider data container",
+				utils.LogAttr("provider", providerAddress),
+				utils.LogAttr("discrepancyBlock", discrepancyBlock),
+				utils.LogAttr("blockHash", blockHash),
+			)
 			relayFinalization, errWrapped := fc.createRelayFinalizationFromProviderDataContainer(providerPrevReply, consumerAddress)
 			if errWrapped != nil {
 				return nil, errWrapped
@@ -157,15 +182,22 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 
 	var otherProviderAddress string
 	// Same provider conflict not found, create proof with other provider
-	for providerAddress, providerDataContainer := range blockToHashesToAgreeingProviders[discrepancyBlock][otherBlockHash] {
+	utils.LavaFormatTrace("did not find any same provider conflict, looking for other providers to create conflict proof", utils.LogAttr("provider", providerAddress))
+	for currentOtherProviderAddress, providerDataContainer := range blockToHashesToAgreeingProviders[discrepancyBlock][otherBlockHash] {
 		// Finalization conflict
+		utils.LavaFormatTrace("creating finalization conflict with another provider",
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("otherProvider", currentOtherProviderAddress),
+			utils.LogAttr("discrepancyBlock", discrepancyBlock),
+			utils.LogAttr("blockHash", otherBlockHash),
+		)
 		relayFinalization, err := fc.createRelayFinalizationFromProviderDataContainer(providerDataContainer, consumerAddress)
 		if err != nil {
 			return nil, err
 		}
 
 		finalizationConflict.RelayFinalization_1 = relayFinalization
-		otherProviderAddress = providerAddress
+		otherProviderAddress = currentOtherProviderAddress
 		break
 	}
 
@@ -173,8 +205,8 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	return finalizationConflict, fmt.Errorf("found finalization conflict on block %d between provider [%s] and provider [%s] ", discrepancyBlock, providerAddress, otherProviderAddress)
 }
 
-func (fc *FinalizationConsensus) findDiscrepancy(finalizedBlocksA map[int64]string, consensus BlockToHashesToAgreeingProviders) (foundDiscrepancy bool, discrepancyBlock int64) {
-	for blockNum, blockHash := range finalizedBlocksA {
+func (fc *FinalizationConsensus) findDiscrepancy(finalizedBlocks map[int64]string, consensus BlockToHashesToAgreeingProviders) (foundDiscrepancy bool, discrepancyBlock int64) {
+	for blockNum, blockHash := range finalizedBlocks {
 		blockHashes, ok := consensus[blockNum]
 		if !ok {
 			continue
@@ -182,6 +214,11 @@ func (fc *FinalizationConsensus) findDiscrepancy(finalizedBlocksA map[int64]stri
 
 		// We found the matching block, now we need to check if the hash exists
 		if _, ok := blockHashes[blockHash]; !ok {
+			utils.LavaFormatTrace("found discrepancy in finalized blocks",
+				utils.LogAttr("blockNumber", blockNum),
+				utils.LogAttr("blockHash", blockHash),
+				utils.LogAttr("consensusBlockHashes", blockHashes),
+			)
 			return true, blockNum
 		}
 	}
