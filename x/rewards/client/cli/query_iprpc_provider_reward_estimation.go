@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
 	"github.com/spf13/cobra"
 )
@@ -24,8 +25,13 @@ func CmdQueryIprpcProviderRewardEstimation() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
+			provider, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
+
 			params := &types.QueryIprpcProviderRewardEstimationRequest{
-				Provider: args[0],
+				Provider: provider,
 			}
 
 			res, err := queryClient.IprpcProviderRewardEstimation(cmd.Context(), params)
