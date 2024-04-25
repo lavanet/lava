@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/rewards/types"
 	"github.com/spf13/cobra"
 )
@@ -29,9 +30,12 @@ func CmdQueryProviderReward() *cobra.Command {
 			if len(args) == 2 {
 				reqChainID = args[1]
 			}
-			reqProvider := args[0]
 
-			clientCtx, err := client.GetClientTxContext(cmd)
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			reqProvider, err := utils.ParseCLIAddress(clientCtx, args[0])
 			if err != nil {
 				return err
 			}
