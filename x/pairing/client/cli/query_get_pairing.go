@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cobra"
 )
@@ -17,10 +18,12 @@ func CmdGetPairing() *cobra.Command {
 		Short: "Query getPairing",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			reqChainID := args[0]
-			reqClient := args[1]
-
 			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			reqChainID := args[0]
+			reqClient, err := utils.ParseCLIAddress(clientCtx, args[1])
 			if err != nil {
 				return err
 			}

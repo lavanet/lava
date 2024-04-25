@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -42,7 +43,10 @@ If the plan index is the same as the consumer's current plan, it will extend the
 
 			argConsumer := creator
 			if len(args) >= 2 {
-				argConsumer = args[1]
+				argConsumer, err = utils.ParseCLIAddress(clientCtx, args[1])
+				if err != nil {
+					return err
+				}
 			}
 
 			argDuration := uint64(1)

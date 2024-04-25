@@ -158,7 +158,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 				return err
 			}
 
-			handleBulk := func(cmd *cobra.Command, args []string, validator string) (msgs []sdk.Msg, err error) {
+			handleBulk := func(args []string, validator string) (msgs []sdk.Msg, err error) {
 				if len(args) != BULK_ARG_COUNT {
 					return nil, fmt.Errorf("invalid argument length %d should be %d", len(args), BULK_ARG_COUNT)
 				}
@@ -208,7 +208,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 				if argRange+BULK_ARG_COUNT > len(args) {
 					return fmt.Errorf("invalid argument count %d > %d", argRange+BULK_ARG_COUNT, len(args))
 				}
-				newMsgs, err := handleBulk(cmd, args[argRange:argRange+BULK_ARG_COUNT], validator)
+				newMsgs, err := handleBulk(args[argRange:argRange+BULK_ARG_COUNT], validator)
 				if err != nil {
 					return err
 				}

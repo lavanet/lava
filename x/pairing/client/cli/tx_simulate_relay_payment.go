@@ -38,7 +38,10 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			}
 
 			// Extract arguments
-			consumerAddress := args[0]
+			consumerAddress, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
 
 			keyName, err := sigs.GetKeyName(clientCtx.WithFrom(consumerAddress))
 			if err != nil {
@@ -156,9 +159,6 @@ func newRelaySession(
 }
 
 func extractQoSFlag(qosValues []string) (qosReport *types.QualityOfServiceReport, err error) {
-	if err != nil {
-		return nil, err
-	}
 	// Check if we have exactly 3 values
 	if len(qosValues) != 3 {
 		return nil, utils.LavaFormatError("expected 3 values for QoSValuesFlag", nil, utils.Attribute{Key: "QoSValues", Value: qosValues})

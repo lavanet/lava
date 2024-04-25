@@ -23,7 +23,8 @@ const (
 )
 
 const (
-	LAVA_LOG_DEBUG = iota
+	LAVA_LOG_TRACE = iota
+	LAVA_LOG_DEBUG
 	LAVA_LOG_INFO
 	LAVA_LOG_WARN
 	LAVA_LOG_ERROR
@@ -37,7 +38,7 @@ var (
 	// if set to production, this will replace some errors to warning that can be caused by misuse instead of bugs
 	ExtendedLogLevel = "development"
 	rollingLogLogger = zerolog.New(os.Stderr).Level(zerolog.Disabled) // this is the singleton rolling logger.
-	globalLogLevel   = zerolog.DebugLevel
+	globalLogLevel   = zerolog.TraceLevel
 )
 
 type Attribute struct {
@@ -73,6 +74,8 @@ func LogLavaEvent(ctx sdk.Context, logger log.Logger, name string, attributes ma
 
 func getLogLevel(logLevel string) zerolog.Level {
 	switch logLevel {
+	case "trace":
+		return zerolog.TraceLevel
 	case "debug":
 		return zerolog.DebugLevel
 	case "info":
@@ -124,6 +127,8 @@ func RollingLoggerSetup(rollingLogLevel string, filePath string, maxSize string,
 	switch rollingLogLevel {
 	case "off":
 		return func() {} // default is disabled.
+	case "trace":
+		logLevel = zerolog.TraceLevel
 	case "debug":
 		logLevel = zerolog.DebugLevel
 	case "info":
@@ -245,6 +250,10 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 		logEvent = zerologlog.Debug()
 		rollingLoggerEvent = rollingLogLogger.Debug()
 		// prefix = "Debug:"
+	case LAVA_LOG_TRACE:
+		logEvent = zerologlog.Trace()
+		rollingLoggerEvent = rollingLogLogger.Trace()
+		// prefix = "Trace:"
 	}
 	output := description
 	attrStrings := []string{}
@@ -311,6 +320,10 @@ func LavaFormatInfo(description string, attributes ...Attribute) error {
 
 func LavaFormatDebug(description string, attributes ...Attribute) error {
 	return LavaFormatLog(description, nil, attributes, LAVA_LOG_DEBUG)
+}
+
+func LavaFormatTrace(description string, attributes ...Attribute) error {
+	return LavaFormatLog(description, nil, attributes, LAVA_LOG_TRACE)
 }
 
 func FormatStringerList[T fmt.Stringer](description string, listToPrint []T, separator string) string {
