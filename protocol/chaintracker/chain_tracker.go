@@ -31,7 +31,6 @@ const (
 	initRetriesCount              = 4
 	BACKOFF_MAX_TIME              = 10 * time.Minute
 	maxFails                      = 10
-	debug                         = false
 	GoodStabilityThreshold        = 0.3
 	PollingUpdateLength           = 10
 	MostFrequentPollingMultiplier = 16
@@ -375,9 +374,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 		for {
 			select {
 			case <-cs.timer.C:
-				if debug {
-					utils.LavaFormatDebug("chain tracker fetch triggered", utils.Attribute{Key: "currTime", Value: time.Now()})
-				}
+				utils.LavaFormatTrace("chain tracker fetch triggered", utils.LogAttr("currTime", time.Now()))
 				fetchCtx, cancel := context.WithTimeout(ctx, 3*time.Second) // protect this flow from hanging code
 				err := cs.fetchAllPreviousBlocksIfNecessary(fetchCtx)
 				cancel()
@@ -423,9 +420,13 @@ func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uin
 	if PollingMultiplier > 1 {
 		newTickerDuration /= time.Duration(PollingMultiplier)
 	}
-	if debug {
-		utils.LavaFormatDebug("state tracker ticker set", utils.Attribute{Key: "timeSinceLastUpdate", Value: timeSinceLastUpdate}, utils.Attribute{Key: "time", Value: time.Now()}, utils.Attribute{Key: "newTickerDuration", Value: newTickerDuration})
-	}
+
+	utils.LavaFormatTrace("state tracker ticker set",
+		utils.LogAttr("timeSinceLastUpdate", timeSinceLastUpdate),
+		utils.LogAttr("time", time.Now()),
+		utils.LogAttr("newTickerDuration", newTickerDuration),
+	)
+
 	cs.timer = time.NewTimer(newTickerDuration)
 }
 
@@ -469,9 +470,11 @@ func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Durati
 		// so we take a 0.33 percentile because we want to be on the safe side by have a smaller time than expected
 		percentileTime := lavaslices.Percentile(ct.blockEventsGap, 0.33)
 		stability := lavaslices.Stability(ct.blockEventsGap, percentileTime)
-		if debug {
-			utils.LavaFormatDebug("block gaps", utils.Attribute{Key: "block gaps", Value: ct.blockEventsGap}, utils.Attribute{Key: "specID", Value: ct.endpoint.ChainID})
-		}
+		utils.LavaFormatTrace("block gaps",
+			utils.LogAttr("block gaps", ct.blockEventsGap),
+			utils.LogAttr("specID", ct.endpoint.ChainID),
+		)
+
 		if blockGapsLen > int(ct.serverBlockMemory)-2 || stability < GoodStabilityThreshold {
 			// only update if there is a 10% difference or more
 			if percentileTime < (pollingTime*9/10) || percentileTime > (pollingTime*11/10) {
@@ -483,8 +486,11 @@ func (ct *ChainTracker) updatePollingTimeBasedOnBlockGap(pollingTime time.Durati
 				return percentileTime, true
 			}
 			return pollingTime, true
-		} else if debug {
-			utils.LavaFormatDebug("current stability measurement", utils.Attribute{Key: "chainID", Value: ct.endpoint.ChainID}, utils.Attribute{Key: "stability", Value: stability})
+		} else {
+			utils.LavaFormatTrace("current stability measurement",
+				utils.LogAttr("chainID", ct.endpoint.ChainID),
+				utils.LogAttr("stability", stability),
+			)
 		}
 	}
 	return pollingTime, false

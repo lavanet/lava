@@ -326,6 +326,10 @@ func LavaFormatTrace(description string, attributes ...Attribute) error {
 	return LavaFormatLog(description, nil, attributes, LAVA_LOG_TRACE)
 }
 
+func IsTraceLogLevelEnabled() bool {
+	return globalLogLevel == zerolog.TraceLevel
+}
+
 func FormatStringerList[T fmt.Stringer](description string, listToPrint []T, separator string) string {
 	st := ""
 	for _, printable := range listToPrint {

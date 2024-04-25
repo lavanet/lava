@@ -25,7 +25,6 @@ import (
 const (
 	ContextUserValueKeyDappID = "dappID"
 	RetryListeningInterval    = 10 // seconds
-	debug                     = false
 	refererMatchString        = "refererMatch"
 	relayMsgLogMaxChars       = 200
 )

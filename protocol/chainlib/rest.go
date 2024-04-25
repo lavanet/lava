@@ -501,13 +501,12 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 	rcp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 
-	if debug {
-		utils.LavaFormatDebug("provider sending node message",
-			utils.Attribute{Key: "_method", Value: nodeMessage.Path},
-			utils.Attribute{Key: "headers", Value: req.Header},
-			utils.Attribute{Key: "apiInterface", Value: "rest"},
-		)
-	}
+	utils.LavaFormatTrace("provider sending node message",
+		utils.LogAttr("_method", nodeMessage.Path),
+		utils.LogAttr("headers", req.Header),
+		utils.LogAttr("apiInterface", "rest"),
+	)
+
 	res, err := httpClient.Do(req)
 	if res != nil {
 		// resp can be non nil on error

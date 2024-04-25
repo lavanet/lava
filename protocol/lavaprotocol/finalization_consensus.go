@@ -109,13 +109,11 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	}()
 
 	logSuccessUpdate := func() {
-		if debug {
-			utils.LavaFormatDebug("finalization information update successfully",
-				utils.LogAttr("specId", fc.specId),
-				utils.LogAttr("finalizationData", finalizedBlocks),
-				utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentEpochBlockToHashesToAgreeingProviders),
-			)
-		}
+		utils.LavaFormatTrace("finalization information update successfully",
+			utils.LogAttr("specId", fc.specId),
+			utils.LogAttr("finalizationData", finalizedBlocks),
+			utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentEpochBlockToHashesToAgreeingProviders),
+		)
 	}
 
 	var blockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders
@@ -212,9 +210,11 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 	defer fc.lock.Unlock()
 
 	if fc.currentEpoch < epoch {
-		if debug {
-			utils.LavaFormatDebug("finalization information epoch changed", utils.Attribute{Key: "specId", Value: fc.specId}, utils.Attribute{Key: "epoch", Value: epoch})
-		}
+		utils.LavaFormatTrace("finalization information epoch changed",
+			utils.LogAttr("specId", fc.specId),
+			utils.LogAttr("epoch", epoch),
+		)
+
 		// means it's time to refresh the epoch
 		fc.prevEpochBlockToHashesToAgreeingProviders = fc.currentEpochBlockToHashesToAgreeingProviders
 		fc.currentEpochBlockToHashesToAgreeingProviders = BlockToHashesToAgreeingProviders{}
@@ -277,15 +277,14 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser chainlib.Cha
 
 	medianOfExpectedBlocks := median(mapExpectedBlockHeights)
 	providersMedianOfLatestBlock := medianOfExpectedBlocks + int64(blockDistanceForFinalizedData)
-	if debug {
-		utils.LavaFormatDebug("finalization information",
-			utils.LogAttr("specId", fc.specId),
-			utils.LogAttr("mapExpectedBlockHeights", mapExpectedBlockHeights),
-			utils.LogAttr("medianOfExpectedBlocks", medianOfExpectedBlocks),
-			utils.LogAttr("latestBlock", fc.prevLatestBlockByMedian),
-			utils.LogAttr("providersMedianOfLatestBlock", providersMedianOfLatestBlock),
-		)
-	}
+
+	utils.LavaFormatTrace("finalization information",
+		utils.LogAttr("specId", fc.specId),
+		utils.LogAttr("mapExpectedBlockHeights", mapExpectedBlockHeights),
+		utils.LogAttr("medianOfExpectedBlocks", medianOfExpectedBlocks),
+		utils.LogAttr("latestBlock", fc.prevLatestBlockByMedian),
+		utils.LogAttr("providersMedianOfLatestBlock", providersMedianOfLatestBlock),
+	)
 
 	if medianOfExpectedBlocks > 0 && uint64(providersMedianOfLatestBlock) > fc.prevLatestBlockByMedian {
 		if uint64(providersMedianOfLatestBlock) > fc.prevLatestBlockByMedian+1000 && fc.prevLatestBlockByMedian > 0 {

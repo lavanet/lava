@@ -194,9 +194,9 @@ func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (pa
 		return common.TxResultData{}, utils.LavaFormatInfo("Failed unmarshaling transaction results", utils.Attribute{Key: "transactionResult", Value: myWriter.String()})
 	}
 	myWriter.Reset()
-	if debug {
-		utils.LavaFormatDebug("transaction results", utils.Attribute{Key: "jsonParsedResult", Value: jsonParsedResult})
-	}
+
+	utils.LavaFormatTrace("transaction results", utils.LogAttr("jsonParsedResult", jsonParsedResult))
+
 	resultData, err := common.ParseTransactionResult(jsonParsedResult)
 	utils.LavaFormatInfo("Sent Transaction", utils.LogAttr("Hash", hex.EncodeToString(resultData.Txhash)))
 	if err != nil {
@@ -233,7 +233,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 				return
 			}
 			utils.LavaFormatDebug("Keep Waiting tx results...", utils.LogAttr("reason", err))
-			if debug {
+			if utils.IsTraceLogLevelEnabled() {
 				utils.LavaFormatWarning("Tx query got error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "resultData", Value: resultData})
 			}
 		}

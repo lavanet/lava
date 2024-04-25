@@ -16,10 +16,6 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-const (
-	debug = false
-)
-
 type HeaderFilterer interface {
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 }
@@ -160,12 +156,16 @@ func compareRelaysFindConflict(ctx context.Context, reply1 pairingtypes.RelayRep
 		ConflictRelayData0: conflictconstruct.ConstructConflictRelayData(&reply1, &request1),
 		ConflictRelayData1: conflictconstruct.ConstructConflictRelayData(&reply2, &request2),
 	}
-	if debug {
+	if utils.IsTraceLogLevelEnabled() {
 		firstAsString := string(reply1.Data)
 		secondAsString := string(reply2.Data)
 		_, idxDiff := findFirstDifferentChar(firstAsString, secondAsString)
 		if idxDiff > 0 && idxDiff+100 < len(firstAsString) && idxDiff+100 < len(secondAsString) {
-			utils.LavaFormatDebug("difference in responses detected", utils.Attribute{Key: "index", Value: idxDiff}, utils.Attribute{Key: "first_diff", Value: firstAsString[idxDiff : idxDiff+100]}, utils.Attribute{Key: "second_diff", Value: secondAsString[idxDiff : idxDiff+100]})
+			utils.LavaFormatTrace("difference in responses detected",
+				utils.LogAttr("index", idxDiff),
+				utils.LogAttr("first_diff", firstAsString[idxDiff:idxDiff+100]),
+				utils.LogAttr("second_diff", secondAsString[idxDiff:idxDiff+100]),
+			)
 		}
 	}
 	return true, responseConflict

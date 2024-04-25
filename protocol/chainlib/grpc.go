@@ -518,13 +518,13 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, utils.LavaFormatError("rp.Next(msg) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}
-	if debug {
-		utils.LavaFormatDebug("provider sending node message",
-			utils.Attribute{Key: "_method", Value: nodeMessage.Path},
-			utils.Attribute{Key: "headers", Value: metadataMap},
-			utils.Attribute{Key: "apiInterface", Value: "grpc"},
-		)
-	}
+
+	utils.LavaFormatTrace("provider sending node message",
+		utils.LogAttr("_method", nodeMessage.Path),
+		utils.LogAttr("headers", metadataMap),
+		utils.LogAttr("apiInterface", "grpc"),
+	)
+
 	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
