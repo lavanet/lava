@@ -37,8 +37,13 @@ type ConsumerMetricsManager struct {
 	addMethodsApiGauge                     bool
 }
 
-func NewConsumerMetricsManager(networkAddress string, addMethodsApiGauge bool) *ConsumerMetricsManager {
-	if networkAddress == DisabledFlagOption {
+type ConsumerMetricsManagerOptions struct {
+	NetworkAddress     string
+	AddMethodsApiGauge bool
+}
+
+func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerMetricsManager {
+	if options.NetworkAddress == DisabledFlagOption {
 		utils.LavaFormatWarning("prometheus endpoint inactive, option is disabled", nil)
 		return nil
 	}
@@ -168,7 +173,7 @@ func NewConsumerMetricsManager(networkAddress string, addMethodsApiGauge bool) *
 		currentNumberOfOpenSessionsMetric:      currentNumberOfOpenSessionsMetric,
 		currentNumberOfBlockedSessionsMetric:   currentNumberOfBlockedSessionsMetric,
 		apiMethodCalls:                         apiSpecificsMetric,
-		addMethodsApiGauge:                     addMethodsApiGauge,
+		addMethodsApiGauge:                     options.AddMethodsApiGauge,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -190,8 +195,8 @@ func NewConsumerMetricsManager(networkAddress string, addMethodsApiGauge bool) *
 	http.HandleFunc("/metrics/health-overall", overallHealthHandler) // Old
 
 	go func() {
-		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: networkAddress})
-		http.ListenAndServe(networkAddress, nil)
+		utils.LavaFormatInfo("prometheus endpoint listening", utils.Attribute{Key: "Listen Address", Value: options.NetworkAddress})
+		http.ListenAndServe(options.NetworkAddress, nil)
 	}()
 
 	return consumerMetricsManager
