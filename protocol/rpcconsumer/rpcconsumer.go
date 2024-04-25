@@ -98,7 +98,7 @@ type ConsumerStateTrackerInf interface {
 }
 
 type AnalyticsServerAddressess struct {
-	AddApiMethodMetricsFlagName bool
+	AddApiMethodCallsMetricsFlagName bool
 	MetricsListenAddress        string
 	RelayServerAddress          string
 	ReportsAddressFlag          string
