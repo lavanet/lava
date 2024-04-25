@@ -15,7 +15,7 @@ import (
 
 const (
 	MetricsListenFlagName       = "metrics-listen-address"
-	AddApiMethodMetricsFlagName = "add-api-method-metrics"
+	AddApiMethodCallsMetricsFlagName = "add-api-method-metrics"
 	RelayServerFlagName         = "relay-server-address"
 	DisabledFlagOption          = "disabled"
 )
