@@ -37,7 +37,7 @@
             "parse_directives": [],
             "verifications": [
               {
-                "name": "chain_id",
+                "name": "chain-id",
                 "values": [
                   {
                     "expected_value": "shielded-expedition.88f17d1d14"
