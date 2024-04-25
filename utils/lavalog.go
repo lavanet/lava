@@ -36,9 +36,9 @@ const (
 var (
 	JsonFormat = false
 	// if set to production, this will replace some errors to warning that can be caused by misuse instead of bugs
-	ExtendedLogLevel = "development"
-	rollingLogLogger = zerolog.New(os.Stderr).Level(zerolog.Disabled) // this is the singleton rolling logger.
-	globalLogLevel   = zerolog.TraceLevel
+	ExtendedLogLevel      = "development"
+	rollingLogLogger      = zerolog.New(os.Stderr).Level(zerolog.Disabled) // this is the singleton rolling logger.
+	defaultGlobalLogLevel = zerolog.DebugLevel
 )
 
 type Attribute struct {
@@ -94,7 +94,7 @@ func getLogLevel(logLevel string) zerolog.Level {
 func SetGlobalLoggingLevel(logLevel string) {
 	// setting global level prevents us from having two different levels for example one for stdout and one for rolling log.
 	// zerolog.SetGlobalLevel(getLogLevel(logLevel))
-	globalLogLevel = getLogLevel(logLevel)
+	defaultGlobalLogLevel = getLogLevel(logLevel)
 	LavaFormatInfo("setting log level", Attribute{Key: "loglevel", Value: logLevel})
 }
 
@@ -214,9 +214,9 @@ func StrValue(val interface{}) string {
 func LavaFormatLog(description string, err error, attributes []Attribute, severity uint) error {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	if JsonFormat {
-		zerologlog.Logger = zerologlog.Output(os.Stderr).Level(globalLogLevel)
+		zerologlog.Logger = zerologlog.Output(os.Stderr).Level(defaultGlobalLogLevel)
 	} else {
-		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(globalLogLevel)
+		zerologlog.Logger = zerologlog.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: NoColor, TimeFormat: time.Stamp}).Level(defaultGlobalLogLevel)
 	}
 
 	var logEvent *zerolog.Event
@@ -327,7 +327,7 @@ func LavaFormatTrace(description string, attributes ...Attribute) error {
 }
 
 func IsTraceLogLevelEnabled() bool {
-	return globalLogLevel == zerolog.TraceLevel
+	return defaultGlobalLogLevel == zerolog.TraceLevel
 }
 
 func FormatStringerList[T fmt.Stringer](description string, listToPrint []T, separator string) string {
