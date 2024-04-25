@@ -109,7 +109,6 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 		utils.LogAttr("latency", latency),
 		utils.LogAttr("success", success),
 	)
-
 }
 
 func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
