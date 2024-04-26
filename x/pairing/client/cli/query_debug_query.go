@@ -11,6 +11,7 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	commontypes "github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	rewardstypes "github.com/lavanet/lava/x/rewards/types"
@@ -30,7 +31,11 @@ func CmdDebugQuery() *cobra.Command {
 				return err
 			}
 
-			provider := args[0]
+			provider, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
+
 			chainID := args[1]
 			ctx := context.Background()
 

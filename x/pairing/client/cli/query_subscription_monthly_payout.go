@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cobra"
 )
@@ -14,9 +15,11 @@ func CmdSubscriptionMonthlyPayout() *cobra.Command {
 		is going to be paid to provider and its components (the amount of funds for each provider, ordered by chain ID)`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			consumer := args[0]
-
 			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			consumer, err := utils.ParseCLIAddress(clientCtx, args[0])
 			if err != nil {
 				return err
 			}
