@@ -181,7 +181,7 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		// this is a node error, meaning we still didn't get a good response.
 		// we may choose to wait until there will be a response or timeout happens
 		// if we decide to wait and timeout happens we will take the majority of response messages
-		err := fmt.Errorf(errorMessage)
+		err := errors.New(errorMessage)
 		rp.nodeResponseErrors.relayErrors = append(rp.nodeResponseErrors.relayErrors, RelayError{err: err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
 		return
 	}

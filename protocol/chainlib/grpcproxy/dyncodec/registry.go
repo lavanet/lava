@@ -2,7 +2,6 @@ package dyncodec
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/lavanet/lava/utils"
@@ -66,7 +65,7 @@ func (r *Registry) FindExtensionByName(field protoreflect.FullName) (protoreflec
 }
 
 func (r *Registry) FindExtensionByNumber(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionType, error) {
-	return nil, fmt.Errorf("not supported")
+	return nil, errors.New("not supported")
 }
 
 func (r *Registry) FindMessageByName(message protoreflect.FullName) (protoreflect.MessageType, error) {

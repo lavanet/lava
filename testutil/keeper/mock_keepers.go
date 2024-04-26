@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	tenderminttypes "github.com/cometbft/cometbft/types"
@@ -80,7 +80,7 @@ func (k mockBankKeeper) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr
 	moduleAcc := GetModuleAddress(recipientModule)
 	accountCoins := k.GetAllBalances(ctx, senderAddr)
 	if !accountCoins.IsAllGTE(amt) {
-		return fmt.Errorf("not enough coins")
+		return errors.New("not enough coins")
 	}
 
 	k.SubFromBalance(senderAddr, amt)
@@ -96,7 +96,7 @@ func (k mockBankKeeper) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModu
 	moduleAcc := GetModuleAddress(senderModule)
 	accountCoins := k.GetAllBalances(ctx, moduleAcc)
 	if !accountCoins.IsAllGTE(amt) {
-		return fmt.Errorf("not enough coins")
+		return errors.New("not enough coins")
 	}
 
 	k.SubFromBalance(moduleAcc, amt)
@@ -146,7 +146,7 @@ func (k mockBankKeeper) SubFromBalance(addr sdk.AccAddress, amounts sdk.Coins) e
 	if _, ok := balance[addr.String()]; ok {
 		balance[addr.String()] = balance[addr.String()].Sub(amounts...)
 	} else {
-		return fmt.Errorf("acount is empty, can't sub")
+		return errors.New("acount is empty, can't sub")
 	}
 
 	return nil

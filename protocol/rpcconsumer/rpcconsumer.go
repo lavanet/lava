@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -363,7 +364,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				return nil
 			}
 			if len(args)%len(Yaml_config_properties) != 0 {
-				return fmt.Errorf("invalid number of arguments, either its a single config file or repeated groups of 3 HOST:PORT chain-id api-interface")
+				return errors.New("invalid number of arguments, either its a single config file or repeated groups of 3 HOST:PORT chain-id api-interface")
 			}
 			return nil
 		},

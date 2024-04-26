@@ -2,7 +2,7 @@ package common
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sort"
 	"strconv"
 	"strings"
@@ -684,7 +684,7 @@ func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 	if amount.LT(consensusPowerTokens) {
 		utils.LavaFormatWarning(`validator stake should usually be larger than the amount of tokens for one 
 		unit of consensus power`,
-			fmt.Errorf("validator stake might be too small"),
+			errors.New("validator stake might be too small"),
 			utils.Attribute{Key: "consensus_power_tokens", Value: consensusPowerTokens.String()},
 			utils.Attribute{Key: "validator_stake", Value: amount.String()},
 		)

@@ -2,6 +2,7 @@ package badgeserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -171,7 +172,7 @@ func (s *Server) validateRequestAndGetProjectData(clientIPAddress string, reques
 	if !exist {
 		return nil, utils.LavaFormatError(
 			"Validation failed",
-			fmt.Errorf("geolocation not found in configuration"),
+			errors.New("geolocation not found in configuration"),
 			utils.LogAttr("BadgeAddress", request.BadgeAddress),
 			utils.LogAttr("ProjectId", request.ProjectId),
 			utils.LogAttr("geolocation", geolocation),
@@ -192,7 +193,7 @@ func (s *Server) validateRequestAndGetProjectData(clientIPAddress string, reques
 		if !exist {
 			return nil, utils.LavaFormatError(
 				"Validation failed",
-				fmt.Errorf("default project not found"),
+				errors.New("default project not found"),
 				utils.LogAttr("BadgeAddress", request.BadgeAddress),
 				utils.LogAttr("ProjectId", request.ProjectId),
 				utils.LogAttr("geolocation", geolocation),

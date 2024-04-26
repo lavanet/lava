@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -160,20 +161,20 @@ func (s *Server) GenerateBadge(ctx context.Context, req *pairingtypes.GenerateBa
 
 func (s *Server) validateRequest(clientAddress string, in *pairingtypes.GenerateBadgeRequest) (*ProjectConfiguration, error) {
 	if in == nil {
-		err := fmt.Errorf("invalid request, no input data provided")
+		err := errors.New("invalid request, no input data provided")
 		utils.LavaFormatError("Validation failed", err)
 		return nil, err
 	}
 	if in.BadgeAddress == "" || in.ProjectId == "" {
 		fmt.Println("In: ", in)
-		err := fmt.Errorf("bad request, no valid input data provided")
+		err := errors.New("bad request, no valid input data provided")
 		utils.LavaFormatError("Validation failed", err)
 		return nil, err
 	}
 	geolocation := s.getClientGeolocationOrDefault(clientAddress)
 	geolocationData, exist := s.ProjectsConfiguration[geolocation]
 	if !exist {
-		err := fmt.Errorf("invalid configuration for this geolocation")
+		err := errors.New("invalid configuration for this geolocation")
 		utils.LavaFormatError(
 			"invalid configuration",
 			err,
@@ -199,7 +200,7 @@ func (s *Server) validateRequest(clientAddress string, in *pairingtypes.Generate
 	if !exist {
 		projectData, exist = geolocationData[DefaultProjectId]
 		if !exist {
-			err := fmt.Errorf("default project not found")
+			err := errors.New("default project not found")
 			utils.LavaFormatError(
 				"Validation failed",
 				err,

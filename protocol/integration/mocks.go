@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -57,7 +58,7 @@ func (m *mockConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consum
 }
 
 func (m *mockConsumerStateTracker) GetProtocolVersion(ctx context.Context) (*updaters.ProtocolVersionResponse, error) {
-	return nil, fmt.Errorf("banana")
+	return nil, errors.New("banana")
 }
 
 func (m *mockConsumerStateTracker) GetLatestVirtualEpoch() uint64 {

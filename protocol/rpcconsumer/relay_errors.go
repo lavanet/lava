@@ -1,6 +1,7 @@
 package rpcconsumer
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -114,7 +115,7 @@ func (r *RelayErrors) mergeAllErrors() error {
 			mergedMessage += ", "
 		}
 	}
-	return fmt.Errorf(mergedMessage)
+	return errors.New(mergedMessage)
 }
 
 // TODO: there's no need to save error twice and provider info twice, this can just be a relayResponse

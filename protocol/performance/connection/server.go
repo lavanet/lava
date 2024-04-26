@@ -2,8 +2,7 @@ package connection
 
 import (
 	"context"
-	"fmt"
-
+	"errors"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -15,7 +14,7 @@ type RelayerConnectionServer struct {
 }
 
 func (rs *RelayerConnectionServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
-	return nil, fmt.Errorf("unimplemented")
+	return nil, errors.New("unimplemented")
 }
 
 func (rs *RelayerConnectionServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
@@ -27,5 +26,5 @@ func (rs *RelayerConnectionServer) Probe(ctx context.Context, probeReq *pairingt
 }
 
 func (rs *RelayerConnectionServer) RelaySubscribe(request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer) error {
-	return fmt.Errorf("unimplemented")
+	return errors.New("unimplemented")
 }

@@ -2,7 +2,7 @@ package connection
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"math/rand"
 
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -29,7 +29,7 @@ func createConnection(ctx context.Context, address string) (*pairingtypes.Relaye
 
 func (p *Prober) RunOnce(ctx context.Context) error {
 	if p.address == "" {
-		return fmt.Errorf("can't run with address empty")
+		return errors.New("can't run with address empty")
 	}
 	if p.conn == nil || p.relayerClient == nil {
 		relayer, conn, err := createConnection(ctx, p.address)

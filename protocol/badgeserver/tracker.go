@@ -2,8 +2,7 @@ package badgeserver
 
 import (
 	"context"
-	"fmt"
-
+	"errors"
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/protocol/chaintracker"
@@ -51,7 +50,7 @@ func (st *BadgeStateTracker) RegisterForEpochUpdates(ctx context.Context, epochU
 	epochUpdaterRaw := st.StateTracker.RegisterForUpdates(ctx, epochUpdater)
 	epochUpdater, ok := epochUpdaterRaw.(*updaters.EpochUpdater)
 	if !ok {
-		err := fmt.Errorf("invalid type")
+		err := errors.New("invalid type")
 		utils.LavaFormatFatal("invalid updater type returned from RegisterForUpdates", err)
 	}
 

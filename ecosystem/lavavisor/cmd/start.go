@@ -3,7 +3,7 @@ package lavavisor
 // TODO: Parallel service restart
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -232,7 +232,7 @@ func SelectMostRecentVersionFromDir(lavavisorPath string, version *protocoltypes
 	}
 
 	if selectedVersion == "" {
-		return "", fmt.Errorf("did not find any valid versions in lavavisor directory, will try to fetch from github")
+		return "", errors.New("did not find any valid versions in lavavisor directory, will try to fetch from github")
 	}
 
 	return selectedVersion, nil

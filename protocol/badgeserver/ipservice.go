@@ -2,7 +2,7 @@ package badgeserver
 
 import (
 	"encoding/csv"
-	"fmt"
+	"errors"
 	"io"
 	"net"
 	"os"
@@ -115,7 +115,7 @@ func (service *IpService) ReadIpTsvFileData() error {
 
 func (service *IpService) SearchForIp(toSearchIp string) (*IpData, error) {
 	if len(*service.IpCountryData) == 0 {
-		return nil, fmt.Errorf("ip servive not configured correctly")
+		return nil, errors.New("ip servive not configured correctly")
 	}
 	needle, err := convertStringToIpInt(toSearchIp)
 	if err != nil {
@@ -135,7 +135,7 @@ func (service *IpService) SearchForIp(toSearchIp string) (*IpData, error) {
 	}
 
 	if low == len(haystack) {
-		return nil, fmt.Errorf("ip not found")
+		return nil, errors.New("ip not found")
 	}
 	if needle >= haystack[low].FromIp && needle <= haystack[low].ToIP {
 		return haystack[low], nil
@@ -151,14 +151,14 @@ func (service *IpService) SearchForIp(toSearchIp string) (*IpData, error) {
 		}
 		low++
 	}
-	return nil, fmt.Errorf("ip not found")
+	return nil, errors.New("ip not found")
 }
 
 func convertRowToIpModel(rowData string) (*IpData, error) {
 	convertRowWith4tabs := func(ipStringDatas []string) (*IpData, error) {
 		ipSorce := strings.Split(ipStringDatas[0], " ")
 		if len(ipSorce) != 2 {
-			return nil, fmt.Errorf("unexpeted ip range on  tsv data format. expected 2 separated with space(' ')")
+			return nil, errors.New("unexpeted ip range on  tsv data format. expected 2 separated with space(' ')")
 		}
 		fromIpData, err := convertStringToIpInt(ipSorce[0])
 		if err != nil {
@@ -196,17 +196,17 @@ func convertRowToIpModel(rowData string) (*IpData, error) {
 	} else if len(ipStringDatas) == 5 {
 		return convertRowWith5tabs(ipStringDatas)
 	} else {
-		return nil, fmt.Errorf("invalid tsv data format. expected 4")
+		return nil, errors.New("invalid tsv data format. expected 4")
 	}
 }
 
 func convertStringToIpInt(sc string) (int64, error) {
 	if len(sc) == 0 {
-		return 0, fmt.Errorf("invalid ip length to convert to number")
+		return 0, errors.New("invalid ip length to convert to number")
 	}
 	ip := net.ParseIP(sc)
 	if ip == nil {
-		return 0, fmt.Errorf("converting ip didn't succeed")
+		return 0, errors.New("converting ip didn't succeed")
 	}
 	number, err := ipconv.IPv4ToInt(ip)
 	return int64(number), err

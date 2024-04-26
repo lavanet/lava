@@ -19,6 +19,7 @@ package rpcclient
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -104,7 +105,7 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if blckNum > math.MaxInt64 {
-		return fmt.Errorf("block number larger than int64")
+		return errors.New("block number larger than int64")
 	}
 	*bn = BlockNumber(blckNum)
 	return nil
