@@ -30,7 +30,27 @@
                   "type": "GET",
                   "add_on": ""
                 },
-                "apis": [],
+                "apis": [
+                  {
+                    "name": "/union/union/params",
+                    "block_parsing": {
+                        "parser_arg": [
+                            "latest"
+                        ],
+                        "parser_func": "DEFAULT"
+                    },
+                    "compute_units": 10,
+                    "enabled": true,
+                    "category": {
+                        "deterministic": false,
+                        "local": false,
+                        "subscription": false,
+                        "stateful": 1,
+                        "hanging_api": true
+                    },
+                    "extra_compute_units": 0
+                }
+                ],
                 "headers": [],
                 "inheritance_apis": [],
                 "parse_directives": [],
