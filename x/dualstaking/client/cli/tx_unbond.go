@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	"github.com/spf13/cobra"
 )
@@ -19,15 +20,18 @@ func CmdUnbond() *cobra.Command {
 		Short: "unbond from a provider",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argValidator := args[0]
-			argProvider := args[1]
-			argChainID := args[2]
-			argAmount, err := sdk.ParseCoinNormalized(args[3])
+			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
 
-			clientCtx, err := client.GetClientTxContext(cmd)
+			argValidator := args[0]
+			argProvider, err := utils.ParseCLIAddress(clientCtx, args[1])
+			if err != nil {
+				return err
+			}
+			argChainID := args[2]
+			argAmount, err := sdk.ParseCoinNormalized(args[3])
 			if err != nil {
 				return err
 			}

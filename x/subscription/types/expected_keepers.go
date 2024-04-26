@@ -62,7 +62,7 @@ type TimerStoreKeeper interface {
 }
 
 type DualStakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
 }
 
 type RewardsKeeper interface {
@@ -72,6 +72,7 @@ type RewardsKeeper interface {
 	FundCommunityPoolFromModule(ctx sdk.Context, amount sdk.Coins, senderModule string) error
 	IsIprpcSubscription(ctx sdk.Context, address string) bool
 	AggregateCU(ctx sdk.Context, subscription, provider string, chainID string, cu uint64)
+	CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Context, reward sdk.Coin) (validatorsCoins sdk.Coins, communityCoins sdk.Coins, err error)
 }
 
 type StakingKeeper interface {

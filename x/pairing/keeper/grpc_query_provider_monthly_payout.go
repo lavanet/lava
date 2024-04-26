@@ -18,13 +18,6 @@ func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryPro
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	providerAddr, err := sdk.AccAddressFromBech32(req.Provider)
-	if err != nil {
-		return nil, utils.LavaFormatError("invalid provider address", err,
-			utils.Attribute{Key: "provider", Value: req.Provider},
-		)
-	}
-
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	var total uint64
 
@@ -72,9 +65,15 @@ func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryPro
 			}
 
 			totalMonthlyReward := k.subscriptionKeeper.CalcTotalMonthlyReward(ctx, totalTokenAmount, providerCu, totalCuTracked)
+			denom := k.stakingKeeper.BondDenom(ctx)
+			validatorsFee, communityFee, err := k.subscriptionKeeper.CalculateParticipationFees(ctx, sdk.NewCoin(denom, totalMonthlyReward))
+			if err != nil {
+				return nil, err
+			}
+			providerRewardAfterFees := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward.Sub(validatorsFee.AmountOf(denom)).Sub(communityFee.AmountOf(denom))))
 
 			// calculate only the provider reward
-			providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, chainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward)), subsciptiontypes.ModuleName, true, true, true)
+			providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, req.Provider, chainID, providerRewardAfterFees, subsciptiontypes.ModuleName, true, true, true)
 			if err != nil {
 				return nil, err
 			}

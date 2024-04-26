@@ -84,16 +84,12 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 					return
 				}
 				// now give the reward the provider contributor and delegators
-				providerAddr, err := sdk.AccAddressFromBech32(basepay.Provider)
-				if err != nil {
-					continue
-				}
-				_, _, err = k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerAddr, basepay.ChainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
+				_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
 
-				details[providerAddr.String()+" "+spec.ChainID] = reward.String()
+				details[basepay.Provider+" "+spec.ChainID] = reward.String()
 			}
 
 			// count iprpc cu
@@ -185,58 +181,71 @@ func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, pop bool) 
 // ContributeToValidatorsAndCommunityPool transfers some of the providers' rewards to the validators and community pool
 // the function return the updated reward after the participation deduction
 func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward sdk.Coin, senderModule string) (updatedReward sdk.Coin, err error) {
-	// calculate validators and community participation fractions
-	validatorsParticipation, communityParticipation, err := k.CalculateContributionPercentages(ctx, reward.Amount)
+	validatorsParticipationReward, communityParticipationReward, err := k.CalculateValidatorsAndCommunityParticipationRewards(ctx, reward)
 	if err != nil {
-		return reward, err
-	}
-
-	if communityParticipation.Equal(sdk.OneDec()) {
-		err := k.FundCommunityPoolFromModule(ctx, sdk.NewCoins(reward), senderModule)
-		if err != nil {
-			return reward, utils.LavaFormatError("failed funding the community pool with whole reward", err,
-				utils.Attribute{Key: "reward", Value: reward.String()},
-				utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
-			)
-		}
-		return sdk.NewCoin(reward.Denom, math.ZeroInt()), nil
+		return reward, utils.LavaFormatError("calculating validators and community participation fees failed", err,
+			utils.LogAttr("reward", reward.String()),
+		)
 	}
 
 	// send validators participation
-	validatorsParticipationReward := validatorsParticipation.MulInt(reward.Amount).TruncateInt()
-	if !validatorsParticipationReward.IsZero() {
-		coins := sdk.NewCoins(sdk.NewCoin(reward.Denom, validatorsParticipationReward))
+	if !validatorsParticipationReward.AmountOf(reward.Denom).IsZero() {
 		pool := types.ValidatorsRewardsDistributionPoolName
 		if k.isEndOfMonth(ctx) {
 			pool = types.ValidatorsRewardsAllocationPoolName
 		}
-		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, string(pool), coins)
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, string(pool), validatorsParticipationReward)
 		if err != nil {
 			return reward, utils.LavaFormatError("sending validators participation failed", err,
-				utils.Attribute{Key: "validators_participation_reward", Value: coins.String()},
-				utils.Attribute{Key: "validators_participation", Value: validatorsParticipation.String()},
+				utils.Attribute{Key: "validators_participation_reward", Value: validatorsParticipationReward.String()},
 				utils.Attribute{Key: "reward", Value: reward.String()},
 			)
 		}
 	}
 
 	// send community participation
-	communityParticipationReward := communityParticipation.MulInt(reward.Amount).TruncateInt()
-	if !communityParticipationReward.IsZero() {
-		err = k.FundCommunityPoolFromModule(ctx, sdk.NewCoins(sdk.NewCoin(reward.Denom, communityParticipationReward)), senderModule)
+	if !communityParticipationReward.AmountOf(reward.Denom).IsZero() {
+		err = k.FundCommunityPoolFromModule(ctx, communityParticipationReward, senderModule)
 		if err != nil {
 			return reward, utils.LavaFormatError("sending community participation failed", err,
-				utils.Attribute{Key: "community_participation_reward", Value: communityParticipationReward.String() + k.stakingKeeper.BondDenom(ctx)},
-				utils.Attribute{Key: "community_participation", Value: communityParticipation.String()},
+				utils.Attribute{Key: "community_participation_reward", Value: communityParticipationReward.String()},
 				utils.Attribute{Key: "reward", Value: reward.String()},
 			)
 		}
 	}
 
 	// update reward amount
-	reward = reward.SubAmount(communityParticipationReward).SubAmount(validatorsParticipationReward)
+	reward = reward.SubAmount(communityParticipationReward.AmountOf(reward.Denom)).SubAmount(validatorsParticipationReward.AmountOf(reward.Denom))
 
 	return reward, nil
+}
+
+func (k Keeper) CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Context, reward sdk.Coin) (validatorsCoins sdk.Coins, communityCoins sdk.Coins, err error) {
+	zeroCoins := sdk.NewCoins(sdk.NewCoin(reward.Denom, math.ZeroInt()))
+	validatorsCoins = zeroCoins
+	communityCoins = zeroCoins
+
+	// calculate validators and community participation fractions
+	validatorsParticipation, communityParticipation, err := k.CalculateContributionPercentages(ctx, reward.Amount)
+	if err != nil {
+		return zeroCoins, zeroCoins, err
+	}
+
+	if communityParticipation.Equal(sdk.OneDec()) {
+		return zeroCoins, sdk.NewCoins(reward), nil
+	}
+
+	validatorsPart := validatorsParticipation.MulInt(reward.Amount).TruncateInt()
+	communityPart := communityParticipation.MulInt(reward.Amount).TruncateInt()
+
+	if !validatorsPart.IsZero() {
+		validatorsCoins = sdk.NewCoins(sdk.NewCoin(reward.Denom, validatorsPart))
+	}
+	if !communityPart.IsZero() {
+		communityCoins = sdk.NewCoins(sdk.NewCoin(reward.Denom, communityPart))
+	}
+
+	return validatorsCoins, communityCoins, nil
 }
 
 // CalculateContributionPercentages calculates the providers' rewards participation to the validators and community pool

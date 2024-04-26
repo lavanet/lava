@@ -16,9 +16,9 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	ts.AddSpec("mock", ts.spec)
 
 	balance := 5 * ts.spec.MinStakeProvider.Amount.Int64()
-	providerAcct, providerAddr := ts.AddAccount(common.PROVIDER, 0, balance)
+	_, provider := ts.AddAccount(common.PROVIDER, 0, balance)
 
-	err := ts.StakeProvider(providerAddr, ts.spec, balance/2)
+	err := ts.StakeProvider(provider, ts.spec, balance/2)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -26,16 +26,16 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	unstakeHoldBlocks := ts.Keepers.Epochstorage.UnstakeHoldBlocks(ts.Ctx, ts.BlockHeight())
 	unstakeHoldBlocksStatic := ts.Keepers.Epochstorage.UnstakeHoldBlocksStatic(ts.Ctx, ts.BlockHeight())
 
-	_, err = ts.TxPairingUnstakeProvider(providerAddr, ts.spec.Index)
+	_, err = ts.TxPairingUnstakeProvider(provider, ts.spec.Index)
 	require.NoError(t, err)
 
 	ts.AdvanceBlocks(unstakeHoldBlocks)
 
-	_, found, _ := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Addr)
+	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
 	require.True(t, found)
 
 	ts.AdvanceBlocks(unstakeHoldBlocksStatic - unstakeHoldBlocks)
 
-	_, found, _ = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Addr)
+	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
 	require.False(t, found)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
@@ -104,4 +105,8 @@ func (k Keeper) ChangeDelegationTimestampForTesting(ctx sdk.Context, index strin
 	d.Timestamp = timestamp
 	k.delegationFS.ModifyEntry(ctx, index, entryBlock, &d)
 	return nil
+}
+
+func (k Keeper) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+	k.HandleSlashedValidators(ctx, req)
 }

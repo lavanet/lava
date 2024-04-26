@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/protocol/badgeserver"
 	"github.com/lavanet/lava/protocol/monitoring"
 	"github.com/lavanet/lava/protocol/performance/connection"
+	validators "github.com/lavanet/lava/protocol/performance/validators"
 	"github.com/lavanet/lava/protocol/rpcconsumer"
 	"github.com/lavanet/lava/protocol/rpcprovider"
 	"github.com/lavanet/lava/protocol/statetracker"
@@ -42,6 +43,8 @@ func main() {
 	// badge generator cobra command
 	badgeServer := badgeserver.CreateBadgeServerCobraCommand()
 
+	validatorsCmd := validators.CreateValidatorsPerformanceCommand()
+
 	// Add Version Command
 	rootCmd.AddCommand(cmdVersion)
 	// Add RPC Consumer Command
@@ -53,6 +56,9 @@ func main() {
 	// Add Badge Generator Command
 	rootCmd.AddCommand(badgeServer)
 
+	// add command to test validators
+	rootCmd.AddCommand(validatorsCmd)
+
 	testCmd := &cobra.Command{
 		Use:   "test",
 		Short: "Test commands for protocol network",
@@ -61,6 +67,7 @@ func main() {
 	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
+	testCmd.AddCommand(statetracker.CreateTxCounterCobraCommand())
 	testCmd.AddCommand(connection.CreateTestConnectionServerCobraCommand())
 	testCmd.AddCommand(connection.CreateTestConnectionProbeCobraCommand())
 	testCmd.AddCommand(monitoring.CreateHealthCobraCommand())
