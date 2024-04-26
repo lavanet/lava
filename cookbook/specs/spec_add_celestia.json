@@ -568,7 +568,7 @@
                 "name": "pruning",
                 "values": [
                   {
-                    "latest_distance": 10000
+                    "latest_distance": 7298
                   }
                 ]
               }
@@ -578,7 +578,7 @@
                 "name": "archive",
                 "cu_multiplier": 5,
                 "rule": {
-                  "block": 9990
+                  "block": 7222
                 }
               }
             ]
@@ -734,7 +734,7 @@
                 "name": "pruning",
                 "values": [
                   {
-                    "latest_distance": 10000
+                    "latest_distance": 7298
                   }
                 ]
               }
@@ -744,7 +744,7 @@
                 "name": "archive",
                 "cu_multiplier": 5,
                 "rule": {
-                  "block": 9990
+                  "block": 7222
                 }
               }
             ]
@@ -774,7 +774,7 @@
                 "name": "pruning",
                 "values": [
                   {
-                    "latest_distance": 10000
+                    "latest_distance": 7298
                   }
                 ]
               }
@@ -784,7 +784,7 @@
                 "name": "archive",
                 "cu_multiplier": 5,
                 "rule": {
-                  "block": 9990
+                  "block": 7222
                 }
               }
             ]
@@ -814,11 +814,11 @@
                 "name": "pruning",
                 "values": [
                   {
-                    "latest_distance": 10000
+                    "latest_distance": 7298
                   },
                   {
                     "extension": "archive",
-                    "latest_distance": 1000000
+                    "expected_value": "1"
                   }
                 ]
               }
@@ -828,7 +828,7 @@
                 "name": "archive",
                 "cu_multiplier": 5,
                 "rule": {
-                  "block": 9990
+                  "block": 7221
                 }
               }
             ]
