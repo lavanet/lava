@@ -754,7 +754,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		}
 		relayLatency = time.Since(relaySentTime)
 		if rpccs.debugRelays {
-			utils.LavaFormatDebug("sending relay to provider",
+			attributes := []utils.Attribute{
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("addon", relayRequest.RelayData.Addon),
 				utils.LogAttr("extensions", relayRequest.RelayData.Extensions),
@@ -769,7 +769,14 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LogAttr("latency", relayLatency),
 				utils.LogAttr("replyErred", err != nil),
 				utils.LogAttr("replyLatestBlock", reply.GetLatestBlock()),
-			)
+				utils.LogAttr("method", chainMessage.GetApi().Name),
+			}
+			internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
+			if internalPath != "" {
+				attributes = append(attributes, utils.LogAttr("internal_path", internalPath),
+					utils.LogAttr("apiUrl", relayRequest.RelayData.ApiUrl))
+			}
+			utils.LavaFormatDebug("sending relay to provider", attributes...)
 		}
 		if err != nil {
 			backoff := false
