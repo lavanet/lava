@@ -60,6 +60,7 @@ func (rpcps *testServer) Probe(ctx context.Context, probeReq *pairingtypes.Probe
 func (rpcps *testServer) Relay(context.Context, *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
 	return nil, utils.LavaFormatError("unused", nil)
 }
+
 func (rpcps *testServer) RelaySubscribe(*pairingtypes.RelayRequest, pairingtypes.Relayer_RelaySubscribeServer) error {
 	return nil
 }
