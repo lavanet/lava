@@ -115,9 +115,7 @@ func TestEndpointSortingFlow(t *testing.T) {
 	pairingList := createPairingList("", true)
 	pairingList[0].Endpoints = append(pairingList[0].Endpoints, &Endpoint{NetworkAddress: delayedAddress, Enabled: true, Client: nil, ConnectionRefusals: 0})
 	// swap locations so that the endpoint of the delayed will be first
-	tmp := pairingList[0].Endpoints[0]
-	pairingList[0].Endpoints[0] = pairingList[0].Endpoints[1]
-	pairingList[0].Endpoints[1] = tmp
+	pairingList[0].Endpoints[0], pairingList[0].Endpoints[1] = pairingList[0].Endpoints[1], pairingList[0].Endpoints[0]
 
 	// update the pairing and wait for the routine to send all requests
 	err = csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
