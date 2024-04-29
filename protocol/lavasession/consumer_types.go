@@ -298,7 +298,7 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
-	conn, err := ConnectgRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders)
+	conn, err := ConnectGRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders)
 	if err != nil {
 		return nil, nil, err
 	}
