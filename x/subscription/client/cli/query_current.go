@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/spf13/cobra"
 )
@@ -18,7 +19,10 @@ func CmdCurrent() *cobra.Command {
 				return err
 			}
 
-			reqConsumer := args[0]
+			reqConsumer, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
 
 			queryClient := types.NewQueryClient(clientCtx)
 

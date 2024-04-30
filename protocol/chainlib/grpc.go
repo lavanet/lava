@@ -96,7 +96,8 @@ func (apip *GrpcChainParser) getSupportedApi(name, connectionType string) (*ApiC
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
 	}
-	return apip.BaseChainParser.getSupportedApi(name, connectionType)
+	apiKey := ApiKey{Name: name, ConnectionType: connectionType}
+	return apip.BaseChainParser.getSupportedApi(apiKey)
 }
 
 func (apip *GrpcChainParser) setupForConsumer(relayer grpcproxy.ProxyCallBack) {
@@ -219,8 +220,8 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceGrpc)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
+	internalPaths, serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceGrpc)
+	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)

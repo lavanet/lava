@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	"github.com/spf13/cobra"
 )
@@ -17,8 +18,8 @@ var _ = strconv.Itoa(0)
 
 func CmdDelegate() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delegate provider chain-id validator amount",
-		Short: "delegate to a validator and provider",
+		Use:   "delegate [provider] [chain-id] [validator] [amount]",
+		Short: "delegate to a validator and provider using dualstaking",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -26,7 +27,11 @@ func CmdDelegate() *cobra.Command {
 				return err
 			}
 
-			argProvider := args[0]
+			argProvider, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
+
 			argChainID := args[1]
 			argvalidator := args[2]
 			argAmount, err := sdk.ParseCoinNormalized(args[3])
