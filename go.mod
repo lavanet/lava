@@ -9,7 +9,7 @@ require (
 	github.com/cometbft/cometbft-db v0.8.0
 	github.com/confio/ics23/go v0.9.0 // indirect
 	github.com/cosmos/cosmos-sdk v0.47.10
-	github.com/cosmos/ibc-go/v7 v7.2.0
+	github.com/cosmos/ibc-go/v7 v7.3.1
 	github.com/ethereum/go-ethereum v1.10.18
 	github.com/gofiber/fiber/v2 v2.50.0
 	github.com/gofiber/websocket/v2 v2.0.22
@@ -30,6 +30,7 @@ require (
 	cosmossdk.io/math v1.3.0
 	github.com/cosmos/cosmos-proto v1.0.0-beta.4
 	github.com/cosmos/gogoproto v1.4.10
+	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.1.3
 	github.com/dgraph-io/badger/v4 v4.1.0
 	github.com/fullstorydev/grpcurl v1.8.5
 	github.com/gogo/status v1.1.0
@@ -91,6 +92,7 @@ require (
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/huandu/skiplist v1.2.0 // indirect
+	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
