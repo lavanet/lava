@@ -23,6 +23,10 @@ import (
 	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
 	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 
+	"github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward"
+	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/keeper"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
+
 	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
@@ -189,6 +193,7 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_1_0_1,
 	upgrades.Upgrade_1_1_0,
 	upgrades.Upgrade_1_2_0,
+	upgrades.Upgrade_1_3_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -236,6 +241,7 @@ var (
 		crisis.AppModuleBasic{},
 		slashing.AppModuleBasic{},
 		feegrantmodule.AppModuleBasic{},
+		packetforward.AppModuleBasic{},
 		ibc.AppModuleBasic{},
 		ibctm.AppModuleBasic{},
 		ica.AppModuleBasic{},
@@ -354,7 +360,7 @@ func New(
 		distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, consensusparamtypes.StoreKey, upgradetypes.StoreKey, feegrant.StoreKey,
 		evidencetypes.StoreKey, crisistypes.StoreKey, ibctransfertypes.StoreKey, ibcexported.StoreKey,
-		icahosttypes.StoreKey,
+		icahosttypes.StoreKey, packetforwardtypes.StoreKey,
 		icacontrollertypes.StoreKey,
 		capabilitytypes.StoreKey,
 		specmoduletypes.StoreKey,
@@ -451,6 +457,17 @@ func New(
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec, keys[ibcexported.StoreKey], app.GetSubspace(ibcexported.ModuleName), app.StakingKeeper, app.UpgradeKeeper, scopedIBCKeeper,
+	)
+
+	app.PacketForwardKeeper = packetforwardkeeper.NewKeeper(
+		appCodec,
+		keys[packetforwardtypes.StoreKey],
+		nil, // will be zero-value here, reference is set later on with SetTransferKeeper.
+		app.IBCKeeper.ChannelKeeper,
+		app.DistrKeeper,
+		app.BankKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	// Initialize SpecKeeper prior to govRouter (order is critical)
@@ -605,12 +622,18 @@ func New(
 
 	// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper, &app.IBCKeeper.PortKeeper,
-		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
+		appCodec,
+		keys[ibctransfertypes.StoreKey],
+		app.GetSubspace(ibctransfertypes.ModuleName),
+		app.PacketForwardKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+		scopedTransferKeeper,
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
+	app.PacketForwardKeeper.SetTransferKeeper(app.TransferKeeper)
 
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey],
@@ -678,8 +701,19 @@ func New(
 
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := ibcporttypes.NewRouter()
-	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule).
-		AddRoute(ibctransfertypes.ModuleName, transferIBCModule)
+	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule)
+
+	var transferStack ibcporttypes.IBCModule
+	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = packetforward.NewIBCMiddleware(
+		transferStack,
+		app.PacketForwardKeeper,
+		0, // retries on timeout
+		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
+		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
+	)
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
+
 	// this line is used by starport scaffolding # ibc/app/router
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -716,6 +750,7 @@ func New(
 		groupmodule.NewAppModule(appCodec, app.GroupKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		ibc.NewAppModule(app.IBCKeeper),
+		packetforward.NewAppModule(app.PacketForwardKeeper, app.GetSubspace(packetforwardtypes.ModuleName)),
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		timerstore.NewAppModule(app.TimerStoreKeeper),
@@ -761,6 +796,7 @@ func New(
 		group.ModuleName,
 		authz.ModuleName,
 		icatypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
@@ -790,6 +826,7 @@ func New(
 		group.ModuleName,
 		authz.ModuleName,
 		icatypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		specmoduletypes.ModuleName,
 		epochstoragemoduletypes.ModuleName,
 		dualstakingmoduletypes.ModuleName,
@@ -832,6 +869,7 @@ func New(
 		group.ModuleName,
 		authz.ModuleName,
 		icatypes.ModuleName,
+		packetforwardtypes.ModuleName,
 		specmoduletypes.ModuleName,
 		subscriptionmoduletypes.ModuleName,
 		downtimemoduletypes.ModuleName,
@@ -1102,6 +1140,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
+	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(specmoduletypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
 	paramsKeeper.Subspace(dualstakingmoduletypes.ModuleName)
