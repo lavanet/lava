@@ -536,14 +536,14 @@ func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	_, err := ts.TxDualstakingUnbond(provider1Addr, provider1Addr, ts.spec.Name, amountToUnbond)
 	require.NoError(t, err)
 
-	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, staked.IsEqual(stakeEntry.Stake))
+	stakeEntry := ts.getStakeEntryCurrent(provider1Acct.Addr.String(), ts.spec.Name)
+	require.True(t, staked.Sub(amountToUnbond).IsEqual(stakeEntry.Stake))
 
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
 	// now in effect
 	staked = staked.Sub(staked.Sub(minSelfDelegation.AddAmount(math.OneInt())))
-	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
+	stakeEntry = ts.getStakeEntryCurrent(provider1Acct.Addr.String(), ts.spec.Name)
 	require.True(t, staked.IsEqual(stakeEntry.Stake))
 	require.True(t, stakeEntry.IsFrozen())
 }
@@ -617,11 +617,11 @@ func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
 	ts.AdvanceEpoch()
 	// now in effect
 
-	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
+	stakeEntry := ts.getStakeEntryCurrent(provider1Acct.Addr.String(), ts.spec.Name)
 	require.True(t, stakeEntry.Stake.Amount.Equal(amountToUnbond.Amount))
 	require.True(t, stakeEntry.IsFrozen())
 
-	stakeEntry = ts.getStakeEntry(provider2Acct.Addr.String(), ts.spec.Name)
+	stakeEntry = ts.getStakeEntryCurrent(provider2Acct.Addr.String(), ts.spec.Name)
 	require.True(t, stake.IsEqual(stakeEntry.Stake))
 	require.True(t, stakeEntry.DelegateTotal.IsEqual(stake.SubAmount(amountToUnbond.Amount)))
 	require.False(t, stakeEntry.IsFrozen())
@@ -634,12 +634,12 @@ func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
 	ts.AdvanceEpoch()
 	// now in effect
 
-	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
+	stakeEntry = ts.getStakeEntryCurrent(provider1Acct.Addr.String(), ts.spec.Name)
 	require.True(t, stakeEntry.Stake.Amount.Equal(amountToUnbond.Amount))
 	require.True(t, stakeEntry.DelegateTotal.IsEqual(stake.SubAmount(amountToUnbond.Amount)))
 	require.True(t, stakeEntry.IsFrozen())
 
-	stakeEntry = ts.getStakeEntry(provider2Acct.Addr.String(), ts.spec.Name)
+	stakeEntry = ts.getStakeEntryCurrent(provider2Acct.Addr.String(), ts.spec.Name)
 	require.True(t, stakeEntry.Stake.Amount.Equal(amountToUnbond.Amount))
 	require.True(t, stakeEntry.DelegateTotal.IsEqual(stake.SubAmount(amountToUnbond.Amount)))
 	require.True(t, stakeEntry.IsFrozen())
@@ -657,7 +657,7 @@ func TestStakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	stakeInt := sdk.NewInt(testStake)
 	stake := sdk.NewCoin("ulava", stakeInt)
 
-	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
+	stakeEntry := ts.getStakeEntryCurrent(provider1Acct.Addr.String(), ts.spec.Name)
 	require.True(t, stake.IsEqual(stakeEntry.Stake))
 	require.False(t, stakeEntry.IsFrozen())
 
@@ -671,7 +671,7 @@ func TestStakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	ts.AdvanceEpoch()
 	// now in effect
 
-	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
+	stakeEntry = ts.getStakeEntryCurrent(provider1Acct.Addr.String(), ts.spec.Name)
 	require.True(t, stakeEntry.Stake.Amount.Equal(amountToUnbond.Amount))
 	require.True(t, stakeEntry.IsFrozen())
 }
