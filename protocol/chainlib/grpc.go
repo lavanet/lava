@@ -42,6 +42,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const GRPCStatusCodeOnFailedMessages = 32
+
 type GrpcNodeErrorResponse struct {
 	ErrorMessage string `json:"error_message"`
 	ErrorCode    uint32 `json:"error_code"`
@@ -572,7 +574,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	reply := &RelayReplyWrapper{
-		StatusCode: 200, // status code is used only for rest at the moment
+		StatusCode: http.StatusOK, // status code is used only for rest at the moment
 		RelayReply: &pairingtypes.RelayReply{
 			Data:     respBytes,
 			Metadata: convertToMetadataMapOfSlices(respHeaders),
@@ -587,7 +589,8 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 func parseGrpcNodeErrorToReply(ctx context.Context, err error) ([]byte, uint32, error) {
 	var respBytes []byte
 	var marshalingError error
-	var errorCode uint32 = 0
+	var errorCode uint32 = GRPCStatusCodeOnFailedMessages
+	// try fetching status code from error or otherwise use the GRPCStatusCodeOnFailedMessages
 	if statusError, ok := status.FromError(err); ok {
 		errorCode = uint32(statusError.Code())
 		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: statusError.Message(), ErrorCode: errorCode})
@@ -595,7 +598,6 @@ func parseGrpcNodeErrorToReply(ctx context.Context, err error) ([]byte, uint32, 
 			return nil, errorCode, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 1", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	} else {
-		errorCode = 32
 		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: err.Error(), ErrorCode: errorCode})
 		if marshalingError != nil {
 			return nil, errorCode, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 2", err, utils.Attribute{Key: "GUID", Value: ctx})
