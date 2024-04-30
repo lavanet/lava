@@ -731,6 +731,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 
 	// create a new relay reply struct with the response body as the data
 	reply := &RelayReplyWrapper{
+		StatusCode: http.StatusOK, // status code is used only for rest at the moment
 		RelayReply: &pairingtypes.RelayReply{
 			Data: body,
 		},
@@ -839,6 +840,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 
 	// create a new relay reply struct
 	reply := &RelayReplyWrapper{
+		StatusCode: http.StatusOK, // status code is used only for rest at the moment
 		RelayReply: &pairingtypes.RelayReply{
 			Data: data,
 		},
