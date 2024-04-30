@@ -47,12 +47,13 @@ func (apip *JsonRPCChainParser) getApiCollection(connectionType, internalPath, a
 	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
 }
 
-func (apip *JsonRPCChainParser) getSupportedApi(name, connectionType string) (*ApiContainer, error) {
+func (apip *JsonRPCChainParser) getSupportedApi(name, connectionType string, internalPath string) (*ApiContainer, error) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
 	}
-	return apip.BaseChainParser.getSupportedApi(name, connectionType)
+	apiKey := ApiKey{Name: name, ConnectionType: connectionType, InternalPath: internalPath}
+	return apip.BaseChainParser.getSupportedApi(apiKey)
 }
 
 func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
@@ -71,7 +72,7 @@ func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, 
 		Params:      nil,
 		BaseMessage: chainproxy.BaseMessage{Headers: metadata},
 	}
-	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType)
+	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType, "")
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +104,12 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
 	for idx, msg := range msgs {
 		var requestedBlockForMessage int64
+		internalPath := ""
+		if apip.isValidInternalPath(url) {
+			internalPath = url
+		}
 		// Check api is supported and save it in nodeMsg
-		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
+		apiCont, err := apip.getSupportedApi(msg.Method, connectionType, internalPath)
 		if err != nil {
 			utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
 			return nil, err
@@ -232,8 +237,8 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
+	internalPaths, serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
+	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
 }
 
 func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
@@ -444,15 +449,17 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
 		}
 
+		path := "/" + fiberCtx.Params("*")
 		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("path", path),
 			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("_msg", logFormattedMsg),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, http.MethodPost, dappID, consumerIp, metricsData, headers)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path, msg, http.MethodPost, dappID, consumerIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
 			go apil.refererData.SendReferer(refererMatch, chainID, msg, metadataValues, nil)
 		}
