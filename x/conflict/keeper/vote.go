@@ -89,17 +89,9 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 	}
 
 	for _, vote := range conflictVote.Votes {
-		accAddress, err := sdk.AccAddressFromBech32(vote.Address)
-		if err != nil {
-			utils.LavaFormatWarning("invalid vote address", err,
-				utils.Attribute{Key: "voteAddress", Value: vote.Address},
-			)
-			ConsensusVote = false
-			continue
-		}
-		entry, err := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, conflictVote.ChainID, accAddress, epochVoteStart)
-		if err != nil {
-			utils.LavaFormatWarning("failed to get stake entry for provider in voter list", err,
+		entry, found := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, conflictVote.ChainID, vote.Address, epochVoteStart)
+		if !found {
+			utils.LavaFormatWarning("failed to get stake entry for provider in voter list", fmt.Errorf("stake entry not found"),
 				utils.Attribute{Key: "voteID", Value: conflictVote.Index},
 				utils.Attribute{Key: "voteChainID", Value: conflictVote.ChainID},
 				utils.Attribute{Key: "voteStartBlock", Value: conflictVote.VoteStartBlock},
@@ -122,12 +114,12 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 			providersWithoutVote = append(providersWithoutVote, vote.Address)
 			bail := stake
 			bail.Quo(sdk.NewIntFromUint64(BailStakeDiv))
-			err = k.pairingKeeper.JailEntry(ctx, accAddress, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), bail))
+			err = k.pairingKeeper.JailEntry(ctx, vote.Address, conflictVote.ChainID, conflictVote.VoteStartBlock, blocksToSave, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), bail))
 			if err != nil {
 				utils.LavaFormatWarning("jailing failed at vote conflict", err)
 				// not skipping to continue to slash
 			}
-			slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, conflictVote.ChainID, SlashStakePercent)
+			slashed, err := k.pairingKeeper.SlashEntry(ctx, vote.Address, conflictVote.ChainID, SlashStakePercent)
 			rewardPool = rewardPool.Add(slashed)
 			if err != nil {
 				utils.LavaFormatWarning("slashing failed at vote conflict", err)
@@ -177,14 +169,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 		if ConsensusVote && sdk.NewDecFromInt(winnerVotersStake).QuoInt(totalVotes).GTE(k.MajorityPercent(ctx)) {
 			for _, vote := range conflictVote.Votes {
 				if vote.Result != winner && !slices.Contains(providersWithoutVote, vote.Address) { // punish those who voted wrong, voters that didnt vote already got punished
-					accAddress, err := sdk.AccAddressFromBech32(vote.Address)
-					if err != nil {
-						utils.LavaFormatWarning("invalid vote address", err,
-							utils.Attribute{Key: "voteAddress", Value: vote.Address},
-						)
-						continue
-					}
-					slashed, err := k.pairingKeeper.SlashEntry(ctx, accAddress, conflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
+					slashed, err := k.pairingKeeper.SlashEntry(ctx, vote.Address, conflictVote.ChainID, sdk.NewDecWithPrec(1, 0))
 					rewardPool = rewardPool.Add(slashed)
 					if err != nil {
 						utils.LavaFormatWarning("slashing failed at vote conflict", err)

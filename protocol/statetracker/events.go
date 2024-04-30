@@ -2,12 +2,14 @@ package statetracker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cometbft/cometbft/abci/types"
@@ -52,6 +54,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 		return utils.LavaFormatError("requested blocks is bigger than latest block height", nil, utils.Attribute{Key: "requested", Value: blocks}, utils.Attribute{Key: "latestHeight", Value: latestHeight})
 	}
 	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 	readEventsFromBlock := func(blockFrom int64, blockTo int64, hash string) {
 		for block := blockFrom; block < blockTo; block++ {
 			brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
@@ -302,4 +305,193 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 	cmdEvents.Flags().String(FlagShowAttributeName, "", "only show a specific attribute name, and no other attributes")
 	cmdEvents.Flags().Bool(FlagDisableInteractiveShell, false, "a flag to disable the shell printing interactive prints, used when scripting the command")
 	return cmdEvents
+}
+
+func CreateTxCounterCobraCommand() *cobra.Command {
+	cmdTxCounter := &cobra.Command{
+		Use:   `txcounter  [number_of_days_to_count(int)] [average_block_time_in_seconds(int)]`,
+		Short: `txcounter  [number_of_days_to_count(int)] [average_block_time_in_seconds(int)]`,
+		Long: `txcounter  [number_of_days_to_count(int)] [average_block_time_in_seconds(int)] counting the number of
+transactions for a certain amount of days given the average block time for that chain`,
+		Example: `lavad test txcounter 1 15 -- will count 1 day worth of blocks where each block is 15 seconds`,
+		Args:    cobra.RangeArgs(1, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			// handle flags, pass necessary fields
+			ctx := context.Background()
+			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
+			if err != nil {
+				return err
+			}
+			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read log level flag", err)
+			}
+
+			numberOfDays := int64(-1)
+			if len(args) == 2 {
+				numberOfDays, err = strconv.ParseInt(args[0], 0, 64)
+				if err != nil {
+					utils.LavaFormatFatal("failed to parse blocks as a number", err)
+				}
+			}
+
+			blockTime, err := strconv.ParseInt(args[1], 0, 64)
+			if err != nil {
+				utils.LavaFormatFatal("failed to parse blocks as a number", err)
+			}
+			if blockTime < 0 {
+				blockTime = 0
+			}
+
+			utils.LavaFormatInfo("Events Lookup started", utils.Attribute{Key: "blocks", Value: blockTime})
+			utils.SetGlobalLoggingLevel(logLevel)
+			clientCtx = clientCtx.WithChainID(networkChainId)
+			_, err = tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				utils.LavaFormatFatal("failed to parse blocks as a number", err)
+			}
+			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
+			rand.InitRandomSeed()
+			return countTransactionsPerDay(ctx, clientCtx, blockTime, numberOfDays)
+		},
+	}
+	flags.AddQueryFlagsToCmd(cmdTxCounter)
+	flags.AddKeyringFlags(cmdTxCounter.Flags())
+	cmdTxCounter.Flags().String(flags.FlagFrom, "", "Name or address of wallet from which to read address, and look for it in value")
+	cmdTxCounter.Flags().Duration(FlagTimeout, 5*time.Minute, "the time to listen for events, defaults to 5m")
+	cmdTxCounter.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	return cmdTxCounter
+}
+
+func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, blockTime, numberOfDays int64) error {
+	resultStatus, err := clientCtx.Client.Status(ctx)
+	if err != nil {
+		return err
+	}
+	latestHeight := resultStatus.SyncInfo.LatestBlockHeight
+	// 1 block for blockTime (lets say 15 seconds)
+	// number of seconds in a day: 24 * 60 * 60
+	numberOfSecondsInADay := int64(24 * 60 * 60)
+	numberOfBlocksInADay := numberOfSecondsInADay / blockTime
+	utils.LavaFormatInfo("Starting counter",
+		utils.LogAttr("latest_block", latestHeight),
+		utils.LogAttr("numberOfSecondsInADay", numberOfSecondsInADay),
+		utils.LogAttr("numberOfBlocksInADay", numberOfBlocksInADay),
+		utils.LogAttr("starting_block", latestHeight-numberOfBlocksInADay),
+	)
+
+	tmClient, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
+	if err != nil {
+		utils.LavaFormatFatal("invalid blockResults provider", err)
+	}
+	// i is days
+	// j are blocks in that day
+	// starting from current day and going backwards
+	var wg sync.WaitGroup
+	totalTxPerDay := sync.Map{}
+
+	// Process each day from the earliest to the latest
+	for i := int64(1); i <= numberOfDays; i++ {
+		startBlock := latestHeight - (numberOfBlocksInADay * numberOfDays) + (numberOfBlocksInADay * (i - 1)) + 1
+		endBlock := latestHeight - (numberOfBlocksInADay * numberOfDays) + (numberOfBlocksInADay * i)
+
+		utils.LavaFormatInfo("Parsing day", utils.LogAttr("Day", i), utils.LogAttr("starting block", startBlock), utils.LogAttr("ending block", endBlock))
+
+		// Process blocks in batches of 20
+		for j := startBlock; j < endBlock; j += 20 {
+			// Calculate the end of the batch
+			end := j + 20
+			if end > endBlock {
+				end = endBlock
+			}
+
+			// Determine how many routines to start (could be less than 20 near the end of the loop)
+			count := (end - j)
+
+			// Add the count of goroutines to be waited on
+			wg.Add(int(count))
+
+			// Launch goroutines for each block in the current batch
+			for k := j; k < end; k++ {
+				go func(k int64) {
+					defer wg.Done()
+					ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+					defer cancel()
+					blockResults, err := tmClient.BlockResults(ctxWithTimeout, &k)
+					if err != nil {
+						utils.LavaFormatError("invalid blockResults status", err)
+						return
+					}
+					transactionResults := blockResults.TxsResults
+					utils.LavaFormatInfo("Number of tx for block", utils.LogAttr("_routine", end-k), utils.LogAttr("block_number", k), utils.LogAttr("number_of_tx", len(transactionResults)))
+					// Update totalTxPerDay safely
+					actual, _ := totalTxPerDay.LoadOrStore(i, len(transactionResults))
+					if actual != nil {
+						val, ok := actual.(int)
+						if !ok {
+							utils.LavaFormatError("Failed converting int", nil)
+							return
+						}
+						totalTxPerDay.Store(i, val+len(transactionResults))
+					}
+				}(k)
+			}
+
+			// Wait for all goroutines of the current batch to complete
+			utils.LavaFormatInfo("Waiting routine batch to finish", utils.LogAttr("block_from", j), utils.LogAttr("block_to", end))
+			wg.Wait()
+		}
+	}
+
+	// Log the transactions per day results
+	totalTxPerDay.Range(func(key, value interface{}) bool {
+		utils.LavaFormatInfo("transactions per day results", utils.LogAttr("Day", key), utils.LogAttr("totalTx", value))
+		return true // continue iteration
+	})
+
+	// Prepare the JSON data
+	jsonData := make(map[string]int)
+	totalTxPerDay.Range(func(key, value interface{}) bool {
+		day, ok := key.(int64)
+		if ok {
+			date := time.Now().AddDate(0, 0, -int(day)+1).Format("2006-01-02")
+			dateKey := fmt.Sprintf("date_%s", date)
+			val, ok2 := value.(int)
+			if ok2 {
+				jsonData[dateKey] = val
+			}
+		}
+		return true
+	})
+
+	// Convert the JSON data to JSON format
+	jsonBytes, err := json.MarshalIndent(jsonData, "", "    ")
+	if err != nil {
+		fmt.Println("Error marshaling JSON:", err)
+		return err
+	}
+
+	// Write JSON data to a file
+	fileName := "dates.json"
+	file, err := os.Create(fileName)
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(jsonBytes)
+	if err != nil {
+		fmt.Println("Error writing to file:", err)
+		return err
+	}
+
+	utils.LavaFormatInfo("JSON data has been written to:" + fileName)
+	return nil
+
+	// "https://testnet2-rpc.lavapro.xyz:443/"
 }

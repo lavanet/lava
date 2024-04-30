@@ -16,10 +16,16 @@ func CmdEffectivePolicy() *cobra.Command {
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			specID := args[0]
-
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
 			var address string
 			if len(args) > 1 {
-				address = args[1]
+				address, err = utils.ParseCLIAddress(clientCtx, args[1])
+				if err != nil {
+					return err
+				}
 			} else {
 				clientCtxForTx, err := client.GetClientQueryContext(cmd)
 				if err != nil {
@@ -38,10 +44,6 @@ func CmdEffectivePolicy() *cobra.Command {
 					return err
 				}
 				address = addressAccount.String()
-			}
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
 			}
 
 			queryClient := types.NewQueryClient(clientCtx)

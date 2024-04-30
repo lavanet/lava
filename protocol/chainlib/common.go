@@ -67,6 +67,7 @@ type ApiContainer struct {
 type ApiKey struct {
 	Name           string
 	ConnectionType string
+	InternalPath   string
 }
 
 type CollectionKey struct {

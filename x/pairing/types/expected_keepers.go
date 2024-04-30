@@ -43,17 +43,16 @@ type EpochstorageKeeper interface {
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
 	GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error)
 	PopUnstakeEntries(ctx sdk.Context, block uint64) (value []epochstoragetypes.StakeEntry)
-	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64) error
-	ModifyUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
+	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64)
+	ModifyUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry)
 	GetStakeStorageUnstake(ctx sdk.Context) (epochstoragetypes.StakeStorage, bool)
-	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry, removeIndex uint64)
+	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry)
 	AppendStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry)
-	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, idx uint64) error
-	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
-	UnstakeEntryByAddress(ctx sdk.Context, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
+	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string) error
+	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (value epochstoragetypes.StakeEntry, found bool)
+	UnstakeEntryByAddress(ctx sdk.Context, address string) (value epochstoragetypes.StakeEntry, found bool)
 	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
 	GetEpochStakeEntries(ctx sdk.Context, block uint64, chainID string) (entries []epochstoragetypes.StakeEntry, found bool, epochHash []byte)
-	GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage epochstoragetypes.StakeStorage, address sdk.AccAddress) (value epochstoragetypes.StakeEntry, found bool, index uint64)
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
@@ -94,6 +93,7 @@ type SubscriptionKeeper interface {
 	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, block uint64) error
 	GetAllSubscriptionsIndices(ctx sdk.Context) []string
 	AppendAdjustment(ctx sdk.Context, consumer string, provider string, totalConsumerUsage uint64, usageWithThisProvider uint64)
+	CalculateParticipationFees(ctx sdk.Context, reward sdk.Coin) (sdk.Coins, sdk.Coins, error)
 }
 
 type PlanKeeper interface {
@@ -107,7 +107,7 @@ type DowntimeKeeper interface {
 }
 
 type DualstakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr sdk.AccAddress, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
 	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error
 	UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin, unstake bool) error
 	GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]dualstakingtypes.Delegation, error)

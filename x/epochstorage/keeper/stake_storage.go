@@ -146,85 +146,62 @@ func (k Keeper) SetStakeStorageCurrent(ctx sdk.Context, chainID string, stakeSto
 	k.SetStakeStorage(ctx, stakeStorage)
 }
 
-func (k Keeper) stakeEntryIndexByAddress(ctx sdk.Context, stakeStorage types.StakeStorage, address sdk.AccAddress) (index uint64, found bool) {
-	// the following finds the address of stakeEntry and returns it
-	entries := stakeStorage.StakeEntries
-	for idx, entry := range entries {
-		entryAddr, err := sdk.AccAddressFromBech32(entry.Address)
-		if err != nil {
-			// this should not happen; to avoid panic we simply skip this one (thus
-			// freeze the situation so it can be investigated and orderly resolved).
-			utils.LavaFormatError("critical: invalid account address inside StakeStorage", err,
-				utils.LogAttr("address", entry.Address),
-				utils.LogAttr("chainID", entry.Chain),
-			)
-			continue
-		}
-		if entryAddr.Equals(address) {
-			// found the right thing
-			return uint64(idx), true
-		}
+func (k Keeper) GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (types.StakeEntry, bool) {
+	if !utils.IsBech32Address(address) {
+		utils.LavaFormatWarning("cannot get stake entry of invalid address", fmt.Errorf("invalid address"),
+			utils.LogAttr("address", address),
+		)
 	}
-	return 0, false
-}
-
-func (k Keeper) GetStakeEntryByAddressFromStorage(ctx sdk.Context, stakeStorage types.StakeStorage, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
-	idx, found := k.stakeEntryIndexByAddress(ctx, stakeStorage, address)
-	if !found {
-		return types.StakeEntry{}, false, 0
-	}
-	// found the right thing
-	value = stakeStorage.StakeEntries[idx]
-	found = true
-	index = idx
-	return
-}
-
-func (k Keeper) GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, chainID)
 	if !found {
-		return types.StakeEntry{}, false, 0
+		return types.StakeEntry{}, false
 	}
-	// the following finds the address of stakeEntry and returns it
-	idx, found := k.stakeEntryIndexByAddress(ctx, stakeStorage, address)
-	if !found {
-		return types.StakeEntry{}, false, 0
-	}
-	// found the right thing
-	value = stakeStorage.StakeEntries[idx]
-	found = true
-	index = idx
-	return
+
+	return stakeStorage.GetStakeEntryByAddressFromStorage(address)
 }
 
-func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, idx uint64) error {
+func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string) error {
+	if !utils.IsBech32Address(address) {
+		utils.LavaFormatWarning("cannot get stake entry of invalid address", fmt.Errorf("invalid address"),
+			utils.LogAttr("address", address),
+		)
+	}
 	stakeStorage, found := k.GetStakeStorageCurrent(ctx, chainID)
 	if !found {
 		return legacyerrors.ErrNotFound
 	}
-	if idx >= uint64(len(stakeStorage.StakeEntries)) {
-		return legacyerrors.ErrNotFound
+
+	for i, entry := range stakeStorage.StakeEntries {
+		if entry.Address == address {
+			stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:i], stakeStorage.StakeEntries[i+1:]...)
+			k.SetStakeStorageCurrent(ctx, chainID, stakeStorage)
+			return nil
+		}
 	}
-	stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:idx], stakeStorage.StakeEntries[idx+1:]...)
-	k.SetStakeStorageCurrent(ctx, chainID, stakeStorage)
-	return nil
+
+	return legacyerrors.ErrNotFound
 }
 
-func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry types.StakeEntry) {
-	// this stake storage entries are sorted by stake amount
-	stakeStorage, found := k.GetStakeStorageCurrent(ctx, chainID)
+func (k Keeper) AppendStakeEntryFromStorage(ctx sdk.Context, stakeStorageIndex string, stakeEntry types.StakeEntry, isUnstake bool) {
+	stakeStorage, found := k.GetStakeStorage(ctx, stakeStorageIndex)
 	var entries []types.StakeEntry
 	if !found {
 		entries = []types.StakeEntry{stakeEntry}
 		// create a new one
-		stakeStorage = types.StakeStorage{Index: k.stakeStorageKeyCurrent(chainID), StakeEntries: entries, EpochBlockHash: nil}
+		stakeStorage = types.StakeStorage{Index: stakeStorageIndex, StakeEntries: entries, EpochBlockHash: nil}
 	} else {
 		// the following code inserts stakeEntry into the existing entries by stake
 		entries = stakeStorage.StakeEntries
 		// sort func needs to return true if the inserted entry is less than the existing entry
 		sortFunc := func(i int) bool {
-			return stakeEntry.EffectiveStake().LT(entries[i].EffectiveStake())
+			return stakeEntry.StakeAppliedBlock <= entries[i].StakeAppliedBlock
 		}
+		if !isUnstake {
+			sortFunc = func(i int) bool {
+				return stakeEntry.EffectiveStake().LT(entries[i].EffectiveStake())
+			}
+		}
+
 		// returns the smallest index in which the sort func is true
 		index := sort.Search(len(entries), sortFunc)
 		if index < len(entries) {
@@ -236,26 +213,24 @@ func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEn
 		}
 	}
 	stakeStorage.StakeEntries = entries
-	k.SetStakeStorageCurrent(ctx, chainID, stakeStorage)
+	k.SetStakeStorage(ctx, stakeStorage)
 }
 
-func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry types.StakeEntry, removeIndex uint64) {
-	// this stake storage entries are sorted by stake amount
-	stakeStorage, found := k.GetStakeStorageCurrent(ctx, chainID)
-	if !found {
-		// should not happen since caller is expected to validate chainID first;
-		// do nothing and return to avoid panic.
-		utils.LavaFormatError("critical: ModifyStakeEntryCurrent with unknown chain", legacyerrors.ErrNotFound,
-			utils.LogAttr("chainID", chainID),
-			utils.LogAttr("stakeAddr", stakeEntry.Address),
-		)
-		return
-	}
+func (k Keeper) AppendStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry types.StakeEntry) {
+	k.AppendStakeEntryFromStorage(ctx, k.stakeStorageKeyCurrent(chainID), stakeEntry, false)
+}
+
+func (k Keeper) ModifyStakeEntryCurrentFromStorage(ctx sdk.Context, stakeStorage types.StakeStorage, stakeEntry types.StakeEntry) {
 	// TODO: more efficient: only create a new list once, after the second index is identified
 	// remove the given index, then store the new entry in the sorted list at the right place
 	entries := []types.StakeEntry{}
-	entries = append(entries, stakeStorage.StakeEntries[:removeIndex]...)
-	entries = append(entries, stakeStorage.StakeEntries[removeIndex+1:]...)
+	for i, entry := range stakeStorage.StakeEntries {
+		if entry.Address == stakeEntry.Address {
+			entries = append(entries, stakeStorage.StakeEntries[:i]...)
+			entries = append(entries, stakeStorage.StakeEntries[i+1:]...)
+			break
+		}
+	}
 	// the following code inserts stakeEntry into the existing entries by stake
 	// sort func needs to return true if the inserted entry is less than the existing entry
 	sortFunc := func(i int) bool {
@@ -270,7 +245,22 @@ func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEn
 		entries = append(entries, stakeEntry)
 	}
 	stakeStorage.StakeEntries = entries
-	k.SetStakeStorageCurrent(ctx, chainID, stakeStorage)
+	k.SetStakeStorage(ctx, stakeStorage)
+}
+
+func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry types.StakeEntry) {
+	// this stake storage entries are sorted by stake amount
+	stakeStorage, found := k.GetStakeStorageCurrent(ctx, chainID)
+	if !found {
+		// should not happen since caller is expected to validate chainID first;
+		// do nothing and return to avoid panic.
+		utils.LavaFormatError("critical: ModifyStakeEntryCurrent with unknown chain", legacyerrors.ErrNotFound,
+			utils.LogAttr("chainID", chainID),
+			utils.LogAttr("stakeAddr", stakeEntry.Address),
+		)
+		return
+	}
+	k.ModifyStakeEntryCurrentFromStorage(ctx, stakeStorage, stakeEntry)
 }
 
 // -------------------------------------------------- unstaking list --------------------------------------------
@@ -285,24 +275,20 @@ func (k Keeper) SetStakeStorageUnstake(ctx sdk.Context, stakeStorage types.Stake
 	k.SetStakeStorage(ctx, stakeStorage)
 }
 
-func (k Keeper) UnstakeEntryByAddress(ctx sdk.Context, address sdk.AccAddress) (value types.StakeEntry, found bool, index uint64) {
+func (k Keeper) UnstakeEntryByAddress(ctx sdk.Context, address string) (value types.StakeEntry, found bool) {
+	if !utils.IsBech32Address(address) {
+		utils.LavaFormatWarning("cannot get stake entry of invalid address", fmt.Errorf("invalid address"),
+			utils.LogAttr("address", address),
+		)
+	}
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx)
 	if !found {
-		return types.StakeEntry{}, false, 0
+		return types.StakeEntry{}, false
 	}
-	// the following finds the address of stakeEntry and returns it
-	idx, found := k.stakeEntryIndexByAddress(ctx, stakeStorage, address)
-	if !found {
-		return types.StakeEntry{}, false, 0
-	}
-	// found the right thing
-	value = stakeStorage.StakeEntries[idx]
-	found = true
-	index = idx
-	return
+	return stakeStorage.GetStakeEntryByAddressFromStorage(address)
 }
 
-func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry, removeIndex uint64) {
+func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry) {
 	// this stake storage entries are sorted by stake amount
 	stakeStorage, found := k.GetStakeStorageUnstake(ctx)
 	if !found {
@@ -312,63 +298,14 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry,
 		)
 		return
 	}
-	// TODO: more efficient: only create a new list once, after the second index is identified
-	// remove the given index, then store the new entry in the sorted list at the right place
-	entries := []types.StakeEntry{}
-	entries = append(entries, stakeStorage.StakeEntries[:removeIndex]...)
-	entries = append(entries, stakeStorage.StakeEntries[removeIndex+1:]...)
-	// the following code inserts stakeEntry into the existing entries by stake
-	// sort func needs to return true if the inserted entry is less than the existing entry
-	sortFunc := func(i int) bool {
-		return stakeEntry.StakeAppliedBlock <= entries[i].StakeAppliedBlock
-	}
-	// returns the smallest index in which the sort func is true
-	index := sort.Search(len(entries), sortFunc)
-	if index < len(entries) {
-		entries = append(entries[:index+1], entries[index:]...)
-		entries[index] = stakeEntry
-	} else {
-		entries = append(entries, stakeEntry)
-	}
-	stakeStorage.StakeEntries = entries
-	k.SetStakeStorageUnstake(ctx, stakeStorage)
+	k.ModifyStakeEntryCurrentFromStorage(ctx, stakeStorage, stakeEntry)
 }
 
-func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry, unstakeHoldBlocks uint64) error {
+func (k Keeper) AppendUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry, unstakeHoldBlocks uint64) {
 	// update unstake stakeAppliedBlock to the higher among params (unstakeholdblocks and blockstosave)
-
 	blockHeight := uint64(ctx.BlockHeight())
-
 	stakeEntry.StakeAppliedBlock = blockHeight + unstakeHoldBlocks
-
-	// this stake storage entries are sorted by stakeAppliedBlock
-	stakeStorage, found := k.GetStakeStorageUnstake(ctx)
-	var entries []types.StakeEntry
-	if !found {
-		entries = []types.StakeEntry{stakeEntry}
-		// create a new one
-		stakeStorage = types.StakeStorage{Index: types.StakeStorageKeyUnstakeConst, StakeEntries: entries, EpochBlockHash: nil}
-	} else {
-		// the following code inserts stakeEntry into the existing entries by stakeAppliedBlock
-		entries = stakeStorage.StakeEntries
-		// sort func needs to return true if the inserted entry is less than the existing entry
-		sortFunc := func(i int) bool {
-			return stakeEntry.StakeAppliedBlock <= entries[i].StakeAppliedBlock
-		}
-		// returns the smallest index in which the sort func is true
-		index := sort.Search(len(entries), sortFunc)
-		if index < len(entries) {
-			entries = append(entries[:index+1], entries[index:]...)
-			entries[index] = stakeEntry
-		} else {
-			// put in the end
-			entries = append(entries, stakeEntry)
-		}
-	}
-	stakeStorage.StakeEntries = entries
-	k.SetStakeStorageUnstake(ctx, stakeStorage)
-
-	return nil
+	k.AppendStakeEntryFromStorage(ctx, types.StakeStorageKeyUnstakeConst, stakeEntry, true)
 }
 
 // Returns the unstaking Entry if its stakeAppliedBlock is lower than the provided block
@@ -422,18 +359,17 @@ func (k Keeper) GetStakeStorageEpoch(ctx sdk.Context, block uint64, chainID stri
 	return k.GetStakeStorage(ctx, key)
 }
 
-func (k Keeper) GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider sdk.AccAddress, epoch uint64) (entry *types.StakeEntry, err error) {
+func (k Keeper) GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, address string, epoch uint64) (types.StakeEntry, bool) {
+	if !utils.IsBech32Address(address) {
+		utils.LavaFormatWarning("cannot get stake entry of invalid address", fmt.Errorf("invalid address"),
+			utils.LogAttr("address", address),
+		)
+	}
 	stakeStorage, found := k.GetStakeStorageEpoch(ctx, epoch, chainID)
 	if !found {
-		return nil, types.ErrStakeStorageNotFound
+		return types.StakeEntry{}, false
 	}
-
-	providerStakeEntry, found, _ := k.GetStakeEntryByAddressFromStorage(ctx, stakeStorage, selectedProvider)
-	if !found {
-		return nil, types.ErrProviderNotStaked
-	}
-	entry = &providerStakeEntry
-	return
+	return stakeStorage.GetStakeEntryByAddressFromStorage(address)
 }
 
 func (k Keeper) GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID string, epoch uint64) (entrys *[]types.StakeEntry, err error) {
