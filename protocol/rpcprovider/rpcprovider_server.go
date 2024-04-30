@@ -379,10 +379,13 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	var subscriptionID string
 	subscribeRepliesChan := make(chan interface{})
 	replyWrapper, subscriptionID, clientSub, _, _, err := rpcps.chainRouter.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage, nil)
-	reply = replyWrapper.RelayReply
 	if err != nil {
 		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
+	if replyWrapper == nil || replyWrapper.RelayReply == nil {
+		return false, utils.LavaFormatError("Subscription failed, relayWrapper or RelayReply are nil", nil, utils.Attribute{Key: "GUID", Value: ctx})
+	}
+	reply = replyWrapper.RelayReply
 	reply.Metadata, _, _ = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	if clientSub == nil {
 		// failed subscription, but not an error. (probably a node error)
@@ -764,6 +767,9 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		replyWrapper, _, _, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		}
+		if replyWrapper == nil || replyWrapper.RelayReply == nil {
+			return nil, utils.LavaFormatError("Relay Wrapper returned nil without an error", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 		}
 
 		reply = replyWrapper.RelayReply
