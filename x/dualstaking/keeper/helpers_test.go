@@ -92,6 +92,19 @@ func (ts *tester) addValidators(count int) {
 
 // getStakeEntry find the stake entry of a given provider + chainID
 func (ts *tester) getStakeEntry(provider string, chainID string) epochstoragetypes.StakeEntry {
+	epoch := ts.EpochStart()
+	keeper := ts.Keepers.Epochstorage
+
+	stakeEntry, found := keeper.GetStakeEntryForProviderEpoch(ts.Ctx, chainID, provider, epoch)
+	if !found {
+		panic("getStakeEntry: no stake entry: " + provider + " " + chainID)
+	}
+
+	return stakeEntry
+}
+
+// getStakeEntry find the stake entry of a given provider + chainID
+func (ts *tester) getStakeEntryCurrent(provider string, chainID string) epochstoragetypes.StakeEntry {
 	keeper := ts.Keepers.Epochstorage
 
 	stakeEntry, found := keeper.GetStakeEntryByAddressCurrent(ts.Ctx, chainID, provider)
