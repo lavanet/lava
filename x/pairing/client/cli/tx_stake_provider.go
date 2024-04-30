@@ -14,6 +14,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	commontypes "github.com/lavanet/lava/common/types"
+	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -77,7 +78,7 @@ func CmdStakeProvider() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			operator, err := parseOperator(clientCtx, operatorFromFlag)
+			operator, err := utils.ParseCLIAddress(clientCtx, operatorFromFlag)
 			if err != nil {
 				return err
 			}
@@ -199,7 +200,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 						return nil, fmt.Errorf("operators amount (length %d) must match chain IDs amount (length %d)", len(unparsedOperators), len(chainIDs))
 					}
 					for _, o := range unparsedOperators {
-						operator, err := parseOperator(clientCtx, o)
+						operator, err := utils.ParseCLIAddress(clientCtx, o)
 						if err != nil {
 							return nil, err
 						}
@@ -360,27 +361,4 @@ func getValidator(clientCtx client.Context, provider string) string {
 		}
 	}
 	return validatorBiggest.OperatorAddress
-}
-
-func parseOperator(clientCtx client.Context, operator string) (string, error) {
-	if operator == "" {
-		// empty operator flag --> operator = vault
-		operator = clientCtx.GetFromAddress().String()
-	} else {
-		// check if operator flag is a valid address
-		_, err := sdk.AccAddressFromBech32(operator)
-		if err != nil {
-			// operator is not a valid address --> try to fetch from the keyring
-			keyringRecord, err := clientCtx.Keyring.Key(operator)
-			if err != nil {
-				return "", err
-			}
-			addr, err := keyringRecord.GetAddress()
-			if err != nil {
-				return "", err
-			}
-			operator = addr.String()
-		}
-	}
-	return operator, nil
 }
