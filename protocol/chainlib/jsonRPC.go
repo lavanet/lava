@@ -628,6 +628,8 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 		return nil, err
 	}
 	reply := &RelayReplyWrapper{
+		StatusCode: http.StatusOK, // status code is used only for rest at the moment
+
 		RelayReply: &pairingtypes.RelayReply{
 			Data: retData,
 		},
@@ -728,6 +730,8 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 
 	reply := &RelayReplyWrapper{
+		StatusCode: http.StatusOK, // status code is used only for rest at the moment
+
 		RelayReply: &pairingtypes.RelayReply{
 			Data: retData,
 		},
