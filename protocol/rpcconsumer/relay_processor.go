@@ -67,6 +67,13 @@ type RelayProcessor struct {
 	consumerIp             string
 }
 
+func (rp *RelayProcessor) ShouldRetry(numberOfRetriesLaunched int) bool {
+	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+		return false
+	}
+	return rp.selection != BestResult
+}
+
 func (rp *RelayProcessor) String() string {
 	if rp == nil {
 		return ""

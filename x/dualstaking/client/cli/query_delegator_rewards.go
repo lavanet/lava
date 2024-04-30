@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
 
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
 
@@ -22,7 +23,6 @@ func CmdQueryDelegatorRewards() *cobra.Command {
 		Can be more specific using the optional --provider and --chain-id flags`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			delegator := args[0]
 			var provider, chainID string
 
 			clientCtx, err := client.GetClientQueryContext(cmd)
@@ -32,12 +32,20 @@ func CmdQueryDelegatorRewards() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
+			delegator, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
+
 			// check if the command includes --provider
 			providerFlag := cmd.Flags().Lookup(providerFlagName)
 			if providerFlag == nil {
 				return fmt.Errorf("%s flag wasn't found", providerFlagName)
 			}
-			provider = providerFlag.Value.String()
+			provider, err = utils.ParseCLIAddress(clientCtx, providerFlag.Value.String())
+			if err != nil {
+				return err
+			}
 
 			// check if the command includes --chain-id
 			chainIDFlag := cmd.Flags().Lookup(chainIDFlagName)

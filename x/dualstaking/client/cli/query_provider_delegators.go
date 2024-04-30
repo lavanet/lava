@@ -7,6 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/cobra"
 
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
 
@@ -16,9 +17,11 @@ func CmdQueryProviderDelegators() *cobra.Command {
 		Short: "shows all the delegators of a specific provider",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			provider := args[0]
-
 			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			provider, err := utils.ParseCLIAddress(clientCtx, args[0])
 			if err != nil {
 				return err
 			}
