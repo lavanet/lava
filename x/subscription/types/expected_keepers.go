@@ -74,6 +74,7 @@ type RewardsKeeper interface {
 	FundCommunityPoolFromModule(ctx sdk.Context, amount sdk.Coins, senderModule string) error
 	IsIprpcSubscription(ctx sdk.Context, address string) bool
 	AggregateCU(ctx sdk.Context, subscription, provider string, chainID string, cu uint64)
+	CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Context, reward sdk.Coin) (validatorsCoins sdk.Coins, communityCoins sdk.Coins, err error)
 }
 
 type StakingKeeper interface {

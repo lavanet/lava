@@ -30,6 +30,8 @@ import (
 )
 
 const (
+	// maximum number of retries to send due to the ticker, if we didn't get a response after 10 different attempts then just wait.
+	MaximumNumberOfTickerRelayRetries        = 10
 	MaxRelayRetries                          = 6
 	SendRelayAttempts                        = 3
 	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
@@ -388,22 +390,32 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
 	defer startNewBatchTicker.Stop()
+	numberOfRetriesLaunched := 0
 	for {
 		select {
 		case success := <-gotResults:
-			if success {
+			if success { // check wether we can return the valid results or we need to send another relay
 				return relayProcessor, nil
 			}
+			// if we don't need to retry return what we currently have
+			if !relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
+				return relayProcessor, nil
+			}
+			// otherwise continue sending another relay
 			err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 			go validateReturnCondition(err)
 			go readResultsFromProcessor()
+			numberOfRetriesLaunched++
 		case <-startNewBatchTicker.C:
-			// only trigger another batch for non BestResult relays
-			if relayProcessor.selection != BestResult {
+			// only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
+			if relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
+				// limit the number of retries called from the new batch ticker flow.
+				// if we pass the limit we just wait for the relays we sent to return.
 				err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 				go validateReturnCondition(err)
 				// add ticker launch metrics
 				go rpccs.rpcConsumerLogs.SetRelaySentByNewBatchTickerMetric(rpccs.getChainIdAndApiInterface())
+				numberOfRetriesLaunched++
 			}
 		case returnErr := <-returnCondition:
 			// we use this channel because there could be a race condition between us releasing the provider and about to send the return
@@ -742,7 +754,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		}
 		relayLatency = time.Since(relaySentTime)
 		if rpccs.debugRelays {
-			utils.LavaFormatDebug("sending relay to provider",
+			attributes := []utils.Attribute{
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("addon", relayRequest.RelayData.Addon),
 				utils.LogAttr("extensions", relayRequest.RelayData.Extensions),
@@ -757,7 +769,14 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LogAttr("latency", relayLatency),
 				utils.LogAttr("replyErred", err != nil),
 				utils.LogAttr("replyLatestBlock", reply.GetLatestBlock()),
-			)
+				utils.LogAttr("method", chainMessage.GetApi().Name),
+			}
+			internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
+			if internalPath != "" {
+				attributes = append(attributes, utils.LogAttr("internal_path", internalPath),
+					utils.LogAttr("apiUrl", relayRequest.RelayData.ApiUrl))
+			}
+			utils.LavaFormatDebug("sending relay to provider", attributes...)
 		}
 		if err != nil {
 			backoff := false

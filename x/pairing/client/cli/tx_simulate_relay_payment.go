@@ -38,7 +38,10 @@ func CmdSimulateRelayPayment() *cobra.Command {
 			}
 
 			// Extract arguments
-			consumerAddress := args[0]
+			consumerAddress, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
 
 			keyName, err := sigs.GetKeyName(clientCtx.WithFrom(consumerAddress))
 			if err != nil {

@@ -269,3 +269,8 @@ func (k Keeper) returnCreditToSub(ctx sdk.Context, sub string, credit math.Int) 
 
 	return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt())
 }
+
+// wrapper function for calculating the validators and community participation fees
+func (k Keeper) CalculateParticipationFees(ctx sdk.Context, reward sdk.Coin) (sdk.Coins, sdk.Coins, error) {
+	return k.rewardsKeeper.CalculateValidatorsAndCommunityParticipationRewards(ctx, reward)
+}

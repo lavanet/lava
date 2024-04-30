@@ -50,7 +50,10 @@ func CmdAccountInfo() *cobra.Command {
 				}
 				address = addressAccount.String()
 			} else {
-				address = args[0]
+				address, err = utils.ParseCLIAddress(clientCtx, args[0])
+				if err != nil {
+					return err
+				}
 			}
 			specQuerier := spectypes.NewQueryClient(clientCtx)
 			ctx := context.Background()

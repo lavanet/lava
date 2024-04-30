@@ -13,7 +13,7 @@ var _ = strconv.Itoa(0)
 
 func CmdQueryIprpcSpecReward() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "iprpc-spec-reward {spec}",
+		Use:   "iprpc-spec-reward [chain-id]",
 		Short: "Query for IPRPC rewards for a specific spec. If no spec is given, all IPRPC rewards will be shown",
 		Args:  cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
