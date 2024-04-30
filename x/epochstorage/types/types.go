@@ -16,6 +16,10 @@ func (stksto StakeStorage) Copy() (returnedStorage StakeStorage) {
 	}
 
 	for _, stakeEntry := range stksto.StakeEntries {
+		if stakeEntry.IsFrozen() {
+			continue
+		}
+
 		newStakeEntry := stakeEntry
 
 		endpoints := make([]Endpoint, len(stakeEntry.Endpoints))

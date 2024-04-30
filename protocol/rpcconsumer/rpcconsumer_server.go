@@ -321,7 +321,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if analytics != nil {
 		currentLatency := time.Since(relaySentTime)
 		analytics.Latency = currentLatency.Milliseconds()
-		analytics.ComputeUnits = chainMessage.GetApi().ComputeUnits
+		api := chainMessage.GetApi()
+		analytics.ComputeUnits = api.ComputeUnits
+		analytics.ApiMethod = api.Name
 	}
 	rpccs.relaysMonitor.LogRelay()
 	return returnedResult, nil
