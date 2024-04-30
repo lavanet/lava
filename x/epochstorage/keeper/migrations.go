@@ -153,6 +153,7 @@ func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 		for _, stakeEntryV5 := range stakeStorageV5.StakeEntries {
 			stakeEntryV6 := types.StakeEntry{
 				Stake:             stakeEntryV5.Stake,
+				Address:           stakeEntryV5.Address,
 				Operator:          stakeEntryV5.Address,
 				Vault:             stakeEntryV5.Address,
 				StakeAppliedBlock: stakeEntryV5.StakeAppliedBlock,
