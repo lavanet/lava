@@ -537,7 +537,7 @@ func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	require.NoError(t, err)
 
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, staked.IsEqual(stakeEntry.Stake))
+	require.True(t, staked.Sub(amountToUnbond).IsEqual(stakeEntry.Stake))
 
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
