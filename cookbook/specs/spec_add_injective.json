@@ -2162,7 +2162,7 @@
                         },
                         "apis": [
                             {
-                                "name": "MsgDeposit",
+                                "name": "injective.auction.v1beta1.Query/AuctionModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2180,7 +2180,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgWithdraw",
+                                "name": "injective.auction.v1beta1.Query/AuctionParams",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2198,7 +2198,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgSubaccountTransfer",
+                                "name": "injective.auction.v1beta1.Query/CurrentAuctionBasket",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2216,7 +2216,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgExternalTransfer",
+                                "name": "injective.exchange.v1beta1.Query/AccountAddressDerivativeOrders",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2234,7 +2234,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgSendToEth",
+                                "name": "injective.exchange.v1beta1.Query/AccountAddressSpotOrders",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2252,7 +2252,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SendToInjective",
+                                "name": "injective.exchange.v1beta1.Query/AggregateMarketVolume",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2270,7 +2270,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "StreamEventOrderFail",
+                                "name": "injective.exchange.v1beta1.Query/AggregateMarketVolumes",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2288,7 +2288,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgBid",
+                                "name": "injective.exchange.v1beta1.Query/AggregateVolume",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2306,7 +2306,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgGrant",
+                                "name": "injective.exchange.v1beta1.Query/AggregateVolumes",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2324,7 +2324,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgExec",
+                                "name": "injective.exchange.v1beta1.Query/BalanceMismatches",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2342,7 +2342,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgRevoke",
+                                "name": "injective.exchange.v1beta1.Query/BalanceWithBalanceHolds",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2360,7 +2360,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgSend",
+                                "name": "injective.exchange.v1beta1.Query/BinaryOptionsMarkets",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2378,7 +2378,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgMultiSend",
+                                "name": "injective.exchange.v1beta1.Query/DenomDecimal",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2396,7 +2396,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "QueryAllBalances",
+                                "name": "injective.exchange.v1beta1.Query/DenomDecimals",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2414,7 +2414,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "QueryBalance",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeMarket",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2432,7 +2432,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SpendableBalancesByDenom",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeMarketAddress",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2450,7 +2450,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DenomsOwners",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeMarkets",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2468,7 +2468,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "StreamRequest",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeMidPriceAndTOB",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2486,7 +2486,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "StreamResponse",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeOrderbook",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2504,7 +2504,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SubaccountDeposits",
+                                "name": "injective.exchange.v1beta1.Query/DerivativeOrdersByHashes",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2522,7 +2522,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SubaccountDeposit",
+                                "name": "injective.exchange.v1beta1.Query/ExchangeBalances",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2540,7 +2540,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "ExchangeBalances",
+                                "name": "injective.exchange.v1beta1.Query/ExchangeModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2558,7 +2558,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "AggregateVolume",
+                                "name": "injective.exchange.v1beta1.Query/ExpiryFuturesMarketInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2576,7 +2576,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "AggregateVolumes",
+                                "name": "injective.exchange.v1beta1.Query/FeeDiscountAccountInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2594,7 +2594,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "AggregateMarketVolume",
+                                "name": "injective.exchange.v1beta1.Query/FeeDiscountSchedule",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2612,7 +2612,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "AggregateMarketVolumes",
+                                "name": "injective.exchange.v1beta1.Query/FeeDiscountTierStatistics",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2630,7 +2630,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DenomDecimal",
+                                "name": "injective.exchange.v1beta1.Query/FullSpotMarket",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2648,7 +2648,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DenomDecimals",
+                                "name": "injective.exchange.v1beta1.Query/FullSpotMarkets",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2666,7 +2666,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SubaccountOrders",
+                                "name": "injective.exchange.v1beta1.Query/HistoricalTradeRecords",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2684,7 +2684,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SubaccountTradeNonce",
+                                "name": "injective.exchange.v1beta1.Query/IsOptedOutOfRewards",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2702,7 +2702,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SubaccountOrderMetadata",
+                                "name": "injective.exchange.v1beta1.Query/MarketAtomicExecutionFeeMultiplier",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2720,7 +2720,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "TradeRewardPoints",
+                                "name": "injective.exchange.v1beta1.Query/MarketVolatility",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2738,7 +2738,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "PendingTradeRewardPoints",
+                                "name": "injective.exchange.v1beta1.Query/MitoVaultInfos",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2756,7 +2756,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "TradeRewardCampaign",
+                                "name": "injective.exchange.v1beta1.Query/OptedOutOfRewardsAccounts",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2774,7 +2774,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "FeeDiscountAccountInfo",
+                                "name": "injective.exchange.v1beta1.Query/PendingTradeRewardPoints",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2792,7 +2792,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "FeeDiscountSchedule",
+                                "name": "injective.exchange.v1beta1.Query/PerpetualMarketFunding",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2810,7 +2810,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "BalanceMismatches",
+                                "name": "injective.exchange.v1beta1.Query/PerpetualMarketInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2828,7 +2828,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "BalanceWithBalanceHolds",
+                                "name": "injective.exchange.v1beta1.Query/Positions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2846,7 +2846,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "FeeDiscountTierStatistics",
+                                "name": "injective.exchange.v1beta1.Query/QueryExchangeParams",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2864,7 +2864,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MitoVaultInfos",
+                                "name": "injective.exchange.v1beta1.Query/QueryMarketIDFromVault",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2882,7 +2882,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "QueryMarketIDFromVault",
+                                "name": "injective.exchange.v1beta1.Query/SpotMarket",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2900,7 +2900,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "HistoricalTradeRecords",
+                                "name": "injective.exchange.v1beta1.Query/SpotMarkets",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2918,7 +2918,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "IsOptedOutOfRewards",
+                                "name": "injective.exchange.v1beta1.Query/SpotMidPriceAndTOB",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2936,7 +2936,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "OptedOutOfRewardsAccounts",
+                                "name": "injective.exchange.v1beta1.Query/SpotOrderbook",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2954,7 +2954,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MarketVolatility",
+                                "name": "injective.exchange.v1beta1.Query/SpotOrdersByHashes",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2972,7 +2972,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MarketAtomicExecutionFeeMultiplier",
+                                "name": "injective.exchange.v1beta1.Query/SubaccountDeposit",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -2990,7 +2990,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgRewardsOptOut",
+                                "name": "injective.exchange.v1beta1.Query/SubaccountDeposits",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3008,7 +3008,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DerivativeMidPriceAndTOB",
+                                "name": "injective.exchange.v1beta1.Query/SubaccountEffectivePositionInMarket",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3026,7 +3026,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DerivativeOrderbook",
+                                "name": "injective.exchange.v1beta1.Query/SubaccountOrderMetadata",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3044,7 +3044,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "TraderDerivativeOrders",
+                                "name": "injective.exchange.v1beta1.Query/SubaccountOrders",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3062,7 +3062,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "AccountAddressDerivativeOrders",
+                                "name": "injective.exchange.v1beta1.Query/SubaccountPositionInMarket",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3080,7 +3080,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DerivativeOrdersByHashes",
+                                "name": "injective.exchange.v1beta1.Query/SubaccountPositions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3098,7 +3098,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "TraderDerivativeTransientOrders",
+                                "name": "injective.exchange.v1beta1.Query/SubaccountTradeNonce",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3116,7 +3116,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DerivativeMarkets",
+                                "name": "injective.exchange.v1beta1.Query/TradeRewardCampaign",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3134,7 +3134,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DerivativeMarket",
+                                "name": "injective.exchange.v1beta1.Query/TradeRewardPoints",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3152,7 +3152,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DerivativeMarketAddress",
+                                "name": "injective.exchange.v1beta1.Query/TraderDerivativeConditionalOrders",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3170,7 +3170,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "Positions",
+                                "name": "injective.exchange.v1beta1.Query/TraderDerivativeOrders",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3188,7 +3188,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SubaccountPositions",
+                                "name": "injective.exchange.v1beta1.Query/TraderDerivativeTransientOrders",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3206,7 +3206,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SubaccountPositionInMarket",
+                                "name": "injective.exchange.v1beta1.Query/TraderSpotOrders",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3224,7 +3224,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SubaccountEffectivePositionInMarket",
+                                "name": "injective.exchange.v1beta1.Query/TraderSpotTransientOrders",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3242,7 +3242,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "PerpetualMarketInfo",
+                                "name": "injective.insurance.v1beta1.Query/EstimatedRedemptions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3260,7 +3260,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "ExpiryFuturesMarketInfo",
+                                "name": "injective.insurance.v1beta1.Query/InsuranceFund",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3278,7 +3278,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "PerpetualMarketFunding",
+                                "name": "injective.insurance.v1beta1.Query/InsuranceFunds",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3296,7 +3296,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "TraderDerivativeConditionalOrders",
+                                "name": "injective.insurance.v1beta1.Query/InsuranceModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3314,7 +3314,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgInstantPerpetualMarketLaunch",
+                                "name": "injective.insurance.v1beta1.Query/InsuranceParams",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3332,7 +3332,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgInstantExpiryFuturesMarketLaunch",
+                                "name": "injective.insurance.v1beta1.Query/PendingRedemptions",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3350,7 +3350,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgCreateDerivativeLimitOrder",
+                                "name": "injective.ocr.v1beta1.Query/FeedConfig",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3368,7 +3368,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgCreateDerivativeMarketOrder",
+                                "name": "injective.ocr.v1beta1.Query/FeedConfigInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3386,7 +3386,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgCancelDerivativeOrder",
+                                "name": "injective.ocr.v1beta1.Query/LatestRound",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3404,7 +3404,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgBatchUpdateOrders",
+                                "name": "injective.ocr.v1beta1.Query/LatestTransmissionDetails",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3422,7 +3422,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgLiquidatePosition",
+                                "name": "injective.ocr.v1beta1.Query/OcrModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3440,7 +3440,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgIncreasePositionMargin",
+                                "name": "injective.ocr.v1beta1.Query/OwedAmount",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3458,7 +3458,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "LocalOrderHashComputation",
+                                "name": "injective.ocr.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3476,7 +3476,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SpotMarkets",
+                                "name": "injective.oracle.v1beta1.Query/BandIBCPriceStates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3494,7 +3494,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SpotMarket",
+                                "name": "injective.oracle.v1beta1.Query/BandPriceStates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3512,7 +3512,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "FullSpotMarkets",
+                                "name": "injective.oracle.v1beta1.Query/BandRelayers",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3530,7 +3530,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "FullSpotMarket",
+                                "name": "injective.oracle.v1beta1.Query/CoinbasePriceStates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3548,7 +3548,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SpotOrderbook",
+                                "name": "injective.oracle.v1beta1.Query/HistoricalPriceRecords",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3566,7 +3566,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "TraderSpotOrders",
+                                "name": "injective.oracle.v1beta1.Query/OracleModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3584,7 +3584,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "AccountAddressSpotOrders",
+                                "name": "injective.oracle.v1beta1.Query/OraclePrice",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3602,7 +3602,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SpotOrdersByHashes",
+                                "name": "injective.oracle.v1beta1.Query/OracleProviderPrices",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3620,7 +3620,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "TraderSpotTransientOrders",
+                                "name": "injective.oracle.v1beta1.Query/OracleProvidersInfo",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3638,7 +3638,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SpotMidPriceAndTOB",
+                                "name": "injective.oracle.v1beta1.Query/OracleVolatility",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3656,7 +3656,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgInstantSpotMarketLaunch",
+                                "name": "injective.oracle.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3674,7 +3674,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgCreateSpotLimitOrder",
+                                "name": "injective.oracle.v1beta1.Query/PriceFeedPriceStates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3692,7 +3692,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgCreateSpotMarketOrder",
+                                "name": "injective.oracle.v1beta1.Query/ProviderPriceState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3710,7 +3710,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgCancelSpotOrder",
+                                "name": "injective.oracle.v1beta1.Query/PythPrice",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3728,7 +3728,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "BinaryOptionsMarkets",
+                                "name": "injective.oracle.v1beta1.Query/PythPriceStates",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3746,7 +3746,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgInstantBinaryOptionsMarketLaunch",
+                                "name": "injective.peggy.v1.Query/BatchConfirms",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3764,7 +3764,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgCreateBinaryOptionsLimitOrder",
+                                "name": "injective.peggy.v1.Query/BatchFees",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3782,7 +3782,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgCreateBinaryOptionsMarketOrder",
+                                "name": "injective.peggy.v1.Query/BatchRequestByNonce",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3800,7 +3800,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgCancelBinaryOptionsOrder",
+                                "name": "injective.peggy.v1.Query/CurrentValset",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3818,7 +3818,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgAdminUpdateBinaryOptionsMarket",
+                                "name": "injective.peggy.v1.Query/DenomToERC20",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3836,7 +3836,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgCreateInsuranceFund",
+                                "name": "injective.peggy.v1.Query/ERC20ToDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3854,7 +3854,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgUnderwrite",
+                                "name": "injective.peggy.v1.Query/GetDelegateKeyByEth",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3872,7 +3872,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgRequestRedemption",
+                                "name": "injective.peggy.v1.Query/GetDelegateKeyByOrchestrator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3890,7 +3890,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgRelayPriceFeedPrice",
+                                "name": "injective.peggy.v1.Query/GetDelegateKeyByValidator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3908,7 +3908,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgRelayProviderPrices",
+                                "name": "injective.peggy.v1.Query/GetPendingSendToEth",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3926,7 +3926,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SetWithdrawAddress",
+                                "name": "injective.peggy.v1.Query/LastEventByAddr",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3944,7 +3944,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgWithdrawDelegatorReward",
+                                "name": "injective.peggy.v1.Query/LastPendingBatchRequestByAddr",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3962,7 +3962,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "WithdrawValidatorCommission",
+                                "name": "injective.peggy.v1.Query/LastPendingValsetRequestByAddr",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3980,7 +3980,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "FundCommunityPool",
+                                "name": "injective.peggy.v1.Query/LastValsetRequests",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -3998,7 +3998,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgDelegate",
+                                "name": "injective.peggy.v1.Query/MissingPeggoNonces",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4016,7 +4016,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DenomAuthorityMetadata",
+                                "name": "injective.peggy.v1.Query/OutgoingTxBatches",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4034,7 +4034,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "DenomsFromCreator",
+                                "name": "injective.peggy.v1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4052,7 +4052,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "TokenfactoryModuleState",
+                                "name": "injective.peggy.v1.Query/PeggyModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4070,7 +4070,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "CreateDenom",
+                                "name": "injective.peggy.v1.Query/ValsetConfirm",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4088,7 +4088,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgMint",
+                                "name": "injective.peggy.v1.Query/ValsetConfirmsByNonce",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4106,7 +4106,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgBurn",
+                                "name": "injective.peggy.v1.Query/ValsetRequest",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4124,7 +4124,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgSetDenomMetadata",
+                                "name": "injective.permissions.v1beta1.Query/AddressRoles",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4142,7 +4142,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgChangeAdmin",
+                                "name": "injective.permissions.v1beta1.Query/AddressesByRole",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4160,7 +4160,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "ContractInfo",
+                                "name": "injective.permissions.v1beta1.Query/AllNamespaces",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4178,7 +4178,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "ContractHistory",
+                                "name": "injective.permissions.v1beta1.Query/NamespaceByDenom",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4196,7 +4196,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "ContractsByCode",
+                                "name": "injective.permissions.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4214,7 +4214,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "AllContractState",
+                                "name": "injective.permissions.v1beta1.Query/VouchersForAddress",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4232,7 +4232,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "RawContractState",
+                                "name": "injective.tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4250,7 +4250,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "SmartContractState",
+                                "name": "injective.tokenfactory.v1beta1.Query/DenomsFromCreator",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4268,7 +4268,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "ContractsByCreator",
+                                "name": "injective.tokenfactory.v1beta1.Query/Params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4286,7 +4286,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgExecuteContract",
+                                "name": "injective.tokenfactory.v1beta1.Query/TokenfactoryModuleState",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -4304,7 +4304,43 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "MsgExecuteContractCompat",
+                                "name": "injective.wasmx.v1.Query/ContractRegistrationInfo",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.wasmx.v1.Query/WasmxModuleState",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "injective.wasmx.v1.Query/WasmxParams",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
