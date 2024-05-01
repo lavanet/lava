@@ -212,7 +212,7 @@ func TestParsingRequestedBlocksHeadersRest(t *testing.T) {
 			require.Equal(t, test.requestedBlock, latestReqBlock)
 			reply, _, _, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
-			parserInput, err := FormatResponseForParsing(reply, chainMessage)
+			parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 			require.NoError(t, err)
 			blockNum, err := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing)
 			require.NoError(t, err)
@@ -286,7 +286,7 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 			require.Equal(t, test.block, latestReqBlock) // expected behavior is that it doesn't change the original requested block
 			reply, _, _, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 			require.NoError(t, err)
-			parserInput, err := FormatResponseForParsing(reply, chainMessage)
+			parserInput, err := FormatResponseForParsing(reply.RelayReply, chainMessage)
 			require.NoError(t, err)
 			blockNum, err := parser.ParseBlockFromReply(parserInput, parsingForCrafting.ResultParsing)
 			require.NoError(t, err)

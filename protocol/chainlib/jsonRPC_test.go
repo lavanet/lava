@@ -66,7 +66,7 @@ func TestJSONChainParser_NilGuard(t *testing.T) {
 	apip.SetSpec(spectypes.Spec{})
 	apip.DataReliabilityParams()
 	apip.ChainBlockStats()
-	apip.getSupportedApi("", "")
+	apip.getSupportedApi("", "", "")
 	apip.ParseMsg("", []byte{}, "", nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 }
 
@@ -77,7 +77,7 @@ func TestJSONGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	api, err := apip.getSupportedApi("API1", connectionType_test)
+	api, err := apip.getSupportedApi("API1", connectionType_test, "")
 	assert.NoError(t, err)
 	assert.Equal(t, "API1", api.api.Name)
 
@@ -87,7 +87,7 @@ func TestJSONGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: true}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API2", connectionType_test)
+	_, err = apip.getSupportedApi("API2", connectionType_test, "")
 	assert.Error(t, err)
 
 	// Test case 3: Returns error if the API is disabled
@@ -96,7 +96,7 @@ func TestJSONGetSupportedApi(t *testing.T) {
 			serverApis: map[ApiKey]ApiContainer{{Name: "API1", ConnectionType: connectionType_test}: {api: &spectypes.Api{Name: "API1", Enabled: false}, collectionKey: CollectionKey{ConnectionType: connectionType_test}}},
 		},
 	}
-	_, err = apip.getSupportedApi("API1", connectionType_test)
+	_, err = apip.getSupportedApi("API1", connectionType_test, "")
 	assert.Error(t, err)
 }
 
@@ -180,7 +180,7 @@ func TestAddonAndVerifications(t *testing.T) {
 		require.NoError(t, err)
 		reply, _, _, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
 		require.NoError(t, err)
-		_, err = FormatResponseForParsing(reply, chainMessage)
+		_, err = FormatResponseForParsing(reply.RelayReply, chainMessage)
 		require.NoError(t, err)
 	}
 	if closeServer != nil {
@@ -293,7 +293,7 @@ func TestJsonRpcBatchCall(t *testing.T) {
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
-	require.Equal(t, response, string(relayReply.Data))
+	require.Equal(t, response, string(relayReply.RelayReply.Data))
 	defer func() {
 		if closeServer != nil {
 			closeServer()
@@ -334,10 +334,50 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
-	require.Equal(t, responseExpected, string(relayReply.Data))
+	require.Equal(t, responseExpected, string(relayReply.RelayReply.Data))
 	defer func() {
 		if closeServer != nil {
 			closeServer()
 		}
 	}()
+}
+
+func TestJsonRpcInternalPathsMultipleVersions(t *testing.T) {
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":1,"result":"%s"}`, r.RequestURI)
+	})
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "STRK", spectypes.APIInterfaceJsonRPC, serverHandle, "../../", nil)
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+	v5_path := "/rpc/v0_5"
+	v6_path := "/rpc/v0_6"
+	req_data := []byte(`{"jsonrpc": "2.0", "id": 1, "method": "starknet_specVersion", "params": []}`)
+	chainMessage, err := chainParser.ParseMsg("", req_data, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	api := chainMessage.GetApi()
+	collection := chainMessage.GetApiCollection()
+	require.Equal(t, "starknet_specVersion", api.Name)
+	require.Equal(t, "", collection.CollectionData.InternalPath)
+
+	chainMessage, err = chainParser.ParseMsg(v5_path, req_data, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	api = chainMessage.GetApi()
+	collection = chainMessage.GetApiCollection()
+	require.Equal(t, "starknet_specVersion", api.Name)
+	require.Equal(t, v5_path, collection.CollectionData.InternalPath)
+
+	chainMessage, err = chainParser.ParseMsg(v6_path, req_data, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	api = chainMessage.GetApi()
+	collection = chainMessage.GetApiCollection()
+	require.Equal(t, "starknet_specVersion", api.Name)
+	require.Equal(t, v6_path, collection.CollectionData.InternalPath)
+	if closeServer != nil {
+		closeServer()
+	}
 }
