@@ -321,7 +321,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if analytics != nil {
 		currentLatency := time.Since(relaySentTime)
 		analytics.Latency = currentLatency.Milliseconds()
-		analytics.ComputeUnits = chainMessage.GetApi().ComputeUnits
+		api := chainMessage.GetApi()
+		analytics.ComputeUnits = api.ComputeUnits
+		analytics.ApiMethod = api.Name
 	}
 	rpccs.relaysMonitor.LogRelay()
 	return returnedResult, nil
@@ -683,7 +685,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				copyReply := &pairingtypes.RelayReply{}
 				copyReplyErr := protocopy.DeepCopyProtoObject(localRelayResult.Reply, copyReply)
 				// set cache in a non blocking call
-
+				statusCode := localRelayResult.StatusCode
 				requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
 				seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
 				hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
@@ -706,6 +708,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 					defer cancel()
 					_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+					// we don't want to cache node errors for too long. what can happen is a finalized block gets an error
+					// and we cache it for a long period of time.
+					isNodeError, _ := chainMessage.CheckResponseError(copyReply.Data, statusCode)
 
 					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 						RequestHash:      hashKey,
@@ -718,6 +723,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						OptionalMetadata: nil,
 						SharedStateId:    sharedStateId,
 						AverageBlockTime: int64(averageBlockTime), // by using average block time we can set longer TTL
+						IsNodeError:      isNodeError,
 					})
 					if err2 != nil {
 						utils.LavaFormatWarning("error updating cache with new entry", err2)

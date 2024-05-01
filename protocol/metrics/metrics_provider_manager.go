@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	MetricsListenFlagName = "metrics-listen-address"
-	RelayServerFlagName   = "relay-server-address"
-	DisabledFlagOption    = "disabled"
+	MetricsListenFlagName    = "metrics-listen-address"
+	AddApiMethodCallsMetrics = "add-api-method-metrics"
+	RelayServerFlagName      = "relay-server-address"
+	DisabledFlagOption       = "disabled"
 )
 
 type ProviderMetricsManager struct {

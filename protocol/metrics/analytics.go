@@ -22,6 +22,7 @@ type RelayMetrics struct {
 	ComputeUnits uint64
 	Source       RelaySource
 	Origin       string
+	ApiMethod    string
 }
 
 type RelayAnalyticsDTO struct {
