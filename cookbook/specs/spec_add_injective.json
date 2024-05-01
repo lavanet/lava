@@ -8,8 +8,7 @@
                 "name": "injective mainnet",
                 "enabled": true,
                 "imports": [
-                    "COSMOSSDKFULL",
-                    "IBC"
+                    "COSMOSSDKFULL"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
