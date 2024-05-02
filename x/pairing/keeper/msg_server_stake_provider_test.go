@@ -902,11 +902,11 @@ func TestVaultOperatorNewStakeEntry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			beforeVault := ts.GetBalance(tt.vault)
-			beforeOperator := ts.GetBalance(tt.operator)
+			vaultBefore := ts.GetBalance(tt.vault)
+			operatorBefore := ts.GetBalance(tt.operator)
 			err := ts.StakeProviderExtra(tt.operator.String(), tt.vault.String(), tt.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
-			afterVault := ts.GetBalance(tt.vault)
-			afterOperator := ts.GetBalance(tt.operator)
+			vaultAfter := ts.GetBalance(tt.vault)
+			operatorAfter := ts.GetBalance(tt.operator)
 
 			ts.AdvanceEpoch()
 
@@ -914,8 +914,8 @@ func TestVaultOperatorNewStakeEntry(t *testing.T) {
 				require.Error(t, err)
 
 				// balance
-				require.Equal(t, beforeVault, afterVault)
-				require.Equal(t, beforeOperator, afterOperator)
+				require.Equal(t, vaultBefore, vaultAfter)
+				require.Equal(t, operatorBefore, operatorAfter)
 
 				// stake entry
 				_, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.operator.String())
@@ -929,11 +929,11 @@ func TestVaultOperatorNewStakeEntry(t *testing.T) {
 				require.NoError(t, err)
 
 				// balance
-				require.Equal(t, beforeVault-testStake, afterVault)
-				if !tt.operator.Equals(tt.vault) {
-					require.Equal(t, beforeOperator, afterOperator)
+				require.Equal(t, vaultBefore-testStake, vaultAfter)
+				if tt.operator.Equals(tt.vault) {
+					require.Equal(t, operatorBefore-testStake, operatorAfter)
 				} else {
-					require.Equal(t, beforeOperator-testStake, afterOperator)
+					require.Equal(t, operatorBefore, operatorAfter)
 				}
 
 				// stake entry
@@ -1008,10 +1008,10 @@ func TestVaultOperatorExistingStakeEntry(t *testing.T) {
 
 				// balance
 				require.Equal(t, beforeVault-100, afterVault)
-				if !tt.operator.Equals(tt.vault) {
-					require.Equal(t, beforeOperator, afterOperator)
-				} else {
+				if tt.operator.Equals(tt.vault) {
 					require.Equal(t, beforeOperator-100, afterOperator)
+				} else {
+					require.Equal(t, beforeOperator, afterOperator)
 				}
 
 				// stake entry

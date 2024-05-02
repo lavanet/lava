@@ -432,7 +432,7 @@ func TestQueryDelegatorRewards(t *testing.T) {
 }
 
 // TestVaultOperatorDelegatorRewardsQuery works as expected for a vault and operator addresses
-// The delegator-rewards query, when view provider rewards, should accept the vault as a delegator
+// When using the delegator-rewards query, it should only accept the vault as a delegator
 // and the operator as the provider (as done while staking a new provider)
 func TestVaultOperatorDelegatorRewardsQuery(t *testing.T) {
 	ts := newTester(t)

@@ -53,7 +53,7 @@ func TestUnstakeAndSlashProposal(t *testing.T) {
 // and vault addresses should work
 // Scenarios:
 // 1. simulate unstake proposal with vault address -> should work
-// 2. simulate with operator -> should work
+// 2. simulate unstake proposal with operator -> should work
 func TestVaultOperatorUnstakeAndSlashProposal(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 0, 0)

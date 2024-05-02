@@ -202,13 +202,13 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, operator, chainID, sdk.NewCoins(creditToSub), types.ModuleName, false, false, false)
 		if errors.Is(err, epochstoragetypes.ErrProviderNotStaked) || errors.Is(err, epochstoragetypes.ErrStakeStorageNotFound) {
 			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
-				utils.Attribute{Key: "provider", Value: operator},
+				utils.Attribute{Key: "provider_operator", Value: operator},
 				utils.Attribute{Key: "chain_id", Value: chainID},
 				utils.Attribute{Key: "block", Value: strconv.FormatInt(ctx.BlockHeight(), 10)},
 			)
 		} else if err != nil {
 			utils.LavaFormatError("sending provider reward with delegations failed", err,
-				utils.Attribute{Key: "provider", Value: operator},
+				utils.Attribute{Key: "provider_operator", Value: operator},
 				utils.Attribute{Key: "tracked_cu", Value: trackedCu},
 				utils.Attribute{Key: "chain_id", Value: chainID},
 				utils.Attribute{Key: "sub", Value: sub},

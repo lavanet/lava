@@ -407,7 +407,7 @@ func TestVaultOperatorTrackedCu(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-	// send relay payment with vault - should fail
+	// send relay payment with vault - should not be payed for
 	relaySession = ts.newRelaySession(vault, 0, relayCuSum, ts.BlockHeight(), 0)
 	sig, err = sigs.Sign(clientAcc.SK, *relaySession)
 	require.NoError(t, err)
@@ -441,7 +441,7 @@ func TestVaultOperatorTrackedCu(t *testing.T) {
 		operator string
 		rewarded bool // should the creator get reward
 	}{
-		{"operator creator", operator, operator, false},
+		{"operator creator (bad)", operator, operator, false},
 		{"vault operator (bad)", operator, vault, false},
 		{"vault creator happy flow", vault, operator, true},
 	}

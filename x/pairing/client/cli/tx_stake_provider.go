@@ -78,6 +78,7 @@ func CmdStakeProvider() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			operator, err := utils.ParseCLIAddress(clientCtx, operatorFromFlag)
 			if err != nil {
 				return err
@@ -121,7 +122,7 @@ func CmdStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
-	cmd.Flags().String(types.FlagOperator, "", "The provider's operator (address used to operate the provider process, default vault address)")
+	cmd.Flags().String(types.FlagOperator, "", "The provider's operator (address used to operate the provider process, default is vault address)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
@@ -167,6 +168,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			customOperators := false
 			if operatorsFromFlag != "" {
 				customOperators = true
@@ -199,6 +201,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 					if len(unparsedOperators) != len(chainIDs) {
 						return nil, fmt.Errorf("operators amount (length %d) must match chain IDs amount (length %d)", len(unparsedOperators), len(chainIDs))
 					}
+
 					for _, o := range unparsedOperators {
 						operator, err := utils.ParseCLIAddress(clientCtx, o)
 						if err != nil {
@@ -269,7 +272,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
-	cmd.Flags().String(types.FlagOperator, "", "The provider's operators (addresses that are used to operate the provider process. default operator address)")
+	cmd.Flags().String(types.FlagOperator, "", "The provider's operators (addresses that are used to operate the provider process. default is operator address)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)

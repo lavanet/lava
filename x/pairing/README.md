@@ -43,7 +43,7 @@ The pairing module is one of Lava's core modules and is closely connected to the
 
 Providers are entities that have access to blockchains and want to monetize that access by providing services to consumers. Providers stake tokens under a geolocation and supported specifications (e.g. Ethereum JSON-RPC in U.S. East), once active they must provide service to consumers. Providers run the lava process and the desired blockchain or service (e.g. Ethereum JSON-RPC) they are providing access for.
 
-Note, a provider stakes its funds using its vault address and run the Lava provider process using the provider's operator address. All the provider's rewards are sent to its vault address.
+Note, a provider stakes its funds using its vault address and runs the Lava provider process using the its operator address. All the provider's rewards are sent to its vault address.
 
 #### Stake
 
@@ -65,7 +65,7 @@ type StakeEntry struct {
 }
 ```
 
-To enhance security, a provider is created with two address: the vault address and the operator address. If the provider doesn't specify the operator address, it defaults to be equal to the vault address. When a provider stakes, the account from which the funds came from is regarded as the vault address. The vault address is used to hold the provider's funds and get rewards from the provider's service. Any other action done by the provider is using the provider's operator address. The only actions the operator cannot do are: staking/unstaking, modifying stake-related fields in the provider's stake entry and claim rewards. Finally, note that once an operator is registered through a provider staking, it cannot stake on the same chain.
+To bolster security, a provider is now associated with two addresses: the vault address and the operator address. If the provider doesn't specify the operator address, it defaults to being the same as the vault address. When a provider stakes, the account from which the funds originate is considered the vault address. This address is utilized to hold the provider's funds and to receive rewards from the provider's service. Any other actions performed by the provider utilize the provider's operator address. The operator address can perform all actions except for staking/unstaking, modifying stake-related fields in the provider's stake entry, and claiming rewards. It's important to note that once an operator is registered through a provider's staking, it cannot stake on the same chain again.
 
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). A provider can accept delegations to increase its effective stake, which increases its chances of being selected in the pairing process. The provider can also set a delegation limit, which determines the maximum value of delegations they can accept. This limit is in place to prevent delegators from increasing the provider's effective stake to a level where the provider is overwhelmed with more consumers than they can handle in the pairing process. For more details about delegations, refer to the dualstaking module README.
 
