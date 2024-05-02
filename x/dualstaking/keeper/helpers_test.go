@@ -103,18 +103,6 @@ func (ts *tester) getStakeEntry(provider string, chainID string) epochstoragetyp
 	return stakeEntry
 }
 
-// getStakeEntry find the stake entry of a given provider + chainID
-func (ts *tester) getStakeEntryCurrent(provider string, chainID string) epochstoragetypes.StakeEntry {
-	keeper := ts.Keepers.Epochstorage
-
-	stakeEntry, found := keeper.GetStakeEntryByAddressCurrent(ts.Ctx, chainID, provider)
-	if !found {
-		panic("getStakeEntry: no stake entry: " + provider + " " + chainID)
-	}
-
-	return stakeEntry
-}
-
 func (ts *tester) verifyDelegatorsBalance() {
 	accounts := ts.AccountsMap()
 	for key, account := range accounts {
