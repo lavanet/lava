@@ -37,7 +37,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 	for i := 1; i <= 1000; i++ {
 		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, acc.Vault.Addr.String(), ts.spec, stake)
+		err := ts.StakeProvider(addr, acc.GetVaultAddr(), ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -103,7 +103,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 
 	for i := 1; i <= 10; i++ {
 		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, acc.Vault.Addr.String(), ts.spec, stake)
+		err := ts.StakeProvider(addr, acc.GetVaultAddr(), ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -145,7 +145,7 @@ func TestVaultOperatorValidatePairing(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, res.Valid)
 
-	res, err = ts.QueryPairingVerifyPairing(ts.spec.Index, consumer.Addr.String(), provider.Vault.Addr.String(), ts.BlockHeight())
+	res, err = ts.QueryPairingVerifyPairing(ts.spec.Index, consumer.Addr.String(), provider.GetVaultAddr(), ts.BlockHeight())
 	require.NoError(t, err)
 	require.False(t, res.Valid)
 }
@@ -273,7 +273,7 @@ func TestPairingStatic(t *testing.T) {
 
 	for i := 0; i < int(ts.plan.PlanPolicy.MaxProvidersToPair)*2; i++ {
 		acc, addr := ts.AddAccount(common.PROVIDER, i, testBalance)
-		err := ts.StakeProvider(addr, acc.Vault.Addr.String(), ts.spec, testStake+int64(i))
+		err := ts.StakeProvider(addr, acc.GetVaultAddr(), ts.spec, testStake+int64(i))
 		require.NoError(t, err)
 	}
 
@@ -772,11 +772,11 @@ func TestSelectedProvidersPairing(t *testing.T) {
 
 			if tt.name == "EXCLUSIVE mode provider unstakes after first pairing" {
 				// unstake p1 and remove from expected providers
-				_, err = ts.TxPairingUnstakeProvider(p1Acc.Vault.Addr.String(), ts.spec.Index)
+				_, err = ts.TxPairingUnstakeProvider(p1Acc.GetVaultAddr(), ts.spec.Index)
 				require.NoError(t, err)
 				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:]
 			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
-				err := ts.StakeProvider(p1, p1Acc.Vault.Addr.String(), ts.spec, testBalance/2)
+				err := ts.StakeProvider(p1, p1Acc.GetVaultAddr(), ts.spec, testBalance/2)
 				require.NoError(t, err)
 			}
 
@@ -852,7 +852,7 @@ func TestVaultOperatorSelectedProviders(t *testing.T) {
 	policy := ts.plan.PlanPolicy
 
 	operator1 := pAcc1.Addr.String()
-	vault2 := pAcc2.Vault.Addr.String()
+	vault2 := pAcc2.GetVaultAddr()
 	operator2 := pAcc2.Addr.String()
 
 	res, err := ts.QueryProjectDeveloper(cAcc.Addr.String())
@@ -2288,7 +2288,7 @@ func TestPairingPerformance(t *testing.T) {
 
 	for i := 1; i <= 1000; i++ {
 		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, acc.Vault.Addr.String(), ts.spec, stake)
+		err := ts.StakeProvider(addr, acc.GetVaultAddr(), ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -2329,7 +2329,7 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	acc, addr := ts.AddAccount(common.PROVIDER, 0, testStake)
 	err := ts.StakeProviderExtra(
 		addr,
-		acc.Vault.Addr.String(),
+		acc.GetVaultAddr(),
 		ts.spec,
 		testStake/2,
 		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],
@@ -2342,7 +2342,7 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	validEndpointsArray := endpoints[types.MAX_ENDPOINTS_AMOUNT_PER_GEO : 3*types.MAX_ENDPOINTS_AMOUNT_PER_GEO]
 	err = ts.StakeProviderExtra(
 		addr,
-		acc.Vault.Addr.String(),
+		acc.GetVaultAddr(),
 		ts.spec,
 		testStake/2,
 		validEndpointsArray,
@@ -2355,7 +2355,7 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	// note, calling StakeProviderExtra for an existing stake entry will run the modify stake entry code flow
 	err = ts.StakeProviderExtra(
 		addr,
-		acc.Vault.Addr.String(),
+		acc.GetVaultAddr(),
 		ts.spec,
 		testStake/2,
 		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],

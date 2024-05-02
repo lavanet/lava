@@ -1140,7 +1140,7 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 	start = len(ts.Accounts(PROVIDER))
 	for i := 0; i < providers; i++ {
 		acc, operator := ts.AddAccount(PROVIDER, start+i, balance)
-		err := ts.StakeProviderExtra(operator, acc.Vault.Addr.String(), spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, "prov"+strconv.Itoa(start+i))
+		err := ts.StakeProviderExtra(operator, acc.GetVaultAddr(), spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, "prov"+strconv.Itoa(start+i))
 		if err != nil {
 			return err
 		}

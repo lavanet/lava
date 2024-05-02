@@ -60,7 +60,7 @@ func TestVaultOperatorUnstakeAndSlashProposal(t *testing.T) {
 
 	acc, _ := ts.GetAccount(common.PROVIDER, 0)
 	operator := acc.Addr.String()
-	vault := acc.Vault.Addr.String()
+	vault := acc.GetVaultAddr()
 
 	tests := []struct {
 		name    string

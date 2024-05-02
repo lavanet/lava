@@ -113,7 +113,7 @@ func TestReDelegateToProvider(t *testing.T) {
 	ts.TxCreateValidator(validator, amount)
 
 	acc, operator := ts.GetAccount(common.PROVIDER, 0)
-	err = ts.StakeProvider(operator, acc.Vault.Addr.String(), ts.spec, amount.Int64())
+	err = ts.StakeProvider(operator, acc.GetVaultAddr(), ts.spec, amount.Int64())
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -181,7 +181,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		provider, _ := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(provider.Addr.String(), provider.Vault.Addr.String(), ts.spec, amount.Int64())
+		err := ts.StakeProvider(provider.Addr.String(), provider.GetVaultAddr(), ts.spec, amount.Int64())
 		require.NoError(t, err)
 	}
 
@@ -298,7 +298,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	providersAccs := []sigs.Account{}
 	for i := 0; i < 5; i++ {
 		provider, _ := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(provider.Addr.String(), provider.Vault.Addr.String(), ts.spec, stake.Int64())
+		err := ts.StakeProvider(provider.Addr.String(), provider.GetVaultAddr(), ts.spec, stake.Int64())
 		require.NoError(t, err)
 		providersAccs = append(providersAccs, provider)
 	}
@@ -401,7 +401,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(stake).RoundInt(), res.Delegations[0].Amount.Amount)
 
 	for _, p := range providersAccs {
-		res, err = ts.QueryDualstakingDelegatorProviders(p.Vault.Addr.String(), true)
+		res, err = ts.QueryDualstakingDelegatorProviders(p.GetVaultAddr(), true)
 		require.NoError(t, err)
 		require.Len(t, res.Delegations, 1)
 		require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(stake).RoundInt(), res.Delegations[0].Amount.Amount)
@@ -475,7 +475,7 @@ func TestHooksRandomDelegations(t *testing.T) {
 	ts.TxCreateValidator(validatorAcc, amount)
 
 	providerAcc, operator := ts.GetAccount(common.PROVIDER, 0)
-	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.Vault.Addr.String(), ts.spec, amount.Int64())
+	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.spec, amount.Int64())
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -525,7 +525,7 @@ func TestNotRoundedShares(t *testing.T) {
 	ts.Keepers.StakingKeeper.SetValidator(ts.Ctx, val)
 
 	providerAcc, operator := ts.GetAccount(common.PROVIDER, 0)
-	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.Vault.Addr.String(), ts.spec, delAmount.Int64())
+	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.spec, delAmount.Int64())
 	require.NoError(t, err)
 
 	shares := sdk.MustNewDecFromStr("1010101010101.010101010101010101")
@@ -562,7 +562,7 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		provider, _ := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(provider.Addr.String(), provider.Vault.Addr.String(), ts.spec, sdk.NewIntFromUint64(9999).Int64())
+		err := ts.StakeProvider(provider.Addr.String(), provider.GetVaultAddr(), ts.spec, sdk.NewIntFromUint64(9999).Int64())
 		require.NoError(t, err)
 	}
 
@@ -617,14 +617,14 @@ func TestUndelegateProvider(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		provider, _ := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(provider.Addr.String(), provider.Vault.Addr.String(), ts.spec, amount.Int64())
+		err := ts.StakeProvider(provider.Addr.String(), provider.GetVaultAddr(), ts.spec, amount.Int64())
 		require.NoError(t, err)
 	}
 
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
 	utils.LavaFormatInfo("addresses:\n",
-		utils.LogAttr("vault", providerAcct.Vault.Addr.String()),
+		utils.LogAttr("vault", providerAcct.GetVaultAddr()),
 		utils.LogAttr("operator", provider),
 		utils.LogAttr("delegator1", delegatorAcc1.Addr.String()),
 	)
@@ -647,18 +647,18 @@ func TestUndelegateProvider(t *testing.T) {
 	unstakeHoldBlocks := ts.Keepers.Epochstorage.UnstakeHoldBlocks(ts.Ctx, ts.BlockHeight())
 	unstakeHoldBlocksStatic := ts.Keepers.Epochstorage.UnstakeHoldBlocksStatic(ts.Ctx, ts.BlockHeight())
 
-	_, err = ts.TxPairingUnstakeProvider(providerAcct.Vault.Addr.String(), ts.spec.Index)
+	_, err = ts.TxPairingUnstakeProvider(providerAcct.GetVaultAddr(), ts.spec.Index)
 	require.NoError(t, err)
 
 	ts.AdvanceBlocks(unstakeHoldBlocks)
 
-	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Vault.Addr.String())
+	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.GetVaultAddr())
 	require.True(t, found)
 
 	ts.AdvanceBlocks(unstakeHoldBlocksStatic - unstakeHoldBlocks)
 
 	// checking that provider can't be found
-	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.Vault.Addr.String())
+	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.GetVaultAddr())
 	require.False(t, found)
 
 	ts.AdvanceEpoch()
@@ -673,7 +673,7 @@ func TestUndelegateProvider(t *testing.T) {
 	fmt.Println("Delegation of Provider after provider is removed", res2)
 
 	// stake provider again
-	err = ts.StakeProvider(providerAcct.Addr.String(), providerAcct.Vault.Addr.String(), ts.spec, sdk.NewIntFromUint64(1000).Int64())
+	err = ts.StakeProvider(providerAcct.Addr.String(), providerAcct.GetVaultAddr(), ts.spec, sdk.NewIntFromUint64(1000).Int64())
 	require.NoError(t, err)
 
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)

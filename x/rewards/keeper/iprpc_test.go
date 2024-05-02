@@ -205,7 +205,7 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 
 	// check that rewards were distributed as expected (use vault address as delegator)
 	for i, expectedProviderReward := range expectedProviderRewards {
-		res2, err := ts.QueryDualstakingDelegatorRewards(providerAccs[i].Vault.Addr.String(), expectedProviderReward.provider, ts.specs[1].Index)
+		res2, err := ts.QueryDualstakingDelegatorRewards(providerAccs[i].GetVaultAddr(), expectedProviderReward.provider, ts.specs[1].Index)
 		require.NoError(t, err)
 		require.True(t, res2.Rewards[0].Amount.IsEqual(expectedProviderReward.fund)) // taking 0 index because there are no delegators
 	}
@@ -220,7 +220,7 @@ func TestVaultOperatorIprpcProviderRewardQuery(t *testing.T) {
 	pAcc, _ := ts.GetAccount(common.PROVIDER, 0)
 	cAcc, _ := ts.GetAccount(common.CONSUMER, 0)
 	operator := pAcc.Addr.String()
-	vault := pAcc.Vault.Addr.String()
+	vault := pAcc.GetVaultAddr()
 
 	msg := ts.SendRelay(operator, cAcc, []string{ts.specs[1].Index}, 100)
 	_, err := ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &msg)
@@ -458,7 +458,7 @@ func TestFundIprpcTwice(t *testing.T) {
 	ts.AdvanceMonths(1).AdvanceEpoch()
 
 	// check rewards - should be only from first funding (=iprpcFunds)
-	res, err := ts.QueryDualstakingDelegatorRewards(p1Acc.Vault.Addr.String(), p1, mockSpec2)
+	res, err := ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
 	require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.Rewards[0].Amount))
 
@@ -470,7 +470,7 @@ func TestFundIprpcTwice(t *testing.T) {
 	ts.AdvanceMonths(1).AdvanceEpoch()
 
 	// check rewards - should be only from first + second funding (=iprpcFunds*3)
-	res, err = ts.QueryDualstakingDelegatorRewards(p1Acc.Vault.Addr.String(), p1, mockSpec2)
+	res, err = ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
 	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).IsEqual(res.Rewards[0].Amount))
 }
@@ -618,9 +618,9 @@ func TestMultipleIprpcSpec(t *testing.T) {
 	spec3.Index = mockSpec3
 	spec3.Name = mockSpec3
 	ts.specs = append(ts.specs, ts.AddSpec(mockSpec3, spec3).Spec(mockSpec3))
-	err := ts.StakeProvider(p1, p1Acc.Vault.Addr.String(), ts.specs[2], testStake)
+	err := ts.StakeProvider(p1, p1Acc.GetVaultAddr(), ts.specs[2], testStake)
 	require.NoError(ts.T, err)
-	err = ts.StakeProvider(p2, p2Acc.Vault.Addr.String(), ts.specs[2], testStake)
+	err = ts.StakeProvider(p2, p2Acc.GetVaultAddr(), ts.specs[2], testStake)
 	require.NoError(ts.T, err)
 
 	// fund iprpc pool for mock2 spec for 1 months
@@ -717,12 +717,12 @@ func TestIprpcRewardWithZeroSubRewards(t *testing.T) {
 
 	// check provider rewards (should be only expected IPRPC rewards)
 	p1ExpectedReward := iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(5))
-	res1, err := ts.QueryDualstakingDelegatorRewards(p1Acc.Vault.Addr.String(), p1, mockSpec2)
+	res1, err := ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
 	require.True(t, p1ExpectedReward.IsEqual(res1.Rewards[0].Amount))
 
 	p2ExpectedReward := p1ExpectedReward.MulInt(sdk.NewInt(4))
-	res2, err := ts.QueryDualstakingDelegatorRewards(p2Acc.Vault.Addr.String(), p2, mockSpec2)
+	res2, err := ts.QueryDualstakingDelegatorRewards(p2Acc.GetVaultAddr(), p2, mockSpec2)
 	require.NoError(t, err)
 	require.True(t, p2ExpectedReward.IsEqual(res2.Rewards[0].Amount))
 }

@@ -47,6 +47,14 @@ type Signable interface {
 	HashRounds() int
 }
 
+func (acc Account) GetVaultAddr() string {
+	if acc.Vault != nil {
+		return acc.Vault.Addr.String()
+	}
+
+	return ""
+}
+
 // Sign creates a signature for a struct. The prepareFunc prepares the struct before extracting the data for the signature
 func Sign(pkey *btcSecp256k1.PrivateKey, data Signable) ([]byte, error) {
 	msgData := data.DataToSign()

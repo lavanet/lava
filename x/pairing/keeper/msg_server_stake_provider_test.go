@@ -73,7 +73,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 
 	// modify moniker
 	moniker = "anotherExampleMoniker"
-	err = ts.StakeProviderExtra(providerAddr, providerAcct.Vault.Addr.String(), ts.spec, testStake, nil, 0, moniker)
+	err = ts.StakeProviderExtra(providerAddr, providerAcct.GetVaultAddr(), ts.spec, testStake, nil, 0, moniker)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -248,7 +248,7 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 					endpoints[i].ApiInterfaces = []string{"stub"}
 					endpoints[i].Addons = []string{}
 				}
-				_, err = ts.TxPairingStakeProvider(provider, acc.Vault.Addr.String(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, "prov")
+				_, err = ts.TxPairingStakeProvider(provider, acc.GetVaultAddr(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, "prov")
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
@@ -698,7 +698,7 @@ func TestStakeEndpoints(t *testing.T) {
 
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
-			_, err := ts.TxPairingStakeProvider(providerAddr, providerAcc.Vault.Addr.String(), ts.spec.Index, amount, play.endpoints, play.geolocation, "prov")
+			_, err := ts.TxPairingStakeProvider(providerAddr, providerAcc.GetVaultAddr(), ts.spec.Index, amount, play.endpoints, play.geolocation, "prov")
 			if play.success {
 				require.NoError(t, err)
 
@@ -755,7 +755,7 @@ func TestStakeProviderLimits(t *testing.T) {
 	for it, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			providerAcct, addr := ts.AddAccount(common.PROVIDER, it+1, tt.stake)
-			err := ts.StakeProviderExtra(addr, providerAcct.Vault.Addr.String(), ts.spec, tt.stake, nil, 0, "")
+			err := ts.StakeProviderExtra(addr, providerAcct.GetVaultAddr(), ts.spec, tt.stake, nil, 0, "")
 			if !tt.isStaked {
 				require.Error(t, err)
 				return
@@ -782,7 +782,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 
 	// stake minSelfDelegation+1 -> operator staked but frozen
 	providerAcc, operator := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
-	err := ts.StakeProviderExtra(operator, providerAcc.Vault.Addr.String(), ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
+	err := ts.StakeProviderExtra(operator, providerAcc.GetVaultAddr(), ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
 	require.NoError(t, err)
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, operator)
 	require.True(t, found)
@@ -964,7 +964,7 @@ func TestVaultOperatorExistingStakeEntry(t *testing.T) {
 	ts := newTester(t)
 
 	p1Acc, _ := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	err := ts.StakeProviderExtra(p1Acc.Addr.String(), p1Acc.Vault.Addr.String(), ts.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+	err := ts.StakeProviderExtra(p1Acc.Addr.String(), p1Acc.GetVaultAddr(), ts.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -1044,7 +1044,7 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 	_, dummy := ts.GetAccount(common.CONSUMER, 0)
 
 	operator := acc.Addr.String()
-	vault := acc.Vault.Addr.String()
+	vault := acc.GetVaultAddr()
 	valAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
 
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, acc.Addr.String())

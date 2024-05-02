@@ -104,7 +104,7 @@ func TestRelayPaymentGovQosWeightChange(t *testing.T) {
 	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
-	_, err = ts.TxDualstakingClaimRewards(providerAcct.Vault.Addr.String(), providerAcct.Addr.String())
+	_, err = ts.TxDualstakingClaimRewards(providerAcct.GetVaultAddr(), providerAcct.Addr.String())
 	require.NoError(t, err)
 
 	newBalance := ts.GetBalance(providerAcct.Vault.Addr)
@@ -522,7 +522,7 @@ func TestStakePaymentUnstake(t *testing.T) {
 	// advance another epoch and unstake the provider
 	ts.AdvanceEpoch()
 
-	_, err = ts.TxPairingUnstakeProvider(providerAcct.Vault.Addr.String(), ts.spec.Index)
+	_, err = ts.TxPairingUnstakeProvider(providerAcct.GetVaultAddr(), ts.spec.Index)
 	require.NoError(t, err)
 
 	// advance enough epochs to make the provider get its money back:
