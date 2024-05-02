@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -205,7 +206,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	}
 
 	var endpointInfos []EndpointInfo
-	var lastError error
+	lastError := fmt.Errorf("endpoints list is empty") // this error will happen if we had 0 endpoints
 	for _, endpoint := range endpoints {
 		err := func() error {
 			connectCtx, cancel := context.WithTimeout(ctx, common.AverageWorldLatency)
