@@ -1051,13 +1051,13 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 	require.True(t, found)
 
 	// consts for stake entry changes
-	var (
-		STAKE                 = 1
-		ENDPOINTS_GEOLOCATION = 2
-		MONIKER               = 3
-		DELEGATE_LIMIT        = 4
-		DELEGATE_COMMISSION   = 5
-		OPERATOR              = 6
+	const (
+		STAKE = iota + 1
+		ENDPOINTS_GEOLOCATION
+		MONIKER
+		DELEGATE_LIMIT
+		DELEGATE_COMMISSION
+		OPERATOR
 	)
 
 	tests := []struct {

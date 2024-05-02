@@ -65,10 +65,9 @@ func TestVaultOperatorUnstakeAndSlashProposal(t *testing.T) {
 	tests := []struct {
 		name    string
 		creator string
-		valid   bool
 	}{
-		{"vault unstakes", vault, true},
-		{"operator unstakes", operator, true},
+		{"vault unstakes", vault},
+		{"operator unstakes", operator},
 	}
 
 	for _, tt := range tests {
@@ -76,11 +75,7 @@ func TestVaultOperatorUnstakeAndSlashProposal(t *testing.T) {
 			err := testutils.SimulateUnstakeProposal(ts.Ctx, ts.Keepers.Pairing, []types.ProviderUnstakeInfo{{
 				Provider: tt.creator, ChainId: ts.spec.Index,
 			}}, []types.DelegatorSlashing{{}})
-			if tt.valid {
-				require.NoError(t, err)
-			} else {
-				require.Error(t, err)
-			}
+			require.NoError(t, err)
 		})
 	}
 }

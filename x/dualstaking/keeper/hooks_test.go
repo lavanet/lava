@@ -136,7 +136,7 @@ func TestReDelegateToProvider(t *testing.T) {
 
 	_, err = ts.TxDualstakingRedelegate(delegator.Addr.String(),
 		dualstakingtypes.EMPTY_PROVIDER,
-		acc.Addr.String(),
+		operator,
 		dualstakingtypes.EMPTY_PROVIDER_CHAINID,
 		entry.Chain,
 		sdk.NewCoin(ts.TokenDenom(), amount))
@@ -149,12 +149,12 @@ func TestReDelegateToProvider(t *testing.T) {
 
 	providersRes1, err = ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
 	require.NoError(t, err)
-	require.Equal(t, acc.Addr.String(), providersRes1.Delegations[0].Provider)
+	require.Equal(t, operator, providersRes1.Delegations[0].Provider)
 
 	ts.AdvanceEpoch()
 
 	epoch = ts.EpochStart()
-	entry, found = ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, acc.Addr.String(), epoch)
+	entry, found = ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, operator, epoch)
 	require.True(t, found)
 	require.Equal(t, amount, entry.DelegateTotal.Amount)
 	require.Equal(t, amount, entry.Stake.Amount)
