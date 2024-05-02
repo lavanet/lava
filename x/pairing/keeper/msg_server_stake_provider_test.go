@@ -982,7 +982,8 @@ func TestVaultOperatorExistingStakeEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			beforeVault := ts.GetBalance(tt.vault)
 			beforeOperator := ts.GetBalance(tt.operator)
-			err := ts.StakeProviderExtra(tt.vault.String(), tt.operator.String(), tt.spec, testStake+(100*int64(i+1)), []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+			fundsToStake := testStake + (100 * int64(i+1)) // funds to stake. needs to change each iteration for the checks below
+			err := ts.StakeProviderExtra(tt.vault.String(), tt.operator.String(), tt.spec, fundsToStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
 			afterVault := ts.GetBalance(tt.vault)
 			afterOperator := ts.GetBalance(tt.operator)
 
