@@ -407,7 +407,7 @@ func TestVaultOperatorTrackedCu(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-	// send relay payment with vault - should not be payed for
+	// send relay payment with vault - should not be paid for
 	relaySession = ts.newRelaySession(vault, 0, relayCuSum, ts.BlockHeight(), 0)
 	sig, err = sigs.Sign(clientAcc.SK, *relaySession)
 	require.NoError(t, err)
