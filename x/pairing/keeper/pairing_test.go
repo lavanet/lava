@@ -37,7 +37,7 @@ func TestPairingUniqueness(t *testing.T) {
 
 	for i := 1; i <= 1000; i++ {
 		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, acc.GetVaultAddr(), ts.spec, stake)
+		err := ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -103,7 +103,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 
 	for i := 1; i <= 10; i++ {
 		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, acc.GetVaultAddr(), ts.spec, stake)
+		err := ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -273,7 +273,7 @@ func TestPairingStatic(t *testing.T) {
 
 	for i := 0; i < int(ts.plan.PlanPolicy.MaxProvidersToPair)*2; i++ {
 		acc, addr := ts.AddAccount(common.PROVIDER, i, testBalance)
-		err := ts.StakeProvider(addr, acc.GetVaultAddr(), ts.spec, testStake+int64(i))
+		err := ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, testStake+int64(i))
 		require.NoError(t, err)
 	}
 
@@ -776,7 +776,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 				require.NoError(t, err)
 				expectedProvidersAfterUnstake = expectedSelectedProviders[tt.expectedProviders][1:]
 			} else if tt.name == "EXCLUSIVE mode non-staked provider stakes after first pairing" {
-				err := ts.StakeProvider(p1, p1Acc.GetVaultAddr(), ts.spec, testBalance/2)
+				err := ts.StakeProvider(p1Acc.GetVaultAddr(), p1, ts.spec, testBalance/2)
 				require.NoError(t, err)
 			}
 
@@ -2288,7 +2288,7 @@ func TestPairingPerformance(t *testing.T) {
 
 	for i := 1; i <= 1000; i++ {
 		acc, addr := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(addr, acc.GetVaultAddr(), ts.spec, stake)
+		err := ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, stake)
 		require.NoError(t, err)
 	}
 
@@ -2328,8 +2328,8 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	// try staking with 2*MAX_ENDPOINTS_AMOUNT_PER_GEO+1 endpoint in USE, should fail
 	acc, addr := ts.AddAccount(common.PROVIDER, 0, testStake)
 	err := ts.StakeProviderExtra(
-		addr,
 		acc.GetVaultAddr(),
+		addr,
 		ts.spec,
 		testStake/2,
 		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],
@@ -2341,8 +2341,8 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	// try staking with MAX_ENDPOINTS_AMOUNT_PER_GEO*2 for USE and EU, should succeed
 	validEndpointsArray := endpoints[types.MAX_ENDPOINTS_AMOUNT_PER_GEO : 3*types.MAX_ENDPOINTS_AMOUNT_PER_GEO]
 	err = ts.StakeProviderExtra(
-		addr,
 		acc.GetVaultAddr(),
+		addr,
 		ts.spec,
 		testStake/2,
 		validEndpointsArray,
@@ -2354,8 +2354,8 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 	// try modifying the existing stake entry with more endpoints than allowed in USE, should fail
 	// note, calling StakeProviderExtra for an existing stake entry will run the modify stake entry code flow
 	err = ts.StakeProviderExtra(
-		addr,
 		acc.GetVaultAddr(),
+		addr,
 		ts.spec,
 		testStake/2,
 		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],

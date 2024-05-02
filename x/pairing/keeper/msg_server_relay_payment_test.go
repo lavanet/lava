@@ -937,7 +937,7 @@ func TestIntOverflow(t *testing.T) {
 	spec2.Index = "mock2"
 	ts.AddSpec("mock2", spec2)
 
-	err := ts.StakeProvider(provider1Addr, provider1Acc.GetVaultAddr(), spec2, testStake)
+	err := ts.StakeProvider(provider1Acc.GetVaultAddr(), provider1Addr, spec2, testStake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()

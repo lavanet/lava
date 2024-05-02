@@ -618,9 +618,9 @@ func TestMultipleIprpcSpec(t *testing.T) {
 	spec3.Index = mockSpec3
 	spec3.Name = mockSpec3
 	ts.specs = append(ts.specs, ts.AddSpec(mockSpec3, spec3).Spec(mockSpec3))
-	err := ts.StakeProvider(p1, p1Acc.GetVaultAddr(), ts.specs[2], testStake)
+	err := ts.StakeProvider(p1Acc.GetVaultAddr(), p1, ts.specs[2], testStake)
 	require.NoError(ts.T, err)
-	err = ts.StakeProvider(p2, p2Acc.GetVaultAddr(), ts.specs[2], testStake)
+	err = ts.StakeProvider(p2Acc.GetVaultAddr(), p2, ts.specs[2], testStake)
 	require.NoError(ts.T, err)
 
 	// fund iprpc pool for mock2 spec for 1 months

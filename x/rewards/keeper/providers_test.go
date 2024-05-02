@@ -18,7 +18,7 @@ func TestZeroProvidersRewards(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -51,7 +51,7 @@ func TestBasicBoostProvidersRewards(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -96,7 +96,7 @@ func TestSpecAllocationProvidersRewards(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -140,7 +140,7 @@ func TestProvidersDiminishingRewards(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -189,7 +189,7 @@ func TestProvidersEndRewards(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -240,10 +240,10 @@ func Test2SpecsZeroShares(t *testing.T) {
 	ts.AddSpec(spec2.Index, spec2)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, 2*testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
-	err = ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), spec2, testBalance)
+	err = ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), spec2, testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -304,10 +304,10 @@ func Test2SpecsDoubleShares(t *testing.T) {
 	ts.AddSpec(spec2.Index, spec2)
 
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, 2*testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
-	err = ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), spec2, testBalance)
+	err = ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), spec2, testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -360,15 +360,15 @@ func TestBonusRewards3Providers(t *testing.T) {
 	ts := newTester(t, true)
 
 	providerAcc1, _ := ts.AddAccount(common.PROVIDER, 1, 2*testBalance)
-	err := ts.StakeProvider(providerAcc1.Addr.String(), providerAcc1.GetVaultAddr(), ts.specs[0], testBalance)
+	err := ts.StakeProvider(providerAcc1.GetVaultAddr(), providerAcc1.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	providerAcc2, _ := ts.AddAccount(common.PROVIDER, 2, 2*testBalance)
-	err = ts.StakeProvider(providerAcc2.Addr.String(), providerAcc2.GetVaultAddr(), ts.specs[0], 2*testBalance)
+	err = ts.StakeProvider(providerAcc2.GetVaultAddr(), providerAcc2.Addr.String(), ts.specs[0], 2*testBalance)
 	require.NoError(t, err)
 
 	providerAcc3, _ := ts.AddAccount(common.PROVIDER, 3, 3*testBalance)
-	err = ts.StakeProvider(providerAcc3.Addr.String(), providerAcc3.GetVaultAddr(), ts.specs[0], 3*testBalance)
+	err = ts.StakeProvider(providerAcc3.GetVaultAddr(), providerAcc3.Addr.String(), ts.specs[0], 3*testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -464,7 +464,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 
 	// create provider+comsumer, send relay and send relay payment TX
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err = ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+	err = ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -509,7 +509,7 @@ func TestValidatorsAndCommunityParticipation(t *testing.T) {
 func TestBonusReward49months(t *testing.T) {
 	ts := newTester(t, true)
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -559,7 +559,7 @@ func TestBonusRewardsEquall5Providers(t *testing.T) {
 
 	for i := 0; i < count; i++ {
 		providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-		err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+		err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 		providerAccs = append(providerAccs, providerAcc)
 		require.NoError(t, err)
 
@@ -622,7 +622,7 @@ func TestBonusRewards5Providers(t *testing.T) {
 
 	for i := 0; i < count; i++ {
 		providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-		err := ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+		err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 		providerAccs = append(providerAccs, providerAcc)
 		require.NoError(t, err)
 
@@ -708,7 +708,7 @@ func TestCommunityTaxOne(t *testing.T) {
 
 	// create provider+comsumer, send relay and send relay payment TX
 	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err = ts.StakeProvider(providerAcc.Addr.String(), providerAcc.GetVaultAddr(), ts.specs[0], testBalance)
+	err = ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.specs[0], testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()

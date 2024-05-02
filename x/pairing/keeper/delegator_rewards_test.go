@@ -369,7 +369,7 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	spec1.Index = "mock1"
 	spec1.Name = "mock1"
 	ts.AddSpec(spec1.Index, spec1)
-	err = ts.StakeProvider(provider1, provider1Acc.GetVaultAddr(), spec1, testStake)
+	err = ts.StakeProvider(provider1Acc.GetVaultAddr(), provider1, spec1, testStake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -442,7 +442,7 @@ func TestVaultOperatorDelegatorRewardsQuery(t *testing.T) {
 	vault := provider1Acc.GetVaultAddr()
 	consumerAcc, _ := ts.GetAccount(common.CONSUMER, 0)
 
-	err := ts.StakeProvider(operator, vault, ts.spec, testBalance)
+	err := ts.StakeProvider(vault, operator, ts.spec, testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()

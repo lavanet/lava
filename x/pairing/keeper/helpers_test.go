@@ -100,7 +100,7 @@ func (ts *tester) addProviderExtra(
 	start := len(ts.Accounts(common.PROVIDER))
 	for i := 0; i < count; i++ {
 		acc, addr := ts.AddAccount(common.PROVIDER, start+i, testBalance)
-		err := ts.StakeProviderExtra(addr, acc.GetVaultAddr(), ts.spec, testStake, endpoints, geoloc, moniker)
+		err := ts.StakeProviderExtra(acc.GetVaultAddr(), addr, ts.spec, testStake, endpoints, geoloc, moniker)
 		if err != nil {
 			return err
 		}

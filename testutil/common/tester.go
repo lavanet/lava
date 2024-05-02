@@ -155,13 +155,13 @@ func (ts *Tester) AccountsMap() map[string]sigs.Account {
 	return ts.accounts
 }
 
-func (ts *Tester) StakeProvider(operator string, vault string, spec spectypes.Spec, amount int64) error {
-	return ts.StakeProviderExtra(operator, vault, spec, amount, nil, 0, "prov")
+func (ts *Tester) StakeProvider(vault string, operator string, spec spectypes.Spec, amount int64) error {
+	return ts.StakeProviderExtra(vault, operator, spec, amount, nil, 0, "prov")
 }
 
 func (ts *Tester) StakeProviderExtra(
-	operator string,
 	vault string,
+	operator string,
 	spec spectypes.Spec,
 	amount int64,
 	endpoints []epochstoragetypes.Endpoint,
@@ -587,6 +587,7 @@ func (ts *Tester) TxPairingStakeProvider(
 // TxPairingStakeProvider: implement 'tx pairing stake-provider'
 func (ts *Tester) TxPairingStakeProviderFull(
 	vault string,
+	operator string,
 	chainID string,
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
@@ -594,7 +595,6 @@ func (ts *Tester) TxPairingStakeProviderFull(
 	moniker string,
 	commission uint64,
 	delegateLimit uint64,
-	operator string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	// if geoloc left zero, use default 1
@@ -1140,7 +1140,7 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 	start = len(ts.Accounts(PROVIDER))
 	for i := 0; i < providers; i++ {
 		acc, operator := ts.AddAccount(PROVIDER, start+i, balance)
-		err := ts.StakeProviderExtra(operator, acc.GetVaultAddr(), spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, "prov"+strconv.Itoa(start+i))
+		err := ts.StakeProviderExtra(acc.GetVaultAddr(), operator, spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, "prov"+strconv.Itoa(start+i))
 		if err != nil {
 			return err
 		}

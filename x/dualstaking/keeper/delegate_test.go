@@ -383,7 +383,7 @@ func TestUnbond(t *testing.T) {
 	spec2.Index = "mock2"
 	spec2.Name = spec2.Index
 	ts.AddSpec(spec2.Index, spec2)
-	err := ts.StakeProvider(provider1Addr, provider1Acct.GetVaultAddr(), spec2, testStake)
+	err := ts.StakeProvider(provider1Acct.GetVaultAddr(), provider1Addr, spec2, testStake)
 	require.NoError(t, err)
 
 	_, client1Addr := ts.GetAccount(common.CONSUMER, 0)

@@ -298,7 +298,7 @@ func TestTrackedCuMultipleChains(t *testing.T) {
 	spec1.Index = spec1Name
 	spec1.Name = spec1Name
 	ts.AddSpec(spec1Name, spec1)
-	err := ts.StakeProvider(provider2, provider2Acc.GetVaultAddr(), spec1, testStake)
+	err := ts.StakeProvider(provider2Acc.GetVaultAddr(), provider2, spec1, testStake)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -481,7 +481,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	spec1.Index = spec1Name
 	spec1.Name = spec1Name
 	ts.AddSpec(spec1Name, spec1)
-	err = ts.StakeProvider(provider, providerAcct.GetVaultAddr(), spec1, testStake)
+	err = ts.StakeProvider(providerAcct.GetVaultAddr(), provider, spec1, testStake)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -601,7 +601,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	percentage := math.LegacyNewDecWithPrec(5, 1) // half the rewards
 	spec1.ContributorPercentage = &percentage
 	ts.AddSpec(spec1Name, spec1)
-	err := ts.StakeProvider(operator, providerAcct.GetVaultAddr(), spec1, testStake)
+	err := ts.StakeProvider(providerAcct.GetVaultAddr(), operator, spec1, testStake)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 

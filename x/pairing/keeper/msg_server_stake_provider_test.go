@@ -73,7 +73,7 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 
 	// modify moniker
 	moniker = "anotherExampleMoniker"
-	err = ts.StakeProviderExtra(providerAddr, providerAcct.GetVaultAddr(), ts.spec, testStake, nil, 0, moniker)
+	err = ts.StakeProviderExtra(providerAcct.GetVaultAddr(), providerAddr, ts.spec, testStake, nil, 0, moniker)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -755,7 +755,7 @@ func TestStakeProviderLimits(t *testing.T) {
 	for it, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			providerAcct, addr := ts.AddAccount(common.PROVIDER, it+1, tt.stake)
-			err := ts.StakeProviderExtra(addr, providerAcct.GetVaultAddr(), ts.spec, tt.stake, nil, 0, "")
+			err := ts.StakeProviderExtra(providerAcct.GetVaultAddr(), addr, ts.spec, tt.stake, nil, 0, "")
 			if !tt.isStaked {
 				require.Error(t, err)
 				return
@@ -782,7 +782,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 
 	// stake minSelfDelegation+1 -> operator staked but frozen
 	providerAcc, operator := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
-	err := ts.StakeProviderExtra(operator, providerAcc.GetVaultAddr(), ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
+	err := ts.StakeProviderExtra(providerAcc.GetVaultAddr(), operator, ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
 	require.NoError(t, err)
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, operator)
 	require.True(t, found)
@@ -831,14 +831,14 @@ func TestCommisionChange(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	_, provider := ts.AddAccount(common.PROVIDER, 1, ts.spec.MinStakeProvider.Amount.Int64())
-	_, err := ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 50, 100, provider)
+	_, err := ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 50, 100)
 	require.NoError(t, err)
 
 	// there are no delegations, can change as much as we want
-	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 55, 120, provider)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 55, 120)
 	require.NoError(t, err)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 60, 140, provider)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 60, 140)
 	require.NoError(t, err)
 
 	// add delegator and delegate to provider
@@ -849,20 +849,20 @@ func TestCommisionChange(t *testing.T) {
 	ts.AdvanceBlock(time.Hour * 25) // advance time to allow changes
 
 	// now changes are limited
-	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 61, 139, provider)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 61, 139)
 	require.NoError(t, err)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 62, 138, provider)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 62, 138)
 	require.Error(t, err)
 
 	ts.AdvanceBlock(time.Hour * 25)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 62, 138, provider)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 62, 138)
 	require.NoError(t, err)
 
 	ts.AdvanceBlock(time.Hour * 25)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 68, 100, provider)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 68, 100)
 	require.Error(t, err)
 }
 
@@ -904,7 +904,7 @@ func TestVaultOperatorNewStakeEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			vaultBefore := ts.GetBalance(tt.vault)
 			operatorBefore := ts.GetBalance(tt.operator)
-			err := ts.StakeProviderExtra(tt.operator.String(), tt.vault.String(), tt.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+			err := ts.StakeProviderExtra(tt.vault.String(), tt.operator.String(), tt.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
 			vaultAfter := ts.GetBalance(tt.vault)
 			operatorAfter := ts.GetBalance(tt.operator)
 
@@ -964,7 +964,7 @@ func TestVaultOperatorExistingStakeEntry(t *testing.T) {
 	ts := newTester(t)
 
 	p1Acc, _ := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	err := ts.StakeProviderExtra(p1Acc.Addr.String(), p1Acc.GetVaultAddr(), ts.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+	err := ts.StakeProviderExtra(p1Acc.GetVaultAddr(), p1Acc.Addr.String(), ts.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -982,7 +982,7 @@ func TestVaultOperatorExistingStakeEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			beforeVault := ts.GetBalance(tt.vault)
 			beforeOperator := ts.GetBalance(tt.operator)
-			err := ts.StakeProviderExtra(tt.operator.String(), tt.vault.String(), tt.spec, testStake+(100*int64(i+1)), []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+			err := ts.StakeProviderExtra(tt.vault.String(), tt.operator.String(), tt.spec, testStake+(100*int64(i+1)), []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
 			afterVault := ts.GetBalance(tt.vault)
 			afterOperator := ts.GetBalance(tt.operator)
 
@@ -1116,6 +1116,7 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 
 			_, err := ts.TxPairingStakeProviderFull(
 				msg.Creator,
+				msg.Operator,
 				msg.ChainID,
 				msg.Amount,
 				msg.Endpoints,
@@ -1123,7 +1124,6 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 				msg.Moniker,
 				msg.DelegateCommission,
 				msg.DelegateLimit.Amount.Uint64(),
-				msg.Operator,
 			)
 			if tt.valid {
 				require.NoError(t, err)
