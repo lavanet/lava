@@ -97,7 +97,7 @@ type StakeEntry struct {
 	StakeAppliedBlock  uint64     // the block at which the provider is included in the pairing list
 	Endpoints          []Endpoint // the endpoints of the provider
 	Geolocation        int32      // the geolocation this provider supports
-	Chain              string     // the chain ID on which the provider staked on
+	Chain              string     // the chain ID on which the provider is staked on
 	Moniker            string     // free string description
 	DelegateTotal      types.Coin // total delegation to the provider (without self delegation)
 	DelegateLimit      types.Coin // delegation total limit
