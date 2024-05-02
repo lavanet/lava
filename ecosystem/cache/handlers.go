@@ -263,11 +263,17 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		utils.Attribute{Key: "requested_block", Value: relayCacheSet.RequestedBlock},
 		utils.Attribute{Key: "response_data", Value: parser.CapStringLen(string(relayCacheSet.Response.Data))},
 		utils.Attribute{Key: "requestHash", Value: string(relayCacheSet.BlockHash)},
-		utils.Attribute{Key: "latestKnownBlock", Value: string(relayCacheSet.BlockHash)})
+		utils.Attribute{Key: "latestKnownBlock", Value: string(relayCacheSet.BlockHash)},
+		utils.Attribute{Key: "IsNodeError", Value: relayCacheSet.IsNodeError},
+	)
 	// finalized entries can stay there
 	if relayCacheSet.Finalized {
 		cache := s.CacheServer.finalizedCache
-		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.CacheServer.ExpirationFinalized)
+		if relayCacheSet.IsNodeError {
+			cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.CacheServer.ExpirationNodeErrors)
+		} else {
+			cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.CacheServer.ExpirationFinalized)
+		}
 	} else {
 		cache := s.CacheServer.tempCache
 		cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.getExpirationForChain(time.Duration(relayCacheSet.AverageBlockTime), relayCacheSet.BlockHash))
