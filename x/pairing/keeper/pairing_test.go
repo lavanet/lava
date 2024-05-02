@@ -278,8 +278,8 @@ func TestPairingStatic(t *testing.T) {
 	}
 
 	// add one frozen provider
-	_, addr := ts.AddAccount(common.PROVIDER, int(ts.plan.PlanPolicy.MaxProvidersToPair)*2, testBalance)
-	err = ts.StakeProvider(addr, ts.spec, ts.spec.MinStakeProvider.Amount.Int64()-1)
+	acc, addr := ts.AddAccount(common.PROVIDER, int(ts.plan.PlanPolicy.MaxProvidersToPair)*2, testBalance)
+	err = ts.StakeProvider(acc.GetVaultAddr(), addr, ts.spec, ts.spec.MinStakeProvider.Amount.Int64()-1)
 	require.NoError(t, err)
 
 	// we expect to get all the providers in static spec
