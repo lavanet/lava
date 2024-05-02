@@ -111,11 +111,15 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 				utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "chainID", Value: voteParams.ChainID})
 		}
 		// TODO: get extensions and addons from the request
-		reply, _, _, _, _, err := rm.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
+		replyWrapper, _, _, _, _, err := rm.chainRouter.SendNodeMsg(ctx, nil, chainMessage, nil)
 		if err != nil {
 			return utils.LavaFormatError("vote relay send has failed", err,
 				utils.Attribute{Key: "ApiURL", Value: voteParams.ApiURL}, utils.Attribute{Key: "RequestData", Value: voteParams.RequestData})
 		}
+		if replyWrapper == nil || replyWrapper.RelayReply == nil {
+			return utils.LavaFormatError("vote relay send has failed, relayWrapper is nil", nil, utils.Attribute{Key: "ApiURL", Value: voteParams.ApiURL}, utils.Attribute{Key: "RequestData", Value: voteParams.RequestData})
+		}
+		reply := replyWrapper.RelayReply
 		reply.Metadata, _, _ = rm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 		nonce := rand.Int63()
 		relayData := BuildRelayDataFromVoteParams(voteParams)

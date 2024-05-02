@@ -97,7 +97,16 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 	}
 
 	if providersType == spectypes.Spec_static {
-		return stakeEntries, strictestPolicy.EpochCuLimit, nil
+		frozenFilter := pairingfilters.FrozenProvidersFilter{}
+		frozenFilter.InitFilter(*strictestPolicy)
+		filterResults := frozenFilter.Filter(ctx, stakeEntries, epoch)
+		stakeEntriesFiltered := []epochstoragetypes.StakeEntry{}
+		for i := 0; i < len(stakeEntries); i++ {
+			if filterResults[i] {
+				stakeEntriesFiltered = append(stakeEntriesFiltered, stakeEntries[i])
+			}
+		}
+		return stakeEntriesFiltered, strictestPolicy.EpochCuLimit, nil
 	}
 
 	filters := pairingfilters.GetAllFilters()
