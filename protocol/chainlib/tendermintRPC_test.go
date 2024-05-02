@@ -195,7 +195,7 @@ func TestTendermintRpcBatchCall(t *testing.T) {
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
-	require.Equal(t, response, string(relayReply.Data))
+	require.Equal(t, response, string(relayReply.RelayReply.Data))
 	defer func() {
 		if closeServer != nil {
 			closeServer()
@@ -237,7 +237,7 @@ func TestTendermintRpcBatchCallWithSameID(t *testing.T) {
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
-	require.Equal(t, response, string(relayReply.Data))
+	require.Equal(t, response, string(relayReply.RelayReply.Data))
 	defer func() {
 		if closeServer != nil {
 			closeServer()

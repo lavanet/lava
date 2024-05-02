@@ -180,7 +180,7 @@ func TestAddonAndVerifications(t *testing.T) {
 		require.NoError(t, err)
 		reply, _, _, _, _, err := chainRouter.SendNodeMsg(ctx, nil, chainMessage, []string{verification.Extension})
 		require.NoError(t, err)
-		_, err = FormatResponseForParsing(reply, chainMessage)
+		_, err = FormatResponseForParsing(reply.RelayReply, chainMessage)
 		require.NoError(t, err)
 	}
 	if closeServer != nil {
@@ -293,7 +293,7 @@ func TestJsonRpcBatchCall(t *testing.T) {
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
-	require.Equal(t, response, string(relayReply.Data))
+	require.Equal(t, response, string(relayReply.RelayReply.Data))
 	defer func() {
 		if closeServer != nil {
 			closeServer()
@@ -334,7 +334,7 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
-	require.Equal(t, responseExpected, string(relayReply.Data))
+	require.Equal(t, responseExpected, string(relayReply.RelayReply.Data))
 	defer func() {
 		if closeServer != nil {
 			closeServer()
