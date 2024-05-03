@@ -219,7 +219,7 @@
                         "name": "pruning",
                         "values": [
                           {
-                            "latest_distance": 13980
+                            "latest_distance": 14400
                         }
                         ]
                     }
@@ -229,7 +229,7 @@
                         "name": "archive",
                         "cu_multiplier": 5,
                         "rule": {
-                            "block": 13835
+                            "block": 14250
                         }
                     }
                 ]
@@ -422,7 +422,7 @@
                         "name": "pruning",
                         "values": [
                           {
-                            "latest_distance": 13980
+                            "latest_distance": 14400
                         }
                         ]
                     }
@@ -432,7 +432,7 @@
                         "name": "archive",
                         "cu_multiplier": 5,
                         "rule": {
-                            "block": 13835
+                            "block": 14250
                         }
                     }
                 ]
@@ -462,7 +462,7 @@
                         "name": "pruning",
                         "values": [
                             {
-                                "latest_distance": 13980
+                                "latest_distance": 14400
                             },
                             {
                                 "extension": "archive",
@@ -476,7 +476,7 @@
                         "name": "archive",
                         "cu_multiplier": 5,
                         "rule": {
-                            "block": 13835
+                            "block": 14250
                         }
                     }
                 ]
