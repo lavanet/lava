@@ -51,11 +51,12 @@ type UsedProvidersInf interface {
 }
 
 type SessionInfo struct {
-	Session           *SingleConsumerSession
-	StakeSize         sdk.Coin
-	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
-	Epoch             uint64
-	ReportedProviders []*pairingtypes.ReportedProvider
+	Session                  *SingleConsumerSession
+	StakeSize                sdk.Coin
+	QoSSummeryResult         sdk.Dec // using ComputeQoS to get the total QOS
+	Epoch                    uint64
+	ReportedProviders        []*pairingtypes.ReportedProvider
+	RemoveAddonAndExtensions bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
 type ConsumerSessionsMap map[string]*SessionInfo
@@ -103,8 +104,9 @@ type Endpoint struct {
 }
 
 type SessionWithProvider struct {
-	SessionsWithProvider *ConsumerSessionsWithProvider
-	CurrentEpoch         uint64
+	SessionsWithProvider      *ConsumerSessionsWithProvider
+	CurrentEpoch              uint64
+	RemoveAddonsAndExtensions bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
 type SessionWithProviderMap map[string]*SessionWithProvider
