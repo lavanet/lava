@@ -18,7 +18,7 @@ const (
 	CHANGE_WINDOW   = time.Hour * 24
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64, operator string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64, provider string) error {
 	logger := k.Logger(ctx)
 	specChainID := chainID
 
@@ -83,35 +83,35 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, creator)
 	if entryExists {
-		// modify the entry (check who's modifying - vault/operator)
-		isOperator := false
+		// modify the entry (check who's modifying - vault/provider)
+		isProvider := false
 		isVault := false
 		if creator == existingEntry.Address {
-			isOperator = true
+			isProvider = true
 		}
 		if creator == existingEntry.Vault {
 			isVault = true
 		}
 
-		if !isOperator && !isVault {
-			return utils.LavaFormatWarning("stake entry modification request was not created by operator/vault", fmt.Errorf("invalid creator address"),
+		if !isProvider && !isVault {
+			return utils.LavaFormatWarning("stake entry modification request was not created by provider/vault", fmt.Errorf("invalid creator address"),
 				utils.LogAttr("spec", specChainID),
 				utils.LogAttr("creator", creator),
-				utils.LogAttr("operator", existingEntry.Address),
+				utils.LogAttr("provider", existingEntry.Address),
 				utils.LogAttr("vault", existingEntry.Vault),
 			)
 		}
 
-		// verify that the operator only tries to change non-stake related traits of the stake entry
-		// an operator can be the same as the vault, so we verify it's not the case
-		if isOperator && !isVault {
+		// verify that the provider only tries to change non-stake related traits of the stake entry
+		// an provider can be the same as the vault, so we verify it's not the case
+		if isProvider && !isVault {
 			if delegationCommission != existingEntry.DelegateCommission ||
 				!delegationLimit.Equal(existingEntry.DelegateLimit) ||
 				!amount.Equal(existingEntry.Stake) {
-				return utils.LavaFormatWarning("operator cannot change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
+				return utils.LavaFormatWarning("provider cannot change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
 					utils.LogAttr("creator", creator),
 					utils.LogAttr("vault", existingEntry.Vault),
-					utils.LogAttr("operator", operator),
+					utils.LogAttr("provider", provider),
 					utils.LogAttr("current_delegation_limit", existingEntry.DelegateLimit),
 					utils.LogAttr("req_delegation_limit", delegationLimit),
 					utils.LogAttr("current_delegation_commission", existingEntry.DelegateCommission),
@@ -201,13 +201,13 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		return nil
 	}
 
-	// check that the configured operator is not used by another vault
-	operatorStakeEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, operator)
+	// check that the configured provider is not used by another vault
+	providerStakeEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
 	if entryExists {
-		return utils.LavaFormatWarning("configured operator exists", fmt.Errorf("new provider not staked"),
-			utils.LogAttr("operator", operator),
+		return utils.LavaFormatWarning("configured provider exists", fmt.Errorf("new provider not staked"),
+			utils.LogAttr("provider", provider),
 			utils.LogAttr("chain_id", chainID),
-			utils.LogAttr("existing_vault", operatorStakeEntry.Vault),
+			utils.LogAttr("existing_vault", providerStakeEntry.Vault),
 		)
 	}
 
@@ -230,17 +230,17 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
-	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, operator, nextEpoch)
+	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, provider, nextEpoch)
 	if err != nil {
 		utils.LavaFormatWarning("cannot get provider's delegators", err,
-			utils.LogAttr("provider", operator),
+			utils.LogAttr("provider", provider),
 			utils.LogAttr("block", nextEpoch),
 		)
 	}
 
 	for _, d := range delegations {
-		if (d.Delegator == creator && d.Provider == operator) || d.ChainID != chainID {
-			// ignore provider self delegation (delegator = vault, provider = operator) or delegations from other chains
+		if (d.Delegator == creator && d.Provider == provider) || d.ChainID != chainID {
+			// ignore provider self delegation (delegator = vault, provider = provider) or delegations from other chains
 			continue
 		}
 		delegateTotal = delegateTotal.Add(d.Amount.Amount)
@@ -248,7 +248,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	stakeEntry := epochstoragetypes.StakeEntry{
 		Stake:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
-		Address:            operator,
+		Address:            provider,
 		StakeAppliedBlock:  stakeAppliedBlock,
 		Endpoints:          endpointsVerified,
 		Geolocation:        geolocation,

@@ -431,24 +431,24 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	}
 }
 
-// TestVaultOperatorDelegatorRewardsQuery works as expected for a vault and operator addresses
+// TestVaultProviderDelegatorRewardsQuery works as expected for a vault and provider addresses
 // When using the delegator-rewards query, it should only accept the vault as a delegator
-// and the operator as the provider (as done while staking a new provider)
-func TestVaultOperatorDelegatorRewardsQuery(t *testing.T) {
+// and the provider as the provider (as done while staking a new provider)
+func TestVaultProviderDelegatorRewardsQuery(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 providers
 
-	provider1Acc, operator := ts.GetAccount(common.PROVIDER, 0)
+	provider1Acc, provider := ts.GetAccount(common.PROVIDER, 0)
 	vault := provider1Acc.GetVaultAddr()
 	consumerAcc, _ := ts.GetAccount(common.CONSUMER, 0)
 
-	err := ts.StakeProvider(vault, operator, ts.spec, testBalance)
+	err := ts.StakeProvider(vault, provider, ts.spec, testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
 	// send relay so provider will be eligible for bonus rewards
-	msg := ts.SendRelay(operator, consumerAcc, []string{ts.spec.Index}, 100)
+	msg := ts.SendRelay(provider, consumerAcc, []string{ts.spec.Index}, 100)
 	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
 	require.NoError(t, err)
 
@@ -464,10 +464,10 @@ func TestVaultOperatorDelegatorRewardsQuery(t *testing.T) {
 		provider  string
 		valid     bool
 	}{
-		{"delegator=vault, provider=operator", vault, operator, true},
-		{"delegator=operator, provider=operator", operator, operator, false},
+		{"delegator=vault, provider=provider", vault, provider, true},
+		{"delegator=provider, provider=provider", provider, provider, false},
 		{"delegator=vault, provider=vault", vault, vault, false},
-		{"delegator=operator, provider=vault", operator, vault, false},
+		{"delegator=provider, provider=vault", provider, vault, false},
 	}
 
 	for _, tt := range tests {

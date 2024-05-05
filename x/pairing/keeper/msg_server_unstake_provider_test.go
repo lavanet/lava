@@ -16,9 +16,9 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	ts.AddSpec("mock", ts.spec)
 
 	balance := 5 * ts.spec.MinStakeProvider.Amount.Int64()
-	providerAcct, operator := ts.AddAccount(common.PROVIDER, 0, balance)
+	providerAcct, provider := ts.AddAccount(common.PROVIDER, 0, balance)
 
-	err := ts.StakeProvider(providerAcct.GetVaultAddr(), operator, ts.spec, balance/2)
+	err := ts.StakeProvider(providerAcct.GetVaultAddr(), provider, ts.spec, balance/2)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -31,25 +31,25 @@ func TestUnstakeStaticProvider(t *testing.T) {
 
 	ts.AdvanceBlocks(unstakeHoldBlocks)
 
-	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, operator)
+	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
 	require.True(t, found)
 
 	ts.AdvanceBlocks(unstakeHoldBlocksStatic - unstakeHoldBlocks)
 
-	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, operator)
+	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
 	require.False(t, found)
 }
 
-// TestVaultOperatorUnstake tests that only the vault address can unstake.
+// TestVaultProviderUnstake tests that only the vault address can unstake.
 // Scenarios:
 // 1. unstake with vault -> should work
-// 2. try with operator -> should fail
-func TestVaultOperatorUnstake(t *testing.T) {
+// 2. try with provider -> should fail
+func TestVaultProviderUnstake(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 0, 0)
 
 	acc, _ := ts.GetAccount(common.PROVIDER, 0)
-	operator := acc.Addr.String()
+	provider := acc.Addr.String()
 	vault := acc.GetVaultAddr()
 
 	tests := []struct {
@@ -57,7 +57,7 @@ func TestVaultOperatorUnstake(t *testing.T) {
 		creator string
 		valid   bool
 	}{
-		{"operator unstakes", operator, false},
+		{"provider unstakes", provider, false},
 		{"vault unstakes", vault, true},
 	}
 

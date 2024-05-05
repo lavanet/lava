@@ -1453,8 +1453,8 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 	validationAcc, _ := ts.AddAccount(common.VALIDATOR, 0, testBalance)
 	ts.TxCreateValidator(validationAcc, math.NewInt(testBalance))
 
-	acc, operator := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	err := ts.StakeProviderExtra(acc.GetVaultAddr(), operator, spec, testStake, nil, 0, "provider")
+	acc, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	err := ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, testStake, nil, 0, "provider")
 	require.NoError(t, err)
 
 	// Trigger changes
@@ -1483,7 +1483,7 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 	relayNum := uint64(1)
 	sendRelayPayment := func() {
 		relaySession := &pairingtypes.RelaySession{
-			Provider:    operator,
+			Provider:    provider,
 			ContentHash: []byte(spec.ApiCollections[0].Apis[0].Name),
 			SessionId:   sessionId,
 			SpecId:      spec.Index,
@@ -1496,7 +1496,7 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 		require.Nil(ts.T, err)
 		relaySession.Sig = sig
 
-		_, err = ts.TxPairingRelayPayment(operator, relaySession)
+		_, err = ts.TxPairingRelayPayment(provider, relaySession)
 		require.NoError(t, err)
 
 		sessionId++
@@ -1548,7 +1548,7 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	// Query provider's rewards
-	rewards, err := ts.QueryDualstakingDelegatorRewards(acc.GetVaultAddr(), operator, spec.Index)
+	rewards, err := ts.QueryDualstakingDelegatorRewards(acc.GetVaultAddr(), provider, spec.Index)
 	require.NoError(t, err)
 	require.Len(t, rewards.Rewards, 1)
 	reward := rewards.Rewards[0]
@@ -2603,8 +2603,8 @@ func TestUpgradedSubscriptionCredit(t *testing.T) {
 	testStake := int64(100000)
 	validationAcc, _ := ts.AddAccount(common.VALIDATOR, 0, testBalance)
 	ts.TxCreateValidator(validationAcc, math.NewInt(testBalance))
-	acc, operator := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	err = ts.StakeProviderExtra(acc.GetVaultAddr(), operator, spec, testStake, nil, 0, "provider")
+	acc, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	err = ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, testStake, nil, 0, "provider")
 	require.NoError(t, err)
 	ts.AdvanceEpoch(10 * time.Minute) // Trigger changes
 
@@ -2613,7 +2613,7 @@ func TestUpgradedSubscriptionCredit(t *testing.T) {
 	relayNum := uint64(1)
 	sendRelayPayment := func() {
 		relaySession := &pairingtypes.RelaySession{
-			Provider:    operator,
+			Provider:    provider,
 			ContentHash: []byte(spec.ApiCollections[0].Apis[0].Name),
 			SessionId:   sessionId,
 			SpecId:      spec.Index,
@@ -2626,7 +2626,7 @@ func TestUpgradedSubscriptionCredit(t *testing.T) {
 		require.Nil(ts.T, err)
 		relaySession.Sig = sig
 
-		_, err = ts.TxPairingRelayPayment(operator, relaySession)
+		_, err = ts.TxPairingRelayPayment(provider, relaySession)
 		require.NoError(t, err)
 
 		sessionId++

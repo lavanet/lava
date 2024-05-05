@@ -112,8 +112,8 @@ func TestReDelegateToProvider(t *testing.T) {
 	amount := sdk.NewIntFromUint64(10000)
 	ts.TxCreateValidator(validator, amount)
 
-	acc, operator := ts.GetAccount(common.PROVIDER, 0)
-	err = ts.StakeProvider(acc.GetVaultAddr(), operator, ts.spec, amount.Int64())
+	acc, provider := ts.GetAccount(common.PROVIDER, 0)
+	err = ts.StakeProvider(acc.GetVaultAddr(), provider, ts.spec, amount.Int64())
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -123,7 +123,7 @@ func TestReDelegateToProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	epoch := ts.EpochStart()
-	entry, found := ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, operator, epoch)
+	entry, found := ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, provider, epoch)
 	require.True(t, found)
 	require.Equal(t, amount, entry.Stake.Amount)
 
@@ -136,7 +136,7 @@ func TestReDelegateToProvider(t *testing.T) {
 
 	_, err = ts.TxDualstakingRedelegate(delegator.Addr.String(),
 		dualstakingtypes.EMPTY_PROVIDER,
-		operator,
+		provider,
 		dualstakingtypes.EMPTY_PROVIDER_CHAINID,
 		entry.Chain,
 		sdk.NewCoin(ts.TokenDenom(), amount))
@@ -149,12 +149,12 @@ func TestReDelegateToProvider(t *testing.T) {
 
 	providersRes1, err = ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
 	require.NoError(t, err)
-	require.Equal(t, operator, providersRes1.Delegations[0].Provider)
+	require.Equal(t, provider, providersRes1.Delegations[0].Provider)
 
 	ts.AdvanceEpoch()
 
 	epoch = ts.EpochStart()
-	entry, found = ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, operator, epoch)
+	entry, found = ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, provider, epoch)
 	require.True(t, found)
 	require.Equal(t, amount, entry.DelegateTotal.Amount)
 	require.Equal(t, amount, entry.Stake.Amount)
@@ -474,7 +474,7 @@ func TestHooksRandomDelegations(t *testing.T) {
 	validatorAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
 	ts.TxCreateValidator(validatorAcc, amount)
 
-	providerAcc, operator := ts.GetAccount(common.PROVIDER, 0)
+	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.spec, amount.Int64())
 	require.NoError(t, err)
 
@@ -494,7 +494,7 @@ func TestHooksRandomDelegations(t *testing.T) {
 			delegatorAcc = prevDelegatorAcc
 			delegator = prevDelegator
 		}
-		_, err := ts.TxDualstakingDelegate(delegator, operator, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(int64(d))))
+		_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(int64(d))))
 		require.NoError(t, err)
 
 		_, found := ts.Keepers.StakingKeeper.GetDelegation(ts.Ctx, delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr))
@@ -524,7 +524,7 @@ func TestNotRoundedShares(t *testing.T) {
 	val.DelegatorShares = sdk.MustNewDecFromStr("4540404040405.050505050505050505")
 	ts.Keepers.StakingKeeper.SetValidator(ts.Ctx, val)
 
-	providerAcc, operator := ts.GetAccount(common.PROVIDER, 0)
+	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.spec, delAmount.Int64())
 	require.NoError(t, err)
 
@@ -532,7 +532,7 @@ func TestNotRoundedShares(t *testing.T) {
 	require.NoError(t, err)
 	ts.Keepers.StakingKeeper.SetDelegation(ts.Ctx, stakingtypes.NewDelegation(delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr), shares))
 
-	_, err = ts.TxDualstakingDelegate(delegator, operator, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), delAmount))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), delAmount))
 	require.NoError(t, err)
 }
 
@@ -625,7 +625,7 @@ func TestUndelegateProvider(t *testing.T) {
 
 	utils.LavaFormatInfo("addresses:\n",
 		utils.LogAttr("vault", providerAcct.GetVaultAddr()),
-		utils.LogAttr("operator", provider),
+		utils.LogAttr("provider", provider),
 		utils.LogAttr("delegator1", delegatorAcc1.Addr.String()),
 	)
 

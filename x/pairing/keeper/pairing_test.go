@@ -130,9 +130,9 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	}
 }
 
-// TestVaultOperatorValidatePairing tests that validating pairing works with operator address
+// TestVaultProviderValidatePairing tests that validating pairing works with provider address
 // and not vault
-func TestVaultOperatorValidatePairing(t *testing.T) {
+func TestVaultProviderValidatePairing(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 3)
 
@@ -843,11 +843,11 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	}
 }
 
-// TestVaultOperatorSelectedProviders tests that selected providers only work with operator addresses
+// TestVaultProviderSelectedProviders tests that selected providers only work with provider addresses
 // Scenarios:
-//  1. put vault addresses and operator address in the selected providers policy -> expect only
-//     operator addresses can be picked
-func TestVaultOperatorSelectedProviders(t *testing.T) {
+//  1. put vault addresses and provider address in the selected providers policy -> expect only
+//     provider addresses can be picked
+func TestVaultProviderSelectedProviders(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(2, 1, 2)
 
@@ -856,9 +856,9 @@ func TestVaultOperatorSelectedProviders(t *testing.T) {
 	pAcc2, _ := ts.GetAccount(common.PROVIDER, 1)
 	policy := ts.plan.PlanPolicy
 
-	operator1 := pAcc1.Addr.String()
+	provider1 := pAcc1.Addr.String()
 	vault2 := pAcc2.GetVaultAddr()
-	operator2 := pAcc2.Addr.String()
+	provider2 := pAcc2.Addr.String()
 
 	res, err := ts.QueryProjectDeveloper(cAcc.Addr.String())
 	require.NoError(t, err)
@@ -868,8 +868,8 @@ func TestVaultOperatorSelectedProviders(t *testing.T) {
 		selectedProviders       []string
 		expectedPairedProviders []string
 	}{
-		{"both operators", []string{operator1, operator2}, []string{operator1, operator2}},
-		{"one operator one vault", []string{operator1, vault2}, []string{operator1}},
+		{"both providers", []string{provider1, provider2}, []string{provider1, provider2}},
+		{"one provider one vault", []string{provider1, vault2}, []string{provider1}},
 	}
 
 	for _, tt := range tests {

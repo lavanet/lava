@@ -11,7 +11,7 @@ const TypeMsgStakeProvider = "stake_provider"
 
 var _ sdk.Msg = &MsgStakeProvider{}
 
-func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegateLimit sdk.Coin, delegateCommission uint64, operator string) *MsgStakeProvider {
+func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegateLimit sdk.Coin, delegateCommission uint64, provider string) *MsgStakeProvider {
 	return &MsgStakeProvider{
 		Creator:            creator,
 		Validator:          validator,
@@ -22,7 +22,7 @@ func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, en
 		Moniker:            moniker,
 		DelegateLimit:      delegateLimit,
 		DelegateCommission: delegateCommission,
-		Operator:           operator,
+		Address:            provider,
 	}
 }
 
@@ -56,8 +56,8 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid creator address (%s)", err)
 	}
 
-	if _, err := sdk.AccAddressFromBech32(msg.Operator); err != nil {
-		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid operator address (%s)", err)
+	if _, err := sdk.AccAddressFromBech32(msg.Address); err != nil {
+		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid provider address (%s)", err)
 	}
 
 	if len(msg.Moniker) > MAX_LEN_MONIKER {

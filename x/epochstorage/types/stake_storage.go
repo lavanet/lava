@@ -19,7 +19,7 @@ func (ss StakeStorage) GetStakeEntryByAddressFromStorage(address string) (StakeE
 			// this should not happen; to avoid panic we simply skip this one (thus
 			// freeze the situation so it can be investigated and orderly resolved).
 			utils.LavaFormatError("critical: invalid account address inside StakeStorage", fmt.Errorf("invalid address"),
-				utils.LogAttr("operator", entry.Address),
+				utils.LogAttr("provider", entry.Address),
 				utils.LogAttr("vault", entry.Vault),
 				utils.LogAttr("chainID", entry.Chain),
 			)

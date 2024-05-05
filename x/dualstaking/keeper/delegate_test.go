@@ -526,14 +526,14 @@ func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	// 0 delegator, 1 provider staked, 0 provider unstaked, 0 provider unstaking
 	ts.setupForDelegation(0, 1, 0, 0)
 
-	provider1Acct, operator := ts.GetAccount(common.PROVIDER, 0)
+	provider1Acct, provider := ts.GetAccount(common.PROVIDER, 0)
 
 	staked := sdk.NewCoin("ulava", sdk.NewInt(testStake))
 	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
 	amountToUnbond := staked.Sub(minSelfDelegation.AddAmount(math.OneInt()))
 
 	// unbond once (not unstaking completely but still below min stake)
-	_, err := ts.TxDualstakingUnbond(provider1Acct.GetVaultAddr(), operator, ts.spec.Name, amountToUnbond)
+	_, err := ts.TxDualstakingUnbond(provider1Acct.GetVaultAddr(), provider, ts.spec.Name, amountToUnbond)
 	require.NoError(t, err)
 
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
@@ -554,13 +554,13 @@ func TestDualstakingUnbondStakeIsLowerThanMinSelfDelegationCausesUnstake(t *test
 	// 0 delegator, 1 provider staked, 0 provider unstaked, 0 provider unstaking
 	ts.setupForDelegation(0, 1, 0, 0)
 
-	provider1Acct, operator := ts.GetAccount(common.PROVIDER, 0)
+	provider1Acct, provider := ts.GetAccount(common.PROVIDER, 0)
 
 	staked := sdk.NewCoin("ulava", sdk.NewInt(testStake))
 	amountToUnbond := staked.SubAmount(math.OneInt())
 
 	// unbond once (not unstaking completely but still below min stake)
-	_, err := ts.TxDualstakingUnbond(provider1Acct.GetVaultAddr(), operator, ts.spec.Name, amountToUnbond)
+	_, err := ts.TxDualstakingUnbond(provider1Acct.GetVaultAddr(), provider, ts.spec.Name, amountToUnbond)
 	require.NoError(t, err)
 
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)

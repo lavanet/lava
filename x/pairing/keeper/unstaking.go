@@ -37,9 +37,9 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 	}
 
 	if creator == existingEntry.Address && creator != existingEntry.Vault {
-		return utils.LavaFormatWarning("can't unstake entry with operator address, only vault address is allowed to unstake", fmt.Errorf("operator unstake failed"),
+		return utils.LavaFormatWarning("can't unstake entry with provider address, only vault address is allowed to unstake", fmt.Errorf("provider unstake failed"),
 			utils.LogAttr("creator", creator),
-			utils.LogAttr("operator", existingEntry.Address),
+			utils.LogAttr("provider", existingEntry.Address),
 			utils.LogAttr("vault", existingEntry.Vault),
 			utils.LogAttr("chain_id", chainID),
 		)
@@ -115,7 +115,7 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator.OperatorAddress, existingEntry.Address, existingEntry.GetChain(), sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount), true)
 		if err != nil {
 			return utils.LavaFormatWarning("can't unbond self delegation", err,
-				utils.LogAttr("operator", existingEntry.Address),
+				utils.LogAttr("provider", existingEntry.Address),
 				utils.LogAttr("vault", existingEntry.Vault),
 				utils.LogAttr("spec", chainID),
 			)

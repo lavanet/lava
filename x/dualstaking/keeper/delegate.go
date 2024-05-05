@@ -174,8 +174,8 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 }
 
 // modifyStakeEntryDelegation modifies the (epochstorage) stake-entry of the provider for a chain based on the action (increase or decrease).
-func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, operator, chainID string, amount sdk.Coin, increase bool) (err error) {
-	stakeEntry, exists := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, operator)
+func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, increase bool) (err error) {
+	stakeEntry, exists := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
 	if !exists {
 		if increase {
 			return epochstoragetypes.ErrProviderNotStaked
@@ -206,7 +206,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, operator,
 
 	details := map[string]string{
 		"provider_vault":    stakeEntry.Vault,
-		"provider_operator": stakeEntry.Address,
+		"provider_provider": stakeEntry.Address,
 		"chain_id":          stakeEntry.Chain,
 		"moniker":           stakeEntry.Moniker,
 		"stake":             stakeEntry.Stake.String(),

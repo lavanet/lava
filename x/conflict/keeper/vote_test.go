@@ -142,15 +142,15 @@ func TestNewVoterOldVote(t *testing.T) {
 
 	// add a staked provider
 	balance := int64(10000)
-	notVoterAcc, notVoterOperator := ts.AddAccount(common.PROVIDER, 10, balance)
-	err := ts.StakeProvider(notVoterAcc.GetVaultAddr(), notVoterOperator, ts.spec, balance/10)
+	notVoterAcc, notVoterProvider := ts.AddAccount(common.PROVIDER, 10, balance)
+	err := ts.StakeProvider(notVoterAcc.GetVaultAddr(), notVoterProvider, ts.spec, balance/10)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
 
 	// try to vote with the new provider: will be on the next voting list but not in the old one
 	msg := conflicttypes.MsgConflictVoteCommit{}
-	msg.Creator = notVoterOperator
+	msg.Creator = notVoterProvider
 	msg.VoteID = voteID
 
 	nonce := rand.Int63()
@@ -166,7 +166,7 @@ func TestNewVoterOldVote(t *testing.T) {
 	ts.AdvanceEpochs(ts.VotePeriod() + 1)
 
 	msgReveal := conflicttypes.MsgConflictVoteReveal{}
-	msgReveal.Creator = notVoterOperator
+	msgReveal.Creator = notVoterProvider
 	msgReveal.VoteID = voteID
 	msgReveal.Hash = sigs.HashMsg(relayExchange.DataToSign())
 	msgReveal.Nonce = 0
@@ -498,11 +498,11 @@ func TestNoDecisionVote(t *testing.T) {
 	require.Equal(t, utils.EventPrefix+conflicttypes.ConflictVoteUnresolvedEventName, LastEvent.Type)
 }
 
-// TestVaultOperatorConflictVote tests that conflicts are using the operator addresses
+// TestVaultProviderConflictVote tests that conflicts are using the provider addresses
 // Scenarios:
-//  1. conflict are between operator addresses, voting can be done only by operators, punishment
-//     is done to operator address. Usage of vault addresses should fail the process
-func TestVaultOperatorConflictVote(t *testing.T) {
+//  1. conflict are between provider addresses, voting can be done only by providers, punishment
+//     is done to provider address. Usage of vault addresses should fail the process
+func TestVaultProviderConflictVote(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForConflict(2)
 

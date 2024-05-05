@@ -109,7 +109,7 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 		}
 
 		if providerAddress.String() == stakeEntry.Vault && providerAddress.String() != stakeEntry.Address {
-			return nil, fmt.Errorf("provider vault address should not be used in conflict. vault: %s, operator: %s, chainID: %s, epoch: %d", stakeEntry.Vault, stakeEntry.Address, chainID, epochStart)
+			return nil, fmt.Errorf("provider vault address should not be used in conflict. vault: %s, provider: %s, chainID: %s, epoch: %d", stakeEntry.Vault, stakeEntry.Address, chainID, epochStart)
 		}
 		return providerAddress, nil
 	}
