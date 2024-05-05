@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -72,12 +71,12 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 	}
 	slashingQueryClient := slashingtypes.NewQueryClient(clientCtx)
 	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	params, err := slashingQueryClient.Params(timeoutCtx, &slashingtypes.QueryParamsRequest{})
+	_, err = slashingQueryClient.Params(timeoutCtx, &slashingtypes.QueryParamsRequest{})
 	cancel()
 	if err != nil {
 		return retInfo, utils.LavaFormatError("invalid slashing params query", err)
 	}
-	jumpBlocks := params.Params.SignedBlocksWindow
+	jumpBlocks := int64(3500)
 	utils.LavaFormatInfo("jump blocks", utils.LogAttr("blocks", jumpBlocks))
 	timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
 	signingInfos, err := slashingQueryClient.SigningInfos(timeoutCtx, &slashingtypes.QuerySigningInfosRequest{})
@@ -103,28 +102,32 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 		if err != nil {
 			return retInfo, utils.LavaFormatError("error reading validators", err)
 		}
-		re, err := regexp.Compile(valAddr)
-		if err != nil {
-			return retInfo, utils.LavaFormatError("failed compiling regex", err, utils.LogAttr("regex", valAddr))
-		}
-		valAddr = ""
+		// re, err := regexp.Compile("(?i)" + regexp.QuoteMeta(valAddr))
+		// if err != nil {
+		// 	return retInfo, utils.LavaFormatError("failed compiling regex", err, utils.LogAttr("regex", valAddr))
+		// }
+		// re2, err := regexp.Compile("(?i)" + regexp.QuoteMeta(strings.ReplaceAll(valAddr, " ", "")))
+		// if err != nil {
+		// 	return retInfo, utils.LavaFormatError("failed compiling regex", err, utils.LogAttr("regex", strings.ReplaceAll(valAddr, " ", "")))
+		// }
 		foundMoniker := ""
 		for _, validator := range allValidators.GetValidators() {
-			if re.MatchString(validator.Description.Moniker) {
-				if valAddr == "" {
-					foundMoniker = validator.Description.Moniker
-					valAddr = validator.OperatorAddress
-					valCons, err = extractValcons(clientCtx.Codec, validator, hrp)
-					if err != nil {
-						continue
-					}
-				} else {
-					return retInfo, utils.LavaFormatError("regex matched two validators", nil, utils.LogAttr("first", foundMoniker), utils.LogAttr("second", validator.Description.Moniker))
+			if valAddr == validator.Description.Moniker {
+				// if re.MatchString(validator.Description.Moniker) || re2.MatchString(validator.Description.Moniker) {
+				// if valAddr == "" {
+				foundMoniker = validator.Description.Moniker
+				valAddr = validator.OperatorAddress
+				valCons, err = extractValcons(clientCtx.Codec, validator, hrp)
+				if err != nil {
+					continue
 				}
+				// } else {
+				// 	return retInfo, utils.LavaFormatError("regex matched two validators", nil, utils.LogAttr("first", foundMoniker), utils.LogAttr("second", validator.Description.Moniker))
+				// }
 			}
 		}
 		if valAddr == "" {
-			return retInfo, utils.LavaFormatError("failed to match a validator with regex", err, utils.LogAttr("regex", re.String()))
+			return retInfo, utils.LavaFormatError("failed to match a validator with regex", err, utils.LogAttr("regex", valAddr))
 		}
 		utils.LavaFormatInfo("found validator moniker", utils.LogAttr("moniker", foundMoniker), utils.LogAttr("address", valAddr))
 	}
@@ -138,7 +141,7 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 		return retInfo, utils.LavaFormatError("error reading validator", err)
 	}
 	retInfo.tokens = validator.Validator.Tokens
-	timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
+	_, cancel = context.WithTimeout(ctx, 5*time.Second)
 	pool, err := stakingQueryClient.Pool(ctx, &stakingtypes.QueryPoolRequest{})
 	cancel()
 	if err != nil {
@@ -226,9 +229,6 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			if err != nil {
-				return err
-			}
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
@@ -266,5 +266,70 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 	flags.AddKeyringFlags(cmd.Flags())
 	cmd.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmd.Flags().Bool(validatorMonikerFlagName, false, "turn on regex parsing for the validator moniker instead of accepting a valoper")
+	return cmd
+}
+
+func RunValidatorsPerformanceCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: `run-validator-performance`,
+		Short: `simply run the command. The output is two CSV files for validators and missing validators (validators
+		that were not found). Use protocol/performance/validators/validators_performance_config.go for configuration`,
+		Args: cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			missingValsData := []MissingValsData{}
+			valsData := []ValsData{}
+
+			for _, chain := range Chains {
+				err := cmd.Flags().Set("node", chain.archiveNode)
+				if err != nil {
+					return err
+				}
+
+				clientCtx, err := client.GetClientQueryContext(cmd)
+				if err != nil {
+					return err
+				}
+				// handle flags, pass necessary fields
+				ctx := context.Background()
+
+				for _, val := range Validators {
+					// run performance check
+					retInfo, err := checkValidatorPerformance(ctx, clientCtx, val, true, chain.blocksInMonth, -1)
+					if err != nil {
+						missingValsData = append(missingValsData, MissingValsData{
+							Val:   val,
+							Chain: chain.Name,
+							Err:   err.Error(),
+						})
+						continue
+					}
+					downtime := math.LegacyNewDecFromInt(math.NewInt(retInfo.missedBlocks)).QuoInt64(chain.blocksInMonth)
+					perfData := ValsData{
+						Validator: val, Chain: chain.Name,
+						Jailed: retInfo.jailed, VotePower: retInfo.power, Downtime: downtime}
+					valsData = append(valsData, perfData)
+				}
+			}
+
+			// Write CSV data to files
+			err := ExportToCSVMissingValidators("no_data.csv", missingValsData)
+			if err != nil {
+				return fmt.Errorf("error writing NoData CSV to file: %w", err)
+			}
+
+			err = ExportToCSVValidators("performance_data.csv", valsData)
+			if err != nil {
+				return fmt.Errorf("error writing PerformanceData CSV to file: %w", err)
+			}
+
+			fmt.Println("CSV files exported successfully.")
+
+			return nil
+		},
+	}
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddKeyringFlags(cmd.Flags())
+	cmd.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	return cmd
 }
