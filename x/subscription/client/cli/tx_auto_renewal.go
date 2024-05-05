@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -64,9 +65,14 @@ lavad tx subscription auto-renewal false <subscription_consumer> --from <subscri
 				consumer = args[2]
 			}
 
+			parsedConsumer, err := utils.ParseCLIAddress(clientCtx, consumer)
+			if err != nil {
+				return err
+			}
+
 			msg := types.NewMsgAutoRenewal(
 				creator,
-				consumer,
+				parsedConsumer,
 				planIndex,
 				enabled,
 			)

@@ -226,9 +226,11 @@
                                 "name": "validators",
                                 "block_parsing": {
                                     "parser_arg": [
+                                        "block_id",
+                                        "=",
                                         "0"
                                     ],
-                                    "parser_func": "PARSE_BY_ARG",
+                                    "parser_func": "PARSE_DICTIONARY_OR_ORDERED",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,

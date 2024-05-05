@@ -221,7 +221,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	// reward + before == after
-	_, err = ts.TxDualstakingClaimRewards(provider1Acct.Vault.Addr.String(), provider1Acct.Addr.String())
+	_, err = ts.TxDualstakingClaimRewards(provider1Acct.GetVaultAddr(), provider1Acct.Addr.String())
 	require.Nil(ts.T, err)
 
 	balanceProviderAfterPayment := ts.GetBalance(provider1Acct.Vault.Addr)
@@ -454,7 +454,7 @@ func TestVaultOperatorRelayPayment(t *testing.T) {
 
 	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
 	providerAcc, operator := ts.GetAccount(common.PROVIDER, 0)
-	vault := providerAcc.Vault.Addr.String()
+	vault := providerAcc.GetVaultAddr()
 	qos := &types.QualityOfServiceReport{
 		Latency:      sdk.OneDec(),
 		Availability: sdk.OneDec(),
@@ -937,7 +937,7 @@ func TestIntOverflow(t *testing.T) {
 	spec2.Index = "mock2"
 	ts.AddSpec("mock2", spec2)
 
-	err := ts.StakeProvider(provider1Addr, provider1Acc.Vault.Addr.String(), spec2, testStake)
+	err := ts.StakeProvider(provider1Acc.GetVaultAddr(), provider1Addr, spec2, testStake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()

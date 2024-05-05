@@ -44,7 +44,7 @@ func (ts *tester) setupForDelegation(delegatorCount, stakedCount, unstakedCount,
 	require.NoError(ts.T, err)
 	for i := 0; i < stakedCount; i++ {
 		acc, operator := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(operator, acc.Vault.Addr.String(), ts.spec, testStake)
+		err := ts.StakeProvider(acc.GetVaultAddr(), operator, ts.spec, testStake)
 		require.NoError(ts.T, err)
 	}
 
@@ -55,10 +55,10 @@ func (ts *tester) setupForDelegation(delegatorCount, stakedCount, unstakedCount,
 
 	for i := 0; i < unstakingCount; i++ {
 		acc, operator := ts.GetAccount(common.PROVIDER, stakedCount+unstakedCount+i)
-		err := ts.StakeProvider(operator, acc.Vault.Addr.String(), ts.spec, testStake)
+		err := ts.StakeProvider(acc.GetVaultAddr(), operator, ts.spec, testStake)
 		require.NoError(ts.T, err)
 		ts.AdvanceEpoch()
-		_, err = ts.TxPairingUnstakeProvider(acc.Vault.Addr.String(), ts.spec.Name)
+		_, err = ts.TxPairingUnstakeProvider(acc.GetVaultAddr(), ts.spec.Name)
 		require.NoError(ts.T, err)
 	}
 

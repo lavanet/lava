@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/gogo/status"
 	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -31,6 +32,7 @@ import (
 	"golang.org/x/exp/slices"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -100,7 +102,7 @@ func validateCORSHeaders(resp *http.Response) error {
 	return nil
 }
 
-func startTesting(ctx context.Context, clientCtx client.Context, providerEntries []epochstoragetypes.StakeEntry) error {
+func startTesting(ctx context.Context, clientCtx client.Context, providerEntries []epochstoragetypes.StakeEntry, plainTextConnection bool) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -127,19 +129,34 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 				if portValid := validatePortNumber(endpoint.IPPORT); portValid != "" && !slices.Contains(portValidation, portValid) {
 					portValidation = append(portValidation, portValid)
 				}
-				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
-				if err != nil {
-					if !lavasession.AllowInsecureConnectionToProviders {
-						// lets try insecure see if this is the reason
-						lavasession.AllowInsecureConnectionToProviders = true
-						_, _, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
-						lavasession.AllowInsecureConnectionToProviders = false
-						if err == nil {
-							return 0, "", 0, utils.LavaFormatError("provider endpoint is insecure when it should be secure", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
-						}
+				var conn *grpc.ClientConn
+				var err error
+				var relayerClientPt *pairingtypes.RelayerClient
+
+				if plainTextConnection {
+					utils.LavaFormatWarning("You are using plain text connection (disabled tls), no consumer can connect to it as all consumers use tls. this should be used for testing purposes only", nil)
+					conn, err = grpc.DialContext(ctx, endpoint.IPPORT, grpc.WithBlock(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
+					if err != nil {
+						return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 					}
-					return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					relayerClient := pairingtypes.NewRelayerClient(conn)
+					relayerClientPt = &relayerClient
+				} else {
+					relayerClientPt, conn, err = cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
+					if err != nil {
+						if !lavasession.AllowInsecureConnectionToProviders {
+							// lets try insecure see if this is the reason
+							lavasession.AllowInsecureConnectionToProviders = true
+							_, _, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
+							lavasession.AllowInsecureConnectionToProviders = false
+							if err == nil {
+								return 0, "", 0, utils.LavaFormatError("provider endpoint is insecure when it should be secure", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+							}
+						}
+						return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
+					}
 				}
+
 				defer conn.Close()
 				relayerClient := *relayerClientPt
 				guid := uint64(rand.Int63())
@@ -351,7 +368,7 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 				utils.LavaFormatError("no active chains for provider", nil, utils.Attribute{Key: "address", Value: address})
 			}
 			utils.LavaFormatDebug("checking chain entries", utils.Attribute{Key: "stakedProviderChains", Value: stakedProviderChains})
-			return startTesting(ctx, clientCtx, stakedProviderChains)
+			return startTesting(ctx, clientCtx, stakedProviderChains, viper.GetBool(common.PlainTextConnection))
 		},
 	}
 
@@ -359,5 +376,6 @@ rpcprovider --from providerWallet --endpoints "provider-public-grpc:port,jsonrpc
 	flags.AddTxFlagsToCmd(cmdTestRPCProvider)
 	cmdTestRPCProvider.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
 	cmdTestRPCProvider.Flags().String(common.EndpointsConfigName, "", "endpoints to check, overwrites reading it from the blockchain")
+	cmdTestRPCProvider.Flags().Bool(common.PlainTextConnection, false, "for testing purposes connect provider using plain text (disabled tls)")
 	return cmdTestRPCProvider
 }

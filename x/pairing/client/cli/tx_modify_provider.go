@@ -101,7 +101,7 @@ func CmdModifyProvider() *cobra.Command {
 			}
 			var providerEntry *epochstoragetypes.StakeEntry
 			for idx, provider := range response.StakeEntry {
-				if provider.Operator == address.String() {
+				if provider.Operator == address.String() || provider.Vault == address.String() {
 					providerEntry = &response.StakeEntry[idx]
 					break
 				}

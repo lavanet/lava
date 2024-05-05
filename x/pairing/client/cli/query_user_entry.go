@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -18,13 +19,17 @@ func CmdUserMaxCu() *cobra.Command {
 		Short: "Query userEntry",
 		Args:  cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			reqAddress := args[0]
-			reqChainID := args[1]
-			reqBlock, err := cast.ToUint64E(args[2])
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
-			clientCtx, err := client.GetClientQueryContext(cmd)
+
+			reqAddress, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
+			reqChainID := args[1]
+			reqBlock, err := cast.ToUint64E(args[2])
 			if err != nil {
 				return err
 			}

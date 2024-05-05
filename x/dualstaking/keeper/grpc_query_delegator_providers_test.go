@@ -142,7 +142,7 @@ func TestQueryProviderMultipleDelegators(t *testing.T) {
 
 	spec := ts.Spec("mock")
 	spec1 := ts.Spec("mock1")
-	err := ts.StakeProvider(operator, providerAcc.Vault.Addr.String(), spec1, testStake)
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), operator, spec1, testStake)
 	require.NoError(t, err)
 
 	amountUint64 := uint64(100)

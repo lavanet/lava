@@ -214,7 +214,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, operator,
 	}
 
 	if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
-		err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Operator)
+		err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Vault)
 		if err != nil {
 			return utils.LavaFormatError("can't remove stake Entry after decreasing provider self delegation", err,
 				utils.Attribute{Key: "provider", Value: stakeEntry.Operator},

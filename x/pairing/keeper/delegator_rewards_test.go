@@ -369,7 +369,7 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	spec1.Index = "mock1"
 	spec1.Name = "mock1"
 	ts.AddSpec(spec1.Index, spec1)
-	err = ts.StakeProvider(provider1, provider1Acc.Vault.Addr.String(), spec1, testStake)
+	err = ts.StakeProvider(provider1Acc.GetVaultAddr(), provider1, spec1, testStake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -432,17 +432,17 @@ func TestQueryDelegatorRewards(t *testing.T) {
 }
 
 // TestVaultOperatorDelegatorRewardsQuery works as expected for a vault and operator addresses
-// The delegator-rewards query, when view provider rewards, should accept the vault as a delegator
+// When using the delegator-rewards query, it should only accept the vault as a delegator
 // and the operator as the provider (as done while staking a new provider)
 func TestVaultOperatorDelegatorRewardsQuery(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 providers
 
 	provider1Acc, operator := ts.GetAccount(common.PROVIDER, 0)
-	vault := provider1Acc.Vault.Addr.String()
+	vault := provider1Acc.GetVaultAddr()
 	consumerAcc, _ := ts.GetAccount(common.CONSUMER, 0)
 
-	err := ts.StakeProvider(operator, vault, ts.spec, testBalance)
+	err := ts.StakeProvider(vault, operator, ts.spec, testBalance)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()

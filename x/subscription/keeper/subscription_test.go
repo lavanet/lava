@@ -1454,7 +1454,7 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 	ts.TxCreateValidator(validationAcc, math.NewInt(testBalance))
 
 	acc, operator := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	err := ts.StakeProviderExtra(operator, acc.Vault.Addr.String(), spec, testStake, nil, 0, "provider")
+	err := ts.StakeProviderExtra(acc.GetVaultAddr(), operator, spec, testStake, nil, 0, "provider")
 	require.NoError(t, err)
 
 	// Trigger changes
@@ -1548,7 +1548,7 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	// Query provider's rewards
-	rewards, err := ts.QueryDualstakingDelegatorRewards(acc.Vault.Addr.String(), operator, spec.Index)
+	rewards, err := ts.QueryDualstakingDelegatorRewards(acc.GetVaultAddr(), operator, spec.Index)
 	require.NoError(t, err)
 	require.Len(t, rewards.Rewards, 1)
 	reward := rewards.Rewards[0]
@@ -2604,7 +2604,7 @@ func TestUpgradedSubscriptionCredit(t *testing.T) {
 	validationAcc, _ := ts.AddAccount(common.VALIDATOR, 0, testBalance)
 	ts.TxCreateValidator(validationAcc, math.NewInt(testBalance))
 	acc, operator := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	err = ts.StakeProviderExtra(operator, acc.Vault.Addr.String(), spec, testStake, nil, 0, "provider")
+	err = ts.StakeProviderExtra(acc.GetVaultAddr(), operator, spec, testStake, nil, 0, "provider")
 	require.NoError(t, err)
 	ts.AdvanceEpoch(10 * time.Minute) // Trigger changes
 

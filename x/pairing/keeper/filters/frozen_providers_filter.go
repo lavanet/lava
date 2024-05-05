@@ -12,9 +12,9 @@ func (f *FrozenProvidersFilter) IsMix() bool {
 	return false
 }
 
-func (f *FrozenProvidersFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
+func (f *FrozenProvidersFilter) InitFilter(strictestPolicy planstypes.Policy) (bool, []Filter) {
 	// frozen providers (or providers that their stake is not applied yet) can't be part of the pairing - this filter is always active
-	return true
+	return true, nil
 }
 
 func (f *FrozenProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, currentEpoch uint64) []bool {

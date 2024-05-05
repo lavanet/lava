@@ -15,17 +15,17 @@ func (f *SelectedProvidersFilter) IsMix() bool {
 	return f.mix
 }
 
-func (f *SelectedProvidersFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
+func (f *SelectedProvidersFilter) InitFilter(strictestPolicy planstypes.Policy) (bool, []Filter) {
 	switch strictestPolicy.SelectedProvidersMode {
 	case planstypes.SELECTED_PROVIDERS_MODE_EXCLUSIVE:
 		f.selectedProviders = strictestPolicy.SelectedProviders
-		return true
+		return true, nil
 	case planstypes.SELECTED_PROVIDERS_MODE_MIXED:
 		f.mix = true // set mix as true
 		f.selectedProviders = strictestPolicy.SelectedProviders
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 func (f *SelectedProvidersFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, currentEpoch uint64) []bool {
