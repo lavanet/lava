@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	dualstakingclient "github.com/lavanet/lava/x/dualstaking/client/cli"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cobra"
@@ -54,6 +55,11 @@ func CmdUnstakeProvider() *cobra.Command {
 					return err
 				}
 				msgs = append(msgs, msg)
+
+				revokeGrantFeeMsg := CreateRevokeFeeGrantMsg(clientCtx.GetFromAddress().String(), chainID)
+				if revokeGrantFeeMsg != nil {
+					msgs = append(msgs, revokeGrantFeeMsg)
+				}
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msgs...)
@@ -63,4 +69,8 @@ func CmdUnstakeProvider() *cobra.Command {
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
+}
+
+func CreateRevokeFeeGrantMsg(vault string, chainID string) *feegrant.MsgRevokeAllowance {
+	return nil
 }

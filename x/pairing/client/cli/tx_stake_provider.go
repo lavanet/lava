@@ -12,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
@@ -38,7 +39,7 @@ func CmdStakeProvider() *cobra.Command {
 		[geolocation] should be the geolocation codes to be staked for. You can also use the geolocation codes syntax: EU,AU,AF,etc. Note that this geolocation should be a union of the endpoints' geolocations.
 		[validator] delegate to a validator with the same amount with dualstaking, if not provided the validator will be chosen for best fit, when amount is decreasing to unbond, this determines the validator to extract funds from
 		
-		Note: The operator address can be hardcoded or derived automatically from the keyring. If a operator address is not specified, the operator address will be the provider's vault address (that stakes)
+		Note: The operator address can be hardcoded or derived automatically from the keyring. If a operator address is not specified, the operator address will be the provider's vault address (that stakes). If an operator address is specified and is different than the vault address, you may use the "--grant-operator-gas-fees-auth" flag to let the vault account pay for the operator gas fees
 		IMPORTANT: endpoint should not contain your node URL, it should point to the grpc listener of your provider service defined in your provider config or cli args`,
 		Example: `
 		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com:2221,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -84,6 +85,16 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
+			grantOperatorGasFeesAuthFlagUsed := cmd.Flags().Lookup(types.FlagGrantFeeAuth).Changed
+			var feeGrantMsg *feegrant.MsgGrantAllowance
+			if grantOperatorGasFeesAuthFlagUsed {
+				feeGrantMsg = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), operator)
+				err := feeGrantMsg.ValidateBasic()
+				if err != nil {
+					return err
+				}
+			}
+
 			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
 			if err != nil {
 				return err
@@ -116,13 +127,19 @@ func CmdStakeProvider() *cobra.Command {
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+
+			msgs := []sdk.Msg{msg}
+			if feeGrantMsg != nil {
+				msgs = append(msgs, feeGrantMsg)
+			}
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msgs...)
 		},
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagOperator, "", "The provider's operator (address used to operate the provider process, default is vault address)")
+	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the operator address use the vault address' funds for gas fees")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
@@ -141,7 +158,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 		[geolocation] should be the geolocation code to be staked for
 		{repeat for another bulk} - creates a new Msg within the transaction with different arguments, can be used to run many changes in many chains without waiting for a new block
 		[validator] validator address to delegate, if not provided the validator will be chosen for you for best match
-		Note: The operator address can be hardcoded or derived automatically from the keyring. If a operator address is not specified, the operator address will be the provider's vault address (that stakes)`,
+		Note: The operator address can be hardcoded or derived automatically from the keyring. If a operator address is not specified, the operator address will be the provider's vault address (that stakes). If an operator address is specified and is different than the vault address, you may use the "--grant-operator-gas-fees-auth" flag to let the vault account pay for the operator gas fees`,
 		Example: `lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 		bulk send: two bulks, listen for ETH1,LAV1 in one endpoint and OSMOSIS,COSMOSHUB in another
 		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 OSMOSIS,COSMOSHUB 500000ulava "my-other-grpc-addr.com:1111,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -230,6 +247,17 @@ func CmdBulkStakeProvider() *cobra.Command {
 					if customOperators {
 						operator = operators[i]
 					}
+
+					grantOperatorGasFeesAuthFlagUsed := cmd.Flags().Lookup(types.FlagGrantFeeAuth).Changed
+					var feeGrantMsg *feegrant.MsgGrantAllowance
+					if grantOperatorGasFeesAuthFlagUsed {
+						feeGrantMsg = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), operator)
+						err := feeGrantMsg.ValidateBasic()
+						if err != nil {
+							return nil, err
+						}
+					}
+
 					msg := types.NewMsgStakeProvider(
 						clientCtx.GetFromAddress().String(),
 						validator,
@@ -251,6 +279,9 @@ func CmdBulkStakeProvider() *cobra.Command {
 						return nil, err
 					}
 					msgs = append(msgs, msg)
+					if feeGrantMsg != nil {
+						msgs = append(msgs, feeGrantMsg)
+					}
 				}
 				return msgs, nil
 			}
@@ -273,6 +304,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagOperator, "", "The provider's operators (addresses that are used to operate the provider process. default is operator address)")
+	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the operator address use the vault address' funds for gas fees")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
@@ -364,4 +396,8 @@ func getValidator(clientCtx client.Context, provider string) string {
 		}
 	}
 	return validatorBiggest.OperatorAddress
+}
+
+func CreateGrantFeeMsg(granter string, grantee string) *feegrant.MsgGrantAllowance {
+	return nil
 }

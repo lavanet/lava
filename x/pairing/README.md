@@ -43,7 +43,8 @@ The pairing module is one of Lava's core modules and is closely connected to the
 
 Providers are entities that have access to blockchains and want to monetize that access by providing services to consumers. Providers stake tokens under a geolocation and supported specifications (e.g. Ethereum JSON-RPC in U.S. East), once active they must provide service to consumers. Providers run the lava process and the desired blockchain or service (e.g. Ethereum JSON-RPC) they are providing access for.
 
-Note, a provider stakes its funds using its vault address and runs the Lava provider process using the its operator address. All the provider's rewards are sent to its vault address.
+Note, a provider stakes its funds using its vault address and runs the Lava provider process using the its operator address. All the provider's rewards are sent to its vault address. In case an operator address is defined (which is different from the vault address),
+it is recommended to let the operator use the vault address' funds for gas fees with the appropriate flag (see below).
 
 #### Stake
 
@@ -342,7 +343,7 @@ The pairing module supports the following transactions:
 | `modify-provider`     | chain-id (string)  | modify a provider's stake entry (use the TX optional flags)                  |
 | `relay-payment`     | chain-id (string) | automatically generated TX used by a provider to request payment for their service                  | 
 | `simulate-relay-payment`     | consumer-key (string), chainId (string)  | simulate a relay payment TX                  |
-| `stake-provider`     | chain-id (string), amount (Coin), endpoints ([]Endpoint), geolocation (int32), validator (string, optional), --provider-moniker (string) | stake a provider in a chain with multiple endpoints                 |
+| `stake-provider`     | chain-id (string), amount (Coin), endpoints ([]Endpoint), geolocation (int32), validator (string, optional), --provider-moniker (string) --grant-operator-gas-fees-auth (bool)| stake a provider in a chain with multiple endpoints                 |
 | `unfreeze`     | chain-ids ([]string)  | unfreeze a provider in multiple chains                  |
 | `unstake-provider`     | chain-ids ([]string), validator (string, optional)  | unstake a provider from multiple chains                  |
 
