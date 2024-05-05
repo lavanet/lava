@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -195,8 +196,7 @@ func (csm *ConsumerSessionManager) probeProviders(ctx context.Context, pairingLi
 
 // this code needs to be thread safe
 func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSessionsWithProvider *ConsumerSessionsWithProvider, epoch uint64, tryReconnectToDisabledEndpoints bool) (latency time.Duration, providerAddress string, err error) {
-	// TODO: fetch all endpoints not just one
-	connected, endpoint, providerAddress, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, tryReconnectToDisabledEndpoints)
+	connected, endpoints, providerAddress, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, tryReconnectToDisabledEndpoints, true)
 	if err != nil || !connected {
 		if AllProviderEndpointsDisabledError.Is(err) {
 			csm.blockProvider(providerAddress, true, epoch, MaxConsecutiveConnectionAttempts, 0, csm.GenerateReconnectCallback(consumerSessionsWithProvider)) // reporting and blocking provider this epoch
@@ -204,43 +204,65 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 		return 0, providerAddress, err
 	}
 
-	relaySentTime := time.Now()
-	connectCtx, cancel := context.WithTimeout(ctx, common.AverageWorldLatency)
-	defer cancel()
-	guid, found := utils.GetUniqueIdentifier(connectCtx)
-	if !found {
-		return 0, providerAddress, utils.LavaFormatError("probeProvider failed fetching unique identifier from context when it's set", nil)
+	var endpointInfos []EndpointInfo
+	lastError := fmt.Errorf("endpoints list is empty") // this error will happen if we had 0 endpoints
+	for _, endpoint := range endpoints {
+		err := func() error {
+			connectCtx, cancel := context.WithTimeout(ctx, common.AverageWorldLatency)
+			defer cancel()
+			guid, found := utils.GetUniqueIdentifier(connectCtx)
+			if !found {
+				return utils.LavaFormatError("probeProvider failed fetching unique identifier from context when it's set", nil)
+			}
+			if endpoint.Client == nil {
+				consumerSessionsWithProvider.Lock.Lock()
+				defer consumerSessionsWithProvider.Lock.Unlock()
+				return utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
+			}
+			client := *endpoint.Client
+			probeReq := &pairingtypes.ProbeRequest{
+				Guid:         guid,
+				SpecId:       csm.rpcEndpoint.ChainID,
+				ApiInterface: csm.rpcEndpoint.ApiInterface,
+			}
+			var trailer metadata.MD
+			relaySentTime := time.Now()
+			probeResp, err := client.Probe(connectCtx, probeReq, grpc.Trailer(&trailer))
+			relayLatency := time.Since(relaySentTime)
+			versions := trailer.Get(common.VersionMetadataKey)
+			if err != nil {
+				return utils.LavaFormatError("probe call error", err, utils.Attribute{Key: "provider", Value: providerAddress})
+			}
+			providerGuid := probeResp.GetGuid()
+			if providerGuid != guid {
+				return utils.LavaFormatWarning("mismatch probe response", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "provider Guid", Value: providerGuid}, utils.Attribute{Key: "sent guid", Value: guid})
+			}
+			if probeResp.LatestBlock == 0 {
+				return utils.LavaFormatWarning("provider returned 0 latest block", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "sent guid", Value: guid})
+			}
+
+			endpointInfos = append(endpointInfos, EndpointInfo{
+				Latency:  relayLatency,
+				Endpoint: endpoint,
+			})
+			// public lava address is a value that is not changing, so it's thread safe
+			if DebugProbes {
+				utils.LavaFormatDebug("Probed provider successfully", utils.Attribute{Key: "latency", Value: relayLatency}, utils.Attribute{Key: "provider", Value: consumerSessionsWithProvider.PublicLavaAddress}, utils.LogAttr("version", strings.Join(versions, ",")))
+			}
+			return nil
+		}()
+		if err != nil {
+			lastError = err
+		}
 	}
-	if endpoint.Client == nil {
-		consumerSessionsWithProvider.Lock.Lock()
-		defer consumerSessionsWithProvider.Lock.Unlock()
-		return 0, providerAddress, utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
+
+	if len(endpointInfos) == 0 {
+		// no endpoints.
+		return 0, providerAddress, lastError
 	}
-	client := *endpoint.Client
-	probeReq := &pairingtypes.ProbeRequest{
-		Guid:         guid,
-		SpecId:       csm.rpcEndpoint.ChainID,
-		ApiInterface: csm.rpcEndpoint.ApiInterface,
-	}
-	var trailer metadata.MD
-	probeResp, err := client.Probe(connectCtx, probeReq, grpc.Trailer(&trailer))
-	versions := trailer.Get(common.VersionMetadataKey)
-	relayLatency := time.Since(relaySentTime)
-	if err != nil {
-		return 0, providerAddress, utils.LavaFormatError("probe call error", err, utils.Attribute{Key: "provider", Value: providerAddress})
-	}
-	providerGuid := probeResp.GetGuid()
-	if providerGuid != guid {
-		return 0, providerAddress, utils.LavaFormatWarning("mismatch probe response", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "provider Guid", Value: providerGuid}, utils.Attribute{Key: "sent guid", Value: guid})
-	}
-	if probeResp.LatestBlock == 0 {
-		return 0, providerAddress, utils.LavaFormatWarning("provider returned 0 latest block", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "sent guid", Value: guid})
-	}
-	// public lava address is a value that is not changing, so it's thread safe
-	if DebugProbes {
-		utils.LavaFormatDebug("Probed provider successfully", utils.Attribute{Key: "latency", Value: relayLatency}, utils.Attribute{Key: "provider", Value: consumerSessionsWithProvider.PublicLavaAddress}, utils.LogAttr("version", strings.Join(versions, ",")))
-	}
-	return relayLatency, providerAddress, nil
+	sort.Sort(EndpointInfoList(endpointInfos))
+	consumerSessionsWithProvider.sortEndpointsByLatency(endpointInfos)
+	return endpointInfos[0].Latency, providerAddress, nil
 }
 
 // csm needs to be locked here
@@ -374,7 +396,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			sessionEpoch := sessionWithProvider.CurrentEpoch
 
 			// Get a valid Endpoint from the provider chosen
-			connected, endpoint, _, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, false)
+			connected, endpoints, _, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, false, false)
 			if err != nil {
 				// verify err is AllProviderEndpointsDisabled and report.
 				if AllProviderEndpointsDisabledError.Is(err) {
@@ -395,6 +417,9 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				continue
 			}
+
+			// get the endpoint we got, as its the only one returned when asking fetchEndpointConnectionFromConsumerSessionWithProvider with false value
+			endpoint := endpoints[0]
 
 			// we get the reported providers here after we try to connect, so if any provider didn't respond he will already be added to the list.
 			reportedProviders := csm.GetReportedProviders(sessionEpoch)
