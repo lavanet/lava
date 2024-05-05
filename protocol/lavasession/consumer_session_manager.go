@@ -367,6 +367,9 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders U
 					return nil, err // return original error (getValidConsumerSessionsWithProvider)
 				}
 			}
+			for _, session := range sessionWithProviderMap {
+				session.RemoveAddonsAndExtensions = true
+			}
 		} else {
 			return nil, err
 		}
@@ -412,6 +415,15 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	sessions := make(ConsumerSessionsMap, wantedSession)
 	for {
 		for providerAddress, sessionWithProvider := range sessionWithProviderMap {
+			// adding a protection when using RemoveAddonsAndExtensions to use only one session.
+			// we can get here if we wanted 3 archive and got 2 only because one couldn't connect,
+			// so we tried getting more sessions and got a regular provider due to no pairings available.
+			// in that case just return the current sessions that we do have.
+			if sessionWithProvider.RemoveAddonsAndExtensions && len(sessions) > 1 {
+				utils.LavaFormatDebug("Too many sessions when using RemoveAddonAndExtensions session", utils.LogAttr("sessions", sessions), utils.LogAttr("wanted_to_add", sessionWithProvider))
+				// in that case we just return the sessions we already have.
+				return sessions, nil
+			}
 			// Extract values from session with provider
 			consumerSessionsWithProvider := sessionWithProvider.SessionsWithProvider
 			sessionEpoch := sessionWithProvider.CurrentEpoch
@@ -504,10 +516,11 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 
 				// If no error, add provider session map
 				sessionInfo := &SessionInfo{
-					StakeSize:         consumerSessionsWithProvider.getProviderStakeSize(),
-					Session:           consumerSession,
-					Epoch:             sessionEpoch,
-					ReportedProviders: reportedProviders,
+					StakeSize:                consumerSessionsWithProvider.getProviderStakeSize(),
+					Session:                  consumerSession,
+					Epoch:                    sessionEpoch,
+					ReportedProviders:        reportedProviders,
+					RemoveAddonAndExtensions: sessionWithProvider.RemoveAddonsAndExtensions,
 				}
 
 				// adding qos summery for error parsing.
@@ -518,7 +531,6 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				consumerSession.SetUsageForSession(cuNeededForSession, csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress), usedProviders)
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
-
 				if len(sessions) == wantedSession {
 					return sessions, nil
 				}
