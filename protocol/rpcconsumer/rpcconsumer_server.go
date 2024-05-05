@@ -555,6 +555,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
+		// in case we need to remove addons and extensions from relay request data so the providers will get a normal relay.
+		if sessionInfo.RemoveAddonAndExtensions {
+			relayRequestData.Addon = ""
+			relayRequestData.Extensions = []string{}
+		}
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			// add ticker launch metrics
