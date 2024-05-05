@@ -23,12 +23,14 @@ import (
 )
 
 const (
-	ExpirationFlagName               = "expiration"
-	ExpirationNonFinalizedFlagName   = "expiration-non-finalized"
-	FlagCacheSizeName                = "max-items"
-	DefaultExpirationForNonFinalized = 500 * time.Millisecond
-	DefaultExpirationTimeFinalized   = time.Hour
-	CacheNumCounters                 = 100000000 // expect 10M items
+	ExpirationFlagName                      = "expiration"
+	ExpirationNonFinalizedFlagName          = "expiration-non-finalized"
+	ExpirationNodeErrorsOnFinalizedFlagName = "expiration-finalized-node-errors"
+	FlagCacheSizeName                       = "max-items"
+	DefaultExpirationForNonFinalized        = 500 * time.Millisecond
+	DefaultExpirationTimeFinalized          = time.Hour
+	DefaultExpirationNodeErrors             = 5 * time.Second
+	CacheNumCounters                        = 100000000 // expect 10M items
 )
 
 type CacheServer struct {
@@ -36,6 +38,7 @@ type CacheServer struct {
 	tempCache              *ristretto.Cache
 	ExpirationFinalized    time.Duration
 	ExpirationNonFinalized time.Duration
+	ExpirationNodeErrors   time.Duration
 	CacheMetrics           *CacheMetrics
 	CacheMaxCost           int64
 }

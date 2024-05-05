@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -18,15 +19,22 @@ func CmdVerifyPairing() *cobra.Command {
 		Short: "Query verifyPairing",
 		Args:  cobra.ExactArgs(4),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			reqChainID := args[0]
-			reqClient := args[1]
-			reqProvider := args[2]
-			reqBlock, err := cast.ToUint64E(args[3])
+			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
 
-			clientCtx, err := client.GetClientQueryContext(cmd)
+			reqChainID := args[0]
+			reqClient, err := utils.ParseCLIAddress(clientCtx, args[1])
+			if err != nil {
+				return err
+			}
+
+			reqProvider, err := utils.ParseCLIAddress(clientCtx, args[2])
+			if err != nil {
+				return err
+			}
+			reqBlock, err := cast.ToUint64E(args[3])
 			if err != nil {
 				return err
 			}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/projects/types"
 	"github.com/spf13/cobra"
 )
@@ -21,10 +22,14 @@ func CmdDeveloper() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			developer, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryDeveloperRequest{Developer: args[0]}
+			params := &types.QueryDeveloperRequest{Developer: developer}
 
 			res, err := queryClient.Developer(cmd.Context(), params)
 			if err != nil {
