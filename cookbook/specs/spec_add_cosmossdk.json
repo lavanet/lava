@@ -845,6 +845,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "/cosmos/consensus/v1/params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "/cosmos/distribution/v1beta1/community_pool",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -1475,6 +1493,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "/cosmos/params/v1beta1/subspaces",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "/cosmos/slashing/v1beta1/params",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -1901,6 +1937,24 @@
                                         "0"
                                     ],
                                     "parser_func": "PARSE_DICTIONARY_OR_ORDERED"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/cosmos/upgrade/v1beta1/authority",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
