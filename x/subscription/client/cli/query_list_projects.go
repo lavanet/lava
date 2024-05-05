@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/subscription/types"
 	"github.com/spf13/cobra"
 )
@@ -17,9 +18,12 @@ func CmdListProjects() *cobra.Command {
 		Short: "Query all the subscription's projects",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			reqSubscription := args[0]
-
 			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			reqSubscription, err := utils.ParseCLIAddress(clientCtx, args[0])
 			if err != nil {
 				return err
 			}

@@ -8,7 +8,6 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
 type chainRouterEntry struct {
@@ -57,7 +56,7 @@ func (cri chainRouterImpl) ExtensionsSupported(extensions []string) bool {
 	return ok
 }
 
-func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) {
+func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) {
 	// add the parsed addon from the apiCollection
 	addon := chainMessage.GetApiCollection().CollectionData.AddOn
 	selectedChainProxy, err := cri.getChainProxySupporting(addon, extensions)
