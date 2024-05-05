@@ -101,7 +101,7 @@ func CmdModifyProvider() *cobra.Command {
 			}
 			var providerEntry *epochstoragetypes.StakeEntry
 			for idx, provider := range response.StakeEntry {
-				if provider.Operator == address.String() || provider.Vault == address.String() {
+				if provider.Address == address.String() || provider.Vault == address.String() {
 					providerEntry = &response.StakeEntry[idx]
 					break
 				}
@@ -191,7 +191,7 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.Moniker,
 				providerEntry.DelegateLimit,
 				providerEntry.DelegateCommission,
-				providerEntry.Operator,
+				providerEntry.Address,
 			)
 
 			if msg.DelegateLimit.Denom != commontypes.TokenDenom {

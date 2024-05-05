@@ -1096,7 +1096,7 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 				Moniker:            stakeEntry.Moniker,
 				DelegateLimit:      stakeEntry.DelegateLimit,
 				DelegateCommission: stakeEntry.DelegateCommission,
-				Operator:           stakeEntry.Operator,
+				Operator:           stakeEntry.Address,
 			}
 
 			switch tt.stakeChange {

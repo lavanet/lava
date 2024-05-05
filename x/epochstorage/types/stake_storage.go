@@ -15,18 +15,18 @@ func (ss StakeStorage) GetStakeEntryByAddressFromStorage(address string) (StakeE
 	}
 
 	for _, entry := range ss.StakeEntries {
-		if !utils.IsBech32Address(entry.Operator) || !utils.IsBech32Address(entry.Vault) {
+		if !utils.IsBech32Address(entry.Address) || !utils.IsBech32Address(entry.Vault) {
 			// this should not happen; to avoid panic we simply skip this one (thus
 			// freeze the situation so it can be investigated and orderly resolved).
 			utils.LavaFormatError("critical: invalid account address inside StakeStorage", fmt.Errorf("invalid address"),
-				utils.LogAttr("operator", entry.Operator),
+				utils.LogAttr("operator", entry.Address),
 				utils.LogAttr("vault", entry.Vault),
 				utils.LogAttr("chainID", entry.Chain),
 			)
 			continue
 		}
 
-		if entry.Vault == address || entry.Operator == address {
+		if entry.Vault == address || entry.Address == address {
 			// found the right entry
 			return entry, true
 		}

@@ -172,7 +172,7 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address
 	}
 
 	for i, entry := range stakeStorage.StakeEntries {
-		if entry.Operator == address || entry.Vault == address {
+		if entry.Address == address || entry.Vault == address {
 			stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:i], stakeStorage.StakeEntries[i+1:]...)
 			k.SetStakeStorageCurrent(ctx, chainID, stakeStorage)
 			return nil
@@ -225,7 +225,7 @@ func (k Keeper) ModifyStakeEntryCurrentFromStorage(ctx sdk.Context, stakeStorage
 	// remove the given index, then store the new entry in the sorted list at the right place
 	entries := []types.StakeEntry{}
 	for i, entry := range stakeStorage.StakeEntries {
-		if entry.Operator == stakeEntry.Operator || entry.Vault == stakeEntry.Vault {
+		if entry.Address == stakeEntry.Address || entry.Vault == stakeEntry.Vault {
 			entries = append(entries, stakeStorage.StakeEntries[:i]...)
 			entries = append(entries, stakeStorage.StakeEntries[i+1:]...)
 			break
@@ -256,7 +256,7 @@ func (k Keeper) ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEn
 		// do nothing and return to avoid panic.
 		utils.LavaFormatError("critical: ModifyStakeEntryCurrent with unknown chain", legacyerrors.ErrNotFound,
 			utils.LogAttr("chainID", chainID),
-			utils.LogAttr("stakeAddr", stakeEntry.Operator),
+			utils.LogAttr("stakeAddr", stakeEntry.Address),
 		)
 		return
 	}
@@ -294,7 +294,7 @@ func (k Keeper) ModifyUnstakeEntry(ctx sdk.Context, stakeEntry types.StakeEntry)
 	if !found {
 		// should not happen since stake storage must always exist; do nothing to avoid panic
 		utils.LavaFormatError("critical: ModifyUnstakeEntry failed to get stakeStorage", legacyerrors.ErrNotFound,
-			utils.LogAttr("stakeAddr", stakeEntry.Operator),
+			utils.LogAttr("stakeAddr", stakeEntry.Address),
 		)
 		return
 	}

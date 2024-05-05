@@ -86,7 +86,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		// modify the entry (check who's modifying - vault/operator)
 		isOperator := false
 		isVault := false
-		if creator == existingEntry.Operator {
+		if creator == existingEntry.Address {
 			isOperator = true
 		}
 		if creator == existingEntry.Vault {
@@ -97,7 +97,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			return utils.LavaFormatWarning("stake entry modification request was not created by operator/vault", fmt.Errorf("invalid creator address"),
 				utils.LogAttr("spec", specChainID),
 				utils.LogAttr("creator", creator),
-				utils.LogAttr("operator", existingEntry.Operator),
+				utils.LogAttr("operator", existingEntry.Address),
 				utils.LogAttr("vault", existingEntry.Vault),
 			)
 		}
@@ -171,7 +171,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		if amount.Amount.GT(existingEntry.Stake.Amount) {
 			// delegate the difference
 			diffAmount := amount.Sub(existingEntry.Stake)
-			err = k.dualstakingKeeper.DelegateFull(ctx, existingEntry.Vault, validator, existingEntry.Operator, chainID, diffAmount)
+			err = k.dualstakingKeeper.DelegateFull(ctx, existingEntry.Vault, validator, existingEntry.Address, chainID, diffAmount)
 			if err != nil {
 				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
 				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
@@ -181,7 +181,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		} else if amount.Amount.LT(existingEntry.Stake.Amount) {
 			// unbond the difference
 			diffAmount := existingEntry.Stake.Sub(amount)
-			err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Operator, chainID, diffAmount, false)
+			err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, chainID, diffAmount, false)
 			if err != nil {
 				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
 				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
@@ -249,7 +249,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	stakeEntry := epochstoragetypes.StakeEntry{
 		Stake:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
 		Address:            operator,
-		Operator:           operator,
 		StakeAppliedBlock:  stakeAppliedBlock,
 		Endpoints:          endpointsVerified,
 		Geolocation:        geolocation,
@@ -264,7 +263,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
 
-	err = k.dualstakingKeeper.DelegateFull(ctx, stakeEntry.Vault, validator, stakeEntry.Operator, chainID, amount)
+	err = k.dualstakingKeeper.DelegateFull(ctx, stakeEntry.Vault, validator, stakeEntry.Address, chainID, amount)
 	if err != nil {
 		return utils.LavaFormatWarning("provider self delegation failed", err,
 			details...,

@@ -108,8 +108,8 @@ func (k Keeper) ValidateResponseConflict(ctx sdk.Context, conflictData *types.Re
 			return nil, fmt.Errorf("did not find a stake entry for %s provider %s on epoch %d, chainID %s", print_st, providerAddress, epochStart, chainID)
 		}
 
-		if providerAddress.String() == stakeEntry.Vault && providerAddress.String() != stakeEntry.Operator {
-			return nil, fmt.Errorf("provider vault address should not be used in conflict. vault: %s, operator: %s, chainID: %s, epoch: %d", stakeEntry.Vault, stakeEntry.Operator, chainID, epochStart)
+		if providerAddress.String() == stakeEntry.Vault && providerAddress.String() != stakeEntry.Address {
+			return nil, fmt.Errorf("provider vault address should not be used in conflict. vault: %s, operator: %s, chainID: %s, epoch: %d", stakeEntry.Vault, stakeEntry.Address, chainID, epochStart)
 		}
 		return providerAddress, nil
 	}

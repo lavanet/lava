@@ -154,7 +154,6 @@ func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 			stakeEntryV6 := types.StakeEntry{
 				Stake:             stakeEntryV5.Stake,
 				Address:           stakeEntryV5.Address,
-				Operator:          stakeEntryV5.Address,
 				Vault:             stakeEntryV5.Address,
 				StakeAppliedBlock: stakeEntryV5.StakeAppliedBlock,
 				Chain:             stakeEntryV5.Chain,

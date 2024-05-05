@@ -34,7 +34,7 @@ func TestGetPairingForSubscription(t *testing.T) {
 
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, dev1Addr)
 	require.NoError(t, err)
-	providerAddr := pairing.Providers[0].Operator
+	providerAddr := pairing.Providers[0].Address
 
 	verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, dev1Addr, providerAddr, ts.BlockHeight())
 	require.NoError(t, err)
@@ -62,7 +62,7 @@ func TestRelayPaymentSubscription(t *testing.T) {
 
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
 	require.NoError(t, err)
-	providerAddr := pairing.Providers[0].Operator
+	providerAddr := pairing.Providers[0].Address
 
 	verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, client1Addr, providerAddr, ts.BlockHeight())
 	require.NoError(t, err)
@@ -139,7 +139,7 @@ func TestRelayPaymentSubscriptionCU(t *testing.T) {
 	for _, consumer := range consumers {
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, consumer)
 		require.NoError(t, err)
-		providerAddr := pairing.Providers[0].Operator
+		providerAddr := pairing.Providers[0].Address
 		verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, consumer, providerAddr, ts.BlockHeight())
 		require.NoError(t, err)
 		require.True(t, verify.Valid)
@@ -453,7 +453,7 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 	for i := 0; i < int(totalCuLimit/epochCuLimit); i++ {
 		res, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
 		require.NoError(t, err)
-		providerAddr := res.Providers[0].Operator
+		providerAddr := res.Providers[0].Address
 
 		relaySession := ts.newRelaySession(providerAddr, uint64(i), epochCuLimit, ts.BlockHeight(), 0)
 		relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)
@@ -474,7 +474,7 @@ func TestPairingNotChangingDueToCuOveruse(t *testing.T) {
 
 		res, err := ts.QueryPairingGetPairing(ts.spec.Index, client1Addr)
 		require.NoError(t, err)
-		providerAddr := res.Providers[0].Operator
+		providerAddr := res.Providers[0].Address
 
 		relaySession := ts.newRelaySession(providerAddr, uint64(i), epochCuLimit, ts.BlockHeight(), 0)
 		relaySession.Sig, err = sigs.Sign(client1Acct.SK, *relaySession)

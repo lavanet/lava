@@ -292,7 +292,7 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, provid
 	}
 
 	for _, possibleAddr := range validAddresses {
-		providerAccAddr, err := sdk.AccAddressFromBech32(possibleAddr.Operator)
+		providerAccAddr, err := sdk.AccAddressFromBech32(possibleAddr.Address)
 		if err != nil {
 			// panic:ok: provider address saved on chain must be valid
 			utils.LavaFormatPanic("critical: invalid provider address for payment", err,

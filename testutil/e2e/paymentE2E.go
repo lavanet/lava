@@ -95,7 +95,7 @@ func (lt *lavaTest) getProvidersAddresses() ([]string, error) {
 	}
 
 	for _, p := range providers {
-		addresses = append(addresses, p.Operator)
+		addresses = append(addresses, p.Address)
 	}
 
 	return addresses, nil

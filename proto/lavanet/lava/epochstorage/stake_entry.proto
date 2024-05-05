@@ -20,8 +20,7 @@ message StakeEntry {
   uint64 delegate_commission = 11; // delegation commission (precentage 0-100)
   uint64 last_change = 12;
   BlockReport block_report = 13;
-  string operator = 14;
-  string vault = 15;
+  string vault = 14;
 }
 
 // BlockReport holds the most up-to-date info regarding blocks of the provider
