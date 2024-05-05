@@ -237,8 +237,8 @@ var Upgrade_1_2_0 = Upgrade{
 	StoreUpgrades:        store.StoreUpgrades{},
 }
 
-var Upgrade_1_3_0 = Upgrade{
-	UpgradeName:          "v1.3.0",
+var Upgrade_2_0_0 = Upgrade{
+	UpgradeName:          "v2.0.0",
 	CreateUpgradeHandler: defaultUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
 		Added: []string{packetforwardtypes.StoreKey},
