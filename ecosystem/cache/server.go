@@ -26,6 +26,7 @@ const (
 	ExpirationFlagName                      = "expiration"
 	ExpirationNonFinalizedFlagName          = "expiration-non-finalized"
 	ExpirationNodeErrorsOnFinalizedFlagName = "expiration-finalized-node-errors"
+	ExpirationMultiplierFlagName            = "expiration-multiplier"
 	FlagCacheSizeName                       = "max-items"
 	DefaultExpirationForNonFinalized        = 500 * time.Millisecond
 	DefaultExpirationTimeFinalized          = time.Hour
@@ -39,13 +40,15 @@ type CacheServer struct {
 	ExpirationFinalized    time.Duration
 	ExpirationNonFinalized time.Duration
 	ExpirationNodeErrors   time.Duration
+	ExpirationMultiplier   float64
 	CacheMetrics           *CacheMetrics
 	CacheMaxCost           int64
 }
 
-func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, expirationNonFinalized time.Duration, metricsAddr string) {
+func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, expirationNonFinalized time.Duration, expirationMultiplier float64, metricsAddr string) {
 	cs.ExpirationFinalized = expiration
 	cs.ExpirationNonFinalized = expirationNonFinalized
+	cs.ExpirationMultiplier = expirationMultiplier
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("could not create cache", err)
@@ -120,7 +123,8 @@ func (cs *CacheServer) Serve(ctx context.Context,
 
 func (cs *CacheServer) ExpirationForChain(averageBlockTimeForChain time.Duration) time.Duration {
 	eighthBlock := averageBlockTimeForChain / 8
-	return lavaslices.Max([]time.Duration{eighthBlock, cs.ExpirationNonFinalized}) // return the maximum TTL between an eighth block and expiration
+	floatExpiration := float64(lavaslices.Max([]time.Duration{eighthBlock, cs.ExpirationNonFinalized}))
+	return time.Duration(floatExpiration * cs.ExpirationMultiplier) // return the maximum TTL between an eighth block and expiration, times the expiration multiplier
 }
 
 func Server(
@@ -136,16 +140,26 @@ func Server(
 
 	expirationNonFinalized, err := flags.GetDuration(ExpirationNonFinalizedFlagName)
 	if err != nil {
-		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationFlagName})
+		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationNonFinalizedFlagName})
 	}
 
 	cacheMaxCost, err := flags.GetInt64(FlagCacheSizeName)
 	if err != nil {
 		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: FlagCacheSizeName})
 	}
+
+	expirationMultiplier, err := flags.GetFloat64(ExpirationMultiplierFlagName)
+	if err != nil {
+		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationMultiplierFlagName})
+	}
+
+	if expirationMultiplier < 1 {
+		utils.LavaFormatFatal("expiration multiplier must be greater than 1", nil, utils.Attribute{Key: "flag", Value: ExpirationMultiplierFlagName})
+	}
+
 	cs := CacheServer{CacheMaxCost: cacheMaxCost}
 
-	cs.InitCache(ctx, expiration, expirationNonFinalized, metricsAddr)
+	cs.InitCache(ctx, expiration, expirationNonFinalized, expirationMultiplier, metricsAddr)
 	// TODO: have a state tracker
 	cs.Serve(ctx, listenAddr)
 }
