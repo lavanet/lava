@@ -550,10 +550,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	usedProviders := relayProcessor.GetUsedProviders()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
-		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
-			// if we have no providers for a specific addon or extension, return an indicative error
-			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
-		}
 		return err
 	}
 
