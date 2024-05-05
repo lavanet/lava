@@ -2014,20 +2014,20 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 	}
 }
 
-// TestMixBothExentionAndAddonPairingBug checks the following scenario:
+// TestMixBothExetensionAndAddonPairing checks the following scenario:
 //
 //   - The strictest policy indicates that the selected providers should have both "ext1" extension and "add1" addon
 //
 //   - There is only one provider that support both "ext1" extension and "addon" addon. There are two more providers
 //     one supports only "ext1" and the other only supports "addon".
 //
-//     The mix filters code had a bug that if the policy requests ext1+addon and there were only providers that support either
-//     "ext1" or "addon", they wouldn't necessarily be picked over "normal" providers.
+//     Previously, a scenario where the policy requests ext1+addon and there are only providers that support either
+//     "ext1" or "addon", the code would pick ext1+addon providers and then pick providers in random.
 //
-//     Test result with bug: pairing includes the provider that supports both and 3 random providers
-//     Test result without bug: pairing includes the provider that supports both, the "ext1" provider, the "addon" provider
-//     and one random provider
-func TestMixBothExentionAndAddonPairingBug(t *testing.T) {
+//     Test result with previous version of the code: pairing includes the provider that supports both and 3 random providers
+//     Test result with code that picks better providers: pairing includes the provider that supports both,
+//     the "ext1" provider, the "addon" provider and one random provider
+func TestMixBothExetensionAndAddonPairing(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(100, 0, 5) // 100 "normal" providers, 0 client, 5 providers-to-pair
 

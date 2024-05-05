@@ -44,8 +44,8 @@ func GetAllFilters() []Filter {
 	return filters
 }
 
-func initFilters(filters []Filter, strictestPolicy planstypes.Policy) (originalFilters []Filter) {
-	activeFilters := []Filter{}
+func initFilters(filters []Filter, strictestPolicy planstypes.Policy) (activeFilters []Filter) {
+	activeFilters = []Filter{}
 
 	for _, filter := range filters {
 		active, subMixFilters := filter.InitFilter(strictestPolicy)
