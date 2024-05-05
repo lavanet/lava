@@ -71,9 +71,10 @@
                                 "name": "/qgb/v1/data_commitment/range/height",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        "latest"
+                                        "",
+                                        "="
                                     ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "PARSE_DICTIONARY"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
