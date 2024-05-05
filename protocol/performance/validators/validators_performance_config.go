@@ -66,7 +66,6 @@ func ExportToCSVMissingValidators(filename string, data []MissingValsData) error
 	}
 
 	return nil
-
 }
 
 // Export array of structs to CSV file of validators (validator,chain,amount-of-times-jailed,downtime-percentage,vote-power)
@@ -91,5 +90,4 @@ func ExportToCSVValidators(filename string, data []ValsData) error {
 	}
 
 	return nil
-
 }

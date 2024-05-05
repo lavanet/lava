@@ -276,7 +276,6 @@ func RunValidatorsPerformanceCommand() *cobra.Command {
 		that were not found). Use protocol/performance/validators/validators_performance_config.go for configuration`,
 		Args: cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			missingValsData := []MissingValsData{}
 			valsData := []ValsData{}
 
@@ -307,7 +306,8 @@ func RunValidatorsPerformanceCommand() *cobra.Command {
 					downtime := math.LegacyNewDecFromInt(math.NewInt(retInfo.missedBlocks)).QuoInt64(chain.blocksInMonth)
 					perfData := ValsData{
 						Validator: val, Chain: chain.Name,
-						Jailed: retInfo.jailed, VotePower: retInfo.power, Downtime: downtime}
+						Jailed: retInfo.jailed, VotePower: retInfo.power, Downtime: downtime,
+					}
 					valsData = append(valsData, perfData)
 				}
 			}
