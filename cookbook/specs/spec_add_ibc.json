@@ -281,6 +281,24 @@
                                 "extra_compute_units": 0
                             },
                             {
+                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence_send",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        ""
+                                    ],
+                                    "parser_func": "EMPTY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
                                 "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
                                 "block_parsing": {
                                     "parser_arg": [
