@@ -303,7 +303,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	}
 	// Handle Data Reliability
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
-	if enabled {
+	// check if data reliability is enabled and relay processor allows us to perform data reliability
+	if enabled && !relayProcessor.getSkipDataReliability() {
 		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
 		// as data reliability happens in a go routine it will continue while the response returns.
 		guid, found := utils.GetUniqueIdentifier(ctx)
@@ -557,6 +558,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	for providerPublicAddress, sessionInfo := range sessions {
 		// in case we need to remove addons and extensions from relay request data so the providers will get a normal relay.
 		if sessionInfo.RemoveAddonAndExtensions {
+			if len(sessions) > 1 {
+				utils.LavaFormatError("Should not have more than one session when using RemoveAddonAndExtensions", nil, utils.LogAttr("sessions", sessions))
+			}
+			relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling addons and extensions.
 			relayRequestData.Addon = ""
 			relayRequestData.Extensions = []string{}
 		}
