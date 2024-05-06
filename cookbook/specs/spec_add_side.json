@@ -165,25 +165,6 @@
                     "extra_compute_units": 0
                 },
                 {
-                    "name": "/sideprotocol/side/interchainquery/pending_queries",
-                    "block_parsing": {
-                        "parser_arg": [
-                            "latest"
-                        ],
-                        "parser_func": "DEFAULT"
-                    },
-                    "compute_units": 10,
-                    "enabled": true,
-                    "category": {
-                        "deterministic": false,
-                        "local": false,
-                        "subscription": false,
-                        "stateful": 1,
-                        "hanging_api": true
-                    },
-                    "extra_compute_units": 0
-                },
-                {
                     "name": "/sideprotocol/side/yield/params",
                     "block_parsing": {
                         "parser_arg": [
@@ -353,24 +334,6 @@
                 },
                 {
                     "name": "side.gmm.QueryService/APR",
-                    "block_parsing": {
-                        "parser_arg": [
-                            "latest"
-                        ],
-                        "parser_func": "DEFAULT"
-                    },
-                    "compute_units": 10,
-                    "enabled": true,
-                    "category": {
-                        "deterministic": true,
-                        "local": false,
-                        "subscription": false,
-                        "stateful": 0
-                    },
-                    "extra_compute_units": 0
-                },
-                {
-                    "name": "side.interchainquery.v1.QueryService/PendingQueries",
                     "block_parsing": {
                         "parser_arg": [
                             "latest"
