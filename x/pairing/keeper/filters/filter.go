@@ -11,9 +11,26 @@ import (
 	planstypes "github.com/lavanet/lava/x/plans/types"
 )
 
+// The Filter interface allows creating filters that filter out providers in the pairing process.
+// There are 3 functions defined in the interface:
+//   - Filter: gets a list of providers and outputs a boolean array that indicates which providers passed
+//             the filter (by index) and the number of passed providers.
+//   - InitFilter: initializes the filter paramenters using the consumer's project's effective policy.
+//                 The output is whether the filter is active and should be used when filtering providers and
+//                 generates a list of sub-filters that are used only in mixed mode (see note below).
+//   - IsMix: returns whether the filter is in mix mode (should be considered when the policy defines the MIX selected
+//            providers mode).
+
+// Note, the only filter that is divided to additional sub filters is the addon filter. When the policy defines the MIX
+// selected providers mode, we look at the total requirements of the policy for addon\extensions divide them.
+// Let's assume the policy defines the pairing should have providers that support the "archive" addon and the "debug"
+// and "trace" extensions combined. So the addon filter will filter providers that are not supporting the whole combination,
+// but if the selected providers mode is MIX, we create additional mix filters that filter providers by the defined addons and
+// extensions separately. In this example, the new filters will be a filter with "archive" only, filter with "debug" only
+// and filter with "trace" only.
 type Filter interface {
 	Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, currentEpoch uint64) []bool
-	InitFilter(strictestPolicy planstypes.Policy) bool // return if filter is usable (by the policy)
+	InitFilter(strictestPolicy planstypes.Policy) (active bool, subMixFilters []Filter) // return if filter is usable (by the policy) and mix filters
 	IsMix() bool
 }
 
@@ -27,13 +44,16 @@ func GetAllFilters() []Filter {
 	return filters
 }
 
-func initFilters(filters []Filter, strictestPolicy planstypes.Policy) []Filter {
-	activeFilters := []Filter{}
+func initFilters(filters []Filter, strictestPolicy planstypes.Policy) (activeFilters []Filter) {
+	activeFilters = []Filter{}
 
 	for _, filter := range filters {
-		active := filter.InitFilter(strictestPolicy)
+		active, subMixFilters := filter.InitFilter(strictestPolicy)
 		if active {
 			activeFilters = append(activeFilters, filter)
+			if subMixFilters != nil {
+				activeFilters = append(activeFilters, subMixFilters...)
+			}
 		}
 	}
 
@@ -44,7 +64,7 @@ func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetype
 	filters = initFilters(filters, *strictestPolicy)
 
 	var filtersResult [][]bool
-	mixFilters := []Filter{} // mix filters
+	mixFilters := []Filter{}
 
 	for _, filter := range filters {
 		res := filter.Filter(ctx, providers, currentEpoch)
@@ -102,7 +122,7 @@ func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetype
 }
 
 // this function calculates which slot indexes should be filtered by what filters when mix filtering
-// it divides the mix filters to abtches where one batch is always empty and the rest contain one or more mix filters
+// it divides the mix filters to batches where one batch is always empty and the rest contain one or more mix filters
 // in case there are too many mix filters the batches grow in the amount of filters, in case there are less mix filters than slots, each batch will contain only one filter
 func CalculateMixFilterSlots(mixFilters []Filter, slotCount int) (mixFiltersIndexes map[Filter][]int) {
 	mixFiltersIndexes = map[Filter][]int{}
