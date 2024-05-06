@@ -39,6 +39,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/pairing/verify_pairing/{chainID}/{client}/{provider}/{block}";
 	}
 
+// Queries a list of ProviderPairingChance items.
+	rpc ProviderPairingChance(QueryProviderPairingChanceRequest) returns (QueryProviderPairingChanceResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider_pairing_chance/{provider}/{chainID}/{geolocation}/{cluster}";
+	}
+
 // Queries a UserEntry items.
 	rpc UserEntry(QueryUserEntryRequest) returns (QueryUserEntryResponse) {
 		option (google.api.http).get = "/lavanet/lava/pairing/user_entry/{address}/{chainID}";
@@ -123,6 +128,17 @@ message QueryVerifyPairingResponse {
   uint64 paired_providers = 3;
   uint64 cu_per_epoch = 4;
   string project_id = 5;
+}
+
+message QueryProviderPairingChanceRequest {
+  string provider = 1;
+  string chainID = 2;
+  int32 geolocation = 3;
+  string cluster = 4;
+}
+  
+message QueryProviderPairingChanceResponse {
+  string chance = 1 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", (gogoproto.nullable) = false];
 }
 
 message QueryUserEntryRequest {
