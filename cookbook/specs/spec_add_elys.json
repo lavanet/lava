@@ -1380,7 +1380,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 0
+                                        "latest_distance": 19200
                                     }
                                 ]
                             }
@@ -1390,7 +1390,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 18587
+                                    "block": 19000
                                 }
                             }
                         ]
@@ -2897,7 +2897,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 0
+                                        "latest_distance": 19200
                                     }
                                 ]
                             }
@@ -2907,7 +2907,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 18587
+                                    "block": 19000
                                 }
                             }
                         ]
@@ -2937,7 +2937,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 0
+                                        "latest_distance": 19200
                                     },
                                     {
                                         "extension": "archive",
@@ -2951,7 +2951,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 18587
+                                    "block": 19200
                                 }
                             }
                         ]
