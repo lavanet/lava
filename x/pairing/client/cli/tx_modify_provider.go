@@ -211,7 +211,6 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().Var(&geolocationVar, GeolocationFlag, `modify the provider's geolocation int32 or string value "EU,US"`)
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
-	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the provider use the vault address' funds for gas fees")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

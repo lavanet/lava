@@ -34,7 +34,6 @@ type (
 		downtimeKeeper     types.DowntimeKeeper
 		dualstakingKeeper  types.DualstakingKeeper
 		stakingKeeper      types.StakingKeeper
-		feegrantKeeper     types.FeegrantKeeper
 	}
 )
 
@@ -66,7 +65,6 @@ func NewKeeper(
 	stakingKeeper types.StakingKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
-	feegrantKeeper types.FeegrantKeeper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -88,7 +86,6 @@ func NewKeeper(
 		downtimeKeeper:     downtimeKeeper,
 		dualstakingKeeper:  dualstakingKeeper,
 		stakingKeeper:      stakingKeeper,
-		feegrantKeeper:     feegrantKeeper,
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)
