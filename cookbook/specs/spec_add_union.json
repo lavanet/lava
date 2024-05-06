@@ -14,7 +14,7 @@
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
                 "blocks_in_finalization_proof": 1,
-                "average_block_time": 6180,
+                "average_block_time": 6000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
@@ -102,7 +102,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 13980
+                                        "latest_distance": 14400
                                     }                                
                                 ]
                             }
@@ -112,7 +112,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 13835
+                                    "block": 14250
                                 }
                             }
                         ]
@@ -125,7 +125,62 @@
                             "type": "",
                             "add_on": ""
                         },
-                        "apis": [],
+                        "apis": [
+                            {
+                                "name": "tokenfactory.v1beta1.Query/DenomAuthorityMetadata",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "tokenfactory.v1beta1.Query/DenomsFromCreator",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "tokenfactory.v1beta1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
                         "headers": [],
                         "inheritance_apis": [],
                         "parse_directives": [],
@@ -142,7 +197,7 @@
                                 "name": "pruning",
                                 "values": [
                                   {
-                                    "latest_distance": 13980
+                                    "latest_distance": 14400
                                 }
                                 ]
                             }
@@ -152,7 +207,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 13835
+                                    "block": 14250
                                 }
                             }
                         ]
@@ -182,7 +237,7 @@
                                 "name": "pruning",
                                 "values": [
                                     {
-                                        "latest_distance": 13980
+                                        "latest_distance": 14400
                                     },
                                     {
                                         "extension": "archive",
@@ -196,7 +251,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 13835
+                                    "block": 14250
                                 }
                             }
                         ]
