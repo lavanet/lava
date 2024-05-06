@@ -445,15 +445,15 @@ func TestRelayPaymentQoS(t *testing.T) {
 	}
 }
 
-// TestVaultOperatorRelayPayment tests that relay payment is sent by the operator and not vault
+// TestVaultProviderRelayPayment tests that relay payment is sent by the provider and not vault
 // Scenarios:
-// 1. only operator (not vault) should send relay payments
-func TestVaultOperatorRelayPayment(t *testing.T) {
+// 1. only provider (not vault) should send relay payments
+func TestVaultProviderRelayPayment(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 
 	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
-	providerAcc, operator := ts.GetAccount(common.PROVIDER, 0)
+	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 	vault := providerAcc.GetVaultAddr()
 	qos := &types.QualityOfServiceReport{
 		Latency:      sdk.OneDec(),
@@ -467,9 +467,9 @@ func TestVaultOperatorRelayPayment(t *testing.T) {
 		providerInRelay string
 		valid           bool
 	}{
-		{"creator=operator, providerInRelay=operator", operator, operator, true},
-		{"creator=vault, providerInRelay=operator", vault, operator, false},
-		{"creator=operator, providerInRelay=vault", operator, vault, false},
+		{"creator=provider, providerInRelay=provider", provider, provider, true},
+		{"creator=vault, providerInRelay=provider", vault, provider, false},
+		{"creator=provider, providerInRelay=vault", provider, vault, false},
 		{"creator=vault, providerInRelay=vault", vault, vault, false},
 	}
 

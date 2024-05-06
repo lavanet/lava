@@ -101,7 +101,7 @@ func CmdModifyProvider() *cobra.Command {
 			}
 			var providerEntry *epochstoragetypes.StakeEntry
 			for idx, provider := range response.StakeEntry {
-				if provider.Operator == address.String() || provider.Vault == address.String() {
+				if provider.Address == address.String() || provider.Vault == address.String() {
 					providerEntry = &response.StakeEntry[idx]
 					break
 				}
@@ -191,7 +191,7 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.Moniker,
 				providerEntry.DelegateLimit,
 				providerEntry.DelegateCommission,
-				providerEntry.Operator,
+				providerEntry.Address,
 			)
 
 			if msg.DelegateLimit.Denom != commontypes.TokenDenom {
@@ -211,7 +211,7 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().Var(&geolocationVar, GeolocationFlag, `modify the provider's geolocation int32 or string value "EU,US"`)
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
-	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the operator address use the vault address' funds for gas fees")
+	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the provider use the vault address' funds for gas fees")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

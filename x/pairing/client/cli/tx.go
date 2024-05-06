@@ -113,7 +113,7 @@ func NewSubmitUnstakeProposalTxCmd() *cobra.Command {
 				}
 				var providerEntry *epochstoragetypes.StakeEntry
 				for idx, provider := range response.StakeEntry {
-					if provider.Operator == args[0] {
+					if provider.Address == args[0] {
 						providerEntry = &response.StakeEntry[idx]
 						break
 					}
@@ -123,7 +123,7 @@ func NewSubmitUnstakeProposalTxCmd() *cobra.Command {
 				}
 
 				dualstakingQuerier := dualstakingTypes.NewQueryClient(clientCtx)
-				delegators, err := dualstakingQuerier.ProviderDelegators(ctx, &dualstakingTypes.QueryProviderDelegatorsRequest{Provider: providerEntry.Operator})
+				delegators, err := dualstakingQuerier.ProviderDelegators(ctx, &dualstakingTypes.QueryProviderDelegatorsRequest{Provider: providerEntry.Address})
 				if err != nil {
 					return lavautils.LavaFormatError("failed to fetch delegators", nil)
 				}
@@ -131,7 +131,7 @@ func NewSubmitUnstakeProposalTxCmd() *cobra.Command {
 				content = &types.UnstakeProposal{}
 				content.Title = "unstaking and slashing provider"
 				content.Description = "unstaking and slashing provider and providers delegators by proposal"
-				content.ProvidersInfo = []types.ProviderUnstakeInfo{{Provider: providerEntry.Operator, ChainId: providerEntry.Chain}}
+				content.ProvidersInfo = []types.ProviderUnstakeInfo{{Provider: providerEntry.Address, ChainId: providerEntry.Chain}}
 				content.DelegatorsSlashing = []types.DelegatorSlashing{}
 				for _, delegator := range delegators.Delegations {
 					if delegator.ChainID == providerEntry.Chain {

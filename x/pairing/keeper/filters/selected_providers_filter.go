@@ -40,7 +40,7 @@ func (f *SelectedProvidersFilter) Filter(ctx sdk.Context, providers []epochstora
 	}
 
 	for i := range providers {
-		_, filterResult[i] = selectedProvidersMap[providers[i].Operator]
+		_, filterResult[i] = selectedProvidersMap[providers[i].Address]
 	}
 
 	return filterResult

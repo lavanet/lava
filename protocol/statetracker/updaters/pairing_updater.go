@@ -148,7 +148,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 		// Sanity
 		providerEndpoints := provider.GetEndpoints()
 		if len(providerEndpoints) == 0 {
-			utils.LavaFormatError("skipping provider with no endoints", nil, utils.Attribute{Key: "Address", Value: provider.Operator}, utils.Attribute{Key: "ChainID", Value: provider.Chain})
+			utils.LavaFormatError("skipping provider with no endoints", nil, utils.Attribute{Key: "Address", Value: provider.Address}, utils.Attribute{Key: "ChainID", Value: provider.Chain})
 			continue
 		}
 
@@ -163,7 +163,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 			}
 		}
 		if len(relevantEndpoints) == 0 {
-			utils.LavaFormatError("skipping provider, No relevant endpoints for apiInterface", nil, utils.Attribute{Key: "Address", Value: provider.Operator}, utils.Attribute{Key: "ChainID", Value: provider.Chain}, utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface}, utils.Attribute{Key: "Endpoints", Value: providerEndpoints})
+			utils.LavaFormatError("skipping provider, No relevant endpoints for apiInterface", nil, utils.Attribute{Key: "Address", Value: provider.Address}, utils.Attribute{Key: "ChainID", Value: provider.Chain}, utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface}, utils.Attribute{Key: "Endpoints", Value: providerEndpoints})
 			continue
 		}
 
@@ -188,7 +188,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 		}
 		lavasession.SortByGeolocations(pairingEndpoints, currentGeo)
 		pairing[uint64(providerIdx)] = lavasession.NewConsumerSessionWithProvider(
-			provider.Operator,
+			provider.Address,
 			pairingEndpoints,
 			maxCu,
 			epoch,

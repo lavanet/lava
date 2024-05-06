@@ -85,7 +85,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 		for _, providerStakeEntry := range providerStakeEntriesForChain {
 			if !providerStakeEntry.IsFrozen() {
 				existingProviders[providerStakeEntry.GetChain()]++
-				stakeAppliedBlockProviders[ProviderChainID(providerStakeEntry.Operator, providerStakeEntry.Chain)] = providerStakeEntry.StakeAppliedBlock
+				stakeAppliedBlockProviders[ProviderChainID(providerStakeEntry.Address, providerStakeEntry.Chain)] = providerStakeEntry.StakeAppliedBlock
 			}
 		}
 	}

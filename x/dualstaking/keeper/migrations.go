@@ -38,7 +38,7 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 		if found {
 			for _, entry := range storage.StakeEntries {
 				// return the providers all their coins
-				addr, err := sdk.AccAddressFromBech32(entry.Operator)
+				addr, err := sdk.AccAddressFromBech32(entry.Address)
 				if err != nil {
 					return err
 				}
@@ -59,7 +59,7 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 				stake := entry.Stake
 				entry.Stake.Amount = sdk.ZeroInt()
 				m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, entry)
-				err = m.keeper.DelegateFull(ctx, entry.Operator, highestVal.OperatorAddress, entry.Operator, chainID, stake)
+				err = m.keeper.DelegateFull(ctx, entry.Address, highestVal.OperatorAddress, entry.Address, chainID, stake)
 				if err != nil {
 					return err
 				}
@@ -280,10 +280,10 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 			missing := 0
 			// remove duplicates
 			for _, entry := range storage.StakeEntries {
-				if _, ok := providers[entry.Operator]; !ok {
-					d, found := m.keeper.GetDelegation(ctx, entry.Operator, entry.Operator, entry.Chain, nextEpoch)
+				if _, ok := providers[entry.Address]; !ok {
+					d, found := m.keeper.GetDelegation(ctx, entry.Address, entry.Address, entry.Chain, nextEpoch)
 					if found {
-						delegations, err := m.keeper.GetProviderDelegators(ctx, entry.Operator, nextEpoch)
+						delegations, err := m.keeper.GetProviderDelegators(ctx, entry.Address, nextEpoch)
 						if err == nil {
 							entry.DelegateTotal.Amount = sdk.ZeroInt()
 							for _, d := range delegations {
@@ -292,15 +292,15 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 								}
 							}
 						} else {
-							fmt.Println("didnt find delegations for:", entry.Operator)
+							fmt.Println("didnt find delegations for:", entry.Address)
 						}
 						entry.Stake = d.Amount
 						stakeEntries = append(stakeEntries, entry)
 					} else {
-						fmt.Println("didnt find self delegation for:", entry.Operator)
+						fmt.Println("didnt find self delegation for:", entry.Address)
 					}
 
-					providers[entry.Operator] = struct{}{}
+					providers[entry.Address] = struct{}{}
 				} else {
 					duplicated++
 				}
@@ -310,11 +310,11 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 			if len(OldStakeStorages) > 0 {
 				deletedEntriesToAdd := OldStakeStorages[chainID]
 				for _, entry := range deletedEntriesToAdd.StakeEntries {
-					if _, ok := providers[entry.Operator]; !ok {
-						d, found := m.keeper.GetDelegation(ctx, entry.Operator, entry.Operator, entry.Chain, nextEpoch)
+					if _, ok := providers[entry.Address]; !ok {
+						d, found := m.keeper.GetDelegation(ctx, entry.Address, entry.Address, entry.Chain, nextEpoch)
 						if found {
 							missing++
-							delegations, err := m.keeper.GetProviderDelegators(ctx, entry.Operator, nextEpoch)
+							delegations, err := m.keeper.GetProviderDelegators(ctx, entry.Address, nextEpoch)
 							if err == nil {
 								entry.DelegateTotal.Amount = sdk.ZeroInt()
 								for _, d := range delegations {

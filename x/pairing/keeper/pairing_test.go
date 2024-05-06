@@ -49,7 +49,7 @@ func TestPairingUniqueness(t *testing.T) {
 	pairing2, err := ts.QueryPairingGetPairing(ts.spec.Index, sub2Addr)
 	require.NoError(t, err)
 
-	mapFunc := func(p epochstoragetypes.StakeEntry) string { return p.Operator }
+	mapFunc := func(p epochstoragetypes.StakeEntry) string { return p.Address }
 
 	providerAddrs1 := lavaslices.Map(pairing1.Providers, mapFunc)
 	providerAddrs2 := lavaslices.Map(pairing2.Providers, mapFunc)
@@ -77,8 +77,8 @@ func TestPairingUniqueness(t *testing.T) {
 		require.NoError(t, err)
 
 		for i := range pairing11.Providers {
-			providerAddr := pairing11.Providers[i].Operator
-			require.Equal(t, providerAddr, pairing111.Providers[i].Operator)
+			providerAddr := pairing11.Providers[i].Address
+			require.Equal(t, providerAddr, pairing111.Providers[i].Address)
 			require.NoError(t, err)
 			epoch, _, err := ts.Keepers.Epochstorage.GetEpochStartForBlock(ts.Ctx, ts.BlockHeight())
 			require.NoError(t, err)
@@ -116,7 +116,7 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	block := ts.BlockHeight()
 	testAllProviders := func() {
 		for _, provider := range pairing.Providers {
-			providerAddr := provider.Operator
+			providerAddr := provider.Address
 			verify, err := ts.QueryPairingVerifyPairing(ts.spec.Index, sub1Addr, providerAddr, block)
 			require.NoError(t, err)
 			require.True(t, verify.Valid)
@@ -130,9 +130,9 @@ func TestValidatePairingDeterminism(t *testing.T) {
 	}
 }
 
-// TestVaultOperatorValidatePairing tests that validating pairing works with operator address
+// TestVaultProviderValidatePairing tests that validating pairing works with provider address
 // and not vault
-func TestVaultOperatorValidatePairing(t *testing.T) {
+func TestVaultProviderValidatePairing(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 3)
 
@@ -203,7 +203,7 @@ func TestGetPairing(t *testing.T) {
 				require.NoError(t, err)
 
 				// verify the expected provider
-				require.Equal(t, providerAddr, pairing.Providers[0].Operator)
+				require.Equal(t, providerAddr, pairing.Providers[0].Address)
 
 				// verify the current epoch
 				epochThis := ts.EpochStart()
@@ -772,7 +772,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 
 			providerAddresses1 := []string{}
 			for _, provider := range pairing.Providers {
-				providerAddresses1 = append(providerAddresses1, provider.Operator)
+				providerAddresses1 = append(providerAddresses1, provider.Address)
 			}
 
 			if tt.name == "EXCLUSIVE mode provider unstakes after first pairing" {
@@ -792,7 +792,7 @@ func TestSelectedProvidersPairing(t *testing.T) {
 
 			providerAddresses2 := []string{}
 			for _, provider := range pairing.Providers {
-				providerAddresses2 = append(providerAddresses2, provider.Operator)
+				providerAddresses2 = append(providerAddresses2, provider.Address)
 			}
 
 			// check pairings
@@ -843,11 +843,11 @@ func TestSelectedProvidersPairing(t *testing.T) {
 	}
 }
 
-// TestVaultOperatorSelectedProviders tests that selected providers only work with operator addresses
+// TestVaultProviderSelectedProviders tests that selected providers only work with provider addresses
 // Scenarios:
-//  1. put vault addresses and operator address in the selected providers policy -> expect only
-//     operator addresses can be picked
-func TestVaultOperatorSelectedProviders(t *testing.T) {
+//  1. put vault addresses and provider address in the selected providers policy -> expect only
+//     provider addresses can be picked
+func TestVaultProviderSelectedProviders(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(2, 1, 2)
 
@@ -856,9 +856,9 @@ func TestVaultOperatorSelectedProviders(t *testing.T) {
 	pAcc2, _ := ts.GetAccount(common.PROVIDER, 1)
 	policy := ts.plan.PlanPolicy
 
-	operator1 := pAcc1.Addr.String()
+	provider1 := pAcc1.Addr.String()
 	vault2 := pAcc2.GetVaultAddr()
-	operator2 := pAcc2.Addr.String()
+	provider2 := pAcc2.Addr.String()
 
 	res, err := ts.QueryProjectDeveloper(cAcc.Addr.String())
 	require.NoError(t, err)
@@ -868,8 +868,8 @@ func TestVaultOperatorSelectedProviders(t *testing.T) {
 		selectedProviders       []string
 		expectedPairedProviders []string
 	}{
-		{"both operators", []string{operator1, operator2}, []string{operator1, operator2}},
-		{"one operator one vault", []string{operator1, vault2}, []string{operator1}},
+		{"both providers", []string{provider1, provider2}, []string{provider1, provider2}},
+		{"one provider one vault", []string{provider1, vault2}, []string{provider1}},
 	}
 
 	for _, tt := range tests {
@@ -885,7 +885,7 @@ func TestVaultOperatorSelectedProviders(t *testing.T) {
 			require.NoError(t, err)
 			pairedProviders := []string{}
 			for _, p := range res.Providers {
-				pairedProviders = append(pairedProviders, p.Operator)
+				pairedProviders = append(pairedProviders, p.Address)
 			}
 			require.ElementsMatch(t, tt.expectedPairedProviders, pairedProviders)
 		})
@@ -903,7 +903,7 @@ func (ts *tester) verifyPairingDistribution(desc, client string, providersToPair
 	// mapping from provider (address) to its index
 	mapProviders := make(map[string]int)
 	for i, provider := range allProviders {
-		mapProviders[provider.Operator] = i
+		mapProviders[provider.Address] = i
 	}
 
 	// calculate the total expected weight
@@ -919,8 +919,8 @@ func (ts *tester) verifyPairingDistribution(desc, client string, providersToPair
 		require.NoError(ts.T, err, desc)
 
 		for _, provider := range res.Providers {
-			count := histogram[mapProviders[provider.Operator]]
-			histogram[mapProviders[provider.Operator]] = count + 1
+			count := histogram[mapProviders[provider.Address]]
+			histogram[mapProviders[provider.Address]] = count + 1
 		}
 
 		// advance epoch to to switch pairing
@@ -968,7 +968,7 @@ func TestPairingDistributionPerStake(t *testing.T) {
 
 	// double the stake of the first provider
 	p := allProviders.StakeEntry[0]
-	_, err = ts.TxDualstakingDelegate(p.Vault, p.Operator, ts.spec.Index, p.Stake)
+	_, err = ts.TxDualstakingDelegate(p.Vault, p.Address, ts.spec.Index, p.Stake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -1137,7 +1137,7 @@ func TestGeolocationPairingScores(t *testing.T) {
 
 			for i := range stakeEntries {
 				// TODO: require err to be nil once the providerQosFS's update is implemented
-				qos, _ := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Operator)
+				qos, _ := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Address)
 				providerScore := pairingscores.NewPairingScore(&stakeEntries[i], qos)
 				providerScores = append(providerScores, providerScore)
 			}
@@ -1278,9 +1278,9 @@ func TestDuplicateProviders(t *testing.T) {
 		require.NoError(t, err)
 		providerSeen := map[string]struct{}{}
 		for _, provider := range pairingRes.Providers {
-			_, found := providerSeen[provider.Operator]
+			_, found := providerSeen[provider.Address]
 			require.False(t, found)
-			providerSeen[provider.Operator] = struct{}{}
+			providerSeen[provider.Address] = struct{}{}
 		}
 	}
 }
@@ -2355,7 +2355,7 @@ func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 		// verify selected providers mix count
 		addresses := []string{}
 		for _, provider := range pairing.Providers {
-			addresses = append(addresses, provider.Operator)
+			addresses = append(addresses, provider.Address)
 		}
 		count := countSelectedAddresses(addresses, selectedProviders)
 		require.Equal(t, count, len(selectedProviders))
@@ -2388,8 +2388,8 @@ func TestPairingConsistency(t *testing.T) {
 		var currentPairingAddrs []string
 
 		for i := range res.Providers {
-			prevPairingAddrs = append(prevPairingAddrs, prevPairing[i].Operator)
-			currentPairingAddrs = append(currentPairingAddrs, res.Providers[i].Operator)
+			prevPairingAddrs = append(prevPairingAddrs, prevPairing[i].Address)
+			currentPairingAddrs = append(currentPairingAddrs, res.Providers[i].Address)
 		}
 
 		require.True(t, lavaslices.UnorderedEqual(prevPairingAddrs, currentPairingAddrs))

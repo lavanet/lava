@@ -152,8 +152,8 @@ func (k Keeper) LotteryVoters(goCtx context.Context, epoch uint64, chainID strin
 
 	voters := make([]string, 0)
 	for i, entry := range *entries {
-		if !slices.Contains(exemptions, entry.Operator) && frozenProviders[i] {
-			voters = append(voters, entry.Operator)
+		if !slices.Contains(exemptions, entry.Address) && frozenProviders[i] {
+			voters = append(voters, entry.Address)
 		}
 	}
 

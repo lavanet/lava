@@ -174,8 +174,8 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 }
 
 // modifyStakeEntryDelegation modifies the (epochstorage) stake-entry of the provider for a chain based on the action (increase or decrease).
-func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, operator, chainID string, amount sdk.Coin, increase bool) (err error) {
-	stakeEntry, exists := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, operator)
+func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, increase bool) (err error) {
+	stakeEntry, exists := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
 	if !exists {
 		if increase {
 			return epochstoragetypes.ErrProviderNotStaked
@@ -206,7 +206,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, operator,
 
 	details := map[string]string{
 		"provider_vault":    stakeEntry.Vault,
-		"provider_operator": stakeEntry.Operator,
+		"provider_provider": stakeEntry.Address,
 		"chain_id":          stakeEntry.Chain,
 		"moniker":           stakeEntry.Moniker,
 		"stake":             stakeEntry.Stake.String(),
@@ -217,7 +217,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, operator,
 		err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Vault)
 		if err != nil {
 			return utils.LavaFormatError("can't remove stake Entry after decreasing provider self delegation", err,
-				utils.Attribute{Key: "provider", Value: stakeEntry.Operator},
+				utils.Attribute{Key: "provider", Value: stakeEntry.Address},
 				utils.Attribute{Key: "spec", Value: chainID},
 			)
 		}

@@ -74,12 +74,12 @@ func CmdUnstakeProvider() *cobra.Command {
 	return cmd
 }
 
-// CreateRevokeFeeGrantMsg constructs a feegrant RevokeAllowance msg to revoke the feegrant of the operator when the vault account unstakes
+// CreateRevokeFeeGrantMsg constructs a feegrant RevokeAllowance msg to revoke the feegrant of the provider when the vault account unstakes
 func CreateRevokeFeeGrantMsg(clientCtx client.Context, chainID string) *feegrant.MsgRevokeAllowance {
 	ctx := context.Background()
 	vault := clientCtx.GetFromAddress().String()
 
-	// find stake entry to get operator
+	// find stake entry to get provider
 	pairingQuerier := types.NewQueryClient(clientCtx)
 	response, err := pairingQuerier.Providers(ctx, &types.QueryProvidersRequest{
 		ChainID:    chainID,
@@ -113,8 +113,8 @@ func CreateRevokeFeeGrantMsg(clientCtx client.Context, chainID string) *feegrant
 	}
 
 	// construct revoke grant msg
-	if vault == providerEntry.Operator {
-		// when vault = operator there is no grant, do nothing
+	if vault == providerEntry.Address {
+		// when vault = provider there is no grant, do nothing
 		return nil
 	}
 	granterAcc, err := sdk.AccAddressFromBech32(vault)
@@ -125,10 +125,10 @@ func CreateRevokeFeeGrantMsg(clientCtx client.Context, chainID string) *feegrant
 		return nil
 	}
 
-	granteeAcc, err := sdk.AccAddressFromBech32(providerEntry.Operator)
+	granteeAcc, err := sdk.AccAddressFromBech32(providerEntry.Address)
 	if err != nil {
 		utils.LavaFormatError("failed revoking feegrant for gas fees for grantee", err,
-			utils.LogAttr("grantee", providerEntry.Operator),
+			utils.LogAttr("grantee", providerEntry.Address),
 		)
 		return nil
 	}

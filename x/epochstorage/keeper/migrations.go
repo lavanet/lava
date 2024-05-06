@@ -131,9 +131,9 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 	return nil
 }
 
-// Migrate5to6 goes over all existing stake entries and populates the new vault and operator addresses fields with the stake entry address
+// Migrate5to6 goes over all existing stake entries and populates the new vault address field with the stake entry address
 func (m Migrator) Migrate5to6(ctx sdk.Context) error {
-	utils.LavaFormatDebug("migrate: epochstorage to include operator and vault addresses")
+	utils.LavaFormatDebug("migrate: epochstorage to include provider and vault addresses")
 
 	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(types.StakeStorageKeyPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
@@ -154,7 +154,6 @@ func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 			stakeEntryV6 := types.StakeEntry{
 				Stake:             stakeEntryV5.Stake,
 				Address:           stakeEntryV5.Address,
-				Operator:          stakeEntryV5.Address,
 				Vault:             stakeEntryV5.Address,
 				StakeAppliedBlock: stakeEntryV5.StakeAppliedBlock,
 				Chain:             stakeEntryV5.Chain,

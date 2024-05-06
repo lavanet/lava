@@ -211,22 +211,22 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 	}
 }
 
-// TestVaultOperatorIprpcProviderRewardQuery tests that the query works as expected for both operator and vault
-// using both vault and operator should work
-func TestVaultOperatorIprpcProviderRewardQuery(t *testing.T) {
+// TestVaultProviderIprpcProviderRewardQuery tests that the query works as expected for both provider and vault
+// using both vault and provider should work
+func TestVaultProviderIprpcProviderRewardQuery(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(true)
 
 	pAcc, _ := ts.GetAccount(common.PROVIDER, 0)
 	cAcc, _ := ts.GetAccount(common.CONSUMER, 0)
-	operator := pAcc.Addr.String()
+	provider := pAcc.Addr.String()
 	vault := pAcc.GetVaultAddr()
 
-	msg := ts.SendRelay(operator, cAcc, []string{ts.specs[1].Index}, 100)
+	msg := ts.SendRelay(provider, cAcc, []string{ts.specs[1].Index}, 100)
 	_, err := ts.Servers.PairingServer.RelayPayment(ts.GoCtx, &msg)
 	require.NoError(t, err)
 
-	res, err := ts.QueryRewardsIprpcProviderRewardEstimation(operator)
+	res, err := ts.QueryRewardsIprpcProviderRewardEstimation(provider)
 	require.NoError(t, err)
 	require.Len(t, res.SpecFunds, 1)
 

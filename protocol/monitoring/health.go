@@ -267,7 +267,7 @@ func RunHealth(ctx context.Context,
 
 			for _, providerEntry := range response.StakeEntry {
 				providerKey := LavaEntity{
-					Address: providerEntry.Operator,
+					Address: providerEntry.Address,
 					SpecId:  specId,
 				}
 				apiInterfaces := chainIdToApiInterfaces[specId]
@@ -278,7 +278,7 @@ func RunHealth(ctx context.Context,
 					continue
 				}
 				lookupKey := LavaEntity{
-					Address:      providerEntry.Operator,
+					Address:      providerEntry.Address,
 					SpecId:       specId,
 					ApiInterface: apiInterfaces[0],
 				}
@@ -593,7 +593,7 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 			}
 			for _, endpointService := range endpointServices {
 				providerKey := LavaEntity{
-					Address:      providerEntry.Operator,
+					Address:      providerEntry.Address,
 					SpecId:       providerEntry.Chain,
 					ApiInterface: endpointService.ApiInterface,
 				}

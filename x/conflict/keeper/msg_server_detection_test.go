@@ -55,8 +55,8 @@ func (ts *tester) setupForConflict(providersCount int) *tester {
 	ts.consumer = consumer
 
 	for i := 0; i < providersCount; i++ {
-		providerAcct, operator := ts.AddAccount(common.PROVIDER, i, balance)
-		err := ts.StakeProvider(providerAcct.GetVaultAddr(), operator, ts.spec, stake)
+		providerAcct, provider := ts.AddAccount(common.PROVIDER, i, balance)
+		err := ts.StakeProvider(providerAcct.GetVaultAddr(), provider, ts.spec, stake)
 		require.Nil(ts.T, err)
 		ts.providers = append(ts.providers, providerAcct)
 	}

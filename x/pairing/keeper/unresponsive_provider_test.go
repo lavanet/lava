@@ -75,7 +75,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[clientIndex].Addr.String())
 		require.NoError(t, err)
 		providerIndex := rand.Intn(len(pairing.Providers))
-		providerAddress := pairing.Providers[providerIndex].Operator
+		providerAddress := pairing.Providers[providerIndex].Address
 		// NOTE: the following loop contains a random factor in it. We make sure that we pick
 		// a provider in random that is not one of the defined unresponsive providers
 		// If we did, we pick one of the providers in random again and check whether it's
@@ -95,7 +95,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 				break
 			}
 			providerIndex = rand.Intn(len(pairing.Providers))
-			providerAddress = pairing.Providers[providerIndex].Operator
+			providerAddress = pairing.Providers[providerIndex].Address
 		}
 
 		cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex)
@@ -156,8 +156,8 @@ func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 	// find two providers in the pairing
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 	require.NoError(t, err)
-	provider0 := pairing.Providers[0].Operator
-	provider1 := pairing.Providers[1].Operator
+	provider0 := pairing.Providers[0].Address
+	provider1 := pairing.Providers[1].Address
 
 	// get provider1's balance before the stake
 	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1}}
@@ -215,8 +215,8 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 	// find two providers in the pairing
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 	require.NoError(t, err)
-	provider0 := pairing.Providers[0].Operator
-	provider1 := pairing.Providers[1].Operator
+	provider0 := pairing.Providers[0].Address
+	provider1 := pairing.Providers[1].Address
 
 	// create relay requests for provider0 that contain complaints about provider1
 	unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1}}
@@ -308,25 +308,25 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		// find two providers in the pairing
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 		require.NoError(t, err)
-		provider0Operator := pairing.Providers[0].Operator
-		provider1Operator := pairing.Providers[1].Operator
+		provider0Provider := pairing.Providers[0].Address
+		provider1Provider := pairing.Providers[1].Address
 		provider0Vault := sdk.MustAccAddressFromBech32(pairing.Providers[0].Vault)
 
 		// create unresponsive data that includes provider1 being unresponsive
-		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1Operator}}
+		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1Provider}}
 		// create relay requests for provider0 that contain complaints about provider1
 		relayEpoch := ts.BlockHeight()
 		for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 			cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits*10 + uint64(clientIndex)
 
-			relaySession := ts.newRelaySession(provider0Operator, 0, cuSum, relayEpoch, 0)
+			relaySession := ts.newRelaySession(provider0Provider, 0, cuSum, relayEpoch, 0)
 			relaySession.UnresponsiveProviders = unresponsiveProvidersData
 			sig, err := sigs.Sign(clients[clientIndex].SK, *relaySession)
 			relaySession.Sig = sig
 			require.NoError(t, err)
 
 			relayPaymentMessage := types.MsgRelayPayment{
-				Creator: provider0Operator,
+				Creator: provider0Provider,
 				Relays:  lavaslices.Slice(relaySession),
 			}
 
@@ -341,6 +341,6 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		ts.AdvanceEpochs(largerConst)
 
 		// test the unresponsive provider1 hasn't froze
-		ts.checkProviderFreeze(provider1Operator, play.shouldBeFrozen)
+		ts.checkProviderFreeze(provider1Provider, play.shouldBeFrozen)
 	}
 }

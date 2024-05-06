@@ -780,21 +780,21 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	ts.Keepers.Spec.SetSpec(ts.Ctx, ts.spec)
 	ts.AdvanceEpoch()
 
-	// stake minSelfDelegation+1 -> operator staked but frozen
-	providerAcc, operator := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
-	err := ts.StakeProviderExtra(providerAcc.GetVaultAddr(), operator, ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
+	// stake minSelfDelegation+1 -> provider staked but frozen
+	providerAcc, provider := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
+	err := ts.StakeProviderExtra(providerAcc.GetVaultAddr(), provider, ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
 	require.NoError(t, err)
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, operator)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
 	require.Equal(t, minSelfDelegation.Amount.AddRaw(1), stakeEntry.EffectiveStake())
 
 	// try to unfreeze -> should fail
-	_, err = ts.TxPairingUnfreezeProvider(operator, ts.spec.Index)
+	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
 	require.Error(t, err)
 
 	// increase delegation limit of stake entry from 0 to MinStakeProvider + 100
-	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, operator)
+	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	stakeEntry.DelegateLimit = ts.spec.MinStakeProvider.AddAmount(math.NewInt(100))
 	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry)
@@ -803,16 +803,16 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	// add delegator and delegate to provider so its effective stake is MinStakeProvider+MinSelfDelegation+1
 	// provider should still be frozen
 	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(consumer, operator, ts.spec.Index, ts.spec.MinStakeProvider)
+	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.Index, ts.spec.MinStakeProvider)
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegation
-	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, operator)
+	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
 	require.Equal(t, ts.spec.MinStakeProvider.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.EffectiveStake())
 
 	// try to unfreeze -> should succeed
-	_, err = ts.TxPairingUnfreezeProvider(operator, ts.spec.Index)
+	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
 	require.NoError(t, err)
 }
 
@@ -866,18 +866,18 @@ func TestCommisionChange(t *testing.T) {
 	require.Error(t, err)
 }
 
-// TestVaultOperatorNewStakeEntry tests that staking (or "self delegation") is actually the provider's vault
-// delegating to the provider's operator address.
+// TestVaultProviderNewStakeEntry tests that staking (or "self delegation") is actually the provider's vault
+// delegating to the provider's address.
 // For each scenario, we'll check the vault's balance, the stake entry's stake/delegate total fields and the delegations
 // fixation store.
 // Scenarios:
-// 1. stake new entry with operator = vault
-// 2. stake new entry with different addresses for operator and vault
-// 3. stake new entry with operator -> should fail since operator is already registered to a stake entry
-// 4. stake new entry with operator on different chain -> should work
+// 1. stake new entry with provider = vault
+// 2. stake new entry with different addresses for provider and vault
+// 3. stake new entry with provider -> should fail since provider is already registered to a stake entry
+// 4. stake new entry with provider on different chain -> should work
 // 5. stake to an existing entry with vault -> should succeed
-// 6. stake to an existing entry with operator -> should fail
-func TestVaultOperatorNewStakeEntry(t *testing.T) {
+// 6. stake to an existing entry with provider -> should fail
+func TestVaultProviderNewStakeEntry(t *testing.T) {
 	ts := newTester(t)
 
 	p1Acc, _ := ts.AddAccount(common.PROVIDER, 0, testBalance)
@@ -890,23 +890,23 @@ func TestVaultOperatorNewStakeEntry(t *testing.T) {
 	tests := []struct {
 		name     string
 		vault    sdk.AccAddress
-		operator sdk.AccAddress
+		provider sdk.AccAddress
 		spec     spectypes.Spec
 		valid    bool
 	}{
-		{"stake operator = vault", p1Acc.Addr, p1Acc.Addr, ts.spec, true},
-		{"stake operator != vault", p2Acc.Vault.Addr, p2Acc.Addr, ts.spec, true},
-		{"stake existing operator", p1Acc.Vault.Addr, p1Acc.Addr, ts.spec, false},
-		{"stake existing operator different chain", p1Acc.Vault.Addr, p1Acc.Addr, spec1, true},
+		{"stake provider = vault", p1Acc.Addr, p1Acc.Addr, ts.spec, true},
+		{"stake provider != vault", p2Acc.Vault.Addr, p2Acc.Addr, ts.spec, true},
+		{"stake existing provider", p1Acc.Vault.Addr, p1Acc.Addr, ts.spec, false},
+		{"stake existing provider different chain", p1Acc.Vault.Addr, p1Acc.Addr, spec1, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			vaultBefore := ts.GetBalance(tt.vault)
-			operatorBefore := ts.GetBalance(tt.operator)
-			err := ts.StakeProviderExtra(tt.vault.String(), tt.operator.String(), tt.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+			providerBefore := ts.GetBalance(tt.provider)
+			err := ts.StakeProviderExtra(tt.vault.String(), tt.provider.String(), tt.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
 			vaultAfter := ts.GetBalance(tt.vault)
-			operatorAfter := ts.GetBalance(tt.operator)
+			providerAfter := ts.GetBalance(tt.provider)
 
 			ts.AdvanceEpoch()
 
@@ -915,11 +915,11 @@ func TestVaultOperatorNewStakeEntry(t *testing.T) {
 
 				// balance
 				require.Equal(t, vaultBefore, vaultAfter)
-				require.Equal(t, operatorBefore, operatorAfter)
+				require.Equal(t, providerBefore, providerAfter)
 
 				// stake entry
-				_, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.operator.String())
-				require.True(t, found) // should be found because operator is registered in a vaild stake entry
+				_, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.provider.String())
+				require.True(t, found) // should be found because provider is registered in a vaild stake entry
 
 				// delegations
 				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
@@ -930,14 +930,14 @@ func TestVaultOperatorNewStakeEntry(t *testing.T) {
 
 				// balance
 				require.Equal(t, vaultBefore-testStake, vaultAfter)
-				if tt.operator.Equals(tt.vault) {
-					require.Equal(t, operatorBefore-testStake, operatorAfter)
+				if tt.provider.Equals(tt.vault) {
+					require.Equal(t, providerBefore-testStake, providerAfter)
 				} else {
-					require.Equal(t, operatorBefore, operatorAfter)
+					require.Equal(t, providerBefore, providerAfter)
 				}
 
 				// stake entry
-				stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.operator.String())
+				stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.provider.String())
 				require.True(t, found)
 				require.Equal(t, testStake, stakeEntry.Stake.Amount.Int64())
 				require.Equal(t, int64(0), stakeEntry.DelegateTotal.Amount.Int64())
@@ -946,21 +946,21 @@ func TestVaultOperatorNewStakeEntry(t *testing.T) {
 				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 1)
-				require.Equal(t, tt.operator.String(), res.Delegations[0].Provider)
+				require.Equal(t, tt.provider.String(), res.Delegations[0].Provider)
 				require.Equal(t, testStake, res.Delegations[0].Amount.Amount.Int64())
 			}
 		})
 	}
 }
 
-// TestVaultOperatorExistingStakeEntry tests that staking (or "self delegation") to an existing stake entry
-// only works when the creator is the vault and not the operator.
+// TestVaultProviderExistingStakeEntry tests that staking (or "self delegation") to an existing stake entry
+// only works when the creator is the vault and not the provider.
 // For each scenario, we'll check the vault's balance, the stake entry's stake/delegate total fields and the delegations
 // fixation store.
 // Scenarios:
 // 1. stake with vault to an existing stake entry -> should work
-// 2. try with operator -> should fail
-func TestVaultOperatorExistingStakeEntry(t *testing.T) {
+// 2. try with provider -> should fail
+func TestVaultProviderExistingStakeEntry(t *testing.T) {
 	ts := newTester(t)
 
 	p1Acc, _ := ts.AddAccount(common.PROVIDER, 0, testBalance)
@@ -970,22 +970,22 @@ func TestVaultOperatorExistingStakeEntry(t *testing.T) {
 	tests := []struct {
 		name     string
 		vault    sdk.AccAddress
-		operator sdk.AccAddress
+		provider sdk.AccAddress
 		spec     spectypes.Spec
 		valid    bool
 	}{
 		{"stake with vault", p1Acc.Vault.Addr, p1Acc.Addr, ts.spec, true},
-		{"stake with operator", p1Acc.Addr, p1Acc.Addr, ts.spec, false},
+		{"stake with provider", p1Acc.Addr, p1Acc.Addr, ts.spec, false},
 	}
 
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			beforeVault := ts.GetBalance(tt.vault)
-			beforeOperator := ts.GetBalance(tt.operator)
+			beforeProvider := ts.GetBalance(tt.provider)
 			fundsToStake := testStake + (100 * int64(i+1)) // funds to stake. needs to change each iteration for the checks below
-			err := ts.StakeProviderExtra(tt.vault.String(), tt.operator.String(), tt.spec, fundsToStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+			err := ts.StakeProviderExtra(tt.vault.String(), tt.provider.String(), tt.spec, fundsToStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
 			afterVault := ts.GetBalance(tt.vault)
-			afterOperator := ts.GetBalance(tt.operator)
+			afterProvider := ts.GetBalance(tt.provider)
 
 			ts.AdvanceEpoch()
 
@@ -994,11 +994,11 @@ func TestVaultOperatorExistingStakeEntry(t *testing.T) {
 
 				// balance
 				require.Equal(t, beforeVault, afterVault)
-				require.Equal(t, beforeOperator, afterOperator)
+				require.Equal(t, beforeProvider, afterProvider)
 
 				// stake entry
-				_, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.operator.String())
-				require.True(t, found) // should be found because operator is registered in a vaild stake entry
+				_, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.provider.String())
+				require.True(t, found) // should be found because provider is registered in a vaild stake entry
 
 				// delegations
 				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
@@ -1009,14 +1009,14 @@ func TestVaultOperatorExistingStakeEntry(t *testing.T) {
 
 				// balance
 				require.Equal(t, beforeVault-100, afterVault)
-				if tt.operator.Equals(tt.vault) {
-					require.Equal(t, beforeOperator-100, afterOperator)
+				if tt.provider.Equals(tt.vault) {
+					require.Equal(t, beforeProvider-100, afterProvider)
 				} else {
-					require.Equal(t, beforeOperator, afterOperator)
+					require.Equal(t, beforeProvider, afterProvider)
 				}
 
 				// stake entry
-				stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.operator.String())
+				stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, tt.spec.Index, tt.provider.String())
 				require.True(t, found)
 				require.Equal(t, testStake+100, stakeEntry.Stake.Amount.Int64())
 				require.Equal(t, int64(0), stakeEntry.DelegateTotal.Amount.Int64())
@@ -1025,26 +1025,26 @@ func TestVaultOperatorExistingStakeEntry(t *testing.T) {
 				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 1)
-				require.Equal(t, tt.operator.String(), res.Delegations[0].Provider)
+				require.Equal(t, tt.provider.String(), res.Delegations[0].Provider)
 				require.Equal(t, testStake+100, res.Delegations[0].Amount.Amount.Int64())
 			}
 		})
 	}
 }
 
-// TestVaultOperatorModifyStakeEntry tests that the operator can change non-stake related properties of the stake entry
+// TestVaultProviderModifyStakeEntry tests that the provider can change non-stake related properties of the stake entry
 // and the vault address can change anything
 // Scenarios:
-// 1. operator modifies all non-stake related properties -> should work
-// 2. operator modifies all stake related properties -> should fail
+// 1. provider modifies all non-stake related properties -> should work
+// 2. provider modifies all stake related properties -> should fail
 // 3. vault can change anything in the stake entry
-func TestVaultOperatorModifyStakeEntry(t *testing.T) {
+func TestVaultProviderModifyStakeEntry(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0)
 	acc, _ := ts.GetAccount(common.PROVIDER, 0)
 	_, dummy := ts.GetAccount(common.CONSUMER, 0)
 
-	operator := acc.Addr.String()
+	provider := acc.Addr.String()
 	vault := acc.GetVaultAddr()
 	valAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
 
@@ -1058,7 +1058,7 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 		MONIKER
 		DELEGATE_LIMIT
 		DELEGATE_COMMISSION
-		OPERATOR
+		PROVIDER
 	)
 
 	tests := []struct {
@@ -1073,15 +1073,15 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 		{"moniker change vault", vault, MONIKER, true},
 		{"delegate total change vault", vault, DELEGATE_LIMIT, true},
 		{"delegate commission change vault", vault, DELEGATE_COMMISSION, true},
-		{"operator change vault", vault, OPERATOR, true},
+		{"provider change vault", vault, PROVIDER, true},
 
-		// operator can't change stake/delegation related properties
-		{"stake change operator", operator, STAKE, false},
-		{"endpoints_geo change operator", operator, ENDPOINTS_GEOLOCATION, true},
-		{"moniker change operator", operator, MONIKER, true},
-		{"delegate total change operator", operator, DELEGATE_LIMIT, false},
-		{"delegate commission change operator", operator, DELEGATE_COMMISSION, false},
-		{"operator change operator", operator, OPERATOR, true},
+		// provider can't change stake/delegation related properties
+		{"stake change provider", provider, STAKE, false},
+		{"endpoints_geo change provider", provider, ENDPOINTS_GEOLOCATION, true},
+		{"moniker change provider", provider, MONIKER, true},
+		{"delegate total change provider", provider, DELEGATE_LIMIT, false},
+		{"delegate commission change provider", provider, DELEGATE_COMMISSION, false},
+		{"provider change provider", provider, PROVIDER, true},
 	}
 
 	for _, tt := range tests {
@@ -1096,7 +1096,7 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 				Moniker:            stakeEntry.Moniker,
 				DelegateLimit:      stakeEntry.DelegateLimit,
 				DelegateCommission: stakeEntry.DelegateCommission,
-				Operator:           stakeEntry.Operator,
+				Address:            stakeEntry.Address,
 			}
 
 			switch tt.stakeChange {
@@ -1111,13 +1111,13 @@ func TestVaultOperatorModifyStakeEntry(t *testing.T) {
 				msg.DelegateLimit = msg.DelegateLimit.AddAmount(math.NewInt(100))
 			case DELEGATE_COMMISSION:
 				msg.DelegateCommission -= 10
-			case OPERATOR:
-				operator = dummy
+			case PROVIDER:
+				provider = dummy
 			}
 
 			_, err := ts.TxPairingStakeProviderFull(
 				msg.Creator,
-				msg.Operator,
+				msg.Address,
 				msg.ChainID,
 				msg.Amount,
 				msg.Endpoints,
