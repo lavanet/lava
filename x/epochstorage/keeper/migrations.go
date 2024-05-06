@@ -131,7 +131,7 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 	return nil
 }
 
-// Migrate5to6 goes over all existing stake entries and populates the new vault and provider addresses fields with the stake entry address
+// Migrate5to6 goes over all existing stake entries and populates the new vault address field with the stake entry address
 func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 	utils.LavaFormatDebug("migrate: epochstorage to include provider and vault addresses")
 

@@ -433,7 +433,7 @@ func TestQueryDelegatorRewards(t *testing.T) {
 
 // TestVaultProviderDelegatorRewardsQuery works as expected for a vault and provider addresses
 // When using the delegator-rewards query, it should only accept the vault as a delegator
-// and the provider as the provider (as done while staking a new provider)
+// and the provider as the delegation's provider (as done while staking a new provider)
 func TestVaultProviderDelegatorRewardsQuery(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 providers

@@ -867,7 +867,7 @@ func TestCommisionChange(t *testing.T) {
 }
 
 // TestVaultProviderNewStakeEntry tests that staking (or "self delegation") is actually the provider's vault
-// delegating to the provider's provider address.
+// delegating to the provider's address.
 // For each scenario, we'll check the vault's balance, the stake entry's stake/delegate total fields and the delegations
 // fixation store.
 // Scenarios:
@@ -1058,7 +1058,7 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		MONIKER
 		DELEGATE_LIMIT
 		DELEGATE_COMMISSION
-		OPERATOR
+		PROVIDER
 	)
 
 	tests := []struct {
@@ -1073,7 +1073,7 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		{"moniker change vault", vault, MONIKER, true},
 		{"delegate total change vault", vault, DELEGATE_LIMIT, true},
 		{"delegate commission change vault", vault, DELEGATE_COMMISSION, true},
-		{"provider change vault", vault, OPERATOR, true},
+		{"provider change vault", vault, PROVIDER, true},
 
 		// provider can't change stake/delegation related properties
 		{"stake change provider", provider, STAKE, false},
@@ -1081,7 +1081,7 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		{"moniker change provider", provider, MONIKER, true},
 		{"delegate total change provider", provider, DELEGATE_LIMIT, false},
 		{"delegate commission change provider", provider, DELEGATE_COMMISSION, false},
-		{"provider change provider", provider, OPERATOR, true},
+		{"provider change provider", provider, PROVIDER, true},
 	}
 
 	for _, tt := range tests {
@@ -1111,7 +1111,7 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 				msg.DelegateLimit = msg.DelegateLimit.AddAmount(math.NewInt(100))
 			case DELEGATE_COMMISSION:
 				msg.DelegateCommission -= 10
-			case OPERATOR:
+			case PROVIDER:
 				provider = dummy
 			}
 
