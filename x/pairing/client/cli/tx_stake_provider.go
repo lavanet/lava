@@ -16,6 +16,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -398,6 +399,57 @@ func getValidator(clientCtx client.Context, provider string) string {
 	return validatorBiggest.OperatorAddress
 }
 
+// CreateGrantFeeMsg cosntructs a feegrant GrantAllowance msg for specific TXs to allow the operator use the vault's funds for gas fees
 func CreateGrantFeeMsg(granter string, grantee string) *feegrant.MsgGrantAllowance {
-	return nil
+	if grantee == granter {
+		// no need to grant allowance if the granter and grantee are the same (vault = operator)
+		return nil
+	}
+	granterAcc, err := sdk.AccAddressFromBech32(granter)
+	if err != nil {
+		utils.LavaFormatError("failed granting feegrant for gas fees for granter", err,
+			utils.LogAttr("granter", granter),
+		)
+		return nil
+	}
+
+	granteeAcc, err := sdk.AccAddressFromBech32(grantee)
+	if err != nil {
+		utils.LavaFormatError("failed granting feegrant for gas fees for grantee", err,
+			utils.LogAttr("grantee", grantee),
+		)
+		return nil
+	}
+
+	grant, err := feegrant.NewAllowedMsgAllowance(&feegrant.BasicAllowance{}, []string{
+		// pairing module TXs
+		sdk.MsgTypeURL(&types.MsgRelayPayment{}),
+		sdk.MsgTypeURL(&types.MsgStakeProvider{}), // for modify-provider TX
+		sdk.MsgTypeURL(&types.MsgFreezeProvider{}),
+		sdk.MsgTypeURL(&types.MsgUnfreezeProvider{}),
+
+		// conflict module TXs
+		sdk.MsgTypeURL(&conflicttypes.MsgDetection{}),
+		sdk.MsgTypeURL(&conflicttypes.MsgConflictVoteCommit{}),
+		sdk.MsgTypeURL(&conflicttypes.MsgConflictVoteReveal{}),
+	})
+	if err != nil {
+		utils.LavaFormatError("failed granting feegrant for gas fees", err,
+			utils.LogAttr("granter", granter),
+			utils.LogAttr("grantee", grantee),
+		)
+		return nil
+	}
+
+	msg, err := feegrant.NewMsgGrantAllowance(grant, granterAcc, granteeAcc)
+	if err != nil {
+		utils.LavaFormatError("failed granting feegrant for gas fees", err,
+			utils.LogAttr("granter", granter),
+			utils.LogAttr("grantee", grantee),
+			utils.LogAttr("grant", grant.String()),
+		)
+		return nil
+	}
+
+	return msg
 }
