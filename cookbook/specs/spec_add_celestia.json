@@ -1,12 +1,15 @@
 {
     "proposal": {
-        "title": "Add Specs: IBC",
-        "description": "Adding default Inter Blockchain Communication (IBC) specification",
+        "title": "Add Specs: Celestia",
+        "description": "Adding new specification support for relaying Celestia data on Lava",
         "specs": [
             {
-                "index": "IBC",
-                "name": "ibc",
-                "enabled": false,
+                "index": "CELESTIA",
+                "name": "celestia mainnet",
+                "enabled": true,
+                "imports": [
+                    "COSMOSSDKFULL"
+                ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
                 "block_distance_for_finalized_data": 0,
@@ -29,43 +32,7 @@
                         },
                         "apis": [
                             {
-                                "name": "/ibc/apps/interchain_accounts/controller/v1/params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/apps/interchain_accounts/host/v1/params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/apps/router/v1/params",
+                                "name": "/blob/v1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -83,7 +50,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ibc/apps/transfer/v1/channels/{channel_id}/ports/{port_id}/escrow_address",
+                                "name": "/qgb/v1/attestations/requests/{nonce}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -101,12 +68,14 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ibc/apps/transfer/v1/denom_hashes/{trace}",
+                                "name": "/qgb/v1/data_commitment/range/height",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "",
+                                        "="
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "default_value": "latest",
+                                    "parser_func": "PARSE_DICTIONARY"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -119,403 +88,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ibc/apps/transfer/v1/denom_traces",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/apps/transfer/v1/params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/client/v1/params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/client_state",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/next_sequence_send",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acknowledgements",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_acks/{sequence}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_ack_sequences}/unreceived_acks",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{packet_commitment_sequences}/unreceived_packets",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_commitments/{sequence}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/channels/{channel_id}/ports/{port_id}/packet_receipts/{sequence}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/channel/v1/connections/{connection}/channels",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/client/v1/client_states",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/client/v1/client_states/{client_id}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/client/v1/client_status/{client_id}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/client/v1/consensus_states/{client_id}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/client/v1/consensus_states/{client_id}/heights",
+                                "name": "/qgb/v1/evm_address",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -533,25 +106,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ibc/core/client/v1/consensus_states/{client_id}/revision/{revision_number}/height/{revision_height}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/client/v1/params",
+                                "name": "/qgb/v1/attestations/nonce/earliest",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -569,133 +124,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ibc/core/client/v1/upgraded_client_states",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/client/v1/upgraded_consensus_states",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/connection/v1/client_connections/{client_id}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/connection/v1/connections",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/connection/v1/connections/{connection_id}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/connection/v1/connections/{connection_id}/client_state",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/connection/v1/connections/{connection_id}/consensus_state/revision/{revision_number}/height/{revision_height}",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "/ibc/core/connection/v1/params",
+                                "name": "/qgb/v1/attestations/nonce/latest",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -713,7 +142,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ibc/apps/transfer/v1/denom_hashes/{trace=**}",
+                                "name": "/qgb/v1/data_commitment/latest",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -731,7 +160,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ibc/apps/interchain_accounts/controller/v1/owners/{owner}/connections/{connection_id}",
+                                "name": "/qgb/v1/unbonding",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -749,7 +178,25 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/ibc/apps/transfer/v1/denoms/{denom=**}/total_escrow",
+                                "name": "/qgb/v1/valset/request/before/{nonce}",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "/qgb/v1/params",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -769,7 +216,34 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": []
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "celestia"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 5760
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 5680
+                                }
+                            }
+                        ]
                     },
                     {
                         "enabled": true,
@@ -781,97 +255,7 @@
                         },
                         "apis": [
                             {
-                                "name": "ibc.applications.interchain_accounts.controller.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.applications.interchain_accounts.host.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.applications.transfer.v1.Query/DenomHash",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.applications.transfer.v1.Query/DenomTrace",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.applications.transfer.v1.Query/DenomTraces",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.applications.transfer.v1.Query/EscrowAddress",
+                                "name": "celestia.qgb.v1.Query/EVMAddress",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -889,349 +273,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "ibc.applications.transfer.v1.Query/Params",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/Channel",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/ChannelClientState",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/ChannelConsensusState",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/Channels",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/ConnectionChannels",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/NextSequenceReceive",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/PacketAcknowledgement",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/PacketAcknowledgements",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/PacketCommitment",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/PacketCommitments",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/PacketReceipt",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/UnreceivedAcks",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.channel.v1.Query/UnreceivedPackets",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.client.v1.Query/ClientParams",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.client.v1.Query/ClientState",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.client.v1.Query/ClientStates",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.client.v1.Query/ClientStatus",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.client.v1.Query/ConsensusState",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.client.v1.Query/ConsensusStateHeights",
+                                "name": "celestia.qgb.v1.Query/LatestUnbondingHeight",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1249,151 +291,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "ibc.core.client.v1.Query/ConsensusStates",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.client.v1.Query/UpgradedClientState",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.client.v1.Query/UpgradedConsensusState",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.connection.v1.Query/ClientConnections",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.connection.v1.Query/Connection",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.connection.v1.Query/ConnectionClientState",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.connection.v1.Query/ConnectionConsensusState",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.core.connection.v1.Query/Connections",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        ""
-                                    ],
-                                    "parser_func": "EMPTY"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                            {
-                                "name": "ibc.applications.interchain_accounts.controller.v1.Query/InterchainAccount",
+                                "name": "celestia.qgb.v1.Query/LatestAttestationNonce",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1411,7 +309,27 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "ibc.applications.transfer.v1.Query/TotalEscrowForDenom",
+                                "name": "celestia.qgb.v1.Query/DataCommitmentRangeForHeight",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "height",
+                                        ":"
+                                    ],
+                                    "default_value": "latest",
+                                    "parser_func": "PARSE_DICTIONARY"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "celestia.qgb.v1.Query/AttestationRequestByNonce",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1429,7 +347,133 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "ibc.core.connection.v1.Query/ConnectionParams",
+                                "name": "celestia.qgb.v1.Query/EarliestAttestationNonce",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "celestia.blob.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "celestia.qgb.v1.Query/LatestValsetRequestBeforeNonce",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "celestia.qgb.v1.Query/Params",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "celestia.qgb.v1.Query/LatestDataCommitment",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "celestia.mint.v1.Query/AnnualProvisions",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "celestia.mint.v1.Query/GenesisTime",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "celestia.mint.v1.Query/InflationRate",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
@@ -1449,7 +493,968 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": []
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "celestia"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 5760
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 5680
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "celestia"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "latest_distance": 5760
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "1"
+                                    }
+                                ]
+                            }
+                        ],
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 5680
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [
+                            {
+                                "name": "blob.Get",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "blob.GetAll",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "blob.GetProof",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "blob.Included",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "blob.Submit",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "das.SamplingStats",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "das.WaitCatchUp",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "fraud.Get",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "header.GetByHash",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "header.GetByHeight",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "header.GetRangeByHeight",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "1"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "header.LocalHead",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "header.NetworkHead",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "header.SyncState",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "header.SyncWait",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "header.WaitForHeight",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "0"
+                                    ],
+                                    "parser_func": "PARSE_BY_ARG"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "node.Ready",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "share.GetEDS",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "share.GetShare",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "share.GetSharesByNamespace",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "share.SharesAvailable",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.BalanceForAddress",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.BeginRedelegate",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.CancelUnbondingDelegation",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.Delegate",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.QueryDelegation",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.QueryRedelegations",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.QueryUnbonding",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": true,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 0
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.SubmitPayForBlob",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.SubmitTx",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.Transfer",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            },
+                            {
+                                "name": "state.Undelegate",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1
+                                },
+                                "extra_compute_units": 0
+                            }
+                        ],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"header.LocalHead\",\"params\":[],\"id\":1}",
+                                "function_tag": "GET_BLOCKNUM",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "header",
+                                        "height"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "api_name": "header.LocalHead"
+                            },
+                            {
+                                "function_tag": "GET_BLOCK_BY_NUM",
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"header.GetByHeight\",\"params\":[%d],\"id\":1}",
+                                "result_parsing": {
+                                    "parser_arg": [
+                                        "0",
+                                        "commit",
+                                        "block_id",
+                                        "hash"
+                                    ],
+                                    "parser_func": "PARSE_CANONICAL"
+                                },
+                                "api_name": "header.GetByHeight"
+                            }
+                        ],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"header.LocalHead\",\"params\":[],\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "header",
+                                            "chain_id"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "header.LocalHead"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "celestia"
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_tag": "GET_BLOCK_BY_NUM"
+                                },
+                                "values": [
+                                    {
+                                        "latest_distance": 5760
+                                    }
+                                ]
+                            }
+                        ],
+
+                        
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 5680
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "index": "CELESTIATM",
+                "name": "celestia mocha testnet",
+                "enabled": true,
+                "imports": [
+                    "CELESTIA"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 6500,
+                "allowed_block_lag_for_qos_sync": 2,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "47500000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "mocha-4"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "mocha-4"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "mocha-4"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "mocha-4"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                    
+                ]
+            },
+            {
+                "index": "CELESTIATA",
+                "name": "celestia arabica testnet",
+                "enabled": true,
+                "imports": [
+                    "CELESTIA"
+                ],
+                "reliability_threshold": 268435455,
+                "data_reliability_enabled": true,
+                "block_distance_for_finalized_data": 0,
+                "blocks_in_finalization_proof": 1,
+                "average_block_time": 6500,
+                "allowed_block_lag_for_qos_sync": 2,
+                "shares": 1,
+                "min_stake_provider": {
+                    "denom": "ulava",
+                    "amount": "47500000000"
+                },
+                "api_collections": [
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "rest",
+                            "internal_path": "",
+                            "type": "GET",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "arabica-11"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "grpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "arabica-11"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "tendermintrpc",
+                            "internal_path": "",
+                            "type": "",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "arabica-11"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "enabled": true,
+                        "collection_data": {
+                            "api_interface": "jsonrpc",
+                            "internal_path": "",
+                            "type": "POST",
+                            "add_on": ""
+                        },
+                        "apis": [],
+                        "headers": [],
+                        "inheritance_apis": [],
+                        "parse_directives": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "values": [
+                                    {
+                                        "expected_value": "arabica-11"
+                                    }
+                                ]
+                            }
+                        ]
                     }
                 ]
             }
