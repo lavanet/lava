@@ -355,7 +355,7 @@ export class StateChainQuery {
 
         const stakeEntry = new StakeEntry();
         stakeEntry.setEndpointsList([pairingEndpoint]);
-        stakeEntry.setOperator(provider.publicAddress);
+        stakeEntry.setAddress(provider.publicAddress);
 
         pairing.push(stakeEntry);
 
