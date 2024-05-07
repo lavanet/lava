@@ -4,56 +4,66 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/pairing/types"
+	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/spf13/cobra"
+)
+
+const (
+	FlagGeolocation = "geolocation"
+	FlagCluster     = "cluster"
 )
 
 func CmdProviderPairingChance() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "effective-policy [spec-id] [consumer/project]",
-		Short: "Query to show the effective policy of a consumer taking into account plan policy and subscription policy, consumer/project can also be defined as --from walletName",
-		Args:  cobra.RangeArgs(1, 2),
+		Use:   "provider-pairing-chance [provider] [chain_id] --geolocation <geolocation> (optional) --cluster <cluster> (optional)",
+		Short: "Query to show the chance of a specific provider to be picked in the pairing process to serve consumers on a specific chain. You can optionally specify geolocation and consumer cluster (else, the query will calculate the average among all geolocations/clusters).",
+		Example: `
+		lavad q pairing provider-pairing-chance alice ETH1
+		lavad q pairing provider-pairing-chance alice ETH1 --geolocation "1"
+		lavad q pairing provider-pairing-chance alice ETH1 --geolocation "AS" --cluster "free"`,
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			specID := args[0]
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
-			var address string
-			if len(args) > 1 {
-				address, err = utils.ParseCLIAddress(clientCtx, args[1])
+
+			provider, err := utils.ParseCLIAddress(clientCtx, args[0])
+			if err != nil {
+				return err
+			}
+			chainID := args[1]
+
+			geo := planstypes.Geolocation_value["GL"]
+			if cmd.Flags().Lookup(FlagGeolocation).Changed {
+				geoStr, err := cmd.Flags().GetString(FlagGeolocation)
 				if err != nil {
 					return err
 				}
-			} else {
-				clientCtxForTx, err := client.GetClientQueryContext(cmd)
+				geo, err = planstypes.ParseGeoEnum(geoStr)
 				if err != nil {
 					return err
 				}
-				keyName, err := sigs.GetKeyName(clientCtxForTx)
-				if err != nil {
-					utils.LavaFormatFatal("failed getting key name from clientCtx", err)
-				}
-				clientKey, err := clientCtxForTx.Keyring.Key(keyName)
-				if err != nil {
-					return err
-				}
-				addressAccount, err := clientKey.GetAddress()
+			}
+
+			cluster := ""
+			if cmd.Flags().Lookup(FlagCluster).Changed {
+				cluster, err = cmd.Flags().GetString(FlagCluster)
 				if err != nil {
 					return err
 				}
-				address = addressAccount.String()
+			}
+
+			params := &types.QueryProviderPairingChanceRequest{
+				Provider:    provider,
+				ChainID:     chainID,
+				Geolocation: geo,
+				Cluster:     cluster,
 			}
 
 			queryClient := types.NewQueryClient(clientCtx)
-
-			params := &types.QueryEffectivePolicyRequest{
-				Consumer: address,
-				SpecID:   specID,
-			}
-
-			res, err := queryClient.EffectivePolicy(cmd.Context(), params)
+			res, err := queryClient.ProviderPairingChance(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -62,6 +72,8 @@ func CmdProviderPairingChance() *cobra.Command {
 		},
 	}
 	cmd.Flags().String(flags.FlagFrom, "", "wallet name or address of the developer to query for, to be used instead of [consumer/project]")
+	cmd.Flags().String(FlagGeolocation, "GL", "geolocation to check pairing chance (default: global)")
+	cmd.Flags().String(FlagCluster, "", "cluster to check pairing chance (default: empty)")
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
