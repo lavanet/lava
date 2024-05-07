@@ -369,7 +369,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
 				break
 			}
-			dappID, ok := websocketConn.Locals("dappId").(string)
+			dappID, ok := websocketConn.Locals("dapp-id").(string)
 			if !ok {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 			}
