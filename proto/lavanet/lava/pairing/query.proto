@@ -29,6 +29,11 @@ service Query {
 		option (google.api.http).get = "/lavanet/lava/pairing/providers/{chainID}";
 	}
 
+  // Queries a Provider item.
+  	rpc Provider(QueryProviderRequest) returns (QueryProviderResponse) {
+		option (google.api.http).get = "/lavanet/lava/pairing/provider/{address}/{chainID}";
+	}
+
 // Queries a list of GetPairing items.
 	rpc GetPairing(QueryGetPairingRequest) returns (QueryGetPairingResponse) {
 		option (google.api.http).get = "/lavanet/lava/pairing/get_pairing/{chainID}/{client}";
@@ -100,6 +105,15 @@ message QueryProvidersRequest {
 message QueryProvidersResponse {
   repeated lavanet.lava.epochstorage.StakeEntry stakeEntry = 1 [(gogoproto.nullable) = false];
   reserved 2;  
+}
+
+message QueryProviderRequest {
+	string address = 1;
+	string chainID = 2;
+}
+  
+message QueryProviderResponse {
+	lavanet.lava.epochstorage.StakeEntry stakeEntry = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryGetPairingRequest {

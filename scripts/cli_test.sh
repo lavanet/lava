@@ -145,6 +145,7 @@ trace lavad q pairing effective-policy ETH1 $(lavad keys show alice -a) >/dev/nu
 trace lavad q pairing get-pairing STRK $(lavad keys show alice -a) >/dev/null
 trace lavad q pairing provider-epoch-cu $(lavad keys show servicer1) >/dev/null
 trace lavad q pairing providers STRK >/dev/null
+trace lavad q pairing provider $(lavad keys show servicer1 -a) STRK >/dev/null
 trace lavad q pairing sdk-pairing STRK $(lavad keys show alice -a) >/dev/null
 trace lavad q pairing provider-monthly-payout $(lavad keys show servicer1 -a) >/dev/null
 trace lavad q pairing subscription-monthly-payout $(lavad keys show user1 -a) >/dev/null

@@ -813,6 +813,15 @@ func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingty
 	return ts.Keepers.Pairing.Providers(ts.GoCtx, msg)
 }
 
+// QueryPairingProvider: implement 'q pairing provider'
+func (ts *Tester) QueryPairingProvider(address string, chainID string) (*pairingtypes.QueryProviderResponse, error) {
+	msg := &pairingtypes.QueryProviderRequest{
+		Address: address,
+		ChainID: chainID,
+	}
+	return ts.Keepers.Pairing.Provider(ts.GoCtx, msg)
+}
+
 // QueryPairingVerifyPairing implements 'q pairing verfy-pairing'
 func (ts *Tester) QueryPairingVerifyPairing(chainID, client, provider string, block uint64) (*pairingtypes.QueryVerifyPairingResponse, error) {
 	msg := &pairingtypes.QueryVerifyPairingRequest{
