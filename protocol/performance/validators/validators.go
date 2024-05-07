@@ -130,7 +130,7 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 			}
 		}
 		if valAddr == "" {
-			return retInfo, utils.LavaFormatError("failed to match a validator with regex", err, utils.LogAttr("regex", valAddr))
+			return retInfo, utils.LavaFormatError("failed to match a validator with regex", err, utils.LogAttr("regex", re.String()))
 		}
 		utils.LavaFormatInfo("found validator moniker", utils.LogAttr("moniker", foundMoniker), utils.LogAttr("address", valAddr))
 	}
