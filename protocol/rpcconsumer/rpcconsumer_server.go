@@ -303,7 +303,8 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	}
 	// Handle Data Reliability
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
-	if enabled {
+	// check if data reliability is enabled and relay processor allows us to perform data reliability
+	if enabled && !relayProcessor.getSkipDataReliability() {
 		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
 		// as data reliability happens in a go routine it will continue while the response returns.
 		guid, found := utils.GetUniqueIdentifier(ctx)
@@ -551,14 +552,21 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
-			// if we have no providers for a specific addon or extension, return an indicative error
-			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
+			err = utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
 		}
 		return err
 	}
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
+		// in case we need to remove extensions from relay request data so the providers will get a normal relay.
+		if sessionInfo.RemoveExtensions {
+			if len(sessions) > 1 {
+				utils.LavaFormatError("Should not have more than one session when using RemoveExtensions", nil, utils.LogAttr("sessions", sessions))
+			}
+			relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling extensions.
+			relayRequestData.Extensions = []string{}
+		}
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			// add ticker launch metrics
