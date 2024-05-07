@@ -161,6 +161,12 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		response.relayResult.Finalized = false // shut down data reliability
 		// }
 	}
+
+	if chainlib.IsSubscription(rp.chainMessage) {
+		rp.successResults = append(rp.successResults, response.relayResult)
+		return
+	}
+
 	if response.relayResult.Reply == nil {
 		utils.LavaFormatError("got to setValidResponse with nil Reply",
 			response.err,
