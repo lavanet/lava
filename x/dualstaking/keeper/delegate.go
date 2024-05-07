@@ -184,6 +184,11 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		return nil
 	}
 
+	if provider != stakeEntry.Address {
+		// this means provider = vault address, this is wrong. Should be the stake entry's address
+		return epochstoragetypes.ErrProviderNotStaked
+	}
+
 	if delegator == stakeEntry.Vault {
 		if increase {
 			stakeEntry.Stake = stakeEntry.Stake.Add(amount)
