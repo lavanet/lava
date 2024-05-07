@@ -157,6 +157,11 @@ func (jbm *JsonrpcBatchMessage) GetBatch() []rpcclient.BatchElemWithId {
 	return jbm.batch
 }
 
+func (jbm JsonrpcBatchMessage) GetParams() interface{} {
+	utils.LavaFormatWarning("Someone called GetParams() on a batch message, which does not make sense", nil)
+	return [][]byte{}
+}
+
 func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {
 	batch := make([]rpcclient.BatchElemWithId, len(msgs))
 	for idx, msg := range msgs {
