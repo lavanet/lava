@@ -353,11 +353,10 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders U
 			var errOnRetry error
 			sessionWithProviderMap, errOnRetry = csm.tryGetConsumerSessionWithProviderFromBlockedProviderList(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, usedProviders)
 			if errOnRetry != nil {
-				if PairingListEmptyError.Is(errOnRetry) && (addon != "" || len(extensionNames) > 0) {
+				if PairingListEmptyError.Is(errOnRetry) && (len(extensionNames) > 0) {
 					var errGetRegularProvider error
-					emptyAddon := ""
 					emptyExtensionNames := []string{}
-					sessionWithProviderMap, errGetRegularProvider = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, emptyAddon, emptyExtensionNames, stateful, virtualEpoch)
+					sessionWithProviderMap, errGetRegularProvider = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, emptyExtensionNames, stateful, virtualEpoch)
 					if errGetRegularProvider != nil {
 						return nil, err // return original error (getValidConsumerSessionsWithProvider)
 					}
@@ -368,7 +367,7 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders U
 				}
 			}
 			for _, session := range sessionWithProviderMap {
-				session.RemoveAddonsAndExtensions = true
+				session.RemoveExtensions = true
 			}
 		} else {
 			return nil, err
@@ -419,7 +418,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			// we can get here if we wanted 3 archive and got 2 only because one couldn't connect,
 			// so we tried getting more sessions and got a regular provider due to no pairings available.
 			// in that case just return the current sessions that we do have.
-			if sessionWithProvider.RemoveAddonsAndExtensions && len(sessions) > 1 {
+			if sessionWithProvider.RemoveExtensions && len(sessions) > 1 {
 				utils.LavaFormatDebug("Too many sessions when using RemoveAddonAndExtensions session", utils.LogAttr("sessions", sessions), utils.LogAttr("wanted_to_add", sessionWithProvider))
 				// in that case we just return the sessions we already have.
 				return sessions, nil
@@ -516,11 +515,11 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 
 				// If no error, add provider session map
 				sessionInfo := &SessionInfo{
-					StakeSize:                consumerSessionsWithProvider.getProviderStakeSize(),
-					Session:                  consumerSession,
-					Epoch:                    sessionEpoch,
-					ReportedProviders:        reportedProviders,
-					RemoveAddonAndExtensions: sessionWithProvider.RemoveAddonsAndExtensions,
+					StakeSize:         consumerSessionsWithProvider.getProviderStakeSize(),
+					Session:           consumerSession,
+					Epoch:             sessionEpoch,
+					ReportedProviders: reportedProviders,
+					RemoveExtensions:  sessionWithProvider.RemoveExtensions,
 				}
 
 				// adding qos summery for error parsing.
