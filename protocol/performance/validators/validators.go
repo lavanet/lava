@@ -75,12 +75,12 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 	}
 	slashingQueryClient := slashingtypes.NewQueryClient(clientCtx)
 	timeoutCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	_, err = slashingQueryClient.Params(timeoutCtx, &slashingtypes.QueryParamsRequest{})
+	params, err := slashingQueryClient.Params(timeoutCtx, &slashingtypes.QueryParamsRequest{})
 	cancel()
 	if err != nil {
 		return retInfo, utils.LavaFormatError("invalid slashing params query", err)
 	}
-	jumpBlocks := int64(3500)
+	jumpBlocks := params.Params.SignedBlocksWindow
 	utils.LavaFormatInfo("jump blocks", utils.LogAttr("blocks", jumpBlocks))
 	timeoutCtx, cancel = context.WithTimeout(ctx, 5*time.Second)
 	signingInfos, err := slashingQueryClient.SigningInfos(timeoutCtx, &slashingtypes.QuerySigningInfosRequest{})
