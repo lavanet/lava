@@ -48,6 +48,7 @@ type UsedProvidersInf interface {
 	AddUsed(ConsumerSessionsMap, error)
 	GetUnwantedProvidersToSend() map[string]struct{}
 	AddUnwantedAddresses(address string)
+	CurrentlyUsed() int
 }
 
 type SessionInfo struct {
