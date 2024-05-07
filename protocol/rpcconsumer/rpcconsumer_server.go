@@ -551,17 +551,20 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	usedProviders := relayProcessor.GetUsedProviders()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
+		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
+			err = utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
+		}
 		return err
 	}
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
-		// in case we need to remove addons and extensions from relay request data so the providers will get a normal relay.
+		// in case we need to remove extensions from relay request data so the providers will get a normal relay.
 		if sessionInfo.RemoveExtensions {
 			if len(sessions) > 1 {
-				utils.LavaFormatError("Should not have more than one session when using RemoveAddonAndExtensions", nil, utils.LogAttr("sessions", sessions))
+				utils.LavaFormatError("Should not have more than one session when using RemoveExtensions", nil, utils.LogAttr("sessions", sessions))
 			}
-			relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling addons and extensions.
+			relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling extensions.
 			relayRequestData.Extensions = []string{}
 		}
 		// Launch a separate goroutine for each session
