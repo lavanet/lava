@@ -48,6 +48,7 @@ type UsedProvidersInf interface {
 	AddUsed(ConsumerSessionsMap, error)
 	GetUnwantedProvidersToSend() map[string]struct{}
 	AddUnwantedAddresses(address string)
+	CurrentlyUsed() int
 }
 
 type SessionInfo struct {
@@ -56,6 +57,7 @@ type SessionInfo struct {
 	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
+	RemoveExtensions  bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
 type ConsumerSessionsMap map[string]*SessionInfo
@@ -105,6 +107,7 @@ type Endpoint struct {
 type SessionWithProvider struct {
 	SessionsWithProvider *ConsumerSessionsWithProvider
 	CurrentEpoch         uint64
+	RemoveExtensions     bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
 type SessionWithProviderMap map[string]*SessionWithProvider

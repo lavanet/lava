@@ -88,6 +88,18 @@ func TestHappyFlow(t *testing.T) {
 	}
 }
 
+func TestExtensionDoesNotExistOnPairingList(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	require.NoError(t, err)
+	ext := []*spectypes.Extension{{Name: "test_non_existing_ex", Rule: &spectypes.Rule{Block: 555}, CuMultiplier: 5}}
+	_, err = csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", ext, common.NO_STATE, 0) // get a session
+	// if we got a session successfully we should get no error.
+	require.NoError(t, err)
+}
+
 func getDelayedAddress() string {
 	delayedServerAddress := "127.0.0.1:3335"
 	// because grpcListener is random we might have overlap. in that case just change the port.
