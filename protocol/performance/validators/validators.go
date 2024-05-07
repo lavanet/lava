@@ -30,6 +30,7 @@ import (
 
 const (
 	validatorMonikerFlagName = "regex"
+	exactFlagName            = "exact"
 	outputFileFlagName       = "output-file"
 )
 
@@ -56,7 +57,7 @@ func extractValcons(codec codec.Codec, validator stakingtypes.Validator, hrp str
 	return valcons, nil
 }
 
-func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, valAddr string, regex bool, blocks int64, fromBlock int64) (retInfo RetInfo, err error) {
+func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, valAddr string, regex bool, exact bool, blocks int64, fromBlock int64) (retInfo RetInfo, err error) {
 	retInfo = RetInfo{}
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
@@ -95,7 +96,7 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 	}
 	valCons := ""
 	stakingQueryClient := stakingtypes.NewQueryClient(clientCtx)
-	if regex {
+	if regex || exact {
 		timeoutCtx, cancel = context.WithTimeout(ctx, 60*time.Second)
 		allValidators, err := stakingQueryClient.Validators(timeoutCtx, &stakingtypes.QueryValidatorsRequest{
 			Pagination: &query.PageRequest{
@@ -117,7 +118,7 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 		valAddr := ""
 		foundMoniker := ""
 		for _, validator := range allValidators.GetValidators() {
-			if re.MatchString(validator.Description.Moniker) || re2.MatchString(validator.Description.Moniker) {
+			if (exact && validator.Description.Moniker == valAddr) || (!exact && (re.MatchString(validator.Description.Moniker) || re2.MatchString(validator.Description.Moniker))) {
 				foundMoniker = validator.Description.Moniker
 				valAddr = validator.OperatorAddress
 				valCons, err = extractValcons(clientCtx.Codec, validator, hrp)
@@ -254,13 +255,14 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 			}
 
 			regex := viper.GetBool(validatorMonikerFlagName)
+			exact := viper.GetBool(exactFlagName)
 			outputfile := viper.GetString(outputFileFlagName)
 			utils.SetGlobalLoggingLevel(logLevel)
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.InitRandomSeed()
 			valsData := []ValsData{}
 			for _, address := range valAddresss {
-				retInfo, err := checkValidatorPerformance(ctx, clientCtx, address, regex, blocks, fromBlock)
+				retInfo, err := checkValidatorPerformance(ctx, clientCtx, address, regex, exact, blocks, fromBlock)
 				if err == nil {
 					fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n🔹unbonded: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n🔹tokens: %s\n🔹power: %s\n\n", retInfo.checks, retInfo.unbonded, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone, retInfo.tokens.String(), retInfo.power.String())
 					downtime := math.LegacyNewDecFromInt(math.NewInt(retInfo.missedBlocks)).QuoInt64(blocks)
@@ -285,6 +287,7 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddKeyringFlags(cmd.Flags())
 	cmd.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmd.Flags().Bool(exactFlagName, false, "turn on exact if the moniker needs to match perfectly")
 	cmd.Flags().Bool(validatorMonikerFlagName, false, "turn on regex parsing for the validator moniker instead of accepting a valoper")
 	cmd.Flags().String(outputFileFlagName, "", "flag that indicates an output csv file for the results")
 	return cmd
