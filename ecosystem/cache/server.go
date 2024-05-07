@@ -23,12 +23,18 @@ import (
 )
 
 const (
-	ExpirationFlagName               = "expiration"
-	ExpirationNonFinalizedFlagName   = "expiration-non-finalized"
-	FlagCacheSizeName                = "max-items"
-	DefaultExpirationForNonFinalized = 500 * time.Millisecond
-	DefaultExpirationTimeFinalized   = time.Hour
-	CacheNumCounters                 = 100000000 // expect 10M items
+	ExpirationFlagName                           = "expiration"
+	ExpirationTimeFinalizedMultiplierFlagName    = "expiration-multiplier"
+	ExpirationNonFinalizedFlagName               = "expiration-non-finalized"
+	ExpirationTimeNonFinalizedMultiplierFlagName = "expiration-non-finalized-multiplier"
+	ExpirationNodeErrorsOnFinalizedFlagName      = "expiration-finalized-node-errors"
+	FlagCacheSizeName                            = "max-items"
+	DefaultExpirationForNonFinalized             = 500 * time.Millisecond
+	DefaultExpirationTimeFinalizedMultiplier     = 1.0
+	DefaultExpirationTimeNonFinalizedMultiplier  = 1.0
+	DefaultExpirationTimeFinalized               = time.Hour
+	DefaultExpirationNodeErrors                  = 5 * time.Second
+	CacheNumCounters                             = 100000000 // expect 10M items
 )
 
 type CacheServer struct {
@@ -36,13 +42,16 @@ type CacheServer struct {
 	tempCache              *ristretto.Cache
 	ExpirationFinalized    time.Duration
 	ExpirationNonFinalized time.Duration
-	CacheMetrics           *CacheMetrics
-	CacheMaxCost           int64
+	ExpirationNodeErrors   time.Duration
+
+	CacheMetrics *CacheMetrics
+	CacheMaxCost int64
 }
 
-func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, expirationNonFinalized time.Duration, metricsAddr string) {
-	cs.ExpirationFinalized = expiration
-	cs.ExpirationNonFinalized = expirationNonFinalized
+func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, expirationNonFinalized time.Duration, metricsAddr string, expirationFinalizedMultiplier float64, expirationNonFinalizedMultiplier float64) {
+	cs.ExpirationFinalized = time.Duration(float64(expiration) * expirationFinalizedMultiplier)
+	cs.ExpirationNonFinalized = time.Duration(float64(expirationNonFinalized) * expirationNonFinalizedMultiplier)
+
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("could not create cache", err)
@@ -133,7 +142,17 @@ func Server(
 
 	expirationNonFinalized, err := flags.GetDuration(ExpirationNonFinalizedFlagName)
 	if err != nil {
-		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationFlagName})
+		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationNonFinalizedFlagName})
+	}
+
+	expirationFinalizedMultiplier, err := flags.GetFloat64(ExpirationTimeFinalizedMultiplierFlagName)
+	if err != nil {
+		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationTimeFinalizedMultiplierFlagName})
+	}
+
+	expirationNonFinalizedMultiplier, err := flags.GetFloat64(ExpirationTimeNonFinalizedMultiplierFlagName)
+	if err != nil {
+		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationTimeNonFinalizedMultiplierFlagName})
 	}
 
 	cacheMaxCost, err := flags.GetInt64(FlagCacheSizeName)
@@ -142,7 +161,7 @@ func Server(
 	}
 	cs := CacheServer{CacheMaxCost: cacheMaxCost}
 
-	cs.InitCache(ctx, expiration, expirationNonFinalized, metricsAddr)
+	cs.InitCache(ctx, expiration, expirationNonFinalized, metricsAddr, expirationFinalizedMultiplier, expirationNonFinalizedMultiplier)
 	// TODO: have a state tracker
 	cs.Serve(ctx, listenAddr)
 }
