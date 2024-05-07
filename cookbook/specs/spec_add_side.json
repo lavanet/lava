@@ -42,11 +42,10 @@
                     "compute_units": 10,
                     "enabled": true,
                     "category": {
-                        "deterministic": false,
+                        "deterministic": true,
                         "local": false,
                         "subscription": false,
-                        "stateful": 1,
-                        "hanging_api": true
+                        "stateful": 0
                     },
                     "extra_compute_units": 0
                 },
@@ -61,11 +60,10 @@
                     "compute_units": 10,
                     "enabled": true,
                     "category": {
-                        "deterministic": false,
+                        "deterministic": true,
                         "local": false,
                         "subscription": false,
-                        "stateful": 1,
-                        "hanging_api": true
+                        "stateful": 0
                     },
                     "extra_compute_units": 0
                 },
@@ -73,18 +71,17 @@
                     "name": "/sideprotocol/side/gmm/params",
                     "block_parsing": {
                         "parser_arg": [
-                            "0"
+                            "latest"
                         ],
-                        "parser_func": "PARSE_BY_ARG"
+                        "parser_func": "DEFAULT"
                     },
                     "compute_units": 10,
                     "enabled": true,
                     "category": {
-                        "deterministic": false,
+                        "deterministic": true,
                         "local": false,
                         "subscription": false,
-                        "stateful": 1,
-                        "hanging_api": true
+                        "stateful": 0
                     },
                     "extra_compute_units": 0
                 },
@@ -99,11 +96,10 @@
                     "compute_units": 10,
                     "enabled": true,
                     "category": {
-                        "deterministic": false,
+                        "deterministic": true,
                         "local": false,
                         "subscription": false,
-                        "stateful": 1,
-                        "hanging_api": true
+                        "stateful": 0
                     },
                     "extra_compute_units": 0
                 },
@@ -118,11 +114,10 @@
                     "compute_units": 10,
                     "enabled": true,
                     "category": {
-                        "deterministic": false,
+                        "deterministic": true,
                         "local": false,
                         "subscription": false,
-                        "stateful": 1,
-                        "hanging_api": true
+                        "stateful": 0
                     },
                     "extra_compute_units": 0
                 },
@@ -137,11 +132,10 @@
                     "compute_units": 10,
                     "enabled": true,
                     "category": {
-                        "deterministic": false,
+                        "deterministic": true,
                         "local": false,
                         "subscription": false,
-                        "stateful": 1,
-                        "hanging_api": true
+                        "stateful": 0
                     },
                     "extra_compute_units": 0
                 },
@@ -156,11 +150,10 @@
                     "compute_units": 10,
                     "enabled": true,
                     "category": {
-                        "deterministic": false,
+                        "deterministic": true,
                         "local": false,
                         "subscription": false,
-                        "stateful": 1,
-                        "hanging_api": true
+                        "stateful": 0
                     },
                     "extra_compute_units": 0
                 },
@@ -175,11 +168,10 @@
                     "compute_units": 10,
                     "enabled": true,
                     "category": {
-                        "deterministic": false,
+                        "deterministic": true,
                         "local": false,
                         "subscription": false,
-                        "stateful": 1,
-                        "hanging_api": true
+                        "stateful": 0
                     },
                     "extra_compute_units": 0
                 }
@@ -192,7 +184,7 @@
                         "name": "chain-id",
                         "values": [
                             {
-                                "expected_value": "S2-testnet-1"
+                                "expected_value": "S2-testnet-2"
                             }
                         ]
                     },
@@ -377,7 +369,7 @@
                         "name": "chain-id",
                         "values": [
                             {
-                                "expected_value": "S2-testnet-1"
+                                "expected_value": "S2-testnet-2"
                             }
                         ]
                     },
@@ -417,7 +409,7 @@
                         "name": "chain-id",
                         "values": [
                             {
-                                "expected_value": "S2-testnet-1"
+                                "expected_value": "S2-testnet-2"
                             }
                         ]
                     },
