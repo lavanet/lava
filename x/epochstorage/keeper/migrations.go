@@ -152,13 +152,23 @@ func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 		var stakeEntriesV6 []types.StakeEntry
 		for _, stakeEntryV5 := range stakeStorageV5.StakeEntries {
 			stakeEntryV6 := types.StakeEntry{
-				Stake:             stakeEntryV5.Stake,
-				Address:           stakeEntryV5.Address,
-				Vault:             stakeEntryV5.Address,
-				StakeAppliedBlock: stakeEntryV5.StakeAppliedBlock,
-				Chain:             stakeEntryV5.Chain,
-				Moniker:           stakeEntryV5.Moniker,
-				Geolocation:       stakeEntryV5.Geolocation,
+				Stake:              stakeEntryV5.Stake,
+				Address:            stakeEntryV5.Address,
+				Vault:              stakeEntryV5.Address,
+				StakeAppliedBlock:  stakeEntryV5.StakeAppliedBlock,
+				Chain:              stakeEntryV5.Chain,
+				Moniker:            stakeEntryV5.Moniker,
+				Geolocation:        stakeEntryV5.Geolocation,
+				DelegateTotal:      stakeEntryV5.DelegateTotal,
+				DelegateLimit:      stakeEntryV5.DelegateLimit,
+				DelegateCommission: stakeEntryV5.DelegateCommission,
+				LastChange:         stakeEntryV5.LastChange,
+			}
+
+			blockReport := stakeEntryV5.BlockReport
+			stakeEntryV6.BlockReport = &types.BlockReport{
+				Epoch:       blockReport.Epoch,
+				LatestBlock: blockReport.LatestBlock,
 			}
 
 			var endpointsV6 []types.Endpoint
