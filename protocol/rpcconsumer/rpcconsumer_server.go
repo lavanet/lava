@@ -557,12 +557,11 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
 		// in case we need to remove addons and extensions from relay request data so the providers will get a normal relay.
-		if sessionInfo.RemoveAddonAndExtensions {
+		if sessionInfo.RemoveExtensions {
 			if len(sessions) > 1 {
 				utils.LavaFormatError("Should not have more than one session when using RemoveAddonAndExtensions", nil, utils.LogAttr("sessions", sessions))
 			}
 			relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling addons and extensions.
-			relayRequestData.Addon = ""
 			relayRequestData.Extensions = []string{}
 		}
 		// Launch a separate goroutine for each session
