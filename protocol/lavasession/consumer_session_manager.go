@@ -353,21 +353,24 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders U
 			var errOnRetry error
 			sessionWithProviderMap, errOnRetry = csm.tryGetConsumerSessionWithProviderFromBlockedProviderList(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, usedProviders)
 			if errOnRetry != nil {
-				if PairingListEmptyError.Is(errOnRetry) && (len(extensionNames) > 0) {
+				// we validate currently used providers are 0 meaning we didn't find a valid extension provider
+				// so we don't return an invalid error while waiting for a reply for a valid provider.
+				// in the case we do not have any relays sent at the moment we get a provider from the regular list
+				if usedProviders.CurrentlyUsed() == 0 && PairingListEmptyError.Is(errOnRetry) && (len(extensionNames) > 0) {
 					var errGetRegularProvider error
 					emptyExtensionNames := []string{}
 					sessionWithProviderMap, errGetRegularProvider = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, emptyExtensionNames, stateful, virtualEpoch)
 					if errGetRegularProvider != nil {
 						return nil, err // return original error (getValidConsumerSessionsWithProvider)
 					}
+					for _, session := range sessionWithProviderMap {
+						session.RemoveExtensions = true
+					}
 					// print a warning in case we got a provider who does not support that addon or extension.
 					utils.LavaFormatWarning("No Providers For Addon Or Extension, using regular provider for relay", errOnRetry, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensionNames))
 				} else {
 					return nil, err // return original error (getValidConsumerSessionsWithProvider)
 				}
-			}
-			for _, session := range sessionWithProviderMap {
-				session.RemoveExtensions = true
 			}
 		} else {
 			return nil, err
