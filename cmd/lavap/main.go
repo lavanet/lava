@@ -44,7 +44,6 @@ func main() {
 	badgeServer := badgeserver.CreateBadgeServerCobraCommand()
 
 	validatorsCmd := validators.CreateValidatorsPerformanceCommand()
-	overallValidatorsCmd := validators.RunValidatorsPerformanceCommand()
 
 	// Add Version Command
 	rootCmd.AddCommand(cmdVersion)
@@ -59,7 +58,6 @@ func main() {
 
 	// add command to test validators
 	rootCmd.AddCommand(validatorsCmd)
-	rootCmd.AddCommand(overallValidatorsCmd)
 
 	testCmd := &cobra.Command{
 		Use:   "test",
