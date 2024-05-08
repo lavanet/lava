@@ -90,8 +90,7 @@ func CmdStakeProvider() *cobra.Command {
 			grantProviderGasFeesAuthFlagUsed := cmd.Flags().Lookup(types.FlagGrantFeeAuth).Changed
 			var feeGrantMsg *feegrant.MsgGrantAllowance
 			if grantProviderGasFeesAuthFlagUsed {
-				feeGrantMsg = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
-				err := feeGrantMsg.ValidateBasic()
+				feeGrantMsg, err = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
 				if err != nil {
 					return err
 				}
@@ -254,8 +253,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 					grantProviderGasFeesAuthFlagUsed := cmd.Flags().Lookup(types.FlagGrantFeeAuth).Changed
 					var feeGrantMsg *feegrant.MsgGrantAllowance
 					if grantProviderGasFeesAuthFlagUsed {
-						feeGrantMsg = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
-						err := feeGrantMsg.ValidateBasic()
+						feeGrantMsg, err = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
 						if err != nil {
 							return nil, err
 						}
@@ -402,25 +400,23 @@ func getValidator(clientCtx client.Context, provider string) string {
 }
 
 // CreateGrantFeeMsg cosntructs a feegrant GrantAllowance msg for specific TXs to allow the provider use the vault's funds for gas fees
-func CreateGrantFeeMsg(granter string, grantee string) *feegrant.MsgGrantAllowance {
+func CreateGrantFeeMsg(granter string, grantee string) (*feegrant.MsgGrantAllowance, error) {
 	if grantee == granter {
 		// no need to grant allowance if the granter and grantee are the same (vault = provider)
-		return nil
+		return nil, nil
 	}
 	granterAcc, err := sdk.AccAddressFromBech32(granter)
 	if err != nil {
-		utils.LavaFormatError("failed granting feegrant for gas fees for granter", err,
+		return nil, utils.LavaFormatError("failed granting feegrant for gas fees for granter", err,
 			utils.LogAttr("granter", granter),
 		)
-		return nil
 	}
 
 	granteeAcc, err := sdk.AccAddressFromBech32(grantee)
 	if err != nil {
-		utils.LavaFormatError("failed granting feegrant for gas fees for grantee", err,
+		return nil, utils.LavaFormatError("failed granting feegrant for gas fees for grantee", err,
 			utils.LogAttr("grantee", grantee),
 		)
-		return nil
 	}
 
 	grant, err := feegrant.NewAllowedMsgAllowance(&feegrant.BasicAllowance{}, []string{
@@ -431,27 +427,29 @@ func CreateGrantFeeMsg(granter string, grantee string) *feegrant.MsgGrantAllowan
 		sdk.MsgTypeURL(&types.MsgUnfreezeProvider{}),
 
 		// conflict module TXs
-		sdk.MsgTypeURL(&conflicttypes.MsgDetection{}),
 		sdk.MsgTypeURL(&conflicttypes.MsgConflictVoteCommit{}),
 		sdk.MsgTypeURL(&conflicttypes.MsgConflictVoteReveal{}),
 	})
 	if err != nil {
-		utils.LavaFormatError("failed granting feegrant for gas fees", err,
+		return nil, utils.LavaFormatError("failed granting feegrant for gas fees", err,
 			utils.LogAttr("granter", granter),
 			utils.LogAttr("grantee", grantee),
 		)
-		return nil
 	}
 
 	msg, err := feegrant.NewMsgGrantAllowance(grant, granterAcc, granteeAcc)
 	if err != nil {
-		utils.LavaFormatError("failed granting feegrant for gas fees", err,
+		return nil, utils.LavaFormatError("failed granting feegrant for gas fees", err,
 			utils.LogAttr("granter", granter),
 			utils.LogAttr("grantee", grantee),
 			utils.LogAttr("grant", grant.String()),
 		)
-		return nil
 	}
 
-	return msg
+	err = msg.ValidateBasic()
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }
