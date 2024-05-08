@@ -156,7 +156,6 @@ func initLavaProtocolRootCmd(
 	)
 
 	rootCmd.AddCommand(
-		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
 		config.Cmd(),
 	)
 }
