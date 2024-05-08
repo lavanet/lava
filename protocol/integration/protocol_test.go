@@ -404,7 +404,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 					counter[id]++
 					handler := func(req []byte, header http.Header) (data []byte, status int) {
 						time.Sleep(3 * time.Millisecond) // cause timeout for providers we got a reply for so others get chosen with a bigger likelihood
-						return providers[id].replySetter.replyDataBuf, http.StatusOK
+						return providers[id-1].replySetter.replyDataBuf, http.StatusOK
 					}
 					providers[id-1].replySetter.handler = handler
 				}
