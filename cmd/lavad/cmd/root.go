@@ -130,9 +130,8 @@ func NewLavaProtocolRootCmd() *cobra.Command {
 			setLogLevelFieldNameFromFlag(cmd)
 
 			customAppTemplate, customAppConfig := initAppConfig()
-			customConfig := initTendermintConfig()
 			return server.InterceptConfigsPreRunHandler(
-				cmd, customAppTemplate, customAppConfig, customConfig,
+				cmd, customAppTemplate, customAppConfig, tmcfg.DefaultConfig(),
 			)
 		},
 	}
@@ -154,6 +153,11 @@ func initLavaProtocolRootCmd(
 		queryCommand(),
 		txCommand(),
 		keys.Commands(app.DefaultNodeHome),
+	)
+
+	rootCmd.AddCommand(
+		genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome),
+		config.Cmd(),
 	)
 }
 
