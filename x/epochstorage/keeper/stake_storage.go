@@ -225,7 +225,7 @@ func (k Keeper) ModifyStakeEntryCurrentFromStorage(ctx sdk.Context, stakeStorage
 	// remove the given index, then store the new entry in the sorted list at the right place
 	entries := []types.StakeEntry{}
 	for i, entry := range stakeStorage.StakeEntries {
-		if entry.Address == stakeEntry.Address || entry.Vault == stakeEntry.Vault {
+		if entry.Address == stakeEntry.Address && entry.Vault == stakeEntry.Vault {
 			entries = append(entries, stakeStorage.StakeEntries[:i]...)
 			entries = append(entries, stakeStorage.StakeEntries[i+1:]...)
 			break

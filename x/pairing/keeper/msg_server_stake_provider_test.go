@@ -1138,3 +1138,145 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		})
 	}
 }
+
+// TestDelegatorStakesAfterProviderUnstakes tests the following scenario:
+// There's a staked provider and a delegator delegates to it. Then the provider unstakes (delegation entry is still there).
+// Now, the delegator stakes:
+//  1. as the vault
+//  2. as the provider address
+//
+// Both (separately) should be successful. Only the provider's vault/provider address cannot stake if they are already registered in a stake
+// entry. The delegator is a third-party account, so it should not be influenced by the stake restrictions.
+func TestDelegatorStakesAfterProviderUnstakes(t *testing.T) {
+	tests := []struct {
+		name             string
+		delegatorIsVault bool // when false, delegator stakes as provider address
+	}{
+		{"delegator stakes as vault", true},
+		{"delegator stakes as provider address", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := newTester(t)
+
+			// create staked provider
+			ts.setupForPayments(1, 0, 0)
+			acc, provider := ts.GetAccount(common.PROVIDER, 0)
+			vault := acc.Vault.Addr.String()
+
+			// create delegator and delegate to provider
+			_, delegator := ts.AddAccount(common.CONSUMER, 0, testBalance)
+			_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+			require.NoError(t, err)
+			ts.AdvanceEpoch()
+
+			// unstake the provider and verify the delegation still exists
+			_, err = ts.TxPairingUnstakeProvider(vault, ts.spec.Index)
+			require.NoError(t, err)
+
+			res, err := ts.QueryDualstakingDelegatorProviders(delegator, false)
+			require.NoError(t, err)
+			require.Len(t, res.Delegations, 1)
+			require.Equal(t, delegator, res.Delegations[0].Delegator)
+			require.Equal(t, provider, res.Delegations[0].Provider)
+
+			// try to stake with the delegator on the same chain as vault/operator
+			if tt.delegatorIsVault {
+				err = ts.StakeProvider(delegator, delegator, ts.spec, testBalance/2)
+				require.NoError(t, err)
+			} else {
+				_, dummyVault := ts.AddAccount(common.CONSUMER, 0, testBalance)
+				err = ts.StakeProvider(dummyVault, delegator, ts.spec, testBalance/2)
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+// TestDelegatorAfterProviderUnstakeAndStake tests the following scenarios:
+// Assume 3 different accounts: banana, apple and orange
+// For both scenarios, banana stakes and apple delegates to it. Then banana unstakes. Now, there are two scenarios:
+//   1. orange stakes with banana provider address
+//   2. banana stakes with orange provider address
+
+// When delegating, the delegator delegates to the provider address. So the delegation should be apple->banana.
+// In the first case, apple should be able to unbond and banana has no delegations after it.
+// In the second case, apple should not be delegated to banana (because now banana is only the vault) and apple should be able to unbond.
+func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
+	tests := []struct {
+		name              string
+		restakeWithOrange bool // true = first scenario, false = second scenario
+	}{
+		{"orange stakes with banana provider address", true},
+		{"banana stakes with orange provider address", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := newTester(t)
+
+			// create banana staked provider
+			_, banana := ts.AddAccount(common.PROVIDER, 0, testBalance)
+			err := ts.StakeProvider(banana, banana, ts.spec, testBalance/2)
+			require.NoError(t, err)
+
+			// create apple apple and delegate to banana
+			_, apple := ts.AddAccount(common.CONSUMER, 0, testBalance)
+			_, err = ts.TxDualstakingDelegate(apple, banana, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+			require.NoError(t, err)
+			ts.AdvanceEpoch()
+
+			// unstake banana and verify the delegation still exists
+			_, err = ts.TxPairingUnstakeProvider(banana, ts.spec.Index)
+			require.NoError(t, err)
+			ts.AdvanceEpoch()
+
+			res, err := ts.QueryDualstakingDelegatorProviders(apple, false)
+			require.NoError(t, err)
+			require.Len(t, res.Delegations, 1)
+			require.Equal(t, apple, res.Delegations[0].Delegator)
+			require.Equal(t, banana, res.Delegations[0].Provider)
+
+			// create orange account
+			_, orange := ts.AddAccount(common.CONSUMER, 1, testBalance)
+
+			// check both scenarios
+			if tt.restakeWithOrange {
+				// stake with orange vault and banana provider address
+				// total delegations of new stake should not be zero
+				// apple should be able to unbond. After this, banana has one delegation: orange->banana
+				err = ts.StakeProvider(orange, banana, ts.spec, testBalance/4)
+				require.NoError(t, err)
+				stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, orange)
+				require.True(t, found)
+				require.NotZero(t, stakeEntry.DelegateTotal.Amount.Int64())
+
+				_, err = ts.TxDualstakingUnbond(apple, banana, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+				require.NoError(t, err)
+				ts.AdvanceEpoch()
+				res, err := ts.QueryDualstakingProviderDelegators(banana, false)
+				require.NoError(t, err)
+				require.Len(t, res.Delegations, 1)
+				require.Equal(t, banana, res.Delegations[0].Provider)
+				require.Equal(t, orange, res.Delegations[0].Delegator)
+			} else {
+				// stake with banana vault and orange provider address
+				// total delegations of new stake should be zero
+				// apple should be able to unbond. After this, banana has no delegations
+				err = ts.StakeProvider(banana, orange, ts.spec, testBalance/4)
+				require.NoError(t, err)
+				stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, banana)
+				require.True(t, found)
+				require.Zero(t, stakeEntry.DelegateTotal.Amount.Int64())
+
+				_, err = ts.TxDualstakingUnbond(apple, banana, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+				require.NoError(t, err)
+				ts.AdvanceEpoch()
+				res, err := ts.QueryDualstakingProviderDelegators(banana, false)
+				require.NoError(t, err)
+				require.Len(t, res.Delegations, 0)
+			}
+		})
+	}
+}
