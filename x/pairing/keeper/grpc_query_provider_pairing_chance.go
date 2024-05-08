@@ -29,11 +29,11 @@ func (k Keeper) ProviderPairingChance(goCtx context.Context, req *types.QueryPro
 	}
 
 	// construct required geolocations and clusters array to check
-	geos := []int32{}
+	geos := []planstypes.Geolocation{}
 	if req.Geolocation == planstypes.Geolocation_value["GL"] {
-		geos = planstypes.GetAllGeolocationsInt32()
+		geos = planstypes.GetAllGeolocations()
 	} else {
-		geos = append(geos, req.Geolocation)
+		geos = append(geos, planstypes.Geolocation(req.Geolocation))
 	}
 
 	clusters := []string{}
@@ -48,7 +48,7 @@ func (k Keeper) ProviderPairingChance(goCtx context.Context, req *types.QueryPro
 	counter := int64(0)
 	for _, geo := range geos {
 		for _, cluster := range clusters {
-			policy := planstypes.Policy{GeolocationProfile: geo, MaxProvidersToPair: 1}
+			policy := planstypes.Policy{GeolocationProfile: int32(geo), MaxProvidersToPair: 1}
 			calculatedChance, err := k.CalculatePairingChance(ctx, providerToCheck.Address, providerToCheck.Chain, &policy, cluster)
 			if err != nil {
 				return nil, err
