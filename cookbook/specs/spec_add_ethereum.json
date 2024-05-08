@@ -1458,14 +1458,13 @@
                             {
                                 "name": "bundler",
                                 "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_supportedEntryPoints\",\"id\":1}",
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_supportedEntryPoints\",\"params\":[],\"id\":1}",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0"
                                         ],
-                                        "parser_func": "PARSE_BY_ARG",
-                                        "encoding": "hex"
+                                        "parser_func": "PARSE_BY_ARG"
                                     },
                                     "api_name": "eth_supportedEntryPoints"
                                 },
@@ -1476,15 +1475,7 @@
                                 ]
                             }
                         ],
-                        "extensions": [
-                            {
-                                "name": "archive",
-                                "cu_multiplier": 5,
-                                "rule": {
-                                    "block": 6554
-                                }
-                            }
-                        ]
+                        "extensions": []
                     }
                 ]
             },
