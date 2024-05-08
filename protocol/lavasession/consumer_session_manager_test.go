@@ -40,31 +40,145 @@ const (
 	maxCuForVirtualEpoch               = uint64(200)
 )
 
+type testServer struct {
+	delay time.Duration
+}
+
+func (rpcps *testServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
+	utils.LavaFormatDebug("Debug probe called")
+	probeReply := &pairingtypes.ProbeReply{
+		Guid:                  probeReq.GetGuid(),
+		LatestBlock:           1,
+		FinalizedBlocksHashes: []byte{},
+		LavaEpoch:             1,
+		LavaLatestBlock:       1,
+	}
+	time.Sleep(rpcps.delay)
+	return probeReply, nil
+}
+
+func (rpcps *testServer) Relay(context.Context, *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
+	return nil, utils.LavaFormatError("not Implemented", nil)
+}
+
+func (rpcps *testServer) RelaySubscribe(*pairingtypes.RelayRequest, pairingtypes.Relayer_RelaySubscribeServer) error {
+	return utils.LavaFormatError("not implemented", nil)
+}
+
+// Test the basic functionality of the consumerSessionManager
+func TestHappyFlow(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	require.NoError(t, err)
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	require.NoError(t, err)
+
+	for _, cs := range css {
+		require.NotNil(t, cs)
+		require.Equal(t, cs.Epoch, csm.currentEpoch)
+		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
+		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
+		require.NoError(t, err)
+		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
+		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
+		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)
+		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
+	}
+}
+
+func TestExtensionDoesNotExistOnPairingList(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	require.NoError(t, err)
+	ext := []*spectypes.Extension{{Name: "test_non_existing_ex", Rule: &spectypes.Rule{Block: 555}, CuMultiplier: 5}}
+	_, err = csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", ext, common.NO_STATE, 0) // get a session
+	// if we got a session successfully we should get no error.
+	require.NoError(t, err)
+}
+
+func getDelayedAddress() string {
+	delayedServerAddress := "127.0.0.1:3335"
+	// because grpcListener is random we might have overlap. in that case just change the port.
+	if grpcListener == delayedServerAddress {
+		delayedServerAddress = "127.0.0.1:3336"
+	}
+	return delayedServerAddress
+}
+
+func TestEndpointSortingFlow(t *testing.T) {
+	delayedAddress := getDelayedAddress()
+	err := createGRPCServer(delayedAddress, time.Millisecond)
+	csp := &ConsumerSessionsWithProvider{}
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_, _, err := csp.ConnectRawClientWithTimeout(ctx, delayedAddress)
+		if err != nil {
+			utils.LavaFormatDebug("waiting for grpc server to launch")
+			continue
+		}
+		cancel()
+		break
+	}
+	require.NoError(t, err)
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	pairingList[0].Endpoints = append(pairingList[0].Endpoints, &Endpoint{NetworkAddress: delayedAddress, Enabled: true, Client: nil, ConnectionRefusals: 0})
+	// swap locations so that the endpoint of the delayed will be first
+	pairingList[0].Endpoints[0], pairingList[0].Endpoints[1] = pairingList[0].Endpoints[1], pairingList[0].Endpoints[0]
+
+	// update the pairing and wait for the routine to send all requests
+	err = csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
+	require.NoError(t, err)
+
+	_, ok := csm.pairing[pairingList[0].PublicLavaAddress]
+	require.True(t, ok)
+
+	// because probing is in a routine we need to wait for the sorting and probing to end asynchronously
+	swapped := false
+	for i := 0; i < 10; i++ {
+		if pairingList[0].Endpoints[0].NetworkAddress == grpcListener {
+			fmt.Println("Endpoints Are Sorted!", i)
+			swapped = true
+			break
+		}
+		time.Sleep(1 * time.Second)
+		fmt.Println("Endpoints did not swap yet, attempt:", i)
+	}
+	require.True(t, swapped)
+	// after creating all the sessions
+}
+
 // This variable will hold grpc server address
 var grpcListener = "localhost:0"
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
-	AllowInsecureConnectionToProviders = true // set to allow insecure for tests purposes
 	rand.InitRandomSeed()
 	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1), nil, nil)
 }
 
-var grpcServer *grpc.Server
-
 func TestMain(m *testing.M) {
-	serverStarted := make(chan struct{})
-
-	go func() {
-		err := createGRPCServer(serverStarted)
+	AllowInsecureConnectionToProviders = true
+	err := createGRPCServer("", time.Microsecond)
+	if err != nil {
+		fmt.Println("Failed create server", err)
+		os.Exit(-1)
+	}
+	csp := &ConsumerSessionsWithProvider{}
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_, _, err := csp.ConnectRawClientWithTimeout(ctx, grpcListener)
 		if err != nil {
-			fmt.Printf("Failed to start server: %v\n", err)
-			os.Exit(1)
+			utils.LavaFormatDebug("waiting for grpc server to launch")
+			continue
 		}
-	}()
-
-	// Wait for server to start
-	<-serverStarted
+		cancel()
+		break
+	}
 
 	// Start running tests.
 	code := m.Run()
@@ -72,31 +186,33 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func createGRPCServer(serverStarted chan struct{}) error {
-	if grpcServer != nil {
-		close(serverStarted)
-		return nil
+func createGRPCServer(changeListener string, probeDelay time.Duration) error {
+	listenAddress := grpcListener
+	if changeListener != "" {
+		listenAddress = changeListener
 	}
-	lis, err := net.Listen("tcp", grpcListener)
+	lis, err := net.Listen("tcp", listenAddress)
 	if err != nil {
 		return err
 	}
-
 	// Update the grpcListener with the actual address
-	grpcListener = lis.Addr().String()
+	if changeListener == "" {
+		grpcListener = lis.Addr().String()
+	}
 
 	// Create a new server with insecure credentials
 	tlsConfig := GetTlsConfig(NetworkAddressData{})
 	s := grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig)))
 
+	s2 := &testServer{delay: probeDelay}
+	pairingtypes.RegisterRelayerServer(s, s2)
+
 	go func() {
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("Failed to serve: %v", err)
+			os.Exit(-1)
 		}
 	}()
-
-	grpcServer = s
-	close(serverStarted) // Signal that the server has started
 	return nil
 }
 
@@ -132,29 +248,6 @@ func createPairingList(providerPrefixAddress string, enabled bool) map[uint64]*C
 		}
 	}
 	return cswpList
-}
-
-// Test the basic functionality of the consumerSessionManager
-func TestHappyFlow(t *testing.T) {
-	ctx := context.Background()
-	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
-	require.NoError(t, err)
-	css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
-	require.NoError(t, err)
-
-	for _, cs := range css {
-		require.NotNil(t, cs)
-		require.Equal(t, cs.Epoch, csm.currentEpoch)
-		require.Equal(t, cs.Session.LatestRelayCu, cuForFirstRequest)
-		err = csm.OnSessionDone(cs.Session, servicedBlockNumber, cuForFirstRequest, time.Millisecond, cs.Session.CalculateExpectedLatency(2*time.Millisecond), (servicedBlockNumber - 1), numberOfProviders, numberOfProviders, false)
-		require.NoError(t, err)
-		require.Equal(t, cs.Session.CuSum, cuForFirstRequest)
-		require.Equal(t, cs.Session.LatestRelayCu, latestRelayCuAfterDone)
-		require.Equal(t, cs.Session.RelayNum, relayNumberAfterFirstCall)
-		require.Equal(t, cs.Session.LatestBlock, servicedBlockNumber)
-	}
 }
 
 func TestNoPairingAvailableFlow(t *testing.T) {
@@ -718,7 +811,7 @@ func TestContext(t *testing.T) {
 
 func TestGrpcClientHang(t *testing.T) {
 	ctx := context.Background()
-	conn, err := ConnectgRPCClient(ctx, grpcListener, true)
+	conn, err := ConnectGRPCClient(ctx, grpcListener, true)
 	require.NoError(t, err)
 	client := pairingtypes.NewRelayerClient(conn)
 	err = conn.Close()

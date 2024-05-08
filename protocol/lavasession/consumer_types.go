@@ -17,6 +17,27 @@ import (
 	"google.golang.org/grpc/connectivity"
 )
 
+type EndpointInfo struct {
+	Latency  time.Duration
+	Endpoint *Endpoint
+}
+
+// Slice to hold EndpointInfo
+type EndpointInfoList []EndpointInfo
+
+// Implement sort.Interface for EndpointInfoList
+func (list EndpointInfoList) Len() int {
+	return len(list)
+}
+
+func (list EndpointInfoList) Less(i, j int) bool {
+	return list[i].Latency < list[j].Latency
+}
+
+func (list EndpointInfoList) Swap(i, j int) {
+	list[i], list[j] = list[j], list[i]
+}
+
 const AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
 
 var AllowInsecureConnectionToProviders = false
@@ -27,6 +48,7 @@ type UsedProvidersInf interface {
 	AddUsed(ConsumerSessionsMap, error)
 	GetUnwantedProvidersToSend() map[string]struct{}
 	AddUnwantedAddresses(address string)
+	CurrentlyUsed() int
 }
 
 type SessionInfo struct {
@@ -35,6 +57,7 @@ type SessionInfo struct {
 	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
+	RemoveExtensions  bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
 type ConsumerSessionsMap map[string]*SessionInfo
@@ -84,6 +107,7 @@ type Endpoint struct {
 type SessionWithProvider struct {
 	SessionsWithProvider *ConsumerSessionsWithProvider
 	CurrentEpoch         uint64
+	RemoveExtensions     bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
 type SessionWithProviderMap map[string]*SessionWithProvider
@@ -277,7 +301,7 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
-	conn, err := ConnectgRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders)
+	conn, err := ConnectGRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -351,13 +375,43 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 	return consumerSession, cswp.PairingEpoch, nil
 }
 
+func (cswp *ConsumerSessionsWithProvider) sortEndpointsByLatency(endpointInfos []EndpointInfo) {
+	cswp.Lock.Lock()
+	defer cswp.Lock.Unlock()
+
+	// validate we do not overflow no matter what.
+	if len(endpointInfos) > len(cswp.Endpoints) {
+		utils.LavaFormatError("Not suppose to have larger endpointInfos length than cswp.Endpoints length", nil, utils.LogAttr("endpointInfos", endpointInfos), utils.LogAttr("cswp.Endpoints", cswp.Endpoints))
+		return
+	}
+
+	// endpoint infos are already sorted by the best latency endpoint
+	for idx, endpoint := range endpointInfos {
+		// find the endpoint, and swap if indexes do not match expected by latency
+		for cswpEndpointIdx, cswpEndpoint := range cswp.Endpoints {
+			if cswpEndpoint.NetworkAddress == endpoint.Endpoint.NetworkAddress {
+				// found endpoint check the index location matches the order of best endpoints
+				if cswpEndpointIdx == idx {
+					break
+				} else {
+					// we need to swap the indexes of the endpoints.
+					tmpEndpoint := cswp.Endpoints[idx]
+					cswp.Endpoints[idx] = endpoint.Endpoint
+					cswp.Endpoints[cswpEndpointIdx] = tmpEndpoint
+					break
+				}
+			}
+		}
+	}
+}
+
 // fetching an endpoint from a ConsumerSessionWithProvider and establishing a connection,
 // can fail without an error if trying to connect once to each endpoint but none of them are active.
-func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, retryDisabledEndpoints bool) (connected bool, endpointPtr *Endpoint, providerAddress string, err error) {
-	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr *Endpoint, allDisabled bool) {
+func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, retryDisabledEndpoints bool, getAllEndpoints bool) (connected bool, endpointsList []*Endpoint, providerAddress string, err error) {
+	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr []*Endpoint, allDisabled bool) {
+		endpoints := make([]*Endpoint, 0)
 		cswp.Lock.Lock()
 		defer cswp.Lock.Unlock()
-
 		for idx, endpoint := range cswp.Endpoints {
 			// retryDisabledEndpoints will attempt to reconnect to the provider even though we have disabled the endpoint
 			// this is used on a routine that tries to reconnect to a provider that has been disabled due to being unable to connect to it.
@@ -408,7 +462,16 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			}
 			cswp.Endpoints[idx] = endpoint
 			cswp.Endpoints[idx].Enabled = true // return enabled once we successfully reconnect
-			return true, endpoint, false
+			// successful connection add to endpoints list
+			endpoints = append(endpoints, endpoint)
+			if !getAllEndpoints {
+				return true, endpoints, false
+			}
+		}
+
+		// if we managed to get at least one endpoint we can return the list of active endpoints
+		if len(endpoints) > 0 {
+			return true, endpoints, false
 		}
 
 		// checking disabled endpoints, as we can disable an endpoint mid run of the previous loop, we should re test the current endpoint state
@@ -425,14 +488,14 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	}
 
 	var allDisabled bool
-	connected, endpointPtr, allDisabled = getConnectionFromConsumerSessionsWithProvider(ctx)
+	connected, endpointsList, allDisabled = getConnectionFromConsumerSessionsWithProvider(ctx)
 	if allDisabled {
 		utils.LavaFormatInfo("purging provider after all endpoints are disabled", utils.Attribute{Key: "provider endpoints", Value: cswp.Endpoints}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress})
 		// report provider.
-		return connected, endpointPtr, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError
+		return connected, endpointsList, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError
 	}
 
-	return connected, endpointPtr, cswp.PublicLavaAddress, nil
+	return connected, endpointsList, cswp.PublicLavaAddress, nil
 }
 
 func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, scaledAvailabilityScoreRet sdk.Dec) {

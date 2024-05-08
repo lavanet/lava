@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 func isGrpcServerUp(url string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 	defer cancel()
-	conn, err := lavasession.ConnectgRPCClient(context.Background(), url, true)
+	conn, err := lavasession.ConnectGRPCClient(context.Background(), url, true)
 	if err != nil {
 		return false
 	}
@@ -404,7 +404,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 					counter[id]++
 					handler := func(req []byte, header http.Header) (data []byte, status int) {
 						time.Sleep(3 * time.Millisecond) // cause timeout for providers we got a reply for so others get chosen with a bigger likelihood
-						return providers[id].replySetter.replyDataBuf, http.StatusOK
+						return providers[id-1].replySetter.replyDataBuf, http.StatusOK
 					}
 					providers[id-1].replySetter.handler = handler
 				}

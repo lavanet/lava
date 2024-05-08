@@ -43,6 +43,7 @@ func TestGetUniqueGuidResponseDeterministic(t *testing.T) {
 	assert.Nil(t, err)
 
 	responseError := errors.New("response error")
+	utils.SetGlobalLoggingLevel("fatal") // prevent spam.
 	errorMsg := plog.GetUniqueGuidResponseForError(responseError, "msgSeed")
 
 	for i := 1; i < 10000; i++ {
