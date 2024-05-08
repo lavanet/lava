@@ -63,7 +63,6 @@ func IsSessionSyncLoss(err error) bool {
 }
 
 func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, skipTLS bool) (*grpc.ClientConn, error) {
-
 	var opts []grpc.DialOption
 
 	if skipTLS {

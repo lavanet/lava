@@ -89,18 +89,20 @@ func (cs *CacheServer) Serve(ctx context.Context,
 		lis, err = net.Listen("unix", socketPath)
 		if err != nil {
 			utils.LavaFormatFatal("Cache server failure setting up Unix socket listener: %v\n", err)
-			os.Exit(1)
+			return
 		}
+
 		// Set permissions for the Unix socket
-		if err := os.Chmod(socketPath, 0777); err != nil {
+		err := os.Chmod(socketPath, 0o600)
+		if err != nil {
 			utils.LavaFormatFatal("Failed to set permissions for Unix socket: %v\n", err)
-			os.Exit(1)
+			return
 		}
 	} else {
 		lis, err = net.Listen("tcp", listenAddr)
 		if err != nil {
 			utils.LavaFormatFatal("Cache server failure setting up TCP listener: %v\n", err)
-			os.Exit(1)
+			return
 		}
 	}
 
