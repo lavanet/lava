@@ -2,11 +2,13 @@ package validators
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
 	"os"
 	"os/signal"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"cosmossdk.io/math"
@@ -28,6 +30,8 @@ import (
 
 const (
 	validatorMonikerFlagName = "regex"
+	exactFlagName            = "exact"
+	outputFileFlagName       = "output-file"
 )
 
 type RetInfo struct {
@@ -37,6 +41,7 @@ type RetInfo struct {
 	checks       int64
 	unbonded     int64
 	tokens       math.Int
+	power        math.LegacyDec
 }
 
 func extractValcons(codec codec.Codec, validator stakingtypes.Validator, hrp string) (valCons string, err error) {
@@ -52,7 +57,7 @@ func extractValcons(codec codec.Codec, validator stakingtypes.Validator, hrp str
 	return valcons, nil
 }
 
-func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, valAddr string, regex bool, blocks int64, fromBlock int64) (retInfo RetInfo, err error) {
+func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, valAddr string, regex bool, exact bool, blocks int64, fromBlock int64) (retInfo RetInfo, err error) {
 	retInfo = RetInfo{}
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
@@ -91,7 +96,7 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 	}
 	valCons := ""
 	stakingQueryClient := stakingtypes.NewQueryClient(clientCtx)
-	if regex {
+	if regex || exact {
 		timeoutCtx, cancel = context.WithTimeout(ctx, 60*time.Second)
 		allValidators, err := stakingQueryClient.Validators(timeoutCtx, &stakingtypes.QueryValidatorsRequest{
 			Pagination: &query.PageRequest{
@@ -102,24 +107,26 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 		if err != nil {
 			return retInfo, utils.LavaFormatError("error reading validators", err)
 		}
-		re, err := regexp.Compile(valAddr)
+		re, err := regexp.Compile("(?i)" + regexp.QuoteMeta(valAddr))
 		if err != nil {
 			return retInfo, utils.LavaFormatError("failed compiling regex", err, utils.LogAttr("regex", valAddr))
 		}
-		valAddr = ""
+		re2, err := regexp.Compile("(?i)" + regexp.QuoteMeta(strings.ReplaceAll(valAddr, " ", "")))
+		if err != nil {
+			return retInfo, utils.LavaFormatError("failed compiling regex", err, utils.LogAttr("regex", strings.ReplaceAll(valAddr, " ", "")))
+		}
+		valAddr := ""
 		foundMoniker := ""
 		for _, validator := range allValidators.GetValidators() {
-			if re.MatchString(validator.Description.Moniker) {
-				if valAddr == "" {
-					foundMoniker = validator.Description.Moniker
-					valAddr = validator.OperatorAddress
-					valCons, err = extractValcons(clientCtx.Codec, validator, hrp)
-					if err != nil {
-						continue
-					}
-				} else {
-					return retInfo, utils.LavaFormatError("regex matched two validators", nil, utils.LogAttr("first", foundMoniker), utils.LogAttr("second", validator.Description.Moniker))
+			if (exact && validator.Description.Moniker == valAddr) || (!exact && (re.MatchString(validator.Description.Moniker) || re2.MatchString(validator.Description.Moniker))) {
+				foundMoniker = validator.Description.Moniker
+				valAddr = validator.OperatorAddress
+				valCons, err = extractValcons(clientCtx.Codec, validator, hrp)
+				if err != nil {
+					continue
 				}
+			} else {
+				return retInfo, utils.LavaFormatError("regex matched two validators", nil, utils.LogAttr("first", foundMoniker), utils.LogAttr("second", validator.Description.Moniker))
 			}
 		}
 		if valAddr == "" {
@@ -137,6 +144,14 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 		return retInfo, utils.LavaFormatError("error reading validator", err)
 	}
 	retInfo.tokens = validator.Validator.Tokens
+	_, cancel = context.WithTimeout(ctx, 5*time.Second)
+	pool, err := stakingQueryClient.Pool(ctx, &stakingtypes.QueryPoolRequest{})
+	cancel()
+	if err != nil {
+		return retInfo, utils.LavaFormatError("error reading total pool", err)
+	}
+	retInfo.power = math.LegacyNewDecFromInt(validator.Validator.Tokens).QuoInt(pool.Pool.BondedTokens)
+
 	ticker := time.NewTicker(3 * time.Second)
 	readEventsFromBlock := func(blockFrom int64, blockTo int64) error {
 		for block := blockFrom; block < blockTo; block += jumpBlocks {
@@ -217,15 +232,12 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 			}
 			// handle flags, pass necessary fields
 			ctx := context.Background()
-			if err != nil {
-				return err
-			}
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
 
-			valAddress := args[0]
+			valAddresss := strings.Split(args[0], ",")
 			blocks, err := strconv.ParseInt(args[1], 0, 64)
 			if err != nil {
 				utils.LavaFormatFatal("failed to parse blocks as a number", err)
@@ -243,19 +255,75 @@ validator-performance valida*_monik* --regex 100 --node https://public-rpc.lavan
 			}
 
 			regex := viper.GetBool(validatorMonikerFlagName)
+			exact := viper.GetBool(exactFlagName)
+			outputfile := viper.GetString(outputFileFlagName)
 			utils.SetGlobalLoggingLevel(logLevel)
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.InitRandomSeed()
-			retInfo, err := checkValidatorPerformance(ctx, clientCtx, valAddress, regex, blocks, fromBlock)
-			if err == nil {
-				fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n🔹unbonded: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n🔹tokens: %s\n\n", retInfo.checks, retInfo.unbonded, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone, retInfo.tokens.String())
+			valsData := []ValsData{}
+			for _, address := range valAddresss {
+				retInfo, err := checkValidatorPerformance(ctx, clientCtx, address, regex, exact, blocks, fromBlock)
+				if err == nil {
+					fmt.Printf("📄----------------------------------------✨SUMMARY✨----------------------------------------📄\n\n🔵 Validator Stats:\n🔹checks: %d\n🔹unbonded: %d\n🔹jailed: %d\n🔹missedBlocks: %d\n🔹tombstone: %d\n🔹tokens: %s\n🔹power: %s\n\n", retInfo.checks, retInfo.unbonded, retInfo.jailed, retInfo.missedBlocks, retInfo.tombstone, retInfo.tokens.String(), retInfo.power.String())
+					downtime := math.LegacyNewDecFromInt(math.NewInt(retInfo.missedBlocks)).QuoInt64(blocks)
+					perfData := ValsData{
+						Validator: address,
+						Jailed:    retInfo.jailed, VotePower: retInfo.power, Downtime: downtime,
+					}
+					valsData = append(valsData, perfData)
+				}
 			}
+
+			if outputfile != "" {
+				err = ExportToCSVValidators(outputfile, valsData)
+				if err != nil {
+					return fmt.Errorf("error writing PerformanceData CSV to file: %w", err)
+				}
+			}
+
 			return err
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddKeyringFlags(cmd.Flags())
 	cmd.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmd.Flags().Bool(exactFlagName, false, "turn on exact if the moniker needs to match perfectly")
 	cmd.Flags().Bool(validatorMonikerFlagName, false, "turn on regex parsing for the validator moniker instead of accepting a valoper")
+	cmd.Flags().String(outputFileFlagName, "", "flag that indicates an output csv file for the results")
 	return cmd
+}
+
+type ValsData struct {
+	Validator string
+	Jailed    int64
+	Downtime  math.LegacyDec
+	VotePower math.LegacyDec
+}
+
+func (pd ValsData) String() []string {
+	return []string{pd.Validator, strconv.FormatInt(pd.Jailed, 10), pd.Downtime.String(), pd.VotePower.String()}
+}
+
+// Export array of structs to CSV file of validators (validator,chain,amount-of-times-jailed,downtime-percentage,vote-power)
+func ExportToCSVValidators(filename string, data []ValsData) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write CSV data
+	values := [][]string{{"validator", "jailed", "downtime", "voting power"}}
+	for _, d := range data {
+		values = append(values, d.String())
+	}
+
+	if err := writer.WriteAll(values); err != nil {
+		return err
+	}
+
+	return nil
 }

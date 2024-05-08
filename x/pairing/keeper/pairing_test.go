@@ -912,22 +912,6 @@ func TestPairingDistributionPerStake(t *testing.T) {
 	ts.verifyPairingDistribution("uniform distribution", clientAddr, providersToPair, weightFunc)
 }
 
-func unorderedEqual(first, second []string) bool {
-	if len(first) != len(second) {
-		return false
-	}
-	exists := make(map[string]bool)
-	for _, value := range first {
-		exists[value] = true
-	}
-	for _, value := range second {
-		if !exists[value] {
-			return false
-		}
-	}
-	return true
-}
-
 func IsSubset(subset, superset []string) bool {
 	// Create a map to store the elements of the superset
 	elements := make(map[string]bool)
@@ -1135,15 +1119,6 @@ func TestGeolocationPairingScores(t *testing.T) {
 			}
 		})
 	}
-}
-
-func isGeoInList(geo uint64, geoList []uint64) bool {
-	for _, geoElem := range geoList {
-		if geoElem == geo {
-			return true
-		}
-	}
-	return false
 }
 
 // verifyGeoScoreForTesting is used to testing purposes only!
@@ -2036,6 +2011,134 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 				require.Error(t, err)
 			}
 		})
+	}
+}
+
+// TestMixBothExetensionAndAddonPairing checks the following scenario:
+//
+//   - The strictest policy indicates that the selected providers should have both "ext1" extension and "add1" addon
+//
+//   - There is only one provider that support both "ext1" extension and "addon" addon. There are two more providers
+//     one supports only "ext1" and the other only supports "addon".
+//
+//     Previously, a scenario where the policy requests ext1+addon and there are only providers that support either
+//     "ext1" or "addon", the code would pick ext1+addon providers and then pick providers in random.
+//
+//     Test result with previous version of the code: pairing includes the provider that supports both and 3 random providers
+//     Test result with code that picks better providers: pairing includes the provider that supports both,
+//     the "ext1" provider, the "addon" provider and one random provider
+func TestMixBothExetensionAndAddonPairing(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(100, 0, 5) // 100 "normal" providers, 0 client, 5 providers-to-pair
+
+	addon := "archive"
+	ext1 := "debug"
+
+	// create spec that supports addon and ext1
+	collectionData := spectypes.CollectionData{
+		ApiInterface: "mandatory",
+		InternalPath: "",
+		Type:         "",
+		AddOn:        "",
+	}
+	addonCollectionData := collectionData
+	addonCollectionData.AddOn = addon
+	ts.spec.ApiCollections = []*spectypes.ApiCollection{
+		{
+			Enabled:        true,
+			CollectionData: collectionData,
+			Extensions:     getExtensions(ext1),
+		},
+		{
+			Enabled:        true,
+			CollectionData: addonCollectionData,
+		},
+		{
+			Enabled:        true,
+			CollectionData: addonCollectionData,
+			Extensions:     getExtensions(ext1),
+		},
+	}
+	ts.AddSpec("mock", ts.spec)
+
+	// create 3 providers: one only supports ext1, the other addon and both
+	// do this by defining endpoints and add new providers
+	mandatoryExt1SupportingEndpoint := []epochstoragetypes.Endpoint{{
+		IPPORT:        "123",
+		Geolocation:   1,
+		Addons:        []string{},
+		ApiInterfaces: []string{addonCollectionData.ApiInterface},
+		Extensions:    []string{ext1},
+	}}
+	err := ts.addProviderEndpoints(1, mandatoryExt1SupportingEndpoint)
+	require.NoError(t, err)
+
+	mandatoryAddonSupportingEndpoint := []epochstoragetypes.Endpoint{{
+		IPPORT:        "456",
+		Geolocation:   1,
+		Addons:        []string{addonCollectionData.AddOn},
+		ApiInterfaces: []string{addonCollectionData.ApiInterface},
+		Extensions:    []string{},
+	}}
+	err = ts.addProviderEndpoints(1, mandatoryAddonSupportingEndpoint)
+	require.NoError(t, err)
+
+	mandatoryAddonExt1SupportingEndpoint := []epochstoragetypes.Endpoint{{
+		IPPORT:        "789",
+		Geolocation:   1,
+		Addons:        []string{addonCollectionData.AddOn},
+		ApiInterfaces: []string{addonCollectionData.ApiInterface},
+		Extensions:    []string{ext1},
+	}}
+	err = ts.addProviderEndpoints(1, mandatoryAddonExt1SupportingEndpoint)
+	require.NoError(t, err)
+
+	// set a new policy which asks for both ext1 and addon
+	mandatoryExtAddonChainPolicy := &planstypes.ChainPolicy{
+		ChainId:      ts.spec.Index,
+		Requirements: []planstypes.ChainRequirement{{Collection: addonCollectionData, Extensions: []string{ext1}, Mixed: true}},
+	}
+	plan := ts.plan // original mock template
+	plan.Index = "ext1-addon-plan"
+	plan.PlanPolicy.ChainPolicies = []planstypes.ChainPolicy{*mandatoryExtAddonChainPolicy}
+	plan.PlanPolicy.SelectedProvidersMode = planstypes.SELECTED_PROVIDERS_MODE_MIXED
+	_, p2 := ts.GetAccount(common.PROVIDER, 2)
+	plan.PlanPolicy.SelectedProviders = []string{p2}
+	err = ts.TxProposalAddPlans(plan)
+	require.NoError(t, err)
+
+	// buy a subscription to the plan with the new policy and advance epoch to apply pairing
+	_, sub := ts.AddAccount("sub", 0, 10000)
+	_, err = ts.TxSubscriptionBuy(sub, sub, plan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	// do the following checks twice to avoid potential statistical errors:
+	// get pairing and verify that we get the providers that support ext1 and addon
+	// even though the policy only wanted providers that support both
+	for i := 0; i < 2; i++ {
+		ts.AdvanceEpoch()
+		pairing, err := ts.QueryPairingGetPairing(ts.spec.Index, sub)
+		require.NoError(t, err)
+		services := map[string]int{}
+		for _, provider := range pairing.GetProviders() {
+			for _, endpoint := range provider.Endpoints {
+				for _, addon := range endpoint.Addons {
+					services[addon]++
+				}
+				for _, extension := range endpoint.Extensions {
+					services[extension]++
+				}
+			}
+		}
+
+		// check we got 2 providers that support "ext1" and 2 providers that support addon
+		// these are 3 providers: ext1 provider, addon provider, ext1+addon provider
+		count, ok := services[ext1]
+		require.True(t, ok)
+		require.Equal(t, 2, count)
+		count, ok = services[addon]
+		require.True(t, ok)
+		require.Equal(t, 2, count)
 	}
 }
 
