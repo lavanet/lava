@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -35,6 +36,7 @@ const (
 	DefaultExpirationTimeFinalized               = time.Hour
 	DefaultExpirationNodeErrors                  = 5 * time.Second
 	CacheNumCounters                             = 100000000 // expect 10M items
+	unixPrefix                                   = "unix:"
 )
 
 type CacheServer struct {
@@ -78,10 +80,30 @@ func (cs *CacheServer) Serve(ctx context.Context,
 		signal.Stop(signalChan)
 		cancel()
 	}()
-	lis, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		utils.LavaFormatFatal("cache server failure setting up listener", err, utils.Attribute{Key: "listenAddr", Value: listenAddr})
+
+	// Determine the listener type (TCP vs Unix socket)
+	var lis net.Listener
+	var err error
+	if strings.HasPrefix(listenAddr, unixPrefix) { // Unix socket
+		socketPath := strings.TrimPrefix(listenAddr, unixPrefix)
+		lis, err = net.Listen("unix", socketPath)
+		if err != nil {
+			utils.LavaFormatFatal("Cache server failure setting up Unix socket listener: %v\n", err)
+			os.Exit(1)
+		}
+		// Set permissions for the Unix socket
+		if err := os.Chmod(socketPath, 0777); err != nil {
+			utils.LavaFormatFatal("Failed to set permissions for Unix socket: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		lis, err = net.Listen("tcp", listenAddr)
+		if err != nil {
+			utils.LavaFormatFatal("Cache server failure setting up TCP listener: %v\n", err)
+			os.Exit(1)
+		}
 	}
+
 	serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(chainproxy.MaxCallRecvMsgSize) // setting receive size to 32mb instead of 4mb default
 	s := grpc.NewServer(serverReceiveMaxMessageSize)
 
