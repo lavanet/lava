@@ -27,12 +27,16 @@ var SUB_USAGES = []uint64{0, 6, 7} // sub usages that are treated differently wh
 
 func GetSubUsageCriterion(sub Subscription) uint64 {
 	if sub.DurationTotal == 0 {
-		return SUB_USAGES[0]
-	} else if sub.DurationTotal > 6 {
-		return SUB_USAGES[2]
+		return 0
 	}
 
-	return SUB_USAGES[1]
+	for _, usage := range SUB_USAGES {
+		if sub.DurationTotal <= usage {
+			return usage
+		}
+	}
+
+	return SUB_USAGES[len(SUB_USAGES)-1]
 }
 
 // GetClusterKey returns the subscription's best-fit cluster
