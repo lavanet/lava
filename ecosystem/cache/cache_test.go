@@ -31,7 +31,7 @@ const (
 func initTest() (context.Context, *cache.RelayerCacheServer) {
 	ctx := context.Background()
 	cs := cache.CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024}
-	cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DisabledFlagOption)
+	cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DisabledFlagOption, cache.DefaultExpirationTimeFinalizedMultiplier, cache.DefaultExpirationTimeNonFinalizedMultiplier)
 	cacheServer := &cache.RelayerCacheServer{CacheServer: &cs}
 	return ctx, cacheServer
 }
@@ -513,6 +513,32 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			} else {
 				require.Error(t, err)
 			}
+		})
+	}
+}
+
+func TestCacheExpirationMultiplier(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		multiplier float64
+		expected   time.Duration
+	}{
+		{name: "Multiplier of 1", multiplier: 1.0, expected: cache.DefaultExpirationForNonFinalized},
+		{name: "Multiplier of 1.2", multiplier: 1.2, expected: time.Duration(float64(cache.DefaultExpirationForNonFinalized) * 1.2)},
+		{name: "Multiplier of 2", multiplier: 2.0, expected: time.Duration(float64(cache.DefaultExpirationForNonFinalized) * 2)},
+		{name: "Multiplier of 2.5", multiplier: 2.5, expected: time.Duration(float64(cache.DefaultExpirationForNonFinalized) * 2.5)},
+		{name: "Multiplier of 200", multiplier: 200.0, expected: time.Duration(float64(cache.DefaultExpirationForNonFinalized) * 200)},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cs := cache.CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024}
+			cs.InitCache(context.Background(), cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DisabledFlagOption, 1, tt.multiplier)
+			cacheServer := &cache.RelayerCacheServer{CacheServer: &cs}
+
+			durationActual := cacheServer.CacheServer.ExpirationForChain(cache.DefaultExpirationForNonFinalized)
+			require.Equal(t, tt.expected, durationActual)
 		})
 	}
 }
