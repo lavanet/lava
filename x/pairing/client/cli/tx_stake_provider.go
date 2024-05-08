@@ -40,7 +40,7 @@ func CmdStakeProvider() *cobra.Command {
 		[geolocation] should be the geolocation codes to be staked for. You can also use the geolocation codes syntax: EU,AU,AF,etc. Note that this geolocation should be a union of the endpoints' geolocations.
 		[validator] delegate to a validator with the same amount with dualstaking, if not provided the validator will be chosen for best fit, when amount is decreasing to unbond, this determines the validator to extract funds from
 		
-		Note: The provider address can be hardcoded or derived automatically from the keyring. If a provider address is not specified, the provider address will be the vault address (that stakes). If a provider address is specified and is different than the vault address, you may use the "--grant-provider-gas-fees-auth" flag to let the vault account pay for the provider gas fees.
+		Note: The provider address is used when the user wishes to separate the account the holds its funds and the account that is used to operate the provider process (for enhance security). When specifying the provider address, it can be hardcoded or derived automatically from the keyring. If a provider address is not specified, the provider address will be the vault address (that stakes). If a provider address is specified and is different than the vault address, you may use the "--grant-provider-gas-fees-auth" flag to let the vault account pay for the provider gas fees.
 		After that, to use the vault's funds for gas fees, use Cosmos' --fee-granter flag.
 		IMPORTANT: endpoint should not contain your node URL, it should point to the grpc listener of your provider service defined in your provider config or cli args`,
 		Example: `

@@ -29,7 +29,7 @@ type EpochstorageKeeper interface {
 	GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider string, epoch uint64) (entry epochstoragetypes.StakeEntry, found bool)
 	GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID string, epoch uint64) (entrys *[]epochstoragetypes.StakeEntry, err error)
 	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry)
-	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
+	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (value epochstoragetypes.StakeEntry, found bool)
 	PushFixatedParams(ctx sdk.Context, block, limit uint64)
 }
 

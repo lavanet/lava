@@ -93,31 +93,31 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			isVault = true
 		}
 
-		if !isProvider && !isVault {
-			return utils.LavaFormatWarning("stake entry modification request was not created by provider/vault", fmt.Errorf("invalid creator address"),
-				utils.LogAttr("spec", specChainID),
-				utils.LogAttr("creator", creator),
-				utils.LogAttr("provider", existingEntry.Address),
-				utils.LogAttr("vault", existingEntry.Vault),
-			)
-		}
-
-		// verify that the provider only tries to change non-stake related traits of the stake entry
-		// an provider can be the same as the vault, so we verify it's not the case
-		if isProvider && !isVault {
-			if delegationCommission != existingEntry.DelegateCommission ||
-				!delegationLimit.Equal(existingEntry.DelegateLimit) ||
-				!amount.Equal(existingEntry.Stake) {
-				return utils.LavaFormatWarning("provider cannot change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
+		if !isVault {
+			// verify that the provider only tries to change non-stake related traits of the stake entry
+			// a provider can be the same as the vault, so we verify it's not the case
+			if isProvider {
+				if delegationCommission != existingEntry.DelegateCommission ||
+					!delegationLimit.Equal(existingEntry.DelegateLimit) ||
+					!amount.Equal(existingEntry.Stake) {
+					return utils.LavaFormatWarning("only vault address can change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
+						utils.LogAttr("creator", creator),
+						utils.LogAttr("vault", existingEntry.Vault),
+						utils.LogAttr("provider", provider),
+						utils.LogAttr("current_delegation_limit", existingEntry.DelegateLimit),
+						utils.LogAttr("req_delegation_limit", delegationLimit),
+						utils.LogAttr("current_delegation_commission", existingEntry.DelegateCommission),
+						utils.LogAttr("req_delegation_commission", delegationCommission),
+						utils.LogAttr("current_stake", existingEntry.Stake.String()),
+						utils.LogAttr("req_stake", amount.String()),
+					)
+				}
+			} else {
+				return utils.LavaFormatWarning("stake entry modification request was not created by provider/vault", fmt.Errorf("invalid creator address"),
+					utils.LogAttr("spec", specChainID),
 					utils.LogAttr("creator", creator),
+					utils.LogAttr("provider", existingEntry.Address),
 					utils.LogAttr("vault", existingEntry.Vault),
-					utils.LogAttr("provider", provider),
-					utils.LogAttr("current_delegation_limit", existingEntry.DelegateLimit),
-					utils.LogAttr("req_delegation_limit", delegationLimit),
-					utils.LogAttr("current_delegation_commission", existingEntry.DelegateCommission),
-					utils.LogAttr("req_delegation_commission", delegationCommission),
-					utils.LogAttr("current_stake", existingEntry.Stake.String()),
-					utils.LogAttr("req_stake", amount.String()),
 				)
 			}
 		}
@@ -201,14 +201,16 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		return nil
 	}
 
-	// check that the configured provider is not used by another vault
-	providerStakeEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
-	if entryExists {
-		return utils.LavaFormatWarning("configured provider exists", fmt.Errorf("new provider not staked"),
-			utils.LogAttr("provider", provider),
-			utils.LogAttr("chain_id", chainID),
-			utils.LogAttr("existing_vault", providerStakeEntry.Vault),
-		)
+	// check that the configured provider is not used by another vault (when the provider and creator (vault) addresses are not equal)
+	if provider != creator {
+		providerStakeEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+		if entryExists {
+			return utils.LavaFormatWarning("configured provider exists", fmt.Errorf("new provider not staked"),
+				utils.LogAttr("provider", provider),
+				utils.LogAttr("chain_id", chainID),
+				utils.LogAttr("existing_vault", providerStakeEntry.Vault),
+			)
+		}
 	}
 
 	// entry isn't staked so add him
@@ -257,7 +259,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
 		DelegateLimit:      delegationLimit,
 		DelegateCommission: delegationCommission,
-		Vault:              creator,
+		Vault:              creator, // the stake-provider TX creator is always regarded as the vault address
 		LastChange:         uint64(ctx.BlockTime().UTC().Unix()),
 	}
 
