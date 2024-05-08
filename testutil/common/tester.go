@@ -803,6 +803,17 @@ func (ts *Tester) QueryPairingGetPairing(chainID, client string) (*pairingtypes.
 	return ts.Keepers.Pairing.GetPairing(ts.GoCtx, msg)
 }
 
+// QueryPairingProviderPairingChance implements 'q pairing get-pairing'
+func (ts *Tester) QueryPairingProviderPairingChance(provider string, chainID string, geolocation int32, cluster string) (*pairingtypes.QueryProviderPairingChanceResponse, error) {
+	msg := &pairingtypes.QueryProviderPairingChanceRequest{
+		Provider:    provider,
+		ChainID:     chainID,
+		Geolocation: geolocation,
+		Cluster:     cluster,
+	}
+	return ts.Keepers.Pairing.ProviderPairingChance(ts.GoCtx, msg)
+}
+
 // QueryPairingProviders: implement 'q pairing providers'
 func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingtypes.QueryProvidersResponse, error) {
 	msg := &pairingtypes.QueryProvidersRequest{
@@ -810,6 +821,15 @@ func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingty
 		ShowFrozen: frozen,
 	}
 	return ts.Keepers.Pairing.Providers(ts.GoCtx, msg)
+}
+
+// QueryPairingProvider: implement 'q pairing provider'
+func (ts *Tester) QueryPairingProvider(address string, chainID string) (*pairingtypes.QueryProviderResponse, error) {
+	msg := &pairingtypes.QueryProviderRequest{
+		Address: address,
+		ChainID: chainID,
+	}
+	return ts.Keepers.Pairing.Provider(ts.GoCtx, msg)
 }
 
 // QueryPairingVerifyPairing implements 'q pairing verfy-pairing'

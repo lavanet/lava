@@ -94,6 +94,7 @@ type SubscriptionKeeper interface {
 	GetAllSubscriptionsIndices(ctx sdk.Context) []string
 	AppendAdjustment(ctx sdk.Context, consumer string, provider string, totalConsumerUsage uint64, usageWithThisProvider uint64)
 	CalculateParticipationFees(ctx sdk.Context, reward sdk.Coin) (sdk.Coins, sdk.Coins, error)
+	GetAllClusters(ctx sdk.Context) []string
 }
 
 type PlanKeeper interface {
