@@ -26,7 +26,7 @@ func (ss StakeStorage) GetStakeEntryByAddressFromStorage(address string) (StakeE
 			continue
 		}
 
-		if entry.Vault == address || entry.Address == address {
+		if entry.IsAddressVaultOrProvider(address) {
 			// found the right entry
 			return entry, true
 		}

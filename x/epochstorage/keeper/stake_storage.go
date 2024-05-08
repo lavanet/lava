@@ -172,7 +172,7 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address
 	}
 
 	for i, entry := range stakeStorage.StakeEntries {
-		if entry.Address == address || entry.Vault == address {
+		if entry.IsAddressVaultOrProvider(address) {
 			stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:i], stakeStorage.StakeEntries[i+1:]...)
 			k.SetStakeStorageCurrent(ctx, chainID, stakeStorage)
 			return nil
