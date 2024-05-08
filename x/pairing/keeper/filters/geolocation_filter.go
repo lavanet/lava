@@ -17,7 +17,7 @@ func (f *GeolocationFilter) IsMix() bool {
 	return false
 }
 
-func (f *GeolocationFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
+func (f *GeolocationFilter) InitFilter(strictestPolicy planstypes.Policy) (bool, []Filter) {
 	/*
 		if strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_DISABLED ||
 			strictestPolicy.SelectedProvidersMode == planstypes.SELECTED_PROVIDERS_MODE_ALLOWED {
@@ -25,7 +25,7 @@ func (f *GeolocationFilter) InitFilter(strictestPolicy planstypes.Policy) bool {
 			return true
 		}
 	*/
-	return false
+	return false, nil
 }
 
 func (f *GeolocationFilter) Filter(ctx sdk.Context, providers []epochstoragetypes.StakeEntry, currentEpoch uint64) []bool {
