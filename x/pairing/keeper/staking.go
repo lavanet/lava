@@ -201,14 +201,16 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		return nil
 	}
 
-	// check that the configured provider is not used by another vault
-	providerStakeEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
-	if entryExists {
-		return utils.LavaFormatWarning("configured provider exists", fmt.Errorf("new provider not staked"),
-			utils.LogAttr("provider", provider),
-			utils.LogAttr("chain_id", chainID),
-			utils.LogAttr("existing_vault", providerStakeEntry.Vault),
-		)
+	// check that the configured provider is not used by another vault (when the provider and creator (vault) addresses are not equal)
+	if provider != creator {
+		providerStakeEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+		if entryExists {
+			return utils.LavaFormatWarning("configured provider exists", fmt.Errorf("new provider not staked"),
+				utils.LogAttr("provider", provider),
+				utils.LogAttr("chain_id", chainID),
+				utils.LogAttr("existing_vault", providerStakeEntry.Vault),
+			)
+		}
 	}
 
 	// entry isn't staked so add him
