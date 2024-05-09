@@ -363,11 +363,11 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders U
 					if errGetRegularProvider != nil {
 						return nil, err // return original error (getValidConsumerSessionsWithProvider)
 					}
-					for _, session := range sessionWithProviderMap {
-						session.RemoveExtensions = true
+					for key := range sessionWithProviderMap {
+						sessionWithProviderMap[key].RemoveExtensions = true
 					}
 					// print a warning in case we got a provider who does not support that addon or extension.
-					utils.LavaFormatWarning("No Providers For Addon Or Extension, using regular provider for relay", errOnRetry, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensionNames))
+					utils.LavaFormatWarning("No Providers For Addon Or Extension, using regular provider for relay", errOnRetry, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensionNames), utils.LogAttr("providers_chosen", sessionWithProviderMap))
 				} else {
 					return nil, err // return original error (getValidConsumerSessionsWithProvider)
 				}
@@ -421,7 +421,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			// we can get here if we wanted 3 archive and got 2 only because one couldn't connect,
 			// so we tried getting more sessions and got a regular provider due to no pairings available.
 			// in that case just return the current sessions that we do have.
-			if sessionWithProvider.RemoveExtensions && len(sessions) > 1 {
+			if sessionWithProvider.RemoveExtensions && len(sessions) >= 1 {
 				utils.LavaFormatDebug("Too many sessions when using RemoveAddonAndExtensions session", utils.LogAttr("sessions", sessions), utils.LogAttr("wanted_to_add", sessionWithProvider))
 				// in that case we just return the sessions we already have.
 				return sessions, nil
