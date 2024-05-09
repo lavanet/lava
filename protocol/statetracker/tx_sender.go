@@ -350,7 +350,7 @@ func (pts *ProviderTxSender) UpdateEpoch(epoch uint64) {
 		// failed getting vaults, try again next epoch
 		return
 	}
-	utils.LavaFormatDebug("ProviderTxSender got epoch update, updating vaults", utils.LogAttr("new vaults", vaults))
+	utils.LavaFormatDebug("ProviderTxSender got epoch update, updating vaults", utils.LogAttr("new vaults", vaults), utils.LogAttr("epoch", epoch))
 	pts.vaultsLock.Lock()
 	defer pts.vaultsLock.Unlock()
 	pts.vaults = vaults
