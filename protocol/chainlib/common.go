@@ -426,7 +426,7 @@ func (rd *RefererData) SendReferer(refererMatchString string, chainId string, ms
 		userAgent, _ = c.Locals(metrics.UserAgentHeaderKey).(string)
 	}
 
-	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString))
+	utils.LavaFormatDebug("referer detected", utils.LogAttr("referer", refererMatchString), utils.LogAttr("ip", userIp), utils.LogAttr("msg", msg), utils.LogAttr("origin", origin), utils.LogAttr("userAgent", userAgent))
 	rd.ReferrerClient.AppendReferrer(metrics.NewReferrerRequest(refererMatchString, chainId, msg, referer, origin, userAgent, userIp))
 	return nil
 }
