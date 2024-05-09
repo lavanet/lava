@@ -316,14 +316,8 @@ func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, final
 
 type ProviderTxSender struct {
 	*TxSender
-	vaults     map[string]vault // chain ID -> vault
+	vaults     map[string]sdk.AccAddress // chain ID -> vault that is a fee granter
 	vaultsLock sync.RWMutex
-}
-
-// struct that holds a vault address and whether it's configured as a fee granter
-type vault struct {
-	address      sdk.AccAddress
-	isFeeGranter bool
 }
 
 func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactory tx.Factory) (ret *ProviderTxSender, err error) {
@@ -356,8 +350,8 @@ func (pts *ProviderTxSender) UpdateEpoch(epoch uint64) {
 	pts.vaults = vaults
 }
 
-func (pts *ProviderTxSender) getVaults(ctx context.Context) (map[string]vault, error) {
-	vaults := map[string]vault{}
+func (pts *ProviderTxSender) getVaults(ctx context.Context) (map[string]sdk.AccAddress, error) {
+	vaults := map[string]sdk.AccAddress{}
 	pairingQuerier := pairingtypes.NewQueryClient(pts.clientCtx)
 	res, err := pairingQuerier.Provider(ctx, &pairingtypes.QueryProviderRequest{Address: pts.clientCtx.FromAddress.String()})
 	if err != nil {
@@ -367,8 +361,17 @@ func (pts *ProviderTxSender) getVaults(ctx context.Context) (map[string]vault, e
 		return vaults, err
 	}
 
+	// this can happen if the provider is not staked yet
+	if len(res.StakeEntries) <= 0 {
+		return vaults, utils.LavaFormatWarning("couldn't find entries on chain - could be that the provider is not staked yet", nil)
+	}
+
 	feegrantQuerier := feegrant.NewQueryClient(pts.clientCtx)
 	for _, stakeEntry := range res.StakeEntries {
+		if stakeEntry.Vault == stakeEntry.Address {
+			// if provider == vault, there is no feegrant, skip the stake entry
+			continue
+		}
 		vaultAcc, err := sdk.AccAddressFromBech32(stakeEntry.Vault)
 		if err != nil {
 			utils.LavaFormatError("critical: invalid vault address in stake entry", err,
@@ -378,7 +381,6 @@ func (pts *ProviderTxSender) getVaults(ctx context.Context) (map[string]vault, e
 			)
 			continue
 		}
-		vault := vault{address: vaultAcc, isFeeGranter: false}
 		res, err := feegrantQuerier.Allowance(ctx, &feegrant.QueryAllowanceRequest{
 			Granter: stakeEntry.Vault,
 			Grantee: pts.clientCtx.FromAddress.String(),
@@ -393,14 +395,8 @@ func (pts *ProviderTxSender) getVaults(ctx context.Context) (map[string]vault, e
 			continue
 		}
 		if res.Allowance != nil {
-			vault.isFeeGranter = true
+			vaults[stakeEntry.Chain] = vaultAcc
 		}
-		vaults[stakeEntry.Chain] = vault
-	}
-
-	// this can happen if the provider is not staked yet
-	if len(vaults) <= 0 {
-		return vaults, utils.LavaFormatWarning("couldn't find vaults on chain - could be that the provider is not staked yet", nil)
 	}
 
 	return vaults, nil
@@ -415,15 +411,11 @@ func (pts *ProviderTxSender) getFeeGranterFromVaults(chainId string) sdk.AccAddr
 
 	feeGranter, ok := pts.vaults[chainId]
 	if ok {
-		if feeGranter.isFeeGranter {
-			return feeGranter.address
-		}
+		return feeGranter
 	}
 	// else get the first fee granter
-	for key := range pts.vaults {
-		if pts.vaults[key].isFeeGranter {
-			return pts.vaults[key].address
-		}
+	for _, val := range pts.vaults {
+		return val
 	}
 
 	return nil

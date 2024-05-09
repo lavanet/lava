@@ -87,7 +87,10 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
-			grantProviderGasFeesAuthFlagUsed := cmd.Flags().Lookup(types.FlagGrantFeeAuth).Changed
+			grantProviderGasFeesAuthFlagUsed, err := cmd.Flags().GetBool(types.FlagGrantFeeAuth)
+			if err != nil {
+				return err
+			}
 			var feeGrantMsg *feegrant.MsgGrantAllowance
 			if grantProviderGasFeesAuthFlagUsed {
 				feeGrantMsg, err = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
@@ -183,14 +186,9 @@ func CmdBulkStakeProvider() *cobra.Command {
 				return err
 			}
 
-			providersFromFlag, err := cmd.Flags().GetString(types.FlagProvider)
+			providerFromFlag, err := cmd.Flags().GetString(types.FlagProvider)
 			if err != nil {
 				return err
-			}
-
-			customProviders := false
-			if providersFromFlag != "" {
-				customProviders = true
 			}
 
 			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
@@ -214,22 +212,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 				argChainIDs := args[0]
 				chainIDs := strings.Split(argChainIDs, ",")
 
-				providers := []string{}
-				if customProviders {
-					unparsedProviders := strings.Split(providersFromFlag, ",")
-					if len(unparsedProviders) != len(chainIDs) {
-						return nil, fmt.Errorf("providers amount (length %d) must match chain IDs amount (length %d)", len(unparsedProviders), len(chainIDs))
-					}
-
-					for _, o := range unparsedProviders {
-						provider, err := utils.ParseCLIAddress(clientCtx, o)
-						if err != nil {
-							return nil, err
-						}
-						providers = append(providers, provider)
-					}
-				}
-
 				argAmount, err := sdk.ParseCoinNormalized(args[1])
 				if err != nil {
 					return nil, err
@@ -240,23 +222,33 @@ func CmdBulkStakeProvider() *cobra.Command {
 					return nil, err
 				}
 
-				for i, chainID := range chainIDs {
+				provider := clientCtx.GetFromAddress().String()
+				if providerFromFlag != "" {
+					provider, err = utils.ParseCLIAddress(clientCtx, providerFromFlag)
+					if err != nil {
+						return nil, err
+					}
+				}
+
+				grantProviderGasFeesAuthFlagUsed, err := cmd.Flags().GetBool(types.FlagGrantFeeAuth)
+				if err != nil {
+					return nil, err
+				}
+				var feeGrantMsg *feegrant.MsgGrantAllowance
+				if grantProviderGasFeesAuthFlagUsed {
+					feeGrantMsg, err = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
+					if err != nil {
+						return nil, err
+					}
+				}
+
+				if feeGrantMsg != nil {
+					msgs = append(msgs, feeGrantMsg)
+				}
+
+				for _, chainID := range chainIDs {
 					if chainID == "" {
 						continue
-					}
-
-					provider := clientCtx.GetFromAddress().String()
-					if customProviders {
-						provider = providers[i]
-					}
-
-					grantProviderGasFeesAuthFlagUsed := cmd.Flags().Lookup(types.FlagGrantFeeAuth).Changed
-					var feeGrantMsg *feegrant.MsgGrantAllowance
-					if grantProviderGasFeesAuthFlagUsed {
-						feeGrantMsg, err = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
-						if err != nil {
-							return nil, err
-						}
 					}
 
 					msg := types.NewMsgStakeProvider(
@@ -280,9 +272,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 						return nil, err
 					}
 					msgs = append(msgs, msg)
-					if feeGrantMsg != nil {
-						msgs = append(msgs, feeGrantMsg)
-					}
 				}
 				return msgs, nil
 			}
@@ -306,7 +295,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational address (addresses that are used to operate the provider process. default is provider address)")
 	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the provider use the vault address' funds for gas fees")
-	cmd.Flags().String(types.FlagProvider, "", "The provider's operational addresses (addresses that are used to operate the provider process. default is vault address)")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
