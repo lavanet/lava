@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
@@ -76,8 +77,11 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 	return nil
 }
 
-func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg sdk.Msg, checkProfitability bool) error {
+func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Context, msg sdk.Msg, checkProfitability bool, feeGranter sdk.AccAddress) error {
 	txfactory := ts.txFactory.WithGasPrices(defaultGasPrice)
+	if feeGranter != nil {
+		txfactory = ts.txFactory.WithFeeGranter(feeGranter)
+	}
 
 	if err := msg.ValidateBasic(); err != nil {
 		return err
@@ -301,7 +305,7 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 
 func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
 	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
-	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
+	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, nil)
 	if err != nil {
 		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err)
 	}
@@ -310,6 +314,13 @@ func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, final
 
 type ProviderTxSender struct {
 	*TxSender
+	vaults map[string]vault // chain ID -> vault
+}
+
+// struct that holds a vault address and whether it's configured as a fee granter
+type vault struct {
+	address      sdk.AccAddress
+	isFeeGranter bool
 }
 
 func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactory tx.Factory) (ret *ProviderTxSender, err error) {
@@ -318,31 +329,94 @@ func NewProviderTxSender(ctx context.Context, clientCtx client.Context, txFactor
 		return nil, err
 	}
 	ts := &ProviderTxSender{TxSender: txSender}
+	ts.vaults = ts.getVaults(ctx)
 	return ts, nil
+}
+
+func (pts *ProviderTxSender) getVaults(ctx context.Context) map[string]vault {
+	vaults := map[string]vault{}
+	pairingQuerier := pairingtypes.NewQueryClient(pts.clientCtx)
+	res, err := pairingQuerier.Provider(ctx, &pairingtypes.QueryProviderRequest{Address: pts.clientCtx.FromAddress.String()})
+	if err != nil {
+		utils.LavaFormatWarning("could not get provider vault addresses. provider is not staked on any chain", err,
+			utils.LogAttr("provider", pts.clientCtx.FromAddress.String()),
+		)
+		return vaults
+	}
+
+	feegrantQuerier := feegrant.NewQueryClient(pts.clientCtx)
+	for _, stakeEntry := range res.StakeEntries {
+		vaultAcc, err := sdk.AccAddressFromBech32(stakeEntry.Vault)
+		if err != nil {
+			utils.LavaFormatError("critical: invalid vault address in stake entry", err,
+				utils.LogAttr("provider", pts.clientCtx.FromAddress.String()),
+				utils.LogAttr("vault", stakeEntry.Vault),
+				utils.LogAttr("chain_id", stakeEntry.Chain),
+			)
+			continue
+		}
+		vault := vault{address: vaultAcc, isFeeGranter: false}
+		res, err := feegrantQuerier.Allowance(ctx, &feegrant.QueryAllowanceRequest{
+			Granter: stakeEntry.Vault,
+			Grantee: pts.clientCtx.FromAddress.String(),
+		})
+		if err != nil {
+			// Allowance doesn't return an error if allowance doesn't exist. Error is returned on parsing issues
+			utils.LavaFormatWarning("could not get gas fee allowance for provider and vault", err,
+				utils.LogAttr("provider", pts.clientCtx.FromAddress.String()),
+				utils.LogAttr("vault", stakeEntry.Vault),
+				utils.LogAttr("chain_id", stakeEntry.Chain),
+			)
+			continue
+		}
+		if res.Allowance != nil {
+			vault.isFeeGranter = true
+		}
+		vaults[stakeEntry.Chain] = vault
+	}
+
+	return vaults
 }
 
 func (pts *ProviderTxSender) TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error {
 	msg := pairingtypes.NewMsgRelayPayment(pts.clientCtx.FromAddress.String(), relayRequests, description, latestBlocks)
 	utils.LavaFormatDebug("Sending reward TX", utils.LogAttr("Number_of_relay_sessions_for_payment", len(relayRequests)))
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, true)
+	var feeGranter sdk.AccAddress
+	for key := range pts.vaults {
+		if pts.vaults[key].isFeeGranter {
+			feeGranter = pts.vaults[key].address
+			break
+		}
+	}
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, true, feeGranter)
 	if err != nil {
 		return utils.LavaFormatError("relay_payment - sending Tx Failed", err)
 	}
 	return nil
 }
 
-func (pts *ProviderTxSender) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
+func (pts *ProviderTxSender) SendVoteReveal(ctx context.Context, voteID string, vote *reliabilitymanager.VoteData, specID string) error {
 	msg := conflicttypes.NewMsgConflictVoteReveal(pts.clientCtx.FromAddress.String(), voteID, vote.Nonce, vote.RelayDataHash)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
+	var feeGranter sdk.AccAddress
+	acc, ok := pts.vaults[specID]
+	if ok {
+		feeGranter = acc.address
+	}
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, feeGranter)
 	if err != nil {
 		return utils.LavaFormatError("SendVoteReveal - SimulateAndBroadCastTx Failed", err)
 	}
 	return nil
 }
 
-func (pts *ProviderTxSender) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error {
+func (pts *ProviderTxSender) SendVoteCommitment(ctx context.Context, voteID string, vote *reliabilitymanager.VoteData, specID string) error {
 	msg := conflicttypes.NewMsgConflictVoteCommit(pts.clientCtx.FromAddress.String(), voteID, vote.CommitHash)
-	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(msg, false)
+	var feeGranter sdk.AccAddress
+	acc, ok := pts.vaults[specID]
+	if ok {
+		feeGranter = acc.address
+	}
+	err := pts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, feeGranter)
 	if err != nil {
 		return utils.LavaFormatError("SendVoteCommitment - SimulateAndBroadCastTx Failed", err)
 	}

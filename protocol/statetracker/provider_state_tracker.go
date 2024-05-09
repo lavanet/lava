@@ -127,12 +127,12 @@ func (pst *ProviderStateTracker) TxRelayPayment(ctx context.Context, relayReques
 	return pst.txSender.TxRelayPayment(ctx, relayRequests, description, latestBlocks)
 }
 
-func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
-	return pst.txSender.SendVoteReveal(voteID, vote)
+func (pst *ProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
+	return pst.txSender.SendVoteReveal(context.Background(), voteID, vote, specID)
 }
 
-func (pst *ProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error {
-	return pst.txSender.SendVoteCommitment(voteID, vote)
+func (pst *ProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
+	return pst.txSender.SendVoteCommitment(context.Background(), voteID, vote, specID)
 }
 
 func (pst *ProviderStateTracker) LatestBlock() int64 {
