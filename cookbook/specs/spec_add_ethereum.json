@@ -1436,7 +1436,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "eth_supportedEntryPoint",
+                                "name": "eth_supportedEntryPoints",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
