@@ -43,6 +43,7 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 	}
 
 	pst.RegisterForEpochUpdates(ctx, emergencyTracker)
+	pst.RegisterForEpochUpdates(ctx, txSender)
 	err = pst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
 	return pst, err
 }
