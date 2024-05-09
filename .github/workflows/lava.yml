@@ -74,49 +74,57 @@ jobs:
   test-protocol:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version-file: go.mod
-        cache-dependency-path: go.sum
-
-    # Setup Paths
-    - name: home
-      run:  pwd && ls -l
-    - name: ls usr 
-      run: ls -l /home/runner/work/lava/lava
-    - name: cp lava
-      run:  cp -r ~/work/lava/lava ~/go/lava 
-    - name: export GOPATH
-      run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
-    - name: export PATH
-      run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/:$GOPATH/bin
-    - name: export LAVA
-      run: export LAVA=/home/runner/work/lava/lava
-    - name: go env
-      run:  go env
-    - name: pwd
-      run: pwd
-    - name: tree
-      run: tree
-    - name: ls -l
-      run: ls -l
-
-    ######################################################
-    ### Run protocol unitests
-    ######################################################
-    - name: Run Lava Protocol Tests
-      run: |
-        go install github.com/jstemmer/go-junit-report/v2@latest
-        go test -v ./protocol/... | go-junit-report -iocopy -set-exit-code -out protocol-report.xml  
-        go test -v ./ecosystem/cache/... | go-junit-report -iocopy -set-exit-code -out cache-report.xml
-    
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: Test Results (Protocol)
-        path: "*-report.xml"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+  
+      # Setup Paths
+      - name: home
+        run:  pwd && ls -l
+      - name: ls usr 
+        run: ls -l /home/runner/work/lava/lava
+      - name: cp lava
+        run:  cp -r ~/work/lava/lava ~/go/lava 
+      - name: export GOPATH
+        run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
+      - name: export PATH
+        run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/:$GOPATH/bin
+      - name: export LAVA
+        run: export LAVA=/home/runner/work/lava/lava
+      - name: go env
+        run:  go env
+      - name: pwd
+        run: pwd
+      - name: tree
+        run: tree
+      - name: ls -l
+        run: ls -l
+  
+      ######################################################
+      ### Run protocol unitests
+      ######################################################
+      - name: Run Lava Protocol Tests
+        run: |
+          go install github.com/jstemmer/go-junit-report/v2@latest
+          go test -v ./protocol/... | go-junit-report -iocopy -set-exit-code -out protocol-report.xml  
+          go test -v ./ecosystem/cache/... | go-junit-report -iocopy -set-exit-code -out cache-report.xml
+      
+      - name: Parse Test Results
+        run: |
+          apt-get update && apt-get -y install jq
+          jq -r '.testsuites.testsuite[] | select(.failures > 0) | .testcase[] | [.name, .failure.message] | @tsv' protocol-report.xml cache-report.xml > failed-tests-summary.txt
+  
+      - name: Display Failed Tests Summary
+        run: cat failed-tests-summary.txt
+  
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Test Results (Protocol)
+          path: "*-report.xml"
 
   test-protocol-e2e:
     runs-on: ubuntu-latest
