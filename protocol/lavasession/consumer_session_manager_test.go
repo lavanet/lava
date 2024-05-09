@@ -110,6 +110,7 @@ func getDelayedAddress() string {
 }
 
 func TestEndpointSortingFlow(t *testing.T) {
+	require.True(t, false)
 	delayedAddress := getDelayedAddress()
 	err := createGRPCServer(delayedAddress, time.Millisecond)
 	csp := &ConsumerSessionsWithProvider{}
