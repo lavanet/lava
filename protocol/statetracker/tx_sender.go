@@ -362,7 +362,7 @@ func (pts *ProviderTxSender) getVaults(ctx context.Context) (map[string]sdk.AccA
 	}
 
 	// this can happen if the provider is not staked yet
-	if len(res.StakeEntries) <= 0 {
+	if len(res.StakeEntries) == 0 {
 		return vaults, utils.LavaFormatWarning("couldn't find entries on chain - could be that the provider is not staked yet", nil)
 	}
 
@@ -405,7 +405,7 @@ func (pts *ProviderTxSender) getVaults(ctx context.Context) (map[string]sdk.AccA
 func (pts *ProviderTxSender) getFeeGranterFromVaults(chainId string) sdk.AccAddress {
 	pts.vaultsLock.RLock()
 	defer pts.vaultsLock.RUnlock()
-	if len(pts.vaults) <= 0 {
+	if len(pts.vaults) == 0 {
 		return nil
 	}
 

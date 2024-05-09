@@ -392,7 +392,7 @@ func getValidator(clientCtx client.Context, provider string) string {
 func CreateGrantFeeMsg(granter string, grantee string) (*feegrant.MsgGrantAllowance, error) {
 	if grantee == granter {
 		// no need to grant allowance if the granter and grantee are the same (vault = provider)
-		return nil, nil
+		return nil, nil //nolint
 	}
 	granterAcc, err := sdk.AccAddressFromBech32(granter)
 	if err != nil {

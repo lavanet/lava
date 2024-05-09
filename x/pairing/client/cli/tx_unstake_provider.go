@@ -115,7 +115,7 @@ func CreateRevokeFeeGrantMsg(clientCtx client.Context, chainID string) (*feegran
 	// construct revoke grant msg
 	if vault == providerEntry.Address {
 		// when vault = provider there is no grant, do nothing
-		return nil, nil
+		return nil, nil //nolint
 	}
 	granterAcc, err := sdk.AccAddressFromBech32(vault)
 	if err != nil {
@@ -141,7 +141,7 @@ func CreateRevokeFeeGrantMsg(clientCtx client.Context, chainID string) (*feegran
 
 	if res.Allowance == nil {
 		// no allowance found, do nothing
-		return nil, nil
+		return nil, nil //nolint
 	}
 
 	msg := feegrant.NewMsgRevokeAllowance(granterAcc, granteeAcc)
