@@ -21,7 +21,7 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-type BlockToHashesToAgreeingProviders map[int64]map[string]map[string]providerDataContainer
+type BlockToHashesToAgreeingProviders map[int64]map[string]map[string]providerDataContainer // first key is block num, second key is block hash, third key is provider address
 
 func (b BlockToHashesToAgreeingProviders) String() string {
 	ret, err := json.Marshal(b)
