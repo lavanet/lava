@@ -359,8 +359,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	gotResults := make(chan bool)
 	processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
 	// create the processing timeout prior to entering the method so it wont reset every time
-	processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
-	defer cancel()
+	processingCtx, processingCtxCancel := context.WithTimeout(ctx, processingTimeout)
+	defer processingCtxCancel()
 
 	readResultsFromProcessor := func() {
 		// ProcessResults is reading responses while blocking until the conditions are met

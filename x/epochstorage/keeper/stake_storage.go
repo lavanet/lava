@@ -172,7 +172,7 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address
 	}
 
 	for i, entry := range stakeStorage.StakeEntries {
-		if entry.Address == address {
+		if entry.IsAddressVaultOrProvider(address) {
 			stakeStorage.StakeEntries = append(stakeStorage.StakeEntries[:i], stakeStorage.StakeEntries[i+1:]...)
 			k.SetStakeStorageCurrent(ctx, chainID, stakeStorage)
 			return nil
@@ -225,7 +225,7 @@ func (k Keeper) ModifyStakeEntryCurrentFromStorage(ctx sdk.Context, stakeStorage
 	// remove the given index, then store the new entry in the sorted list at the right place
 	entries := []types.StakeEntry{}
 	for i, entry := range stakeStorage.StakeEntries {
-		if entry.Address == stakeEntry.Address {
+		if entry.Address == stakeEntry.Address && entry.Vault == stakeEntry.Vault {
 			entries = append(entries, stakeStorage.StakeEntries[:i]...)
 			entries = append(entries, stakeStorage.StakeEntries[i+1:]...)
 			break

@@ -10,6 +10,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
@@ -110,8 +112,8 @@ func TestReDelegateToProvider(t *testing.T) {
 	amount := sdk.NewIntFromUint64(10000)
 	ts.TxCreateValidator(validator, amount)
 
-	_, provider := ts.GetAccount(common.PROVIDER, 0)
-	err = ts.StakeProvider(provider, ts.spec, amount.Int64())
+	acc, provider := ts.GetAccount(common.PROVIDER, 0)
+	err = ts.StakeProvider(acc.GetVaultAddr(), provider, ts.spec, amount.Int64())
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -179,7 +181,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		provider, _ := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(provider.Addr.String(), ts.spec, amount.Int64())
+		err := ts.StakeProvider(provider.GetVaultAddr(), provider.Addr.String(), ts.spec, amount.Int64())
 		require.NoError(t, err)
 	}
 
@@ -293,10 +295,12 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	valAcc, _ := ts.GetAccount(common.VALIDATOR, 0)
 	ts.TxCreateValidator(valAcc, stake)
 
+	providersAccs := []sigs.Account{}
 	for i := 0; i < 5; i++ {
 		provider, _ := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(provider.Addr.String(), ts.spec, stake.Int64())
+		err := ts.StakeProvider(provider.GetVaultAddr(), provider.Addr.String(), ts.spec, stake.Int64())
 		require.NoError(t, err)
+		providersAccs = append(providersAccs, provider)
 	}
 	ts.AdvanceEpoch()
 
@@ -396,8 +400,8 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	require.Len(t, res.Delegations, 1)
 	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(stake).RoundInt(), res.Delegations[0].Amount.Amount)
 
-	for _, p := range providers {
-		res, err = ts.QueryDualstakingDelegatorProviders(p, true)
+	for _, p := range providersAccs {
+		res, err = ts.QueryDualstakingDelegatorProviders(p.GetVaultAddr(), true)
 		require.NoError(t, err)
 		require.Len(t, res.Delegations, 1)
 		require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(stake).RoundInt(), res.Delegations[0].Amount.Amount)
@@ -471,7 +475,7 @@ func TestHooksRandomDelegations(t *testing.T) {
 	ts.TxCreateValidator(validatorAcc, amount)
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
-	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, amount.Int64())
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.spec, amount.Int64())
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -521,7 +525,7 @@ func TestNotRoundedShares(t *testing.T) {
 	ts.Keepers.StakingKeeper.SetValidator(ts.Ctx, val)
 
 	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
-	err := ts.StakeProvider(providerAcc.Addr.String(), ts.spec, delAmount.Int64())
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), ts.spec, delAmount.Int64())
 	require.NoError(t, err)
 
 	shares := sdk.MustNewDecFromStr("1010101010101.010101010101010101")
@@ -558,14 +562,14 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		provider, _ := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(provider.Addr.String(), ts.spec, sdk.NewIntFromUint64(9999).Int64())
+		err := ts.StakeProvider(provider.GetVaultAddr(), provider.Addr.String(), ts.spec, sdk.NewIntFromUint64(9999).Int64())
 		require.NoError(t, err)
 	}
 
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
 	// provider completely unbond from validator, delegation is removed
-	_, err = ts.TxUnbondValidator(providerAcct, validator, sdk.NewInt(9999))
+	_, err = ts.TxUnbondValidator(*providerAcct.Vault, validator, sdk.NewInt(9999))
 	require.NoError(t, err)
 
 	// other delegator should not be able to delegate to the provider
@@ -613,11 +617,17 @@ func TestUndelegateProvider(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		provider, _ := ts.GetAccount(common.PROVIDER, i)
-		err := ts.StakeProvider(provider.Addr.String(), ts.spec, amount.Int64())
+		err := ts.StakeProvider(provider.GetVaultAddr(), provider.Addr.String(), ts.spec, amount.Int64())
 		require.NoError(t, err)
 	}
 
-	_, provider := ts.GetAccount(common.PROVIDER, 0)
+	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
+
+	utils.LavaFormatInfo("addresses:\n",
+		utils.LogAttr("vault", providerAcct.GetVaultAddr()),
+		utils.LogAttr("provider", provider),
+		utils.LogAttr("delegator1", delegatorAcc1.Addr.String()),
+	)
 
 	// delegator1 redelegates 9999 to the provider
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
@@ -637,18 +647,18 @@ func TestUndelegateProvider(t *testing.T) {
 	unstakeHoldBlocks := ts.Keepers.Epochstorage.UnstakeHoldBlocks(ts.Ctx, ts.BlockHeight())
 	unstakeHoldBlocksStatic := ts.Keepers.Epochstorage.UnstakeHoldBlocksStatic(ts.Ctx, ts.BlockHeight())
 
-	_, err = ts.TxPairingUnstakeProvider(provider, ts.spec.Index)
+	_, err = ts.TxPairingUnstakeProvider(providerAcct.GetVaultAddr(), ts.spec.Index)
 	require.NoError(t, err)
 
 	ts.AdvanceBlocks(unstakeHoldBlocks)
 
-	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
+	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.GetVaultAddr())
 	require.True(t, found)
 
 	ts.AdvanceBlocks(unstakeHoldBlocksStatic - unstakeHoldBlocks)
 
 	// checking that provider can't be found
-	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
+	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.GetVaultAddr())
 	require.False(t, found)
 
 	ts.AdvanceEpoch()
@@ -663,7 +673,7 @@ func TestUndelegateProvider(t *testing.T) {
 	fmt.Println("Delegation of Provider after provider is removed", res2)
 
 	// stake provider again
-	err = ts.StakeProvider(provider, ts.spec, sdk.NewIntFromUint64(1000).Int64())
+	err = ts.StakeProvider(providerAcct.GetVaultAddr(), providerAcct.Addr.String(), ts.spec, sdk.NewIntFromUint64(1000).Int64())
 	require.NoError(t, err)
 
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
