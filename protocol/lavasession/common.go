@@ -8,6 +8,8 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"math/big"
+	"net"
+	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -21,6 +23,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -40,6 +43,7 @@ const (
 	BACKOFF_TIME_ON_FAILURE                          = 3 * time.Second
 	BLOCKING_PROBE_SLEEP_TIME                        = 1000 * time.Millisecond // maximum amount of time to sleep before triggering probe, to scatter probes uniformly across chains
 	BLOCKING_PROBE_TIMEOUT                           = time.Minute             // maximum time to wait for probe to complete before updating pairing
+	unixPrefix                                       = "unix:"
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(1, 1) // TODO move to params pairing
@@ -58,13 +62,38 @@ func IsSessionSyncLoss(err error) bool {
 	return code == codes.Code(SessionOutOfSyncError.ABCICode())
 }
 
-func ConnectgRPCClient(ctx context.Context, address string, allowInsecure bool) (*grpc.ClientConn, error) {
-	var tlsConf tls.Config
-	if allowInsecure {
-		tlsConf.InsecureSkipVerify = true // this will allow us to use self signed certificates in development.
+func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, skipTLS bool) (*grpc.ClientConn, error) {
+	var opts []grpc.DialOption
+
+	if skipTLS {
+		// Skip TLS encryption completely
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	} else {
+		// Use TLS with optional server verification
+		var tlsConf tls.Config
+		if allowInsecure {
+			tlsConf.InsecureSkipVerify = true // Allows self-signed certificates
+		}
+		credentials := credentials.NewTLS(&tlsConf)
+		opts = append(opts, grpc.WithTransportCredentials(credentials))
 	}
-	credentials := credentials.NewTLS(&tlsConf)
-	conn, err := grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithTransportCredentials(credentials), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
+
+	opts = append(opts, grpc.WithBlock(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
+
+	if strings.HasPrefix(address, unixPrefix) {
+		// Unix socket
+		socketPath := strings.TrimPrefix(address, unixPrefix)
+		opts = append(opts, grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return net.Dial("unix", socketPath)
+		}))
+	} else {
+		// TCP socket
+		opts = append(opts, grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return net.Dial("tcp", addr)
+		}))
+	}
+
+	conn, err := grpc.DialContext(ctx, address, opts...)
 	return conn, err
 }
 

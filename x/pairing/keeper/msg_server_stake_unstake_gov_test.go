@@ -157,7 +157,7 @@ func TestUnstakeGovUnstakeHoldBlocksDecrease(t *testing.T) {
 
 	// Unstake the provider:
 	// should get the funds on block #260 (39+210 = 249 -> next epoch start in 260)
-	_, err = ts.TxPairingUnstakeProvider(providerAcct.Addr.String(), ts.spec.Index)
+	_, err = ts.TxPairingUnstakeProvider(providerAcct.GetVaultAddr(), ts.spec.Index)
 	require.NoError(t, err)
 
 	// Advance a block to complete the epoch and apply UnstakeHoldBlocks change to 60
@@ -206,7 +206,7 @@ func TestUnstakeGovUnstakeHoldBlocksIncrease(t *testing.T) {
 
 	// Unstake the provider:
 	// should get the funds back on block #260 (39+210 = 249 -> next epoch start in 260)
-	_, err = ts.TxPairingUnstakeProvider(providerAcct.Addr.String(), ts.spec.Index)
+	_, err = ts.TxPairingUnstakeProvider(providerAcct.GetVaultAddr(), ts.spec.Index)
 	require.NoError(t, err)
 
 	// Advance a block to complete the epoch and apply UnstakeHoldBlocks change to 280

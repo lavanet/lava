@@ -298,11 +298,13 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, directiveHeaders, chainMessage, relayRequestData, dappID, consumerIp)
 	if err != nil && !relayProcessor.HasResults() {
 		// we can't send anymore, and we don't have any responses
-		return nil, utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", consumerIp))
+		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", consumerIp), utils.LogAttr("relayProcessor", relayProcessor))
+		return nil, err
 	}
 	// Handle Data Reliability
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
-	if enabled {
+	// check if data reliability is enabled and relay processor allows us to perform data reliability
+	if enabled && !relayProcessor.getSkipDataReliability() {
 		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
 		// as data reliability happens in a go routine it will continue while the response returns.
 		guid, found := utils.GetUniqueIdentifier(ctx)
@@ -357,8 +359,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	gotResults := make(chan bool)
 	processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
 	// create the processing timeout prior to entering the method so it wont reset every time
-	processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
-	defer cancel()
+	processingCtx, processingCtxCancel := context.WithTimeout(ctx, processingTimeout)
+	defer processingCtxCancel()
 
 	readResultsFromProcessor := func() {
 		// ProcessResults is reading responses while blocking until the conditions are met
@@ -550,14 +552,21 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
-			// if we have no providers for a specific addon or extension, return an indicative error
-			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
+			err = utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
 		}
 		return err
 	}
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
+		// in case we need to remove extensions from relay request data so the providers will get a normal relay.
+		if sessionInfo.RemoveExtensions {
+			if len(sessions) > 1 {
+				utils.LavaFormatError("Should not have more than one session when using RemoveExtensions", nil, utils.LogAttr("sessions", sessions))
+			}
+			relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling extensions.
+			relayRequestData.Extensions = []string{}
+		}
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			// add ticker launch metrics

@@ -14,6 +14,14 @@ Policy:
           extensions:
             - "archive"
           mixed: true
+    - chain_id: NEAR
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+          extensions:
+            - "archive"
+          mixed: true
     - chain_id: SEP1
       requirements:
         - collection:
