@@ -53,6 +53,7 @@ protoc \
     "$COSMOS_PROTO_DIR/gogoproto/gogo.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/descriptor.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/wrappers.proto" \
+    "$COSMOS_PROTO_DIR/google/protobuf/timestamp.proto" \
     "$COSMOS_PROTO_DIR/google/api/annotations.proto" \
     "$COSMOS_PROTO_DIR/google/api/http.proto" \
     "$COSMOS_PROTO_DIR/cosmos/base/query/v1beta1/pagination.proto" \
@@ -62,6 +63,11 @@ protoc \
     "$COSMOS_PROTO_DIR/cosmos/staking/v1beta1/staking.proto" \
     "$COSMOS_PROTO_DIR/tendermint/types/types.proto" \
     "$COSMOS_PROTO_DIR/tendermint/abci/types.proto" \
+    "$COSMOS_PROTO_DIR/tendermint/crypto/proof.proto" \
+    "$COSMOS_PROTO_DIR/tendermint/version/types.proto" \
+    "$COSMOS_PROTO_DIR/tendermint/types/validator.proto" \
+    "$COSMOS_PROTO_DIR/tendermint/crypto/keys.proto" \
+    "$COSMOS_PROTO_DIR/tendermint/types/params.proto" \
 
 # mv ./src/proto/test ./src/pairing/.
 # rm -rf ./src/proto
