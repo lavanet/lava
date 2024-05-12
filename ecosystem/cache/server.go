@@ -86,7 +86,6 @@ func (cs *CacheServer) Serve(ctx context.Context,
 	var lis net.Listener
 	var err error
 	if strings.HasPrefix(listenAddr, unixPrefix) { // Unix socket
-
 		host, port, err := net.SplitHostPort(listenAddr)
 		if err != nil {
 			utils.LavaFormatFatal("Failed to parse Unix socket: %v\n", err)
