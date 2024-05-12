@@ -834,7 +834,6 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	// TODO: response data sanity, check its under an expected format add that format to spec
 	enabled, _ := rpccs.chainParser.DataReliabilityParams()
 	if enabled {
-		// TODO: DETECTION instead of existingSessionLatestBlock, we need proof of last reply to send the previous reply and the current reply
 		finalizedBlocks, err := lavaprotocol.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
 		if err != nil {
 			if lavaprotocol.ProviderFinalizationDataAccountabilityError.Is(err) {
