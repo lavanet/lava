@@ -536,22 +536,6 @@ func (c *Client) newMessageArrayWithID(method string, id json.RawMessage, params
 	return msg, nil
 }
 
-// func (c *Client) newMessageWithString(method string, id json.RawMessage, paramsIn string) (*JsonrpcMessage, error) {
-// 	var msg *JsonrpcMessage
-// 	if id == nil {
-// 		msg = &JsonrpcMessage{Version: Vsn, ID: c.nextID(), Method: method}
-// 	} else {
-// 		msg = &JsonrpcMessage{Version: Vsn, ID: id, Method: method}
-// 	}
-// 	if paramsIn != "" { // prevent sending "params":null
-// 		var err error
-// 		if msg.Params, err = json.Marshal(paramsIn); err != nil {
-// 			return nil, err
-// 		}
-// 	}
-// 	return msg, nil
-// }
-
 func (c *Client) newMessageArray(method string, paramsIn ...interface{}) (*JsonrpcMessage, error) {
 	msg := &JsonrpcMessage{Version: Vsn, ID: c.nextID(), Method: method}
 	if paramsIn != nil { // prevent sending "params":null
