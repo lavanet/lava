@@ -100,6 +100,23 @@ func CmdStakeProvider() *cobra.Command {
 
 			validator := args[4]
 
+			identity, err := cmd.Flags().GetString(types.FlagIdentity)
+			if err != nil {
+				return err
+			}
+
+			website, err := cmd.Flags().GetString(types.FlagWebsite)
+			if err != nil {
+				return err
+			}
+
+			contactInfo, err := cmd.Flags().GetString(types.FlagContactInfo)
+			if err != nil {
+				return err
+			}
+
+			description := stakingtypes.NewDescription(moniker, identity, website, contactInfo, "")
+
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				validator,
@@ -107,10 +124,10 @@ func CmdStakeProvider() *cobra.Command {
 				argAmount,
 				argEndpoints,
 				argGeolocation,
-				moniker,
 				delegationLimit,
 				commission,
 				provider,
+				description,
 			)
 
 			if err := msg.ValidateBasic(); err != nil {
@@ -123,6 +140,9 @@ func CmdStakeProvider() *cobra.Command {
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational address (address used to operate the provider process, default is vault address)")
+	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
+	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
+	cmd.Flags().String(types.FlagContactInfo, "", "The provider's contact info")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
@@ -221,6 +241,23 @@ func CmdBulkStakeProvider() *cobra.Command {
 					return nil, err
 				}
 
+				identity, err := cmd.Flags().GetString(types.FlagIdentity)
+				if err != nil {
+					return nil, err
+				}
+
+				website, err := cmd.Flags().GetString(types.FlagWebsite)
+				if err != nil {
+					return nil, err
+				}
+
+				contactInfo, err := cmd.Flags().GetString(types.FlagContactInfo)
+				if err != nil {
+					return nil, err
+				}
+
+				description := stakingtypes.NewDescription(moniker, identity, website, contactInfo, "")
+
 				for i, chainID := range chainIDs {
 					if chainID == "" {
 						continue
@@ -237,10 +274,10 @@ func CmdBulkStakeProvider() *cobra.Command {
 						argAmount,
 						allEndpoints,
 						argGeolocation,
-						moniker,
 						delegationLimit,
 						commission,
 						provider,
+						description,
 					)
 
 					if msg.DelegateLimit.Denom != commontypes.TokenDenom {
@@ -273,6 +310,9 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational addresses (addresses that are used to operate the provider process. default is vault address)")
+	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
+	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
+	cmd.Flags().String(types.FlagContactInfo, "", "The provider's contact info")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)

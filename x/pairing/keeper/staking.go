@@ -6,6 +6,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -18,7 +19,7 @@ const (
 	CHANGE_WINDOW   = time.Hour * 24
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64, provider string) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, delegationLimit sdk.Coin, delegationCommission uint64, provider string, description stakingtypes.Description) error {
 	logger := k.Logger(ctx)
 	specChainID := chainID
 
@@ -68,7 +69,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		return utils.LavaFormatWarning("stake provider failed", fmt.Errorf("number of endpoint for geolocation exceeded limit"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("chain_id", chainID),
-			utils.LogAttr("moniker", moniker),
+			utils.LogAttr("description", description.String()),
 			utils.LogAttr("geolocation", geolocation),
 			utils.LogAttr("max_endpoints_allowed", types.MAX_ENDPOINTS_AMOUNT_PER_GEO),
 		)
@@ -76,10 +77,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	// new staking takes effect from the next block
 	stakeAppliedBlock := uint64(ctx.BlockHeight()) + 1
-
-	if len(moniker) > 50 {
-		moniker = moniker[:50]
-	}
 
 	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, creator)
 	if entryExists {
@@ -104,6 +101,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 						utils.LogAttr("creator", creator),
 						utils.LogAttr("vault", existingEntry.Vault),
 						utils.LogAttr("provider", provider),
+						utils.LogAttr("description", description.String()),
 						utils.LogAttr("current_delegation_limit", existingEntry.DelegateLimit),
 						utils.LogAttr("req_delegation_limit", delegationLimit),
 						utils.LogAttr("current_delegation_commission", existingEntry.DelegateCommission),
@@ -118,6 +116,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 					utils.LogAttr("creator", creator),
 					utils.LogAttr("provider", existingEntry.Address),
 					utils.LogAttr("vault", existingEntry.Vault),
+					utils.LogAttr("description", description.String()),
 				)
 			}
 		}
@@ -127,14 +126,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			{Key: "provider", Value: senderAddr.String()},
 			{Key: "stakeAppliedBlock", Value: stakeAppliedBlock},
 			{Key: "stake", Value: amount},
+			utils.LogAttr("description", description.String()),
 		}
-		details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 
 		// if the provider has no delegations then we dont limit the changes
 		if !existingEntry.DelegateTotal.IsZero() {
 			// if there was a change in the last 24h than we dont allow changes
 			if ctx.BlockTime().UTC().Unix()-int64(existingEntry.LastChange) < int64(CHANGE_WINDOW.Seconds()) {
-				if delegationCommission != existingEntry.DelegateCommission || existingEntry.DelegateLimit != delegationLimit {
+				if delegationCommission != existingEntry.DelegateCommission || !existingEntry.DelegateLimit.IsEqual(delegationLimit) {
 					return utils.LavaFormatWarning(fmt.Sprintf("stake entry commmision or delegate limit can only be changes once in %s", CHANGE_WINDOW), nil,
 						utils.LogAttr("last_change_time", existingEntry.LastChange))
 				}
@@ -161,7 +160,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
 		existingEntry.Geolocation = geolocation
 		existingEntry.Endpoints = endpointsVerified
-		existingEntry.Moniker = moniker
+		existingEntry.Description = description
 		existingEntry.DelegateCommission = delegationCommission
 		existingEntry.DelegateLimit = delegationLimit
 		existingEntry.LastChange = uint64(ctx.BlockTime().UTC().Unix())
@@ -255,7 +254,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		Endpoints:          endpointsVerified,
 		Geolocation:        geolocation,
 		Chain:              chainID,
-		Moniker:            moniker,
+		Description:        description,
 		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
 		DelegateLimit:      delegationLimit,
 		DelegateCommission: delegationCommission,
@@ -271,8 +270,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			details...,
 		)
 	}
-
-	details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
 
 	detailsMap := map[string]string{}
 	for _, atr := range details {

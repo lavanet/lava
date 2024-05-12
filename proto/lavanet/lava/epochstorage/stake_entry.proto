@@ -5,22 +5,24 @@ option go_package = "github.com/lavanet/lava/x/epochstorage/types";
 import "lavanet/lava/epochstorage/endpoint.proto";
 import "gogoproto/gogo.proto"; 
 import "cosmos/base/v1beta1/coin.proto"; 
+import "cosmos/staking/v1beta1/staking.proto";
+import "amino/amino.proto";
 
 message StakeEntry {
-  reserved 7;
+  reserved 7,8;
   cosmos.base.v1beta1.Coin stake = 1 [(gogoproto.nullable) = false]; 
   string address = 2; 
   uint64 stake_applied_block = 3; 
   repeated Endpoint endpoints = 4 [(gogoproto.nullable) = false]; 
   int32 geolocation = 5; 
   string chain = 6;
-  string moniker = 8;
   cosmos.base.v1beta1.Coin delegate_total = 9 [(gogoproto.nullable) = false]; // delegation total
   cosmos.base.v1beta1.Coin delegate_limit = 10 [(gogoproto.nullable) = false]; // delegation limit
   uint64 delegate_commission = 11; // delegation commission (precentage 0-100)
   uint64 last_change = 12;
   BlockReport block_report = 13;
   string vault = 14;
+  cosmos.staking.v1beta1.Description description = 15 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
 // BlockReport holds the most up-to-date info regarding blocks of the provider
