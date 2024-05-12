@@ -257,7 +257,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 					return nil, err
 				}
 
-				contactInfo, err := cmd.Flags().GetString(types.FlagSecurityContact)
+				securityContact, err := cmd.Flags().GetString(types.FlagSecurityContact)
 				if err != nil {
 					return nil, err
 				}
@@ -267,7 +267,7 @@ func CmdBulkStakeProvider() *cobra.Command {
 					return nil, err
 				}
 
-				description := stakingtypes.NewDescription(moniker, identity, website, contactInfo, descriptionDetails)
+				description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
 
 				for i, chainID := range chainIDs {
 					if chainID == "" {

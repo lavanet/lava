@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
 	v3 "github.com/lavanet/lava/x/epochstorage/types/migrations/v3"
@@ -157,7 +158,7 @@ func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 				Vault:              stakeEntryV5.Address,
 				StakeAppliedBlock:  stakeEntryV5.StakeAppliedBlock,
 				Chain:              stakeEntryV5.Chain,
-				Moniker:            stakeEntryV5.Moniker,
+				Description:        stakingtypes.NewDescription(stakeEntryV5.Moniker, "", "", "", ""),
 				Geolocation:        stakeEntryV5.Geolocation,
 				DelegateTotal:      stakeEntryV5.DelegateTotal,
 				DelegateLimit:      stakeEntryV5.DelegateLimit,
