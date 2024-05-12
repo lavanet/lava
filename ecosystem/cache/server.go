@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -85,24 +86,29 @@ func (cs *CacheServer) Serve(ctx context.Context,
 	var lis net.Listener
 	var err error
 	if strings.HasPrefix(listenAddr, unixPrefix) { // Unix socket
-		socketPath := strings.TrimPrefix(listenAddr, unixPrefix)
 
-		// err = syscall.Unlink(socketPath)
-		// if err != nil {
-		// 	// not really important if it fails
-		// 	utils.LavaFormatFatal("Unlink()", err)
-		// }
-
-		lis, err = net.Listen("unix", socketPath)
+		host, port, err := net.SplitHostPort(listenAddr)
 		if err != nil {
-			utils.LavaFormatFatal("Cache server failure setting up Unix socket listener: %v\n", err)
+			utils.LavaFormatFatal("Failed parse Unix socket: %v\n", err)
 			return
 		}
 
-		defer lis.Close()
+		syscall.Unlink(port)
+
+		addr, err := net.ResolveUnixAddr(host, port)
+		if err != nil {
+			utils.LavaFormatFatal("Failed to resolve unix socket address: %v\n", err)
+			return
+		}
+
+		lis, err = net.ListenUnix(host, addr)
+		if err != nil {
+			utils.LavaFormatFatal("Faild to listen to unix socket listener: %v\n", err)
+			return
+		}
 
 		// Set permissions for the Unix socket
-		err := os.Chmod(socketPath, 0o600)
+		err = os.Chmod(port, 0o600)
 		if err != nil {
 			utils.LavaFormatFatal("Failed to set permissions for Unix socket: %v\n", err)
 			return
