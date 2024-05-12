@@ -292,9 +292,7 @@ func (c *Client) CallContext(ctx context.Context, id json.RawMessage, method str
 	var msg *JsonrpcMessage
 	var err error
 	switch p := params.(type) {
-	case []interface{}:
-		msg, err = c.newMessageArrayWithID(method, id, p)
-	case string:
+	case []interface{}, string:
 		msg, err = c.newMessageArrayWithID(method, id, p)
 	case map[string]interface{}:
 		msg, err = c.newMessageMapWithID(method, id, p)
