@@ -196,12 +196,20 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.Description.Website = website
 			}
 
-			contactInfo, err := cmd.Flags().GetString(types.FlagContactInfo)
+			securityContact, err := cmd.Flags().GetString(types.FlagSecurityContact)
 			if err != nil {
 				return err
 			}
-			if contactInfo != "" {
-				providerEntry.Description.SecurityContact = contactInfo
+			if securityContact != "" {
+				providerEntry.Description.SecurityContact = securityContact
+			}
+
+			descriptionDetails, err := cmd.Flags().GetString(types.FlagDescriptionDetails)
+			if err != nil {
+				return err
+			}
+			if descriptionDetails != "" {
+				providerEntry.Description.Details = descriptionDetails
 			}
 
 			description, err := providerEntry.Description.EnsureLength()
@@ -242,7 +250,8 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
-	cmd.Flags().String(types.FlagContactInfo, "", "The provider's contact info")
+	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
+	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

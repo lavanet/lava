@@ -110,12 +110,17 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
-			contactInfo, err := cmd.Flags().GetString(types.FlagContactInfo)
+			securityContact, err := cmd.Flags().GetString(types.FlagSecurityContact)
 			if err != nil {
 				return err
 			}
 
-			description := stakingtypes.NewDescription(moniker, identity, website, contactInfo, "")
+			descriptionDetails, err := cmd.Flags().GetString(types.FlagDescriptionDetails)
+			if err != nil {
+				return err
+			}
+
+			description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
 
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
@@ -142,7 +147,8 @@ func CmdStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational address (address used to operate the provider process, default is vault address)")
 	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
-	cmd.Flags().String(types.FlagContactInfo, "", "The provider's contact info")
+	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
+	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
@@ -251,12 +257,17 @@ func CmdBulkStakeProvider() *cobra.Command {
 					return nil, err
 				}
 
-				contactInfo, err := cmd.Flags().GetString(types.FlagContactInfo)
+				contactInfo, err := cmd.Flags().GetString(types.FlagSecurityContact)
 				if err != nil {
 					return nil, err
 				}
 
-				description := stakingtypes.NewDescription(moniker, identity, website, contactInfo, "")
+				descriptionDetails, err := cmd.Flags().GetString(types.FlagDescriptionDetails)
+				if err != nil {
+					return nil, err
+				}
+
+				description := stakingtypes.NewDescription(moniker, identity, website, contactInfo, descriptionDetails)
 
 				for i, chainID := range chainIDs {
 					if chainID == "" {
@@ -312,7 +323,8 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational addresses (addresses that are used to operate the provider process. default is vault address)")
 	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
-	cmd.Flags().String(types.FlagContactInfo, "", "The provider's contact info")
+	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
+	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
