@@ -115,18 +115,19 @@ func checkValidatorPerformance(ctx context.Context, clientCtx client.Context, va
 		if err != nil {
 			return retInfo, utils.LavaFormatError("failed compiling regex", err, utils.LogAttr("regex", strings.ReplaceAll(valAddr, " ", "")))
 		}
-		valAddr := ""
+		valAddr = ""
 		foundMoniker := ""
 		for _, validator := range allValidators.GetValidators() {
-			if (exact && validator.Description.Moniker == valAddr) || (!exact && (re.MatchString(validator.Description.Moniker) || re2.MatchString(validator.Description.Moniker))) {
+			if (exact && validator.Description.Moniker == valAddr) || (regex && (re.MatchString(validator.Description.Moniker) || re2.MatchString(validator.Description.Moniker))) {
+				if valAddr != "" {
+					return retInfo, utils.LavaFormatError("regex matched two validators", nil, utils.LogAttr("first", foundMoniker), utils.LogAttr("second", validator.Description.Moniker))
+				}
 				foundMoniker = validator.Description.Moniker
 				valAddr = validator.OperatorAddress
 				valCons, err = extractValcons(clientCtx.Codec, validator, hrp)
 				if err != nil {
 					continue
 				}
-			} else {
-				return retInfo, utils.LavaFormatError("regex matched two validators", nil, utils.LogAttr("first", foundMoniker), utils.LogAttr("second", validator.Description.Moniker))
 			}
 		}
 		if valAddr == "" {
