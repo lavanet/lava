@@ -89,7 +89,7 @@ func (cs *CacheServer) Serve(ctx context.Context,
 
 		host, port, err := net.SplitHostPort(listenAddr)
 		if err != nil {
-			utils.LavaFormatFatal("Failed parse Unix socket: %v\n", err)
+			utils.LavaFormatFatal("Failed to parse Unix socket: %v\n", err)
 			return
 		}
 
