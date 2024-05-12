@@ -86,11 +86,20 @@ func (cs *CacheServer) Serve(ctx context.Context,
 	var err error
 	if strings.HasPrefix(listenAddr, unixPrefix) { // Unix socket
 		socketPath := strings.TrimPrefix(listenAddr, unixPrefix)
+
+		// err = syscall.Unlink(socketPath)
+		// if err != nil {
+		// 	// not really important if it fails
+		// 	utils.LavaFormatFatal("Unlink()", err)
+		// }
+
 		lis, err = net.Listen("unix", socketPath)
 		if err != nil {
 			utils.LavaFormatFatal("Cache server failure setting up Unix socket listener: %v\n", err)
 			return
 		}
+
+		defer lis.Close()
 
 		// Set permissions for the Unix socket
 		err := os.Chmod(socketPath, 0o600)
