@@ -1392,7 +1392,7 @@
                                 "compute_units": 200,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
+                                    "deterministic": true,
                                     "local": true,
                                     "subscription": false,
                                     "stateful": 0
@@ -1410,7 +1410,7 @@
                                 "compute_units": 200,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
+                                    "deterministic": true,
                                     "local": true,
                                     "subscription": false,
                                     "stateful": 0
@@ -1428,7 +1428,7 @@
                                 "compute_units": 200,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": false,
+                                    "deterministic": true,
                                     "local": true,
                                     "subscription": false,
                                     "stateful": 0
