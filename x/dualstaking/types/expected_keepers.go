@@ -44,6 +44,7 @@ type EpochstorageKeeper interface {
 	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string) error
 	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64)
 	GetUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64
+	UnstakeEntryByAddress(ctx sdk.Context, address string) (value epochstoragetypes.StakeEntry, found bool)
 	// Methods imported from epochstorage should be defined here
 }
 

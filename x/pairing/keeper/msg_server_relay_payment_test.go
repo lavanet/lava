@@ -213,7 +213,7 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 		relays = append(relays, relaySession)
 	}
 
-	balanceProviderBeforePayment := ts.GetBalance(provider1Acct.Addr)
+	balanceProviderBeforePayment := ts.GetBalance(provider1Acct.Vault.Addr)
 	_, err := ts.TxPairingRelayPayment(provider1Addr, relays...)
 	require.NoError(t, err)
 	ts.AdvanceMonths(1)
@@ -221,10 +221,10 @@ func TestRelayPaymentUnstakingProviderForUnresponsivenessWithBadDataInput(t *tes
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
 	// reward + before == after
-	_, err = ts.TxDualstakingClaimRewards(provider1Acct.Addr.String(), provider1Acct.Addr.String())
+	_, err = ts.TxDualstakingClaimRewards(provider1Acct.GetVaultAddr(), provider1Acct.Addr.String())
 	require.Nil(ts.T, err)
 
-	balanceProviderAfterPayment := ts.GetBalance(provider1Acct.Addr)
+	balanceProviderAfterPayment := ts.GetBalance(provider1Acct.Vault.Addr)
 	require.Equal(t, balanceProviderAfterPayment, int64(reward)+balanceProviderBeforePayment)
 }
 
@@ -294,7 +294,7 @@ func TestRelayPaymentDoubleSpending(t *testing.T) {
 		Relays:  lavaslices.Slice(relaySession, relaySession),
 	}
 
-	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, false, 100)
+	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Vault.Addr, true, false, 100)
 }
 
 func TestRelayPaymentDataModification(t *testing.T) {
@@ -445,6 +445,51 @@ func TestRelayPaymentQoS(t *testing.T) {
 	}
 }
 
+// TestVaultProviderRelayPayment tests that relay payment is sent by the provider and not vault
+// Scenarios:
+// 1. only provider (not vault) should send relay payments
+func TestVaultProviderRelayPayment(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+
+	clientAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
+	vault := providerAcc.GetVaultAddr()
+	qos := &types.QualityOfServiceReport{
+		Latency:      sdk.OneDec(),
+		Availability: sdk.OneDec(),
+		Sync:         sdk.OneDec(),
+	}
+
+	tests := []struct {
+		name            string
+		creator         string
+		providerInRelay string
+		valid           bool
+	}{
+		{"creator=provider, providerInRelay=provider", provider, provider, true},
+		{"creator=vault, providerInRelay=provider", vault, provider, false},
+		{"creator=provider, providerInRelay=vault", provider, vault, false},
+		{"creator=vault, providerInRelay=vault", vault, vault, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			relaySession := ts.newRelaySession(tt.providerInRelay, 0, 100, ts.BlockHeight(), 0)
+			relaySession.QosReport = qos
+			sig, err := sigs.Sign(clientAcc.SK, *relaySession)
+			require.NoError(t, err)
+			relaySession.Sig = sig
+
+			payment := types.MsgRelayPayment{
+				Creator: tt.creator,
+				Relays:  lavaslices.Slice(relaySession),
+			}
+			ts.relayPaymentWithoutPay(payment, tt.valid)
+		})
+	}
+}
+
 func TestEpochPaymentDeletion(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(2, 1, 0) // 1 provider, 1 client, default providers-to-pair
@@ -465,7 +510,7 @@ func TestEpochPaymentDeletion(t *testing.T) {
 		Relays:  lavaslices.Slice(relaySession),
 	}
 
-	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Addr, true, true, 100)
+	ts.payAndVerifyBalance(payment, client1Acct.Addr, providerAcct.Vault.Addr, true, true, 100)
 
 	ts.AdvanceEpochs(ts.EpochsToSave() + 1)
 
@@ -674,7 +719,7 @@ func TestAddressEpochBadgeMap(t *testing.T) {
 		Relays:  relays,
 	}
 
-	ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, true, 100)
+	ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Vault.Addr, true, true, 100)
 }
 
 // Test:
@@ -817,7 +862,7 @@ func TestBadgeUsedCuMapTimeout(t *testing.T) {
 				Creator: providerAddr,
 				Relays:  relays,
 			}
-			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Addr, true, tt.valid, 100)
+			ts.payAndVerifyBalance(relayPaymentMessage, client1Acct.Addr, providerAcct.Vault.Addr, true, tt.valid, 100)
 
 			// verify that the badgeUsedCu entry was deleted after it expired (and has the
 			// right value of used cu before expiring)
@@ -886,13 +931,13 @@ func TestIntOverflow(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
 	consumerAcct, consumerAddr := ts.GetAccount(common.CONSUMER, 0)
-	_, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
+	provider1Acc, provider1Addr := ts.GetAccount(common.PROVIDER, 0)
 
 	spec2 := ts.spec
 	spec2.Index = "mock2"
 	ts.AddSpec("mock2", spec2)
 
-	err := ts.StakeProvider(provider1Addr, spec2, testStake)
+	err := ts.StakeProvider(provider1Acc.GetVaultAddr(), provider1Addr, spec2, testStake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()

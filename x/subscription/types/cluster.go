@@ -23,15 +23,16 @@ import "strconv"
 
 const FREE_PLAN = "free" // gets its own const because it's treated differently
 
+var SUB_USAGES = []uint64{0, 6, 7} // sub usages that are treated differently when constructing a cluster key
+
 func GetSubUsageCriterion(sub Subscription) uint64 {
-	switch {
-	case sub.DurationTotal == 0:
-		return 0
-	case sub.DurationTotal > 6:
-		return 7
-	default:
-		return 6
+	for _, usage := range SUB_USAGES {
+		if sub.DurationTotal <= usage {
+			return usage
+		}
 	}
+
+	return SUB_USAGES[len(SUB_USAGES)-1]
 }
 
 // GetClusterKey returns the subscription's best-fit cluster
