@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding/gzip"
 )
 
 const (
@@ -92,6 +93,10 @@ func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, 
 			return net.Dial("tcp", addr)
 		}))
 	}
+
+	opts = append(opts, grpc.WithDefaultCallOptions(
+		grpc.UseCompressor(gzip.Name), // Use gzip compression for provider consumer communication
+	))
 
 	conn, err := grpc.DialContext(ctx, address, opts...)
 	return conn, err
