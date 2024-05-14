@@ -19,10 +19,12 @@ package rpcclient
 import (
 	"encoding/json"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
+	gojson "github.com/goccy/go-json"
 )
 
 func TestBlockNumberJSONUnmarshal(t *testing.T) {
@@ -152,4 +154,87 @@ func TestBlockNumberOrHash_WithNumber_MarshalAndUnmarshal(t *testing.T) {
 			}
 		})
 	}
+}
+
+type Data struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type LargeData struct {
+	ID       int      `json:"id"`
+	Name     string   `json:"name"`
+	Age      int      `json:"age"`
+	Email    string   `json:"email"`
+	Phone    string   `json:"phone"`
+	Accounts []string `json:"accounts"`
+}
+
+func BenchmarkJSONLibraries(b *testing.B) {
+	data := Data{
+		ID:   1,
+		Name: "John Doe",
+	}
+
+	mediumData := LargeData{
+		ID:    1,
+		Name:  "John Doe",
+		Age:   30,
+		Email: "john@example.com",
+		Phone: "123-456-7890",
+	}
+
+	largeData := LargeData{
+		ID:       0xffffffffffff0,
+		Name:     "John test very long string ############################################################################################################################################### Doe",
+		Age:      3111111111111111110,
+		Email:    "john@example.com",
+		Phone:    "+732-123-456-7890",
+		Accounts: []string{},
+	}
+	for i := 0; i < 1000; i++ {
+		largeData.Accounts = append(largeData.Accounts, "account"+strconv.Itoa(i))
+	}
+
+	runBenchMark := func(data interface{}, name string) {
+		b.Run(name+" json/encoding (encoding)", func(b *testing.B) {
+			b.Helper()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				json.Marshal(&data)
+			}
+		})
+
+		b.Run(name+" json/encoding (decoding)", func(b *testing.B) {
+			b.Helper()
+			bytes, _ := json.Marshal(&data)
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				var decoded Data
+				json.Unmarshal(bytes, &decoded)
+			}
+		})
+
+		b.Run(name+" go-json (encoding)", func(b *testing.B) {
+			b.Helper()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				gojson.Marshal(data)
+			}
+		})
+
+		b.Run(name+" go-json (decoding)", func(b *testing.B) {
+			b.Helper()
+			bytes, _ := json.Marshal(data)
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				var decoded Data
+				gojson.Unmarshal(bytes, &decoded)
+			}
+		})
+	}
+
+	runBenchMark(data, "Small Data")
+	runBenchMark(mediumData, "Medium Data")
+	runBenchMark(largeData, "Large Data")
 }
