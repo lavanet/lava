@@ -63,7 +63,7 @@ func IsSessionSyncLoss(err error) bool {
 	return code == codes.Code(SessionOutOfSyncError.ABCICode())
 }
 
-func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, skipTLS bool) (*grpc.ClientConn, error) {
+func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, skipTLS bool, allowCompression bool) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 
 	if skipTLS {
@@ -94,9 +94,11 @@ func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, 
 		}))
 	}
 
-	opts = append(opts, grpc.WithDefaultCallOptions(
-		grpc.UseCompressor(gzip.Name), // Use gzip compression for provider consumer communication
-	))
+	if allowCompression {
+		opts = append(opts, grpc.WithDefaultCallOptions(
+			grpc.UseCompressor(gzip.Name), // Use gzip compression for provider consumer communication
+		))
+	}
 
 	conn, err := grpc.DialContext(ctx, address, opts...)
 	return conn, err
