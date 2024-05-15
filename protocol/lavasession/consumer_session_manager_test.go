@@ -811,7 +811,7 @@ func TestContext(t *testing.T) {
 
 func TestGrpcClientHang(t *testing.T) {
 	ctx := context.Background()
-	conn, err := ConnectGRPCClient(ctx, grpcListener, true, false)
+	conn, err := ConnectGRPCClient(ctx, grpcListener, true, false, false)
 	require.NoError(t, err)
 	client := pairingtypes.NewRelayerClient(conn)
 	err = conn.Close()
