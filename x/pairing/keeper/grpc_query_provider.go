@@ -26,5 +26,6 @@ func (k Keeper) Provider(goCtx context.Context, req *types.QueryProviderRequest)
 		)
 	}
 
+	stakeEntry.Moniker = stakeEntry.Description.Moniker
 	return &types.QueryProviderResponse{StakeEntry: stakeEntry}, nil
 }

@@ -9,13 +9,14 @@ import "cosmos/staking/v1beta1/staking.proto";
 import "amino/amino.proto";
 
 message StakeEntry {
-  reserved 7,8;
+  reserved 7;
   cosmos.base.v1beta1.Coin stake = 1 [(gogoproto.nullable) = false]; 
   string address = 2; 
   uint64 stake_applied_block = 3; 
   repeated Endpoint endpoints = 4 [(gogoproto.nullable) = false]; 
   int32 geolocation = 5; 
   string chain = 6;
+  string moniker = 8;
   cosmos.base.v1beta1.Coin delegate_total = 9 [(gogoproto.nullable) = false]; // delegation total
   cosmos.base.v1beta1.Coin delegate_limit = 10 [(gogoproto.nullable) = false]; // delegation limit
   uint64 delegate_commission = 11; // delegation commission (precentage 0-100)
