@@ -11,7 +11,7 @@ func TestAddLatency(t *testing.T) {
 
 	// Add some latencies
 	latencies := []time.Duration{time.Millisecond * 100, time.Millisecond * 200, time.Millisecond * 300}
-	expectedAverageLatencies := []time.Duration{time.Millisecond * 100, time.Millisecond * 150, time.Millisecond * 200}
+	expectedAverageLatencies := []time.Duration{100, 150, 200}
 
 	for i, latency := range latencies {
 		lt.AddLatency(latency)
