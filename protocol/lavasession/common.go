@@ -94,6 +94,7 @@ func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, 
 		}))
 	}
 
+	// allow gzip compression for grpc.
 	if allowCompression {
 		opts = append(opts, grpc.WithDefaultCallOptions(
 			grpc.UseCompressor(gzip.Name), // Use gzip compression for provider consumer communication
