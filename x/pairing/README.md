@@ -43,24 +43,29 @@ The pairing module is one of Lava's core modules and is closely connected to the
 
 Providers are entities that have access to blockchains and want to monetize that access by providing services to consumers. Providers stake tokens under a geolocation and supported specifications (e.g. Ethereum JSON-RPC in U.S. East), once active they must provide service to consumers. Providers run the lava process and the desired blockchain or service (e.g. Ethereum JSON-RPC) they are providing access for.
 
+Note, a provider stakes its funds using its vault address and runs the Lava provider process using the its provider address. All the provider's rewards are sent to its vault address.
+
 #### Stake
 
 When a provider stakes, a new stake entry is created on-chain. A stake entry is defined as follows:
 
 ```go
 type StakeEntry struct {
-	Stake               Coin        // stake amount
-	Address             string      // provider Lava address
-	StakeAppliedBlock   uint64      // the block in which the stake is active
-	Endpoints           []Endpoint  // a list of endpoints
-	Geolocation         int32       // supported geolocation
-	Chain               string      // chain in which the provider is staked on
-	Moniker             string      // non-unique human name
-	DelegateTotal       Coin        // total delegations
-	DelegateLimit       Coin        // max amount of delegations the provider accepts
-	DelegateCommission  uint64      // commission for delegation
+	Stake              types.Coin // the providers stake amount (self delegation)
+	Vault              string     // the lava address of the provider's vault which holds most of its funds
+	Address           string      // the lava address of the provider entity's which is used to run and operate the provider process
+	StakeAppliedBlock  uint64     // the block at which the provider is included in the pairing list
+	Endpoints          []Endpoint // the endpoints of the provider
+	Geolocation        int32      // the geolocation this provider supports
+	Chain              string     // the chain ID on which the provider staked on
+	Moniker            string     // free string description
+	DelegateTotal      types.Coin // total delegation to the provider (without self delegation)
+	DelegateLimit      types.Coin // delegation total limit
+	DelegateCommission uint64     // commission from delegation rewards
 }
 ```
+
+To bolster security, a provider entity is now associated with two addresses: the vault address and the provider address. If the provider entity doesn't specify the provider address, it defaults to being the same as the vault address. When a provider entity stakes, the account from which the funds originate is considered the vault address. This address is utilized to hold the provider entity's funds and to receive rewards from the provider entity's service. Any other actions performed by the provider entity utilize the provider entity's provider address. The provider address can perform all actions except for staking/unstaking, modifying stake-related fields in the provider's stake entry, and claiming rewards. It's important to note that once a provider address is registered through a provider entity's staking, it cannot stake on the same chain again.
 
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). A provider can accept delegations to increase its effective stake, which increases its chances of being selected in the pairing process. The provider can also set a delegation limit, which determines the maximum value of delegations they can accept. This limit is in place to prevent delegators from increasing the provider's effective stake to a level where the provider is overwhelmed with more consumers than they can handle in the pairing process. For more details about delegations, refer to the dualstaking module README.
 

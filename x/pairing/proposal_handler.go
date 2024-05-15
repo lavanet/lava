@@ -49,6 +49,7 @@ func handleUnstakeProposal(ctx sdk.Context, k keeper.Keeper, p *types.UnstakePro
 					chainID,
 					err.Error(),
 				}, ","))
+				continue
 			}
 
 			err = k.UnstakeEntryForce(ctx, stakeEntry.Chain, stakeEntry.Address, "unstaked via gov proposal")

@@ -315,8 +315,13 @@ func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions 
 	csm.lock.Lock() // lock write
 	defer csm.lock.Unlock()
 	if len(csm.getValidAddresses(addon, extensions)) == 0 { // re verify it didn't change while waiting for lock.
-		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
 		csm.setValidAddressesToDefaultValue(addon, extensions)
+		// only if length is larger than 0 after reset we actually reset. otherwise we don't have any providers for addon or extension
+		if len(csm.getValidAddresses(addon, extensions)) != 0 {
+			utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+		} else {
+			utils.LavaFormatWarning("No providers for asked addon or extension, list is empty after trying to reset", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+		}
 		csm.numberOfResets += 1
 	}
 	// if len(csm.validAddresses) != 0 meaning we had a reset (or an epoch change), so we need to return the numberOfResets which is currently in csm
@@ -363,11 +368,11 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders U
 					if errGetRegularProvider != nil {
 						return nil, err // return original error (getValidConsumerSessionsWithProvider)
 					}
-					for _, session := range sessionWithProviderMap {
-						session.RemoveExtensions = true
+					for key := range sessionWithProviderMap {
+						sessionWithProviderMap[key].RemoveExtensions = true
 					}
 					// print a warning in case we got a provider who does not support that addon or extension.
-					utils.LavaFormatWarning("No Providers For Addon Or Extension, using regular provider for relay", errOnRetry, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensionNames))
+					utils.LavaFormatWarning("No Providers For Addon Or Extension, using regular provider for relay", errOnRetry, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensionNames), utils.LogAttr("providers_chosen", sessionWithProviderMap))
 				} else {
 					return nil, err // return original error (getValidConsumerSessionsWithProvider)
 				}
@@ -421,7 +426,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			// we can get here if we wanted 3 archive and got 2 only because one couldn't connect,
 			// so we tried getting more sessions and got a regular provider due to no pairings available.
 			// in that case just return the current sessions that we do have.
-			if sessionWithProvider.RemoveExtensions && len(sessions) > 1 {
+			if sessionWithProvider.RemoveExtensions && len(sessions) >= 1 {
 				utils.LavaFormatDebug("Too many sessions when using RemoveAddonAndExtensions session", utils.LogAttr("sessions", sessions), utils.LogAttr("wanted_to_add", sessionWithProvider))
 				// in that case we just return the sessions we already have.
 				return sessions, nil

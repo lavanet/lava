@@ -99,8 +99,8 @@ func (ts *tester) addProviderExtra(
 ) error {
 	start := len(ts.Accounts(common.PROVIDER))
 	for i := 0; i < count; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, start+i, testBalance)
-		err := ts.StakeProviderExtra(addr, ts.spec, testStake, endpoints, geoloc, moniker)
+		acc, addr := ts.AddAccount(common.PROVIDER, start+i, testBalance)
+		err := ts.StakeProviderExtra(acc.GetVaultAddr(), addr, ts.spec, testStake, endpoints, geoloc, moniker)
 		if err != nil {
 			return err
 		}
@@ -144,7 +144,7 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 func (ts *tester) payAndVerifyBalance(
 	relayPayment pairingtypes.MsgRelayPayment,
 	clientAddr sdk.AccAddress,
-	providerAddr sdk.AccAddress,
+	providerVault sdk.AccAddress,
 	validConsumer bool,
 	validPayment bool,
 	providerRewardPerc uint64,
@@ -228,17 +228,17 @@ func (ts *tester) payAndVerifyBalance(
 		want = credit.MulRaw(int64(providerReward)).QuoRaw(int64(totalCuUsed))
 	}
 
-	balanceWant := ts.GetBalance(providerAddr) + want.Int64()
-	reward, err := ts.QueryDualstakingDelegatorRewards(providerAddr.String(), providerAddr.String(), "")
+	balanceWant := ts.GetBalance(providerVault) + want.Int64()
+	reward, err := ts.QueryDualstakingDelegatorRewards(providerVault.String(), relayPayment.Creator, "")
 	require.Nil(ts.T, err)
 	for _, reward := range reward.Rewards {
 		want = want.Sub(reward.Amount.AmountOf(ts.BondDenom()))
 	}
 	require.True(ts.T, want.IsZero())
-	_, err = ts.TxDualstakingClaimRewards(providerAddr.String(), providerAddr.String())
+	_, err = ts.TxDualstakingClaimRewards(providerVault.String(), relayPayment.Creator)
 	require.Nil(ts.T, err)
 
-	balance := ts.GetBalance(providerAddr) + want.Int64()
+	balance := ts.GetBalance(providerVault) + want.Int64()
 	require.Equal(ts.T, balanceWant, balance)
 }
 

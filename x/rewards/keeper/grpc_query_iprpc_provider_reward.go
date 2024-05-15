@@ -31,7 +31,13 @@ func (k Keeper) IprpcProviderRewardEstimation(goCtx context.Context, req *types.
 		bps, _ := k.specProvidersBasePay(ctx, specFund.Spec, false)
 		providerIprpcCu := uint64(0)
 		totalIprpcCu := uint64(0)
-		providerBpIndex := types.BasePayIndex{Provider: req.Provider, ChainID: specFund.Spec}
+
+		stakeEntry, found := k.epochstorage.GetStakeEntryByAddressCurrent(ctx, specFund.Spec, req.Provider)
+		if !found {
+			continue
+		}
+
+		providerBpIndex := types.BasePayIndex{Provider: stakeEntry.Address, ChainID: specFund.Spec}
 		for _, bp := range bps {
 			if bp.BasePayIndex.String() == providerBpIndex.String() {
 				providerIprpcCu = bp.IprpcCu
