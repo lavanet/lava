@@ -22,7 +22,6 @@ import (
 	crand "crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -30,6 +29,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/utils"
 )
