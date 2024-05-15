@@ -31,8 +31,8 @@ const (
 	MaxConsecutiveConnectionAttempts                 = 5
 	TimeoutForEstablishingAConnection                = 1500 * time.Millisecond // 1.5 seconds
 	MaxSessionsAllowedPerProvider                    = 1000                    // Max number of sessions allowed per provider
-	MaxAllowedBlockListedSessionPerProvider          = 3
-	MaximumNumberOfFailuresAllowedPerConsumerSession = 3
+	MaxAllowedBlockListedSessionPerProvider          = MaxSessionsAllowedPerProvider / 3
+	MaximumNumberOfFailuresAllowedPerConsumerSession = 15
 	RelayNumberIncrement                             = 1
 	DataReliabilitySessionId                         = 0 // data reliability session id is 0. we can change to more sessions later if needed.
 	DataReliabilityRelayNumber                       = 1
