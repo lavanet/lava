@@ -50,7 +50,7 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/elys-network/elys/accountedpool/accounted_pool/{ppol_id}",
+                                "name": "/elys-network/elys/accountedpool/accounted_pool/{pool_id}",
                                 "block_parsing": {
                                     "parser_arg": [
                                         "latest"
