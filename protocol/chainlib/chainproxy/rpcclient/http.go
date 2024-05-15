@@ -19,7 +19,6 @@ package rpcclient
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -29,6 +28,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"

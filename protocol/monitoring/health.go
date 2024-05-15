@@ -2,11 +2,12 @@ package monitoring
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/gogo/status"
