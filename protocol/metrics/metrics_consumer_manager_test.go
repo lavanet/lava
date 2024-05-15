@@ -34,7 +34,7 @@ func TestAddLatencyWithZeroTotalRequests(t *testing.T) {
 	// Adding latency without incrementing TotalRequests
 	lt.AddLatency(time.Millisecond * 100)
 
-	if lt.AverageLatency != time.Millisecond*100 {
-		t.Errorf("Expected average latency %v, got %v", time.Millisecond*100, lt.AverageLatency)
+	if lt.AverageLatency != 100 {
+		t.Errorf("Expected average latency %v, got %v", 100, lt.AverageLatency)
 	}
 }
