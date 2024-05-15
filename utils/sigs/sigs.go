@@ -35,6 +35,7 @@ type Account struct {
 	PubKey  cryptotypes.PubKey
 	Addr    sdk.AccAddress
 	ConsKey cryptotypes.PrivKey
+	Vault   *Account // provider vault account (only for provider)
 }
 
 type Signable interface {
@@ -44,6 +45,14 @@ type Signable interface {
 	DataToSign() []byte
 	// HashRounds gets the number of times the object's data is hashed before it's signed
 	HashRounds() int
+}
+
+func (acc Account) GetVaultAddr() string {
+	if acc.Vault != nil {
+		return acc.Vault.Addr.String()
+	}
+
+	return ""
 }
 
 // Sign creates a signature for a struct. The prepareFunc prepares the struct before extracting the data for the signature

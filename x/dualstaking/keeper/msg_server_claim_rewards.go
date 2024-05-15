@@ -35,7 +35,7 @@ func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimReward
 			"provider":  msg.Provider,
 			"claimed":   claimed.String(),
 		}
-		utils.LogLavaEvent(ctx, logger, types.DelegateEventName, details, "Claim Delegation Rewards")
+		utils.LogLavaEvent(ctx, logger, types.ClaimRewardsEventName, details, "Claim Delegation Rewards")
 	}
 
 	return &types.MsgClaimRewardsResponse{}, err

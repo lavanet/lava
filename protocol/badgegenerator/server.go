@@ -3,10 +3,11 @@ package badgegenerator
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"sync/atomic"
+
+	"github.com/goccy/go-json"
 
 	"google.golang.org/grpc/metadata"
 
