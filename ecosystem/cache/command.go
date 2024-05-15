@@ -15,7 +15,7 @@ const (
 
 func CreateCacheCobraCommand() *cobra.Command {
 	cacheCmd := &cobra.Command{
-		Use:   "cache [address<HOST:PORT>]",
+		Use:   "cache [address<HOST:PORT> | unix:<SOCKET_PATH.sock>]",
 		Short: "set up a ram based cache server for relays listening on address specified, can work either with rpcconsumer or rpcprovider to improve latency",
 		Long: `set up a ram based cache server for relays listening on address specified, can work either with rpcconsumer or rpcprovider to improve latency,
 longer DefaultExpirationForNonFinalized will reduce sync QoS for "latest" request but reduce load`,

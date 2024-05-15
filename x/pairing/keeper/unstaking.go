@@ -36,16 +36,25 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		)
 	}
 
-	err := k.dualstakingKeeper.UnbondFull(ctx, existingEntry.GetAddress(), validator, existingEntry.GetAddress(), existingEntry.GetChain(), existingEntry.Stake, true)
+	if creator != existingEntry.Vault {
+		return utils.LavaFormatWarning("can't unstake entry with provider address, only vault address is allowed to unstake", fmt.Errorf("provider unstake failed"),
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("provider", existingEntry.Address),
+			utils.LogAttr("vault", existingEntry.Vault),
+			utils.LogAttr("chain_id", chainID),
+		)
+	}
+
+	err := k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, existingEntry.GetChain(), existingEntry.Stake, true)
 	if err != nil {
-		return utils.LavaFormatWarning("can't unbond seld delegation", err,
+		return utils.LavaFormatWarning("can't unbond self delegation", err,
 			utils.Attribute{Key: "address", Value: existingEntry.Address},
 			utils.Attribute{Key: "spec", Value: chainID},
 		)
 	}
 
 	// index might have changed in the unbond
-	_, found = k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, creator)
+	_, found = k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, existingEntry.Address)
 	if found {
 		err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, creator)
 		if err != nil {
@@ -103,11 +112,12 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			amount = totalAmount
 		}
 		totalAmount = totalAmount.Sub(amount)
-		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.GetAddress(), validator.OperatorAddress, existingEntry.GetAddress(), existingEntry.GetChain(), sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount), true)
+		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator.OperatorAddress, existingEntry.Address, existingEntry.GetChain(), sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount), true)
 		if err != nil {
-			return utils.LavaFormatWarning("can't unbond seld delegation", err,
-				utils.Attribute{Key: "address", Value: existingEntry.Address},
-				utils.Attribute{Key: "spec", Value: chainID},
+			return utils.LavaFormatWarning("can't unbond self delegation", err,
+				utils.LogAttr("provider", existingEntry.Address),
+				utils.LogAttr("vault", existingEntry.Vault),
+				utils.LogAttr("spec", chainID),
 			)
 		}
 

@@ -48,3 +48,34 @@ func TestUnstakeAndSlashProposal(t *testing.T) {
 		}
 	}
 }
+
+// TestVaultProviderUnstakeAndSlashProposal tests that when running a proposal, both the provider
+// and vault addresses should work
+// Scenarios:
+// 1. simulate unstake proposal with vault address -> should work
+// 2. simulate unstake proposal with provider -> should work
+func TestVaultProviderUnstakeAndSlashProposal(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 0, 0)
+
+	acc, _ := ts.GetAccount(common.PROVIDER, 0)
+	provider := acc.Addr.String()
+	vault := acc.GetVaultAddr()
+
+	tests := []struct {
+		name    string
+		creator string
+	}{
+		{"vault unstakes", vault},
+		{"provider unstakes", provider},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := testutils.SimulateUnstakeProposal(ts.Ctx, ts.Keepers.Pairing, []types.ProviderUnstakeInfo{{
+				Provider: tt.creator, ChainId: ts.spec.Index,
+			}}, []types.DelegatorSlashing{{}})
+			require.NoError(t, err)
+		})
+	}
+}

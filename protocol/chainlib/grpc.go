@@ -3,7 +3,6 @@ package chainlib
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"

@@ -315,8 +315,13 @@ func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions 
 	csm.lock.Lock() // lock write
 	defer csm.lock.Unlock()
 	if len(csm.getValidAddresses(addon, extensions)) == 0 { // re verify it didn't change while waiting for lock.
-		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
 		csm.setValidAddressesToDefaultValue(addon, extensions)
+		// only if length is larger than 0 after reset we actually reset. otherwise we don't have any providers for addon or extension
+		if len(csm.getValidAddresses(addon, extensions)) != 0 {
+			utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+		} else {
+			utils.LavaFormatWarning("No providers for asked addon or extension, list is empty after trying to reset", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+		}
 		csm.numberOfResets += 1
 	}
 	// if len(csm.validAddresses) != 0 meaning we had a reset (or an epoch change), so we need to return the numberOfResets which is currently in csm
@@ -345,6 +350,41 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, ext
 	return numberOfResets
 }
 
+func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders UsedProvidersInf, tempIgnoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensionNames []string, stateful uint32, virtualEpoch uint64) (sessionWithProviderMap SessionWithProviderMap, err error) {
+	sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch)
+	if err != nil {
+		if PairingListEmptyError.Is(err) {
+			// got no pairing available, try to recover a session from the currently banned providers
+			var errOnRetry error
+			sessionWithProviderMap, errOnRetry = csm.tryGetConsumerSessionWithProviderFromBlockedProviderList(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, usedProviders)
+			if errOnRetry != nil {
+				// we validate currently used providers are 0 meaning we didn't find a valid extension provider
+				// so we don't return an invalid error while waiting for a reply for a valid provider.
+				// in the case we do not have any relays sent at the moment we get a provider from the regular list
+				if usedProviders.CurrentlyUsed() == 0 && PairingListEmptyError.Is(errOnRetry) && (len(extensionNames) > 0) {
+					var errGetRegularProvider error
+					emptyExtensionNames := []string{}
+					sessionWithProviderMap, errGetRegularProvider = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, emptyExtensionNames, stateful, virtualEpoch)
+					if errGetRegularProvider != nil {
+						return nil, err // return original error (getValidConsumerSessionsWithProvider)
+					}
+					for key := range sessionWithProviderMap {
+						sessionWithProviderMap[key].RemoveExtensions = true
+					}
+					// print a warning in case we got a provider who does not support that addon or extension.
+					utils.LavaFormatWarning("No Providers For Addon Or Extension, using regular provider for relay", errOnRetry, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensionNames), utils.LogAttr("providers_chosen", sessionWithProviderMap))
+				} else {
+					return nil, err // return original error (getValidConsumerSessionsWithProvider)
+				}
+			}
+		} else {
+			return nil, err
+		}
+		// if we got here we managed to get a sessionWithProviderMap
+	}
+	return sessionWithProviderMap, nil
+}
+
 // GetSessions will return a ConsumerSession, given cu needed for that session.
 // The user can also request specific providers to not be included in the search for a session.
 func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForSession uint64, usedProviders UsedProvidersInf, requestedBlock int64, addon string, extensions []*spectypes.Extension, stateful uint32, virtualEpoch uint64) (
@@ -371,19 +411,9 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	}
 
 	// Get a valid consumerSessionsWithProvider
-	sessionWithProviderMap, err := csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch)
+	sessionWithProviderMap, err := csm.getSessionWithProviderOrError(usedProviders, tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch)
 	if err != nil {
-		if PairingListEmptyError.Is(err) {
-			// got no pairing available, try to recover a session from the currently banned providers
-			var errOnRetry error
-			sessionWithProviderMap, errOnRetry = csm.tryGetConsumerSessionWithProviderFromBlockedProviderList(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, usedProviders)
-			if errOnRetry != nil {
-				return nil, err // return original error (getValidConsumerSessionsWithProvider)
-			}
-		} else {
-			return nil, err
-		}
-		// if we got here we managed to get a sessionWithProviderMap
+		return nil, err
 	}
 
 	// Save how many sessions we are aiming to have
@@ -392,6 +422,15 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	sessions := make(ConsumerSessionsMap, wantedSession)
 	for {
 		for providerAddress, sessionWithProvider := range sessionWithProviderMap {
+			// adding a protection when using RemoveAddonsAndExtensions to use only one session.
+			// we can get here if we wanted 3 archive and got 2 only because one couldn't connect,
+			// so we tried getting more sessions and got a regular provider due to no pairings available.
+			// in that case just return the current sessions that we do have.
+			if sessionWithProvider.RemoveExtensions && len(sessions) >= 1 {
+				utils.LavaFormatDebug("Too many sessions when using RemoveAddonAndExtensions session", utils.LogAttr("sessions", sessions), utils.LogAttr("wanted_to_add", sessionWithProvider))
+				// in that case we just return the sessions we already have.
+				return sessions, nil
+			}
 			// Extract values from session with provider
 			consumerSessionsWithProvider := sessionWithProvider.SessionsWithProvider
 			sessionEpoch := sessionWithProvider.CurrentEpoch
@@ -488,6 +527,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					Session:           consumerSession,
 					Epoch:             sessionEpoch,
 					ReportedProviders: reportedProviders,
+					RemoveExtensions:  sessionWithProvider.RemoveExtensions,
 				}
 
 				// adding qos summery for error parsing.
@@ -498,7 +538,6 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				consumerSession.SetUsageForSession(cuNeededForSession, csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress), usedProviders)
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
-
 				if len(sessions) == wantedSession {
 					return sessions, nil
 				}
@@ -507,26 +546,16 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 		}
 
 		// If we do not have enough fetch more
-		sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch)
-
+		sessionWithProviderMap, err = csm.getSessionWithProviderOrError(usedProviders, tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch)
 		// If error exists but we have sessions, return them
 		if err != nil && len(sessions) != 0 {
 			return sessions, nil
 		}
-
-		// If error happens, and we do not have any sessions return error
+		// If error happens, and we do not have any sessions return an error
 		if err != nil {
-			if PairingListEmptyError.Is(err) {
-				// got no pairing available, try to recover a session from the currently banned providers
-				var errOnRetry error
-				sessionWithProviderMap, errOnRetry = csm.tryGetConsumerSessionWithProviderFromBlockedProviderList(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, usedProviders)
-				if errOnRetry != nil {
-					return nil, err // return original error (getValidConsumerSessionsWithProvider)
-				}
-			} else {
-				return nil, err
-			}
+			return nil, err
 		}
+		// if we got here we managed to get more sessions so we will try to connect and return a session to the user.
 	}
 }
 
@@ -680,7 +709,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	// Fetch provider addresses
 	providerAddresses, err := csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful)
 	if err != nil {
-		utils.LavaFormatError(csm.rpcEndpoint.ChainID+" could not get a provider addresses", err)
+		utils.LavaFormatInfo(csm.rpcEndpoint.ChainID+" could not get a provider addresses", utils.LogAttr("error", err))
 		return nil, err
 	}
 
