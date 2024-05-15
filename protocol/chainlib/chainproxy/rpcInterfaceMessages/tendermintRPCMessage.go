@@ -1,9 +1,10 @@
 package rpcInterfaceMessages
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
+
+	"github.com/goccy/go-json"
 
 	tenderminttypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"

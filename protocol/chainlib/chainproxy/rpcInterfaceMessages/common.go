@@ -1,7 +1,7 @@
 package rpcInterfaceMessages
 
 import (
-	"encoding/json"
+	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/parser"
