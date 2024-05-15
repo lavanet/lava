@@ -3,11 +3,12 @@ package monitoring
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"

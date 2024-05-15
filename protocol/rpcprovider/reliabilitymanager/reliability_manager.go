@@ -2,11 +2,12 @@ package reliabilitymanager
 
 import (
 	"context"
-	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/lavanet/lava/protocol/chainlib"
