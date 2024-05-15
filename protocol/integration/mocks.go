@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -245,12 +246,12 @@ func NewMockChainFetcher(startBlock, blocksToSave int64, callback func()) *MockC
 	return &mockCHainFetcher
 }
 
-type uniqueAddresGenerator struct {
+type uniqueAddressGenerator struct {
 	seed int
 	lock sync.Mutex
 }
 
-func (ug *uniqueAddresGenerator) GetAddress() string {
+func (ug *uniqueAddressGenerator) GetAddress() string {
 	ug.lock.Lock()
 	defer ug.lock.Unlock()
 	ug.seed++
@@ -258,4 +259,14 @@ func (ug *uniqueAddresGenerator) GetAddress() string {
 		return "localhost:111" + strconv.Itoa(ug.seed)
 	}
 	return "localhost:11" + strconv.Itoa(ug.seed)
+}
+
+func (ug *uniqueAddressGenerator) GetUnixSocketAddress() string {
+	ug.lock.Lock()
+	defer ug.lock.Unlock()
+	ug.seed++
+	if ug.seed < 100 {
+		return filepath.Join("/tmp", "unix:"+strconv.Itoa(ug.seed)+".sock")
+	}
+	return filepath.Join("/tmp", "unix:"+strconv.Itoa(ug.seed)+".sock")
 }

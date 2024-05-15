@@ -134,7 +134,7 @@ func TestQueryProviderMultipleDelegators(t *testing.T) {
 	_, delegator1 := ts.GetAccount(common.CONSUMER, 0)
 	_, delegator2 := ts.GetAccount(common.CONSUMER, 1)
 	_, delegator3 := ts.GetAccount(common.CONSUMER, 2)
-	_, provider := ts.GetAccount(common.PROVIDER, 0)
+	providerAcc, provider := ts.GetAccount(common.PROVIDER, 0)
 
 	ts.AddSpec("mock1", common.CreateMockSpec())
 
@@ -142,7 +142,7 @@ func TestQueryProviderMultipleDelegators(t *testing.T) {
 
 	spec := ts.Spec("mock")
 	spec1 := ts.Spec("mock1")
-	err := ts.StakeProvider(provider, spec1, testStake)
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), provider, spec1, testStake)
 	require.NoError(t, err)
 
 	amountUint64 := uint64(100)

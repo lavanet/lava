@@ -6,8 +6,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/epochstorage/types"
 	v3 "github.com/lavanet/lava/x/epochstorage/types/migrations/v3"
 	v4 "github.com/lavanet/lava/x/epochstorage/types/migrations/v4"
+	v5 "github.com/lavanet/lava/x/epochstorage/types/migrations/v5"
 )
 
 type Migrator struct {
@@ -124,6 +126,72 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 			StakeStorages[st].StakeEntries[s].DelegateCommission = 100
 		}
 		m.keeper.SetStakeStorage(ctx, StakeStorages[st])
+	}
+
+	return nil
+}
+
+// Migrate5to6 goes over all existing stake entries and populates the new vault address field with the stake entry address
+func (m Migrator) Migrate5to6(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate: epochstorage to include provider and vault addresses")
+
+	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(types.StakeStorageKeyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var stakeStorageV5 v5.StakeStorage
+		m.keeper.cdc.MustUnmarshal(iterator.Value(), &stakeStorageV5)
+
+		stakeStorageV6 := types.StakeStorage{
+			Index:          stakeStorageV5.Index,
+			EpochBlockHash: stakeStorageV5.EpochBlockHash,
+		}
+
+		var stakeEntriesV6 []types.StakeEntry
+		for _, stakeEntryV5 := range stakeStorageV5.StakeEntries {
+			stakeEntryV6 := types.StakeEntry{
+				Stake:              stakeEntryV5.Stake,
+				Address:            stakeEntryV5.Address,
+				Vault:              stakeEntryV5.Address,
+				StakeAppliedBlock:  stakeEntryV5.StakeAppliedBlock,
+				Chain:              stakeEntryV5.Chain,
+				Moniker:            stakeEntryV5.Moniker,
+				Geolocation:        stakeEntryV5.Geolocation,
+				DelegateTotal:      stakeEntryV5.DelegateTotal,
+				DelegateLimit:      stakeEntryV5.DelegateLimit,
+				DelegateCommission: stakeEntryV5.DelegateCommission,
+				LastChange:         stakeEntryV5.LastChange,
+			}
+
+			blockReport := stakeEntryV5.BlockReport
+			stakeEntryV6.BlockReport = &types.BlockReport{
+				Epoch:       blockReport.Epoch,
+				LatestBlock: blockReport.LatestBlock,
+			}
+
+			var endpointsV6 []types.Endpoint
+			for _, endpointV5 := range stakeEntryV5.Endpoints {
+				endpointV6 := types.Endpoint{
+					IPPORT:        endpointV5.IPPORT,
+					Addons:        endpointV5.Addons,
+					ApiInterfaces: endpointV5.ApiInterfaces,
+					Extensions:    endpointV5.Extensions,
+					Geolocation:   endpointV5.Geolocation,
+				}
+
+				endpointsV6 = append(endpointsV6, endpointV6)
+			}
+
+			stakeEntryV6.Endpoints = endpointsV6
+
+			stakeEntriesV6 = append(stakeEntriesV6, stakeEntryV6)
+		}
+		stakeStorageV6.StakeEntries = stakeEntriesV6
+
+		store.Delete(iterator.Key())
+		store.Set(iterator.Key(), m.keeper.cdc.MustMarshal(&stakeStorageV6))
 	}
 
 	return nil

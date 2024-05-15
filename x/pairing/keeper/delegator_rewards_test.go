@@ -80,7 +80,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			// ** check provider reward without delegators ** //
 
 			relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-			ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 100)
+			ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 100)
 
 			// ** check provider reward with delegators ** //
 
@@ -118,7 +118,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 
 			// send relay and check provider balance according to expected providerRewardPerc (done inside payAndVerifyBalance)
 			relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-			ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, tt.providerReward)
+			ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, tt.providerReward)
 
 			// Get the delegator rewards from the delegatorRewardsMap
 			resRewards1, err := ts.QueryDualstakingDelegatorRewards(delegator1, provider, stakeEntry.Chain)
@@ -232,7 +232,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	require.Equal(t, 3, len(res.Delegations))
 
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 70)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 70)
 
 	// modify the stake entry to have a delegation limit lower than the total delegations
 	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
@@ -240,7 +240,7 @@ func TestDelegationLimitAffectingProviderReward(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 76)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 76)
 }
 
 func TestProviderRewardWithCommission(t *testing.T) {
@@ -292,7 +292,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	// check that the expected reward equals to the provider's new balance minus old balance
 	relayPaymentMessage := sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 100)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 100)
 
 	// the delegator should get no rewards
 	resRewards, err := ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
@@ -307,7 +307,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	// the expected reward for the provider with 0% commission is half of the total rewards
 	// (in this test specifically, effectiveDelegations = delegateTotal = providerStake)
 	relayPaymentMessage = sendRelay(ts, provider, clientAcc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Addr, true, true, 50)
+	ts.payAndVerifyBalance(relayPaymentMessage, clientAcc.Addr, providerAcc.Vault.Addr, true, true, 50)
 
 	// the delegator should get the total rewards
 	resRewards, err = ts.QueryDualstakingDelegatorRewards(delegator1, "", "")
@@ -369,7 +369,7 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	spec1.Index = "mock1"
 	spec1.Name = "mock1"
 	ts.AddSpec(spec1.Index, spec1)
-	err = ts.StakeProvider(provider1, spec1, testStake)
+	err = ts.StakeProvider(provider1Acc.GetVaultAddr(), provider1, spec1, testStake)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -389,10 +389,10 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	ts.AdvanceEpoch() // apply delegations
 
 	relayPaymentMessage := sendRelay(ts, provider1, client1Acc, []string{ts.spec.Index, spec1.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, client1Acc.Addr, provider1Acc.Addr, true, true, 50)
+	ts.payAndVerifyBalance(relayPaymentMessage, client1Acc.Addr, provider1Acc.Vault.Addr, true, true, 50)
 
 	relayPaymentMessage = sendRelay(ts, provider2, client1Acc, []string{ts.spec.Index})
-	ts.payAndVerifyBalance(relayPaymentMessage, client1Acc.Addr, provider2Acc.Addr, true, true, 50)
+	ts.payAndVerifyBalance(relayPaymentMessage, client1Acc.Addr, provider2Acc.Vault.Addr, true, true, 50)
 
 	planPrice := ts.plan.Price.Amount.Int64()
 
@@ -427,6 +427,58 @@ func TestQueryDelegatorRewards(t *testing.T) {
 				delegatorReward += reward.Amount.AmountOf(ts.BondDenom()).Int64()
 			}
 			require.Equal(t, tt.expectedRewards, delegatorReward)
+		})
+	}
+}
+
+// TestVaultProviderDelegatorRewardsQuery works as expected for a vault and provider addresses
+// When using the delegator-rewards query, it should only accept the vault as a delegator
+// and the provider as the delegation's provider (as done while staking a new provider)
+func TestVaultProviderDelegatorRewardsQuery(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 1, 0) // 1 providers
+
+	provider1Acc, provider := ts.GetAccount(common.PROVIDER, 0)
+	vault := provider1Acc.GetVaultAddr()
+	consumerAcc, _ := ts.GetAccount(common.CONSUMER, 0)
+
+	err := ts.StakeProvider(vault, provider, ts.spec, testBalance)
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch()
+
+	// send relay so provider will be eligible for bonus rewards
+	msg := ts.SendRelay(provider, consumerAcc, []string{ts.spec.Index}, 100)
+	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+	require.NoError(t, err)
+
+	// advance two months so provider bonus reward will aggregate
+	ts.AdvanceMonths(1)
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+
+	tests := []struct {
+		name      string
+		delegator string
+		provider  string
+		valid     bool
+	}{
+		{"delegator=vault, provider=provider", vault, provider, true},
+		{"delegator=provider, provider=provider", provider, provider, false},
+		{"delegator=vault, provider=vault", vault, vault, false},
+		{"delegator=provider, provider=vault", provider, vault, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := ts.QueryDualstakingDelegatorRewards(tt.delegator, tt.provider, ts.spec.Index)
+			require.NoError(t, err)
+			if tt.valid {
+				require.Len(t, res.Rewards, 1)
+			} else {
+				require.Len(t, res.Rewards, 0)
+			}
 		})
 	}
 }

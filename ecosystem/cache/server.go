@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
+	"syscall"
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
@@ -35,6 +37,7 @@ const (
 	DefaultExpirationTimeFinalized               = time.Hour
 	DefaultExpirationNodeErrors                  = 5 * time.Second
 	CacheNumCounters                             = 100000000 // expect 10M items
+	unixPrefix                                   = "unix:"
 )
 
 type CacheServer struct {
@@ -78,10 +81,45 @@ func (cs *CacheServer) Serve(ctx context.Context,
 		signal.Stop(signalChan)
 		cancel()
 	}()
-	lis, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		utils.LavaFormatFatal("cache server failure setting up listener", err, utils.Attribute{Key: "listenAddr", Value: listenAddr})
+
+	// Determine the listener type (TCP vs Unix socket)
+	var lis net.Listener
+	var err error
+	if strings.HasPrefix(listenAddr, unixPrefix) { // Unix socket
+		host, port, err := net.SplitHostPort(listenAddr)
+		if err != nil {
+			utils.LavaFormatFatal("Failed to parse unix socket, provide address in this format unix:/tmp/example.sock: %v\n", err)
+			return
+		}
+
+		syscall.Unlink(port)
+
+		addr, err := net.ResolveUnixAddr(host, port)
+		if err != nil {
+			utils.LavaFormatFatal("Failed to resolve unix socket address: %v\n", err)
+			return
+		}
+
+		lis, err = net.ListenUnix(host, addr)
+		if err != nil {
+			utils.LavaFormatFatal("Faild to listen to unix socket listener: %v\n", err)
+			return
+		}
+
+		// Set permissions for the Unix socket
+		err = os.Chmod(port, 0o600)
+		if err != nil {
+			utils.LavaFormatFatal("Failed to set permissions for Unix socket: %v\n", err)
+			return
+		}
+	} else {
+		lis, err = net.Listen("tcp", listenAddr)
+		if err != nil {
+			utils.LavaFormatFatal("Cache server failure setting up TCP listener: %v\n", err)
+			return
+		}
 	}
+
 	serverReceiveMaxMessageSize := grpc.MaxRecvMsgSize(chainproxy.MaxCallRecvMsgSize) // setting receive size to 32mb instead of 4mb default
 	s := grpc.NewServer(serverReceiveMaxMessageSize)
 

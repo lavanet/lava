@@ -2,11 +2,12 @@ package metrics
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/utils"
 )
