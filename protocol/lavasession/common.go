@@ -24,14 +24,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding/gzip"
 )
 
 const (
 	MaxConsecutiveConnectionAttempts                 = 5
 	TimeoutForEstablishingAConnection                = 1500 * time.Millisecond // 1.5 seconds
 	MaxSessionsAllowedPerProvider                    = 1000                    // Max number of sessions allowed per provider
-	MaxAllowedBlockListedSessionPerProvider          = 3
-	MaximumNumberOfFailuresAllowedPerConsumerSession = 3
+	MaxAllowedBlockListedSessionPerProvider          = MaxSessionsAllowedPerProvider / 3
+	MaximumNumberOfFailuresAllowedPerConsumerSession = 15
 	RelayNumberIncrement                             = 1
 	DataReliabilitySessionId                         = 0 // data reliability session id is 0. we can change to more sessions later if needed.
 	DataReliabilityRelayNumber                       = 1
@@ -62,7 +63,7 @@ func IsSessionSyncLoss(err error) bool {
 	return code == codes.Code(SessionOutOfSyncError.ABCICode())
 }
 
-func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, skipTLS bool) (*grpc.ClientConn, error) {
+func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, skipTLS bool, allowCompression bool) (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 
 	if skipTLS {
@@ -91,6 +92,13 @@ func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, 
 		opts = append(opts, grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			return net.Dial("tcp", addr)
 		}))
+	}
+
+	// allow gzip compression for grpc.
+	if allowCompression {
+		opts = append(opts, grpc.WithDefaultCallOptions(
+			grpc.UseCompressor(gzip.Name), // Use gzip compression for provider consumer communication
+		))
 	}
 
 	conn, err := grpc.DialContext(ctx, address, opts...)
