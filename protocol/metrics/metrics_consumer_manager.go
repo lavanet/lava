@@ -14,7 +14,7 @@ import (
 )
 
 type LatencyTracker struct {
-	AverageLatency time.Duration
+	AverageLatency time.Duration // in nano seconds (time.Since result)
 	TotalRequests  int
 }
 
@@ -22,7 +22,7 @@ func (lt *LatencyTracker) AddLatency(latency time.Duration) {
 	lt.TotalRequests++
 	weight := 1.0 / float64(lt.TotalRequests)
 	// Calculate the weighted average of the current average latency and the new latency
-	lt.AverageLatency = time.Duration(float64(lt.AverageLatency)*(1-weight) + float64(latency.Milliseconds())*weight)
+	lt.AverageLatency = time.Duration(float64(lt.AverageLatency)*(1-weight) + float64(latency)*weight)
 }
 
 type ConsumerMetricsManager struct {
@@ -313,7 +313,6 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 	}
 
 	// calculate average latency on successful sessions only and not hanging apis (transactions etc..)
-	utils.LavaFormatDebug("Adding latency", utils.LogAttr("is successful", sessionSuccessful), utils.LogAttr("relayLatency", relayLatency))
 	if sessionSuccessful {
 		averageLatencyKey := pme.getKeyForAverageLatency(chainId, apiInterface)
 		existingLatency, foundExistingLatency := pme.averageLatencyPerChain[averageLatencyKey]
@@ -322,8 +321,7 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 			existingLatency = pme.averageLatencyPerChain[averageLatencyKey]
 		}
 		existingLatency.AddLatency(relayLatency)
-		utils.LavaFormatDebug("Adding latency", utils.LogAttr("latency", existingLatency.AverageLatency))
-		pme.averageLatencyMetric.WithLabelValues(chainId, apiInterface).Set(float64(existingLatency.AverageLatency))
+		pme.averageLatencyMetric.WithLabelValues(chainId, apiInterface).Set(float64(existingLatency.AverageLatency.Milliseconds()))
 	}
 
 	pme.LatestProviderRelay.WithLabelValues(chainId, providerAddress, apiInterface).SetToCurrentTime()
