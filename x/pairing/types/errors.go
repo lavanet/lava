@@ -24,4 +24,5 @@ var (
 	UnFreezeInsufficientStakeError                     = sdkerrors.New("UnFreezeInsufficientStakeError Error", 697, "Could not unfreeze provider due to insufficient stake. Stake must be above minimum stake to unfreeze")
 	InvalidCreatorAddressError                         = sdkerrors.New("InvalidCreatorAddressError Error", 698, "The creator address is invalid")
 	AmountCoinError                                    = sdkerrors.New("AmountCoinError Error", 699, "Amount limit coin is invalid")
+	UnFreezeJailedStakeError                           = sdkerrors.New("UnFreezeJailedStakeError Error", 700, "Could not unfreeze provider due to being jailed")
 )

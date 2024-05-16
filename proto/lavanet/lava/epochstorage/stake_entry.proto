@@ -21,6 +21,8 @@ message StakeEntry {
   uint64 last_change = 12;
   BlockReport block_report = 13;
   string vault = 14;
+  uint64 jails = 16;
+  int64 jail_time = 17;
 }
 
 // BlockReport holds the most up-to-date info regarding blocks of the provider

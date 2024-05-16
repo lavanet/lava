@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -227,14 +228,28 @@ func (k Keeper) getCurrentProviderStakeStorageList(ctx sdk.Context) []epochstora
 
 // Function that punishes providers. Current punishment is freeze
 func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, provider, chainID string, complaintCU uint64, servicedCU uint64, providerEpochCuMap map[uint64]types.ProviderEpochComplainerCu) error {
-	// freeze the unresponsive provider
-	err := k.FreezeProvider(ctx, provider, []string{chainID}, "unresponsiveness")
-	if err != nil {
-		utils.LavaFormatError("unable to freeze provider entry due to unresponsiveness", err,
-			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "chainID", Value: chainID},
+	if !utils.IsBech32Address(provider) {
+		return utils.LavaFormatWarning("Freeze_get_provider_address", fmt.Errorf("invalid address"),
+			utils.Attribute{Key: "providerAddress", Value: provider},
 		)
 	}
+
+	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+	if !found {
+		return utils.LavaFormatWarning("Freeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "providerAddress", Value: provider}}...)
+	}
+
+	stakeEntry.Jails++
+
+	if stakeEntry.Jails > 2 {
+		stakeEntry.Freeze()
+		stakeEntry.JailTime = ctx.BlockTime().UTC().Unix() + int64(24*time.Hour)
+	} else {
+		stakeEntry.JailTime = ctx.BlockTime().UTC().Unix() + int64(time.Hour)
+		stakeEntry.StakeAppliedBlock = uint64(ctx.BlockHeight()) + uint64(time.Hour/k.downtimeKeeper.GetParams(ctx).EpochDuration)*k.epochStorageKeeper.EpochBlocksRaw(ctx)
+	}
+	k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry)
+
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderJailedEventName,
 		map[string]string{
 			"provider_address": provider,
