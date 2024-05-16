@@ -239,6 +239,10 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, pro
 		return utils.LavaFormatWarning("Freeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "providerAddress", Value: provider}}...)
 	}
 
+	// if last jail was more than 24H ago, reset the jails counter
+	if !stakeEntry.IsJailed(ctx.BlockTime().UTC().Unix() + int64(24*time.Hour)) {
+		stakeEntry.Jails = 0
+	}
 	stakeEntry.Jails++
 
 	if stakeEntry.Jails > 2 {
