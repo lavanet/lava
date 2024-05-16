@@ -8,19 +8,14 @@ import (
 	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
-func (ts *tester) checkProviderFreeze(provider string, shouldFreeze bool) {
+func (ts *tester) checkProviderJailed(provider string, shouldFreeze bool) {
 	stakeEntry, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
 	require.True(ts.T, stakeStorageFound)
-	if shouldFreeze {
-		require.Equal(ts.T, uint64(epochstoragetypes.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
-	} else {
-		require.NotEqual(ts.T, uint64(epochstoragetypes.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
-	}
+	require.Equal(ts.T, shouldFreeze, stakeEntry.IsJailed(ts.Ctx.BlockTime().UTC().Unix()))
 }
 
 func (ts *tester) checkComplainerReset(provider string, epoch uint64) {
@@ -122,7 +117,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 	ts.AdvanceEpochs(largerConst)
 
 	for i := 0; i < unresponsiveCount; i++ {
-		ts.checkProviderFreeze(providers[i].Addr.String(), true)
+		ts.checkProviderJailed(providers[i].Addr.String(), true)
 		ts.checkComplainerReset(providers[i].Addr.String(), relayEpoch)
 	}
 
@@ -187,7 +182,7 @@ func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 
 	ts.AdvanceEpochs(largerConst)
 
-	ts.checkProviderFreeze(provider1, true)
+	ts.checkProviderJailed(provider1, true)
 	ts.checkComplainerReset(provider1, relayEpoch)
 	ts.checkProviderStaked(provider0)
 }
@@ -244,7 +239,7 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 
 	ts.AdvanceEpochs(largerConst)
 
-	ts.checkProviderFreeze(provider1, true)
+	ts.checkProviderJailed(provider1, true)
 	ts.checkComplainerReset(provider1, relayEpoch)
 
 	ts.AdvanceEpochs(2)
@@ -266,7 +261,7 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 	}
 
 	// test the provider is still frozen
-	ts.checkProviderFreeze(provider1, true)
+	ts.checkProviderJailed(provider1, true)
 }
 
 func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
@@ -341,6 +336,6 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		ts.AdvanceEpochs(largerConst)
 
 		// test the unresponsive provider1 hasn't froze
-		ts.checkProviderFreeze(provider1Provider, play.shouldBeFrozen)
+		ts.checkProviderJailed(provider1Provider, play.shouldBeFrozen)
 	}
 }
