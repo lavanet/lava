@@ -92,15 +92,16 @@ The stake entry is a struct that contains all the information of a provider.
 ```go
 type StakeEntry struct {
 	Stake              types.Coin // the providers stake amount (self delegation)
-	Address            string     // the lava address of the provider
+	Vault              string     // the lava address of the provider's vault which holds most of its funds
+	Operator           string     // the lava address of the provider's operator which is used to run and operate the provider process
 	StakeAppliedBlock  uint64     // the block at which the provider is included in the pairing list
 	Endpoints          []Endpoint // the endpoints of the provider
 	Geolocation        int32      // the geolocation this provider supports
-	Chain              string     // the chainID of the provider
+	Chain              string     // the chain ID on which the provider is staked on
 	Moniker            string     // free string description
 	DelegateTotal      types.Coin // total delegation to the provider (without self delegation)
 	DelegateLimit      types.Coin // delegation total limit
-	DelegateCommission uint64     // commision from delegation rewards
+	DelegateCommission uint64     // commission from delegation rewards
 }
 ```
 
@@ -108,6 +109,8 @@ Geolocation are bit flags that indicate all the geolocations that the provider s
 for more about [geolocation](../../proto/lavanet/lava/plans/plan.proto).
 
 For more information about delegation, go to dualstaking [README.md](../dualstaking/README.md).
+
+For more information about the vault and operator addresses, see pairing module's [README.md](../pairing/README.md).
 
 ### EndPoint
 

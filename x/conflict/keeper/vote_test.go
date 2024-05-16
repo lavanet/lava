@@ -142,8 +142,8 @@ func TestNewVoterOldVote(t *testing.T) {
 
 	// add a staked provider
 	balance := int64(10000)
-	_, notVoterProvider := ts.AddAccount(common.PROVIDER, 10, balance)
-	err := ts.StakeProvider(notVoterProvider, ts.spec, balance/10)
+	notVoterAcc, notVoterProvider := ts.AddAccount(common.PROVIDER, 10, balance)
+	err := ts.StakeProvider(notVoterAcc.GetVaultAddr(), notVoterProvider, ts.spec, balance/10)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -496,4 +496,40 @@ func TestNoDecisionVote(t *testing.T) {
 	events := ts.Ctx.EventManager().Events()
 	LastEvent := events[len(events)-1]
 	require.Equal(t, utils.EventPrefix+conflicttypes.ConflictVoteUnresolvedEventName, LastEvent.Type)
+}
+
+// TestVaultProviderConflictVote tests that conflicts are using the provider addresses
+// Scenarios:
+//  1. conflict are between provider addresses, voting can be done only by providers, punishment
+//     is done to provider address. Usage of vault addresses should fail the process
+func TestVaultProviderConflictVote(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForConflict(2)
+
+	tests := []struct {
+		name  string
+		p1    sigs.Account
+		p2    sigs.Account
+		valid bool
+	}{
+		{"HappyFlow", ts.providers[0], ts.providers[1], true},
+		{"Provider0Vault", *ts.providers[0].Vault, ts.providers[1], false},
+		{"Provider1Vault", ts.providers[0], *ts.providers[1].Vault, false},
+		{"BothVault", *ts.providers[0].Vault, *ts.providers[1].Vault, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg, _, _, err := common.CreateMsgDetectionTest(ts.GoCtx, ts.consumer, tt.p1, tt.p2, ts.spec)
+			require.NoError(t, err)
+
+			_, err = ts.txConflictDetection(msg)
+			if tt.valid {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+			ts.AdvanceEpoch()
+		})
+	}
 }

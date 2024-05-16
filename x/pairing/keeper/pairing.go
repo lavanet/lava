@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 
+	cosmosmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/lavaslices"
@@ -68,37 +69,66 @@ func (k Keeper) GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, cha
 }
 
 func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddress sdk.AccAddress) (providers []epochstoragetypes.StakeEntry, errorRet error) {
-	project, err := k.GetProjectData(ctx, clientAddress, chainID, uint64(ctx.BlockHeight()))
+	block := uint64(ctx.BlockHeight())
+	project, err := k.GetProjectData(ctx, clientAddress, chainID, block)
 	if err != nil {
 		return nil, err
 	}
 
-	providers, _, err = k.getPairingForClient(ctx, chainID, uint64(ctx.BlockHeight()), project)
+	strictestPolicy, cluster, err := k.GetProjectStrictestPolicy(ctx, project, chainID, block)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user for pairing: %s", err.Error())
+	}
+
+	providers, _, _, err = k.getPairingForClient(ctx, chainID, block, strictestPolicy, cluster, project.Index, false)
 	return providers, err
+}
+
+// CalculatePairingChance calculates the chance of a provider to be picked in the pairing process for the first pairing slot
+func (k Keeper) CalculatePairingChance(ctx sdk.Context, provider string, chainID string, policy *planstypes.Policy, cluster string) (cosmosmath.LegacyDec, error) {
+	totalScore := cosmosmath.ZeroUint()
+	providerScore := cosmosmath.ZeroUint()
+
+	_, _, scores, err := k.getPairingForClient(ctx, chainID, uint64(ctx.BlockHeight()), policy, cluster, "dummy", true)
+	if err != nil {
+		return cosmosmath.LegacyZeroDec(), err
+	}
+
+	for _, score := range scores {
+		if score.Provider.Address == provider {
+			providerScore = providerScore.Add(score.Score)
+		}
+		totalScore = totalScore.Add(score.Score)
+	}
+
+	if providerScore.IsZero() {
+		return cosmosmath.LegacyZeroDec(), utils.LavaFormatError("provider not found in provider scores array", fmt.Errorf("cannot calculate pairing chance"),
+			utils.LogAttr("provider", provider),
+			utils.LogAttr("chain_id", chainID),
+		)
+	}
+
+	providerScoreDec := cosmosmath.LegacyNewDecFromInt(cosmosmath.Int(providerScore))
+	totalScoreDec := cosmosmath.LegacyNewDecFromInt(cosmosmath.Int(totalScore))
+
+	return providerScoreDec.Quo(totalScoreDec), nil
 }
 
 // function used to get a new pairing from provider and client
 // first argument has all metadata, second argument is only the addresses
-func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint64, project projectstypes.Project) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, errorRet error) {
-	var strictestPolicy *planstypes.Policy
-
+func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint64, policy *planstypes.Policy, cluster string, projectIndex string, calcChance bool) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, providerScores []*pairingscores.PairingScore, errorRet error) {
 	epoch, providersType, err := k.VerifyPairingData(ctx, chainID, block)
 	if err != nil {
-		return nil, 0, fmt.Errorf("invalid pairing data: %s", err)
+		return nil, 0, nil, fmt.Errorf("invalid pairing data: %s", err)
 	}
 	stakeEntries, found, epochHash := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, chainID)
 	if !found {
-		return nil, 0, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
-	}
-
-	strictestPolicy, cluster, err := k.GetProjectStrictestPolicy(ctx, project, chainID, block)
-	if err != nil {
-		return nil, 0, fmt.Errorf("invalid user for pairing: %s", err.Error())
+		return nil, 0, nil, fmt.Errorf("did not find providers for pairing: epoch:%d, chainID: %s", block, chainID)
 	}
 
 	if providersType == spectypes.Spec_static {
 		frozenFilter := pairingfilters.FrozenProvidersFilter{}
-		frozenFilter.InitFilter(*strictestPolicy)
+		frozenFilter.InitFilter(*policy)
 		filterResults := frozenFilter.Filter(ctx, stakeEntries, epoch)
 		stakeEntriesFiltered := []epochstoragetypes.StakeEntry{}
 		for i := 0; i < len(stakeEntries); i++ {
@@ -106,18 +136,18 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 				stakeEntriesFiltered = append(stakeEntriesFiltered, stakeEntries[i])
 			}
 		}
-		return stakeEntriesFiltered, strictestPolicy.EpochCuLimit, nil
+		return stakeEntriesFiltered, policy.EpochCuLimit, nil, nil
 	}
 
 	filters := pairingfilters.GetAllFilters()
 	// create the pairing slots with assigned reqs
-	slots := pairingscores.CalcSlots(strictestPolicy)
+	slots := pairingscores.CalcSlots(policy)
 	// group identical slots (in terms of reqs types)
 	slotGroups := pairingscores.GroupSlots(slots)
 	// filter relevant providers and add slotFiltering for mix filters
-	providerScores, err := pairingfilters.SetupScores(ctx, filters, stakeEntries, strictestPolicy, epoch, len(slots), cluster, k)
+	providerScores, err = pairingfilters.SetupScores(ctx, filters, stakeEntries, policy, epoch, len(slots), cluster, k)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, nil, err
 	}
 
 	if len(slots) >= len(providerScores) {
@@ -125,24 +155,27 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 		for _, score := range providerScores {
 			filteredEntries = append(filteredEntries, *score.Provider)
 		}
-		return filteredEntries, strictestPolicy.EpochCuLimit, nil
+		return filteredEntries, policy.EpochCuLimit, nil, nil
 	}
 
 	// calculate score (always on the diff in score components of consecutive groups) and pick providers
 	prevGroupSlot := pairingscores.NewPairingSlotGroup(pairingscores.NewPairingSlot(-1)) // init dummy slot to compare to
 	for idx, group := range slotGroups {
-		hashData := pairingscores.PrepareHashData(project.Index, chainID, epochHash, idx)
+		hashData := pairingscores.PrepareHashData(projectIndex, chainID, epochHash, idx)
 		diffSlot := group.Subtract(prevGroupSlot)
 		err := pairingscores.CalcPairingScore(providerScores, pairingscores.GetStrategy(), diffSlot)
 		if err != nil {
-			return nil, 0, err
+			return nil, 0, nil, err
+		}
+		if calcChance {
+			break
 		}
 		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Indexes(), hashData)
 		providers = append(providers, pickedProviders...)
 		prevGroupSlot = group
 	}
 
-	return providers, strictestPolicy.EpochCuLimit, err
+	return providers, policy.EpochCuLimit, providerScores, err
 }
 
 func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string, block uint64) (*planstypes.Policy, string, error) {
@@ -286,7 +319,12 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, provid
 		return false, allowedCU, []epochstoragetypes.StakeEntry{}, err
 	}
 
-	validAddresses, allowedCU, err := k.getPairingForClient(ctx, chainID, epoch, project)
+	strictestPolicy, cluster, err := k.GetProjectStrictestPolicy(ctx, project, chainID, reqEpoch)
+	if err != nil {
+		return false, allowedCU, []epochstoragetypes.StakeEntry{}, fmt.Errorf("invalid user for pairing: %s", err.Error())
+	}
+
+	validAddresses, allowedCU, _, err := k.getPairingForClient(ctx, chainID, epoch, strictestPolicy, cluster, project.Index, false)
 	if err != nil {
 		return false, allowedCU, []epochstoragetypes.StakeEntry{}, err
 	}
