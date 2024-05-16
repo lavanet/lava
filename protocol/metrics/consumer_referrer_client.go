@@ -1,9 +1,10 @@
 package metrics
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/utils"
 )

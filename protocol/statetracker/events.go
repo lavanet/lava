@@ -2,7 +2,6 @@ package statetracker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
