@@ -62,6 +62,8 @@ type StakeEntry struct {
 	DelegateTotal      types.Coin // total delegation to the provider (without self delegation)
 	DelegateLimit      types.Coin // delegation total limit
 	DelegateCommission uint64     // commission from delegation rewards
+	Jails              uint64     // number of times the provider have been jailed
+	JailTime           int64      // the time when the jail period is finished the he can come back to service
 }
 ```
 
@@ -94,6 +96,12 @@ A provider can unstake and retrieve their coins. When a provider unstakes, they 
 #### Freeze
 
 Freeze Mode enables the Provider to temporarily suspend their node's operation during maintenance to avoid bad Quality of Service (QoS). Freeze/Unfreeze is applied on the next Epoch. The Provider can initiate multiple Freeze actions with one command.
+
+#### Jail
+
+If a provider is down and is being reported as such by users it will be jailed.
+The first 3 times jail is temporary for 1H and will be removed automatically.
+After 3 consecutive jails the provider will e jailed for 24H and set to a frozen state, to continue activity the provider must send unfreeze transaction after jail time is over.
 
 ### Pairing
 
