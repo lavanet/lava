@@ -847,7 +847,6 @@
                                 "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                   "parser_arg": [
-                                    "0",
                                     "data",
                                     "header",
                                     "message",
@@ -862,9 +861,7 @@
                                 "function_tag": "GET_BLOCK_BY_NUM",
                                 "result_parsing": {
                                   "parser_arg": [
-                                    "0",
                                     "data",
-                                    "0",
                                     "header",
                                     "slot"
                                   ],
@@ -877,9 +874,7 @@
                                     "function_tag": "GET_EARLIEST_BLOCK",
                                     "result_parsing": {
                                       "parser_arg": [
-                                        "0",
                                         "data",
-                                        "0",
                                         "header",
                                         "message",
                                         "slot"
