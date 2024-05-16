@@ -145,7 +145,7 @@ func (rs *RelayerConnectionServer) RelaySubscribe(request *pairingtypes.RelayReq
 }
 
 func startServer() (*grpc.Server, net.Listener) {
-	listen := ":50051"
+	listen := ":0"
 	lis, err := net.Listen("tcp", listen)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
