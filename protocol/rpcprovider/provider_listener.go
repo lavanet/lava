@@ -18,6 +18,7 @@ import (
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	_ "google.golang.org/grpc/encoding/gzip"
 )
 
 const (
