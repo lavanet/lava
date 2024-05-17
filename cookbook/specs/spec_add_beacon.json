@@ -847,6 +847,7 @@
                                 "function_tag": "GET_BLOCKNUM",
                                 "result_parsing": {
                                   "parser_arg": [
+                                    "0",
                                     "data",
                                     "header",
                                     "message",
@@ -861,6 +862,7 @@
                                 "function_tag": "GET_BLOCK_BY_NUM",
                                 "result_parsing": {
                                   "parser_arg": [
+                                    "0",
                                     "data",
                                     "header",
                                     "message",
@@ -869,21 +871,7 @@
                                   "parser_func": "PARSE_CANONICAL"
                                 },
                                 "api_name": "/eth/v1/beacon/headers/{block_id}"
-                                },
-                                {
-                                    "function_template": "/eth/v1/beacon/headers/genesis",
-                                    "function_tag": "GET_EARLIEST_BLOCK",
-                                    "result_parsing": {
-                                      "parser_arg": [
-                                        "data",
-                                        "header",
-                                        "message",
-                                        "slot"
-                                      ],
-                                      "parser_func": "PARSE_CANONICAL"
-                                    },
-                                    "api_name": "/eth/v1/beacon/headers/genesis"
-                                    }
+                                }
 
                         ],
                         "verifications": [
@@ -1277,44 +1265,8 @@
                                 "api_name": "/eth/v1/beacon/headers/{block_id}"
                                 }
                         ],
-                        "verifications": [
-                            {
-                                "name": "genesis",
-                                "parse_directive": {
-                                    "function_template": "/eth/v1/beacon/genesis",
-                                    "function_tag": "VERIFICATION",
-                                    "result_parsing": {
-                                        "parser_arg": [
-                                            "0",
-                                            "data",
-                                            "genesis_fork_version"
-                                        ],
-                                        "parser_func": "PARSE_CANONICAL"
-                                    },
-                                    "api_name": "/eth/v1/beacon/genesis"
-                                },
-                                "values": [
-                                    {
-                                        "expected_value": "0x00000000"
-                                    }
-                                ]
-                            },
-                            {
-                                "name": "pruning",
-                                "parse_directive": {
-                                    "function_tag": "GET_BLOCK_BY_NUM"
-                                    }
-                            }
-                        ],
-                        "extensions": [
-                            {
-                                "name": "archive",
-                                "cu_multiplier": 5,
-                                "rule": {
-                                    "block": 7140
-                                }
-                            }
-                        ]
+                        "verifications": [],
+                        "extensions": []
                     },
                     {
                         "enabled": true,
