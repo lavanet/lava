@@ -885,7 +885,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
 	consecutiveErrors := uint64(len(consumerSession.ConsecutiveErrors))
 	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
-	csm.updateMetricsManager(consumerSession)
+	csm.updateMetricsManager(consumerSession, time.Duration(0), false)
 	// finished with consumerSession here can unlock.
 	consumerSession.Free(errorReceived) // we unlock before we change anything in the parent ConsumerSessionsWithProvider
 
@@ -961,13 +961,13 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	// calculate QoS
 	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
-	csm.updateMetricsManager(consumerSession)
+	csm.updateMetricsManager(consumerSession, currentLatency, !isHangingApi) // apply latency only for non hanging apis
 	return nil
 }
 
 // updates QoS metrics for a provider
 // consumerSession should still be locked when accessing this method as it fetches information from the session it self
-func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleConsumerSession) {
+func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleConsumerSession, relayLatency time.Duration, sessionSuccessful bool) {
 	if csm.consumerMetricsManager == nil {
 		return
 	}
@@ -988,7 +988,7 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
 
 	go func() {
-		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum)
+		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
 		// in case we blocked the session add it to our block sessions metric
 		if blockedSession {
 			csm.consumerMetricsManager.AddNumberOfBlockedSessionMetric(chainId, apiInterface, publicProviderAddress)
