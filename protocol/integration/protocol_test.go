@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 func isGrpcServerUp(url string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 	defer cancel()
-	conn, err := lavasession.ConnectGRPCClient(context.Background(), url, true, false)
+	conn, err := lavasession.ConnectGRPCClient(context.Background(), url, true, false, false)
 	if err != nil {
 		return false
 	}
