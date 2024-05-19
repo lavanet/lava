@@ -62,6 +62,10 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid provider address (%s)", err)
 	}
 
+	if _, err := msg.Description.EnsureLength(); err != nil {
+		return sdkerrors.Wrapf(InvalidDescriptionError, "error: %s", err.Error())
+	}
+
 	if msg.DelegateCommission > 100 {
 		return sdkerrors.Wrapf(DelegateCommissionOOBError, "commission out of bound (%d)", msg.DelegateCommission)
 	}
