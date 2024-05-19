@@ -35,6 +35,7 @@ import (
 	epochstorage "github.com/lavanet/lava/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -76,6 +77,7 @@ type ProviderStateTrackerInf interface {
 	RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, chainId string) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable)
+	RegisterForEpochUpdatesWithDelay(ctx context.Context, epochUpdatable updaters.EpochUpdatable, blocksUpdateDelay int64)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error
 	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error
@@ -215,6 +217,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	}
 
 	specValidator := NewSpecValidator()
+	utils.LavaFormatTrace("Running setup for RPCProvider endpoints", utils.LogAttr("endpoints", options.rpcProviderEndpoints))
 	disabledEndpointsList := rpcp.SetupProviderEndpoints(options.rpcProviderEndpoints, specValidator, true)
 	rpcp.relaysMonitorAggregator.StartMonitoring(ctx)
 	specValidator.Start(ctx)
@@ -454,8 +457,22 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		rpcp.providerMetricsManager.RegisterRelaysMonitor(chainID, apiInterface, relaysMonitor)
 	}
 
+	currEpoch := uint64(chainTracker.GetAtomicLatestBlockNum())
+	epochSize, err := rpcp.providerStateTracker.GetEpochSize(ctx)
+	if err != nil {
+		return utils.LavaFormatError("failed to get epoch size", err)
+	}
+
+	prevEpoch := currEpoch - epochSize
+	var providerNodeSubscriptionManager *ProviderNodeSubscriptionManager
+	if rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC || rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
+		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
+		providerNodeSubscriptionManager = NewProviderNodeSubscriptionManager(chainRouter, chainParser, currEpoch, prevEpoch, rpcp.privKey)
+		rpcp.providerStateTracker.RegisterForEpochUpdatesWithDelay(ctx, providerNodeSubscriptionManager, 5) // backoff of 5 blocks
+	}
+
 	rpcProviderServer := &RPCProviderServer{}
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -470,13 +487,16 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			rpcp.rpcProviderListeners[rpcProviderEndpoint.NetworkAddress.Address] = listener
 		}
 	}()
+
 	if listener == nil {
 		utils.LavaFormatFatal("listener not defined, cant register RPCProviderServer", nil, utils.Attribute{Key: "RPCProviderEndpoint", Value: rpcProviderEndpoint.String()})
 	}
+
 	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	if err != nil {
 		utils.LavaFormatError("error in register receiver", err)
 	}
+
 	utils.LavaFormatDebug("provider finished setting up endpoint", utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.Key()})
 	// prevents these objects form being overrun later
 	chainParser.Activate()

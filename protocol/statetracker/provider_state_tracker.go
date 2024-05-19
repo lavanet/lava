@@ -48,6 +48,10 @@ func NewProviderStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 }
 
 func (pst *ProviderStateTracker) RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable) {
+	pst.RegisterForEpochUpdatesWithDelay(ctx, epochUpdatable, 0)
+}
+
+func (pst *ProviderStateTracker) RegisterForEpochUpdatesWithDelay(ctx context.Context, epochUpdatable updaters.EpochUpdatable, blocksUpdateDelay int64) {
 	epochUpdater := updaters.NewEpochUpdater(&pst.stateQuery.EpochStateQuery)
 	epochUpdaterRaw := pst.StateTracker.RegisterForUpdates(ctx, epochUpdater)
 	epochUpdater, ok := epochUpdaterRaw.(*updaters.EpochUpdater)

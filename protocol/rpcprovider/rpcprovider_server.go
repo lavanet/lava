@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -14,7 +15,6 @@ import (
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
@@ -43,20 +43,21 @@ const (
 var RPCProviderStickinessHeaderName = "X-Node-Sticky"
 
 type RPCProviderServer struct {
-	cache                     *performance.Cache
-	chainRouter               chainlib.ChainRouter
-	privKey                   *btcec.PrivateKey
-	reliabilityManager        ReliabilityManagerInf
-	providerSessionManager    *lavasession.ProviderSessionManager
-	rewardServer              RewardServerInf
-	chainParser               chainlib.ChainParser
-	rpcProviderEndpoint       *lavasession.RPCProviderEndpoint
-	stateTracker              StateTrackerInf
-	providerAddress           sdk.AccAddress
-	lavaChainID               string
-	allowedMissingCUThreshold float64
-	metrics                   *metrics.ProviderMetrics
-	relaysMonitor             *metrics.RelaysMonitor
+	cache                           *performance.Cache
+	chainRouter                     chainlib.ChainRouter
+	privKey                         *btcec.PrivateKey
+	reliabilityManager              ReliabilityManagerInf
+	providerSessionManager          *lavasession.ProviderSessionManager
+	rewardServer                    RewardServerInf
+	chainParser                     chainlib.ChainParser
+	rpcProviderEndpoint             *lavasession.RPCProviderEndpoint
+	stateTracker                    StateTrackerInf
+	providerAddress                 sdk.AccAddress
+	lavaChainID                     string
+	allowedMissingCUThreshold       float64
+	metrics                         *metrics.ProviderMetrics
+	relaysMonitor                   *metrics.RelaysMonitor
+	providerNodeSubscriptionManager *ProviderNodeSubscriptionManager
 }
 
 type ReliabilityManagerInf interface {
@@ -92,6 +93,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	allowedMissingCUThreshold float64,
 	providerMetrics *metrics.ProviderMetrics,
 	relaysMonitor *metrics.RelaysMonitor,
+	providerNodeSubscriptionManager *ProviderNodeSubscriptionManager,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
@@ -107,6 +109,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.allowedMissingCUThreshold = allowedMissingCUThreshold
 	rpcps.metrics = providerMetrics
 	rpcps.relaysMonitor = relaysMonitor
+	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
 
 	rpcps.initRelaysMonitor(ctx)
 }
@@ -328,38 +331,42 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 	if request.RelayData == nil || request.RelaySession == nil {
 		return utils.LavaFormatError("invalid relay subscribe request, internal fields are nil", nil)
 	}
+
 	ctx := utils.AppendUniqueIdentifier(context.Background(), lavaprotocol.GetSalt(request.RelayData))
 	utils.LavaFormatDebug("Provider got relay subscribe request",
-		utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
-		utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
-		utils.Attribute{Key: "request.cu", Value: request.RelaySession.CuSum},
-		utils.Attribute{Key: "GUID", Value: ctx},
+		utils.LogAttr("request.SessionId", request.RelaySession.SessionId),
+		utils.LogAttr("request.relayNumber", request.RelaySession.RelayNum),
+		utils.LogAttr("request.cu", request.RelaySession.CuSum),
+		utils.LogAttr("GUID", ctx),
 	)
+
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
 		return rpcps.handleRelayErrorStatus(err)
 	}
-	subscribed, err := rpcps.TryRelaySubscribe(ctx, uint64(request.RelaySession.Epoch), srv, chainMessage, consumerAddress, relaySession, request.RelaySession.RelayNum) // this function does not return until subscription ends
+
+	subscribed, err := rpcps.TryRelaySubscribe(ctx, uint64(request.RelaySession.Epoch), request, srv, chainMessage, consumerAddress, relaySession, request.RelaySession.RelayNum) // this function does not return until subscription ends
 	if subscribed {
 		// meaning we created a subscription and used it for at least a message
 		pairingEpoch := relaySession.PairingEpoch
+
 		// no need to perform on session done as we did it in try relay subscribe
 		go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
+
 		utils.LavaFormatDebug("Provider Finished Relay Successfully",
-			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},
-			utils.Attribute{Key: "request.relayNumber", Value: request.RelaySession.RelayNum},
-			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.LogAttr("request.SessionId", request.RelaySession.SessionId),
+			utils.LogAttr("request.relayNumber", request.RelaySession.RelayNum),
+			utils.LogAttr("GUID", ctx),
 		)
 		err = nil // we don't want to return an error here
 	} else {
 		// we didn't even manage to subscribe
-		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
-		if relayFailureError != nil {
-			err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "onSessionFailureError", Value: relayFailureError.Error()}, utils.Attribute{Key: "error", Value: err})
-		} else {
-			err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err})
-		}
+		err = utils.LavaFormatError("failed subscribing", lavasession.SubscriptionInitiationError,
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("error", err),
+		)
 	}
+
 	return rpcps.handleRelayErrorStatus(err)
 }
 
@@ -373,90 +380,93 @@ func (rpcps *RPCProviderServer) SendProof(ctx context.Context, epoch uint64, req
 	return nil
 }
 
-func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBlockHeight uint64, srv pairingtypes.Relayer_RelaySubscribeServer, chainMessage chainlib.ChainMessage, consumerAddress sdk.AccAddress, relaySession *lavasession.SingleProviderSession, relayNumber uint64) (subscribed bool, errRet error) {
-	var reply *pairingtypes.RelayReply
-	var clientSub *rpcclient.ClientSubscription
-	var subscriptionID string
-	subscribeRepliesChan := make(chan interface{})
-	replyWrapper, subscriptionID, clientSub, _, _, err := rpcps.chainRouter.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage, nil)
-	if err != nil {
-		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
-	}
-	if replyWrapper == nil || replyWrapper.RelayReply == nil {
-		return false, utils.LavaFormatError("Subscription failed, relayWrapper or RelayReply are nil", nil, utils.Attribute{Key: "GUID", Value: ctx})
-	}
-	reply = replyWrapper.RelayReply
-	reply.Metadata, _, _ = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	if clientSub == nil {
-		// failed subscription, but not an error. (probably a node error)
-		// return the response to the user, and close the session.
-		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber) // subscription failed due to node error mark session as done and return
-		if relayError != nil {
-			utils.LavaFormatError("Error OnSessionDone", relayError)
-		}
-		err = srv.Send(reply) // this reply contains the error to the subscription
-		if err != nil {
-			utils.LavaFormatError("Error returning response", err)
-		}
-		return true, nil // we already returned the error to the user so no need to return another error.
-	}
+func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBlockHeight uint64, request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer, chainMessage chainlib.ChainMessage, consumerAddress sdk.AccAddress, relaySession *lavasession.SingleProviderSession, relayNumber uint64) (subscribed bool, errRet error) {
+	subscribeRepliesChan := make(chan *pairingtypes.RelayReply)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	// if we got a node error clientSub will be nil and also err will be nil. in that case we need to check for clientSub
-	subscription := &lavasession.RPCSubscription{
-		Id:                   subscriptionID,
-		Sub:                  clientSub,
-		SubscribeRepliesChan: subscribeRepliesChan,
-	}
-	err = rpcps.providerSessionManager.ReleaseSessionAndCreateSubscription(relaySession, subscription, consumerAddress.String(), requestBlockHeight, relayNumber)
-	if err != nil {
-		return false, err
-	}
-	rpcps.rewardServer.SubscribeStarted(consumerAddress.String(), requestBlockHeight, subscriptionID)
-	processSubscribeMessages := func() (subscribed bool, errRet error) {
-		err = srv.Send(reply) // this reply contains the RPC ID
-		if err != nil {
-			utils.LavaFormatError("Error getting RPC ID", err, utils.Attribute{Key: "GUID", Value: ctx})
-		} else {
-			subscribed = true
-		}
+	// This wait group is to make this function blocking until context is closed
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 
+	processSubscribeMessages := func() {
+		defer wg.Done()
 		for {
 			select {
-			case <-clientSub.Err():
-				utils.LavaFormatError("client sub", err, utils.Attribute{Key: "GUID", Value: ctx})
-				// delete this connection from the subs map
+			case <-ctx.Done():
+			case <-srv.Context().Done():
+				utils.LavaFormatTrace("ctx or relay server context closed",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("consumerAddr", consumerAddress),
+				)
 
-				return subscribed, err
-			case subscribeReply := <-subscribeRepliesChan:
-				data, err := json.Marshal(subscribeReply)
+				err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, true)
 				if err != nil {
-					return subscribed, utils.LavaFormatError("client sub unmarshal", err, utils.Attribute{Key: "GUID", Value: ctx})
+					utils.LavaFormatError("Error RemoveConsumer", err, utils.LogAttr("GUID", ctx))
+				}
+				return
+			case subscribeReply, ok := <-subscribeRepliesChan:
+				if !ok { // channel is closed
+					utils.LavaFormatTrace("subscribeRepliesChan closed")
+					err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, false) // false because the channel is already closed
+					if err != nil {
+						errRet = utils.LavaFormatError("Error RemoveConsumer", err, utils.LogAttr("GUID", ctx))
+						return
+					}
+					errRet = err
+					return
 				}
 
-				err = srv.Send(
-					&pairingtypes.RelayReply{
-						Data: data,
-					},
-				)
-				if err != nil {
+				errRet = srv.Send(subscribeReply)
+
+				if errRet != nil {
 					// usually triggered when client closes connection
-					if strings.Contains(err.Error(), "Canceled desc = context canceled") {
-						err = utils.LavaFormatWarning("Client closed connection", err, utils.Attribute{Key: "GUID", Value: ctx})
+					if strings.Contains(errRet.Error(), "Canceled desc = context canceled") {
+						errRet = utils.LavaFormatWarning("Client closed connection", errRet, utils.Attribute{Key: "GUID", Value: ctx})
 					} else {
-						err = utils.LavaFormatError("srv.Send", err, utils.Attribute{Key: "GUID", Value: ctx})
+						errRet = utils.LavaFormatError("srv.Send", errRet, utils.Attribute{Key: "GUID", Value: ctx})
 					}
-					return subscribed, err
+
+					return
 				} else {
 					subscribed = true
 				}
 
-				utils.LavaFormatDebug("Sending data", utils.Attribute{Key: "data", Value: string(data)}, utils.Attribute{Key: "GUID", Value: ctx})
+				utils.LavaFormatTrace("Sending data to consumer",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("data", subscribeReply.Data),
+					utils.LogAttr("consumerAddr", consumerAddress),
+				)
 			}
 		}
 	}
-	subscribed, errRet = processSubscribeMessages()
-	rpcps.providerSessionManager.SubscriptionEnded(consumerAddress.String(), requestBlockHeight, subscriptionID)
-	rpcps.rewardServer.SubscribeEnded(consumerAddress.String(), requestBlockHeight, subscriptionID)
+
+	go processSubscribeMessages()
+	_, subscriptionId, err := rpcps.providerNodeSubscriptionManager.AddConsumer(ctx, request, chainMessage, consumerAddress, subscribeRepliesChan)
+	if err != nil {
+		// subscription failed due to node error mark session as done and return
+		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber) // subscription failed due to node error mark session as done and return
+		if relayError != nil {
+			utils.LavaFormatError("Error OnSessionDone", relayError)
+		}
+
+		return false, utils.LavaFormatWarning("RPCProviderServer: Subscription failed", err,
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("consumerAddr", consumerAddress),
+		)
+	}
+
+	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber) // TODO: Ask Omer if this is fine
+	if relayError != nil {
+		utils.LavaFormatError("Error OnSessionDone", relayError)
+	}
+
+	rpcps.rewardServer.SubscribeStarted(consumerAddress.String(), requestBlockHeight, subscriptionId)
+	wg.Wait()
+
+	// TODO: Delete from ProviderSessionManager
+	// rpcps.providerSessionManager.SubscriptionEnded(consumerAddress.String(), requestBlockHeight, subscriptionId)
+	rpcps.rewardServer.SubscribeEnded(consumerAddress.String(), requestBlockHeight, subscriptionId)
 	return subscribed, errRet
 }
 
