@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,7 +15,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
 	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
@@ -187,6 +187,11 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
 		return nil, rpcps.handleRelayErrorStatus(err)
+	}
+
+	// Check that this is not subscription related messages
+	if chainMessage.GetApi().Category.Subscription {
+		return nil, errors.New("subscription category messages are not supported through Relay")
 	}
 
 	// Try sending relay
@@ -672,15 +677,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		return nil, errV
 	}
 	// Send
-	var reqMsg *rpcInterfaceMessages.JsonrpcMessage
-	var reqParams interface{}
-	switch msg := chainMsg.GetRPCMessage().(type) {
-	case *rpcInterfaceMessages.JsonrpcMessage:
-		reqMsg = msg
-		reqParams = reqMsg.Params
-	default:
-		reqMsg = nil
-	}
 	var requestedBlockHash []byte = nil
 	finalized := false
 	dataReliabilityEnabled, _ := rpcps.chainParser.DataReliabilityParams()
@@ -832,13 +828,6 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		}
 	}
 
-	apiName := chainMsg.GetApi().Name
-	if reqMsg != nil && strings.Contains(apiName, "unsubscribe") {
-		err := rpcps.processUnsubscribe(ctx, apiName, consumerAddr, reqParams, uint64(request.RelayData.RequestBlock))
-		if err != nil {
-			return nil, err
-		}
-	}
 	if dataReliabilityEnabled {
 		// now we need to provide the proof for the response
 		proofBlock := latestBlock
