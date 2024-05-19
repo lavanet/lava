@@ -372,12 +372,11 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 
 	epochsConnected := len(pnsm.openSubscriptions[hashedParams].ConnectedConsumers)
 	if epochsConnected == 0 {
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() cancelling context", utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)))
-		pnsm.openSubscriptions[hashedParams].CancellableContextCancelFunc()
+		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in subscription, closing subscription", utils.LogAttr("params", params))
 
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers subscription, closing subscription", utils.LogAttr("params", params))
-		close(pnsm.openSubscriptions[hashedParams].MessagesChannel)
 		pnsm.openSubscriptions[hashedParams].NodeSubscription.Unsubscribe()
+		pnsm.openSubscriptions[hashedParams].CancellableContextCancelFunc()
+		close(pnsm.openSubscriptions[hashedParams].MessagesChannel)
 		delete(pnsm.openSubscriptions, hashedParams)
 	}
 
