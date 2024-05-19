@@ -469,8 +469,6 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	rpcps.rewardServer.SubscribeStarted(consumerAddress.String(), requestBlockHeight, subscriptionId)
 	wg.Wait()
 
-	// TODO: Delete from ProviderSessionManager
-	// rpcps.providerSessionManager.SubscriptionEnded(consumerAddress.String(), requestBlockHeight, subscriptionId)
 	rpcps.rewardServer.SubscribeEnded(consumerAddress.String(), requestBlockHeight, subscriptionId)
 	return subscribed, errRet
 }
@@ -1022,27 +1020,6 @@ func (rpcps *RPCProviderServer) GetLatestBlockData(ctx context.Context, blockDis
 		err = utils.LavaFormatError("failed fetching finalization block data", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "fromBlock", Value: fromBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "toBlock", Value: toBlock})
 	}
 	return
-}
-
-func (rpcps *RPCProviderServer) processUnsubscribe(ctx context.Context, apiName string, consumerAddr sdk.AccAddress, reqParams interface{}, epoch uint64) error {
-	var subscriptionID string
-	switch reqParamsCasted := reqParams.(type) {
-	case []interface{}:
-		var ok bool
-		subscriptionID, ok = reqParamsCasted[0].(string)
-		if !ok {
-			return utils.LavaFormatError("processUnsubscribe - p[0].(string) - type assertion failed", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "type", Value: reqParamsCasted[0]})
-		}
-	case map[string]interface{}:
-		if apiName == "unsubscribe" {
-			var ok bool
-			subscriptionID, ok = reqParamsCasted["query"].(string)
-			if !ok {
-				return utils.LavaFormatError("processUnsubscribe - p['query'].(string) - type assertion failed", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "type", Value: reqParamsCasted["query"]})
-			}
-		}
-	}
-	return rpcps.providerSessionManager.ProcessUnsubscribe(apiName, subscriptionID, consumerAddr.String(), epoch)
 }
 
 func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtypes.ProbeRequest) (*pairingtypes.ProbeReply, error) {
