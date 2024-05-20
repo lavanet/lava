@@ -19,15 +19,15 @@ import (
 )
 
 type ChannelToConnectedConsumers struct {
-	CancellableContext           context.Context
-	CancellableContextCancelFunc context.CancelFunc
-	MessagesChannel              chan interface{}
-	NodeSubscription             *rpcclient.ClientSubscription
-	SubscriptionID               string
-	FirstSetupReply              *pairingtypes.RelayReply
-	FirstSetupRequest            *pairingtypes.RelayRequest
-	ApiCollection                *spectypes.ApiCollection
-	ConnectedConsumers           map[uint64]map[string]*SafeChannelSender[*pairingtypes.RelayReply] // first key is epoch, second key is consumer address
+	cancellableContext           context.Context
+	cancellableContextCancelFunc context.CancelFunc
+	messagesChannel              chan interface{}
+	nodeSubscription             *rpcclient.ClientSubscription
+	subscriptionID               string
+	firstSetupReply              *pairingtypes.RelayReply
+	firstSetupRequest            *pairingtypes.RelayRequest
+	apiCollection                *spectypes.ApiCollection
+	connectedConsumers           map[uint64]map[string]*SafeChannelSender[*pairingtypes.RelayReply] // first key is epoch, second key is consumer address
 }
 
 type ProviderNodeSubscriptionManager struct {
@@ -85,30 +85,30 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 	if found {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() found existing subscription", utils.LogAttr("params", string(params)))
 
-		if _, ok := paramsChannelToConnectedConsumers.ConnectedConsumers[pnsm.currentEpoch]; !ok { // Add the new epoch if doesn't exist
+		if _, ok := paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch]; !ok { // Add the new epoch if doesn't exist
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() consumer registered for epoch that does not exists in map, creating the new epoch map", utils.LogAttr("consumerAddr", consumerAddr))
-			paramsChannelToConnectedConsumers.ConnectedConsumers[pnsm.currentEpoch] = make(map[string]*SafeChannelSender[*pairingtypes.RelayReply])
-		} else if _, found := paramsChannelToConnectedConsumers.ConnectedConsumers[pnsm.currentEpoch][consumerAddrString]; found { // Consumer is already connected to this subscription in current epoch, dismiss
+			paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch] = make(map[string]*SafeChannelSender[*pairingtypes.RelayReply])
+		} else if _, found := paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch][consumerAddrString]; found { // Consumer is already connected to this subscription in current epoch, dismiss
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() consumer is already connected, returning the existing subscription", utils.LogAttr("consumerAddr", consumerAddr))
-			return paramsChannelToConnectedConsumers.NodeSubscription, paramsChannelToConnectedConsumers.SubscriptionID, nil
+			return paramsChannelToConnectedConsumers.nodeSubscription, paramsChannelToConnectedConsumers.subscriptionID, nil
 		}
 
 		// Check if the consumer already exist in prev epoch for the same reqParamHash
-		connectedConsumerChan, found := paramsChannelToConnectedConsumers.ConnectedConsumers[pnsm.prevEpoch][consumerAddrString]
+		connectedConsumerChan, found := paramsChannelToConnectedConsumers.connectedConsumers[pnsm.prevEpoch][consumerAddrString]
 		if found {
 			// Same consumer is renewing the subscription for the new epoch, let's move him to the current one
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() consumer already exist in prev epoch, moving him to the current one", utils.LogAttr("consumerAddr", consumerAddr))
-			paramsChannelToConnectedConsumers.ConnectedConsumers[pnsm.currentEpoch][consumerAddrString] = connectedConsumerChan
-			delete(paramsChannelToConnectedConsumers.ConnectedConsumers[pnsm.prevEpoch], consumerAddrString) // Remove the entry from old epoch
+			paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch][consumerAddrString] = connectedConsumerChan
+			delete(paramsChannelToConnectedConsumers.connectedConsumers[pnsm.prevEpoch], consumerAddrString) // Remove the entry from old epoch
 		} else {
 			// Add the new entry for the consumer
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() consumer registered for new epoch, the consumer does not exist in prev epoch", utils.LogAttr("consumerAddr", consumerAddr))
-			paramsChannelToConnectedConsumers.ConnectedConsumers[pnsm.currentEpoch][consumerAddrString] = NewSafeChannelSender(ctx, consumerChannel)
+			paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch][consumerAddrString] = NewSafeChannelSender(ctx, consumerChannel)
 		}
 
-		firstSetupReply = paramsChannelToConnectedConsumers.FirstSetupReply
-		clientSubscription = paramsChannelToConnectedConsumers.NodeSubscription
-		subscriptionId = paramsChannelToConnectedConsumers.SubscriptionID
+		firstSetupReply = paramsChannelToConnectedConsumers.firstSetupReply
+		clientSubscription = paramsChannelToConnectedConsumers.nodeSubscription
+		subscriptionId = paramsChannelToConnectedConsumers.subscriptionID
 	} else {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() did not found existing subscription, creating new one")
 
@@ -148,19 +148,19 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 
 		cancellableCtx, cancel := context.WithCancel(context.Background())
 		channelToConnectedConsumers := &ChannelToConnectedConsumers{
-			CancellableContext:           cancellableCtx,
-			CancellableContextCancelFunc: cancel,
-			MessagesChannel:              nodeChan,
-			NodeSubscription:             clientSubscription,
-			SubscriptionID:               subscriptionId,
-			FirstSetupReply:              reply,
-			FirstSetupRequest:            request,
-			ApiCollection:                chainMessage.GetApiCollection(),
-			ConnectedConsumers:           make(map[uint64]map[string]*SafeChannelSender[*pairingtypes.RelayReply]),
+			cancellableContext:           cancellableCtx,
+			cancellableContextCancelFunc: cancel,
+			messagesChannel:              nodeChan,
+			nodeSubscription:             clientSubscription,
+			subscriptionID:               subscriptionId,
+			firstSetupReply:              reply,
+			firstSetupRequest:            request,
+			apiCollection:                chainMessage.GetApiCollection(),
+			connectedConsumers:           make(map[uint64]map[string]*SafeChannelSender[*pairingtypes.RelayReply]),
 		}
 
-		channelToConnectedConsumers.ConnectedConsumers[pnsm.currentEpoch] = make(map[string]*SafeChannelSender[*pairingtypes.RelayReply])
-		channelToConnectedConsumers.ConnectedConsumers[pnsm.currentEpoch][consumerAddrString] = NewSafeChannelSender(ctx, consumerChannel)
+		channelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch] = make(map[string]*SafeChannelSender[*pairingtypes.RelayReply])
+		channelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch][consumerAddrString] = NewSafeChannelSender(ctx, consumerChannel)
 
 		pnsm.openSubscriptions[hashedParams] = channelToConnectedConsumers
 		firstSetupReply = reply
@@ -169,7 +169,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 	}
 
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
-	pnsm.openSubscriptions[hashedParams].ConnectedConsumers[pnsm.currentEpoch][consumerAddrString].Send(firstSetupReply)
+	pnsm.openSubscriptions[hashedParams].connectedConsumers[pnsm.currentEpoch][consumerAddrString].Send(firstSetupReply)
 
 	return clientSubscription, subscriptionId, nil
 }
@@ -177,13 +177,17 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx context.Context, nodeChan chan interface{}, hashedParams string) {
 	for {
 		select {
-		case <-pnsm.openSubscriptions[hashedParams].CancellableContext.Done():
+		case <-pnsm.openSubscriptions[hashedParams].cancellableContext.Done():
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() pnsm.openSubscriptions[hashedParams].CancellableContext.Done(), exiting", utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)))
 			return
 		case <-ctx.Done():
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() context done, exiting", utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)))
 			return
 		case nodeMsg := <-nodeChan:
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() got new message from node",
+				utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)),
+				utils.LogAttr("nodeMsg", nodeMsg),
+			)
 			pnsm.handleNewNodeMessage(hashedParams, nodeMsg)
 		}
 	}
@@ -251,14 +255,14 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(hashedParams s
 	defer pnsm.lock.RUnlock()
 
 	// Sending message to all connected consumers, for all epochs
-	for epoch, consumerAddrToChannel := range pnsm.openSubscriptions[hashedParams].ConnectedConsumers {
+	for epoch, consumerAddrToChannel := range pnsm.openSubscriptions[hashedParams].connectedConsumers {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumers in epoch", utils.LogAttr("epoch", epoch), utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)))
 
 		for consumerAddrString, consumerChannel := range consumerAddrToChannel {
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumer", utils.LogAttr("consumerAddr", consumerAddrString), utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)))
 
-			request := pnsm.openSubscriptions[hashedParams].FirstSetupRequest
-			apiCollection := pnsm.openSubscriptions[hashedParams].ApiCollection
+			request := pnsm.openSubscriptions[hashedParams].firstSetupRequest
+			apiCollection := pnsm.openSubscriptions[hashedParams].apiCollection
 
 			marshalledNodeMsg, err := pnsm.convertNodeMsgToMarshalledJsonRpcResponse(nodeMsg, apiCollection)
 			if err != nil {
@@ -318,7 +322,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 	}
 
 	// Remove consumer from all epochs
-	for epoch, connectedConsumers := range openSubscriptions.ConnectedConsumers {
+	for epoch, connectedConsumers := range openSubscriptions.connectedConsumers {
 		if _, ok := connectedConsumers[consumerAddrString]; ok {
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() found consumer in epoch",
 				utils.LogAttr("consumerAddr", consumerAddr),
@@ -331,7 +335,14 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 				connectedConsumers[consumerAddrString].Close()
 			}
 
-			delete(pnsm.openSubscriptions[hashedParams].ConnectedConsumers[epoch], consumerAddrString)
+			delete(pnsm.openSubscriptions[hashedParams].connectedConsumers[epoch], consumerAddrString)
+			if len(pnsm.openSubscriptions[hashedParams].connectedConsumers[epoch]) == 0 {
+				utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in epoch, closing epoch",
+					utils.LogAttr("epoch", epoch),
+					utils.LogAttr("params", params),
+				)
+				delete(pnsm.openSubscriptions[hashedParams].connectedConsumers, epoch)
+			}
 		} else {
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() consumer not found in epoch",
 				utils.LogAttr("consumerAddr", consumerAddr),
@@ -342,42 +353,47 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 		}
 	}
 
-	connectedConsumersCount := len(pnsm.openSubscriptions[hashedParams].ConnectedConsumers[pnsm.prevEpoch])
+	connectedConsumersCount := len(pnsm.openSubscriptions[hashedParams].connectedConsumers[pnsm.prevEpoch])
 	if connectedConsumersCount == 0 {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in previous epoch, closing subscription",
 			utils.LogAttr("params", params),
 			utils.LogAttr("epoch", pnsm.prevEpoch),
 		)
-		delete(pnsm.openSubscriptions[hashedParams].ConnectedConsumers, pnsm.prevEpoch)
+		delete(pnsm.openSubscriptions[hashedParams].connectedConsumers, pnsm.prevEpoch)
 	} else {
 		utils.LavaFormatTrace(fmt.Sprintf("ProviderNodeSubscriptionManager:RemoveConsumer() still have %v consumers left in this subscription for previous epoch", connectedConsumersCount),
 			utils.LogAttr("params", params),
-			utils.LogAttr("connectedConsumers", pnsm.openSubscriptions[hashedParams].ConnectedConsumers),
+			utils.LogAttr("connectedConsumers", pnsm.openSubscriptions[hashedParams].connectedConsumers),
 		)
 	}
 
-	connectedConsumersCount = len(pnsm.openSubscriptions[hashedParams].ConnectedConsumers[pnsm.currentEpoch])
+	connectedConsumersCount = len(pnsm.openSubscriptions[hashedParams].connectedConsumers[pnsm.currentEpoch])
 	if connectedConsumersCount == 0 {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in current epoch, closing subscription",
 			utils.LogAttr("params", params),
 			utils.LogAttr("epoch", pnsm.currentEpoch),
 		)
-		delete(pnsm.openSubscriptions[hashedParams].ConnectedConsumers, pnsm.currentEpoch)
+		delete(pnsm.openSubscriptions[hashedParams].connectedConsumers, pnsm.currentEpoch)
 	} else {
 		utils.LavaFormatTrace(fmt.Sprintf("ProviderNodeSubscriptionManager:RemoveConsumer() still have %v consumers left in this subscription for current epoch", connectedConsumersCount),
 			utils.LogAttr("params", params),
-			utils.LogAttr("connectedConsumers", pnsm.openSubscriptions[hashedParams].ConnectedConsumers),
+			utils.LogAttr("connectedConsumers", pnsm.openSubscriptions[hashedParams].connectedConsumers),
 		)
 	}
 
-	epochsConnected := len(pnsm.openSubscriptions[hashedParams].ConnectedConsumers)
+	epochsConnected := len(pnsm.openSubscriptions[hashedParams].connectedConsumers)
 	if epochsConnected == 0 {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in subscription, closing subscription", utils.LogAttr("params", params))
 
-		pnsm.openSubscriptions[hashedParams].NodeSubscription.Unsubscribe()
-		pnsm.openSubscriptions[hashedParams].CancellableContextCancelFunc()
-		close(pnsm.openSubscriptions[hashedParams].MessagesChannel)
+		pnsm.openSubscriptions[hashedParams].nodeSubscription.Unsubscribe()
+		pnsm.openSubscriptions[hashedParams].cancellableContextCancelFunc()
+		close(pnsm.openSubscriptions[hashedParams].messagesChannel)
 		delete(pnsm.openSubscriptions, hashedParams)
+	} else {
+		utils.LavaFormatTrace(fmt.Sprintf("ProviderNodeSubscriptionManager:RemoveConsumer() still have %v epochs left in this subscription", epochsConnected),
+			utils.LogAttr("params", params),
+			utils.LogAttr("connectedConsumers", pnsm.openSubscriptions[hashedParams].connectedConsumers),
+		)
 	}
 
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() removed consumer", utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("params", params))
@@ -397,11 +413,18 @@ func (pnsm *ProviderNodeSubscriptionManager) UpdateEpoch(epoch uint64) {
 	// TODO: Disconnect all prev epoch consumers, and close all streams
 	// To test, disable the context cancellation in the consumer, and see that the context is still cancelled from provider
 
-	for _, channelToConnectedConsumers := range pnsm.openSubscriptions {
-		if _, ok := channelToConnectedConsumers.ConnectedConsumers[pnsm.prevEpoch]; ok {
-			for consumerAddr, consumerChannel := range channelToConnectedConsumers.ConnectedConsumers[pnsm.prevEpoch] {
+	for hashedParams, channelToConnectedConsumers := range pnsm.openSubscriptions {
+		if _, ok := channelToConnectedConsumers.connectedConsumers[pnsm.prevEpoch]; ok {
+			for consumerAddr, consumerChannel := range channelToConnectedConsumers.connectedConsumers[pnsm.prevEpoch] {
 				consumerChannel.Close()
-				delete(channelToConnectedConsumers.ConnectedConsumers[pnsm.prevEpoch], consumerAddr)
+				delete(pnsm.openSubscriptions[hashedParams].connectedConsumers[pnsm.prevEpoch], consumerAddr)
+				if len(pnsm.openSubscriptions[hashedParams].connectedConsumers[pnsm.prevEpoch]) == 0 {
+					utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in prev epoch, closing epoch",
+						utils.LogAttr("epoch", pnsm.prevEpoch),
+						utils.LogAttr("hashedParams", hashedParams),
+					)
+					delete(pnsm.openSubscriptions[hashedParams].connectedConsumers, pnsm.prevEpoch)
+				}
 			}
 		}
 	}

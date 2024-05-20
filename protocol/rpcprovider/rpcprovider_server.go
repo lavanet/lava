@@ -190,7 +190,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	}
 
 	// Check that this is not subscription related messages
-	if chainMessage.GetApi().Category.Subscription {
+	if chainlib.IsSubscriptionCategory(chainMessage) {
 		return nil, errors.New("subscription category messages are not supported through Relay")
 	}
 
@@ -461,7 +461,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 		)
 	}
 
-	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber) // TODO: Ask Omer if this is fine
+	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber) // TODO: Both consumer and provider should be mark failure on first message fail
 	if relayError != nil {
 		utils.LavaFormatError("Error OnSessionDone", relayError)
 	}
