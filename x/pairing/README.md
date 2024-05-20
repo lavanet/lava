@@ -62,8 +62,8 @@ type StakeEntry struct {
 	DelegateTotal      types.Coin // total delegation to the provider (without self delegation)
 	DelegateLimit      types.Coin // delegation total limit
 	DelegateCommission uint64     // commission from delegation rewards
-	Jails              uint64     // number of times the provider have been jailed
-	JailTime           int64      // the time when the jail period is finished the he can come back to service
+	Jails              uint64     // number of times the provider has been jailed
+	JailTime           int64      // the end of the jail time, after which the provider can return to service
 }
 ```
 
