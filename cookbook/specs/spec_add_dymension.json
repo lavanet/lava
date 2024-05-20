@@ -9,7 +9,8 @@
           "enabled": true,
           "imports": [
             "COSMOSSDK",
-            "ETHERMINT"
+            "ETHERMINT",
+            "ETH1"
           ],
           "reliability_threshold": 268435455,
           "data_reliability_enabled": true,
