@@ -1249,24 +1249,17 @@
                         ],
                         "headers": [],
                         "inheritance_apis": [],
-                        "parse_directives": [
-                            {
-                                "function_template": "/eth/v1/beacon/headers/%d",
-                                "function_tag": "GET_BLOCK_BY_NUM",
-                                "result_parsing": {
-                                  "parser_arg": [
-                                    "data",
-                                    "header",
-                                    "message",
-                                    "slot"
-                                  ],
-                                  "parser_func": "PARSE_CANONICAL"
-                                },
-                                "api_name": "/eth/v1/beacon/headers/{block_id}"
-                                }
-                        ],
+                        "parse_directives": [],
                         "verifications": [],
-                        "extensions": []
+                        "extensions": [
+                            {
+                                "name": "archive",
+                                "cu_multiplier": 5,
+                                "rule": {
+                                    "block": 7140
+                                }
+                            }
+                        ]
                     },
                     {
                         "enabled": true,
