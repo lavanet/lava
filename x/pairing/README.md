@@ -43,7 +43,8 @@ The pairing module is one of Lava's core modules and is closely connected to the
 
 Providers are entities that have access to blockchains and want to monetize that access by providing services to consumers. Providers stake tokens under a geolocation and supported specifications (e.g. Ethereum JSON-RPC in U.S. East), once active they must provide service to consumers. Providers run the lava process and the desired blockchain or service (e.g. Ethereum JSON-RPC) they are providing access for.
 
-Note, a provider stakes its funds using its vault address and runs the Lava provider process using the its provider address. All the provider's rewards are sent to its vault address.
+Note, a provider stakes its funds using its vault address and runs the Lava provider process using the its provider address. All the provider's rewards are sent to its vault address. In case a provider address is defined (which is different from the vault address),
+it is recommended to let the provider use the vault address' funds for gas fees with the appropriate flag (see below).
 
 #### Stake
 
@@ -67,7 +68,7 @@ type StakeEntry struct {
 }
 ```
 
-To bolster security, a provider entity is now associated with two addresses: the vault address and the provider address. If the provider entity doesn't specify the provider address, it defaults to being the same as the vault address. When a provider entity stakes, the account from which the funds originate is considered the vault address. This address is utilized to hold the provider entity's funds and to receive rewards from the provider entity's service. Any other actions performed by the provider entity utilize the provider entity's provider address. The provider address can perform all actions except for staking/unstaking, modifying stake-related fields in the provider's stake entry, and claiming rewards. It's important to note that once a provider address is registered through a provider entity's staking, it cannot stake on the same chain again.
+To bolster security, a provider entity is now associated with two addresses: the vault address and the provider address. If the provider entity doesn't specify the provider address when staking, it defaults to being the same as the vault address. When a provider entity stakes, the account from which the funds originate is considered the vault address. This address is utilized to hold the provider entity's funds and to receive rewards from the provider entity's service. Any other actions performed by the provider entity utilize the provider entity's provider address. The provider address can perform all actions except for staking/unstaking, modifying stake-related fields in the provider entity's stake entry, and claiming rewards. To let the provider address use the vault's funds for gas fees, use the `--grant-provider-gas-fees-auth`. The only transactions that are funded by the vault are: `relay-payment`, `freeze`, `unfreeze`, `modify-provider`, `detection` (conflict module), `conflict-vote-commit` and `conflict-vote-reveal`. When executing any of these transactions using the CLI with the provider entity, use the `--fee-granter` flag to specify the vault address which will pay for the gas fees. It's important to note that once an provider address is registered through a provider entity's staking, it cannot stake on the same chain again.
 
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). A provider can accept delegations to increase its effective stake, which increases its chances of being selected in the pairing process. The provider can also set a delegation limit, which determines the maximum value of delegations they can accept. This limit is in place to prevent delegators from increasing the provider's effective stake to a level where the provider is overwhelmed with more consumers than they can handle in the pairing process. For more details about delegations, refer to the dualstaking module README.
 
@@ -350,11 +351,13 @@ The pairing module supports the following transactions:
 | `modify-provider`     | chain-id (string)  | modify a provider's stake entry (use the TX optional flags)                  |
 | `relay-payment`     | chain-id (string) | automatically generated TX used by a provider to request payment for their service                  | 
 | `simulate-relay-payment`     | consumer-key (string), chainId (string)  | simulate a relay payment TX                  |
-| `stake-provider`     | chain-id (string), amount (Coin), endpoints ([]Endpoint), geolocation (int32), validator (string, optional), --provider-moniker (string) | stake a provider in a chain with multiple endpoints                 |
+| `stake-provider`     | chain-id (string), amount (Coin), endpoints ([]Endpoint), geolocation (int32), validator (string, optional), --provider-moniker (string) --grant-provider-gas-fees-auth (bool)| stake a provider in a chain with multiple endpoints                 |
 | `unfreeze`     | chain-ids ([]string)  | unfreeze a provider in multiple chains                  |
 | `unstake-provider`     | chain-ids ([]string), validator (string, optional)  | unstake a provider from multiple chains                  |
 
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). From the CLI, use `100ulava` to assign a `Coin` argument. The `Endpoint` type defines a provider endpoint. From the CLI, use "my-provider-grpc-addr.com:9090,1" for one endpoint (includes the endpoint's URL+port and the endpoint's geolocation). When it comes to staking-related transactions, the geolocation argument should encompass the geolocations of all the endpoints combined.
+
+Moreover, using `--grant-provider-gas-fees-auth` flag when staking a provider entity will let the provider address use the vault address funds for gas fees. When sending a TX, the provider address should add the `--fee-granter` flag to specify the vault's account as the payer of gas fees.
 
 ## Proposals
 
