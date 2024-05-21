@@ -449,6 +449,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 		delay     time.Duration
 		finalized bool
 		hash      []byte
+		nullId    bool
 	}{
 		{name: "Finalized No Hash", valid: true, delay: time.Millisecond, finalized: true, hash: nil},
 		{name: "Finalized After delay No Hash", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil},
@@ -458,6 +459,14 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 		{name: "Finalized After delay With Hash", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: []byte{1, 2, 3}},
 		{name: "NonFinalized With Hash", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}},
 		{name: "NonFinalized After delay With Hash", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}},
+		{name: "Finalized No Hash, with null id", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullId: true},
+		{name: "Finalized After delay No Hash, with null id", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullId: true},
+		{name: "NonFinalized No Hash, with null id", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullId: true},
+		{name: "NonFinalized After delay No Hash", valid: false, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: nil, nullId: true},
+		{name: "Finalized With Hash, with null id", valid: true, delay: time.Millisecond, finalized: true, hash: []byte{1, 2, 3}, nullId: true},
+		{name: "Finalized After delay With Hash, with null id", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: []byte{1, 2, 3}, nullId: true},
+		{name: "NonFinalized With Hash, with null id", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullId: true},
+		{name: "NonFinalized After delay With Hash, with null id", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullId: true},
 	}
 
 	for _, tt := range tests {
@@ -466,9 +475,15 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			id := rand.Int63()
 
 			formatIDInJson := func(idNum int64) []byte {
+				if tt.nullId {
+					return []byte(`{"jsonrpc":"2.0","method":"status","params":[],"id":null}`)
+				}
 				return []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"status","params":[],"id":%d}`, idNum))
 			}
 			formatIDInJsonResponse := func(idNum int64) []byte {
+				if tt.nullId {
+					return []byte(`{"jsonrpc":"2.0","result":0x12345,"id":null}`)
+				}
 				return []byte(fmt.Sprintf(`{"jsonrpc":"2.0","result":0x12345,"id":%d}`, idNum))
 			}
 			request := getRequest(1230, formatIDInJson(id), spectypes.APIInterfaceJsonRPC) // &pairingtypes.RelayRequest{
@@ -509,7 +524,11 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 				require.NoError(t, err)
 				result := gjson.GetBytes(cacheReply.GetReply().Data, format.IDFieldName)
 				extractedID := result.Raw
-				require.Equal(t, strconv.FormatInt(changedID, 10), extractedID)
+				if tt.nullId {
+					require.Equal(t, "null", extractedID)
+				} else {
+					require.Equal(t, strconv.FormatInt(changedID, 10), extractedID)
+				}
 			} else {
 				require.Error(t, err)
 			}
