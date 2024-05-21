@@ -4,7 +4,6 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc/codes"
@@ -18,13 +17,19 @@ func (k Keeper) Provider(goCtx context.Context, req *types.QueryProviderRequest)
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, req.ChainID, req.Address)
-	if !found {
-		return nil, utils.LavaFormatWarning("provider not staked on chain", epochstoragetypes.ErrProviderNotStaked,
-			utils.LogAttr("provider", req.Address),
-			utils.LogAttr("chain_id", req.ChainID),
-		)
+	chains := []string{req.ChainID}
+	if req.ChainID == "" {
+		chains = k.specKeeper.GetAllChainIDs(ctx)
 	}
 
-	return &types.QueryProviderResponse{StakeEntry: stakeEntry}, nil
+	stakeEntries := []epochstoragetypes.StakeEntry{}
+	for _, chain := range chains {
+		stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chain, req.Address)
+		if !found {
+			continue
+		}
+		stakeEntries = append(stakeEntries, stakeEntry)
+	}
+
+	return &types.QueryProviderResponse{StakeEntries: stakeEntries}, nil
 }
