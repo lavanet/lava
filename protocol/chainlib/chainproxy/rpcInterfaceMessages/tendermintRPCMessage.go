@@ -105,7 +105,7 @@ func IdFromRawMessage(rawID json.RawMessage) (jsonrpcId, error) {
 		// json.Unmarshal uses float64 for all numbers
 		return JSONRPCIntID(int(id)), nil
 	case nil:
-		return nil, nil
+		return jsonrpcId(nil), nil
 	default:
 		typ := reflect.TypeOf(id)
 		return nil, utils.LavaFormatError("failed to unmarshal id not a string or float", err, []utils.Attribute{{Key: "id", Value: string(rawID)}, {Key: "id type", Value: typ}}...)
