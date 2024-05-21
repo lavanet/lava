@@ -92,10 +92,6 @@ func (JSONRPCIntID) isJSONRPCID()      {}
 func (id JSONRPCIntID) String() string { return fmt.Sprintf("%d", id) }
 
 func IdFromRawMessage(rawID json.RawMessage) (jsonrpcId, error) {
-	if rawID == nil {
-		return nil, nil
-	}
-
 	var idInterface interface{}
 	err := json.Unmarshal(rawID, &idInterface)
 	if err != nil {
