@@ -142,17 +142,17 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 }
 
 type mockTx struct {
-	callbackCommit func(voteID string, voteData *reliabilitymanager.VoteData)
-	callbackReveal func(voteID string, voteData *reliabilitymanager.VoteData)
+	callbackCommit func(voteID string, voteData *reliabilitymanager.VoteData, specID string)
+	callbackReveal func(voteID string, voteData *reliabilitymanager.VoteData, specID string)
 }
 
-func (m mockTx) SendVoteCommitment(voteID string, voteData *reliabilitymanager.VoteData) error {
-	m.callbackCommit(voteID, voteData)
+func (m mockTx) SendVoteCommitment(voteID string, voteData *reliabilitymanager.VoteData, specID string) error {
+	m.callbackCommit(voteID, voteData, specID)
 	return nil
 }
 
-func (m mockTx) SendVoteReveal(voteID string, voteData *reliabilitymanager.VoteData) error {
-	m.callbackReveal(voteID, voteData)
+func (m mockTx) SendVoteReveal(voteID string, voteData *reliabilitymanager.VoteData, specID string) error {
+	m.callbackReveal(voteID, voteData, specID)
 	return nil
 }
 
@@ -326,13 +326,13 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 
 		commitCalled := false
 		revealCalled := false
-		sendVoteCommit := func(voteID string, vote *reliabilitymanager.VoteData) {
+		sendVoteCommit := func(voteID string, vote *reliabilitymanager.VoteData, specID string) {
 			commitCalled = true
 			msg := conflicttypes.NewMsgConflictVoteCommit(votingProvider.Addr.String(), voteID, vote.CommitHash)
 			_, err := ts.Servers.ConflictServer.ConflictVoteCommit(ts.Ctx, msg)
 			require.NoError(t, err)
 		}
-		sendVoteReveal := func(voteID string, vote *reliabilitymanager.VoteData) {
+		sendVoteReveal := func(voteID string, vote *reliabilitymanager.VoteData, specID string) {
 			revealCalled = true
 			msg := conflicttypes.NewMsgConflictVoteReveal(votingProvider.Addr.String(), voteID, vote.Nonce, vote.RelayDataHash)
 			_, err := ts.Servers.ConflictServer.ConflictVoteReveal(ts.Ctx, msg)
