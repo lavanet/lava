@@ -102,7 +102,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 	pecsDetailed := k.GetAllProviderEpochComplainerCuStore(ctx)
 	complainedProviders := map[string]map[uint64]types.ProviderEpochComplainerCu{} // map[provider chainID]map[epoch]ProviderEpochComplainerCu
 	for _, pec := range pecsDetailed {
-		entry, ok := stakeEntries[pec.Provider]
+		entry, ok := stakeEntries[ProviderChainID(pec.Provider, pec.ChainId)]
 		if ok {
 			if minHistoryBlock < entry.StakeAppliedBlock {
 				// this staked provider has too short history (either since staking
@@ -149,6 +149,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 			entry, ok := stakeEntries[key]
 			if !ok {
 				utils.LavaFormatWarning("Freeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "providerAddress", Value: provider}}...)
+				continue
 			}
 			err = k.punishUnresponsiveProvider(ctx, epochs, entry, complaintCU, servicedCU, complainedProviders[key])
 			existingProviders[chainID]--
