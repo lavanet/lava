@@ -97,12 +97,6 @@ A provider can unstake and retrieve their coins. When a provider unstakes, they 
 
 Freeze Mode enables the Provider to temporarily suspend their node's operation during maintenance to avoid bad Quality of Service (QoS). Freeze/Unfreeze is applied on the next Epoch. The Provider can initiate multiple Freeze actions with one command.
 
-#### Jail
-
-If a provider is down and is being reported as such by users it will be jailed.
-The first 3 times jail is temporary for 1H and will be removed automatically.
-After 3 consecutive jails the provider will e jailed for 24H and set to a frozen state, to continue activity the provider must send unfreeze transaction after jail time is over.
-
 ### Pairing
 
 The Pairing Engine is a core component of the Lava Network, responsible for connecting consumers with the most suitable service providers. It operates on a complex array of inputs, including the strictest policies defined at the plan, subscription, and project levels. These policies set the boundaries for service provisioning, ensuring that consumers' specific requirements are met while adhering to the network's overarching rules.
@@ -214,11 +208,17 @@ Pairing verification is used by the provider to determine whether to offer servi
 
 #### Unresponsiveness
 
-Providers can get punished for being unresponsive to consumer requests. If a provider wishes to stop getting paired with consumers for any reason to avoid getting punished, it can freeze itself. Currently, the punishment for being unresponsive is freezing. In the future, providers will be jailed for this kind of behaviour.
+Providers can get punished for being unresponsive to consumer requests. If a provider wishes to stop getting paired with consumers for any reason to avoid getting punished, it can freeze itself. Currently, the punishment for being unresponsive is jailing.
 
 When a consumer is getting paired with a provider, it sends requests for service. If provider A is unresponsive after a few tries, the consumer switches to another provider from its pairing list, provider B, and send requests to it. When communicatting with provider B, the consumer appends the address of provider A to its request, thus adding the current request's CU to provider A's "complainers CU" counter.
 
 Every epoch start, the amount of complainers CU is compared with the amount of serviced CU of each provider across a few epochs back. If the complainers CU is higher, the provider is considered unresponsive and gets punished. The number of epochs back is determined by the recommendedEpochNumToCollectPayment parameter
+
+#### Jail
+
+If a provider is down and users report it, the provider will be jailed.
+The first three instances of jailing are temporary, lasting 1 hour each, and will be automatically removed.
+After three consecutive jailings, the provider will be jailed for 24 hours and set to a 'frozen' state. To resume activity, the provider must send an 'unfreeze' transaction after the jail time has ended.
 
 #### Static Providers
 
