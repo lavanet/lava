@@ -8,7 +8,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 	"github.com/lavanet/lava/x/rewards/types"
 	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 )
@@ -41,6 +45,9 @@ type (
 		// the address capable of executing a MsgSetIprpcData message. Typically, this
 		// should be the x/gov module account.
 		authority string
+
+		// ICS4 wrapper that lets the rewards module be an IBC middleware module
+		ics4Wrapper porttypes.ICS4Wrapper
 	}
 )
 
@@ -60,6 +67,7 @@ func NewKeeper(
 	feeCollectorName string,
 	timerStoreKeeper types.TimerStoreKeeper,
 	authority string,
+	ics4Wrapper porttypes.ICS4Wrapper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -83,6 +91,7 @@ func NewKeeper(
 
 		feeCollectorName: feeCollectorName,
 		authority:        authority,
+		ics4Wrapper:      ics4Wrapper,
 	}
 
 	refillRewardsPoolTimerCallback := func(ctx sdk.Context, subkey, data []byte) {
@@ -141,4 +150,19 @@ func (k Keeper) InitRewardsRefillTS(ctx sdk.Context, gs timerstoretypes.GenesisS
 // ExportRewardsRefillTS exports refill pools timers data (for genesis)
 func (k Keeper) ExportRewardsRefillTS(ctx sdk.Context) timerstoretypes.GenesisState {
 	return k.refillRewardsPoolTS.Export(ctx)
+}
+
+// ICS4 wrapper default implementations
+func (k Keeper) SendPacket(ctx sdk.Context, chanCap *capabilitytypes.Capability, sourcePort string, sourceChannel string,
+	timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte) (sequence uint64, err error) {
+	return k.ics4Wrapper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
+}
+
+func (k Keeper) WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet exported.PacketI,
+	ack exported.Acknowledgement) error {
+	return k.ics4Wrapper.WriteAcknowledgement(ctx, chanCap, packet, ack)
+}
+
+func (k Keeper) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
+	return k.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
 }
