@@ -189,6 +189,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 		w.WriteHeader(status)
 		fmt.Fprint(w, string(data))
 	})
+
 	chainParser, chainRouter, chainFetcher, _, endpoint, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", addons)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
@@ -240,7 +241,8 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 		ConsistencyCallback: nil,
 		Pmetrics:            nil,
 	}
-	mockChainFetcher := NewMockChainFetcher(1000, 10, nil)
+
+	mockChainFetcher := NewMockChainFetcher(1000, int64(blocksToSaveChainTracker), nil)
 	chainTracker, err := chaintracker.NewChainTracker(ctx, mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, account.Addr.String(), chainRouter, chainParser)
