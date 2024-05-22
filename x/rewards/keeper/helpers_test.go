@@ -9,9 +9,11 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/testutil/sample"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -136,6 +138,10 @@ func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
 		require.True(ts.T, ts.GetBalances(consumerAcc.Addr).IsEqual(expectedBalanceAfterFund))
 		ts.AdvanceMonths(1).AdvanceEpoch() // fund only fund for next month, so advance a month
 	}
+}
+
+func (ts *tester) createIbcTransferPacketData(memo string) transfertypes.FungibleTokenPacketData {
+	return transfertypes.NewFungibleTokenPacketData(ts.TokenDenom(), "100000", sample.AccAddress(), sample.AccAddress(), memo)
 }
 
 // deductParticipationFees calculates the validators and community participation
