@@ -115,6 +115,10 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	k.DistributeBlockReward(ctx)
 }
 
+func (k Keeper) GetModuleAddress() string {
+	return k.accountKeeper.GetModuleAddress(types.ModuleName).String()
+}
+
 // BondedTargetFactor calculates the bonded target factor which is used to calculate the validators
 // block rewards
 func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {
