@@ -158,12 +158,14 @@ func (k Keeper) ExportRewardsRefillTS(ctx sdk.Context) timerstoretypes.GenesisSt
 
 // ICS4 wrapper default implementations
 func (k Keeper) SendPacket(ctx sdk.Context, chanCap *capabilitytypes.Capability, sourcePort string, sourceChannel string,
-	timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte) (sequence uint64, err error) {
+	timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte,
+) (sequence uint64, err error) {
 	return k.ics4Wrapper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 func (k Keeper) WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet exported.PacketI,
-	ack exported.Acknowledgement) error {
+	ack exported.Acknowledgement,
+) error {
 	return k.ics4Wrapper.WriteAcknowledgement(ctx, chanCap, packet, ack)
 }
 

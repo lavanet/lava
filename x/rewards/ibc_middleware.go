@@ -153,12 +153,14 @@ func (im IBCMiddleware) OnTimeoutPacket(
 
 // ICS4Wrapper interface (default implementations)
 func (im IBCMiddleware) SendPacket(ctx sdk.Context, chanCap *capabilitytypes.Capability, sourcePort string, sourceChannel string,
-	timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte) (sequence uint64, err error) {
+	timeoutHeight clienttypes.Height, timeoutTimestamp uint64, data []byte,
+) (sequence uint64, err error) {
 	return im.keeper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 func (im IBCMiddleware) WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet exported.PacketI,
-	ack exported.Acknowledgement) error {
+	ack exported.Acknowledgement,
+) error {
 	return im.keeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
 }
 
