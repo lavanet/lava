@@ -4,7 +4,7 @@
         "description": "Adding new specification support for relaying Initia data on Lava",
         "specs": [
             {
-                "index": "INITIAT",
+                "index": "INITIA1T",
                 "name": "initia initiation testnet",
                 "enabled": true,
                 "imports": [
@@ -1447,11 +1447,11 @@
                 ]
             },
             {
-                "index": "MINIMOVE1",
-                "name": "minimove 1 testnet",
+                "index": "MINIMOVE1T",
+                "name": "minimove testnet",
                 "enabled": true,
                 "imports": [
-                    "INITIAT"
+                    "INITIA1T"
                 ],
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
@@ -1592,11 +1592,11 @@
                 ]
             },
             {
-                "index": "MINIWASM1",
-                "name": "miniwasm 1 testnet",
+                "index": "MINIWASM1T",
+                "name": "miniwasm testnet",
                 "enabled": true,
                 "imports": [
-                    "INITIAT",
+                    "INITIA1T",
                     "COSMOSWASM"
                 ],
                 "reliability_threshold": 268435455,
@@ -1668,7 +1668,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "minimove-1"
+                                        "expected_value": "miniwasm-1"
                                     }
                                 ]
                             },
@@ -1708,7 +1708,7 @@
                                 "name": "chain-id",
                                 "values": [
                                     {
-                                        "expected_value": "minimove-1"
+                                        "expected_value": "miniwasm-1"
                                     }
                                 ]
                             },
