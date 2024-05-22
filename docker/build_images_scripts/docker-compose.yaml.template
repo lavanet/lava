@@ -3,7 +3,7 @@ name: lava
 
 services:
   cache:
-    image: svetekllc/lava:v1.2.1-cache
+    image: svetekllc/lava:2.0.1-cache
     labels:
       network: testnet
     env_file:
@@ -25,7 +25,7 @@ services:
     restart: unless-stopped
 
   node:
-    image: svetekllc/lava:v1.2.0-node
+    image: svetekllc/lava:v2.0.0-node
     labels:
       network: testnet
     env_file:
@@ -50,7 +50,7 @@ services:
     restart: unless-stopped
 
   provider:
-    image: svetekllc/lava:v1.2.1-provider
+    image: svetekllc/lava:2.0.1-provider
     labels:
       network: testnet
     env_file:
@@ -60,9 +60,6 @@ services:
     ports:
       - '23001:23001'
     networks:
-      - canto
-      - cosmos
-      - evmos
       - lava
     logging:
       driver: "json-file"
@@ -77,14 +74,5 @@ services:
     restart: unless-stopped
 
 networks:
-  canto:
-    name: canto
-    external: true
-  cosmos:
-    name: cosmos
-    external: true
-  evmos:
-    name: evmos
-    external: true
   lava:
     name: lava

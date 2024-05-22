@@ -3,9 +3,9 @@ export DOCKER_BUILDKIT=1
 
 set -e
 
+BUILD_DATE="$(date -u +'%Y-%m-%d')"
 DIR="$( cd "$( dirname "$0" )" && pwd )"
 DOCKERFILE="$DIR/Dockerfile"
-BUILD_DATE="$(date -u +'%Y-%m-%d')"
 GIT_REPOSITORY=https://github.com/lavanet/lava
 
 NODE_TYPES=("cache" "provider" "node")
