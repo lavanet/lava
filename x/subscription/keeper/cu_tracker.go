@@ -188,7 +188,6 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 		creditToSub := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyRewardAmount)
 		totalTokenRewarded = totalTokenRewarded.Add(totalMonthlyRewardAmount)
 
-		// aggregate the reward for the provider
 		k.rewardsKeeper.AggregateRewards(ctx, provider, chainID, providerAdjustment, totalMonthlyRewardAmount)
 
 		// Transfer some of the total monthly reward to validators contribution and community pool
@@ -269,4 +268,9 @@ func (k Keeper) returnCreditToSub(ctx sdk.Context, sub string, credit math.Int) 
 	}
 
 	return sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt())
+}
+
+// wrapper function for calculating the validators and community participation fees
+func (k Keeper) CalculateParticipationFees(ctx sdk.Context, reward sdk.Coin) (sdk.Coins, sdk.Coins, error) {
+	return k.rewardsKeeper.CalculateValidatorsAndCommunityParticipationRewards(ctx, reward)
 }

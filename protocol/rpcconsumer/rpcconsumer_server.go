@@ -30,6 +30,8 @@ import (
 )
 
 const (
+	// maximum number of retries to send due to the ticker, if we didn't get a response after 10 different attempts then just wait.
+	MaximumNumberOfTickerRelayRetries        = 10
 	MaxRelayRetries                          = 6
 	SendRelayAttempts                        = 3
 	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
@@ -296,11 +298,13 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, directiveHeaders, chainMessage, relayRequestData, dappID, consumerIp)
 	if err != nil && !relayProcessor.HasResults() {
 		// we can't send anymore, and we don't have any responses
-		return nil, utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", consumerIp))
+		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", consumerIp), utils.LogAttr("relayProcessor", relayProcessor))
+		return nil, err
 	}
 	// Handle Data Reliability
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
-	if enabled {
+	// check if data reliability is enabled and relay processor allows us to perform data reliability
+	if enabled && !relayProcessor.getSkipDataReliability() {
 		// new context is needed for data reliability as some clients cancel the context they provide when the relay returns
 		// as data reliability happens in a go routine it will continue while the response returns.
 		guid, found := utils.GetUniqueIdentifier(ctx)
@@ -319,7 +323,9 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if analytics != nil {
 		currentLatency := time.Since(relaySentTime)
 		analytics.Latency = currentLatency.Milliseconds()
-		analytics.ComputeUnits = chainMessage.GetApi().ComputeUnits
+		api := chainMessage.GetApi()
+		analytics.ComputeUnits = api.ComputeUnits
+		analytics.ApiMethod = api.Name
 	}
 	rpccs.relaysMonitor.LogRelay()
 	return returnedResult, nil
@@ -353,8 +359,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	gotResults := make(chan bool)
 	processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
 	// create the processing timeout prior to entering the method so it wont reset every time
-	processingCtx, cancel := context.WithTimeout(ctx, processingTimeout)
-	defer cancel()
+	processingCtx, processingCtxCancel := context.WithTimeout(ctx, processingTimeout)
+	defer processingCtxCancel()
 
 	readResultsFromProcessor := func() {
 		// ProcessResults is reading responses while blocking until the conditions are met
@@ -388,22 +394,32 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
 	defer startNewBatchTicker.Stop()
+	numberOfRetriesLaunched := 0
 	for {
 		select {
 		case success := <-gotResults:
-			if success {
+			if success { // check wether we can return the valid results or we need to send another relay
 				return relayProcessor, nil
 			}
+			// if we don't need to retry return what we currently have
+			if !relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
+				return relayProcessor, nil
+			}
+			// otherwise continue sending another relay
 			err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 			go validateReturnCondition(err)
 			go readResultsFromProcessor()
+			numberOfRetriesLaunched++
 		case <-startNewBatchTicker.C:
-			// only trigger another batch for non BestResult relays
-			if relayProcessor.selection != BestResult {
+			// only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
+			if relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
+				// limit the number of retries called from the new batch ticker flow.
+				// if we pass the limit we just wait for the relays we sent to return.
 				err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 				go validateReturnCondition(err)
 				// add ticker launch metrics
 				go rpccs.rpcConsumerLogs.SetRelaySentByNewBatchTickerMetric(rpccs.getChainIdAndApiInterface())
+				numberOfRetriesLaunched++
 			}
 		case returnErr := <-returnCondition:
 			// we use this channel because there could be a race condition between us releasing the provider and about to send the return
@@ -536,14 +552,21 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
-			// if we have no providers for a specific addon or extension, return an indicative error
-			err = utils.LavaFormatError("No Providers For Addon Or Extension", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
+			err = utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
 		}
 		return err
 	}
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
+		// in case we need to remove extensions from relay request data so the providers will get a normal relay.
+		if sessionInfo.RemoveExtensions {
+			if len(sessions) > 1 {
+				utils.LavaFormatError("Should not have more than one session when using RemoveExtensions", nil, utils.LogAttr("sessions", sessions))
+			}
+			relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling extensions.
+			relayRequestData.Extensions = []string{}
+		}
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			// add ticker launch metrics
@@ -671,7 +694,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				copyReply := &pairingtypes.RelayReply{}
 				copyReplyErr := protocopy.DeepCopyProtoObject(localRelayResult.Reply, copyReply)
 				// set cache in a non blocking call
-
+				statusCode := localRelayResult.StatusCode
 				requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
 				seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
 				hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
@@ -694,6 +717,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 					defer cancel()
 					_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+					// we don't want to cache node errors for too long. what can happen is a finalized block gets an error
+					// and we cache it for a long period of time.
+					isNodeError, _ := chainMessage.CheckResponseError(copyReply.Data, statusCode)
 
 					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 						RequestHash:      hashKey,
@@ -706,6 +732,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						OptionalMetadata: nil,
 						SharedStateId:    sharedStateId,
 						AverageBlockTime: int64(averageBlockTime), // by using average block time we can set longer TTL
+						IsNodeError:      isNodeError,
 					})
 					if err2 != nil {
 						utils.LavaFormatWarning("error updating cache with new entry", err2)
@@ -742,7 +769,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		}
 		relayLatency = time.Since(relaySentTime)
 		if rpccs.debugRelays {
-			utils.LavaFormatDebug("sending relay to provider",
+			attributes := []utils.Attribute{
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("addon", relayRequest.RelayData.Addon),
 				utils.LogAttr("extensions", relayRequest.RelayData.Extensions),
@@ -757,7 +784,14 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LogAttr("latency", relayLatency),
 				utils.LogAttr("replyErred", err != nil),
 				utils.LogAttr("replyLatestBlock", reply.GetLatestBlock()),
-			)
+				utils.LogAttr("method", chainMessage.GetApi().Name),
+			}
+			internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
+			if internalPath != "" {
+				attributes = append(attributes, utils.LogAttr("internal_path", internalPath),
+					utils.LogAttr("apiUrl", relayRequest.RelayData.ApiUrl))
+			}
+			utils.LavaFormatDebug("sending relay to provider", attributes...)
 		}
 		if err != nil {
 			backoff := false

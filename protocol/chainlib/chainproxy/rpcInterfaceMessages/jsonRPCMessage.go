@@ -1,8 +1,9 @@
 package rpcInterfaceMessages
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"github.com/goccy/go-json"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"

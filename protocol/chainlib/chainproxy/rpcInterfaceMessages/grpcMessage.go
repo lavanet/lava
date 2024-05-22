@@ -1,9 +1,11 @@
 package rpcInterfaceMessages
 
 import (
-	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/gogo/status"
@@ -32,7 +34,10 @@ type GrpcMessage struct {
 }
 
 func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	// grpc doesn't get here as it returns a real error
+	// grpc status code different than OK or 0 is a node error.
+	if httpStatusCode != 0 && httpStatusCode != http.StatusOK {
+		return true, ""
+	}
 	return false, ""
 }
 

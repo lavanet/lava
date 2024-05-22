@@ -65,6 +65,26 @@ type RelayProcessor struct {
 	consumerConsistency    *ConsumerConsistency
 	dappID                 string
 	consumerIp             string
+	skipDataReliability    bool
+}
+
+func (rp *RelayProcessor) setSkipDataReliability(val bool) {
+	rp.lock.Lock()
+	defer rp.lock.Unlock()
+	rp.skipDataReliability = val
+}
+
+func (rp *RelayProcessor) getSkipDataReliability() bool {
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	return rp.skipDataReliability
+}
+
+func (rp *RelayProcessor) ShouldRetry(numberOfRetriesLaunched int) bool {
+	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+		return false
+	}
+	return rp.selection != BestResult
 }
 
 func (rp *RelayProcessor) String() string {

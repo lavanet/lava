@@ -5,6 +5,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
@@ -31,6 +32,7 @@ type EpochstorageKeeper interface {
 	IsEpochStart(ctx sdk.Context) bool
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
+	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
 	// Methods imported from epochstorage should be defined here
 }
 
@@ -72,6 +74,7 @@ type RewardsKeeper interface {
 	FundCommunityPoolFromModule(ctx sdk.Context, amount sdk.Coins, senderModule string) error
 	IsIprpcSubscription(ctx sdk.Context, address string) bool
 	AggregateCU(ctx sdk.Context, subscription, provider string, chainID string, cu uint64)
+	CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Context, reward sdk.Coin) (validatorsCoins sdk.Coins, communityCoins sdk.Coins, err error)
 }
 
 type StakingKeeper interface {

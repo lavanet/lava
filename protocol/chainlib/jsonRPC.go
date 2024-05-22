@@ -2,12 +2,13 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -47,12 +48,13 @@ func (apip *JsonRPCChainParser) getApiCollection(connectionType, internalPath, a
 	return apip.BaseChainParser.getApiCollection(connectionType, internalPath, addon)
 }
 
-func (apip *JsonRPCChainParser) getSupportedApi(name, connectionType string) (*ApiContainer, error) {
+func (apip *JsonRPCChainParser) getSupportedApi(name, connectionType string, internalPath string) (*ApiContainer, error) {
 	// Guard that the JsonRPCChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
 	}
-	return apip.BaseChainParser.getSupportedApi(name, connectionType)
+	apiKey := ApiKey{Name: name, ConnectionType: connectionType, InternalPath: internalPath}
+	return apip.BaseChainParser.getSupportedApi(apiKey)
 }
 
 func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
@@ -71,7 +73,7 @@ func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, 
 		Params:      nil,
 		BaseMessage: chainproxy.BaseMessage{Headers: metadata},
 	}
-	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType)
+	apiCont, err := apip.getSupportedApi(parsing.ApiName, connectionType, "")
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +105,12 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
 	for idx, msg := range msgs {
 		var requestedBlockForMessage int64
+		internalPath := ""
+		if apip.isValidInternalPath(url) {
+			internalPath = url
+		}
 		// Check api is supported and save it in nodeMsg
-		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
+		apiCont, err := apip.getSupportedApi(msg.Method, connectionType, internalPath)
 		if err != nil {
 			utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
 			return nil, err
@@ -232,8 +238,8 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
+	internalPaths, serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceJsonRPC)
+	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
 }
 
 func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
@@ -365,7 +371,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
 			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
-				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), nil, websockConn)
+				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), websockConn.RemoteAddr().String(), nil, websockConn)
 			}
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
@@ -434,7 +440,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			apil.logger.LogTestMode(fiberCtx)
 		}
 
-		consumerIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
+		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
 
@@ -444,17 +450,19 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
 		}
 
+		path := "/" + fiberCtx.Params("*")
 		utils.LavaFormatDebug("in <<<",
 			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("path", path),
 			utils.LogAttr("seed", msgSeed),
 			utils.LogAttr("_msg", logFormattedMsg),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, http.MethodPost, dappID, consumerIp, metricsData, headers)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path, msg, http.MethodPost, dappID, userIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, msg, metadataValues, nil)
+			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
@@ -586,7 +594,7 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 	return nil
 }
 
-func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, err error) {
+func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, err error) {
 	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
 	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
 	if err != nil {
@@ -627,13 +635,17 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 	if err != nil {
 		return nil, err
 	}
-	reply := &pairingtypes.RelayReply{
-		Data: retData,
+	reply := &RelayReplyWrapper{
+		StatusCode: http.StatusOK, // status code is used only for rest at the moment
+
+		RelayReply: &pairingtypes.RelayReply{
+			Data: retData,
+		},
 	}
 	return reply, nil
 }
 
-func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
@@ -725,8 +737,12 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		return nil, "", nil, err
 	}
 
-	reply := &pairingtypes.RelayReply{
-		Data: retData,
+	reply := &RelayReplyWrapper{
+		StatusCode: http.StatusOK, // status code is used only for rest at the moment
+
+		RelayReply: &pairingtypes.RelayReply{
+			Data: retData,
+		},
 	}
 
 	if ch != nil {

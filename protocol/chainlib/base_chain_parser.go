@@ -22,6 +22,7 @@ type PolicyInf interface {
 }
 
 type BaseChainParser struct {
+	internalPaths   map[string]struct{}
 	taggedApis      map[spectypes.FUNCTION_TAG]TaggedContainer
 	spec            spectypes.Spec
 	rwLock          sync.RWMutex
@@ -226,11 +227,12 @@ func (bcp *BaseChainParser) GetVerifications(supported []string) (retVerificatio
 	return
 }
 
-func (bcp *BaseChainParser) Construct(spec spectypes.Spec, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
+func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[string]struct{}, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
 	serverApis map[ApiKey]ApiContainer, apiCollections map[CollectionKey]*spectypes.ApiCollection, headers map[ApiKey]*spectypes.Header,
 	verifications map[VerificationKey][]VerificationContainer, extensionParser extensionslib.ExtensionParser,
 ) {
 	bcp.spec = spec
+	bcp.internalPaths = internalPaths
 	bcp.serverApis = serverApis
 	bcp.taggedApis = taggedApis
 	bcp.headers = headers
@@ -282,7 +284,7 @@ func (bcp *BaseChainParser) extensionParsingInner(addon string, parsedMessageArg
 }
 
 // getSupportedApi fetches service api from spec by name
-func (apip *BaseChainParser) getSupportedApi(name, connectionType string) (*ApiContainer, error) {
+func (apip *BaseChainParser) getSupportedApi(apiKey ApiKey) (*ApiContainer, error) {
 	// Guard that the GrpcChainParser instance exists
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
@@ -293,10 +295,7 @@ func (apip *BaseChainParser) getSupportedApi(name, connectionType string) (*ApiC
 	defer apip.rwLock.RUnlock()
 
 	// Fetch server api by name
-	apiCont, ok := apip.serverApis[ApiKey{
-		Name:           name,
-		ConnectionType: connectionType,
-	}]
+	apiCont, ok := apip.serverApis[apiKey]
 
 	// Return an error if spec does not exist
 	if !ok {
@@ -305,10 +304,18 @@ func (apip *BaseChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if api is disabled
 	if !apiCont.api.Enabled {
-		return nil, utils.LavaFormatInfo("api is disabled", utils.Attribute{Key: "name", Value: name}, utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, utils.LavaFormatInfo("api is disabled", utils.Attribute{Key: "apiKey", Value: apiKey})
 	}
 
 	return &apiCont, nil
+}
+
+func (apip *BaseChainParser) isValidInternalPath(path string) bool {
+	if apip == nil || len(apip.internalPaths) == 0 {
+		return false
+	}
+	_, ok := apip.internalPaths[path]
+	return ok
 }
 
 // getSupportedApi fetches service api from spec by name
@@ -331,7 +338,7 @@ func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addo
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatError("api not supported", nil, utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, utils.LavaFormatWarning("api not supported", common.APINotSupportedError, utils.Attribute{Key: "connectionType", Value: connectionType})
 	}
 
 	// Return an error if api is disabled
@@ -342,7 +349,8 @@ func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addo
 	return api, nil
 }
 
-func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header, retVerifications map[VerificationKey][]VerificationContainer) {
+func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths map[string]struct{}, retServerApis map[ApiKey]ApiContainer, retTaggedApis map[spectypes.FUNCTION_TAG]TaggedContainer, retApiCollections map[CollectionKey]*spectypes.ApiCollection, retHeaders map[ApiKey]*spectypes.Header, retVerifications map[VerificationKey][]VerificationContainer) {
+	retInternalPaths = map[string]struct{}{}
 	serverApis := map[ApiKey]ApiContainer{}
 	taggedApis := map[spectypes.FUNCTION_TAG]TaggedContainer{}
 	headers := map[ApiKey]*spectypes.Header{}
@@ -361,6 +369,10 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 				InternalPath:   apiCollection.CollectionData.InternalPath,
 				Addon:          apiCollection.CollectionData.AddOn,
 			}
+
+			// add as a valid internal path
+			retInternalPaths[apiCollection.CollectionData.InternalPath] = struct{}{}
+
 			for _, parsing := range apiCollection.ParseDirectives {
 				taggedApis[parsing.FunctionTag] = TaggedContainer{
 					Parsing:       parsing,
@@ -387,12 +399,34 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 						collectionKey: collectionKey,
 					}
 				} else {
-					serverApis[ApiKey{
-						Name:           api.Name,
-						ConnectionType: collectionKey.ConnectionType,
-					}] = ApiContainer{
-						api:           api,
-						collectionKey: collectionKey,
+					// add another internal path entry so it can specifically be referenced
+					if apiCollection.CollectionData.InternalPath != "" {
+						serverApis[ApiKey{
+							Name:           api.Name,
+							ConnectionType: collectionKey.ConnectionType,
+							InternalPath:   apiCollection.CollectionData.InternalPath,
+						}] = ApiContainer{
+							api:           api,
+							collectionKey: collectionKey,
+						}
+						// if it does not exist set it
+						if _, ok := serverApis[ApiKey{Name: api.Name, ConnectionType: collectionKey.ConnectionType}]; !ok {
+							serverApis[ApiKey{
+								Name:           api.Name,
+								ConnectionType: collectionKey.ConnectionType,
+							}] = ApiContainer{
+								api:           api,
+								collectionKey: collectionKey,
+							}
+						}
+					} else {
+						serverApis[ApiKey{
+							Name:           api.Name,
+							ConnectionType: collectionKey.ConnectionType,
+						}] = ApiContainer{
+							api:           api,
+							collectionKey: collectionKey,
+						}
 					}
 				}
 			}
@@ -438,7 +472,7 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retServerApis map
 			apiCollections[collectionKey] = apiCollection
 		}
 	}
-	return serverApis, taggedApis, apiCollections, headers, verifications
+	return retInternalPaths, serverApis, taggedApis, apiCollections, headers, verifications
 }
 
 func (bcp *BaseChainParser) ExtensionsParser() *extensionslib.ExtensionParser {

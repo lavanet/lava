@@ -11,6 +11,7 @@ import (
 type Test_mode_ctx_key struct{}
 
 const (
+	PlainTextConnection                = "allow-plaintext-connection"
 	EndpointsConfigName                = "endpoints"
 	SaveConfigFlagName                 = "save-conf"
 	GeolocationFlag                    = "geolocation"

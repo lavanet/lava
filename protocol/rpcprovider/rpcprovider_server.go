@@ -3,10 +3,11 @@ package rpcprovider
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec"
@@ -378,10 +379,14 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	var clientSub *rpcclient.ClientSubscription
 	var subscriptionID string
 	subscribeRepliesChan := make(chan interface{})
-	reply, subscriptionID, clientSub, _, _, err := rpcps.chainRouter.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage, nil)
+	replyWrapper, subscriptionID, clientSub, _, _, err := rpcps.chainRouter.SendNodeMsg(ctx, subscribeRepliesChan, chainMessage, nil)
 	if err != nil {
 		return false, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
+	if replyWrapper == nil || replyWrapper.RelayReply == nil {
+		return false, utils.LavaFormatError("Subscription failed, relayWrapper or RelayReply are nil", nil, utils.Attribute{Key: "GUID", Value: ctx})
+	}
+	reply = replyWrapper.RelayReply
 	reply.Metadata, _, _ = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	if clientSub == nil {
 		// failed subscription, but not an error. (probably a node error)
@@ -759,11 +764,16 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		if debugConsistency {
 			utils.LavaFormatDebug("adding stickiness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(consumerAddr.String(), common.GetIpFromGrpcContext(ctx))))
 		}
-
-		reply, _, _, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
+		var replyWrapper *chainlib.RelayReplyWrapper
+		replyWrapper, _, _, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 		}
+		if replyWrapper == nil || replyWrapper.RelayReply == nil {
+			return nil, utils.LavaFormatError("Relay Wrapper returned nil without an error", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
+		}
+
+		reply = replyWrapper.RelayReply
 		if debugLatency {
 			utils.LavaFormatDebug("node reply received", utils.Attribute{Key: "timeTaken", Value: time.Since(sendTime)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 		}
@@ -775,6 +785,9 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 			hashKey, _, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID) // get the hash (this changes the data)
 			copyReply := &pairingtypes.RelayReply{}
 			copyReplyErr := protocopy.DeepCopyProtoObject(reply, copyReply)
+
+			// get status code to decide if its a node error
+			statusCode := replyWrapper.StatusCode
 			go func() {
 				if hashErr != nil || copyReplyErr != nil {
 					utils.LavaFormatError("Failed copying relay private data on TryRelay", nil, utils.LogAttr("copyReplyErr", copyReplyErr), utils.LogAttr("hashErr", hashErr))
@@ -787,6 +800,10 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 					utils.LavaFormatError("TryRelay failed calculating hash for cach.SetEntry", err)
 					return
 				}
+				// in case the error is a node error we don't want to cache the response for a long period of time
+				// so users wont get errors if the error was temporary
+				isNodeError, _ := chainMsg.CheckResponseError(copyReply.Data, statusCode)
+
 				err = cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
 					RequestHash:      hashKey,
 					RequestedBlock:   requestedBlock,
@@ -797,6 +814,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 					OptionalMetadata: ignoredMetadata,
 					AverageBlockTime: int64(averageBlockTime),
 					SeenBlock:        latestBlock,
+					IsNodeError:      isNodeError,
 				})
 				if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
 					utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})

@@ -19,7 +19,6 @@ package rpcclient
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -29,6 +28,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
@@ -203,6 +204,7 @@ func (hc *httpConn) doRequest(ctx context.Context, msg interface{}, isJsonRPC bo
 	resp, err := hc.client.Do(req)
 	if resp != nil {
 		// resp can be non nil on error
+		metadata.AppendToOutgoingContext(ctx, common.StatusCodeMetadataKey, strconv.Itoa(resp.StatusCode))
 		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(resp.StatusCode))
 		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 	}

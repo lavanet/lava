@@ -50,4 +50,5 @@ message RelayCacheSet {
     string chain_id = 9; // used to set latest block per chain.
     int64 seen_block = 10;
     int64 average_block_time = 11;
+    bool is_node_error = 12; // node errors wont be cached for long even if they are finalized in cases where it returns a valid response later on
 }

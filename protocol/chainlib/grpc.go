@@ -3,7 +3,6 @@ package chainlib
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
@@ -41,6 +42,8 @@ import (
 	reflectionpbo "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/grpc/status"
 )
+
+const GRPCStatusCodeOnFailedMessages = 32
 
 type GrpcNodeErrorResponse struct {
 	ErrorMessage string `json:"error_message"`
@@ -94,7 +97,8 @@ func (apip *GrpcChainParser) getSupportedApi(name, connectionType string) (*ApiC
 	if apip == nil {
 		return nil, errors.New("ChainParser not defined")
 	}
-	return apip.BaseChainParser.getSupportedApi(name, connectionType)
+	apiKey := ApiKey{Name: name, ConnectionType: connectionType}
+	return apip.BaseChainParser.getSupportedApi(apiKey)
 }
 
 func (apip *GrpcChainParser) setupForConsumer(relayer grpcproxy.ProxyCallBack) {
@@ -217,8 +221,8 @@ func (apip *GrpcChainParser) SetSpec(spec spectypes.Spec) {
 	defer apip.rwLock.Unlock()
 
 	// extract server and tagged apis from spec
-	serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceGrpc)
-	apip.BaseChainParser.Construct(spec, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
+	internalPaths, serverApis, taggedApis, apiCollections, headers, verifications := getServiceApis(spec, spectypes.APIInterfaceGrpc)
+	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
 }
 
 // DataReliabilityParams returns data reliability params from spec (spec.enabled and spec.dataReliabilityThreshold)
@@ -426,7 +430,7 @@ func newGrpcChainProxy(ctx context.Context, averageBlockTime time.Duration, pars
 	return cp, nil
 }
 
-func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *pairingtypes.RelayReply, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	if ch != nil {
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on grpc", nil, utils.Attribute{Key: "GUID", Value: ctx})
 	}
@@ -537,13 +541,19 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, parsedError
 		}
 		// return the node's error back to the client as the error type is a invalid request which is cu deductible
-		respBytes, handlingError := parseGrpcNodeErrorToReply(ctx, err)
+		respBytes, statusCode, handlingError := parseGrpcNodeErrorToReply(ctx, err)
 		if handlingError != nil {
 			return nil, "", nil, handlingError
 		}
-		reply := &pairingtypes.RelayReply{
-			Data:     respBytes,
-			Metadata: convertToMetadataMapOfSlices(respHeaders),
+		// set status code for user header
+		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(int(statusCode)))
+		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+		reply := &RelayReplyWrapper{
+			StatusCode: int(statusCode),
+			RelayReply: &pairingtypes.RelayReply{
+				Data:     respBytes,
+				Metadata: convertToMetadataMapOfSlices(respHeaders),
+			},
 		}
 		return reply, "", nil, nil
 	}
@@ -553,10 +563,17 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
-
-	reply := &pairingtypes.RelayReply{
-		Data:     respBytes,
-		Metadata: convertToMetadataMapOfSlices(respHeaders),
+	// set response status code
+	validResponseStatus := http.StatusOK
+	trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(validResponseStatus))
+	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+	// create reply wrapper
+	reply := &RelayReplyWrapper{
+		StatusCode: validResponseStatus, // status code is used only for rest at the moment
+		RelayReply: &pairingtypes.RelayReply{
+			Data:     respBytes,
+			Metadata: convertToMetadataMapOfSlices(respHeaders),
+		},
 	}
 	return reply, "", nil, nil
 }
@@ -564,21 +581,24 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 // This method assumes that the error is due to misuse of the request arguments, meaning the user would like to get
 // the response from the server to fix the request arguments. this method will make sure the user will get the response
 // from the node in the same format as expected.
-func parseGrpcNodeErrorToReply(ctx context.Context, err error) ([]byte, error) {
+func parseGrpcNodeErrorToReply(ctx context.Context, err error) ([]byte, uint32, error) {
 	var respBytes []byte
 	var marshalingError error
+	var errorCode uint32 = GRPCStatusCodeOnFailedMessages
+	// try fetching status code from error or otherwise use the GRPCStatusCodeOnFailedMessages
 	if statusError, ok := status.FromError(err); ok {
-		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: statusError.Message(), ErrorCode: uint32(statusError.Code())})
+		errorCode = uint32(statusError.Code())
+		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: statusError.Message(), ErrorCode: errorCode})
 		if marshalingError != nil {
-			return nil, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 1", err, utils.Attribute{Key: "GUID", Value: ctx})
+			return nil, errorCode, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 1", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	} else {
-		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: err.Error(), ErrorCode: uint32(32)})
+		respBytes, marshalingError = json.Marshal(&GrpcNodeErrorResponse{ErrorMessage: err.Error(), ErrorCode: errorCode})
 		if marshalingError != nil {
-			return nil, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 2", err, utils.Attribute{Key: "GUID", Value: ctx})
+			return nil, errorCode, utils.LavaFormatError("json.Marshal(&GrpcNodeErrorResponse Failed 2", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}
-	return respBytes, nil
+	return respBytes, errorCode, nil
 }
 
 func marshalJSON(msg proto.Message) ([]byte, error) {
