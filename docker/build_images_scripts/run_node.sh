@@ -188,7 +188,7 @@ then
   init_node
 fi
 
-if [[ $NODE_TYPE == "node" || $NODE_TYPE == "provider" ]] && [[ -n $WALLET && ! -d $CONFIG_PATH/config || $(find $CONFIG_PATH -maxdepth 2 -type f -name $WALLET.info | wc -l) -eq 0 ]]
+if [[ $NODE_TYPE == "node" || $NODE_TYPE == "provider" ]] && [[ -n $WALLET && $(find $CONFIG_PATH -maxdepth 2 -type f -name $WALLET.info 2>/dev/null | wc -l) -eq 0 ]]
 then
   create_account
 fi
