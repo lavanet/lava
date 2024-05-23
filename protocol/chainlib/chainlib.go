@@ -37,12 +37,13 @@ func NewChainListener(
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
 	refererData *RefererData,
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
 ) (ChainListener, error) {
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData), nil
+		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData, consumerWsSubscriptionManager), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData), nil
+		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData, consumerWsSubscriptionManager), nil
 	case spectypes.APIInterfaceRest:
 		return NewRestChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData), nil
 	case spectypes.APIInterfaceGrpc:

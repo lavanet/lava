@@ -96,6 +96,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	sharedState bool,
 	refererData *chainlib.RefererData,
 	reporter metrics.Reporter,
+	consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
@@ -114,6 +115,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.debugRelays = cmdFlags.DebugRelays
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 
+	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
 	if err != nil {
 		return err
 	}
@@ -480,6 +482,24 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			)
 			return relayProcessor, processingCtx.Err() // returning the context error
 		}
+	}
+}
+
+func (rpccs *RPCConsumerServer) CreateSubscriptionKey(dappID, consumerIp string) string {
+	return rpccs.consumerConsistency.Key(dappID, consumerIp)
+}
+
+func (rpccs *RPCConsumerServer) CancelSubscriptionContext(subscriptionKey string) {
+	rpccs.connectedSubscriptionsLock.Lock()
+	defer rpccs.connectedSubscriptionsLock.Unlock()
+
+	ctxHolder, ok := rpccs.connectedSubscriptionsContexts[subscriptionKey]
+	if ok {
+		utils.LavaFormatTrace("Cancelling subscription context", utils.LogAttr("subscriptionID", subscriptionKey))
+		ctxHolder.CancelFunc()
+		delete(rpccs.connectedSubscriptionsContexts, subscriptionKey)
+	} else {
+		utils.LavaFormatWarning("tried to cancel context for subscription ID that does not exist", nil, utils.LogAttr("subscriptionID", subscriptionKey))
 	}
 }
 

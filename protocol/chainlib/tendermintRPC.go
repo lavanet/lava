@@ -314,11 +314,12 @@ func (apip *TendermintChainParser) ChainBlockStats() (allowedBlockLagForQosSync 
 }
 
 type TendermintRpcChainListener struct {
-	endpoint       *lavasession.RPCEndpoint
-	relaySender    RelaySender
-	healthReporter HealthReporter
-	logger         *metrics.RPCConsumerLogs
-	refererData    *RefererData
+	endpoint                      *lavasession.RPCEndpoint
+	relaySender                   RelaySender
+	healthReporter                HealthReporter
+	logger                        *metrics.RPCConsumerLogs
+	refererData                   *RefererData
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
@@ -326,6 +327,7 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	refererData *RefererData,
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
 ) (chainListener *TendermintRpcChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &TendermintRpcChainListener{
@@ -334,6 +336,7 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 		healthReporter,
 		rpcConsumerLogs,
 		refererData,
+		consumerWsSubscriptionManager,
 	}
 
 	return chainListener
@@ -361,90 +364,24 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		return fiber.ErrUpgradeRequired
 	})
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
-		var (
-			mt  int
-			msg []byte
-			err error
-		)
-		msgSeed := apil.logger.GetMessageSeed()
-		startTime := time.Now()
-		for {
-			if mt, msg, err = websocketConn.ReadMessage(); err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-				break
-			}
-			dappID, ok := websocketConn.Locals("dapp-id").(string)
-			if !ok {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-			}
+		utils.LavaFormatTrace("tendermintrpc websocket opened")
+		defer utils.LavaFormatTrace("tendermintrpc websocket closed")
 
-			ctx, cancel := context.WithCancel(context.Background())
-			guid := utils.GenerateUniqueIdentifier()
-			ctx = utils.WithUniqueIdentifier(ctx, guid)
-			defer cancel() // incase there's a problem make sure to cancel the connection
+		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
+			WebsocketConn:                 websocketConn,
+			RpcConsumerLogs:               apil.logger,
+			RefererMatchString:            refererMatchString,
+			CmdFlags:                      cmdFlags,
+			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
+			ChainID:                       chainID,
+			ApiInterface:                  apiInterface,
+			ConnectionType:                "", // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
+			RefererData:                   apil.refererData,
+			RelaySender:                   apil.relaySender,
+			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
+		})
 
-			logFormattedMsg := string(msg)
-			if !cmdFlags.DebugRelays {
-				logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
-			}
-
-			utils.LavaFormatDebug("ws in <<<",
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("seed", msgSeed),
-				utils.LogAttr("msg", logFormattedMsg),
-				utils.LogAttr("dappID", dappID),
-			)
-			msgSeed = strconv.FormatUint(guid, 10)
-			refererMatch, ok := websocketConn.Locals(refererMatchString).(string)
-			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, websocketConn.RemoteAddr().String(), metricsData, nil)
-			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
-				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), nil, websocketConn)
-			}
-			reply := relayResult.GetReply()
-			replyServer := relayResult.GetReplyServer()
-			go apil.logger.AddMetricForWebSocket(metricsData, err, websocketConn)
-			if err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-				continue
-			}
-			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
-			if replyServer != nil {
-				var reply pairingtypes.RelayReply
-				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
-				if err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-					continue
-				}
-
-				if err = websocketConn.WriteMessage(mt, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-					continue
-				}
-				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-				for {
-					err = (*replyServer).RecvMsg(&reply)
-					if err != nil {
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-						break
-					}
-
-					// If portal cant write to the client
-					if err = websocketConn.WriteMessage(mt, reply.Data); err != nil {
-						cancel()
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-						// break
-					}
-					apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-				}
-			} else {
-				if err = websocketConn.WriteMessage(mt, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, mt, err, msgSeed, msg, "tendermint", time.Since(startTime))
-					continue
-				}
-				apil.logger.LogRequestAndResponse("tendermint ws", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-			}
-		}
+		consumerWebsocketManager.ListenForMessages()
 	})
 	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
 	app.Get("/ws", websocketCallbackWithDappID)
@@ -871,7 +808,10 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		}
 		subscriptionID, ok = paramsMap["query"].(string)
 		if !ok {
-			return nil, "", nil, utils.LavaFormatError("unknown subscriptionID type on tendermint subscribe", nil)
+			utils.LavaFormatTrace("could not get subscriptionID from query params", utils.LogAttr("params", params))
+			// This is probably because of a misuse, return error
+			subscriptionID = ""
+			// return nil, "", nil, utils.LavaFormatError("unknown subscriptionID type on tendermint subscribe", nil)
 		}
 	}
 

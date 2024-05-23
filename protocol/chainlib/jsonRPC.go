@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -112,7 +111,12 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType, internalPath)
 		if err != nil {
-			utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
+			utils.LavaFormatInfo("getSupportedApi jsonrpc failed",
+				utils.LogAttr("method", msg.Method),
+				utils.LogAttr("connectionType", connectionType),
+				utils.LogAttr("internalPath", internalPath),
+				utils.LogAttr("error", err),
+			)
 			return nil, err
 		}
 
@@ -285,11 +289,12 @@ func (apip *JsonRPCChainParser) ChainBlockStats() (allowedBlockLagForQosSync int
 }
 
 type JsonRPCChainListener struct {
-	endpoint       *lavasession.RPCEndpoint
-	relaySender    RelaySender
-	healthReporter HealthReporter
-	logger         *metrics.RPCConsumerLogs
-	refererData    *RefererData
+	endpoint                      *lavasession.RPCEndpoint
+	relaySender                   RelaySender
+	healthReporter                HealthReporter
+	logger                        *metrics.RPCConsumerLogs
+	refererData                   *RefererData
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
 }
 
 // NewJrpcChainListener creates a new instance of JsonRPCChainListener
@@ -297,6 +302,7 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 	relaySender RelaySender, healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	refererData *RefererData,
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
 ) (chainListener *JsonRPCChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &JsonRPCChainListener{
@@ -305,6 +311,7 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 		healthReporter,
 		rpcConsumerLogs,
 		refererData,
+		consumerWsSubscriptionManager,
 	}
 
 	return chainListener
@@ -333,94 +340,25 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	chainID := apil.endpoint.ChainID
 	apiInterface := apil.endpoint.ApiInterface
 
-	webSocketCallback := websocket.New(func(websockConn *websocket.Conn) {
-		var (
-			messageType int
-			msg         []byte
-			err         error
-		)
-		startTime := time.Now()
-		msgSeed := apil.logger.GetMessageSeed()
-		for {
-			if messageType, msg, err = websockConn.ReadMessage(); err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-				break
-			}
-			dappID, ok := websockConn.Locals("dapp-id").(string)
-			if !ok {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-			}
-			refererMatch, ok := websockConn.Locals(refererMatchString).(string)
-			ctx, cancel := context.WithCancel(context.Background())
-			guid := utils.GenerateUniqueIdentifier()
-			ctx = utils.WithUniqueIdentifier(ctx, guid)
-			msgSeed = strconv.FormatUint(guid, 10)
-			defer cancel() // incase there's a problem make sure to cancel the connection
+	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
+		utils.LavaFormatTrace("jsonrpc websocket opened")
+		defer utils.LavaFormatTrace("jsonrpc websocket closed")
 
-			logFormattedMsg := string(msg)
-			if !cmdFlags.DebugRelays {
-				logFormattedMsg = utils.FormatLongString(logFormattedMsg, relayMsgLogMaxChars)
-			}
+		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
+			WebsocketConn:                 websocketConn,
+			RpcConsumerLogs:               apil.logger,
+			RefererMatchString:            refererMatchString,
+			CmdFlags:                      cmdFlags,
+			RelayMsgLogMaxChars:           relayMsgLogMaxChars,
+			ChainID:                       chainID,
+			ApiInterface:                  apiInterface,
+			ConnectionType:                fiber.MethodPost, // We use it for the ParseMsg method, which needs to know the connection type to find the method in the spec
+			RefererData:                   apil.refererData,
+			RelaySender:                   apil.relaySender,
+			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
+		})
 
-			utils.LavaFormatDebug("ws in <<<",
-				utils.LogAttr("seed", msgSeed),
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("msg", logFormattedMsg),
-				utils.LogAttr("dappID", dappID),
-			)
-			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
-			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
-				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), nil, websockConn)
-			}
-			reply := relayResult.GetReply()
-			replyServer := relayResult.GetReplyServer()
-			go apil.logger.AddMetricForWebSocket(metricsData, err, websockConn)
-			if err != nil {
-				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-				continue
-			}
-			// If subscribe the first reply would contain the RPC ID that can be used for disconnect.
-			if replyServer != nil {
-				var reply pairingtypes.RelayReply
-				err = (*replyServer).RecvMsg(&reply) // this reply contains the RPC ID
-				if err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-					continue
-				}
-
-				if err = websockConn.WriteMessage(messageType, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-					continue
-				}
-				apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-				for {
-					err = (*replyServer).RecvMsg(&reply)
-					if err != nil {
-						if err == io.EOF {
-							break
-						}
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-						break
-					}
-
-					// If portal cant write to the client
-					if err = websockConn.WriteMessage(messageType, reply.Data); err != nil {
-						cancel()
-						apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-						// break
-					}
-
-					apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-				}
-			} else {
-				if err = websockConn.WriteMessage(messageType, reply.Data); err != nil {
-					apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, err, msgSeed, msg, spectypes.APIInterfaceJsonRPC, time.Since(startTime))
-					continue
-				}
-				apil.logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websockConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
-			}
-		}
+		consumerWebsocketManager.ListenForMessages()
 	})
 	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
 	app.Get("/ws", websocketCallbackWithDappID)
