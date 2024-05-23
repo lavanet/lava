@@ -399,31 +399,3 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() removed consumer", utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("params", params))
 	return nil
 }
-func (pnsm *ProviderNodeSubscriptionManager) UpdateEpoch(epoch uint64) {
-	pnsm.lock.Lock()
-	defer pnsm.lock.Unlock()
-
-	utils.LavaFormatTrace("ProviderNodeSubscriptionManager: UpdateEpoch", utils.LogAttr("epoch", epoch))
-
-	// TODO: Disconnect all prev epoch consumers, and close all streams
-	// To test, disable the context cancellation in the consumer, and see that the context is still cancelled from provider
-
-	for hashedParams, channelToConnectedConsumers := range pnsm.openSubscriptions {
-		if _, ok := channelToConnectedConsumers.connectedConsumers[pnsm.prevEpoch]; ok {
-			for consumerAddr, consumerChannel := range channelToConnectedConsumers.connectedConsumers[pnsm.prevEpoch] {
-				consumerChannel.Close()
-				delete(pnsm.openSubscriptions[hashedParams].connectedConsumers[pnsm.prevEpoch], consumerAddr)
-				if len(pnsm.openSubscriptions[hashedParams].connectedConsumers[pnsm.prevEpoch]) == 0 {
-					utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in prev epoch, closing epoch",
-						utils.LogAttr("epoch", pnsm.prevEpoch),
-						utils.LogAttr("hashedParams", hashedParams),
-					)
-					delete(pnsm.openSubscriptions[hashedParams].connectedConsumers, pnsm.prevEpoch)
-				}
-			}
-		}
-	}
-
-	pnsm.prevEpoch = pnsm.currentEpoch
-	pnsm.currentEpoch = epoch
-}
