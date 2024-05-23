@@ -138,7 +138,11 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
-			utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
+			utils.LavaFormatInfo("getSupportedApi tendermintrpc failed",
+				utils.LogAttr("method", msg.Method),
+				utils.LogAttr("connectionType", connectionType),
+				utils.LogAttr("error", err),
+			)
 			return nil, err
 		}
 
@@ -780,9 +784,17 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		}
 	}
 	// If ch is not nil do subscription
+	var nodeErr error
 	if ch != nil {
 		// subscribe to the rpc call if the channel is not nil
-		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
+		utils.LavaFormatTrace("Sending subscription",
+			utils.LogAttr("chainID", cp.BaseChainProxy.ChainID),
+			utils.LogAttr("apiName", chainMessage.GetApi().Name),
+			utils.LogAttr("nodeMessage.ID", nodeMessage.ID),
+			utils.LogAttr("nodeMessage.Method", nodeMessage.Method),
+			utils.LogAttr("nodeMessage.Params", nodeMessage.Params),
+		)
+		sub, rpcMessage, nodeErr = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
 		// set context with timeout
 		connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
@@ -790,7 +802,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
 		// perform the rpc call
-		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false, nodeMessage.GetDisableErrorHandling())
+		rpcMessage, nodeErr = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, false, nodeMessage.GetDisableErrorHandling())
 		if err != nil {
 			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) || common.StatusCodeErrorStrict.Is(err) {
 				return nil, "", nil, utils.LavaFormatWarning("Received invalid status code", err, utils.Attribute{Key: "chainID", Value: cp.BaseChainProxy.ChainID}, utils.Attribute{Key: "apiName", Value: chainMessage.GetApi().Name})
@@ -805,32 +817,34 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 
 	var replyMsg *rpcInterfaceMessages.RPCResponse
 	// the error check here would only wrap errors not from the rpc
-	if err != nil {
-		utils.LavaFormatDebug("received an error from SendNodeMsg", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err})
-		return nil, "", nil, err
-	} else {
-		replyMessage, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("tendermingRPC error", err)
-		}
-		// if we didn't get a node error.
-		if replyMessage.Error == nil {
-			// validate result is valid
-			responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
-			if responseIsNilValidationError != nil {
-				return nil, "", nil, responseIsNilValidationError
-			}
-		}
-		replyMsg = replyMessage
 
-		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, rpcMessage.ID)
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err,
-				utils.Attribute{Key: "GUID", Value: ctx},
-				utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
-				utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
-			)
+	if nodeErr != nil {
+		utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
+		return nil, "", nil, nodeErr
+	}
+
+	replyMessage, err = rpcInterfaceMessages.ConvertTendermintMsg(rpcMessage)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("tendermintRPC error", err)
+	}
+
+	// if we didn't get a node error.
+	if replyMessage.Error == nil {
+		// validate result is valid
+		responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
+		if responseIsNilValidationError != nil {
+			return nil, "", nil, responseIsNilValidationError
 		}
+	}
+	replyMsg = replyMessage
+
+	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, rpcMessage.ID)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("tendermintRPC ID mismatch error", err,
+			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
+			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
+		)
 	}
 
 	// marshal the jsonrpc message to json

@@ -683,8 +683,9 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			defer rpc.SetHeader(metadata.Name, "")
 		}
 	}
+	var nodeErr error
 	if ch != nil {
-		sub, rpcMessage, err = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
+		sub, rpcMessage, nodeErr = rpc.Subscribe(context.Background(), nodeMessage.ID, nodeMessage.Method, ch, nodeMessage.Params)
 	} else {
 		// we use the minimum timeout between the two, spec or context. to prevent the provider from hanging
 		// we don't use the context alone so the provider won't be hanging forever by an attack
@@ -692,7 +693,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		defer cancel()
 
 		cp.NodeUrl.SetIpForwardingIfNecessary(ctx, rpc.SetHeader)
-		rpcMessage, err = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, nodeMessage.GetDisableErrorHandling())
+		rpcMessage, nodeErr = rpc.CallContext(connectCtx, nodeMessage.ID, nodeMessage.Method, nodeMessage.Params, true, nodeMessage.GetDisableErrorHandling())
 		if err != nil {
 			// here we are getting an error for every code that is not 200-300
 			if common.StatusCodeError504.Is(err) || common.StatusCodeError429.Is(err) || common.StatusCodeErrorStrict.Is(err) {
@@ -708,31 +709,32 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 
 	var replyMsg rpcInterfaceMessages.JsonrpcMessage
 	// the error check here would only wrap errors not from the rpc
-	if err != nil {
-		utils.LavaFormatDebug("received an error from SendNodeMsg", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "error", Value: err})
-		return nil, "", nil, err
-	} else {
-		replyMessage, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
-		}
-		// validate result is valid
-		if replyMessage.Error == nil {
-			responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
-			if responseIsNilValidationError != nil {
-				return nil, "", nil, responseIsNilValidationError
-			}
-		}
 
-		replyMsg = *replyMessage
-		err := cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,
-				utils.Attribute{Key: "GUID", Value: ctx},
-				utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
-				utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
-			)
+	if nodeErr != nil {
+		utils.LavaFormatDebug("got error from node", utils.LogAttr("GUID", ctx), utils.LogAttr("nodeErr", nodeErr))
+		return nil, "", nil, nodeErr
+	}
+
+	replyMessage, err = rpcInterfaceMessages.ConvertJsonRPCMsg(rpcMessage)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("jsonRPC error", err, utils.Attribute{Key: "GUID", Value: ctx})
+	}
+	// validate result is valid
+	if replyMessage.Error == nil {
+		responseIsNilValidationError := ValidateNilResponse(string(replyMessage.Result))
+		if responseIsNilValidationError != nil {
+			return nil, "", nil, responseIsNilValidationError
 		}
+	}
+
+	replyMsg = *replyMessage
+	err = cp.ValidateRequestAndResponseIds(nodeMessage.ID, replyMessage.ID)
+	if err != nil {
+		return nil, "", nil, utils.LavaFormatError("jsonRPC ID mismatch error", err,
+			utils.Attribute{Key: "GUID", Value: ctx},
+			utils.Attribute{Key: "requestId", Value: nodeMessage.ID},
+			utils.Attribute{Key: "responseId", Value: rpcMessage.ID},
+		)
 	}
 
 	retData, err := json.Marshal(replyMsg)

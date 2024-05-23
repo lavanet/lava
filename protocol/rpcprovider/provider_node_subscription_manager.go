@@ -114,6 +114,12 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		nodeChan := make(chan interface{})
 
 		replyWrapper, subscriptionId, clientSubscription, _, _, err := pnsm.chainRouter.SendNodeMsg(ctx, nodeChan, chainMessage, nil)
+		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() subscription reply received",
+			utils.LogAttr("replyWrapper", replyWrapper),
+			utils.LogAttr("subscriptionId", subscriptionId),
+			utils.LogAttr("clientSubscription", clientSubscription),
+			utils.LogAttr("err", err),
+		)
 		if err != nil {
 			return nil, "", utils.LavaFormatError("ProviderNodeSubscriptionManager: Subscription failed", err, utils.LogAttr("GUID", ctx), utils.LogAttr("params", params))
 		}
@@ -174,6 +180,8 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 }
 
 func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx context.Context, nodeChan chan interface{}, hashedParams string) {
+	utils.LavaFormatTrace("Inside ProviderNodeSubscriptionManager:startListeningForSubscription()", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+	defer utils.LavaFormatTrace("Leaving ProviderNodeSubscriptionManager:startListeningForSubscription()", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 	for {
 		select {
 		case <-pnsm.openSubscriptions[hashedParams].cancellableContext.Done():
@@ -332,6 +340,11 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 			)
 
 			if closeConsumerChannel {
+				utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() closing consumer channel",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("consumerAddr", consumerAddr),
+					utils.LogAttr("params", params),
+				)
 				connectedConsumers[consumerAddrString].Close()
 			}
 
