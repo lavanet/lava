@@ -66,7 +66,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() hashed params",
 		utils.LogAttr("params", string(params)),
-		utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)),
+		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 	)
 
 	consumerAddrString := consumerAddr.String()
@@ -178,14 +178,14 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 	for {
 		select {
 		case <-pnsm.openSubscriptions[hashedParams].cancellableContext.Done():
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() pnsm.openSubscriptions[hashedParams].CancellableContext.Done(), exiting", utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)))
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() pnsm.openSubscriptions[hashedParams].CancellableContext.Done(), exiting", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 			return
 		case <-ctx.Done():
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() context done, exiting", utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)))
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() context done, exiting", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 			return
 		case nodeMsg := <-nodeChan:
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() got new message from node",
-				utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("nodeMsg", nodeMsg),
 			)
 			pnsm.handleNewNodeMessage(hashedParams, nodeMsg)
@@ -256,10 +256,10 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(hashedParams s
 
 	// Sending message to all connected consumers, for all epochs
 	for epoch, consumerAddrToChannel := range pnsm.openSubscriptions[hashedParams].connectedConsumers {
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumers in epoch", utils.LogAttr("epoch", epoch), utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)))
+		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumers in epoch", utils.LogAttr("epoch", epoch), utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 
 		for consumerAddrString, consumerChannel := range consumerAddrToChannel {
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumer", utils.LogAttr("consumerAddr", consumerAddrString), utils.LogAttr("hashedParams", pnsm.readableHashedParams(hashedParams)))
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumer", utils.LogAttr("consumerAddr", consumerAddrString), utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 
 			request := pnsm.openSubscriptions[hashedParams].firstSetupRequest
 			apiCollection := pnsm.openSubscriptions[hashedParams].apiCollection
@@ -399,11 +399,6 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() removed consumer", utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("params", params))
 	return nil
 }
-
-func (pnsm *ProviderNodeSubscriptionManager) readableHashedParams(hashedParams string) string {
-	return fmt.Sprintf("%x", hashedParams)
-}
-
 func (pnsm *ProviderNodeSubscriptionManager) UpdateEpoch(epoch uint64) {
 	pnsm.lock.Lock()
 	defer pnsm.lock.Unlock()
