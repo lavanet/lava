@@ -106,6 +106,25 @@ type RelaySender interface {
 		analytics *metrics.RelayMetrics,
 		metadataValues []pairingtypes.Metadata,
 	) (*common.RelayResult, error)
+	ParseRelay(
+		ctx context.Context,
+		url string,
+		req string,
+		connectionType string,
+		dappID string,
+		consumerIp string,
+		analytics *metrics.RelayMetrics,
+		metadata []pairingtypes.Metadata,
+	) (ChainMessage, map[string]string, *pairingtypes.RelayPrivateData, error)
+	SendParsedRelay(
+		ctx context.Context,
+		dappID string,
+		consumerIp string,
+		analytics *metrics.RelayMetrics,
+		chainMessage ChainMessage,
+		directiveHeaders map[string]string,
+		relayRequestData *pairingtypes.RelayPrivateData,
+	) (relayResult *common.RelayResult, errRet error)
 }
 
 type ChainListener interface {

@@ -266,37 +266,70 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	analytics *metrics.RelayMetrics,
 	metadata []pairingtypes.Metadata,
 ) (relayResult *common.RelayResult, errRet error) {
-	// gets the relay request data from the ChainListener
-	// parses the request into an APIMessage, and validating it corresponds to the spec currently in use
-	// construct the common data for a relay message, common data is identical across multiple sends and data reliability
-	// sends a relay message to a provider
-	// compares the result with other providers if defined so
-	// compares the response with other consumer wallets if defined so
-	// asynchronously sends data reliability if necessary
-
-	// remove lava directive headers
-	metadata, directiveHeaders := rpccs.LavaDirectiveHeaders(metadata)
-	relaySentTime := time.Now()
-	chainMessage, err := rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders))
+	chainMessage, directiveHeaders, relayRequestData, err := rpccs.ParseRelay(ctx, url, req, connectionType, dappID, consumerIp, analytics, metadata)
 	if err != nil {
 		return nil, err
 	}
 
+	return rpccs.SendParsedRelay(ctx, dappID, consumerIp, analytics, chainMessage, directiveHeaders, relayRequestData)
+}
+
+func (rpccs *RPCConsumerServer) ParseRelay(
+	ctx context.Context,
+	url string,
+	req string,
+	connectionType string,
+	dappID string,
+	consumerIp string,
+	analytics *metrics.RelayMetrics,
+	metadata []pairingtypes.Metadata,
+) (chainMessage chainlib.ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, err error) {
+	// gets the relay request data from the ChainListener
+	// parses the request into an APIMessage, and validating it corresponds to the spec currently in use
+	// construct the common data for a relay message, common data is identical across multiple sends and data reliability
+
+	// remove lava directive headers
+	metadata, directiveHeaders = rpccs.LavaDirectiveHeaders(metadata)
+	chainMessage, err = rpccs.chainParser.ParseMsg(url, []byte(req), connectionType, metadata, rpccs.getExtensionsFromDirectiveHeaders(directiveHeaders))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	rpccs.HandleDirectiveHeadersForMessage(chainMessage, directiveHeaders)
+
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
 	reqBlock, _ := chainMessage.RequestedBlock()
 	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(dappID, consumerIp)
 	if seenBlock < 0 {
 		seenBlock = 0
 	}
-	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), common.GetExtensionNames(chainMessage.GetExtensions()))
 
+	relayRequestData = lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), common.GetExtensionNames(chainMessage.GetExtensions()))
+	return chainMessage, directiveHeaders, relayRequestData, nil
+}
+
+func (rpccs *RPCConsumerServer) SendParsedRelay(
+	ctx context.Context,
+	dappID string,
+	consumerIp string,
+	analytics *metrics.RelayMetrics,
+	chainMessage chainlib.ChainMessage,
+	directiveHeaders map[string]string,
+	relayRequestData *pairingtypes.RelayPrivateData,
+) (relayResult *common.RelayResult, errRet error) {
+	// sends a relay message to a provider
+	// compares the result with other providers if defined so
+	// compares the response with other consumer wallets if defined so
+	// asynchronously sends data reliability if necessary
+
+	relaySentTime := time.Now()
 	relayProcessor, err := rpccs.ProcessRelaySend(ctx, directiveHeaders, chainMessage, relayRequestData, dappID, consumerIp)
 	if err != nil && !relayProcessor.HasResults() {
 		// we can't send anymore, and we don't have any responses
 		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", consumerIp), utils.LogAttr("relayProcessor", relayProcessor))
 		return nil, err
 	}
+
 	// Handle Data Reliability
 	enabled, dataReliabilityThreshold := rpccs.chainParser.DataReliabilityParams()
 	if enabled {
@@ -315,6 +348,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 	if err != nil {
 		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
 	}
+
 	if analytics != nil {
 		currentLatency := time.Since(relaySentTime)
 		analytics.Latency = currentLatency.Milliseconds()
