@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -40,24 +41,31 @@ const (
 
 var NoResponseTimeout = sdkerrors.New("NoResponseTimeout Error", 685, "timeout occurred while waiting for providers responses")
 
+type CancelableContextHolder struct {
+	Ctx        context.Context
+	CancelFunc context.CancelFunc
+}
+
 // implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCConsumerServer struct {
-	chainParser            chainlib.ChainParser
-	consumerSessionManager *lavasession.ConsumerSessionManager
-	listenEndpoint         *lavasession.RPCEndpoint
-	rpcConsumerLogs        *metrics.RPCConsumerLogs
-	cache                  *performance.Cache
-	privKey                *btcec.PrivateKey
-	consumerTxSender       ConsumerTxSender
-	requiredResponses      int
-	finalizationConsensus  *finalizationconsensus.FinalizationConsensus
-	lavaChainID            string
-	ConsumerAddress        sdk.AccAddress
-	consumerConsistency    *ConsumerConsistency
-	sharedState            bool // using the cache backend to sync the latest seen block with other consumers
-	relaysMonitor          *metrics.RelaysMonitor
-	reporter               metrics.Reporter
-	debugRelays            bool
+	chainParser                    chainlib.ChainParser
+	consumerSessionManager         *lavasession.ConsumerSessionManager
+	listenEndpoint                 *lavasession.RPCEndpoint
+	rpcConsumerLogs                *metrics.RPCConsumerLogs
+	cache                          *performance.Cache
+	privKey                        *btcec.PrivateKey
+	consumerTxSender               ConsumerTxSender
+	requiredResponses              int
+	finalizationConsensus          *finalizationconsensus.FinalizationConsensus
+	lavaChainID                    string
+	ConsumerAddress                sdk.AccAddress
+	consumerConsistency            *ConsumerConsistency
+	sharedState                    bool // using the cache backend to sync the latest seen block with other consumers
+	relaysMonitor                  *metrics.RelaysMonitor
+	reporter                       metrics.Reporter
+	debugRelays                    bool
+	connectedSubscriptionsContexts map[string]*CancelableContextHolder
+	connectedSubscriptionsLock     sync.RWMutex
 }
 
 type relayResponse struct {
@@ -104,7 +112,8 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.sharedState = sharedState
 	rpccs.reporter = reporter
 	rpccs.debugRelays = cmdFlags.DebugRelays
-	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData)
+	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
+
 	if err != nil {
 		return err
 	}
@@ -638,7 +647,26 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			defer func() { go rpccs.rpcConsumerLogs.SetRelayReturnedFromProviderMetric(chainId, apiInterface) }()
 
 			if chainlib.IsSubscriptionCategory(chainMessage) {
-				errResponse = rpccs.relaySubscriptionInner(goroutineCtx, endpointClient, singleConsumerSession, localRelayResult)
+				utils.LavaFormatTrace("inside sendRelayToProvider, relay is subscription", utils.LogAttr("requestData", localRelayRequestData.Data))
+
+				// TODO: select case with ticker of 10 seconds, defer the ticker closing, on ticker done, cancel the context
+				// On fail, try another provider
+				dappKey := rpccs.CreateSubscriptionKey(dappID, consumerIp)
+				cancellableCtx, cancelFunc := context.WithCancel(utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier()))
+
+				ctxHolder := func() *CancelableContextHolder {
+					rpccs.connectedSubscriptionsLock.Lock()
+					defer rpccs.connectedSubscriptionsLock.Unlock()
+
+					ctxHolder := &CancelableContextHolder{
+						Ctx:        cancellableCtx,
+						CancelFunc: cancelFunc,
+					}
+					rpccs.connectedSubscriptionsContexts[dappKey] = ctxHolder
+					return ctxHolder
+				}()
+
+				errResponse = rpccs.relaySubscriptionInner(ctxHolder.Ctx, endpointClient, singleConsumerSession, localRelayResult)
 				if errResponse != nil {
 					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse, utils.LogAttr("Request data", localRelayRequestData))
 				}
