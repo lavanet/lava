@@ -13,7 +13,6 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -200,7 +199,8 @@ func (pnsm *ProviderNodeSubscriptionManager) getHashedParams(chainMessage chainl
 		return "", nil, utils.LavaFormatError("could not marshal params", err)
 	}
 
-	return string(sigs.HashMsg(params)), params, nil
+	hashedParams = rpcclient.CreateHashFromParams(params)
+	return hashedParams, params, nil
 }
 
 func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcResponse(data interface{}, apiCollection *spectypes.ApiCollection) ([]byte, error) {
