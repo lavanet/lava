@@ -10,7 +10,7 @@ func GetAddon(chainMessage ChainMessageForSend) string {
 	return chainMessage.GetApiCollection().CollectionData.AddOn
 }
 
-func IsSubscription(chainMessage ChainMessageForSend) bool {
+func IsSubscriptionCategory(chainMessage ChainMessageForSend) bool {
 	return chainMessage.GetApi().Category.Subscription
 }
 

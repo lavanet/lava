@@ -162,7 +162,7 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		// }
 	}
 
-	if chainlib.IsSubscription(rp.chainMessage) {
+	if chainlib.IsSubscriptionCategory(rp.chainMessage) {
 		rp.successResults = append(rp.successResults, response.relayResult)
 		return
 	}

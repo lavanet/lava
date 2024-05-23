@@ -637,7 +637,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(chainId, apiInterface)
 			defer func() { go rpccs.rpcConsumerLogs.SetRelayReturnedFromProviderMetric(chainId, apiInterface) }()
 
-			if chainlib.IsSubscription(chainMessage) {
+			if chainlib.IsSubscriptionCategory(chainMessage) {
 				errResponse = rpccs.relaySubscriptionInner(goroutineCtx, endpointClient, singleConsumerSession, localRelayResult)
 				if errResponse != nil {
 					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse, utils.LogAttr("Request data", localRelayRequestData))
