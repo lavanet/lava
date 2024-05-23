@@ -182,10 +182,12 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx context.Context, nodeChan chan interface{}, hashedParams string) {
 	utils.LavaFormatTrace("Inside ProviderNodeSubscriptionManager:startListeningForSubscription()", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 	defer utils.LavaFormatTrace("Leaving ProviderNodeSubscriptionManager:startListeningForSubscription()", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+
 	for {
 		select {
 		case <-pnsm.openSubscriptions[hashedParams].cancellableContext.Done():
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() pnsm.openSubscriptions[hashedParams].CancellableContext.Done(), exiting", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() subscription context is done, ending subscription", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+			pnsm.closeNodeSubscription(hashedParams)
 			return
 		case <-ctx.Done():
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() context done, exiting", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
@@ -398,10 +400,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 	if epochsConnected == 0 {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in subscription, closing subscription", utils.LogAttr("params", params))
 
-		pnsm.openSubscriptions[hashedParams].nodeSubscription.Unsubscribe()
-		pnsm.openSubscriptions[hashedParams].cancellableContextCancelFunc()
-		close(pnsm.openSubscriptions[hashedParams].messagesChannel)
-		delete(pnsm.openSubscriptions, hashedParams)
+		pnsm.openSubscriptions[hashedParams].cancellableContextCancelFunc() // This will trigger the cancellation of the subscription
 	} else {
 		utils.LavaFormatTrace(fmt.Sprintf("ProviderNodeSubscriptionManager:RemoveConsumer() still have %v epochs left in this subscription", epochsConnected),
 			utils.LogAttr("params", params),
@@ -410,5 +409,19 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 	}
 
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() removed consumer", utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("params", params))
+	return nil
+}
+
+func (pnsm *ProviderNodeSubscriptionManager) closeNodeSubscription(hashedParams string) error {
+	// Must be called under lock
+
+	if _, ok := pnsm.openSubscriptions[hashedParams]; !ok {
+		return utils.LavaFormatError("closeNodeSubscription called with hashedParams that does not exist", nil, utils.LogAttr("hashedParams", hashedParams))
+	}
+
+	pnsm.openSubscriptions[hashedParams].nodeSubscription.Unsubscribe()
+	close(pnsm.openSubscriptions[hashedParams].messagesChannel)
+	delete(pnsm.openSubscriptions, hashedParams)
+
 	return nil
 }
