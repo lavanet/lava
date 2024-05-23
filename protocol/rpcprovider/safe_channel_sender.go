@@ -6,18 +6,19 @@ import (
 )
 
 type SafeChannelSender[T any] struct {
-	ctx  context.Context
-	ch   chan<- T
-	open bool
-	lock sync.Mutex
+	ctx       context.Context
+	cancelCtx context.CancelFunc
+	ch        chan<- T
+	lock      sync.Mutex
 }
 
 func NewSafeChannelSender[T any](ctx context.Context, ch chan<- T) *SafeChannelSender[T] {
+	ctx, cancel := context.WithCancel(ctx)
 	return &SafeChannelSender[T]{
-		ctx:  ctx,
-		ch:   ch,
-		open: true,
-		lock: sync.Mutex{},
+		ctx:       ctx,
+		cancelCtx: cancel,
+		ch:        ch,
+		lock:      sync.Mutex{},
 	}
 }
 
@@ -28,10 +29,8 @@ func (scs *SafeChannelSender[T]) Send(msg T) {
 	select {
 	case <-scs.ctx.Done():
 		return
-	default:
-		if scs.open {
-			go func() { scs.ch <- msg }() // This is inside a goroutine because the select...case is called after this function returns
-		}
+	case scs.ch <- msg:
+		return
 	}
 }
 
@@ -39,6 +38,6 @@ func (scs *SafeChannelSender[T]) Close() {
 	scs.lock.Lock()
 	defer scs.lock.Unlock()
 
+	scs.cancelCtx()
 	close(scs.ch)
-	scs.open = true
 }
