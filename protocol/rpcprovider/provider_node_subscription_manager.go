@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -183,8 +184,15 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 	utils.LavaFormatTrace("Inside ProviderNodeSubscriptionManager:startListeningForSubscription()", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 	defer utils.LavaFormatTrace("Leaving ProviderNodeSubscriptionManager:startListeningForSubscription()", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 
+	ticker := time.NewTicker(15 * time.Minute) // Set a time limit of 15 minutes for the subscription
+	defer ticker.Stop()
+
 	for {
 		select {
+		case <-ticker.C:
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() timeout reached, ending subscription", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+			pnsm.closeNodeSubscription(hashedParams)
+			return
 		case <-pnsm.activeSubscriptions[hashedParams].cancellableContext.Done():
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() subscription context is done, ending subscription", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 			pnsm.closeNodeSubscription(hashedParams)
@@ -417,6 +425,18 @@ func (pnsm *ProviderNodeSubscriptionManager) closeNodeSubscription(hashedParams 
 
 	if _, ok := pnsm.activeSubscriptions[hashedParams]; !ok {
 		return utils.LavaFormatError("closeNodeSubscription called with hashedParams that does not exist", nil, utils.LogAttr("hashedParams", hashedParams))
+	}
+
+	// Disconnect all connected consumers
+	for epoch, connectedConsumers := range pnsm.activeSubscriptions[hashedParams].connectedConsumers {
+		for consumerAddrString, consumerChannel := range connectedConsumers {
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:closeNodeSubscription() closing consumer channel",
+				utils.LogAttr("consumerAddr", consumerAddrString),
+				utils.LogAttr("epoch", epoch),
+				utils.LogAttr("params", hashedParams),
+			)
+			consumerChannel.Close()
+		}
 	}
 
 	pnsm.activeSubscriptions[hashedParams].nodeSubscription.Unsubscribe()

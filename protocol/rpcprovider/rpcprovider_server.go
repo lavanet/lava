@@ -412,7 +412,11 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 				return
 			case subscribeReply, ok := <-subscribeRepliesChan:
 				if !ok { // channel is closed
-					utils.LavaFormatTrace("subscribeRepliesChan closed")
+					utils.LavaFormatTrace("subscribeRepliesChan closed, removing consumer",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("consumerAddr", consumerAddress),
+					)
+
 					err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, false) // false because the channel is already closed
 					if err != nil {
 						errRet = utils.LavaFormatError("Error RemoveConsumer", err, utils.LogAttr("GUID", ctx))
