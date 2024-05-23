@@ -444,13 +444,15 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name      string
-		valid     bool
-		delay     time.Duration
-		finalized bool
-		hash      []byte
-		nullId    bool
+		name        string
+		valid       bool
+		delay       time.Duration
+		finalized   bool
+		hash        []byte
+		nullIdInGet bool
+		nullIdInSet bool
 	}{
+		// No null ID
 		{name: "Finalized No Hash", valid: true, delay: time.Millisecond, finalized: true, hash: nil},
 		{name: "Finalized After delay No Hash", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil},
 		{name: "NonFinalized No Hash", valid: true, delay: time.Millisecond, finalized: false, hash: nil},
@@ -459,14 +461,50 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 		{name: "Finalized After delay With Hash", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: []byte{1, 2, 3}},
 		{name: "NonFinalized With Hash", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}},
 		{name: "NonFinalized After delay With Hash", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}},
-		{name: "Finalized No Hash, with null id", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullId: true},
-		{name: "Finalized After delay No Hash, with null id", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullId: true},
-		{name: "NonFinalized No Hash, with null id", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullId: true},
-		{name: "NonFinalized After delay No Hash", valid: false, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: nil, nullId: true},
-		{name: "Finalized With Hash, with null id", valid: true, delay: time.Millisecond, finalized: true, hash: []byte{1, 2, 3}, nullId: true},
-		{name: "Finalized After delay With Hash, with null id", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: []byte{1, 2, 3}, nullId: true},
-		{name: "NonFinalized With Hash, with null id", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullId: true},
-		{name: "NonFinalized After delay With Hash, with null id", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullId: true},
+
+		// Null ID in get and set
+		{name: "Finalized No Hash, with null id in get and set", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullIdInGet: true, nullIdInSet: true},
+		{name: "Finalized After delay No Hash, with null id in get and set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullIdInGet: true, nullIdInSet: true},
+		{name: "NonFinalized No Hash, with null id in get and set", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullIdInGet: true, nullIdInSet: true},
+		{name: "NonFinalized After delay No Hash", valid: false, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: nil, nullIdInGet: true, nullIdInSet: true},
+		{name: "Finalized With Hash, with null id in get and set", valid: true, delay: time.Millisecond, finalized: true, hash: []byte{1, 2, 3}, nullIdInGet: true, nullIdInSet: true},
+		{name: "Finalized After delay With Hash, with null id in get and set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: []byte{1, 2, 3}, nullIdInGet: true, nullIdInSet: true},
+		{name: "NonFinalized With Hash, with null id in get and set", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true, nullIdInSet: true},
+		{name: "NonFinalized After delay With Hash, with null id in get and set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true, nullIdInSet: true},
+
+		// Null ID only in get
+		{name: "Finalized No Hash, with null id only in get", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullIdInGet: true},
+		{name: "Finalized After delay No Hash, with null id only in get", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullIdInGet: true},
+		{name: "NonFinalized No Hash, with null id only in get", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullIdInGet: true},
+		{name: "NonFinalized After delay No Hash", valid: false, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: nil, nullIdInGet: true},
+		{name: "Finalized With Hash, with null id only in get", valid: true, delay: time.Millisecond, finalized: true, hash: []byte{1, 2, 3}, nullIdInGet: true},
+		{name: "Finalized After delay With Hash, with null id only in get", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: []byte{1, 2, 3}, nullIdInGet: true},
+		{name: "NonFinalized With Hash, with null id only in get", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true},
+		{name: "NonFinalized After delay With Hash, with null id only in get", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true},
+
+		// Null ID only in set
+		{name: "Finalized No Hash, with null id only in set", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullIdInSet: true},
+		{name: "Finalized After delay No Hash, with null id only in set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullIdInSet: true},
+		{name: "NonFinalized No Hash, with null id only in set", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullIdInSet: true},
+		{name: "NonFinalized After delay No Hash only in set", valid: false, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: nil, nullIdInSet: true},
+		{name: "Finalized With Hash, with null id only in set", valid: true, delay: time.Millisecond, finalized: true, hash: []byte{1, 2, 3}, nullIdInSet: true},
+		{name: "Finalized After delay With Hash, with null id only in set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: []byte{1, 2, 3}, nullIdInSet: true},
+		{name: "NonFinalized With Hash, with null id only in set", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInSet: true},
+		{name: "NonFinalized After delay With Hash, with null id only in set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInSet: true},
+	}
+
+	formatIDInJson := func(idNum int64, nullId bool) []byte {
+		if nullId {
+			return []byte(`{"jsonrpc":"2.0","method":"status","params":[],"id":null}`)
+		}
+		return []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"status","params":[],"id":%d}`, idNum))
+	}
+
+	formatIDInJsonResponse := func(idNum int64, nullId bool) []byte {
+		if nullId {
+			return []byte(`{"jsonrpc":"2.0","result":0x12345,"id":null}`)
+		}
+		return []byte(fmt.Sprintf(`{"jsonrpc":"2.0","result":0x12345,"id":%d}`, idNum))
 	}
 
 	for _, tt := range tests {
@@ -474,23 +512,12 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			ctx, cacheServer := initTest()
 			id := rand.Int63()
 
-			formatIDInJson := func(idNum int64) []byte {
-				if tt.nullId {
-					return []byte(`{"jsonrpc":"2.0","method":"status","params":[],"id":null}`)
-				}
-				return []byte(fmt.Sprintf(`{"jsonrpc":"2.0","method":"status","params":[],"id":%d}`, idNum))
-			}
-			formatIDInJsonResponse := func(idNum int64) []byte {
-				if tt.nullId {
-					return []byte(`{"jsonrpc":"2.0","result":0x12345,"id":null}`)
-				}
-				return []byte(fmt.Sprintf(`{"jsonrpc":"2.0","result":0x12345,"id":%d}`, idNum))
-			}
-			request := getRequest(1230, formatIDInJson(id), spectypes.APIInterfaceJsonRPC) // &pairingtypes.RelayRequest{
+			request := getRequest(1230, formatIDInJson(id, tt.nullIdInSet), spectypes.APIInterfaceJsonRPC) // &pairingtypes.RelayRequest{
 
 			response := &pairingtypes.RelayReply{
-				Data: formatIDInJsonResponse(id), // response has the old id when cached
+				Data: formatIDInJsonResponse(id, tt.nullIdInSet), // response has the old id when cached
 			}
+
 			messageSet := pairingtypes.RelayCacheSet{
 				RequestHash:    HashRequest(t, request, StubChainID),
 				BlockHash:      tt.hash,
@@ -507,9 +534,9 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			time.Sleep(tt.delay)
 			// now to get it
 
-			changedID := id + 1
 			// now we change the ID:
-			request.Data = formatIDInJson(changedID)
+			changedID := id + 1
+			request.Data = formatIDInJson(changedID, tt.nullIdInGet)
 			hash, outputFormatter := HashRequestFormatter(t, request, StubChainID)
 			messageGet := pairingtypes.RelayCacheGet{
 				RequestHash:    hash,
@@ -518,13 +545,16 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 				Finalized:      tt.finalized,
 				RequestedBlock: request.RequestBlock,
 			}
+
 			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
 			if tt.valid {
 				cacheReply.Reply.Data = outputFormatter(cacheReply.Reply.Data)
 				require.NoError(t, err)
+
 				result := gjson.GetBytes(cacheReply.GetReply().Data, format.IDFieldName)
 				extractedID := result.Raw
-				if tt.nullId {
+
+				if tt.nullIdInGet {
 					require.Equal(t, "null", extractedID)
 				} else {
 					require.Equal(t, strconv.FormatInt(changedID, 10), extractedID)
