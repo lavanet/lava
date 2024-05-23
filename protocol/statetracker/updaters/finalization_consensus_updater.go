@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/lavaprotocol"
+	"github.com/lavanet/lava/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/utils"
 )
 
@@ -15,16 +15,16 @@ const (
 
 type FinalizationConsensusUpdater struct {
 	lock                              sync.RWMutex
-	registeredFinalizationConsensuses []*lavaprotocol.FinalizationConsensus
+	registeredFinalizationConsensuses []*finalizationconsensus.FinalizationConsensus
 	nextBlockForUpdate                uint64
 	stateQuery                        *ConsumerStateQuery
 }
 
 func NewFinalizationConsensusUpdater(stateQuery *ConsumerStateQuery) *FinalizationConsensusUpdater {
-	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery}
+	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*finalizationconsensus.FinalizationConsensus{}, stateQuery: stateQuery}
 }
 
-func (fcu *FinalizationConsensusUpdater) RegisterFinalizationConsensus(finalizationConsensus *lavaprotocol.FinalizationConsensus) {
+func (fcu *FinalizationConsensusUpdater) RegisterFinalizationConsensus(finalizationConsensus *finalizationconsensus.FinalizationConsensus) {
 	// TODO: also update here for the first time
 	fcu.lock.Lock()
 	defer fcu.lock.Unlock()

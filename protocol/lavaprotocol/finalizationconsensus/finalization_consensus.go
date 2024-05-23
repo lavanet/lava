@@ -1,4 +1,4 @@
-package lavaprotocol
+package finalizationconsensus
 
 import (
 	"fmt"
@@ -8,10 +8,15 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/lavaslices"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+)
+
+const (
+	debug = false
 )
 
 type FinalizationConsensus struct {
@@ -171,7 +176,7 @@ func (fc *FinalizationConsensus) discrepancyChecker(finalizedBlocksA map[int64]s
 		if otherHash, ok := otherBlocks[blockNum]; ok {
 			if blockHash != otherHash {
 				// TODO: gather discrepancy data
-				return utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", HashesConsunsusError, utils.Attribute{Key: "blockNum", Value: blockNum}, utils.Attribute{Key: "Hashes", Value: fmt.Sprintf("%s vs %s", blockHash, otherHash)}, utils.Attribute{Key: "toIterate", Value: toIterate}, utils.Attribute{Key: "otherBlocks", Value: otherBlocks})
+				return utils.LavaFormatError("Simulation: reliability discrepancy, different hashes detected for block", lavaprotocol.HashesConsensusError, utils.Attribute{Key: "blockNum", Value: blockNum}, utils.Attribute{Key: "Hashes", Value: fmt.Sprintf("%s vs %s", blockHash, otherHash)}, utils.Attribute{Key: "toIterate", Value: toIterate}, utils.Attribute{Key: "otherBlocks", Value: otherBlocks})
 			}
 		}
 	}

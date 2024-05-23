@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
+	"github.com/lavanet/lava/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/performance"
@@ -49,7 +50,7 @@ type RPCConsumerServer struct {
 	privKey                *btcec.PrivateKey
 	consumerTxSender       ConsumerTxSender
 	requiredResponses      int
-	finalizationConsensus  *lavaprotocol.FinalizationConsensus
+	finalizationConsensus  *finalizationconsensus.FinalizationConsensus
 	lavaChainID            string
 	ConsumerAddress        sdk.AccAddress
 	consumerConsistency    *ConsumerConsistency
@@ -73,7 +74,7 @@ type ConsumerTxSender interface {
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
 	chainParser chainlib.ChainParser,
-	finalizationConsensus *lavaprotocol.FinalizationConsensus,
+	finalizationConsensus *finalizationconsensus.FinalizationConsensus,
 	consumerSessionManager *lavasession.ConsumerSessionManager,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
