@@ -175,7 +175,14 @@ var _ = strconv.IntSize
 func createNPendingIprpcFunds(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PendingIprpcFund {
 	items := make([]types.PendingIprpcFund, n)
 	for i := range items {
-		items[i] = types.PendingIprpcFund{Index: uint64(i), Creator: "dummy", Spec: "mock", Month: 1, Expiry: uint64(ctx.BlockTime().UTC().Unix()) + uint64(i)}
+		items[i] = types.PendingIprpcFund{
+			Index:       uint64(i),
+			Creator:     "dummy",
+			Spec:        "mock",
+			Month:       1,
+			Expiry:      uint64(ctx.BlockTime().UTC().Unix()) + uint64(i),
+			CostCovered: sdk.NewCoin("denom", math.OneInt()),
+		}
 		keeper.SetPendingIprpcFund(ctx, items[i])
 	}
 	return items
