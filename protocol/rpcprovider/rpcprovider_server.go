@@ -190,8 +190,12 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	}
 
 	// Check that this is not subscription related messages
-	if chainlib.IsSubscriptionCategory(chainMessage) {
-		return nil, errors.New("subscription category messages are not supported through Relay")
+	if chainlib.IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
+		return nil, errors.New("subscription api is not supported through Relay")
+	}
+
+	if chainlib.IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
+		return nil, errors.New("unsubscribe relay")
 	}
 
 	// Try sending relay

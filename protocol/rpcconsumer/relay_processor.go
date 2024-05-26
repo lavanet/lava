@@ -162,7 +162,7 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		// }
 	}
 
-	if chainlib.IsSubscriptionCategory(rp.chainMessage) {
+	if chainlib.IsOfFunctionType(rp.chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 		rp.successResults = append(rp.successResults, response.relayResult)
 		return
 	}

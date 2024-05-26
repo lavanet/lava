@@ -1,6 +1,9 @@
 package chainlib
 
-import "github.com/lavanet/lava/protocol/common"
+import (
+	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/x/spec/types"
+)
 
 func ShouldSendToAllProviders(chainMessage ChainMessage) bool {
 	return chainMessage.GetApi().Category.Stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS
@@ -8,10 +11,6 @@ func ShouldSendToAllProviders(chainMessage ChainMessage) bool {
 
 func GetAddon(chainMessage ChainMessageForSend) string {
 	return chainMessage.GetApiCollection().CollectionData.AddOn
-}
-
-func IsSubscriptionCategory(chainMessage ChainMessageForSend) bool {
-	return chainMessage.GetApi().Category.Subscription
 }
 
 func IsHangingApi(chainMessage ChainMessageForSend) bool {
@@ -24,4 +23,14 @@ func GetComputeUnits(chainMessage ChainMessageForSend) uint64 {
 
 func GetStateful(chainMessage ChainMessageForSend) uint32 {
 	return chainMessage.GetApi().Category.Stateful
+}
+
+func IsOfFunctionType(chainMessage ChainMessageForSend, functionTag types.FUNCTION_TAG) bool {
+	chainMessageApiName := chainMessage.GetApi().Name
+	for _, parseDirective := range chainMessage.GetApiCollection().GetParseDirectives() {
+		if parseDirective.ApiName == chainMessageApiName && parseDirective.FunctionTag == functionTag {
+			return true
+		}
+	}
+	return false
 }

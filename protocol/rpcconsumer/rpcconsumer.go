@@ -2,7 +2,9 @@ package rpcconsumer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -17,6 +19,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -32,6 +35,7 @@ import (
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -293,7 +297,28 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			}
 
 			rpcConsumerServer := &RPCConsumerServer{}
-			consumerWsSubscriptionManager := chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, chainParser, longLastingProvidersStorage)
+
+			var consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
+
+			switch rpcEndpoint.ApiInterface {
+			case spectypes.APIInterfaceTendermintRPC:
+				paramsExtractorFunc := func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
+					params, err := json.Marshal(request.GetRPCMessage().GetParams())
+					if err != nil {
+						utils.LavaFormatWarning("failed marshaling params", err, utils.LogAttr("request", request))
+						return ""
+					}
+
+					return string(params)
+				}
+				consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, "", chainParser, longLastingProvidersStorage, paramsExtractorFunc)
+			case spectypes.APIInterfaceJsonRPC:
+				paramsExtractorFunc := func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
+					return string(reply.Result)
+				}
+				consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, http.MethodPost, chainParser, longLastingProvidersStorage, paramsExtractorFunc)
+			}
+
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)
 			if err != nil {

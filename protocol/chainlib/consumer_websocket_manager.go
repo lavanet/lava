@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 type ConsumerWebsocketManager struct {
@@ -151,7 +152,19 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 			continue
 		}
 
-		if !IsSubscriptionCategory(chainMessage) {
+		if !IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
+			if IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
+				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData, websocketSubMsgsChan)
+				if err != nil {
+					utils.LavaFormatWarning("error unsubscribing from subscription", err, utils.LogAttr("GUID", webSocketCtx))
+				}
+				continue
+			}
+
+			if IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
+				utils.LavaFormatTrace("got unsubscribe_all message from the websocket", utils.LogAttr("GUID", webSocketCtx))
+			}
+
 			// One shot relay
 			relayResult, err := cwm.relaySender.SendParsedRelay(webSocketCtx, dappID, consumerIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
 			if err != nil {

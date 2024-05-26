@@ -666,7 +666,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(chainId, apiInterface)
 			defer func() { go rpccs.rpcConsumerLogs.SetRelayReturnedFromProviderMetric(chainId, apiInterface) }()
 
-			if chainlib.IsSubscriptionCategory(chainMessage) {
+			if chainlib.IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 				utils.LavaFormatTrace("inside sendRelayToProvider, relay is subscription", utils.LogAttr("requestData", localRelayRequestData.Data))
 
 				// TODO: select case with ticker of 10 seconds, defer the ticker closing, on ticker done, cancel the context
