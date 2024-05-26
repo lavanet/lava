@@ -24,6 +24,7 @@ func DefaultGenesis() *GenesisState {
 		MinIprpcCost:        sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
 		IprpcRewards:        []IprpcReward{},
 		IprpcRewardsCurrent: 0,
+		PendingIprpcFunds:   []PendingIprpcFund{},
 	}
 }
 
@@ -65,6 +66,12 @@ func (gs GenesisState) Validate() error {
 					return fmt.Errorf("invalid iprpc reward fund. invalid coin: %s", coin.String())
 				}
 			}
+		}
+	}
+
+	for _, pendingIprpcFund := range gs.PendingIprpcFunds {
+		if !pendingIprpcFund.IsValid() {
+			return fmt.Errorf("invalid ibc iprpc fund: %s", pendingIprpcFund.String())
 		}
 	}
 

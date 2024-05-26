@@ -18,3 +18,16 @@ message Specfund {
         (gogoproto.nullable)     = false
     ];
 }
+
+message PendingIprpcFund {
+    uint64 index = 1;     // unique index
+    string creator = 2;   // creator moniker
+    string spec = 3;
+    uint64 month = 4;
+    repeated cosmos.base.v1beta1.Coin funds = 5 [
+        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+        (gogoproto.nullable)     = false
+    ];
+    uint64 expiry = 6; // expiry timestamp
+    cosmos.base.v1beta1.Coin cost_covered = 7 [(gogoproto.nullable) = false]; // amount of funds that were paid to cover min iprpc cost
+}
