@@ -5391,6 +5391,20 @@
                                     "encoding": "base64"
                                 },
                                 "api_name": "earliest_block"
+                            },
+                            {
+                                "function_tag": "SUBSCRIBE",
+                                "api_name": "subscribe"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"unsubscribe\",\"params\":%s,\"id\":1}",
+                                "function_tag": "UNSUBSCRIBE",
+                                "api_name": "unsubscribe"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"unsubscribe_all\",\"params\":[],\"id\":1}",
+                                "function_tag": "UNSUBSCRIBE_ALL",
+                                "api_name": "unsubscribe_all"
                             }
                         ],
                         "verifications": [

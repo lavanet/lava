@@ -1045,6 +1045,15 @@
                                     "encoding": "hex"
                                 },
                                 "api_name": "eth_getBlockByNumber"
+                            },
+                            {
+                                "function_tag": "SUBSCRIBE",
+                                "api_name": "eth_subscribe"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_unsubscribe\",\"params\":[\"0x%x\"],\"id\":1}",
+                                "function_tag": "UNSUBSCRIBE",
+                                "api_name": "eth_unsubscribe"
                             }
                         ],
                         "verifications": [
