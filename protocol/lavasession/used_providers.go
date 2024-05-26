@@ -160,6 +160,7 @@ func (up *UsedProviders) TryLockSelection(ctx context.Context) bool {
 	for counter := 0; counter < MaximumNumberOfSelectionLockAttempts; counter++ {
 		select {
 		case <-ctx.Done():
+			utils.LavaFormatTrace("Failed locking selection, context is done")
 			return false
 		default:
 			canSelect := up.tryLockSelection()

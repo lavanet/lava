@@ -495,7 +495,7 @@ func (rpccs *RPCConsumerServer) CancelSubscriptionContext(subscriptionKey string
 
 	ctxHolder, ok := rpccs.connectedSubscriptionsContexts[subscriptionKey]
 	if ok {
-		utils.LavaFormatTrace("Cancelling subscription context", utils.LogAttr("subscriptionID", subscriptionKey))
+		utils.LavaFormatTrace("cancelling subscription context", utils.LogAttr("subscriptionID", subscriptionKey))
 		ctxHolder.CancelFunc()
 		delete(rpccs.connectedSubscriptionsContexts, subscriptionKey)
 	} else {

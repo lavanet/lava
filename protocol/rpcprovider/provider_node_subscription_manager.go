@@ -424,7 +424,7 @@ func (pnsm *ProviderNodeSubscriptionManager) closeNodeSubscription(hashedParams 
 	// Must be called under lock
 
 	if _, ok := pnsm.activeSubscriptions[hashedParams]; !ok {
-		return utils.LavaFormatError("closeNodeSubscription called with hashedParams that does not exist", nil, utils.LogAttr("hashedParams", hashedParams))
+		return utils.LavaFormatError("closeNodeSubscription called with hashedParams that does not exist", nil, utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 	}
 
 	// Disconnect all connected consumers
@@ -433,7 +433,7 @@ func (pnsm *ProviderNodeSubscriptionManager) closeNodeSubscription(hashedParams 
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:closeNodeSubscription() closing consumer channel",
 				utils.LogAttr("consumerAddr", consumerAddrString),
 				utils.LogAttr("epoch", epoch),
-				utils.LogAttr("params", hashedParams),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
 			consumerChannel.Close()
 		}

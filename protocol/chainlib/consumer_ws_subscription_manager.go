@@ -73,6 +73,12 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(webSocketCtx contex
 
 	dappKey := cwsm.relaySender.CreateSubscriptionKey(dappID, consumerIp)
 
+	utils.LavaFormatTrace("request to start subscription",
+		utils.LogAttr("GUID", webSocketCtx),
+		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+		utils.LogAttr("dappKey", dappKey),
+	)
+
 	// Remove the websocket from the active subscriptions, when the websocket is closed
 	go func() {
 		<-webSocketCtx.Done()
@@ -82,6 +88,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(webSocketCtx contex
 
 		utils.LavaFormatTrace("websocket context is done, removing websocket from active subscriptions",
 			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("dappKey", dappKey),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 
@@ -201,7 +208,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 
 		utils.LavaFormatTrace("closing all connected dapps for closed subscription connection",
 			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("params", hashedParams),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 
 		// Close all remaining active connections
@@ -216,9 +223,9 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 
 		if unsubscribeData != nil {
 			// This unsubscribe request was initiated by the user
-			utils.LavaFormatTrace("unsubscribe request was made be the user",
+			utils.LavaFormatTrace("unsubscribe request was made by the user",
 				utils.LogAttr("GUID", webSocketCtx),
-				utils.LogAttr("params", hashedParams),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
 
 			chainMessage = unsubscribeData.chainMessage
@@ -228,7 +235,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			// This unsubscribe request was initiated by us
 			utils.LavaFormatTrace("unsubscribe request was made automatically",
 				utils.LogAttr("GUID", webSocketCtx),
-				utils.LogAttr("params", hashedParams),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
 
 			chainMessage, directiveHeaders, relayRequestData, err = cwsm.craftUnsubscribeMessage(hashedParams, dappID, consumerIp, metricsData)
@@ -244,7 +251,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			}
 
 			utils.LavaFormatTrace("crafted unsubscribe message to send to the provider",
-				utils.LogAttr("params", hashedParams),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("chainMessage", string(stringJson)),
 			)
 		}
@@ -264,10 +271,10 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 	for {
 		select {
 		case unsubscribeData = <-closeSubscriptionChan:
-			utils.LavaFormatTrace("requested to close subscription connection", utils.LogAttr("params", hashedParams))
+			utils.LavaFormatTrace("requested to close subscription connection", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 			return
 		case <-(*replyServer).Context().Done():
-			utils.LavaFormatTrace("reply server context canceled", utils.LogAttr("params", hashedParams))
+			utils.LavaFormatTrace("reply server context canceled", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 			return
 		default:
 			var reply pairingtypes.RelayReply
@@ -363,7 +370,7 @@ func (cwsm *ConsumerWSSubscriptionManager) removeDappFromActiveSubscription(webS
 		utils.LavaFormatDebug("no active subscription found",
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("dappKey", dappKey),
-			utils.LogAttr("hashedParams", hashedParams),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("cwsm.activeSubscriptions[hashedParams]", cwsm.activeSubscriptions[hashedParams]),
 		)
 
@@ -374,7 +381,7 @@ func (cwsm *ConsumerWSSubscriptionManager) removeDappFromActiveSubscription(webS
 		utils.LavaFormatDebug("connection not found for given dappKey and hashedParams",
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("dappKey", dappKey),
-			utils.LogAttr("hashedParams", hashedParams),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("cwsm.activeSubscriptions[hashedParams]", cwsm.activeSubscriptions[hashedParams]),
 		)
 

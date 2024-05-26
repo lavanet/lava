@@ -437,7 +437,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 					if strings.Contains(errRet.Error(), "Canceled desc = context canceled") {
 						errRet = utils.LavaFormatWarning("Client closed connection", errRet, utils.Attribute{Key: "GUID", Value: ctx})
 					} else {
-						errRet = utils.LavaFormatError("srv.Send", errRet, utils.Attribute{Key: "GUID", Value: ctx})
+						errRet = utils.LavaFormatError("Got error from srv.Send()", errRet, utils.Attribute{Key: "GUID", Value: ctx})
 					}
 
 					return
