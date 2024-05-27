@@ -29,6 +29,7 @@ const (
 	FlagWebsite                  = "website"
 	FlagSecurityContact          = "security-contact"
 	FlagDescriptionDetails       = "description-details"
+	FlagGrantFeeAuth             = "grant-provider-gas-fees-auth"
 	MAX_ENDPOINTS_AMOUNT_PER_GEO = 5 // max number of endpoints per geolocation for provider stake entry
 )
 
