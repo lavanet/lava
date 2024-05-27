@@ -104,7 +104,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 	for _, pec := range pecsDetailed {
 		entry, ok := stakeEntries[ProviderChainID(pec.Provider, pec.ChainId)]
 		if ok {
-			if minHistoryBlock < entry.StakeAppliedBlock {
+			if minHistoryBlock < entry.StakeAppliedBlock && entry.Jails == 0 {
 				// this staked provider has too short history (either since staking
 				// or since it was last unfrozen) - do not consider for jailing
 				continue
@@ -254,7 +254,9 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, sta
 		stakeEntry.JailTime = ctx.BlockTime().UTC().Unix() + int64(HARD_JAIL_TIME)
 	} else {
 		stakeEntry.JailTime = ctx.BlockTime().UTC().Unix() + int64(SOFT_JAIL_TIME)
-		stakeEntry.StakeAppliedBlock = uint64(ctx.BlockHeight()) + uint64(time.Hour/k.downtimeKeeper.GetParams(ctx).EpochDuration)*k.epochStorageKeeper.EpochBlocksRaw(ctx)
+		epochduration := k.downtimeKeeper.GetParams(ctx).EpochDuration / time.Second
+		epochblocks := k.epochStorageKeeper.EpochBlocksRaw(ctx)
+		stakeEntry.StakeAppliedBlock = uint64(ctx.BlockHeight()) + uint64(SOFT_JAIL_TIME/epochduration)*epochblocks
 	}
 	k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, stakeEntry.Chain, stakeEntry)
 
@@ -276,13 +278,6 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, sta
 // resetComplainersCU resets the complainers CU for a specific provider and chain
 func (k Keeper) resetComplainersCU(ctx sdk.Context, epochs []uint64, provider string, chainID string, providerEpochCuMap map[uint64]types.ProviderEpochComplainerCu) {
 	for _, epoch := range epochs {
-		pec, ok := providerEpochCuMap[epoch]
-		if !ok {
-			continue
-		}
-
-		// reset the complainer CU
-		pec.ComplainersCu = 0
-		k.SetProviderEpochComplainerCu(ctx, epoch, provider, chainID, pec)
+		k.RemoveProviderEpochComplainerCu(ctx, epoch, provider, chainID)
 	}
 }

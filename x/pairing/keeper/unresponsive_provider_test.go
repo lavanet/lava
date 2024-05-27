@@ -18,16 +18,19 @@ func (ts *tester) checkProviderJailed(provider string, shouldFreeze bool) {
 	require.True(ts.T, stakeStorageFound)
 	require.Equal(ts.T, shouldFreeze, stakeEntry.IsJailed(ts.Ctx.BlockTime().UTC().Unix()))
 	if shouldFreeze {
-		require.InDelta(ts.T, stakeEntry.JailTime, ts.BlockTime().UTC().Unix(), float64(keeper.SOFT_JAIL_TIME))
+		jailDelta := keeper.SOFT_JAIL_TIME
+		if stakeEntry.Jails > keeper.SOFT_JAILS {
+			jailDelta = keeper.HARD_JAIL_TIME
+		}
+		require.InDelta(ts.T, stakeEntry.JailTime, ts.BlockTime().UTC().Unix(), float64(jailDelta))
 	}
 }
 
 func (ts *tester) checkComplainerReset(provider string, epoch uint64) {
 	// validate the complainers CU field in the unresponsive provider's providerPaymentStorage
 	// was reset after being punished (use the epoch from the relay - when it got reported)
-	pec, found := ts.Keepers.Pairing.GetProviderEpochComplainerCu(ts.Ctx, epoch, provider, ts.spec.Name)
-	require.Equal(ts.T, true, found)
-	require.Equal(ts.T, uint64(0), pec.ComplainersCu)
+	_, found := ts.Keepers.Pairing.GetProviderEpochComplainerCu(ts.Ctx, epoch, provider, ts.spec.Name)
+	require.Equal(ts.T, false, found)
 }
 
 func (ts *tester) checkProviderStaked(provider string) {
@@ -365,6 +368,11 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 	// (if the epoch is too early, there's no punishment)
 	ts.AdvanceEpochs(largerConst + recommendedEpochNumToCollectPayment)
 
+	// advance enough epochs so the unresponsive provider will be punished
+	if largerConst < recommendedEpochNumToCollectPayment {
+		largerConst = recommendedEpochNumToCollectPayment
+	}
+
 	// find two providers in the pairing
 	pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 	require.NoError(t, err)
@@ -400,11 +408,6 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 		}
 		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-		// advance enough epochs so the unresponsive provider will be punished
-		if largerConst < recommendedEpochNumToCollectPayment {
-			largerConst = recommendedEpochNumToCollectPayment
-		}
-
 		ts.AdvanceEpochs(largerConst, 0)
 
 		ts.checkProviderJailed(provider1, true)
@@ -427,4 +430,12 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 	ts.AdvanceBlock(time.Hour)
 	ts.AdvanceEpoch(time.Nanosecond)
 	ts.checkProviderJailed(provider1, false)
+
+	// jail third time
+	jailProvider()
+
+	// advance epoch and one hour to leave jail
+	ts.AdvanceBlock(time.Hour)
+	ts.AdvanceEpoch(time.Nanosecond)
+	ts.checkProviderJailed(provider1, true)
 }
