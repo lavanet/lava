@@ -25,8 +25,11 @@ const (
 	FlagCommission               = "delegate-commission"
 	FlagDelegationLimit          = "delegate-limit"
 	FlagProvider                 = "provider"
+	FlagIdentity                 = "identity"
+	FlagWebsite                  = "website"
+	FlagSecurityContact          = "security-contact"
+	FlagDescriptionDetails       = "description-details"
 	FlagGrantFeeAuth             = "grant-provider-gas-fees-auth"
-	MAX_LEN_MONIKER              = 50
 	MAX_ENDPOINTS_AMOUNT_PER_GEO = 5 // max number of endpoints per geolocation for provider stake entry
 )
 
