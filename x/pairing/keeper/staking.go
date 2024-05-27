@@ -128,6 +128,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			{Key: "stake", Value: amount},
 			utils.LogAttr("description", description.String()),
 		}
+		details = append(details, utils.Attribute{Key: "moniker", Value: description.Moniker})
 
 		// if the provider has no delegations then we dont limit the changes
 		if !existingEntry.DelegateTotal.IsZero() {
@@ -271,6 +272,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
+	details = append(details, utils.Attribute{Key: "moniker", Value: description.Moniker})
 	detailsMap := map[string]string{}
 	for _, atr := range details {
 		detailsMap[atr.Key] = fmt.Sprint(atr.Value)

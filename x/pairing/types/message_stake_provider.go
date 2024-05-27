@@ -48,7 +48,6 @@ func (msg *MsgStakeProvider) GetSignBytes() []byte {
 	return sdk.MustSortJSON(bz)
 }
 
-// TODO: add validation to new fields
 func (msg *MsgStakeProvider) ValidateBasic() error {
 	if _, err := sdk.ValAddressFromBech32(msg.Validator); err != nil {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "Invalid validator address (%s) %s", err.Error(), msg.Validator)
