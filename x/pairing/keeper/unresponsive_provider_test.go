@@ -417,6 +417,12 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 
 	// jail first time
 	jailProvider()
+	// try to unfreeze with increase of self delegation
+	_, err = ts.TxDualstakingDelegate(provider1, provider1, ts.spec.Index, common.NewCoin(ts.TokenDenom(), 1))
+	require.Nil(t, err)
+
+	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
+	require.Nil(t, err)
 
 	// advance epoch and one hour to leave jail
 	ts.AdvanceBlock(time.Hour)
@@ -425,17 +431,46 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 
 	// jail second time
 	jailProvider()
+	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
+	require.Nil(t, err)
 
 	// advance epoch and one hour to leave jail
 	ts.AdvanceBlock(time.Hour)
-	ts.AdvanceEpoch(time.Nanosecond)
+	ts.AdvanceEpoch(0)
 	ts.checkProviderJailed(provider1, false)
 
 	// jail third time
 	jailProvider()
+	// try to unfreeze with increase of self delegation
+	_, err = ts.TxDualstakingDelegate(provider1, provider1, ts.spec.Index, common.NewCoin(ts.TokenDenom(), 1))
+	require.Nil(t, err)
+
+	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
+	require.NotNil(t, err)
+
+	// advance epoch and one hour to try leave jail
+	ts.AdvanceBlock(time.Hour)
+	ts.AdvanceEpoch(0)
+	ts.checkProviderJailed(provider1, true)
+
+	// advance epoch and 24 hour to try leave jail
+	ts.AdvanceBlock(24 * time.Hour)
+	ts.AdvanceEpoch(0)
+	ts.checkProviderJailed(provider1, false)
+
+	// advance more 24H
+	ts.AdvanceBlock(24 * time.Hour)
+	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
+	require.Nil(t, err)
+	ts.AdvanceEpochs(largerConst + recommendedEpochNumToCollectPayment)
+
+	// jail first time again
+	jailProvider()
+	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
+	require.Nil(t, err)
 
 	// advance epoch and one hour to leave jail
 	ts.AdvanceBlock(time.Hour)
-	ts.AdvanceEpoch(time.Nanosecond)
-	ts.checkProviderJailed(provider1, true)
+	ts.AdvanceEpoch(0)
+	ts.checkProviderJailed(provider1, false)
 }
