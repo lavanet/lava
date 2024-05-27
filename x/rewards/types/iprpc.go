@@ -1,5 +1,9 @@
 package types
 
+import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
+
 const (
 	// IprpcSubscriptionPrefix is the prefix to retrieve all IprpcSubscription
 	IprpcSubscriptionPrefix = "IprpcSubscription/"
@@ -37,4 +41,8 @@ func (pif PendingIprpcFund) IsEmpty() bool {
 
 func (pif PendingIprpcFund) IsValid() bool {
 	return pif.Expiry > 0 && pif.Funds.IsValid() && pif.CostCovered.IsValid()
+}
+
+func (pif PendingIprpcFund) IsExpired(ctx sdk.Context) bool {
+	return uint64(ctx.BlockTime().UTC().Unix()) >= pif.Expiry
 }
