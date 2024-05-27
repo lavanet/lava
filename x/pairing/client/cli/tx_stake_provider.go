@@ -345,7 +345,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
 	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
 	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
-	cmd.Flags().String(types.FlagProvider, "", "The provider's operational address (addresses that are used to operate the provider process. default is provider address)")
 	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the provider use the vault address' funds for gas fees")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
