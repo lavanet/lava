@@ -485,7 +485,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	}
 }
 
-func (rpccs *RPCConsumerServer) CreateSubscriptionKey(dappID, consumerIp string) string {
+func (rpccs *RPCConsumerServer) CreateDappKey(dappID, consumerIp string) string {
 	return rpccs.consumerConsistency.Key(dappID, consumerIp)
 }
 
@@ -671,7 +671,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 				// TODO: select case with ticker of 10 seconds, defer the ticker closing, on ticker done, cancel the context
 				// On fail, try another provider
-				dappKey := rpccs.CreateSubscriptionKey(dappID, consumerIp)
+				dappKey := rpccs.CreateDappKey(dappID, consumerIp)
 				cancellableCtx, cancelFunc := context.WithCancel(utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier()))
 
 				ctxHolder := func() *CancelableContextHolder {

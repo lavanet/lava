@@ -126,7 +126,7 @@ type RelaySender interface {
 		directiveHeaders map[string]string,
 		relayRequestData *pairingtypes.RelayPrivateData,
 	) (relayResult *common.RelayResult, errRet error)
-	CreateSubscriptionKey(dappID, consumerIp string) string
+	CreateDappKey(dappID, consumerIp string) string
 	CancelSubscriptionContext(subscriptionKey string)
 }
 

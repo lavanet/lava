@@ -71,7 +71,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(webSocketCtx contex
 		return nil, utils.LavaFormatError("could not marshal params", err)
 	}
 
-	dappKey := cwsm.relaySender.CreateSubscriptionKey(dappID, consumerIp)
+	dappKey := cwsm.relaySender.CreateDappKey(dappID, consumerIp)
 
 	utils.LavaFormatTrace("request to start subscription",
 		utils.LogAttr("GUID", webSocketCtx),
@@ -263,7 +263,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 
 		delete(cwsm.activeSubscriptions, hashedParams)
 
-		dappKey := cwsm.relaySender.CreateSubscriptionKey(dappID, consumerIp)
+		dappKey := cwsm.relaySender.CreateDappKey(dappID, consumerIp)
 		cwsm.longLastingProvidersStorage.RemoveProvider(providerAddr)
 		cwsm.relaySender.CancelSubscriptionContext(dappKey)
 	}()
@@ -336,7 +336,7 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 		return utils.LavaFormatError("could not marshal params", err)
 	}
 
-	dappKey := cwsm.relaySender.CreateSubscriptionKey(dappID, consumerIp)
+	dappKey := cwsm.relaySender.CreateDappKey(dappID, consumerIp)
 
 	cwsm.lock.Lock()
 	defer cwsm.lock.Unlock()
