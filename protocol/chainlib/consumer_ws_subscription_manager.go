@@ -263,9 +263,8 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 
 		delete(cwsm.activeSubscriptions, hashedParams)
 
-		dappKey := cwsm.relaySender.CreateDappKey(dappID, consumerIp)
 		cwsm.longLastingProvidersStorage.RemoveProvider(providerAddr)
-		cwsm.relaySender.CancelSubscriptionContext(dappKey)
+		cwsm.relaySender.CancelSubscriptionContext(hashedParams)
 	}()
 
 	for {

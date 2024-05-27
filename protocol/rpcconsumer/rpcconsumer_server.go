@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -671,7 +672,13 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 				// TODO: select case with ticker of 10 seconds, defer the ticker closing, on ticker done, cancel the context
 				// On fail, try another provider
-				dappKey := rpccs.CreateDappKey(dappID, consumerIp)
+				params, err := json.Marshal(chainMessage.GetRPCMessage().GetParams())
+				if err != nil {
+					utils.LavaFormatError("could not marshal params", err)
+					return
+				}
+
+				hashedParams := rpcclient.CreateHashFromParams(params)
 				cancellableCtx, cancelFunc := context.WithCancel(utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier()))
 
 				ctxHolder := func() *CancelableContextHolder {
@@ -682,7 +689,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						Ctx:        cancellableCtx,
 						CancelFunc: cancelFunc,
 					}
-					rpccs.connectedSubscriptionsContexts[dappKey] = ctxHolder
+					rpccs.connectedSubscriptionsContexts[hashedParams] = ctxHolder
 					return ctxHolder
 				}()
 
