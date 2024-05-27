@@ -365,6 +365,7 @@ func (cwsm *ConsumerWSSubscriptionManager) getHashedParams(chainMessage ChainMes
 
 func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Context, chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, dappID, consumerIp string, metricsData *metrics.RelayMetrics) error {
 	utils.LavaFormatTrace("want to unsubscribe",
+		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("dappID", dappID),
 		utils.LogAttr("consumerIp", consumerIp),
 	)
@@ -380,12 +381,7 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 	defer cwsm.lock.Unlock()
 
 	// Look for active connection
-	if _, ok := cwsm.activeSubscriptions[hashedParams]; !ok {
-		utils.LavaFormatDebug("no active subscription found",
-			utils.LogAttr("dappID", dappID),
-			utils.LogAttr("consumerIp", consumerIp),
-		)
-
+	sendSubscriptionNotFoundErrorToWebSocket := func() error {
 		jsonError, err := json.Marshal(common.JsonRpcSubscriptionNotFoundError)
 		if err != nil {
 			return utils.LavaFormatError("could not marshal error response", err)
@@ -396,33 +392,58 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 	}
 
 	if _, ok := cwsm.connectedDapps[dappKey]; !ok {
-		utils.LavaFormatDebug("dapp is not connected",
-			utils.LogAttr("dappID", dappID),
-			utils.LogAttr("consumerIp", consumerIp),
-		)
-
-		jsonError, err := json.Marshal(common.JsonRpcSubscriptionNotFoundError)
-		if err != nil {
-			return utils.LavaFormatError("could not marshal error response", err)
-		}
-
-		cwsm.connectedDapps[dappKey].webSocketChannel <- &pairingtypes.RelayReply{Data: jsonError}
-		return nil
-	}
-
-	if _, ok := cwsm.connectedDapps[dappKey].activeSubscriptions[hashedParams]; !ok {
-		utils.LavaFormatDebug("no active subscription found for given dapp",
+		utils.LavaFormatDebug("webSocket has no active subscriptions",
+			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("consumerIp", consumerIp),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 
-		jsonError, err := json.Marshal(common.JsonRpcSubscriptionNotFoundError)
-		if err != nil {
-			return utils.LavaFormatError("could not marshal error response", err)
-		}
+		return nil
+	}
 
-		cwsm.connectedDapps[dappKey].webSocketChannel <- &pairingtypes.RelayReply{Data: jsonError}
+	if _, ok := cwsm.connectedDapps[dappKey].activeSubscriptions[hashedParams]; !ok {
+		utils.LavaFormatDebug("no active subscription found for given dapp",
+			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("dappID", dappID),
+			utils.LogAttr("consumerIp", consumerIp),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+		)
+
+		err := sendSubscriptionNotFoundErrorToWebSocket()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if _, ok := cwsm.activeSubscriptions[hashedParams]; !ok {
+		utils.LavaFormatError("no active subscription found, but the subscription is found in connectedDapps, this should never happen", nil,
+			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("dappID", dappID),
+			utils.LogAttr("consumerIp", consumerIp),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+		)
+
+		err := sendSubscriptionNotFoundErrorToWebSocket()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if _, ok := cwsm.activeSubscriptions[hashedParams].connectedDapps[dappKey]; !ok {
+		utils.LavaFormatError("active subscription found, but the dappKey is found in it's connectedDapps, this should never happen", nil,
+			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("dappID", dappID),
+			utils.LogAttr("consumerIp", consumerIp),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+		)
+
+		err := sendSubscriptionNotFoundErrorToWebSocket()
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -566,4 +587,3 @@ func (cwsm *ConsumerWSSubscriptionManager) disconnectDappWithSubscription(ctx co
 		}()
 	}
 }
-
