@@ -11,7 +11,6 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
@@ -138,13 +137,6 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 
 		refererMatch, ok := websocketConn.Locals(cwm.refererMatchString).(string)
 		metricsData := metrics.NewRelayAnalytics(dappID, cwm.chainId, cwm.apiInterface)
-		websocketSubMsgsChan := make(chan *pairingtypes.RelayReply)
-
-		go func() {
-			for reply := range websocketSubMsgsChan {
-				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: reply.Data}
-			}
-		}()
 
 		chainMessage, directiveHeaders, relayRequestData, err := cwm.relaySender.ParseRelay(webSocketCtx, "", string(msg), cwm.connectionType, dappID, consumerIp, metricsData, nil)
 		if err != nil {
@@ -154,7 +146,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 
 		if !IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 			if IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
-				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData, websocketSubMsgsChan)
+				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from subscription", err, utils.LogAttr("GUID", webSocketCtx))
 				}
@@ -177,7 +169,13 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 		}
 
 		// Subscription flow
-		reply, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData, websocketSubMsgsChan)
+		reply, websocketSubMsgsChan, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData)
+
+		go func() {
+			for reply := range websocketSubMsgsChan {
+				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: reply.Data}
+			}
+		}()
 
 		if ok && refererMatch != "" && cwm.refererData != nil && err == nil {
 			go cwm.refererData.SendReferer(refererMatch, cwm.chainId, string(msg), nil, websocketConn)
