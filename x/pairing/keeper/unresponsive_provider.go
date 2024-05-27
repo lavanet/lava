@@ -16,8 +16,8 @@ import (
 const (
 	THRESHOLD_FACTOR = 4
 	SOFT_JAILS       = 2
-	SOFT_JAIL_TIME   = 1 * time.Hour
-	HARD_JAIL_TIME   = 24 * time.Hour
+	SOFT_JAIL_TIME   = 1 * time.Hour / time.Second
+	HARD_JAIL_TIME   = 24 * time.Hour / time.Second
 )
 
 // PunishUnresponsiveProviders punished unresponsive providers (current punishment: freeze)

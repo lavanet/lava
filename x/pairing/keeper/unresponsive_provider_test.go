@@ -2,12 +2,13 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/x/pairing/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -16,6 +17,9 @@ func (ts *tester) checkProviderJailed(provider string, shouldFreeze bool) {
 	stakeEntry, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
 	require.True(ts.T, stakeStorageFound)
 	require.Equal(ts.T, shouldFreeze, stakeEntry.IsJailed(ts.Ctx.BlockTime().UTC().Unix()))
+	if shouldFreeze {
+		require.InDelta(ts.T, stakeEntry.JailTime, ts.BlockTime().UTC().Unix(), float64(keeper.SOFT_JAIL_TIME))
+	}
 }
 
 func (ts *tester) checkComplainerReset(provider string, epoch uint64) {
@@ -114,7 +118,7 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		largerConst = recommendedEpochNumToCollectPayment
 	}
 
-	ts.AdvanceEpochs(largerConst)
+	ts.AdvanceEpochs(largerConst, time.Nanosecond)
 
 	for i := 0; i < unresponsiveCount; i++ {
 		ts.checkProviderJailed(providers[i].Addr.String(), true)
@@ -180,7 +184,7 @@ func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 		largerConst = recommendedEpochNumToCollectPayment
 	}
 
-	ts.AdvanceEpochs(largerConst)
+	ts.AdvanceEpochs(largerConst, time.Second)
 
 	ts.checkProviderJailed(provider1, true)
 	ts.checkComplainerReset(provider1, relayEpoch)
@@ -237,12 +241,12 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 		largerConst = recommendedEpochNumToCollectPayment
 	}
 
-	ts.AdvanceEpochs(largerConst)
+	ts.AdvanceEpochs(largerConst, time.Second)
 
 	ts.checkProviderJailed(provider1, true)
 	ts.checkComplainerReset(provider1, relayEpoch)
 
-	ts.AdvanceEpochs(2)
+	ts.AdvanceEpochs(2, time.Second)
 
 	// create more relay requests for provider0 that contain complaints about provider1
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
@@ -298,14 +302,13 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		}
 		// advance enough epochs so we can check punishment due to unresponsiveness
 		// (if the epoch is too early, there's no punishment)
-		ts.AdvanceEpochs(largerConst + recommendedEpochNumToCollectPayment)
+		ts.AdvanceEpochs(largerConst+recommendedEpochNumToCollectPayment, time.Nanosecond)
 
 		// find two providers in the pairing
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 		require.NoError(t, err)
 		provider0Provider := pairing.Providers[0].Address
 		provider1Provider := pairing.Providers[1].Address
-		provider0Vault := sdk.MustAccAddressFromBech32(pairing.Providers[0].Vault)
 
 		// create unresponsive data that includes provider1 being unresponsive
 		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1Provider}}
@@ -325,7 +328,7 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 				Relays:  lavaslices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0Vault, true, true, 100)
+			ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 		}
 
 		// advance enough epochs so the unresponsive provider will be punished
@@ -333,7 +336,7 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 			largerConst = recommendedEpochNumToCollectPayment
 		}
 
-		ts.AdvanceEpochs(largerConst)
+		ts.AdvanceEpochs(largerConst, time.Nanosecond)
 
 		// test the unresponsive provider1 hasn't froze
 		ts.checkProviderJailed(provider1Provider, play.shouldBeFrozen)
