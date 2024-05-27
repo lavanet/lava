@@ -342,3 +342,89 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		ts.checkProviderJailed(provider1Provider, play.shouldBeFrozen)
 	}
 }
+
+// Test to measure the time the check for unresponsiveness every epoch start takes
+func TestJailProviderForUnresponsiveness(t *testing.T) {
+	// setup test for unresponsiveness
+	clientsCount := 1
+	providersCount := 10
+
+	ts := newTester(t)
+	ts.setupForPayments(providersCount, clientsCount, providersCount-1) // set providers-to-pair
+
+	clients := ts.Accounts(common.CONSUMER)
+
+	recommendedEpochNumToCollectPayment := ts.Keepers.Pairing.RecommendedEpochNumToCollectPayment(ts.Ctx)
+
+	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	}
+
+	// advance enough epochs so we can check punishment due to unresponsiveness
+	// (if the epoch is too early, there's no punishment)
+	ts.AdvanceEpochs(largerConst + recommendedEpochNumToCollectPayment)
+
+	// find two providers in the pairing
+	pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
+	require.NoError(t, err)
+	provider0 := pairing.Providers[0].Address
+	provider1 := pairing.Providers[1].Address
+
+	jailProvider := func() {
+		found := false
+		// make sure our provider is in the pairing
+		for !found {
+			ts.AdvanceEpoch(0)
+			pairing1, err := ts.QueryPairingVerifyPairing(ts.spec.Name, clients[0].Addr.String(), provider0, ts.BlockHeight())
+			require.NoError(t, err)
+
+			pairing2, err := ts.QueryPairingVerifyPairing(ts.spec.Name, clients[0].Addr.String(), provider1, ts.BlockHeight())
+			require.NoError(t, err)
+			found = pairing1.Valid && pairing2.Valid
+		}
+
+		// create relay requests for provider0 that contain complaints about provider1
+		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1}}
+		relayEpoch := ts.BlockHeight()
+		cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
+
+		relaySession := ts.newRelaySession(provider0, 0, cuSum, relayEpoch, 0)
+		relaySession.UnresponsiveProviders = unresponsiveProvidersData
+		sig, err := sigs.Sign(clients[0].SK, *relaySession)
+		relaySession.Sig = sig
+		require.NoError(t, err)
+		relayPaymentMessage := types.MsgRelayPayment{
+			Creator: provider0,
+			Relays:  lavaslices.Slice(relaySession),
+		}
+		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
+
+		// advance enough epochs so the unresponsive provider will be punished
+		if largerConst < recommendedEpochNumToCollectPayment {
+			largerConst = recommendedEpochNumToCollectPayment
+		}
+
+		ts.AdvanceEpochs(largerConst, 0)
+
+		ts.checkProviderJailed(provider1, true)
+		ts.checkComplainerReset(provider1, relayEpoch)
+		ts.checkProviderStaked(provider0)
+	}
+
+	// jail first time
+	jailProvider()
+
+	// advance epoch and one hour to leave jail
+	ts.AdvanceBlock(time.Hour)
+	ts.AdvanceEpoch(0)
+	ts.checkProviderJailed(provider1, false)
+
+	// jail second time
+	jailProvider()
+
+	// advance epoch and one hour to leave jail
+	ts.AdvanceBlock(time.Hour)
+	ts.AdvanceEpoch(time.Nanosecond)
+	ts.checkProviderJailed(provider1, false)
+}
