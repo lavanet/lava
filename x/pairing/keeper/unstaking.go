@@ -69,7 +69,8 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		"address":     existingEntry.GetAddress(),
 		"chainID":     existingEntry.GetChain(),
 		"geolocation": strconv.FormatInt(int64(existingEntry.GetGeolocation()), 10),
-		"moniker":     existingEntry.GetMoniker(),
+		"moniker":     existingEntry.Description.Moniker,
+		"description": existingEntry.Description.String(),
 		"stake":       existingEntry.GetStake().Amount.String(),
 	}
 	utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, unstakeDescription)
@@ -135,7 +136,8 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 				"address":     existingEntry.GetAddress(),
 				"chainID":     existingEntry.GetChain(),
 				"geolocation": strconv.FormatInt(int64(existingEntry.GetGeolocation()), 10),
-				"moniker":     existingEntry.GetMoniker(),
+				"description": existingEntry.Description.String(),
+				"moniker":     existingEntry.Description.Moniker,
 				"stake":       existingEntry.GetStake().Amount.String(),
 			}
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderUnstakeEventName, details, unstakeDescription)
