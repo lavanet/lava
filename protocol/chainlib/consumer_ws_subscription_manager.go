@@ -113,7 +113,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		if _, ok := cwsm.connectedDapps[dappKey]; ok {
 			// The websocket can be closed before the first reply is received, so we need to check if the dapp was even added to the connectedDapps map
 			cwsm.connectedDapps[dappKey].activeSubscriptions = make(map[string]struct{}) // reset connected subscriptions, so it'll be deleted completely
-			cwsm.disconnectDappWithSubscription(webSocketCtx, dappKey, hashedParams, nil)
+			cwsm.disconnectDappFromSubscription(webSocketCtx, dappKey, hashedParams, nil)
 		}
 
 		close(websocketRepliesChan)
@@ -448,7 +448,7 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 	}
 
 	// Remove the websocket from the active subscriptions, when the websocket is closed
-	cwsm.disconnectDappWithSubscription(webSocketCtx, dappKey, hashedParams, &unsubscribeRelayData{chainMessage, directiveHeaders, relayRequestData})
+	cwsm.disconnectDappFromSubscription(webSocketCtx, dappKey, hashedParams, &unsubscribeRelayData{chainMessage, directiveHeaders, relayRequestData})
 	return nil
 }
 
@@ -533,7 +533,7 @@ func (cwsm *ConsumerWSSubscriptionManager) connectDappWithSubscription(dappKey s
 	}
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) disconnectDappWithSubscription(ctx context.Context, dappKey string, hashedParams string, unsubscribeRelayData *unsubscribeRelayData) {
+func (cwsm *ConsumerWSSubscriptionManager) disconnectDappFromSubscription(ctx context.Context, dappKey string, hashedParams string, unsubscribeRelayData *unsubscribeRelayData) {
 	// Must be called under a lock
 
 	if _, ok := cwsm.connectedDapps[dappKey]; !ok {
