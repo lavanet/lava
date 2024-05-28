@@ -195,8 +195,8 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		return nil, errors.New("subscribe method is not supported through Relay")
 	}
 
-	if chainlib.IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
-		return nil, errors.New("unsubscribe relay")
+	if chainlib.IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
+		return nil, errors.New("unsubscribe_all method  is not supported through Relay")
 	}
 
 	// Try sending relay
