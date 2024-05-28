@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -27,7 +28,7 @@ type activeSubscription struct {
 	firstSetupReply              *pairingtypes.RelayReply
 	firstSetupRequest            *pairingtypes.RelayRequest
 	apiCollection                *spectypes.ApiCollection
-	connectedConsumers           map[uint64]map[string]*SafeChannelSender[*pairingtypes.RelayReply] // first key is epoch, second key is consumer address
+	connectedConsumers           map[uint64]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply] // first key is epoch, second key is consumer address
 }
 
 type ProviderNodeSubscriptionManager struct {
@@ -87,7 +88,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 
 		if _, ok := paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch]; !ok { // Add the new epoch if doesn't exist
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() consumer registered for epoch that does not exists in map, creating the new epoch map", utils.LogAttr("consumerAddr", consumerAddr))
-			paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch] = make(map[string]*SafeChannelSender[*pairingtypes.RelayReply])
+			paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch] = make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply])
 		} else if _, found := paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch][consumerAddrString]; found { // Consumer is already connected to this subscription in current epoch, dismiss
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() consumer is already connected, returning the existing subscription", utils.LogAttr("consumerAddr", consumerAddr))
 			return paramsChannelToConnectedConsumers.nodeSubscription, paramsChannelToConnectedConsumers.subscriptionID, nil
@@ -103,7 +104,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		} else {
 			// Add the new entry for the consumer
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() consumer registered for new epoch, the consumer does not exist in prev epoch", utils.LogAttr("consumerAddr", consumerAddr))
-			paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch][consumerAddrString] = NewSafeChannelSender(ctx, consumerChannel)
+			paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch][consumerAddrString] = common.NewSafeChannelSender(ctx, consumerChannel)
 		}
 
 		firstSetupReply = paramsChannelToConnectedConsumers.firstSetupReply
@@ -140,7 +141,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			// failed subscription, but not an error. (probably a node error)
 
 			// Send the first message to the consumer, so it can handle the error
-			SafeChannelSender := NewSafeChannelSender(ctx, consumerChannel)
+			SafeChannelSender := common.NewSafeChannelSender(ctx, consumerChannel)
 			SafeChannelSender.Send(reply)
 
 			return nil, "", utils.LavaFormatWarning("subscription failed, node error", nil, utils.LogAttr("GUID", ctx), utils.LogAttr("reply", reply))
@@ -162,11 +163,11 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			firstSetupReply:              reply,
 			firstSetupRequest:            request,
 			apiCollection:                chainMessage.GetApiCollection(),
-			connectedConsumers:           make(map[uint64]map[string]*SafeChannelSender[*pairingtypes.RelayReply]),
+			connectedConsumers:           make(map[uint64]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
 		}
 
-		channelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch] = make(map[string]*SafeChannelSender[*pairingtypes.RelayReply])
-		channelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch][consumerAddrString] = NewSafeChannelSender(ctx, consumerChannel)
+		channelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch] = make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply])
+		channelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch][consumerAddrString] = common.NewSafeChannelSender(ctx, consumerChannel)
 
 		pnsm.activeSubscriptions[hashedParams] = channelToConnectedConsumers
 		firstSetupReply = reply

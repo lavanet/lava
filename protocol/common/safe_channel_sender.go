@@ -1,4 +1,4 @@
-package rpcprovider
+package common
 
 import (
 	"context"
@@ -9,6 +9,7 @@ type SafeChannelSender[T any] struct {
 	ctx       context.Context
 	cancelCtx context.CancelFunc
 	ch        chan<- T
+	closed    bool
 	lock      sync.Mutex
 }
 
@@ -18,6 +19,7 @@ func NewSafeChannelSender[T any](ctx context.Context, ch chan<- T) *SafeChannelS
 		ctx:       ctx,
 		cancelCtx: cancel,
 		ch:        ch,
+		closed:    false,
 		lock:      sync.Mutex{},
 	}
 }
@@ -38,6 +40,11 @@ func (scs *SafeChannelSender[T]) Close() {
 	scs.lock.Lock()
 	defer scs.lock.Unlock()
 
+	if scs.closed {
+		return
+	}
+
 	scs.cancelCtx()
 	close(scs.ch)
+	scs.closed = true
 }
