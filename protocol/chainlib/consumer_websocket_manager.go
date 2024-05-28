@@ -176,22 +176,9 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 		}
 
 		// Subscription flow
-		reply, websocketSubMsgsChan, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData)
-
-		go func() {
-			for reply := range websocketSubMsgsChan {
-				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: reply.Data}
-			}
-		}()
-
-		if ok && refererMatch != "" && cwm.refererData != nil && err == nil {
-			go cwm.refererData.SendReferer(refererMatch, cwm.chainId, string(msg), nil, websocketConn)
-		}
-
-		go logger.AddMetricForWebSocket(metricsData, err, websocketConn)
-
+		reply, subscriptionMsgsChan, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData)
 		if err != nil {
-			logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, messageType, err, msgSeed, msg, "tendermint", time.Since(startTime))
+			logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, messageType, utils.LavaFormatError("could not start subscription", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 
 			// Handle the case when the error is a method not found error
 			if common.APINotSupportedError.Is(err) {
@@ -201,12 +188,46 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 				}
 
 				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: msgData}
+				continue
 			}
 
-			// TODO: Write error to the user
+			utils.LavaFormatWarning("StartSubscription returned an error", err,
+				utils.LogAttr("GUID", webSocketCtx),
+				utils.LogAttr("dappID", dappID),
+				utils.LogAttr("consumerIp", consumerIp),
+				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			)
 
 			continue
 		}
+
+		if subscriptionMsgsChan != nil { // if == nil, it means that we already have an active subscription running on this query
+			go func() {
+				utils.LavaFormatTrace("created go routine for new websocketSubMsgsChan",
+					utils.LogAttr("GUID", webSocketCtx),
+					utils.LogAttr("dappID", dappID),
+					utils.LogAttr("consumerIp", consumerIp),
+					utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+				)
+
+				for reply := range subscriptionMsgsChan {
+					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: reply.Data}
+				}
+
+				utils.LavaFormatTrace("subscriptionMsgsChan was closed",
+					utils.LogAttr("GUID", webSocketCtx),
+					utils.LogAttr("dappID", dappID),
+					utils.LogAttr("consumerIp", consumerIp),
+					utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+				)
+			}()
+		}
+
+		if ok && refererMatch != "" && cwm.refererData != nil {
+			go cwm.refererData.SendReferer(refererMatch, cwm.chainId, string(msg), nil, websocketConn)
+		}
+
+		go logger.AddMetricForWebSocket(metricsData, err, websocketConn)
 
 		if reply != nil {
 			websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: reply.Data}
