@@ -218,8 +218,8 @@ Every epoch start, the amount of complainers CU is compared with the amount of s
 #### Jail
 
 If a provider is down and users report it, the provider will be jailed.
-The first three instances of jailing are temporary, lasting 1 hour each, and will be automatically removed.
-After three consecutive jailings, the provider will be jailed for 24 hours and set to a 'frozen' state. To resume activity, the provider must send an 'unfreeze' transaction after the jail time has ended.
+The first 2 instances of jailing are temporary, lasting 1 hour each, and will be automatically removed.
+After 2 consecutive jailings, the provider will be jailed for 24 hours and set to a 'frozen' state. To resume activity, the provider must send an 'unfreeze' transaction after the jail time has ended.
 
 #### Static Providers
 
