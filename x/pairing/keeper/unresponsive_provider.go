@@ -251,9 +251,9 @@ func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, sta
 
 	if stakeEntry.Jails > SOFT_JAILS {
 		stakeEntry.Freeze()
-		stakeEntry.JailTime = ctx.BlockTime().UTC().Unix() + int64(HARD_JAIL_TIME)
+		stakeEntry.JailEndTime = ctx.BlockTime().UTC().Unix() + int64(HARD_JAIL_TIME)
 	} else {
-		stakeEntry.JailTime = ctx.BlockTime().UTC().Unix() + int64(SOFT_JAIL_TIME)
+		stakeEntry.JailEndTime = ctx.BlockTime().UTC().Unix() + int64(SOFT_JAIL_TIME)
 		epochduration := k.downtimeKeeper.GetParams(ctx).EpochDuration / time.Second
 		epochblocks := k.epochStorageKeeper.EpochBlocksRaw(ctx)
 		stakeEntry.StakeAppliedBlock = uint64(ctx.BlockHeight()) + uint64(SOFT_JAIL_TIME/epochduration)*epochblocks

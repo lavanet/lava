@@ -34,7 +34,7 @@ func (stakeEntry *StakeEntry) IsFrozen() bool {
 }
 
 func (stakeEntry *StakeEntry) IsJailed(time int64) bool {
-	return stakeEntry.JailTime > time
+	return stakeEntry.JailEndTime > time
 }
 
 func (stakeEntry *StakeEntry) IsAddressVaultAndNotProvider(address string) bool {

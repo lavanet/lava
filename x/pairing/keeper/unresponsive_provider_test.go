@@ -22,7 +22,7 @@ func (ts *tester) checkProviderJailed(provider string, shouldFreeze bool) {
 		if stakeEntry.Jails > keeper.SOFT_JAILS {
 			jailDelta = keeper.HARD_JAIL_TIME
 		}
-		require.InDelta(ts.T, stakeEntry.JailTime, ts.BlockTime().UTC().Unix(), float64(jailDelta))
+		require.InDelta(ts.T, stakeEntry.JailEndTime, ts.BlockTime().UTC().Unix(), float64(jailDelta))
 	}
 }
 
