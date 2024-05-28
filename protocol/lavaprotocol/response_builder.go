@@ -7,6 +7,7 @@ import (
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/sigs"
@@ -14,6 +15,40 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
+
+func CraftEmptyRPCResponseFromGenericMessage(message rpcInterfaceMessages.GenericMessage) (*rpcInterfaceMessages.RPCResponse, error) {
+	createRPCResponse := func(rawId json.RawMessage) (*rpcInterfaceMessages.RPCResponse, error) {
+		jsonRpcId, err := rpcInterfaceMessages.IdFromRawMessage(rawId)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed creating jsonrpc id", err)
+		}
+
+		jsonResponse := &rpcInterfaceMessages.RPCResponse{
+			JSONRPC: "2.0",
+			ID:      jsonRpcId,
+			Result:  nil,
+			Error:   nil,
+		}
+
+		return jsonResponse, nil
+	}
+
+	var err error
+	var rpcResponse *rpcInterfaceMessages.RPCResponse
+	if hasID, ok := message.(interface{ GetID() json.RawMessage }); ok {
+		rpcResponse, err = createRPCResponse(hasID.GetID())
+		if err != nil {
+			return nil, utils.LavaFormatError("failed creating jsonrpc id", err)
+		}
+	} else {
+		rpcResponse, err = createRPCResponse([]byte("1"))
+		if err != nil {
+			return nil, utils.LavaFormatError("failed creating jsonrpc id", err)
+		}
+	}
+
+	return rpcResponse, nil
+}
 
 func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply, signDataReliability bool) (*pairingtypes.RelayReply, error) {
 	// request is a copy of the original request, but won't modify it

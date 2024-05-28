@@ -199,8 +199,13 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		return nil, errors.New("unsubscribe_all method  is not supported through Relay")
 	}
 
-	// Try sending relay
-	reply, err := rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
+	var reply *pairingtypes.RelayReply
+	if chainlib.IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
+		reply, err = rpcps.TryRelayUnsubscribe(ctx, request, consumerAddress, chainMessage)
+	} else {
+		// Try sending relay
+		reply, err = rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
+	}
 
 	if err != nil || common.ContextOutOfTime(ctx) {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
@@ -857,6 +862,60 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 	}
 
 	return replyWrapper, nil
+}
+
+func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
+	errV := rpcps.ValidateRequest(chainMessage, request, ctx)
+	if errV != nil {
+		return nil, errV
+	}
+
+	utils.LavaFormatDebug("Provider got unsubscribe request", utils.LogAttr("GUID", ctx))
+
+	// Remove the consumer from the connected consumers list of the subscription
+	err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, true)
+	if err != nil {
+		return nil, err
+	}
+
+	rpcResponse, err := lavaprotocol.CraftEmptyRPCResponseFromGenericMessage(chainMessage.GetRPCMessage())
+	if err != nil {
+		return nil, utils.LavaFormatError("failed crafting empty rpc response", err)
+	}
+
+	dataToSend, err := json.Marshal(rpcResponse)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed marshaling json response", err)
+	}
+
+	reply := &pairingtypes.RelayReply{
+		Data: dataToSend,
+	}
+
+	dataReliabilityEnabled, _ := rpcps.chainParser.DataReliabilityParams()
+	if dataReliabilityEnabled {
+		blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
+		relayTimeout := chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
+		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := rpcps.handleRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
+		if err != nil {
+			return nil, err
+		}
+
+		err = rpcps.buildFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var ignoredMetadata []pairingtypes.Metadata
+	reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+	reply, err = lavaprotocol.SignRelayResponse(consumerAddress, *request, rpcps.privKey, reply, dataReliabilityEnabled)
+	if err != nil {
+		return nil, err
+	}
+	reply.Metadata = append(reply.Metadata, ignoredMetadata...) // appended here only after signing
+
+	return reply, nil
 }
 
 func (rpcps *RPCProviderServer) handleRelayDataReliability(
