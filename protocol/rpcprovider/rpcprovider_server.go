@@ -186,12 +186,13 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	// Init relay
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
+		utils.LavaFormatDebug("got error from init relay", utils.LogAttr("error", err))
 		return nil, rpcps.handleRelayErrorStatus(err)
 	}
 
 	// Check that this is not subscription related messages
 	if chainlib.IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
-		return nil, errors.New("subscription api is not supported through Relay")
+		return nil, errors.New("subscribe method is not supported through Relay")
 	}
 
 	if chainlib.IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
@@ -351,6 +352,7 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 
 	relaySession, consumerAddress, chainMessage, err := rpcps.initRelay(ctx, request)
 	if err != nil {
+		utils.LavaFormatDebug("got error from init relay", utils.LogAttr("error", err))
 		return rpcps.handleRelayErrorStatus(err)
 	}
 

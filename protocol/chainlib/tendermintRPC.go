@@ -364,8 +364,8 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		return fiber.ErrUpgradeRequired
 	})
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
-		utils.LavaFormatTrace("tendermintrpc websocket opened")
-		defer utils.LavaFormatTrace("tendermintrpc websocket closed")
+		utils.LavaFormatDebug("tendermintrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
+		defer utils.LavaFormatDebug("tendermintrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
 		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
 			WebsocketConn:                 websocketConn,

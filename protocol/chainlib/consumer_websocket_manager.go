@@ -63,8 +63,7 @@ func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *Consu
 }
 
 func (cwm *ConsumerWebsocketManager) ListenForMessages() {
-	utils.LavaFormatTrace("consumer websocket manager started")
-	defer utils.LavaFormatTrace("consumer websocket manager stopped")
+
 	var (
 		messageType int
 		msg         []byte
@@ -84,7 +83,11 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 	webSocketCtx, cancelWebSocketCtx := context.WithCancel(context.Background())
 	guid := utils.GenerateUniqueIdentifier()
 	webSocketCtx = utils.WithUniqueIdentifier(webSocketCtx, guid)
-	defer cancelWebSocketCtx() // In case there's a problem make sure to cancel the connection
+	utils.LavaFormatDebug("consumer websocket manager started", utils.LogAttr("GUID", webSocketCtx))
+	defer func() {
+		cancelWebSocketCtx() // In case there's a problem make sure to cancel the connection
+		utils.LavaFormatDebug("consumer websocket manager stopped", utils.LogAttr("GUID", webSocketCtx))
+	}()
 
 	go func() {
 		for msg := range websocketConnWriteChan {
@@ -109,7 +112,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 		utils.LavaFormatTrace("listening for new message from the websocket")
 
 		if messageType, msg, err = websocketConn.ReadMessage(); err != nil {
-			utils.LavaFormatDebug("error reading msg from the websocket", utils.LogAttr("err", err))
+			utils.LavaFormatTrace("error reading msg from the websocket, probably websocket was closed by the user", utils.LogAttr("err", err))
 			logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, messageType, err, msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 			break
 		}

@@ -341,8 +341,8 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	apiInterface := apil.endpoint.ApiInterface
 
 	webSocketCallback := websocket.New(func(websocketConn *websocket.Conn) {
-		utils.LavaFormatTrace("jsonrpc websocket opened")
-		defer utils.LavaFormatTrace("jsonrpc websocket closed")
+		utils.LavaFormatDebug("jsonrpc websocket opened", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
+		defer utils.LavaFormatDebug("jsonrpc websocket closed", utils.LogAttr("consumerIp", websocketConn.LocalAddr().String()))
 
 		consumerWebsocketManager := NewConsumerWebsocketManager(ConsumerWebsocketManagerOptions{
 			WebsocketConn:                 websocketConn,

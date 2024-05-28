@@ -45,11 +45,11 @@ func VerifyRelayReply(ctx context.Context, reply *pairingtypes.RelayReply, relay
 	relayExchange := pairingtypes.NewRelayExchange(*relayRequest, *reply)
 	serverKey, err := sigs.RecoverPubKey(relayExchange)
 	if err != nil {
-		return err
+		return utils.LavaFormatWarning("Relay reply verification failed, RecoverPubKey returned error", err, utils.LogAttr("GUID", ctx))
 	}
 	serverAddr, err := sdk.AccAddressFromHexUnsafe(serverKey.Address().String())
 	if err != nil {
-		return err
+		return utils.LavaFormatWarning("Relay reply verification failed, AccAddressFromHexUnsafe returned error", err, utils.LogAttr("GUID", ctx))
 	}
 	if serverAddr.String() != addr {
 		return utils.LavaFormatError("reply server address mismatch ", ProviderFinzalizationDataError, utils.LogAttr("GUID", ctx), utils.Attribute{Key: "parsed Address", Value: serverAddr.String()}, utils.Attribute{Key: "expected address", Value: addr}, utils.Attribute{Key: "requestedBlock", Value: relayRequest.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: reply.GetLatestBlock()})
@@ -62,12 +62,12 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	relayFinalization := pairingtypes.NewRelayFinalization(pairingtypes.NewRelayExchange(*relayRequest, *reply), consumerAcc)
 	serverKey, err := sigs.RecoverPubKey(relayFinalization)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, utils.LavaFormatWarning("Finalization data verification failed, RecoverPubKey returned error", err)
 	}
 
 	serverAddr, err := sdk.AccAddressFromHexUnsafe(serverKey.Address().String())
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, utils.LavaFormatWarning("Finalization data verification failed, AccAddressFromHexUnsafe returned error", err)
 	}
 
 	if serverAddr.String() != providerAddr {

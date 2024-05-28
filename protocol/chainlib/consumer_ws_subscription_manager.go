@@ -322,6 +322,11 @@ func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedP
 	cwsm.lock.RLock()
 	defer cwsm.lock.RUnlock()
 
+	utils.LavaFormatTrace("handling subscription message",
+		utils.LogAttr("subscriptionMsg", subMsg.Data),
+		utils.LogAttr("hashedParams", hashedParams),
+	)
+
 	activeSubscription := cwsm.activeSubscriptions[hashedParams]
 
 	filteredHeaders, _, ignoredHeaders := cwsm.chainParser.HandleHeaders(subMsg.Metadata, activeSubscription.subscriptionOrigRequestChainMessage.GetApiCollection(), spectypes.Header_pass_reply)
@@ -329,7 +334,8 @@ func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedP
 	err := lavaprotocol.VerifyRelayReply(context.Background(), subMsg, activeSubscription.subscriptionOrigRequest, providerAddr)
 	if err != nil {
 		utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
-			utils.LogAttr("subMsg", subMsg),
+			utils.LogAttr("subscriptionMsg", subMsg.Data),
+			utils.LogAttr("hashedParams", hashedParams),
 			utils.LogAttr("originalRequest", activeSubscription.subscriptionOrigRequest),
 		)
 		return
@@ -444,6 +450,12 @@ func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams,
 
 func (cwsm *ConsumerWSSubscriptionManager) sendUnsubscribeMessage(ctx context.Context, dappID, consumerIp string, chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, metricsData *metrics.RelayMetrics) error {
 	// Send the crafted unsubscribe relay
+	utils.LavaFormatTrace("sending unsubscribe relay",
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("dappID", dappID),
+		utils.LogAttr("consumerIp", consumerIp),
+	)
+
 	_, err := cwsm.relaySender.SendParsedRelay(ctx, dappID, consumerIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
 	if err != nil {
 		return utils.LavaFormatError("could not send unsubscribe relay", err)
