@@ -123,7 +123,6 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 		if _, ok := cwsm.connectedDapps[dappKey]; ok {
 			// The websocket can be closed before the first reply is received, so we need to check if the dapp was even added to the connectedDapps map
-			cwsm.connectedDapps[dappKey].activeSubscriptions = make(map[string]struct{}) // reset connected subscriptions, so it'll be deleted completely
 			cwsm.verifyAndDisconnectDappFromSubscription(webSocketCtx, dappKey, hashedParams, nil)
 		}
 
