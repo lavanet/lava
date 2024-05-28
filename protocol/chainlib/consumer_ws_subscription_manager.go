@@ -33,8 +33,19 @@ type activeSubscriptionHolder struct {
 }
 
 type connectedDapp struct {
-	activeSubscriptions map[string]struct{} // key is hashed params
-	webSocketChannel    chan<- *pairingtypes.RelayReply
+	activeSubscriptions     map[string]struct{} // key is hashed params
+	webSocketCtx            context.Context
+	webSocketRepliesChannel chan<- *pairingtypes.RelayReply
+}
+
+func (cd *connectedDapp) writeToWebSocket(reply *pairingtypes.RelayReply) {
+	select {
+	case <-cd.webSocketCtx.Done():
+		return
+	default:
+		cd.webSocketRepliesChannel <- reply
+		return
+	}
 }
 
 type ConsumerWSSubscriptionManager struct {
@@ -130,7 +141,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 
-		cwsm.connectDappWithSubscription(dappKey, websocketRepliesChan, hashedParams)
+		cwsm.connectDappWithSubscription(webSocketCtx, dappKey, websocketRepliesChan, hashedParams)
 
 		return activeSubscription.firstSubscriptionReply, websocketRepliesChan, nil
 	}
@@ -202,7 +213,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		connectedDapps:                      map[string]struct{}{dappKey: {}},
 	}
 
-	cwsm.connectDappWithSubscription(dappKey, websocketRepliesChan, hashedParams)
+	cwsm.connectDappWithSubscription(webSocketCtx, dappKey, websocketRepliesChan, hashedParams)
 
 	// Need to be run once for subscription
 	go cwsm.listenForSubscriptionMessages(webSocketCtx, dappID, consumerIp, replyServer, hashedParams, providerAddr, metricsData, closeSubscriptionChan)
@@ -354,7 +365,7 @@ func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedP
 			continue
 		}
 
-		cwsm.connectedDapps[connectedDappKey].webSocketChannel <- subMsg
+		cwsm.connectedDapps[connectedDappKey].writeToWebSocket(subMsg)
 	}
 }
 
@@ -464,14 +475,15 @@ func (cwsm *ConsumerWSSubscriptionManager) sendUnsubscribeMessage(ctx context.Co
 	return nil
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) connectDappWithSubscription(dappKey string, webSocketChan chan<- *pairingtypes.RelayReply, hashedParams string) {
+func (cwsm *ConsumerWSSubscriptionManager) connectDappWithSubscription(webSocketCtx context.Context, dappKey string, webSocketChan chan<- *pairingtypes.RelayReply, hashedParams string) {
 	// Must be called under a lock
 
 	cwsm.activeSubscriptions[hashedParams].connectedDapps[dappKey] = struct{}{}
 	if _, ok := cwsm.connectedDapps[dappKey]; !ok {
 		cwsm.connectedDapps[dappKey] = &connectedDapp{
-			activeSubscriptions: map[string]struct{}{hashedParams: {}},
-			webSocketChannel:    webSocketChan,
+			activeSubscriptions:     map[string]struct{}{hashedParams: {}},
+			webSocketRepliesChannel: webSocketChan,
+			webSocketCtx:            webSocketCtx,
 		}
 	} else {
 		cwsm.connectedDapps[dappKey].activeSubscriptions[hashedParams] = struct{}{}
@@ -538,7 +550,7 @@ func (cwsm *ConsumerWSSubscriptionManager) verifyAndDisconnectDappFromSubscripti
 			return utils.LavaFormatError("could not marshal error response", err)
 		}
 
-		cwsm.connectedDapps[dappKey].webSocketChannel <- &pairingtypes.RelayReply{Data: jsonError}
+		cwsm.connectedDapps[dappKey].writeToWebSocket(&pairingtypes.RelayReply{Data: jsonError})
 		return nil
 	}
 
