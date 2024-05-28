@@ -6,5 +6,5 @@ import (
 
 var (
 	NotConnectedError   = sdkerrors.New("Not Connected Error", 700, "No Connection To grpc server")
-	NotInitialisedError = sdkerrors.New("Not Initialised Error", 701, "to use cache run initCache")
+	NotInitializedError = sdkerrors.New("Not Initialised Error", 701, "to use cache run initCache")
 )

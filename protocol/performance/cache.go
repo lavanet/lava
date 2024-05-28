@@ -40,7 +40,7 @@ func InitCache(ctx context.Context, addr string) (*Cache, error) {
 func (cache *Cache) GetEntry(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (reply *pairingtypes.CacheRelayReply, err error) {
 	if cache == nil {
 		// TODO: try to connect again once in a while
-		return nil, NotInitialisedError
+		return nil, NotInitializedError
 	}
 	if cache.client == nil {
 		return nil, NotConnectedError.Wrapf("No client connected to address: %s", cache.address)
@@ -56,7 +56,7 @@ func (cache *Cache) CacheActive() bool {
 func (cache *Cache) SetEntry(ctx context.Context, cacheSet *pairingtypes.RelayCacheSet) error {
 	if cache == nil {
 		// TODO: try to connect again once in a while
-		return NotInitialisedError
+		return NotInitializedError
 	}
 	if cache.client == nil {
 		return NotConnectedError.Wrapf("No client connected to address: %s", cache.address)
