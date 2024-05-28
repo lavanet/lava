@@ -118,6 +118,10 @@ func (cp JsonrpcMessage) GetResult() json.RawMessage {
 	return cp.Result
 }
 
+func (cp JsonrpcMessage) GetID() json.RawMessage {
+	return cp.ID
+}
+
 func (cp JsonrpcMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
