@@ -421,7 +421,8 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 }
 
 func (pnsm *ProviderNodeSubscriptionManager) closeNodeSubscription(hashedParams string) error {
-	// Must be called under lock
+	pnsm.lock.Lock()
+	defer pnsm.lock.Unlock()
 
 	if _, ok := pnsm.activeSubscriptions[hashedParams]; !ok {
 		return utils.LavaFormatError("closeNodeSubscription called with hashedParams that does not exist", nil, utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
