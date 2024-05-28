@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/websocket/v2"
+	formatter "github.com/lavanet/lava/ecosystem/cache/format"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
@@ -176,6 +177,9 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 		}
 
 		// Subscription flow
+		inputFormatter, outputFormatter := formatter.FormatterForRelayRequestAndResponse(relayRequestData.ApiInterface) // we use this to preserve the original jsonrpc id
+		inputFormatter(relayRequestData.Data)                                                                           // set the extracted jsonrpc id
+
 		reply, subscriptionMsgsChan, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData)
 		if err != nil {
 			logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, messageType, utils.LavaFormatError("could not start subscription", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
@@ -187,7 +191,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 					continue
 				}
 
-				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: msgData}
+				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: outputFormatter(msgData)}
 				continue
 			}
 
@@ -211,7 +215,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 				)
 
 				for reply := range subscriptionMsgsChan {
-					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: reply.Data}
+					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: outputFormatter(reply.Data)}
 				}
 
 				utils.LavaFormatTrace("subscriptionMsgsChan was closed",
@@ -230,6 +234,8 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 		go logger.AddMetricForWebSocket(metricsData, err, websocketConn)
 
 		if reply != nil {
+			reply.Data = outputFormatter(reply.Data) // use that id for the reply
+
 			websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: reply.Data}
 
 			logger.LogRequestAndResponse("jsonrpc ws msg", false, "ws", websocketConn.LocalAddr().String(), string(msg), string(reply.Data), msgSeed, time.Since(startTime), nil)
