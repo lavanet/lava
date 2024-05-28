@@ -424,6 +424,8 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
 	require.Nil(t, err)
 
+	ts.checkProviderJailed(provider1, true)
+
 	// advance epoch and one hour to leave jail
 	ts.AdvanceBlock(time.Hour)
 	ts.AdvanceEpoch(0)
@@ -433,6 +435,8 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 	jailProvider()
 	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
 	require.Nil(t, err)
+
+	ts.checkProviderJailed(provider1, true)
 
 	// advance epoch and one hour to leave jail
 	ts.AdvanceBlock(time.Hour)
@@ -458,8 +462,6 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 	ts.AdvanceEpoch(0)
 	ts.checkProviderJailed(provider1, false)
 
-	// advance more 24H
-	ts.AdvanceBlock(24 * time.Hour)
 	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
 	require.Nil(t, err)
 	ts.AdvanceEpochs(largerConst + recommendedEpochNumToCollectPayment)
@@ -468,6 +470,8 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 	jailProvider()
 	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
 	require.Nil(t, err)
+
+	ts.checkProviderJailed(provider1, true)
 
 	// advance epoch and one hour to leave jail
 	ts.AdvanceBlock(time.Hour)

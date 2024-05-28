@@ -148,7 +148,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 		if len(epochs) != 0 && existingProviders[chainID] > minProviders {
 			entry, ok := stakeEntries[key]
 			if !ok {
-				utils.LavaFormatWarning("Freeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "providerAddress", Value: provider}}...)
+				utils.LavaFormatError("Jail_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "providerAddress", Value: provider}}...)
 				continue
 			}
 			err = k.punishUnresponsiveProvider(ctx, epochs, entry, complaintCU, servicedCU, complainedProviders[key])
