@@ -26,24 +26,22 @@ func TestGenesis(t *testing.T) {
 			},
 		},
 		IprpcRewardsCurrent: 2,
-		PendingIprpcFunds: []types.PendingIprpcFund{
+		PendingIbcIprpcFunds: []types.PendingIbcIprpcFund{
 			{
-				Index:       1,
-				Creator:     "1",
-				Spec:        "s1",
-				Month:       1,
-				Funds:       sdk.NewCoins(sdk.NewCoin("denom", math.OneInt())),
-				Expiry:      1,
-				CostCovered: sdk.NewCoin("denom", math.OneInt()),
+				Index:    1,
+				Creator:  "1",
+				Spec:     "s1",
+				Duration: 1,
+				Fund:     sdk.NewCoin("denom", math.OneInt()),
+				Expiry:   1,
 			},
 			{
-				Index:       2,
-				Creator:     "2",
-				Spec:        "s2",
-				Month:       2,
-				Funds:       sdk.NewCoins(sdk.NewCoin("denom", math.OneInt().AddRaw(1))),
-				Expiry:      2,
-				CostCovered: sdk.NewCoin("denom", math.OneInt().AddRaw(1)),
+				Index:    2,
+				Creator:  "2",
+				Spec:     "s2",
+				Duration: 2,
+				Fund:     sdk.NewCoin("denom", math.OneInt().AddRaw(1)),
+				Expiry:   2,
 			},
 		},
 		// this line is used by starport scaffolding # genesis/test/state
@@ -61,6 +59,6 @@ func TestGenesis(t *testing.T) {
 
 	require.ElementsMatch(t, genesisState.IprpcRewards, got.IprpcRewards)
 	require.Equal(t, genesisState.IprpcRewardsCurrent, got.IprpcRewardsCurrent)
-	require.ElementsMatch(t, genesisState.PendingIprpcFunds, got.PendingIprpcFunds)
+	require.ElementsMatch(t, genesisState.PendingIbcIprpcFunds, got.PendingIbcIprpcFunds)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

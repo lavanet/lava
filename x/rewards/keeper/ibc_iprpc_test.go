@@ -3,7 +3,16 @@ package keeper_test
 import (
 	"testing"
 
+	"strconv"
+	"time"
+
 	sdkerrors "cosmossdk.io/errors"
+
+	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	keepertest "github.com/lavanet/lava/testutil/keeper"
+	"github.com/lavanet/lava/testutil/nullify"
+	"github.com/lavanet/lava/x/rewards/keeper"
 	"github.com/lavanet/lava/x/rewards/types"
 	"github.com/stretchr/testify/require"
 )
@@ -21,46 +30,46 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 		"blabla",
 		`{
 			"client": "Bruce",
-		    "duration": 3	
+		    "duration": "3"	
 		}`,
 		`{
 			"iprpc": {
 			  "creator": "my-moniker",
 			  "spec": "mockspec",
-			  "duration": 3
+			  "duration": "3"
 			}
 		}`,
 		`{
 			"iprpc": {
 			  "creator": "",
 			  "spec": "mockspec",
-			  "duration": 3
+			  "duration": "3"
 			}
 		}`,
 		`{
 			"iprpc": {
 			  "spec": "mockspec",
-			  "duration": 3
+			  "duration": "3"
 			}
 		}`,
 		`{
 			"iprpc": {
 			  "creator": "my-moniker",
 			  "spec": "other-mockspec",
-			  "duration": 3
+			  "duration": "3"
 			}
 		}`,
 		`{
 			"iprpc": {
 			  "creator": "my-moniker",
-			  "duration": 3
+			  "duration": "3"
 			}
 		}`,
 		`{
 			"iprpc": {
 			  "creator": "my-moniker",
 			  "spec": "mockspec",
-			  "duration": -3
+			  "duration": "-3"
 			}
 		}`,
 		`{
@@ -160,4 +169,114 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 			require.True(t, memo.IsEqual(tt.expectedMemo))
 		})
 	}
+}
+
+// Prevent strconv unused error
+var _ = strconv.IntSize
+
+func createNPendingIbcIprpcFunds(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PendingIbcIprpcFund {
+	items := make([]types.PendingIbcIprpcFund, n)
+	for i := range items {
+		items[i] = types.PendingIbcIprpcFund{
+			Index:    uint64(i),
+			Creator:  "dummy",
+			Spec:     "mock",
+			Duration: uint64(i),
+			Expiry:   uint64(ctx.BlockTime().UTC().Unix()) + uint64(i),
+		}
+		keeper.SetPendingIbcIprpcFund(ctx, items[i])
+	}
+	return items
+}
+
+func TestPendingIbcIprpcFundsGet(t *testing.T) {
+	keeper, ctx := keepertest.RewardsKeeper(t)
+	items := createNPendingIbcIprpcFunds(keeper, ctx, 10)
+	for _, item := range items {
+		res, found := keeper.GetPendingIbcIprpcFund(ctx, item.Index)
+		require.True(t, found)
+		require.True(t, res.IsEqual(item))
+	}
+}
+
+func TestPendingIbcIprpcFundsRemove(t *testing.T) {
+	keeper, ctx := keepertest.RewardsKeeper(t)
+	items := createNPendingIbcIprpcFunds(keeper, ctx, 10)
+	for _, item := range items {
+		keeper.RemovePendingIbcIprpcFund(ctx, item.Index)
+		_, found := keeper.GetPendingIbcIprpcFund(ctx, item.Index)
+		require.False(t, found)
+	}
+}
+
+func TestPendingIbcIprpcFundsGetAll(t *testing.T) {
+	keeper, ctx := keepertest.RewardsKeeper(t)
+	items := createNPendingIbcIprpcFunds(keeper, ctx, 10)
+	require.ElementsMatch(t,
+		nullify.Fill(items),
+		nullify.Fill(keeper.GetAllPendingIbcIprpcFund(ctx)),
+	)
+}
+
+func TestPendingIbcIprpcFundsRemoveExpired(t *testing.T) {
+	keeper, ctx := keepertest.RewardsKeeper(t)
+	items := createNPendingIbcIprpcFunds(keeper, ctx, 10)
+	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(3 * time.Second))
+	keeper.RemoveExpiredPendingIbcIprpcFund(ctx)
+	for _, item := range items {
+		_, found := keeper.GetPendingIbcIprpcFund(ctx, item.Index)
+		if item.Index <= 3 {
+			require.False(t, found)
+		} else {
+			require.True(t, found)
+		}
+	}
+}
+
+func TestPendingIbcIprpcFundGetLatest(t *testing.T) {
+	keeper, ctx := keepertest.RewardsKeeper(t)
+	latest := keeper.GetLatestPendingIbcIprpcFund(ctx)
+	require.True(t, latest.IsEmpty())
+	items := createNPendingIbcIprpcFunds(keeper, ctx, 10)
+	latest = keeper.GetLatestPendingIbcIprpcFund(ctx)
+	require.True(t, latest.IsEqual(items[len(items)-1]))
+}
+
+func TestPendingIbcIprpcFundNew(t *testing.T) {
+	ts := newTester(t, false)
+	keeper, ctx := ts.Keepers.Rewards, ts.Ctx
+	spec := ts.Spec("mock")
+	validFunds := sdk.NewCoin("denom", math.OneInt())
+
+	template := []struct {
+		name    string
+		spec    string
+		funds   sdk.Coin
+		success bool
+	}{
+		{"valid", spec.Index, validFunds, true},
+		{"invalid fund", spec.Index, sdk.NewCoin("", math.NewInt(-1)), false},
+		{"non-existent spec", "eth", validFunds, false},
+	}
+
+	for _, tt := range template {
+		t.Run(tt.name, func(t *testing.T) {
+			err := keeper.NewPendingIbcIprpcFund(ctx, "creator", tt.spec, 1, tt.funds)
+			if tt.success {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
+
+func TestPendingIbcIprpcFundIsMinCostCovered(t *testing.T) {
+	ts := newTester(t, true)
+	ts.setupForIprpcTests(false)
+	keeper, ctx := ts.Keepers.Rewards, ts.Ctx
+	latest := keeper.GetLatestPendingIbcIprpcFund(ctx)
+	minCost := keeper.CalcPendingIbcIprpcFundMinCost(ctx, latest)
+	expectedMinCost := sdk.NewCoin(ts.TokenDenom(), keeper.GetMinIprpcCost(ctx).Amount.MulRaw(int64(latest.Duration)))
+	require.True(t, minCost.IsEqual(expectedMinCost))
 }
