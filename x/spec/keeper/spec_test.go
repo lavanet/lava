@@ -1092,5 +1092,4 @@ func TestSpecParsing(t *testing.T) {
 		require.NoError(t, err)
 		ts.setSpec(spec)
 	}
-
 }
