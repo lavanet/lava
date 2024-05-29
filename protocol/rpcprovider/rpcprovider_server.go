@@ -361,7 +361,8 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 		return rpcps.handleRelayErrorStatus(err)
 	}
 
-	subscribed, err := rpcps.TryRelaySubscribe(ctx, uint64(request.RelaySession.Epoch), request, srv, chainMessage, consumerAddress, relaySession, request.RelaySession.RelayNum) // this function does not return until subscription ends
+	// TryRelaySubscribe is blocking until subscription ends
+	subscribed, err := rpcps.TryRelaySubscribe(ctx, uint64(request.RelaySession.Epoch), request, srv, chainMessage, consumerAddress, relaySession, request.RelaySession.RelayNum)
 	if subscribed {
 		// meaning we created a subscription and used it for at least a message
 		pairingEpoch := relaySession.PairingEpoch
@@ -401,12 +402,16 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// This wait group is to make this function blocking until context is closed
+	// The reasons that we have a wait group here, and we pass it to the go routine is because we want to start the channel read before calling AddConsumer,
+	// because it might stuck on writing to the channel if we don't do that, which will create a deadlock.
+	// But, we still want to wait the go routine to finish before we return (because the gRPC stream will close on return), so we use a wait group to wait for the go routine to finish.
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	processSubscribeMessages := func() {
+	// Process subscription messages
+	go func() {
 		defer wg.Done()
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -459,9 +464,8 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 				)
 			}
 		}
-	}
+	}()
 
-	go processSubscribeMessages()
 	_, subscriptionId, err := rpcps.providerNodeSubscriptionManager.AddConsumer(ctx, request, chainMessage, consumerAddress, subscribeRepliesChan)
 	if err != nil {
 		// subscription failed due to node error mark session as done and return
