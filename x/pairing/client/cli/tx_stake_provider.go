@@ -115,6 +115,28 @@ func CmdStakeProvider() *cobra.Command {
 
 			validator := args[4]
 
+			identity, err := cmd.Flags().GetString(types.FlagIdentity)
+			if err != nil {
+				return err
+			}
+
+			website, err := cmd.Flags().GetString(types.FlagWebsite)
+			if err != nil {
+				return err
+			}
+
+			securityContact, err := cmd.Flags().GetString(types.FlagSecurityContact)
+			if err != nil {
+				return err
+			}
+
+			descriptionDetails, err := cmd.Flags().GetString(types.FlagDescriptionDetails)
+			if err != nil {
+				return err
+			}
+
+			description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
+
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				validator,
@@ -122,10 +144,10 @@ func CmdStakeProvider() *cobra.Command {
 				argAmount,
 				argEndpoints,
 				argGeolocation,
-				moniker,
 				delegationLimit,
 				commission,
 				provider,
+				description,
 			)
 
 			if err := msg.ValidateBasic(); err != nil {
@@ -143,6 +165,10 @@ func CmdStakeProvider() *cobra.Command {
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational address (address used to operate the provider process, default is vault address)")
+	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
+	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
+	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
+	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
 	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the provider use the vault address' funds for gas fees")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
@@ -222,33 +248,54 @@ func CmdBulkStakeProvider() *cobra.Command {
 					return nil, err
 				}
 
-				provider := clientCtx.GetFromAddress().String()
-				if providerFromFlag != "" {
-					provider, err = utils.ParseCLIAddress(clientCtx, providerFromFlag)
-					if err != nil {
-						return nil, err
-					}
-				}
-
-				grantProviderGasFeesAuthFlagUsed, err := cmd.Flags().GetBool(types.FlagGrantFeeAuth)
+				identity, err := cmd.Flags().GetString(types.FlagIdentity)
 				if err != nil {
 					return nil, err
 				}
-				var feeGrantMsg *feegrant.MsgGrantAllowance
-				if grantProviderGasFeesAuthFlagUsed {
-					feeGrantMsg, err = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
-					if err != nil {
-						return nil, err
-					}
+
+				website, err := cmd.Flags().GetString(types.FlagWebsite)
+				if err != nil {
+					return nil, err
 				}
 
-				if feeGrantMsg != nil {
-					msgs = append(msgs, feeGrantMsg)
+				securityContact, err := cmd.Flags().GetString(types.FlagSecurityContact)
+				if err != nil {
+					return nil, err
 				}
+
+				descriptionDetails, err := cmd.Flags().GetString(types.FlagDescriptionDetails)
+				if err != nil {
+					return nil, err
+				}
+
+				description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
 
 				for _, chainID := range chainIDs {
 					if chainID == "" {
 						continue
+					}
+					provider := clientCtx.GetFromAddress().String()
+					if providerFromFlag != "" {
+						provider, err = utils.ParseCLIAddress(clientCtx, providerFromFlag)
+						if err != nil {
+							return nil, err
+						}
+					}
+
+					grantProviderGasFeesAuthFlagUsed, err := cmd.Flags().GetBool(types.FlagGrantFeeAuth)
+					if err != nil {
+						return nil, err
+					}
+					var feeGrantMsg *feegrant.MsgGrantAllowance
+					if grantProviderGasFeesAuthFlagUsed {
+						feeGrantMsg, err = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
+						if err != nil {
+							return nil, err
+						}
+					}
+
+					if feeGrantMsg != nil {
+						msgs = append(msgs, feeGrantMsg)
 					}
 
 					msg := types.NewMsgStakeProvider(
@@ -258,10 +305,10 @@ func CmdBulkStakeProvider() *cobra.Command {
 						argAmount,
 						allEndpoints,
 						argGeolocation,
-						moniker,
 						delegationLimit,
 						commission,
 						provider,
+						description,
 					)
 
 					if msg.DelegateLimit.Denom != commontypes.TokenDenom {
@@ -293,7 +340,11 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
-	cmd.Flags().String(types.FlagProvider, "", "The provider's operational address (addresses that are used to operate the provider process. default is provider address)")
+	cmd.Flags().String(types.FlagProvider, "", "The provider's operational addresses (addresses that are used to operate the provider process. default is vault address)")
+	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
+	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
+	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
+	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
 	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the provider use the vault address' funds for gas fees")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
