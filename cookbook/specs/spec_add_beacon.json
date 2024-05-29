@@ -453,10 +453,10 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -471,10 +471,10 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -489,10 +489,10 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -507,10 +507,10 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -525,10 +525,10 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
-                                    "stateful": 0
+                                    "stateful": 1
                                 },
                                 "extra_compute_units": 0
                             },
@@ -723,7 +723,7 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -741,7 +741,7 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -777,7 +777,7 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -795,7 +795,7 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -813,7 +813,7 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
@@ -831,7 +831,7 @@
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
-                                    "deterministic": true,
+                                    "deterministic": false,
                                     "local": false,
                                     "subscription": false,
                                     "stateful": 0
