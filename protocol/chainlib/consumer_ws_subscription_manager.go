@@ -136,7 +136,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 			return activeSubscription.firstSubscriptionReply, nil, nil
 		}
 
-		cwsm.connectDappWithSubscription(webSocketCtx, dappKey, websocketRepliesSafeChannelSender, hashedParams)
+		cwsm.connectDappWithSubscription(dappKey, websocketRepliesSafeChannelSender, hashedParams)
 
 		return activeSubscription.firstSubscriptionReply, websocketRepliesChan, nil
 	}
@@ -151,7 +151,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		return nil, nil, utils.LavaFormatError("could not send subscription relay", err)
 	}
 
-	utils.LavaFormatTrace("got relay result from SendRelay",
+	utils.LavaFormatTrace("got relay result from SendParsedRelay",
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		utils.LogAttr("relayResult", relayResult),
@@ -208,7 +208,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		connectedDapps:                      map[string]struct{}{dappKey: {}},
 	}
 
-	cwsm.connectDappWithSubscription(webSocketCtx, dappKey, websocketRepliesSafeChannelSender, hashedParams)
+	cwsm.connectDappWithSubscription(dappKey, websocketRepliesSafeChannelSender, hashedParams)
 
 	// Need to be run once for subscription
 	go cwsm.listenForSubscriptionMessages(webSocketCtx, dappID, consumerIp, replyServer, hashedParams, providerAddr, metricsData, closeSubscriptionChan)
@@ -478,7 +478,7 @@ func (cwsm *ConsumerWSSubscriptionManager) sendUnsubscribeMessage(ctx context.Co
 	return nil
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) connectDappWithSubscription(webSocketCtx context.Context, dappKey string, webSocketChan *common.SafeChannelSender[*pairingtypes.RelayReply], hashedParams string) {
+func (cwsm *ConsumerWSSubscriptionManager) connectDappWithSubscription(dappKey string, webSocketChan *common.SafeChannelSender[*pairingtypes.RelayReply], hashedParams string) {
 	// Must be called under a lock
 
 	cwsm.activeSubscriptions[hashedParams].connectedDapps[dappKey] = struct{}{}
