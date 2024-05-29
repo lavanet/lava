@@ -114,14 +114,20 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 
 		if messageType, msg, err = websocketConn.ReadMessage(); err != nil {
 			utils.LavaFormatTrace("error reading msg from the websocket, probably websocket was closed by the user", utils.LogAttr("err", err))
-			logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, messageType, err, msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), err, msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+			if formatterMsg != nil {
+				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
+			}
 			break
 		}
 
 		dappID, ok := websocketConn.Locals("dapp-id").(string)
 		if !ok {
 			// Log and remove the analyze
-			logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, messageType, nil, msgSeed, []byte("Unable to extract dappID"), cwm.apiInterface, time.Since(startTime))
+			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), nil, msgSeed, []byte("Unable to extract dappID"), cwm.apiInterface, time.Since(startTime))
+			if formatterMsg != nil {
+				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
+			}
 		}
 
 		msgSeed = strconv.FormatUint(guid, 10)
@@ -144,7 +150,10 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 
 		chainMessage, directiveHeaders, relayRequestData, err := cwm.relaySender.ParseRelay(webSocketCtx, "", string(msg), cwm.connectionType, dappID, consumerIp, metricsData, nil)
 		if err != nil {
-			logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, messageType, utils.LavaFormatError("could not parse message", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not parse message", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+			if formatterMsg != nil {
+				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
+			}
 			continue
 		}
 
@@ -168,7 +177,10 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 			// One shot relay
 			relayResult, err := cwm.relaySender.SendParsedRelay(webSocketCtx, dappID, consumerIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
 			if err != nil {
-				logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, messageType, utils.LavaFormatError("could not send parsed relay", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+				formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not send parsed relay", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+				if formatterMsg != nil {
+					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
+				}
 			}
 
 			// No need to verify signature since this is already happening inside the SendParsedRelay flow
@@ -182,7 +194,10 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 
 		reply, subscriptionMsgsChan, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData)
 		if err != nil {
-			logger.AnalyzeWebSocketErrorAndWriteMessage(websocketConn, messageType, utils.LavaFormatError("could not start subscription", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not start subscription", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+			if formatterMsg != nil {
+				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg} // No need to use outputFormatter here since we are sending an error
+			}
 
 			// Handle the case when the error is a method not found error
 			if common.APINotSupportedError.Is(err) {
