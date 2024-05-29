@@ -2,6 +2,7 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 const (
@@ -28,6 +29,10 @@ type IprpcMemo struct {
 
 func (im IprpcMemo) IsEqual(other IprpcMemo) bool {
 	return im.Creator == other.Creator && im.Duration == other.Duration && im.Spec == other.Spec
+}
+
+func IbcIprpcMemoReceiverAddress() string {
+	return authtypes.NewModuleAddress("iprpc").String()
 }
 
 func (pif PendingIprpcFund) IsEqual(other PendingIprpcFund) bool {

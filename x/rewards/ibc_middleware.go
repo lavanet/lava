@@ -101,8 +101,8 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
-	// change the ibc-transfer packet receiver address to be the rewards module address and empty the memo
-	data.Receiver = im.keeper.GetModuleAddress()
+	// change the ibc-transfer packet receiver address to be a temp address and empty the memo
+	data.Receiver = types.IbcIprpcMemoReceiverAddress()
 	data.Memo = ""
 	marshelledData, err := transfertypes.ModuleCdc.MarshalJSON(&data)
 	if err != nil {
