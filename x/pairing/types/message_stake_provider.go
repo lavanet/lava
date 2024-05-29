@@ -4,6 +4,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -11,7 +12,7 @@ const TypeMsgStakeProvider = "stake_provider"
 
 var _ sdk.Msg = &MsgStakeProvider{}
 
-func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegateLimit sdk.Coin, delegateCommission uint64, provider string) *MsgStakeProvider {
+func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, delegateLimit sdk.Coin, delegateCommission uint64, provider string, description stakingtypes.Description) *MsgStakeProvider {
 	return &MsgStakeProvider{
 		Creator:            creator,
 		Validator:          validator,
@@ -19,10 +20,10 @@ func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, en
 		Amount:             amount,
 		Endpoints:          endpoints,
 		Geolocation:        geolocation,
-		Moniker:            moniker,
 		DelegateLimit:      delegateLimit,
 		DelegateCommission: delegateCommission,
 		Address:            provider,
+		Description:        description,
 	}
 }
 
@@ -60,8 +61,8 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid provider address (%s)", err)
 	}
 
-	if len(msg.Moniker) > MAX_LEN_MONIKER {
-		return sdkerrors.Wrapf(MonikerTooLongError, "invalid moniker (%s)", msg.Moniker)
+	if _, err := msg.Description.EnsureLength(); err != nil {
+		return sdkerrors.Wrapf(InvalidDescriptionError, "error: %s", err.Error())
 	}
 
 	if msg.DelegateCommission > 100 {
