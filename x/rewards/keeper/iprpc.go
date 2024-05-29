@@ -25,6 +25,13 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 			utils.LogAttr("duration", strconv.FormatUint(duration, 10)),
 			utils.LogAttr("fund_ulava_amount", fund.AmountOf(k.stakingKeeper.BondDenom(ctx))),
 		)
+	} else if fund.IsEqual(sdk.NewCoins(minIprpcFundCost)) {
+		return utils.LavaFormatWarning("funds are equal to min iprpc cost, no funds left to send to iprpc pool", types.ErrFundIprpc,
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("spec", spec),
+			utils.LogAttr("funds", fund.String()),
+			utils.LogAttr("min_iprpc_cost", minIprpcFundCost.String()),
+		)
 	}
 
 	// check creator has enough balance
@@ -50,7 +57,9 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 	if err != nil {
 		return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding iprpc pool", err,
 			utils.LogAttr("creator", creator),
-			utils.LogAttr("fund", fund.String()),
+			utils.LogAttr("monthly_fund", fund.String()),
+			utils.LogAttr("duration", duration),
+			utils.LogAttr("total_fund", allFunds.String()),
 		)
 	}
 

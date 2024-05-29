@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/maps"
 	"github.com/lavanet/lava/x/rewards/types"
 )
 
@@ -99,7 +101,159 @@ func printInvalidMemoWarning(iprpcData map[string]interface{}, description strin
 	return types.IprpcMemo{}, types.ErrIprpcMemoInvalid
 }
 
-func (k Keeper) SetPendingIprpcOverIbcFunds(ctx sdk.Context, memo types.IprpcMemo, amount sdk.Coin) error {
-	// TODO: implement
+// The PendingIbcIprpcFund object holds all the necessary information for a pending IPRPC over IBC fund request that its min
+// IPRPC cost was not covered. The min cost can be covered using the cover-ibc-iprpc-costs TX. Then, the funds will be transferred
+// to the IPRPC pool from the next month for the pending fund's duration field. The corresponding PendingIbcIprpcFund will be deleted.
+// Also, every PendingIbcIprpcFund has an expiration on which the object is deleted. There will be no refund of the funds
+// upon expiration. The expiration period is determined by the reward module's parameter IbcIprpcExpiration.
+
+// NewPendingIbcIprpcFund sets a new PendingIbcIprpcFund object. It validates the input and sets the object with the right index and expiry
+func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec string, duration uint64, fund sdk.Coin) error {
+	// validate spec and funds
+	_, found := k.specKeeper.GetSpec(ctx, spec)
+	if !found {
+		return utils.LavaFormatError("spec not found", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("spec", spec),
+			utils.LogAttr("duration", duration),
+			utils.LogAttr("funds", fund),
+		)
+	}
+	if fund.IsNil() || !fund.IsValid() {
+		return utils.LavaFormatError("invalid funds", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("spec", spec),
+			utils.LogAttr("duration", duration),
+			utils.LogAttr("funds", fund),
+		)
+	}
+
+	// get index for the new object
+	latestPendingIbcIprpcFund := k.GetLatestPendingIbcIprpcFund(ctx)
+	newIndex := uint64(0)
+	if !latestPendingIbcIprpcFund.IsEmpty() {
+		newIndex = latestPendingIbcIprpcFund.Index + 1
+	}
+
+	// get expiry from current block time (using the rewards module parameter)
+	expiry := k.CalcPendingIbcIprpcFundExpiration(ctx)
+
+	k.SetPendingIbcIprpcFund(ctx, types.PendingIbcIprpcFund{
+		Index:    newIndex,
+		Creator:  creator,
+		Spec:     spec,
+		Duration: duration,
+		Fund:     fund,
+		Expiry:   expiry,
+	})
+
+	return nil
+}
+
+// SetPendingIbcIprpcFund set an PendingIbcIprpcFund in the PendingIbcIprpcFund store
+func (k Keeper) SetPendingIbcIprpcFund(ctx sdk.Context, PendingIbcIprpcFund types.PendingIbcIprpcFund) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PendingIbcIprpcFundPrefix))
+	b := k.cdc.MustMarshal(&PendingIbcIprpcFund)
+	store.Set(maps.GetIDBytes(PendingIbcIprpcFund.Index), b)
+}
+
+// IsPendingIbcIprpcFund gets an PendingIbcIprpcFund from the PendingIbcIprpcFund store
+func (k Keeper) GetPendingIbcIprpcFund(ctx sdk.Context, id uint64) (val types.PendingIbcIprpcFund, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PendingIbcIprpcFundPrefix))
+	b := store.Get(maps.GetIDBytes(id))
+	if b == nil {
+		return val, false
+	}
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+// RemovePendingIbcIprpcFund removes an PendingIbcIprpcFund from the PendingIbcIprpcFund store
+func (k Keeper) RemovePendingIbcIprpcFund(ctx sdk.Context, id uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PendingIbcIprpcFundPrefix))
+	store.Delete(maps.GetIDBytes(id))
+}
+
+// GetAllPendingIbcIprpcFund returns all PendingIbcIprpcFund from the PendingIbcIprpcFund store
+func (k Keeper) GetAllPendingIbcIprpcFund(ctx sdk.Context) (list []types.PendingIbcIprpcFund) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PendingIbcIprpcFundPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var val types.PendingIbcIprpcFund
+		k.cdc.MustUnmarshal(iterator.Value(), &val)
+		list = append(list, val)
+	}
+
+	return
+}
+
+// RemoveExpiredPendingIbcIprpcFund removes all the expired PendingIbcIprpcFund objects from the PendingIbcIprpcFund store
+func (k Keeper) RemoveExpiredPendingIbcIprpcFund(ctx sdk.Context) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PendingIbcIprpcFundPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var val types.PendingIbcIprpcFund
+		k.cdc.MustUnmarshal(iterator.Value(), &val)
+		if val.IsExpired(ctx) {
+			k.RemovePendingIbcIprpcFund(ctx, val.Index)
+		} else {
+			break
+		}
+	}
+}
+
+// GetLatestPendingIbcIprpcFund gets the latest PendingIbcIprpcFund from the PendingIbcIprpcFund store
+func (k Keeper) GetLatestPendingIbcIprpcFund(ctx sdk.Context) types.PendingIbcIprpcFund {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PendingIbcIprpcFundPrefix))
+	iterator := sdk.KVStoreReversePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var val types.PendingIbcIprpcFund
+		k.cdc.MustUnmarshal(iterator.Value(), &val)
+		return val
+	}
+
+	return types.PendingIbcIprpcFund{}
+}
+
+// CalcPendingIbcIprpcFundMinCost calculates the required cost to apply it (transfer the funds to the IPRPC pool)
+func (k Keeper) CalcPendingIbcIprpcFundMinCost(ctx sdk.Context, pendingIbcIprpcFund types.PendingIbcIprpcFund) sdk.Coin {
+	minCost := k.GetMinIprpcCost(ctx)
+	minCost.Amount = minCost.Amount.MulRaw(int64(pendingIbcIprpcFund.Duration))
+	return minCost
+}
+
+// CalcPendingIbcIprpcFundExpiration returns the expiration timestamp of a PendingIbcIprpcFund
+func (k Keeper) CalcPendingIbcIprpcFundExpiration(ctx sdk.Context) uint64 {
+	return uint64(ctx.BlockTime().Add(k.IbcIprpcExpiration(ctx)).UTC().Unix())
+}
+
+// ApplyPendingIbcIprpcFund applies the PendingIbcIprpcFund of a specific index
+// Applying means adding the funds to the IPRPC reward store and deleting the PendingIbcIprpcFund object
+func (k Keeper) ApplyPendingIbcIprpcFund(ctx sdk.Context, index uint64) error {
+	pendingIbcIprpcFund, found := k.GetPendingIbcIprpcFund(ctx, index)
+	if !found {
+		return fmt.Errorf("PendingIbcIprpcFund not found with index %d", index)
+	}
+
+	// sanity check: PendingIbcIprpcFund is not expired
+	if pendingIbcIprpcFund.IsExpired(ctx) {
+		k.RemovePendingIbcIprpcFund(ctx, index)
+		return fmt.Errorf("PendingIbcIprpcFund with index %d is expired. Deleted and aborted applying the fund", index)
+	}
+
+	// apply the fund with addSpecFunds and delete the PendingIbcIprpcFund object
+	funds := sdk.NewCoins(pendingIbcIprpcFund.Fund)
+	k.addSpecFunds(ctx, pendingIbcIprpcFund.Spec, funds, pendingIbcIprpcFund.Duration, true)
+	k.RemovePendingIbcIprpcFund(ctx, index)
+
 	return nil
 }

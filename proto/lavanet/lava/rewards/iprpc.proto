@@ -19,15 +19,11 @@ message Specfund {
     ];
 }
 
-message PendingIprpcFund {
+message PendingIbcIprpcFund {
     uint64 index = 1;     // unique index
-    string creator = 2;   // creator moniker
+    string creator = 2;
     string spec = 3;
-    uint64 month = 4;
-    repeated cosmos.base.v1beta1.Coin funds = 5 [
-        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-        (gogoproto.nullable)     = false
-    ];
+    uint64 duration = 4;
+    cosmos.base.v1beta1.Coin fund = 5 [(gogoproto.nullable) = false];
     uint64 expiry = 6; // expiry timestamp
-    cosmos.base.v1beta1.Coin cost_covered = 7 [(gogoproto.nullable) = false]; // amount of funds that were paid to cover min iprpc cost
 }

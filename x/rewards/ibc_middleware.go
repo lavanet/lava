@@ -119,14 +119,14 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 	}
 
 	// set pending IPRPC over IBC requests on-chain
-	amountInt, ok := sdk.NewIntFromString(data.Amount)
+	amount, ok := sdk.NewIntFromString(data.Amount)
 	if !ok {
 		utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("cannot decode coin amount"),
 			utils.LogAttr("data", data))
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
-	amount := sdk.NewCoin(data.Denom, amountInt)
-	err = im.keeper.SetPendingIprpcOverIbcFunds(ctx, memo, amount)
+	fund := sdk.NewCoin(data.Denom, amount)
+	err = im.keeper.NewPendingIbcIprpcFund(ctx, memo.Creator, memo.Spec, memo.Duration, fund)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
