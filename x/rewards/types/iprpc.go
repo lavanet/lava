@@ -1,5 +1,9 @@
 package types
 
+import (
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+)
+
 const (
 	// IprpcSubscriptionPrefix is the prefix to retrieve all IprpcSubscription
 	IprpcSubscriptionPrefix = "IprpcSubscription/"
@@ -22,4 +26,8 @@ type IprpcMemo struct {
 
 func (im IprpcMemo) IsEqual(other IprpcMemo) bool {
 	return im.Creator == other.Creator && im.Duration == other.Duration && im.Spec == other.Spec
+}
+
+func IbcIprpcReceiverAddress() string {
+	return authtypes.NewModuleAddress("iprpc").String()
 }

@@ -3,6 +3,7 @@ package keeper
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
@@ -77,14 +78,15 @@ func (k Keeper) ExtractIprpcMemoFromPacket(ctx sdk.Context, transferData transfe
 		if !ok {
 			return printInvalidMemoWarning(iprpcData, "memo data does not contain duration field")
 		}
-		durationFloat64, ok := duration.(float64)
+		durationStr, ok := duration.(string)
 		if !ok {
-			return printInvalidMemoWarning(iprpcData, "memo's duration field is not uint64")
+			return printInvalidMemoWarning(iprpcData, "memo's duration field is not a string number")
 		}
-		if durationFloat64 <= 0 {
-			return printInvalidMemoWarning(iprpcData, "memo's duration field cannot be non-positive")
+		durationUint64, err := strconv.ParseUint(durationStr, 10, 64)
+		if err != nil {
+			return printInvalidMemoWarning(iprpcData, "memo's duration field cannot be non-positive. err: "+err.Error())
 		}
-		memo.Duration = uint64(durationFloat64)
+		memo.Duration = durationUint64
 	}
 
 	return memo, nil
