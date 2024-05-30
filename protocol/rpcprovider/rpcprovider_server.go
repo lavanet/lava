@@ -44,8 +44,7 @@ const (
 var RPCProviderStickinessHeaderName = "X-Node-Sticky"
 
 const (
-	RPCProviderAddressHeader   = "Lava-Provider-Address"
-	RPCProviderNodeAddressHash = "Lava-Provider-Node-Address-Hash"
+	RPCProviderAddressHeader = "Lava-Provider-Address"
 )
 
 type RPCProviderServer struct {

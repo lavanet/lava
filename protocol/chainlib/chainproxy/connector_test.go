@@ -175,5 +175,5 @@ func TestHashing(t *testing.T) {
 	ctx := context.Background()
 	conn, _ := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
 	fmt.Println(conn.hashedNodeUrl)
-	require.Equal(t, conn.hashedNodeUrl, hashURL(listenerAddressTcp))
+	require.Equal(t, conn.hashedNodeUrl, HashURL(listenerAddressTcp))
 }

@@ -45,7 +45,7 @@ type Connector struct {
 	hashedNodeUrl string
 }
 
-func hashURL(url string) string {
+func HashURL(url string) string {
 	// Convert the URL string to bytes
 	urlBytes := []byte(url)
 
@@ -61,7 +61,7 @@ func NewConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*Co
 	connector := &Connector{
 		freeClients:   make([]*rpcclient.Client, 0, nConns),
 		nodeUrl:       nodeUrl,
-		hashedNodeUrl: hashURL(nodeUrl.Url),
+		hashedNodeUrl: HashURL(nodeUrl.Url),
 	}
 
 	rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
@@ -192,6 +192,11 @@ func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberO
 		return
 	}
 	utils.LavaFormatDebug("Failed increasing number of clients")
+}
+
+// getting hashed url from connection. this is never changed. so its not locked.
+func (connector *Connector) GetUrlHash() string {
+	return connector.hashedNodeUrl
 }
 
 func (connector *Connector) GetRpc(ctx context.Context, block bool) (*rpcclient.Client, error) {
