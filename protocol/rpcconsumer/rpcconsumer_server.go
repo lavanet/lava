@@ -961,12 +961,11 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 		name := strings.ToLower(metaElement.Name)
 		switch name {
 		case common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME:
-			headerDirectives[name] = metaElement.Value
 		case common.RELAY_TIMEOUT_HEADER_NAME:
-			headerDirectives[name] = metaElement.Value
 		case common.EXTENSION_OVERRIDE_HEADER_NAME:
-			headerDirectives[name] = metaElement.Value
 		case common.FORCE_CACHE_REFRESH_HEADER_NAME:
+		case common.GET_BLOCKED_PROVIDERS:
+		case common.GET_ERRORED_PROVIDERS:
 			headerDirectives[name] = metaElement.Value
 		default:
 			metadataRet = append(metadataRet, metaElement)
@@ -1011,13 +1010,17 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 	}
 	metadataReply := []pairingtypes.Metadata{}
 	// add the provider that responded
-	if relayResult.GetProvider() != "" {
-		metadataReply = append(metadataReply,
-			pairingtypes.Metadata{
-				Name:  common.PROVIDER_ADDRESS_HEADER_NAME,
-				Value: relayResult.GetProvider(),
-			})
+
+	providerAddress := relayResult.GetProvider()
+	if providerAddress == "" {
+		providerAddress = "Cached"
 	}
+	metadataReply = append(metadataReply,
+		pairingtypes.Metadata{
+			Name:  common.PROVIDER_ADDRESS_HEADER_NAME,
+			Value: providerAddress,
+		})
+
 	// add the relay retried count
 	if protocolErrors > 0 {
 		metadataReply = append(metadataReply,

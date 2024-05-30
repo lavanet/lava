@@ -54,6 +54,7 @@ type ConsumerSessionManager struct {
 	pairingPurge           map[string]*ConsumerSessionsWithProvider
 	providerOptimizer      ProviderOptimizer
 	consumerMetricsManager *metrics.ConsumerMetricsManager
+	consumerPublicAddress  string
 }
 
 // this is being read in multiple locations and but never changes so no need to lock.
@@ -321,6 +322,9 @@ func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions 
 			utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
 		} else {
 			utils.LavaFormatWarning("No providers for asked addon or extension, list is empty after trying to reset", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+			if addon == "" && len(extensions) == 0 {
+				utils.LavaFormatError("User subscription might have expired or not purchased properly, pairing list is empty after reset", nil, utils.LogAttr("consumer_address", csm.consumerPublicAddress))
+			}
 		}
 		csm.numberOfResets += 1
 	}
@@ -1050,10 +1054,11 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter) *ConsumerSessionManager {
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter),
 		consumerMetricsManager: consumerMetricsManager,
+		consumerPublicAddress:  consumerPublicAddress,
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
