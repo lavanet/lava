@@ -5,12 +5,13 @@ const (
 	ProviderStakeUpdateEventName = "stake_update_provider"
 	ProviderUnstakeEventName     = "provider_unstake_commit"
 
-	RelayPaymentEventName       = "relay_payment"
-	ProviderJailedEventName     = "provider_jailed"
-	ProviderReportedEventName   = "provider_reported"
-	LatestBlocksReportEventName = "provider_latest_block_report"
-	RejectedCuEventName         = "rejected_cu"
-	UnstakeProposalEventName    = "unstake_gov_proposal"
+	RelayPaymentEventName            = "relay_payment"
+	ProviderTemporaryJailedEventName = "provider_temporary_jailed"
+	ProviderFreezeJailedEventName    = "provider_jailed"
+	ProviderReportedEventName        = "provider_reported"
+	LatestBlocksReportEventName      = "provider_latest_block_report"
+	RejectedCuEventName              = "rejected_cu"
+	UnstakeProposalEventName         = "unstake_gov_proposal"
 )
 
 // unstake description strings

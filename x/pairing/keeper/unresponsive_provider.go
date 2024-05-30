@@ -151,7 +151,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 				utils.LavaFormatError("Jail_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainID}, {Key: "providerAddress", Value: provider}}...)
 				continue
 			}
-			err = k.punishUnresponsiveProvider(ctx, epochs, entry, complaintCU, servicedCU, complainedProviders[key])
+			err = k.punishUnresponsiveProvider(ctx, epochs, entry, complaintCU, servicedCU)
 			existingProviders[chainID]--
 			if err != nil {
 				utils.LavaFormatError("unstake unresponsive providers failed to punish provider", err,
@@ -242,41 +242,49 @@ func (k Keeper) getCurrentProviderStakeStorageList(ctx sdk.Context) []epochstora
 }
 
 // Function that punishes providers. Current punishment is freeze
-func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, stakeEntry epochstoragetypes.StakeEntry, complaintCU uint64, servicedCU uint64, providerEpochCuMap map[uint64]types.ProviderEpochComplainerCu) error {
+func (k Keeper) punishUnresponsiveProvider(ctx sdk.Context, epochs []uint64, stakeEntry epochstoragetypes.StakeEntry, complaintCU uint64, servicedCU uint64) error {
 	// if last jail was more than 24H ago, reset the jails counter
 	if !stakeEntry.IsJailed(ctx.BlockTime().UTC().Unix() - int64(HARD_JAIL_TIME)) {
 		stakeEntry.Jails = 0
 	}
 	stakeEntry.Jails++
 
+	details := map[string]string{
+		"provider_address": stakeEntry.Address,
+		"chain_id":         stakeEntry.Chain,
+		"complaint_cu":     strconv.FormatUint(complaintCU, 10),
+		"serviced_cu":      strconv.FormatUint(servicedCU, 10),
+	}
+
 	if stakeEntry.Jails > SOFT_JAILS {
 		stakeEntry.Freeze()
 		stakeEntry.JailEndTime = ctx.BlockTime().UTC().Unix() + int64(HARD_JAIL_TIME)
+
+		details["duration"] = HARD_JAIL_TIME.String()
+		details["end"] = strconv.FormatInt(stakeEntry.JailEndTime, 10)
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderFreezeJailedEventName, details,
+			"Unresponsive provider was jailed due to unresponsiveness")
 	} else {
 		stakeEntry.JailEndTime = ctx.BlockTime().UTC().Unix() + int64(SOFT_JAIL_TIME)
 		epochduration := k.downtimeKeeper.GetParams(ctx).EpochDuration / time.Second
 		epochblocks := k.epochStorageKeeper.EpochBlocksRaw(ctx)
 		stakeEntry.StakeAppliedBlock = uint64(ctx.BlockHeight()) + uint64(SOFT_JAIL_TIME/epochduration)*epochblocks
+
+		details["duration"] = SOFT_JAIL_TIME.String()
+		details["end"] = strconv.FormatInt(stakeEntry.JailEndTime, 10)
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderTemporaryJailedEventName, details,
+			"Unresponsive provider was jailed due to unresponsiveness")
 	}
 	k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, stakeEntry.Chain, stakeEntry)
 
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderJailedEventName,
-		map[string]string{
-			"provider_address": stakeEntry.Address,
-			"chain_id":         stakeEntry.Chain,
-			"complaint_cu":     strconv.FormatUint(complaintCU, 10),
-			"serviced_cu":      strconv.FormatUint(servicedCU, 10),
-		},
-		"Unresponsive provider was freezed due to unresponsiveness")
-
 	// reset the provider's complainer CU (so he won't get punished for the same complaints twice)
-	k.resetComplainersCU(ctx, epochs, stakeEntry.Address, stakeEntry.Chain, providerEpochCuMap)
+	k.resetComplainersCU(ctx, epochs, stakeEntry.Address, stakeEntry.Chain)
 
 	return nil
 }
 
 // resetComplainersCU resets the complainers CU for a specific provider and chain
-func (k Keeper) resetComplainersCU(ctx sdk.Context, epochs []uint64, provider string, chainID string, providerEpochCuMap map[uint64]types.ProviderEpochComplainerCu) {
+func (k Keeper) resetComplainersCU(ctx sdk.Context, epochs []uint64, provider string, chainID string) {
 	for _, epoch := range epochs {
 		k.RemoveProviderEpochComplainerCu(ctx, epoch, provider, chainID)
 	}

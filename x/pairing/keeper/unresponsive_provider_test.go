@@ -408,11 +408,14 @@ func TestJailProviderForUnresponsiveness(t *testing.T) {
 		}
 		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-		ts.AdvanceEpochs(largerConst, 0)
-
+		ts.AdvanceEpochs(recommendedEpochNumToCollectPayment+1, 0)
 		ts.checkProviderJailed(provider1, true)
 		ts.checkComplainerReset(provider1, relayEpoch)
 		ts.checkProviderStaked(provider0)
+
+		res, err := ts.QueryPairingVerifyPairing(ts.spec.Name, clients[0].Addr.String(), provider1, ts.BlockHeight())
+		require.NoError(t, err)
+		require.False(t, res.Valid)
 	}
 
 	// jail first time
