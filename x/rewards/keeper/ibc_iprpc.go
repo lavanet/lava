@@ -138,14 +138,27 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 	// get expiry from current block time (using the rewards module parameter)
 	expiry := k.CalcPendingIbcIprpcFundExpiration(ctx)
 
-	k.SetPendingIbcIprpcFund(ctx, types.PendingIbcIprpcFund{
+	pendingIbcIprpcFund := types.PendingIbcIprpcFund{
 		Index:    newIndex,
 		Creator:  creator,
 		Spec:     spec,
 		Duration: duration,
 		Fund:     fund,
 		Expiry:   expiry,
-	})
+	}
+
+	// sanity check
+	if !pendingIbcIprpcFund.IsValid() {
+		return utils.LavaFormatError("PendingIbcIprpcFund is invalid. expiry and duration must be positive, fund cannot be zero", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("spec", spec),
+			utils.LogAttr("duration", duration),
+			utils.LogAttr("funds", fund),
+			utils.LogAttr("expiry", expiry),
+		)
+	}
+
+	k.SetPendingIbcIprpcFund(ctx, pendingIbcIprpcFund)
 
 	return nil
 }
@@ -241,26 +254,4 @@ func (k Keeper) CalcPendingIbcIprpcFundMinCost(ctx sdk.Context, pendingIbcIprpcF
 // CalcPendingIbcIprpcFundExpiration returns the expiration timestamp of a PendingIbcIprpcFund
 func (k Keeper) CalcPendingIbcIprpcFundExpiration(ctx sdk.Context) uint64 {
 	return uint64(ctx.BlockTime().Add(k.IbcIprpcExpiration(ctx)).UTC().Unix())
-}
-
-// ApplyPendingIbcIprpcFund applies the PendingIbcIprpcFund of a specific index
-// Applying means adding the funds to the IPRPC reward store and deleting the PendingIbcIprpcFund object
-func (k Keeper) ApplyPendingIbcIprpcFund(ctx sdk.Context, index uint64) error {
-	pendingIbcIprpcFund, found := k.GetPendingIbcIprpcFund(ctx, index)
-	if !found {
-		return fmt.Errorf("PendingIbcIprpcFund not found with index %d", index)
-	}
-
-	// sanity check: PendingIbcIprpcFund is not expired
-	if pendingIbcIprpcFund.IsExpired(ctx) {
-		k.RemovePendingIbcIprpcFund(ctx, index)
-		return fmt.Errorf("PendingIbcIprpcFund with index %d is expired. Deleted and aborted applying the fund", index)
-	}
-
-	// apply the fund with addSpecFunds and delete the PendingIbcIprpcFund object
-	funds := sdk.NewCoins(pendingIbcIprpcFund.Fund)
-	k.addSpecFunds(ctx, pendingIbcIprpcFund.Spec, funds, pendingIbcIprpcFund.Duration, true)
-	k.RemovePendingIbcIprpcFund(ctx, index)
-
-	return nil
 }

@@ -34,7 +34,7 @@ func (piif PendingIbcIprpcFund) IsEmpty() bool {
 }
 
 func (piif PendingIbcIprpcFund) IsValid() bool {
-	return piif.Expiry > 0 && piif.Fund.IsValid() && piif.Duration > 0
+	return piif.Expiry > 0 && piif.Fund.IsValid() && piif.Fund.Amount.IsPositive() && piif.Duration > 0
 }
 
 func (piif PendingIbcIprpcFund) IsExpired(ctx sdk.Context) bool {

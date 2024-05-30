@@ -224,11 +224,24 @@ func TestPendingIbcIprpcFundsGetAll(t *testing.T) {
 	)
 }
 
-// TestPendingIbcIprpcFundsRemoveExpired tests RemoveExpiredPendingIbcIprpcFunds
+// TestPendingIbcIprpcFundsRemoveExpired tests RemoveExpiredPendingIbcIprpcFunds and IsExpired
 func TestPendingIbcIprpcFundsRemoveExpired(t *testing.T) {
 	keeper, ctx := keepertest.RewardsKeeper(t)
 	items := createNPendingIbcIprpcFunds(keeper, ctx, 10)
+
+	// advance time so some of the PendingIbcIprpcFund will expire
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(3 * time.Second))
+
+	// verify they're expired
+	for i := range items {
+		if i <= 3 {
+			require.True(t, items[i].IsExpired(ctx))
+		} else {
+			require.False(t, items[i].IsExpired(ctx))
+		}
+	}
+
+	// remove expired PendingIbcIprpcFund and check they cannot be found
 	keeper.RemoveExpiredPendingIbcIprpcFunds(ctx)
 	for _, item := range items {
 		_, found := keeper.GetPendingIbcIprpcFund(ctx, item.Index)
@@ -270,6 +283,7 @@ func TestPendingIbcIprpcFundsRemoveExpiredWithBeginBlock(t *testing.T) {
 	require.True(t, communityBalance.Equal(expectedBalance.Amount))
 }
 
+// TestPendingIbcIprpcFundGetLatest tests GetLatestPendingIbcIprpcFund
 func TestPendingIbcIprpcFundGetLatest(t *testing.T) {
 	keeper, ctx := keepertest.RewardsKeeper(t)
 	latest := keeper.GetLatestPendingIbcIprpcFund(ctx)
@@ -279,6 +293,7 @@ func TestPendingIbcIprpcFundGetLatest(t *testing.T) {
 	require.True(t, latest.IsEqual(items[len(items)-1]))
 }
 
+// TestPendingIbcIprpcFundNew tests NewPendingIbcIprpcFund
 func TestPendingIbcIprpcFundNew(t *testing.T) {
 	ts := newTester(t, false)
 	keeper, ctx := ts.Keepers.Rewards, ts.Ctx
@@ -292,7 +307,7 @@ func TestPendingIbcIprpcFundNew(t *testing.T) {
 		success bool
 	}{
 		{"valid", spec.Index, validFunds, true},
-		{"invalid fund", spec.Index, sdk.NewCoin("", math.NewInt(-1)), false},
+		{"invalid fund", spec.Index, sdk.NewCoin(ts.TokenDenom(), math.ZeroInt()), false},
 		{"non-existent spec", "eth", validFunds, false},
 	}
 
@@ -308,7 +323,8 @@ func TestPendingIbcIprpcFundNew(t *testing.T) {
 	}
 }
 
-func TestPendingIbcIprpcFundIsMinCostCovered(t *testing.T) {
+// TestCalcPendingIbcIprpcFundMinCost tests CalcPendingIbcIprpcFundMinCost
+func TestCalcPendingIbcIprpcFundMinCost(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(false)
 	keeper, ctx := ts.Keepers.Rewards, ts.Ctx
@@ -316,4 +332,11 @@ func TestPendingIbcIprpcFundIsMinCostCovered(t *testing.T) {
 	minCost := keeper.CalcPendingIbcIprpcFundMinCost(ctx, latest)
 	expectedMinCost := sdk.NewCoin(ts.TokenDenom(), keeper.GetMinIprpcCost(ctx).Amount.MulRaw(int64(latest.Duration)))
 	require.True(t, minCost.IsEqual(expectedMinCost))
+}
+
+func TestCalcPendingIbcIprpcFundExpiration(t *testing.T) {
+	keeper, ctx := keepertest.RewardsKeeper(t)
+	expectedExpiry := uint64(ctx.BlockTime().Add(keeper.IbcIprpcExpiration(ctx)).UTC().Unix())
+	expiry := keeper.CalcPendingIbcIprpcFundExpiration(ctx)
+	require.Equal(t, expectedExpiry, expiry)
 }
