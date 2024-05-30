@@ -713,7 +713,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	// Fetch provider addresses
 	providerAddresses, err := csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful)
 	if err != nil {
-		utils.LavaFormatInfo(csm.rpcEndpoint.ChainID+" could not get a provider addresses", utils.LogAttr("error", err))
+		utils.LavaFormatDebug(csm.rpcEndpoint.ChainID+" could not get a provider addresses", utils.LogAttr("error", err))
 		return nil, err
 	}
 
