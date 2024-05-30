@@ -174,10 +174,12 @@ func (ts *tester) getConsumersForIprpcSubTest(mode int) (sigs.Account, sigs.Acco
 		dev1, _ := ts.AddAccount(common.CONSUMER, 2, testBalance*10000)
 		dev2, _ := ts.AddAccount(common.CONSUMER, 3, testBalance*10000)
 		err := ts.TxSubscriptionAddProject(sub1Acc.Addr.String(), types.ProjectData{
-			Name: "test1", Enabled: true, ProjectKeys: []types.ProjectKey{{Key: dev1.Addr.String(), Kinds: 2}}})
+			Name: "test1", Enabled: true, ProjectKeys: []types.ProjectKey{{Key: dev1.Addr.String(), Kinds: 2}},
+		})
 		require.NoError(ts.T, err)
 		err = ts.TxSubscriptionAddProject(sub2Acc.Addr.String(), types.ProjectData{
-			Name: "test2", Enabled: true, ProjectKeys: []types.ProjectKey{{Key: dev2.Addr.String(), Kinds: 2}}})
+			Name: "test2", Enabled: true, ProjectKeys: []types.ProjectKey{{Key: dev2.Addr.String(), Kinds: 2}},
+		})
 		require.NoError(ts.T, err)
 		return dev1, dev2
 	}
