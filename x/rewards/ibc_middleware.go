@@ -102,7 +102,8 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 	}
 
 	// change the ibc-transfer packet receiver address to be a temp address and empty the memo
-	data.Receiver = types.IbcIprpcMemoReceiverAddress()
+	_, ibcIprpcReceiverAddress := types.IbcIprpcReceiverAddress()
+	data.Receiver = ibcIprpcReceiverAddress.String()
 	data.Memo = ""
 	marshelledData, err := transfertypes.ModuleCdc.MarshalJSON(&data)
 	if err != nil {
@@ -112,7 +113,7 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 	}
 	packet.Data = marshelledData
 
-	// call the next OnRecvPacket() of the transfer stack to make the rewards module get the IBC tokens
+	// call the next OnRecvPacket() of the transfer stack to make the IbcIprpcReceiver address get the IBC tokens
 	ack := im.app.OnRecvPacket(ctx, packet, relayer)
 	if ack == nil || !ack.Success() {
 		return ack

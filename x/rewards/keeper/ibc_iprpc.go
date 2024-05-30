@@ -190,8 +190,8 @@ func (k Keeper) GetAllPendingIbcIprpcFund(ctx sdk.Context) (list []types.Pending
 	return
 }
 
-// RemoveExpiredPendingIbcIprpcFund removes all the expired PendingIbcIprpcFund objects from the PendingIbcIprpcFund store
-func (k Keeper) RemoveExpiredPendingIbcIprpcFund(ctx sdk.Context) {
+// RemoveExpiredPendingIbcIprpcFunds removes all the expired PendingIbcIprpcFund objects from the PendingIbcIprpcFund store
+func (k Keeper) RemoveExpiredPendingIbcIprpcFunds(ctx sdk.Context) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PendingIbcIprpcFundPrefix))
 	iterator := sdk.KVStorePrefixIterator(store, []byte{})
 
@@ -201,6 +201,13 @@ func (k Keeper) RemoveExpiredPendingIbcIprpcFund(ctx sdk.Context) {
 		var val types.PendingIbcIprpcFund
 		k.cdc.MustUnmarshal(iterator.Value(), &val)
 		if val.IsExpired(ctx) {
+			receiverName, _ := types.IbcIprpcReceiverAddress()
+			err := k.FundCommunityPoolFromModule(ctx, sdk.NewCoins(val.Fund), receiverName)
+			if err != nil {
+				utils.LavaFormatError("failed funding community pool from expired IBC IPRPC fund, removing without funding", err,
+					utils.LogAttr("pending_ibc_iprpc_fund", val.String()),
+				)
+			}
 			k.RemovePendingIbcIprpcFund(ctx, val.Index)
 		} else {
 			break

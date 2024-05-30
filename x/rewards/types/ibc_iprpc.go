@@ -15,8 +15,9 @@ func (im IprpcMemo) IsEqual(other IprpcMemo) bool {
 	return im.Creator == other.Creator && im.Duration == other.Duration && im.Spec == other.Spec
 }
 
-func IbcIprpcMemoReceiverAddress() string {
-	return authtypes.NewModuleAddress("iprpc").String()
+func IbcIprpcReceiverAddress() (receiverName string, receiverAddress sdk.AccAddress) {
+	receiverName = "iprpc"
+	return receiverName, authtypes.NewModuleAddress(receiverName)
 }
 
 const (

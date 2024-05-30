@@ -10,6 +10,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/common/types"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/lavanet/lava/x/rewards/keeper"
@@ -174,6 +175,7 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 // Prevent strconv unused error
 var _ = strconv.IntSize
 
+// createNPendingIbcIprpcFunds is a helper function that creates an n-sized array of PendingIbcIprpcFund objects
 func createNPendingIbcIprpcFunds(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.PendingIbcIprpcFund {
 	items := make([]types.PendingIbcIprpcFund, n)
 	for i := range items {
@@ -182,6 +184,7 @@ func createNPendingIbcIprpcFunds(keeper *keeper.Keeper, ctx sdk.Context, n int) 
 			Creator:  "dummy",
 			Spec:     "mock",
 			Duration: uint64(i),
+			Fund:     sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(int64(i+1))),
 			Expiry:   uint64(ctx.BlockTime().UTC().Unix()) + uint64(i),
 		}
 		keeper.SetPendingIbcIprpcFund(ctx, items[i])
@@ -189,6 +192,7 @@ func createNPendingIbcIprpcFunds(keeper *keeper.Keeper, ctx sdk.Context, n int) 
 	return items
 }
 
+// TestPendingIbcIprpcFundsGet tests GetPendingIbcIprpcFund()
 func TestPendingIbcIprpcFundsGet(t *testing.T) {
 	keeper, ctx := keepertest.RewardsKeeper(t)
 	items := createNPendingIbcIprpcFunds(keeper, ctx, 10)
@@ -199,6 +203,7 @@ func TestPendingIbcIprpcFundsGet(t *testing.T) {
 	}
 }
 
+// TestPendingIbcIprpcFundsRemove tests RemovePendingIbcIprpcFund
 func TestPendingIbcIprpcFundsRemove(t *testing.T) {
 	keeper, ctx := keepertest.RewardsKeeper(t)
 	items := createNPendingIbcIprpcFunds(keeper, ctx, 10)
@@ -209,6 +214,7 @@ func TestPendingIbcIprpcFundsRemove(t *testing.T) {
 	}
 }
 
+// TestPendingIbcIprpcFundsGetAll tests GetAllPendingIbcIprpcFund
 func TestPendingIbcIprpcFundsGetAll(t *testing.T) {
 	keeper, ctx := keepertest.RewardsKeeper(t)
 	items := createNPendingIbcIprpcFunds(keeper, ctx, 10)
@@ -218,11 +224,12 @@ func TestPendingIbcIprpcFundsGetAll(t *testing.T) {
 	)
 }
 
+// TestPendingIbcIprpcFundsRemoveExpired tests RemoveExpiredPendingIbcIprpcFunds
 func TestPendingIbcIprpcFundsRemoveExpired(t *testing.T) {
 	keeper, ctx := keepertest.RewardsKeeper(t)
 	items := createNPendingIbcIprpcFunds(keeper, ctx, 10)
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(3 * time.Second))
-	keeper.RemoveExpiredPendingIbcIprpcFund(ctx)
+	keeper.RemoveExpiredPendingIbcIprpcFunds(ctx)
 	for _, item := range items {
 		_, found := keeper.GetPendingIbcIprpcFund(ctx, item.Index)
 		if item.Index <= 3 {
@@ -231,6 +238,36 @@ func TestPendingIbcIprpcFundsRemoveExpired(t *testing.T) {
 			require.True(t, found)
 		}
 	}
+}
+
+// TestPendingIbcIprpcFundsRemoveExpiredWithBeginBlock tests that expired PendingIbcIprpcFunds are removed with BeginBlock
+// Also, their funds should be sent to the community pool
+func TestPendingIbcIprpcFundsRemoveExpiredWithBeginBlock(t *testing.T) {
+	ts := newTester(t, false)
+	keeper, ctx := ts.Keepers.Rewards, ts.Ctx
+	items := createNPendingIbcIprpcFunds(&keeper, ctx, 10)
+
+	// advance block with 3 seconds to expire some of the PendingIbcIprpcFunds
+	// we set balance to the IBC IPRPC receiver address since it get funds only from the IBC middleware (which is not simulated)
+	_, iprpcReceiverAddr := types.IbcIprpcReceiverAddress()
+	ts.Keepers.BankKeeper.SetBalance(ctx, iprpcReceiverAddr, iprpcFunds)
+	ts.AdvanceBlock(3 * time.Second)
+
+	// check that expired PendingIbcIprpcFunds were removed
+	for _, item := range items {
+		_, found := keeper.GetPendingIbcIprpcFund(ctx, item.Index)
+		if item.Index <= 3 {
+			require.False(t, found)
+		} else {
+			require.True(t, found)
+		}
+	}
+
+	// check the community pool's balance (objects in indices 0-3 were removed, so expected balance is 1+2+3+4=10ulava)
+	expectedBalance := sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(10))
+	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
+	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
+	require.True(t, communityBalance.Equal(expectedBalance.Amount))
 }
 
 func TestPendingIbcIprpcFundGetLatest(t *testing.T) {
