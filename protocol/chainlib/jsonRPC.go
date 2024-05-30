@@ -647,6 +647,8 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 
 func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
 	// Get node
+	// trailer := metadata.Pairs(rpcprovider.RPCProviderNodeAddressHash, rpcps.rpcProviderEndpoint.ApiInterface)
+	// grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcMessage)

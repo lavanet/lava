@@ -2,6 +2,7 @@ package chainproxy
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -166,4 +167,13 @@ func TestConnectorGrpcAndInvoke(t *testing.T) {
 		conn.ReturnRpc(rpcList[i])
 	}
 	require.Equal(t, int(conn.usedClients), 0) // checking we dont have clients used
+}
+
+func TestHashing(t *testing.T) {
+	listener := createRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
+	defer listener.Close()
+	ctx := context.Background()
+	conn, _ := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
+	fmt.Println(conn.hashedNodeUrl)
+	require.Equal(t, conn.hashedNodeUrl, hashURL(listenerAddressTcp))
 }
