@@ -970,6 +970,7 @@ func (ts *Tester) QueryRewardsShowIprpcData() (*rewardstypes.QueryShowIprpcDataR
 	return ts.Keepers.Rewards.ShowIprpcData(ts.GoCtx, msg)
 }
 
+// QueryRewardsShowIprpcData implements 'q rewards iprpc-provider-reward-estimation'
 func (ts *Tester) QueryRewardsIprpcProviderRewardEstimation(provider string) (*rewardstypes.QueryIprpcProviderRewardEstimationResponse, error) {
 	msg := &rewardstypes.QueryIprpcProviderRewardEstimationRequest{
 		Provider: provider,
@@ -977,11 +978,20 @@ func (ts *Tester) QueryRewardsIprpcProviderRewardEstimation(provider string) (*r
 	return ts.Keepers.Rewards.IprpcProviderRewardEstimation(ts.GoCtx, msg)
 }
 
+// QueryRewardsShowIprpcData implements 'q rewards iprpc-spec-reward'
 func (ts *Tester) QueryRewardsIprpcSpecReward(spec string) (*rewardstypes.QueryIprpcSpecRewardResponse, error) {
 	msg := &rewardstypes.QueryIprpcSpecRewardRequest{
 		Spec: spec,
 	}
 	return ts.Keepers.Rewards.IprpcSpecReward(ts.GoCtx, msg)
+}
+
+// QueryRewardsShowIprpcData implements 'q rewards pending-ibc-iprpc-funds'
+func (ts *Tester) QueryRewardsPendingIbcIprpcFunds(filter string) (*rewardstypes.QueryPendingIbcIprpcFundsResponse, error) {
+	msg := &rewardstypes.QueryPendingIbcIprpcFundsRequest{
+		Filter: filter,
+	}
+	return ts.Keepers.Rewards.PendingIbcIprpcFunds(ts.GoCtx, msg)
 }
 
 // block/epoch helpers

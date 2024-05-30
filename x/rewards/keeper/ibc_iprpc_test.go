@@ -341,3 +341,66 @@ func TestCalcPendingIbcIprpcFundExpiration(t *testing.T) {
 	expiry := keeper.CalcPendingIbcIprpcFundExpiration(ctx)
 	require.Equal(t, expectedExpiry, expiry)
 }
+
+// TestPendingIbcIprpcFundsQuery tests that the pending-ibc-iprpc-funds query works as expected with filters
+func TestPendingIbcIprpcFundsQuery(t *testing.T) {
+	ts := newTester(t, true)
+	ts.setupForIprpcTests(false)
+	keeper, ctx := ts.Keepers.Rewards, ts.Ctx
+	items := createNPendingIbcIprpcFunds(&keeper, ctx, 3)
+
+	// make some of the PendingIbcIprpcFunds different with creator and spec
+	items[0].Creator = "blabla"
+	items[1].Spec = mockSpec2
+	keeper.SetPendingIbcIprpcFund(ctx, items[0])
+	keeper.SetPendingIbcIprpcFund(ctx, items[1])
+
+	minCost := keeper.GetMinIprpcCost(ctx)
+	template := []struct {
+		name                            string
+		filter                          string
+		expectedPendingIbcIprpcFundInfo []types.PendingIbcIprpcFundInfo
+		success                         bool
+	}{
+		{"no filter", "", []types.PendingIbcIprpcFundInfo{
+			{PendingIbcIprpcFund: items[0], Cost: sdk.NewCoin(minCost.Denom, minCost.Amount.MulRaw(int64(items[0].Duration)))},
+			{PendingIbcIprpcFund: items[1], Cost: sdk.NewCoin(minCost.Denom, minCost.Amount.MulRaw(int64(items[1].Duration)))},
+			{PendingIbcIprpcFund: items[2], Cost: sdk.NewCoin(minCost.Denom, minCost.Amount.MulRaw(int64(items[2].Duration)))},
+		}, true},
+		{"index filter", "2", []types.PendingIbcIprpcFundInfo{
+			{PendingIbcIprpcFund: items[2], Cost: sdk.NewCoin(minCost.Denom, minCost.Amount.MulRaw(int64(items[2].Duration)))},
+		}, true},
+		{"creator filter", "blabla", []types.PendingIbcIprpcFundInfo{
+			{PendingIbcIprpcFund: items[0], Cost: sdk.NewCoin(minCost.Denom, minCost.Amount.MulRaw(int64(items[0].Duration)))},
+		}, true},
+		{"spec filter", mockSpec2, []types.PendingIbcIprpcFundInfo{
+			{PendingIbcIprpcFund: items[1], Cost: sdk.NewCoin(minCost.Denom, minCost.Amount.MulRaw(int64(items[1].Duration)))},
+		}, true},
+		{"invalid index filter", "100", []types.PendingIbcIprpcFundInfo{}, false},
+		{"invalid creator/spec filter", "yoyo", []types.PendingIbcIprpcFundInfo{}, false},
+	}
+
+	for _, tt := range template {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := ts.QueryRewardsPendingIbcIprpcFunds(tt.filter)
+			if tt.success {
+				require.NoError(t, err)
+				foundMatch := false
+				for _, piifi := range res.PendingIbcIprpcFundsInfo {
+					for _, expectedPiifi := range tt.expectedPendingIbcIprpcFundInfo {
+						if piifi.PendingIbcIprpcFund.IsEqual(expectedPiifi.PendingIbcIprpcFund) && piifi.Cost.IsEqual(expectedPiifi.Cost) {
+							foundMatch = true
+							break
+						}
+					}
+					if !foundMatch {
+						require.FailNow(t, "info result not matching expected")
+					}
+					foundMatch = false
+				}
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
