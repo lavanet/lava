@@ -334,6 +334,7 @@ func TestCalcPendingIbcIprpcFundMinCost(t *testing.T) {
 	require.True(t, minCost.IsEqual(expectedMinCost))
 }
 
+// TestCalcPendingIbcIprpcFundExpiration tests CalcPendingIbcIprpcFundExpiration
 func TestCalcPendingIbcIprpcFundExpiration(t *testing.T) {
 	keeper, ctx := keepertest.RewardsKeeper(t)
 	expectedExpiry := uint64(ctx.BlockTime().Add(keeper.IbcIprpcExpiration(ctx)).UTC().Unix())
