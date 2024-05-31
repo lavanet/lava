@@ -9,7 +9,7 @@ import (
 	"github.com/lavanet/lava/x/epochstorage/types"
 	v3 "github.com/lavanet/lava/x/epochstorage/types/migrations/v3"
 	v4 "github.com/lavanet/lava/x/epochstorage/types/migrations/v4"
-	v5 "github.com/lavanet/lava/x/epochstorage/types/migrations/v5"
+	v6 "github.com/lavanet/lava/x/epochstorage/types/migrations/v6"
 )
 
 type Migrator struct {
@@ -141,57 +141,38 @@ func (m Migrator) Migrate5to6(ctx sdk.Context) error {
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {
-		var stakeStorageV5 v5.StakeStorage
-		m.keeper.cdc.MustUnmarshal(iterator.Value(), &stakeStorageV5)
+		var stakeStorageV6 v6.StakeStorage
+		m.keeper.cdc.MustUnmarshal(iterator.Value(), &stakeStorageV6)
 
-		stakeStorageV6 := types.StakeStorage{
-			Index:          stakeStorageV5.Index,
-			EpochBlockHash: stakeStorageV5.EpochBlockHash,
+		for i := range stakeStorageV6.StakeEntries {
+			stakeStorageV6.StakeEntries[i].Vault = stakeStorageV6.StakeEntries[i].Address
 		}
 
-		var stakeEntriesV6 []types.StakeEntry
-		for _, stakeEntryV5 := range stakeStorageV5.StakeEntries {
-			stakeEntryV6 := types.StakeEntry{
-				Stake:              stakeEntryV5.Stake,
-				Address:            stakeEntryV5.Address,
-				Vault:              stakeEntryV5.Address,
-				StakeAppliedBlock:  stakeEntryV5.StakeAppliedBlock,
-				Chain:              stakeEntryV5.Chain,
-				Moniker:            stakeEntryV5.Moniker,
-				Geolocation:        stakeEntryV5.Geolocation,
-				DelegateTotal:      stakeEntryV5.DelegateTotal,
-				DelegateLimit:      stakeEntryV5.DelegateLimit,
-				DelegateCommission: stakeEntryV5.DelegateCommission,
-				LastChange:         stakeEntryV5.LastChange,
-			}
-
-			blockReport := stakeEntryV5.BlockReport
-			stakeEntryV6.BlockReport = &types.BlockReport{
-				Epoch:       blockReport.Epoch,
-				LatestBlock: blockReport.LatestBlock,
-			}
-
-			var endpointsV6 []types.Endpoint
-			for _, endpointV5 := range stakeEntryV5.Endpoints {
-				endpointV6 := types.Endpoint{
-					IPPORT:        endpointV5.IPPORT,
-					Addons:        endpointV5.Addons,
-					ApiInterfaces: endpointV5.ApiInterfaces,
-					Extensions:    endpointV5.Extensions,
-					Geolocation:   endpointV5.Geolocation,
-				}
-
-				endpointsV6 = append(endpointsV6, endpointV6)
-			}
-
-			stakeEntryV6.Endpoints = endpointsV6
-
-			stakeEntriesV6 = append(stakeEntriesV6, stakeEntryV6)
-		}
-		stakeStorageV6.StakeEntries = stakeEntriesV6
-
-		store.Delete(iterator.Key())
 		store.Set(iterator.Key(), m.keeper.cdc.MustMarshal(&stakeStorageV6))
+	}
+
+	return nil
+}
+
+// Migrate6to7 goes over all existing stake entries and populates the new description field with current moniker
+func (m Migrator) Migrate6to7(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate: epochstorage to include detailed description")
+
+	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(types.StakeStorageKeyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var stakeStorageV7 types.StakeStorage
+		m.keeper.cdc.MustUnmarshal(iterator.Value(), &stakeStorageV7)
+
+		for i := range stakeStorageV7.StakeEntries {
+			stakeStorageV7.StakeEntries[i].Description.Moniker = stakeStorageV7.StakeEntries[i].Moniker
+			stakeStorageV7.StakeEntries[i].Moniker = ""
+		}
+
+		store.Set(iterator.Key(), m.keeper.cdc.MustMarshal(&stakeStorageV7))
 	}
 
 	return nil

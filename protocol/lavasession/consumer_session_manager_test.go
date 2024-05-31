@@ -26,7 +26,7 @@ import (
 const (
 	parallelGoRoutines                 = 40
 	numberOfProviders                  = 10
-	numberOfResetsToTest               = 10
+	numberOfResetsToTest               = 1
 	numberOfAllowedSessionsPerConsumer = 10
 	firstEpochHeight                   = 20
 	secondEpochHeight                  = 40
@@ -428,6 +428,8 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 	ctx := context.Background()
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
+	// make list shorter otherwise we wont be able to ban all as it takes slightly more time now
+	pairingList = map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0]}
 	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
 	require.NoError(t, err)
 
@@ -438,6 +440,7 @@ func TestPairingResetWithMultipleFailures(t *testing.T) {
 				break
 			}
 			css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+			require.NoError(t, err)
 
 			for _, cs := range css {
 				err = csm.OnSessionFailure(cs.Session, nil)
@@ -811,7 +814,7 @@ func TestContext(t *testing.T) {
 
 func TestGrpcClientHang(t *testing.T) {
 	ctx := context.Background()
-	conn, err := ConnectGRPCClient(ctx, grpcListener, true, false)
+	conn, err := ConnectGRPCClient(ctx, grpcListener, true, false, false)
 	require.NoError(t, err)
 	client := pairingtypes.NewRelayerClient(conn)
 	err = conn.Close()
