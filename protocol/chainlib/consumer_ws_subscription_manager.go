@@ -234,8 +234,6 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 		// Only gets here when there is an issue with the connection to the provider or the connection's context is canceled
 		// Then, we close all active connections with dapps
 
-		// TODO: Test this with provider subscription timeout
-
 		cwsm.lock.Lock()
 		defer cwsm.lock.Unlock()
 
