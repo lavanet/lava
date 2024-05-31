@@ -152,7 +152,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	}
 
 	// register v6 -> v7 migration
-	if err := cfg.RegisterMigration(types.ModuleName, 6, migrator.Migrate5to6); err != nil {
+	if err := cfg.RegisterMigration(types.ModuleName, 6, migrator.Migrate6to7); err != nil {
 		// panic:ok: at start up, migration cannot proceed anyhow
 		panic(fmt.Errorf("%s: failed to register migration to v7: %w", types.ModuleName, err))
 	}
