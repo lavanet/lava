@@ -317,7 +317,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			var reply pairingtypes.RelayReply
 			err := (*replyServer).RecvMsg(&reply)
 			if err != nil {
-				// TODO: handle error better
+				// The connection was closed by the provider
 				utils.LavaFormatTrace("error reading from subscription stream", utils.LogAttr("original error", err.Error()))
 				return
 			}
