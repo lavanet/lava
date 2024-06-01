@@ -21,11 +21,6 @@ jobs:
       with:
         go-version-file: go.mod
         cache-dependency-path: go.sum
-    # Setup Paths
-    - name: home
-      run:  pwd && ls -l
-    - name: ls usr 
-      run: ls -l /home/runner/work/lava/lava
     - name: cp lava
       run:  cp -r ~/work/lava/lava ~/go/lava 
     - name: export PATH
@@ -34,14 +29,6 @@ jobs:
       run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
     - name: export LAVA
       run: export LAVA=/home/runner/work/lava/lava
-    - name: go env
-      run:  go env
-    - name: pwd
-      run: pwd
-    - name: tree
-      run: tree
-    - name: ls -l
-      run: ls -l
 
     ######################################################
     ### Run Consensus unitests
@@ -79,12 +66,6 @@ jobs:
       with:
         go-version-file: go.mod
         cache-dependency-path: go.sum
-
-    # Setup Paths
-    - name: home
-      run:  pwd && ls -l
-    - name: ls usr 
-      run: ls -l /home/runner/work/lava/lava
     - name: cp lava
       run:  cp -r ~/work/lava/lava ~/go/lava 
     - name: export GOPATH
@@ -93,14 +74,6 @@ jobs:
       run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/:$GOPATH/bin
     - name: export LAVA
       run: export LAVA=/home/runner/work/lava/lava
-    - name: go env
-      run:  go env
-    - name: pwd
-      run: pwd
-    - name: tree
-      run: tree
-    - name: ls -l
-      run: ls -l
 
     ######################################################
     ### Run protocol unitests
