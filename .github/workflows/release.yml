@@ -57,7 +57,7 @@ jobs:
         binary: [lavap, lavad]
     env:
       REGISTRY: ghcr.io
-      IMAGE_NAME: "lava/${{ matrix.binary }}"
+      IMAGE_NAME: "lavanet/lava/${{ matrix.binary }}"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
