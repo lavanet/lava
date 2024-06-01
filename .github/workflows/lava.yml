@@ -179,6 +179,13 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/06_RPCConsumer* --include="*errors*"
+      
+      - name: Upload Protocol E2E Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Protocol E2E Logs
+          path: "testutil/e2e/protocolLogs/*"
 
   test-sdk-e2e:
     runs-on: ubuntu-latest
@@ -289,6 +296,13 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/sdkLogs/01_sdkTest* --include="*errors*"
+      
+      - name: Upload SDK E2E Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDK E2E Logs
+          path: "testutil/e2e/sdkLogs/*"
 
   test-payment-e2e:
     runs-on: ubuntu-latest
@@ -344,6 +358,13 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/06_RPCConsumer* --include="*errors*"
+    
+      - name: Upload Payment E2E Logs 
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Payment E2E Logs
+          path: "testutil/e2e/protocolLogs/*"
 
   report-tests-results:
     runs-on: ubuntu-latest
