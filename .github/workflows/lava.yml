@@ -372,6 +372,7 @@ jobs:
 
   build_docker:
     permissions:
+      contents: read
       packages: write
     needs: [test-consensus, test-protocol]
     runs-on: ubuntu-latest
