@@ -83,5 +83,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           file: cmd/${{ matrix.binary }}/Dockerfile
           build-args: |
-            GIT_VERSION="${{ steps.meta.outputs.version }}""
-            GIT_COMMIT="${{ github.sha }}""
+            GIT_VERSION="${{ steps.meta.outputs.version }}"
+            GIT_COMMIT="${{ github.sha }}"
+          push: true
