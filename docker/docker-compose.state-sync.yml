@@ -13,7 +13,7 @@ services:
     volumes:
       - lava_data:/lava
 
-  lava-node-init-2:
+  lava-node-config:
     image: ghcr.io/tomwright/dasel:v2.7.0
     entrypoint: ["sh", "-c"]
     environment:
@@ -64,7 +64,7 @@ services:
     depends_on:
       lava-node-init:
         condition: service_completed_successfully
-      lava-node-init-2:
+      lava-node-config:
         condition: service_completed_successfully
 
 volumes:
