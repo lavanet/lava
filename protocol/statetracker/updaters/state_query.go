@@ -127,13 +127,7 @@ func (csq *ConsumerStateQuery) GetEffectivePolicy(ctx context.Context, consumerA
 
 func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, latestBlock int64) (pairingList []epochstoragetypes.StakeEntry, epoch, nextBlockForUpdate uint64, errRet error) {
 	if chainID == "" {
-		if csq.lastChainID != "" {
-			chainID = csq.lastChainID
-		}
-		if chainID == "" {
-			chainID = "LAV1"
-			utils.LavaFormatWarning("failed to run get pairing as there is no entry for empty chainID call, using default chainID", nil, utils.Attribute{Key: "chainID", Value: chainID})
-		}
+		return nil, 0, 0, utils.LavaFormatError("chainid is empty in GetPairing", nil, utils.Attribute{Key: "chainID", Value: chainID})
 	}
 
 	cachedInterface, found := csq.ResponsesCache.Get(PairingRespKey + chainID)
