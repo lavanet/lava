@@ -50,6 +50,7 @@ EXPOSE 1317
 EXPOSE 8080
 # grpc
 EXPOSE 9090
+EXPOSE 9091
 # tendermint p2p
 EXPOSE 26656
 # tendermint rpc
