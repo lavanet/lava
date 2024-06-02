@@ -154,11 +154,14 @@ func (rpccs *RPCConsumerServer) waitForPairing() error {
 		}
 	}()
 
+	numberOfTimeouts := 0
 	select {
 	case <-reinitializedChan:
 		break
 	case <-time.After(30 * time.Second):
-		return utils.LavaFormatError("failed initial relays, csm was not initialized after timeout", nil,
+		numberOfTimeouts += 1
+		utils.LavaFormatWarning("failed initial relays, csm was not initialized after timeout, or pairing list is empty for that chain", nil,
+			utils.LogAttr("times_checked", numberOfTimeouts),
 			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 			utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
 		)
