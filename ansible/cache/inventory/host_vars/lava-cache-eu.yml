@@ -1,0 +1,25 @@
+# host_vars/lava-cache-eu.yml
+---
+ansible_host: xxx.xxx.xxx.xxx  # Specify your host
+network: testnet
+
+container:
+  image: svetekllc/lava  # The docker image as an example. Feel free to use your own if you want
+  tag: v2.0.1-cache
+  limits:
+    cpu: 1
+    memory: 2gb
+
+cache_config:
+  expiration: 1h0m0s      # Duration after which cached items expire and are removed
+  cache_port: 23100       # The port number on which the cache server will listen
+  log_level: info         # The verbosity level for logs
+  max_items: 500000000    # The maximum number of items the cache can store
+  metrics_port: 23101     # The port number on which the metrics service will listen
+
+cache_ports:
+  listen: "{{ cache_config.cache_port }}"
+  metrics: "{{ cache_config.metrics_port }}"
+
+networks:
+  - lava
