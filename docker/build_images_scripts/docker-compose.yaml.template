@@ -3,7 +3,7 @@ name: lava
 
 services:
   cache:
-    image: svetekllc/lava:2.0.1-cache
+    image: svetekllc/lava:v1.2.3-cache
     labels:
       network: testnet
     env_file:
@@ -25,16 +25,16 @@ services:
     restart: unless-stopped
 
   node:
-    image: svetekllc/lava:v2.0.0-node
+    image: svetekllc/lava:v1.2.0-node
     labels:
       network: testnet
     env_file:
       - node.env
     volumes:
-      - /opt/testnet/lava:/root/.lava
+      - /opt/lava:/root/.lava
     ports:
-      - '23656:23656'
-      - '23660:23660'
+      - '26656:26656'
+      - '26660:26660'
     networks:
       - lava
     logging:
@@ -50,7 +50,7 @@ services:
     restart: unless-stopped
 
   provider:
-    image: svetekllc/lava:2.0.1-provider
+    image: svetekllc/lava:v1.2.3-provider
     labels:
       network: testnet
     env_file:

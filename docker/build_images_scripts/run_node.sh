@@ -16,14 +16,11 @@ init_node() {
 
   # Set keyring-backend and chain-id configuration
   $BIN config chain-id $CHAIN_ID --home $CONFIG_PATH
-  $BIN config keyring-backend $KEYRING --home $CONFIG_PATH
+  $BIN config keyring-backend $KEYRING_BACKEND --home $CONFIG_PATH
   $BIN config node http://localhost:$NODE_RPC_PORT --home $CONFIG_PATH
 
   # Download addrbook and genesis files
-  if [[ -n $ADDRBOOK_URL ]]
-  then
-    wget -O $CONFIG_PATH/config/addrbook.json $ADDRBOOK_URL
-  fi
+  [[ -n $ADDRBOOK_URL ]] && wget -O $CONFIG_PATH/config/addrbook.json $ADDRBOOK_URL
 
   wget -O $CONFIG_PATH/config/genesis.json ${GENESIS_URL:-https://raw.githubusercontent.com/lavanet/lava-config/main/testnet-2/genesis_json/genesis.json}
 
@@ -103,17 +100,17 @@ state_sync() {
 
 create_account() {
   echo -e "\n\e[32m### Create account ###\e[0m"
-  if [[ "$KEYRING" == "test" ]]; then
-    $BIN keys add $WALLET --keyring-backend $KEYRING --home $CONFIG_PATH
+  if [[ "$KEYRING_BACKEND" == "test" ]]; then
+    $BIN keys add $WALLET --keyring-backend $KEYRING_BACKEND --home $CONFIG_PATH
   else
     expect -c "
       set timeout -1
       exp_internal 0
 
-      spawn $BIN keys add $WALLET --keyring-backend $KEYRING --home $CONFIG_PATH
+      spawn $BIN keys add $WALLET --keyring-backend $KEYRING_BACKEND --home $CONFIG_PATH
       expect \"Enter keyring passphrase*:\"
       send \"$WALLET_PASS\n\"
-      expect \"Re-enter keyring passphrase\"
+      expect \"Re-enter keyring passphrase*:\"
       send \"$WALLET_PASS\n\"
       expect eof
     "
@@ -158,7 +155,7 @@ start_node() {
             "--from $WALLET" \
             "--geolocation $GEOLOCATION" \
             "--home $CONFIG_PATH" \
-            "--keyring-backend $KEYRING" \
+            "--keyring-backend $KEYRING_BACKEND" \
             "--log_level $LOGLEVEL" \
             "--metrics-listen-address 0.0.0.0:${METRICS_PORT:-23001}" \
             "--node $PUBLIC_RPC" \
@@ -175,11 +172,11 @@ set_variable() {
   source ~/.bashrc
   if [[ ! $ACC_ADDRESS ]]
   then
-    echo 'export ACC_ADDRESS='$(echo $WALLET_PASS | $BIN keys show $WALLET ${KEYRING:+--keyring-backend $KEYRING} -a) >> $HOME/.bashrc
+    echo 'export ACC_ADDRESS='$(echo $WALLET_PASS | $BIN keys show $WALLET ${KEYRING_BACKEND:+--keyring-backend $KEYRING_BACKEND} -a) >> $HOME/.bashrc
   fi
   if [[ ! $VAL_ADDRESS ]]
   then
-    echo 'export VAL_ADDRESS='$(echo $WALLET_PASS | $BIN keys show $WALLET ${KEYRING:+--keyring-backend $KEYRING} --bech val -a) >> $HOME/.bashrc
+    echo 'export VAL_ADDRESS='$(echo $WALLET_PASS | $BIN keys show $WALLET ${KEYRING_BACKEND:+--keyring-backend $KEYRING_BACKEND} --bech val -a) >> $HOME/.bashrc
   fi
 }
 
