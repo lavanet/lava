@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
@@ -52,20 +53,31 @@ func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProvi
 }
 
 type RelayProcessor struct {
-	usedProviders          *lavasession.UsedProviders
-	responses              chan *relayResponse
-	requiredSuccesses      int
-	nodeResponseErrors     RelayErrors
-	protocolResponseErrors RelayErrors
-	successResults         []common.RelayResult
-	lock                   sync.RWMutex
-	chainMessage           chainlib.ChainMessage
-	guid                   uint64
-	selection              Selection
-	consumerConsistency    *ConsumerConsistency
-	dappID                 string
-	consumerIp             string
-	skipDataReliability    bool
+	usedProviders           *lavasession.UsedProviders
+	responses               chan *relayResponse
+	requiredSuccesses       int
+	nodeResponseErrors      RelayErrors
+	protocolResponseErrors  RelayErrors
+	successResults          []common.RelayResult
+	lock                    sync.RWMutex
+	chainMessage            chainlib.ChainMessage
+	guid                    uint64
+	selection               Selection
+	consumerConsistency     *ConsumerConsistency
+	dappID                  string
+	consumerIp              string
+	skipDataReliability     bool
+	allowSessionDegradation uint32 // used in the scenario where extension was previously used.
+}
+
+// true if we never got an extension. (default value)
+func (rp *RelayProcessor) GetAllowSessionDegradation() bool {
+	return atomic.LoadUint32(&rp.allowSessionDegradation) == 0
+}
+
+// in case we had an extension and managed to get a session successfully, we prevent session degradation.
+func (rp *RelayProcessor) SetAllowSessionDegradation() {
+	atomic.StoreUint32(&rp.allowSessionDegradation, 1)
 }
 
 func (rp *RelayProcessor) setSkipDataReliability(val bool) {
