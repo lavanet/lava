@@ -44,11 +44,15 @@ COPY --from=builder /lava/build/lavap /bin/lavap
 ENV HOME /lava
 WORKDIR $HOME
 
-EXPOSE 26656
-EXPOSE 26657
+# lava api
 EXPOSE 1317
-# Note: uncomment the line below if you need pprof in locallava
-# We disable it by default in out main Dockerfile for security reasons
-# EXPOSE 6060
+# rosetta
+EXPOSE 8080
+# grpc
+EXPOSE 9090
+# tendermint p2p
+EXPOSE 26656
+# tendermint rpc
+EXPOSE 26657
 
 ENTRYPOINT ["lavap"]
