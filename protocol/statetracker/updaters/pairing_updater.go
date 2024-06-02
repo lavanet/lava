@@ -34,7 +34,9 @@ func NewPairingUpdater(stateQuery *ConsumerStateQuery, specId string) *PairingUp
 
 func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {
 	chainID := consumerSessionManager.RPCEndpoint().ChainID
-	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(context.Background(), chainID, -1)
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, -1)
 	if err != nil {
 		return err
 	}
