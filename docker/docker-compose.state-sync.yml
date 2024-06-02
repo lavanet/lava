@@ -1,4 +1,3 @@
-version: '3.9'
 
 services:
 
@@ -60,7 +59,7 @@ services:
       - '${LAVA_NODE_PORT_RPC:-26657}:26657'
     volumes:
       - lava_data:/lava
-    restart: on-failure
+    restart: always
     depends_on:
       lava-node-init:
         condition: service_completed_successfully
