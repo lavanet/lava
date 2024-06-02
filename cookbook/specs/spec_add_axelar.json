@@ -2464,6 +2464,15 @@
                                         "expected_value": "axelar-testnet-lisbon-3"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "690489"
+                                    }
+                                ]
                             }
                         ]
                     }
