@@ -365,12 +365,6 @@ func (rpcps *RPCProviderServer) RelaySubscribe(request *pairingtypes.RelayReques
 	// TryRelaySubscribe is blocking until subscription ends
 	subscribed, err := rpcps.TryRelaySubscribe(ctx, uint64(request.RelaySession.Epoch), request, srv, chainMessage, consumerAddress, relaySession, request.RelaySession.RelayNum)
 	if subscribed {
-		// meaning we created a subscription and used it for at least a message
-		pairingEpoch := relaySession.PairingEpoch
-
-		// no need to perform on session done as we did it in try relay subscribe
-		go rpcps.SendProof(ctx, pairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
-
 		utils.LavaFormatDebug("Provider Finished Relay Successfully",
 			utils.LogAttr("request.SessionId", request.RelaySession.SessionId),
 			utils.LogAttr("request.relayNumber", request.RelaySession.RelayNum),
@@ -486,8 +480,10 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 		utils.LavaFormatError("Error OnSessionDone", relayError)
 	}
 
+	go rpcps.SendProof(ctx, relaySession.PairingEpoch, request, consumerAddress, chainMessage.GetApiCollection().CollectionData.ApiInterface)
+
 	rpcps.rewardServer.SubscribeStarted(consumerAddress.String(), requestBlockHeight, subscriptionId)
-	wg.Wait()
+	wg.Wait() // Block until subscription is done
 
 	rpcps.rewardServer.SubscribeEnded(consumerAddress.String(), requestBlockHeight, subscriptionId)
 	return subscribed, errRet
