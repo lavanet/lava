@@ -2,9 +2,7 @@
 services:
 
   lava-node-init:
-    build: 
-      context: ..
-      dockerfile: cmd/lavad/Dockerfile
+    image: ghcr.io/lavanet/lava/lavad:v2.0.0
     command: >
       config chain-id lava-testnet-2 && \
       lavad config keyring-backend test && \
@@ -47,9 +45,7 @@ services:
           condition: service_completed_successfully
 
   lava-node:
-    build: 
-      context: ..
-      dockerfile: cmd/lavad/Dockerfile
+    image: ghcr.io/lavanet/lava/lavad:v2.0.0
     command: ["start"]
     ports:
       - '${LAVA_NODE_PORT_API:-1317}:1317'
