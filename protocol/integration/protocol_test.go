@@ -440,7 +440,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 				seenError := false
 				statuses := map[int]struct{}{}
 				for i := 0; i <= 100; i++ {
-					client := http.Client{Timeout: 500 * time.Millisecond}
+					client := http.Client{}
 					req, err := http.NewRequest("GET", "http://"+consumerListenAddress+"/status", nil)
 					require.NoError(t, err)
 
