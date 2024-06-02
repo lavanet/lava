@@ -202,7 +202,8 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() context done, exiting", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 			return
 		case nodeMsg := <-nodeChan:
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() got new message from node",
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() got new message from node, ending subscription",
+				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("nodeMsg", nodeMsg),
 			)
@@ -322,8 +323,10 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 	}
 
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() requested to remove consumer from subscription",
+		utils.LogAttr("GUID", ctx),
 		utils.LogAttr("consumerAddr", consumerAddr),
 		utils.LogAttr("params", params),
+		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 	)
 
 	consumerAddrString := consumerAddr.String()
@@ -333,9 +336,11 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 
 	openSubscriptions, ok := pnsm.activeSubscriptions[hashedParams]
 	if !ok {
-		utils.LavaFormatWarning("ProviderNodeSubscriptionManager:RemoveConsumer() no subscription found for params", nil,
+		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no subscription found for params, subscription is already closed",
+			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", params),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 		return nil
 	}
@@ -344,9 +349,11 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 	for epoch, connectedConsumers := range openSubscriptions.connectedConsumers {
 		if _, ok := connectedConsumers[consumerAddrString]; ok {
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() found consumer in epoch",
+				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("consumerAddr", consumerAddr),
-				utils.LogAttr("epoch", epoch),
 				utils.LogAttr("params", params),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("epoch", epoch),
 				utils.LogAttr("connectedConsumers", connectedConsumers),
 			)
 
@@ -355,6 +362,8 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 					utils.LogAttr("GUID", ctx),
 					utils.LogAttr("consumerAddr", consumerAddr),
 					utils.LogAttr("params", params),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+					utils.LogAttr("epoch", epoch),
 				)
 				connectedConsumers[consumerAddrString].Close()
 			}
@@ -362,16 +371,21 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 			delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers[epoch], consumerAddrString)
 			if len(pnsm.activeSubscriptions[hashedParams].connectedConsumers[epoch]) == 0 {
 				utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in epoch, closing epoch",
-					utils.LogAttr("epoch", epoch),
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("consumerAddr", consumerAddr),
 					utils.LogAttr("params", params),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+					utils.LogAttr("epoch", epoch),
 				)
 				delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers, epoch)
 			}
 		} else {
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() consumer not found in epoch",
+				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("consumerAddr", consumerAddr),
-				utils.LogAttr("epoch", epoch),
 				utils.LogAttr("params", params),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("epoch", epoch),
 				utils.LogAttr("connectedConsumers", connectedConsumers),
 			)
 		}
@@ -380,39 +394,61 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 	connectedConsumersCount := len(pnsm.activeSubscriptions[hashedParams].connectedConsumers[pnsm.prevEpoch])
 	if connectedConsumersCount == 0 {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in previous epoch, closing subscription",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", params),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("epoch", pnsm.prevEpoch),
 		)
 		delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers, pnsm.prevEpoch)
 	} else {
 		utils.LavaFormatTrace(fmt.Sprintf("ProviderNodeSubscriptionManager:RemoveConsumer() still have %v consumers left in this subscription for previous epoch", connectedConsumersCount),
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", params),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("connectedConsumers", pnsm.activeSubscriptions[hashedParams].connectedConsumers),
+			utils.LogAttr("epoch", pnsm.prevEpoch),
 		)
 	}
 
 	connectedConsumersCount = len(pnsm.activeSubscriptions[hashedParams].connectedConsumers[pnsm.currentEpoch])
 	if connectedConsumersCount == 0 {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in current epoch, closing subscription",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", params),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("epoch", pnsm.currentEpoch),
 		)
 		delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers, pnsm.currentEpoch)
 	} else {
 		utils.LavaFormatTrace(fmt.Sprintf("ProviderNodeSubscriptionManager:RemoveConsumer() still have %v consumers left in this subscription for current epoch", connectedConsumersCount),
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", params),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("epoch", pnsm.currentEpoch),
 			utils.LogAttr("connectedConsumers", pnsm.activeSubscriptions[hashedParams].connectedConsumers),
 		)
 	}
 
 	epochsConnected := len(pnsm.activeSubscriptions[hashedParams].connectedConsumers)
 	if epochsConnected == 0 {
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in subscription, closing subscription", utils.LogAttr("params", params))
+		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more consumers in subscription, closing subscription",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("consumerAddr", consumerAddr),
+			utils.LogAttr("params", params),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+		)
 
 		pnsm.activeSubscriptions[hashedParams].cancellableContextCancelFunc() // This will trigger the cancellation of the subscription
 	} else {
 		utils.LavaFormatTrace(fmt.Sprintf("ProviderNodeSubscriptionManager:RemoveConsumer() still have %v epochs left in this subscription", epochsConnected),
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", params),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("connectedConsumers", pnsm.activeSubscriptions[hashedParams].connectedConsumers),
 		)
 	}
