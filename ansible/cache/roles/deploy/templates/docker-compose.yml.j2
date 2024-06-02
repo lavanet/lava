@@ -1,0 +1,37 @@
+---
+name: {{ project_unique_name }}
+
+services:
+  cache:
+    image: {{ container.image }}:{{ container.tag }}
+    container_name: {{ project_unique_name }}
+    labels:
+      network: "{% if network %}{{ network }}{% else %}-no_network_set{% endif %}"
+    env_file:
+      - cache.env
+    ports:
+{% for key, value in cache_ports.items() %}
+      - "{{ value }}:{{ value }}"
+{% endfor %}
+    networks:
+{% for value in networks %}
+      - {{ value }}
+{% endfor %}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "1"
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ container.limits.cpu }}"
+          memory: "{{ container.limits.memory }}"
+    restart: unless-stopped
+
+networks:
+{% for value in networks %}
+  {{ value }}:
+    name: {{ value }}
+    external: true
+{% endfor %}
