@@ -172,7 +172,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		pnsm.activeSubscriptions[hashedParams] = channelToConnectedConsumers
 		firstSetupReply = reply
 
-		go pnsm.listenForSubscriptionMessages(ctx, nodeChan, hashedParams)
+		go pnsm.listenForSubscriptionMessages(ctx, nodeChan, clientSubscription.Err(), hashedParams)
 	}
 
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
@@ -181,25 +181,41 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 	return clientSubscription, subscriptionId, nil
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx context.Context, nodeChan chan interface{}, hashedParams string) {
+func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx context.Context, nodeChan chan interface{}, nodeErrChan <-chan error, hashedParams string) {
 	utils.LavaFormatTrace("Inside ProviderNodeSubscriptionManager:startListeningForSubscription()", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 	defer utils.LavaFormatTrace("Leaving ProviderNodeSubscriptionManager:startListeningForSubscription()", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 
-	ticker := time.NewTicker(15 * time.Minute) // Set a time limit of 15 minutes for the subscription
-	defer ticker.Stop()
+	subscriptionTimeoutTicker := time.NewTicker(15 * time.Minute) // Set a time limit of 15 minutes for the subscription
+	defer subscriptionTimeoutTicker.Stop()
 
 	for {
 		select {
-		case <-ticker.C:
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() timeout reached, ending subscription", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+		case <-ctx.Done():
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() context done, exiting",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
+			return
+		case <-subscriptionTimeoutTicker.C:
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() timeout reached, ending subscription",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
 			pnsm.closeNodeSubscription(hashedParams)
 			return
 		case <-pnsm.activeSubscriptions[hashedParams].cancellableContext.Done():
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() subscription context is done, ending subscription", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() subscription context is done, ending subscription",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
 			pnsm.closeNodeSubscription(hashedParams)
 			return
-		case <-ctx.Done():
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() context done, exiting", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+		case nodeErr := <-nodeErrChan:
+			utils.LavaFormatWarning("ProviderNodeSubscriptionManager:startListeningForSubscription() got error from node, ending subscription", nodeErr,
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
+			pnsm.closeNodeSubscription(hashedParams)
 			return
 		case nodeMsg := <-nodeChan:
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() got new message from node, ending subscription",
