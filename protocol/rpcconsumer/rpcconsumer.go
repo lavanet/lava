@@ -312,13 +312,18 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	relaysMonitorAggregator.StartMonitoring(ctx)
 
 	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
-	for chain := range chainMutexes {
-		policyUpdater, ok := policyUpdaters.Load(chain)
+	for chainId := range chainMutexes {
+		policyUpdater, ok := policyUpdaters.Load(chainId)
 		if !ok {
-			utils.LavaFormatError("could not load policy Updater for chain", nil, utils.LogAttr("chain", chain))
+			utils.LavaFormatError("could not load policy Updater for chain", nil, utils.LogAttr("chain", chainId))
 			continue
 		}
-		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater)
+		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater, chainId)
+		emergencyTracker, ok := consumerStateTracker.ConsumerEmergencyTrackerInf.(*statetracker.EmergencyTracker)
+		if !ok {
+			utils.LavaFormatFatal("Failed converting consumerStateTracker.ConsumerEmergencyTrackerInf to *statetracker.EmergencyTracker", nil, utils.LogAttr("chain", chainId))
+		}
+		consumerStateTracker.RegisterForPairingUpdates(ctx, emergencyTracker, chainId)
 	}
 
 	utils.LavaFormatInfo("RPCConsumer done setting up all endpoints, ready for requests")
