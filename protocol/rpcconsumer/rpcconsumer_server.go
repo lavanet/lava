@@ -551,22 +551,31 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	usedProviders := relayProcessor.GetUsedProviders()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
-		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
-			err = utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
+		if lavasession.PairingListEmptyError.Is(err) {
+			if addon != "" {
+				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
+			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
+				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(chainMessage), virtualEpoch)
+				if err != nil {
+					return err
+				}
+				relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling extensions.
+				relayRequestData.Extensions = []string{}
+			} else {
+				return err
+			}
+		} else {
+			return err
 		}
-		return err
+	}
+
+	// making sure next get sessions wont use regular providers
+	if len(extensions) > 0 {
+		relayProcessor.SetAllowSessionDegradation()
 	}
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
-		// in case we need to remove extensions from relay request data so the providers will get a normal relay.
-		if sessionInfo.RemoveExtensions {
-			if len(sessions) > 1 {
-				utils.LavaFormatError("Should not have more than one session when using RemoveExtensions", nil, utils.LogAttr("sessions", sessions))
-			}
-			relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling extensions.
-			relayRequestData.Extensions = []string{}
-		}
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			// add ticker launch metrics
