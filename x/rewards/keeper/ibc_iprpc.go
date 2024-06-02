@@ -130,7 +130,6 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 
 	// divide funds by duration since we use addSpecFunds() when applying the PendingIbcIprpcFund
 	// which assumes that each month will get the input fund
-
 	monthlyFund := sdk.NewCoin(fund.Denom, fund.Amount.QuoRaw(int64(duration)))
 	if monthlyFund.IsZero() {
 		return utils.LavaFormatWarning("fund amount cannot be less than duration", fmt.Errorf("cannot create PendingIbcIprpcFund"),
@@ -141,7 +140,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 		)
 	}
 
-	// leftovers will be transfered to the community pool
+	// leftovers will be transferred to the community pool
 	leftovers := sdk.NewCoin(fund.Denom, fund.Amount.Sub(monthlyFund.Amount.MulRaw(int64(duration))))
 	if !leftovers.IsZero() {
 		receiverName, _ := types.IbcIprpcReceiverAddress()
@@ -187,16 +186,14 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 		)
 	}
 
-	k.SetPendingIbcIprpcFund(ctx, pendingIbcIprpcFund)
-
 	return nil
 }
 
 // SetPendingIbcIprpcFund set an PendingIbcIprpcFund in the PendingIbcIprpcFund store
-func (k Keeper) SetPendingIbcIprpcFund(ctx sdk.Context, PendingIbcIprpcFund types.PendingIbcIprpcFund) {
+func (k Keeper) SetPendingIbcIprpcFund(ctx sdk.Context, pendingIbcIprpcFund types.PendingIbcIprpcFund) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.PendingIbcIprpcFundPrefix))
-	b := k.cdc.MustMarshal(&PendingIbcIprpcFund)
-	store.Set(maps.GetIDBytes(PendingIbcIprpcFund.Index), b)
+	b := k.cdc.MustMarshal(&pendingIbcIprpcFund)
+	store.Set(maps.GetIDBytes(pendingIbcIprpcFund.Index), b)
 }
 
 // IsPendingIbcIprpcFund gets an PendingIbcIprpcFund from the PendingIbcIprpcFund store

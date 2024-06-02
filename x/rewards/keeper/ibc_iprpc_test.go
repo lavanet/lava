@@ -1,9 +1,8 @@
 package keeper_test
 
 import (
-	"testing"
-
 	"strconv"
+	"testing"
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
@@ -343,7 +342,7 @@ func TestCalcPendingIbcIprpcFundExpiration(t *testing.T) {
 }
 
 // TestPendingIbcIprpcFundNewFunds tests that when creating a new PendingIbcIprpcFund the original
-// fund gets divided by duration and the division leftovers are transfered to the community pool
+// fund gets divided by duration and the division leftovers are transferred to the community pool
 func TestPendingIbcIprpcFundNewFunds(t *testing.T) {
 	template := []struct {
 		name                     string
