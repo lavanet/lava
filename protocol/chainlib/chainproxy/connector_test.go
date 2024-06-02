@@ -7,11 +7,13 @@ import (
 	"net"
 	"net/http"
 	"net/rpc"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/utils"
 	pb_pkg "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -19,10 +21,10 @@ import (
 )
 
 const (
-	listenerAddress    = "localhost:1234"
-	port               = "1234"
-	listenerAddressTcp = "http://localhost:1234"
-	numberOfClients    = 5
+	listenerAddress     = "localhost:1234"
+	listenerAddressGrpc = "localhost:1235"
+	listenerAddressTcp  = "http://localhost:1234"
+	numberOfClients     = 5
 )
 
 type Args struct{}
@@ -36,7 +38,7 @@ func (t *TimeServer) GiveServerTime(args *Args, reply *int64) error {
 }
 
 func createGRPCServer(t *testing.T) *grpc.Server {
-	lis, err := net.Listen("tcp", listenerAddress)
+	lis, err := net.Listen("tcp", listenerAddressGrpc)
 	require.NoError(t, err)
 	s := grpc.NewServer()
 	go s.Serve(lis) // serve in a different thread
@@ -56,7 +58,7 @@ func (is *implementedLavanetLavaSpec) ShowChainInfo(ctx context.Context, req *pb
 }
 
 func createGRPCServerWithRegisteredProto(t *testing.T) *grpc.Server {
-	lis, err := net.Listen("tcp", listenerAddress)
+	lis, err := net.Listen("tcp", listenerAddressGrpc)
 	require.NoError(t, err)
 	s := grpc.NewServer()
 	lavanetlavaspec := &implementedLavanetLavaSpec{}
@@ -86,8 +88,6 @@ func createRPCServer() net.Listener {
 }
 
 func TestConnector(t *testing.T) {
-	listener := createRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer listener.Close()
 	ctx := context.Background()
 	conn, err := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
 	require.NoError(t, err)
@@ -116,7 +116,7 @@ func TestConnectorGrpc(t *testing.T) {
 	server := createGRPCServer(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer server.Stop()
 	ctx := context.Background()
-	conn, err := NewGRPCConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddress})
+	conn, err := NewGRPCConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressGrpc})
 	require.NoError(t, err)
 	for { // wait for the routine to finish connecting
 		if len(conn.freeClients) == numberOfClients {
@@ -143,7 +143,7 @@ func TestConnectorGrpcAndInvoke(t *testing.T) {
 	server := createGRPCServerWithRegisteredProto(t) // create a grpcServer so we can connect to its endpoint and validate everything works.
 	defer server.Stop()
 	ctx := context.Background()
-	conn, err := NewGRPCConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddress})
+	conn, err := NewGRPCConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressGrpc})
 	require.NoError(t, err)
 	for { // wait for the routine to finish connecting
 		if len(conn.freeClients) == numberOfClients {
@@ -170,10 +170,28 @@ func TestConnectorGrpcAndInvoke(t *testing.T) {
 }
 
 func TestHashing(t *testing.T) {
-	listener := createRPCServer() // create a grpcServer so we can connect to its endpoint and validate everything works.
-	defer listener.Close()
 	ctx := context.Background()
 	conn, _ := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
 	fmt.Println(conn.hashedNodeUrl)
 	require.Equal(t, conn.hashedNodeUrl, HashURL(listenerAddressTcp))
+}
+
+func TestMain(m *testing.M) {
+	listener := createRPCServer()
+	defer listener.Close()
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_, err := rpcclient.DialContext(ctx, listenerAddressTcp)
+		if err != nil {
+			utils.LavaFormatDebug("waiting for grpc server to launch")
+			continue
+		}
+		cancel()
+		break
+	}
+
+	// Start running tests.
+	code := m.Run()
+
+	os.Exit(code)
 }
