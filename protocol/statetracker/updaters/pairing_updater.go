@@ -25,10 +25,11 @@ type PairingUpdater struct {
 	nextBlockForUpdate         uint64
 	stateQuery                 *ConsumerStateQuery
 	pairingUpdatables          []*PairingUpdatable
+	specId                     string
 }
 
-func NewPairingUpdater(stateQuery *ConsumerStateQuery) *PairingUpdater {
-	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery}
+func NewPairingUpdater(stateQuery *ConsumerStateQuery, specId string) *PairingUpdater {
+	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery, specId: specId}
 }
 
 func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {
@@ -56,7 +57,7 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 func (pu *PairingUpdater) RegisterPairingUpdatable(ctx context.Context, pairingUpdatable *PairingUpdatable) error {
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
-	_, epoch, _, err := pu.stateQuery.GetPairing(ctx, "", -1)
+	_, epoch, _, err := pu.stateQuery.GetPairing(ctx, pu.specId, -1)
 	if err != nil {
 		return err
 	}
@@ -103,7 +104,7 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	// get latest epoch from cache
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_, epoch, _, err := pu.stateQuery.GetPairing(timeoutCtx, "", latestBlock)
+	_, epoch, _, err := pu.stateQuery.GetPairing(timeoutCtx, pu.specId, latestBlock)
 	if err != nil {
 		utils.LavaFormatError("could not update pairing for updatables, trying again next block", err)
 		nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
