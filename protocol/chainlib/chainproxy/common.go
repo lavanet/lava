@@ -1,8 +1,9 @@
 package chainproxy
 
 import (
-	"encoding/json"
 	"fmt"
+
+	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/protocol/parser"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"

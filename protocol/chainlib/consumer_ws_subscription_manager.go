@@ -220,7 +220,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 	webSocketCtx context.Context,
 	dappID string,
-	consumerIp string,
+	userIp string,
 	replyServer *pairingtypes.Relayer_RelaySubscribeClient,
 	hashedParams string,
 	providerAddr string,
@@ -274,7 +274,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
 
-			chainMessage, directiveHeaders, relayRequestData, err = cwsm.craftUnsubscribeMessage(hashedParams, dappID, consumerIp, metricsData)
+			chainMessage, directiveHeaders, relayRequestData, err = cwsm.craftUnsubscribeMessage(hashedParams, dappID, userIp, metricsData)
 			if err != nil {
 				utils.LavaFormatError("could not craft unsubscribe message", err)
 				return
@@ -292,7 +292,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			)
 		}
 
-		err = cwsm.sendUnsubscribeMessage(context.Background(), dappID, consumerIp, chainMessage, directiveHeaders, relayRequestData, metricsData)
+		err = cwsm.sendUnsubscribeMessage(context.Background(), dappID, userIp, chainMessage, directiveHeaders, relayRequestData, metricsData)
 		if err != nil {
 			utils.LavaFormatError("could not send unsubscribe message", err, utils.LogAttr("GUID", webSocketCtx))
 		}

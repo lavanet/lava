@@ -32,3 +32,15 @@ func (stakeEntry *StakeEntry) UnFreeze(currentBlock uint64) {
 func (stakeEntry *StakeEntry) IsFrozen() bool {
 	return stakeEntry.StakeAppliedBlock == FROZEN_BLOCK
 }
+
+func (stakeEntry *StakeEntry) IsJailed(time int64) bool {
+	return stakeEntry.JailEndTime > time
+}
+
+func (stakeEntry *StakeEntry) IsAddressVaultAndNotProvider(address string) bool {
+	return address != stakeEntry.Address && address == stakeEntry.Vault
+}
+
+func (stakeEntry *StakeEntry) IsAddressVaultOrProvider(address string) bool {
+	return address == stakeEntry.Address || address == stakeEntry.Vault
+}

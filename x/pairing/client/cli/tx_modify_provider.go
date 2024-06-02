@@ -101,7 +101,7 @@ func CmdModifyProvider() *cobra.Command {
 			}
 			var providerEntry *epochstoragetypes.StakeEntry
 			for idx, provider := range response.StakeEntry {
-				if provider.Address == address.String() {
+				if provider.IsAddressVaultOrProvider(address.String()) {
 					providerEntry = &response.StakeEntry[idx]
 					break
 				}
@@ -149,7 +149,7 @@ func CmdModifyProvider() *cobra.Command {
 				return err
 			}
 			if moniker != "" {
-				providerEntry.Moniker = moniker
+				providerEntry.Description.Moniker = moniker
 			}
 
 			if cmd.Flags().Changed(types.FlagCommission) {
@@ -180,6 +180,43 @@ func CmdModifyProvider() *cobra.Command {
 				validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
 			}
 
+			identity, err := cmd.Flags().GetString(types.FlagIdentity)
+			if err != nil {
+				return err
+			}
+			if identity != "" {
+				providerEntry.Description.Identity = identity
+			}
+
+			website, err := cmd.Flags().GetString(types.FlagWebsite)
+			if err != nil {
+				return err
+			}
+			if website != "" {
+				providerEntry.Description.Website = website
+			}
+
+			securityContact, err := cmd.Flags().GetString(types.FlagSecurityContact)
+			if err != nil {
+				return err
+			}
+			if securityContact != "" {
+				providerEntry.Description.SecurityContact = securityContact
+			}
+
+			descriptionDetails, err := cmd.Flags().GetString(types.FlagDescriptionDetails)
+			if err != nil {
+				return err
+			}
+			if descriptionDetails != "" {
+				providerEntry.Description.Details = descriptionDetails
+			}
+
+			description, err := providerEntry.Description.EnsureLength()
+			if err != nil {
+				return err
+			}
+
 			// modify fields
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
@@ -188,9 +225,10 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.Stake,
 				providerEntry.Endpoints,
 				providerEntry.Geolocation,
-				providerEntry.Moniker,
 				providerEntry.DelegateLimit,
 				providerEntry.DelegateCommission,
+				providerEntry.Address,
+				description,
 			)
 
 			if msg.DelegateLimit.Denom != commontypes.TokenDenom {
@@ -210,6 +248,10 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().Var(&geolocationVar, GeolocationFlag, `modify the provider's geolocation int32 or string value "EU,US"`)
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
+	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
+	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
+	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
+	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

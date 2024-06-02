@@ -80,8 +80,8 @@ type ProviderStateTrackerInf interface {
 	RegisterForEpochUpdatesWithDelay(ctx context.Context, epochUpdatable updaters.EpochUpdatable, blocksUpdateDelay int64)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error
-	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error
-	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error
+	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error
+	SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error
 	LatestBlock() int64
 	GetMaxCuForUser(ctx context.Context, consumerAddress, chainID string, epocu uint64) (maxCu uint64, err error)
 	VerifyPairing(ctx context.Context, consumerAddress, providerAddress string, epoch uint64, chainID string) (valid bool, total int64, projectId string, err error)

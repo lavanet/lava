@@ -131,7 +131,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 		}
 
 		msgSeed = strconv.FormatUint(guid, 10)
-		consumerIp := websocketConn.RemoteAddr().String()
+		userIp := websocketConn.RemoteAddr().String()
 
 		logFormattedMsg := string(msg)
 		if !cwm.cmdFlags.DebugRelays {
@@ -148,7 +148,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 		refererMatch, ok := websocketConn.Locals(cwm.refererMatchString).(string)
 		metricsData := metrics.NewRelayAnalytics(dappID, cwm.chainId, cwm.apiInterface)
 
-		chainMessage, directiveHeaders, relayRequestData, err := cwm.relaySender.ParseRelay(webSocketCtx, "", string(msg), cwm.connectionType, dappID, consumerIp, metricsData, nil)
+		chainMessage, directiveHeaders, relayRequestData, err := cwm.relaySender.ParseRelay(webSocketCtx, "", string(msg), cwm.connectionType, dappID, userIp, metricsData, nil)
 		if err != nil {
 			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not parse message", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 			if formatterMsg != nil {
@@ -159,7 +159,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 
 		if !IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 			if IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
-				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData)
+				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from subscription", err, utils.LogAttr("GUID", webSocketCtx))
 				}
@@ -167,7 +167,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 			}
 
 			if IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
-				err := cwm.consumerWsSubscriptionManager.UnsubscribeAll(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData)
+				err := cwm.consumerWsSubscriptionManager.UnsubscribeAll(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from all subscription", err, utils.LogAttr("GUID", webSocketCtx))
 				}
@@ -175,7 +175,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 			}
 
 			// One shot relay
-			relayResult, err := cwm.relaySender.SendParsedRelay(webSocketCtx, dappID, consumerIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
+			relayResult, err := cwm.relaySender.SendParsedRelay(webSocketCtx, dappID, userIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
 			if err != nil {
 				formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not send parsed relay", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 				if formatterMsg != nil {
@@ -192,7 +192,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 		inputFormatter, outputFormatter := formatter.FormatterForRelayRequestAndResponse(relayRequestData.ApiInterface) // we use this to preserve the original jsonrpc id
 		inputFormatter(relayRequestData.Data)                                                                           // set the extracted jsonrpc id
 
-		reply, subscriptionMsgsChan, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp, metricsData)
+		reply, subscriptionMsgsChan, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, metricsData)
 		if err != nil {
 			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not start subscription", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 			if formatterMsg != nil {
@@ -213,7 +213,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 			utils.LavaFormatWarning("StartSubscription returned an error", err,
 				utils.LogAttr("GUID", webSocketCtx),
 				utils.LogAttr("dappID", dappID),
-				utils.LogAttr("consumerIp", consumerIp),
+				utils.LogAttr("userIp", userIp),
 				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 			)
 
@@ -225,7 +225,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 				utils.LavaFormatTrace("created go routine for new websocketSubMsgsChan",
 					utils.LogAttr("GUID", webSocketCtx),
 					utils.LogAttr("dappID", dappID),
-					utils.LogAttr("consumerIp", consumerIp),
+					utils.LogAttr("userIp", userIp),
 					utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 				)
 
@@ -236,14 +236,14 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 				utils.LavaFormatTrace("subscriptionMsgsChan was closed",
 					utils.LogAttr("GUID", webSocketCtx),
 					utils.LogAttr("dappID", dappID),
-					utils.LogAttr("consumerIp", consumerIp),
+					utils.LogAttr("userIp", userIp),
 					utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 				)
 			}()
 		}
 
 		if ok && refererMatch != "" && cwm.refererData != nil {
-			go cwm.refererData.SendReferer(refererMatch, cwm.chainId, string(msg), nil, websocketConn)
+			go cwm.refererData.SendReferer(refererMatch, cwm.chainId, string(msg), websocketConn.RemoteAddr().String(), nil, websocketConn)
 		}
 
 		go logger.AddMetricForWebSocket(metricsData, err, websocketConn)

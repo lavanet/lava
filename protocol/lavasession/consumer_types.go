@@ -38,9 +38,15 @@ func (list EndpointInfoList) Swap(i, j int) {
 	list[i], list[j] = list[j], list[i]
 }
 
-const AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
+const (
+	AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
+	AllowGRPCCompressionFlag               = "allow-grpc-compression-for-consumer-provider-communication"
+)
 
-var AllowInsecureConnectionToProviders = false
+var (
+	AllowInsecureConnectionToProviders                   = false
+	AllowGRPCCompressionForConsumerProviderCommunication = false
+)
 
 type UsedProvidersInf interface {
 	RemoveUsed(providerAddress string, err error)
@@ -48,6 +54,7 @@ type UsedProvidersInf interface {
 	AddUsed(ConsumerSessionsMap, error)
 	GetUnwantedProvidersToSend() map[string]struct{}
 	AddUnwantedAddresses(address string)
+	CurrentlyUsed() int
 }
 
 type SessionInfo struct {
@@ -56,6 +63,7 @@ type SessionInfo struct {
 	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
+	RemoveExtensions  bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
 type ConsumerSessionsMap map[string]*SessionInfo
@@ -105,6 +113,7 @@ type Endpoint struct {
 type SessionWithProvider struct {
 	SessionsWithProvider *ConsumerSessionsWithProvider
 	CurrentEpoch         uint64
+	RemoveExtensions     bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
 type SessionWithProviderMap map[string]*SessionWithProvider
@@ -298,7 +307,7 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
-	conn, err := ConnectGRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders)
+	conn, err := ConnectGRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders, false, AllowGRPCCompressionForConsumerProviderCommunication)
 	if err != nil {
 		return nil, nil, err
 	}

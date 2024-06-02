@@ -3,12 +3,13 @@ package rpcprovider
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec"

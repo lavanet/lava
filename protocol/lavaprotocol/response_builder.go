@@ -2,8 +2,9 @@ package lavaprotocol
 
 import (
 	"context"
-	"encoding/json"
 	"sort"
+
+	"github.com/goccy/go-json"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
