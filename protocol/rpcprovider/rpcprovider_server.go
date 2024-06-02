@@ -963,7 +963,8 @@ func (rpcps *RPCProviderServer) handleRelayDataReliability(
 		// avoid using cache, but can still service
 		utils.LavaFormatWarning("no hash data for requested block", nil, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "requestedBlock", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "latestBlock", Value: latestBlock}, utils.Attribute{Key: "modifiedReqBlock", Value: modifiedReqBlock}, utils.Attribute{Key: "specificBlock", Value: specificBlock})
 	}
-	return
+
+	return latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, nil
 }
 
 func (rpcps *RPCProviderServer) buildFinalizedBlockHashes(

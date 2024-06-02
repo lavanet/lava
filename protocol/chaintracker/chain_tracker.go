@@ -103,8 +103,8 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int
 		}
 		requestedHashes = append(requestedHashes, &blockStore)
 	}
-	changeTime = cs.latestChangeTime
-	return
+
+	return latestBlock, requestedHashes, cs.latestChangeTime, nil
 }
 
 func (cs *ChainTracker) RegisterForBlockTimeUpdates(updatable blockTimeUpdatable) {

@@ -64,7 +64,6 @@ func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *Consu
 }
 
 func (cwm *ConsumerWebsocketManager) ListenForMessages() {
-
 	var (
 		messageType int
 		msg         []byte

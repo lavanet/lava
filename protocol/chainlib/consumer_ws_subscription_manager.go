@@ -214,7 +214,6 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	go cwsm.listenForSubscriptionMessages(webSocketCtx, dappID, consumerIp, replyServer, hashedParams, providerAddr, metricsData, closeSubscriptionChan)
 
 	return &reply, websocketRepliesChan, nil
-
 }
 
 func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
@@ -227,7 +226,6 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 	metricsData *metrics.RelayMetrics,
 	closeSubscriptionChan chan *unsubscribeRelayData,
 ) {
-
 	var unsubscribeData *unsubscribeRelayData
 
 	defer func() {
