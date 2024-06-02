@@ -151,7 +151,7 @@ func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, l
 	csq.lastChainID = chainID
 	csq.ResponsesCache.SetWithTTL(PairingRespKey+chainID, pairingResp, 1, DefaultTimeToLiveExpiration)
 	if len(pairingResp.Providers) == 0 {
-		utils.LavaFormatError("Chain returned empty provider list, check node connection and consumer subscription status", nil,
+		utils.LavaFormatWarning("Chain returned empty provider list, check node connection and consumer subscription status, or no providers provide this chain", nil,
 			utils.LogAttr("chainId", chainID),
 			utils.LogAttr("epoch", pairingResp.CurrentEpoch),
 			utils.LogAttr("consumer_address", csq.clientCtx.FromAddress.String()),
