@@ -382,8 +382,9 @@ jobs:
 
   build_docker:
     permissions:
-      contents: read
+      contents: write
       packages: write
+      id-token: write
     needs: [test-consensus, test-protocol]
     runs-on: ubuntu-latest
     strategy:
