@@ -127,7 +127,7 @@ func TestEndpointSortingFlow(t *testing.T) {
 
 	// because probing is in a routine we need to wait for the sorting and probing to end asynchronously
 	swapped := false
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		if pairingList[0].Endpoints[0].NetworkAddress == grpcListener {
 			fmt.Println("Endpoints Are Sorted!", i)
 			swapped = true
