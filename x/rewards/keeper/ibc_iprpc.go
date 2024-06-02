@@ -128,6 +128,35 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 		)
 	}
 
+	// divide funds by duration since we use addSpecFunds() when applying the PendingIbcIprpcFund
+	// which assumes that each month will get the input fund
+
+	monthlyFund := sdk.NewCoin(fund.Denom, fund.Amount.QuoRaw(int64(duration)))
+	if monthlyFund.IsZero() {
+		return utils.LavaFormatWarning("fund amount cannot be less than duration", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("spec", spec),
+			utils.LogAttr("duration", duration),
+			utils.LogAttr("funds", fund),
+		)
+	}
+
+	// leftovers will be transfered to the community pool
+	leftovers := sdk.NewCoin(fund.Denom, fund.Amount.Sub(monthlyFund.Amount.MulRaw(int64(duration))))
+	if !leftovers.IsZero() {
+		receiverName, _ := types.IbcIprpcReceiverAddress()
+		err := k.FundCommunityPoolFromModule(ctx, sdk.NewCoins(leftovers), receiverName)
+		if err != nil {
+			return utils.LavaFormatError("cannot transfer monthly fund leftovers to community pool for PendingIbcIprpcFund", err,
+				utils.LogAttr("creator", creator),
+				utils.LogAttr("spec", spec),
+				utils.LogAttr("duration", duration),
+				utils.LogAttr("funds", fund),
+				utils.LogAttr("leftovers", leftovers),
+			)
+		}
+	}
+
 	// get index for the new object
 	latestPendingIbcIprpcFund := k.GetLatestPendingIbcIprpcFund(ctx)
 	newIndex := uint64(0)
@@ -143,7 +172,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 		Creator:  creator,
 		Spec:     spec,
 		Duration: duration,
-		Fund:     fund,
+		Fund:     monthlyFund,
 		Expiry:   expiry,
 	}
 

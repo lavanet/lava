@@ -341,3 +341,50 @@ func TestCalcPendingIbcIprpcFundExpiration(t *testing.T) {
 	expiry := keeper.CalcPendingIbcIprpcFundExpiration(ctx)
 	require.Equal(t, expectedExpiry, expiry)
 }
+
+// TestPendingIbcIprpcFundNewFunds tests that when creating a new PendingIbcIprpcFund the original
+// fund gets divided by duration and the division leftovers are transfered to the community pool
+func TestPendingIbcIprpcFundNewFunds(t *testing.T) {
+	template := []struct {
+		name                     string
+		funds                    math.Int
+		duration                 uint64
+		expectedFundsInPending   math.Int
+		expectedFundsInCommunity math.Int
+		success                  bool
+	}{
+		{"divisiable - 9ulava", math.NewInt(9), 3, math.NewInt(3), math.ZeroInt(), true},
+		{"not divisiable - 10ulava", math.NewInt(10), 3, math.NewInt(3), math.OneInt(), true},
+		{"less than duration - 1ulava", math.NewInt(1), 3, math.ZeroInt(), math.ZeroInt(), false},
+		{"one month duration - 10ulava", math.NewInt(10), 1, math.NewInt(10), math.ZeroInt(), true},
+	}
+
+	for _, tt := range template {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := newTester(t, false)
+			keeper, ctx := ts.Keepers.Rewards, ts.Ctx
+			spec := ts.Spec("mock")
+			funds := sdk.NewCoin(ts.TokenDenom(), tt.funds)
+
+			// set the IPRPC receiver balance manually since we don't call the IBC middleware
+			// this is crucial since the leftover funds are taken from it to the community pool
+			_, iprpcReceiverAddr := types.IbcIprpcReceiverAddress()
+			ts.Keepers.BankKeeper.SetBalance(ctx, iprpcReceiverAddr, sdk.NewCoins(funds))
+
+			// create a new PendingIbcIprpcFund
+			err := keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
+			if tt.success {
+				require.NoError(t, err)
+				latest := keeper.GetLatestPendingIbcIprpcFund(ts.Ctx)
+				require.True(t, latest.Fund.Amount.Equal(tt.expectedFundsInPending))
+			} else {
+				require.Error(t, err)
+			}
+
+			// check community pool balance
+			communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
+			communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
+			require.True(t, communityBalance.Equal(tt.expectedFundsInCommunity))
+		})
+	}
+}
