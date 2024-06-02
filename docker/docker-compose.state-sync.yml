@@ -53,11 +53,11 @@ services:
       dockerfile: cmd/lavad/Dockerfile
     command: ["start"]
     ports:
-      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_API:-1317}:1317'
-      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_GRPC:-9090}:9090'
-      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_GRPC_WEB:-9091}:9091'
-      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_P2P:-26656}:26656'
-      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_RPC:-26657}:26657'
+      - '${LAVA_NODE_PORT_API:-1317}:1317'
+      - '${LAVA_NODE_PORT_GRPC:-9090}:9090'
+      - '${LAVA_NODE_PORT_GRPC_WEB:-9091}:9091'
+      - '${LAVA_NODE_PORT_P2P:-26656}:26656'
+      - '${LAVA_NODE_PORT_RPC:-26657}:26657'
     volumes:
       - lava_data:/lava
     restart: on-failure
