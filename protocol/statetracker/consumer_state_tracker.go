@@ -49,14 +49,13 @@ func NewConsumerStateTracker(ctx context.Context, txFactory tx.Factory, clientCt
 		disableConflictTransactions: disableConflictTransactions,
 	}
 
-	cst.RegisterForPairingUpdates(ctx, emergencyTracker)
 	err = cst.RegisterForDowntimeParamsUpdates(ctx, emergencyTracker)
 	return cst, err
 }
 
 func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
 	// register this CSM to get the updated pairing list when a new epoch starts
-	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery)
+	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery, consumerSessionManager.RPCEndpoint().ChainID)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
 	pairingUpdater, ok := pairingUpdaterRaw.(*updaters.PairingUpdater)
 	if !ok {
@@ -68,8 +67,8 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 	}
 }
 
-func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, pairingUpdatable updaters.PairingUpdatable) {
-	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery)
+func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, pairingUpdatable updaters.PairingUpdatable, specId string) {
+	pairingUpdater := updaters.NewPairingUpdater(cst.stateQuery, specId)
 	pairingUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, pairingUpdater)
 	pairingUpdater, ok := pairingUpdaterRaw.(*updaters.PairingUpdater)
 	if !ok {
@@ -82,7 +81,7 @@ func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, 
 }
 
 func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *lavaprotocol.FinalizationConsensus) {
-	finalizationConsensusUpdater := updaters.NewFinalizationConsensusUpdater(cst.stateQuery)
+	finalizationConsensusUpdater := updaters.NewFinalizationConsensusUpdater(cst.stateQuery, finalizationConsensus.SpecId)
 	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)
 	finalizationConsensusUpdater, ok := finalizationConsensusUpdaterRaw.(*updaters.FinalizationConsensusUpdater)
 	if !ok {
