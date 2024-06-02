@@ -60,7 +60,7 @@ Servicer | ERR_unstake_servicer_spec | Tx | sent when the spec specified  on uns
 Servicer | ERR_unstake_servicer_storage | Tx | sent when there is a problem with the storage fdor handling the request | error | the storage that had the problem
 Servicer | ERR_unstake_servicer_entry | Tx | sent when the entry for unstaking wasn't found meaning servicer wasn't staked | servicer | the address of the servicer | spec | the spec of the servicer
 Gov | ERR_param_change | Tx | sent when a param change proposal passed but had an error | param | the param to change | value | the new value | error | the error that was triggered
-Spec | ERR_spec_add_dup | Tx | sent when a proposal tried to add an existing spec | spec | the name of the spec | status | the status of the spec | chainID | the index of the spec
+Spec | ERR_dup | Tx | sent when a proposal tried to add an existing spec | spec | the name of the spec | status | the status of the spec | chainID | the index of the spec
 Spec | ERR_spec_modify_missing | Tx | sent when a proposal tried to modify a spec but wasn't found | spec | the name of the spec | status | the status of the spec | chainID | the index of the spec
 User | ERR_user_unstaking_credit | NewBlock | sent upon an error in crediting a user after unstake deadline was reached | error | the error that occured | spec | the spec name | user | unstaking user address | stake | the stake that needs to be credited
 User | ERR_user_unstaking_deadline | NewBlock | sent upon an invalid callback schedule for next unstaking commit | minDeadline | the next callback block | height | the current block | unstakingCount | the amount of unstaking users | deletedIndexes | the amount of users credited this callback
