@@ -64,16 +64,15 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 
 	err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
 	if err != nil {
-		utils.LavaFormatError("failed registering for pairing updates", err, utils.Attribute{Key: "data", Value: consumerSessionManager.RPCEndpoint()})
 		// if failed registering pairing, continue trying asynchronously
 		go func() {
-			numberOfAttempts := 1
+			numberOfAttempts := 0
 			for {
+				utils.LavaFormatError("Failed retry RegisterPairing", err, utils.LogAttr("attempt", numberOfAttempts), utils.Attribute{Key: "data", Value: consumerSessionManager.RPCEndpoint()})
 				err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
 				if err == nil {
 					break
 				}
-				utils.LavaFormatError("Failed retry RegisterPairing", err, utils.LogAttr("attempt", numberOfAttempts))
 			}
 		}()
 	}
