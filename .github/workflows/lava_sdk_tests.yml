@@ -26,7 +26,7 @@ jobs:
           node-version: "21.2.0"
 
       - name: Init the SDK
-        run: GOPATH=~/go ./scripts/test/init_sdk.sh -s
+        run: GOPATH=~/go ./scripts/init_sdk.sh -s
         working-directory: ./ecosystem/lava-sdk
 
       - name: ESLint
