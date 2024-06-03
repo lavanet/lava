@@ -22,10 +22,7 @@ func IbcIprpcReceiverAddress() sdk.AccAddress {
 }
 
 const (
-	IbcIprpcReceiver = "iprpc"
-)
-
-const (
+	IbcIprpcReceiver          = "iprpc"
 	PendingIbcIprpcFundPrefix = "PendingIbcIprpcFund/"
 )
 
