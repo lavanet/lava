@@ -104,8 +104,7 @@ func CmdQueryGenerateIbcIprpcTx() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_, recieverAddr := types.IbcIprpcReceiverAddress()
-			msg := ibctransfertypes.NewMsgTransfer(srcPort, srcChannel, amount, sender, recieverAddr.String(), height, 0, memo)
+			msg := ibctransfertypes.NewMsgTransfer(srcPort, srcChannel, amount, sender, types.IbcIprpcReceiverAddress().String(), height, 0, memo)
 
 			// print constructed transfer message with custom memo
 			txf, err := tx.NewFactoryCLI(clientCtx, cmd.Flags())
