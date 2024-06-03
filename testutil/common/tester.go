@@ -700,6 +700,11 @@ func (ts *Tester) TxRewardsFundIprpc(creator string, spec string, duration uint6
 	return ts.Servers.RewardsServer.FundIprpc(ts.GoCtx, msg)
 }
 
+func (ts *Tester) TxRewardsCoverIbcIprpcFundCost(creator string, index uint64) (*rewardstypes.MsgCoverIbcIprpcFundCostResponse, error) {
+	msg := rewardstypes.NewMsgCoverIbcIprpcFundCost(creator, index)
+	return ts.Servers.RewardsServer.CoverIbcIprpcFundCost(ts.GoCtx, msg)
+}
+
 // TxCreateValidator: implement 'tx staking createvalidator' and bond its tokens
 func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, 1)
