@@ -109,11 +109,11 @@ func printInvalidMemoWarning(iprpcData map[string]interface{}, description strin
 // upon expiration. The expiration period is determined by the reward module's parameter IbcIprpcExpiration.
 
 // NewPendingIbcIprpcFund sets a new PendingIbcIprpcFund object. It validates the input and sets the object with the right index and expiry
-func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec string, duration uint64, fund sdk.Coin) error {
+func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec string, duration uint64, fund sdk.Coin) (types.PendingIbcIprpcFund, error) {
 	// validate spec and funds
 	_, found := k.specKeeper.GetSpec(ctx, spec)
 	if !found {
-		return utils.LavaFormatError("spec not found", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+		return types.PendingIbcIprpcFund{}, utils.LavaFormatError("spec not found", fmt.Errorf("cannot create PendingIbcIprpcFund"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("spec", spec),
 			utils.LogAttr("duration", duration),
@@ -121,7 +121,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 		)
 	}
 	if fund.IsNil() || !fund.IsValid() {
-		return utils.LavaFormatError("invalid funds", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+		return types.PendingIbcIprpcFund{}, utils.LavaFormatError("invalid funds", fmt.Errorf("cannot create PendingIbcIprpcFund"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("spec", spec),
 			utils.LogAttr("duration", duration),
@@ -133,7 +133,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 	// which assumes that each month will get the input fund
 	monthlyFund := sdk.NewCoin(fund.Denom, fund.Amount.QuoRaw(int64(duration)))
 	if monthlyFund.IsZero() {
-		return utils.LavaFormatWarning("fund amount cannot be less than duration", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+		return types.PendingIbcIprpcFund{}, utils.LavaFormatWarning("fund amount cannot be less than duration", fmt.Errorf("cannot create PendingIbcIprpcFund"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("spec", spec),
 			utils.LogAttr("duration", duration),
@@ -146,7 +146,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 	if !leftovers.IsZero() {
 		err := k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(leftovers), types.IbcIprpcReceiverAddress())
 		if err != nil {
-			return utils.LavaFormatError("cannot transfer monthly fund leftovers to community pool for PendingIbcIprpcFund", err,
+			return types.PendingIbcIprpcFund{}, utils.LavaFormatError("cannot transfer monthly fund leftovers to community pool for PendingIbcIprpcFund", err,
 				utils.LogAttr("creator", creator),
 				utils.LogAttr("spec", spec),
 				utils.LogAttr("duration", duration),
@@ -177,7 +177,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 
 	// sanity check
 	if !pendingIbcIprpcFund.IsValid() {
-		return utils.LavaFormatError("PendingIbcIprpcFund is invalid. expiry and duration must be positive, fund cannot be zero", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+		return types.PendingIbcIprpcFund{}, utils.LavaFormatError("PendingIbcIprpcFund is invalid. expiry and duration must be positive, fund cannot be zero", fmt.Errorf("cannot create PendingIbcIprpcFund"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("spec", spec),
 			utils.LogAttr("duration", duration),
@@ -188,7 +188,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 
 	k.SetPendingIbcIprpcFund(ctx, pendingIbcIprpcFund)
 
-	return nil
+	return pendingIbcIprpcFund, nil
 }
 
 // SetPendingIbcIprpcFund set an PendingIbcIprpcFund in the PendingIbcIprpcFund store
@@ -249,6 +249,14 @@ func (k Keeper) RemoveExpiredPendingIbcIprpcFunds(ctx sdk.Context) {
 				)
 			}
 			k.RemovePendingIbcIprpcFund(ctx, val.Index)
+			utils.LogLavaEvent(ctx, k.Logger(ctx), types.ExpiredPendingIbcIprpcFundRemovedEventName, map[string]string{
+				"index":        strconv.FormatUint(val.Index, 10),
+				"creator":      val.Creator,
+				"spec":         val.Spec,
+				"duration":     strconv.FormatUint(val.Duration, 10),
+				"monthly_fund": val.Fund.String(),
+				"expiry":       strconv.FormatUint(val.Expiry, 10),
+			}, "Expired pending IBC IPRPC fund was removed. Funds were transferred to the community pool")
 		} else {
 			break
 		}

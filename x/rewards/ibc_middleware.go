@@ -3,6 +3,7 @@ package rewards
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -141,10 +142,20 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 	}
 
 	// set pending IPRPC over IBC requests on-chain
-	err = im.keeper.NewPendingIbcIprpcFund(ctx, memo.Creator, memo.Spec, memo.Duration, ibcFundCoins[0])
+	piif, err := im.keeper.NewPendingIbcIprpcFund(ctx, memo.Creator, memo.Spec, memo.Duration, ibcFundCoins[0])
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
+
+	// make event
+	utils.LogLavaEvent(ctx, im.keeper.Logger(ctx), types.NewPendingIbcIprpcFundEventName, map[string]string{
+		"index":        strconv.FormatUint(piif.Index, 10),
+		"creator":      piif.Creator,
+		"spec":         piif.Spec,
+		"duration":     strconv.FormatUint(piif.Duration, 10),
+		"monthly_fund": piif.Fund.String(),
+		"expiry":       strconv.FormatUint(piif.Expiry, 10),
+	}, "New pending IBC IPRPC fund was created successfully")
 
 	return nil
 }
