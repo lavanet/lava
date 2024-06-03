@@ -321,17 +321,20 @@ func (k Keeper) CoverIbcIprpcFundCost(ctx sdk.Context, creator string, index uin
 		)
 	}
 
-	// send the min cost to the ValidatorsRewardsAllocationPoolName
-	cost := k.CalcPendingIbcIprpcFundMinCost(ctx, piif)
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creatorAddr, string(types.ValidatorsRewardsAllocationPoolName), sdk.NewCoins(cost))
-	if err != nil {
-		return zeroCoin, utils.LavaFormatWarning(types.ErrCoverIbcIprpcFundCostFailed.Error(), err,
-			utils.LogAttr("creator", creator),
-			utils.LogAttr("index", index),
-		)
+	// send the min cost to the ValidatorsRewardsAllocationPoolName (gov module doesn't pay min cost)
+	cost := zeroCoin
+	if creator != k.authority {
+		cost = k.CalcPendingIbcIprpcFundMinCost(ctx, piif)
+		err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creatorAddr, string(types.ValidatorsRewardsAllocationPoolName), sdk.NewCoins(cost))
+		if err != nil {
+			return zeroCoin, utils.LavaFormatWarning(types.ErrCoverIbcIprpcFundCostFailed.Error(), err,
+				utils.LogAttr("creator", creator),
+				utils.LogAttr("index", index),
+			)
+		}
 	}
 
-	// fund the iprpc pool with funds of IbcIprpcReceiver (inside, the IbcIprpcReceiver is not paying the min cost)
+	// fund the iprpc pool with funds of IbcIprpcReceiver (inside, the IbcIprpcReceiver and the gov module are not paying the min cost)
 	err = k.FundIprpc(ctx, types.IbcIprpcReceiver, piif.Duration, sdk.NewCoins(piif.Fund), piif.Spec)
 	if err != nil {
 		return zeroCoin, utils.LavaFormatWarning(types.ErrCoverIbcIprpcFundCostFailed.Error(), err,
