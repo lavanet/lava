@@ -17,8 +17,9 @@ services:
     image: ghcr.io/tomwright/dasel:v2.7.0
     entrypoint: ["sh", "-c"]
     environment:
-      - STATE_SYNC_RPC=https://lava-testnet.rpc.kjnodes.com:443
-      - STATE_SYNC_PEER=d5519e378247dfb61dfe90652d1fe3e2b3005a5b@lava-testnet.rpc.kjnodes.com:14456
+      - STATE_SYNC_RPC_1=https://lava-testnet.rpc.kjnodes.com:443
+      - STATE_SYNC_RPC_2=https://lava-testnet-rpc.polkachu.com:443
+      - STATE_SYNC_RPC_3=https://lava-testnet.rpc.nodex.one:443
       - P2P_SEEDS=3f472746f46493309650e5a033076689996c8881@lava-testnet.rpc.kjnodes.com:14459
       - GENESIS_ADDRESS=https://snapshots.kjnodes.com/lava-testnet/genesis.json
       - ADDRBOOK_ADDRESS=https://snapshots.kjnodes.com/lava-testnet/addrbook.json
@@ -40,10 +41,9 @@ services:
       SYNC_BLOCK_HASH=$(curl -s "$$STATE_SYNC_RPC/block?height=$$SYNC_BLOCK_HEIGHT" | jq -r .result.block_id.hash) &&
 
       dasel put -f /lava/.lava/config/config.toml -t string -v true 'statesync.enable' &&
-      dasel put -f /lava/.lava/config/config.toml -t string -v \"$$STATE_SYNC_RPC,$$STATE_SYNC_RPC\" 'statesync.rpc_servers' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v \"$$STATE_SYNC_RPC_1,$$STATE_SYNC_RPC_2,$$STATE_SYNC_RPC_3\" 'statesync.rpc_servers' &&
       dasel put -f /lava/.lava/config/config.toml -t string -v \"$$SYNC_BLOCK_HEIGHT\" 'statesync.trust_height' &&
-      dasel put -f /lava/.lava/config/config.toml -t string -v \"$$SYNC_BLOCK_HASH\" 'statesync.trust_hash' &&
-      dasel put -f /lava/.lava/config/config.toml -t string -v \"$$STATE_SYNC_PEER\" 'p2p.persistent_peers'
+      dasel put -f /lava/.lava/config/config.toml -t string -v \"$$SYNC_BLOCK_HASH\" 'statesync.trust_hash'
       "
     volumes:
       - lava_data:/lava
