@@ -312,7 +312,7 @@ func TestPendingIbcIprpcFundNew(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			err := keeper.NewPendingIbcIprpcFund(ctx, "creator", tt.spec, 1, tt.funds)
+			_, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", tt.spec, 1, tt.funds)
 			if tt.success {
 				require.NoError(t, err)
 			} else {
@@ -371,11 +371,10 @@ func TestPendingIbcIprpcFundNewFunds(t *testing.T) {
 			require.NoError(t, err)
 
 			// create a new PendingIbcIprpcFund
-			err = keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
+			piif, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
 			if tt.success {
 				require.NoError(t, err)
-				latest := keeper.GetLatestPendingIbcIprpcFund(ts.Ctx)
-				require.True(t, latest.Fund.Amount.Equal(tt.expectedFundsInPending))
+				require.True(t, piif.Fund.Amount.Equal(tt.expectedFundsInPending))
 			} else {
 				require.Error(t, err)
 			}
