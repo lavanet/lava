@@ -40,6 +40,9 @@ const (
 	maxCuForVirtualEpoch               = uint64(200)
 )
 
+// This variable will hold grpc server address
+var grpcListener = "localhost:0"
+
 type testServer struct {
 	delay time.Duration
 }
@@ -94,23 +97,38 @@ func getDelayedAddress() string {
 	if grpcListener == delayedServerAddress {
 		delayedServerAddress = "127.0.0.1:3336"
 	}
+	utils.LavaFormatDebug("delayedAddress Chosen", utils.LogAttr("address", delayedServerAddress))
 	return delayedServerAddress
 }
 
 func TestEndpointSortingFlow(t *testing.T) {
 	delayedAddress := getDelayedAddress()
-	err := createGRPCServer(delayedAddress, time.Millisecond)
+	err := createGRPCServer(delayedAddress, 300*time.Millisecond)
 	csp := &ConsumerSessionsWithProvider{}
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		_, _, err := csp.ConnectRawClientWithTimeout(ctx, delayedAddress)
 		if err != nil {
-			utils.LavaFormatDebug("waiting for grpc server to launch")
+			utils.LavaFormatDebug("delayedAddress - waiting for grpc server to launch")
 			continue
 		}
+		utils.LavaFormatDebug("delayedAddress - grpc server is live", utils.LogAttr("address", delayedAddress))
 		cancel()
 		break
 	}
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_, _, err := csp.ConnectRawClientWithTimeout(ctx, grpcListener)
+		if err != nil {
+			utils.LavaFormatDebug("grpcListener - waiting for grpc server to launch")
+			continue
+		}
+		utils.LavaFormatDebug("grpcListener - grpc server is live", utils.LogAttr("address", grpcListener))
+		cancel()
+		break
+	}
+
 	require.NoError(t, err)
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
@@ -139,9 +157,6 @@ func TestEndpointSortingFlow(t *testing.T) {
 	require.True(t, swapped)
 	// after creating all the sessions
 }
-
-// This variable will hold grpc server address
-var grpcListener = "localhost:0"
 
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.InitRandomSeed()
