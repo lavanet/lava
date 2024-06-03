@@ -50,6 +50,7 @@ services:
 
   lava-node:
     image: ghcr.io/lavanet/lava/lavad:v2.0.0
+    container_name: lava-node
     command: ["start"]
     ports:
       - '${LAVA_NODE_PORT_API:-1317}:1317'
