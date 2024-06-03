@@ -701,7 +701,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					return ctxHolder
 				}()
 
-				errResponse = rpccs.relaySubscriptionInner(ctxHolder.Ctx, endpointClient, singleConsumerSession, localRelayResult)
+				errResponse = rpccs.relaySubscriptionInner(ctxHolder.Ctx, hashedParams, endpointClient, singleConsumerSession, localRelayResult)
 				if errResponse != nil {
 					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse, utils.LogAttr("Request data", localRelayRequestData))
 				}
@@ -924,27 +924,107 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	return relayLatency, nil, false
 }
 
-func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endpointClient pairingtypes.RelayerClient, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult) (err error) {
+func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hashedParams string, endpointClient pairingtypes.RelayerClient, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult) (err error) {
 	// relaySentTime := time.Now()
 	replyServer, err := endpointClient.RelaySubscribe(ctx, relayResult.Request)
 	// relayLatency := time.Since(relaySentTime) // TODO: use subscription QoS
 	if err != nil {
 		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
-			return utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "original error", Value: err.Error()})
+			return utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport,
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("originalError", err.Error()),
+			)
 		}
 
 		return err
 	}
 
-	utils.LavaFormatTrace("subscribe relay succeeded", utils.LogAttr("GUID", ctx))
+	reply, err := rpccs.getFirstSubscriptionReply(ctx, hashedParams, &replyServer)
+	if err != nil {
+		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
+		if errReport != nil {
+			return utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport,
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("originalError", err.Error()),
+			)
+		}
+		return err
+	}
+
+	utils.LavaFormatTrace("subscribe relay succeeded",
+		utils.LogAttr("GUID", ctx),
+		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+	)
 
 	// TODO: need to check that if provider fails and returns error, this is reflected here and we run onSessionDone
 	// my thoughts are that this fails if the grpc fails not if the provider fails, and if the provider returns an error this is reflected by the Recv function on the chainListener calling us here
 	// and this is too late
 	relayResult.ReplyServer = &replyServer
-	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession)
+	relayResult.Reply = reply
+	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession) // TODO: Elad - Use latest block from reply
 	return err
+}
+
+func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, hashedParams string, replyServer *pairingtypes.Relayer_RelaySubscribeClient) (*pairingtypes.RelayReply, error) {
+	var reply pairingtypes.RelayReply
+	var gotFirstReplyChanOrErr = make(chan struct{})
+
+	// Cancel the context after 10 seconds, so we won't hang forever
+	go func() {
+		for {
+			select {
+			case <-time.After(10 * time.Second):
+				if reply.Data == nil {
+					utils.LavaFormatError("Timeout exceeded when waiting for first reply message from subscription, cancelling the context with the provider", nil,
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+					)
+					rpccs.CancelSubscriptionContext(hashedParams) // Cancel the context with the provider, which will trigger the replyServer's context to be cancelled
+				}
+			case <-gotFirstReplyChanOrErr:
+				return
+			}
+		}
+	}()
+
+	select {
+	case <-(*replyServer).Context().Done(): // Make sure the reply server is open
+		return nil, utils.LavaFormatError("reply server context canceled before first time read", nil,
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+		)
+	default:
+		err := (*replyServer).RecvMsg(&reply)
+		gotFirstReplyChanOrErr <- struct{}{}
+		if err != nil {
+			return nil, utils.LavaFormatError("Could not read reply from reply server", err,
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
+		}
+		}
+
+		utils.LavaFormatTrace("successfully got first reply",
+			utils.LogAttr("GUID", ctx),
+		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+		utils.LogAttr("reply", reply),
+	)
+
+	// Make sure we can parse the reply
+	var replyJson rpcclient.JsonrpcMessage
+	err := json.Unmarshal(reply.Data, &replyJson)
+	if err != nil {
+		return nil, utils.LavaFormatError("could not parse reply into json", err,
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("reply", reply.Data),
+		)
+	}
+
+	return &reply, nil
 }
 
 func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, dappID string, consumerIp string, chainMessage chainlib.ChainMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
