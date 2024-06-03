@@ -38,7 +38,7 @@ services:
 
       LATEST_HEIGHT=$(curl -s $$STATE_SYNC_RPC_1/block | jq -r .result.block.header.height) &&
       SYNC_BLOCK_HEIGHT=$(($$LATEST_HEIGHT - $$NUM_BLOCKS)) &&
-      SYNC_BLOCK_HASH=$(curl -s "$$STATE_SYNC_RPC/block?height=$$SYNC_BLOCK_HEIGHT" | jq -r .result.block_id.hash) &&
+      SYNC_BLOCK_HASH=$(curl -s "$$STATE_SYNC_RPC_1/block?height=$$SYNC_BLOCK_HEIGHT" | jq -r .result.block_id.hash) &&
 
       dasel put -f /lava/.lava/config/config.toml -t string -v true 'statesync.enable' &&
       dasel put -f /lava/.lava/config/config.toml -t string -v \"$$STATE_SYNC_RPC_1,$$STATE_SYNC_RPC_2,$$STATE_SYNC_RPC_3\" 'statesync.rpc_servers' &&
