@@ -208,7 +208,8 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		"provider_vault":    stakeEntry.Vault,
 		"provider_provider": stakeEntry.Address,
 		"chain_id":          stakeEntry.Chain,
-		"moniker":           stakeEntry.Moniker,
+		"moniker":           stakeEntry.Description.Moniker,
+		"description":       stakeEntry.Description.String(),
 		"stake":             stakeEntry.Stake.String(),
 		"effective_stake":   stakeEntry.EffectiveStake().String() + stakeEntry.Stake.Denom,
 	}
@@ -230,7 +231,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, chainID).String()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
 		stakeEntry.Freeze()
-	} else if delegator == stakeEntry.Vault && stakeEntry.IsFrozen() {
+	} else if delegator == stakeEntry.Vault && stakeEntry.IsFrozen() && !stakeEntry.IsJailed(ctx.BlockTime().UTC().Unix()) {
 		stakeEntry.UnFreeze(k.epochstorageKeeper.GetCurrentNextEpoch(ctx) + 1)
 	}
 

@@ -17,5 +17,9 @@ ecosystem/**/package-lock.json
 .idea/
 .vscode/
 .storage/
+.vscode/
+go.work
+go.work.sum
+*.md
 
 Dockerfile

@@ -9,6 +9,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/hex"
 	"errors"
 	"log"
 	"os"
@@ -20,6 +21,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -36,17 +38,30 @@ const (
 var NumberOfParallelConnections uint = 10
 
 type Connector struct {
-	lock        sync.RWMutex
-	freeClients []*rpcclient.Client
-	usedClients int64
-	nodeUrl     common.NodeUrl
+	lock          sync.RWMutex
+	freeClients   []*rpcclient.Client
+	usedClients   int64
+	nodeUrl       common.NodeUrl
+	hashedNodeUrl string
+}
+
+func HashURL(url string) string {
+	// Convert the URL string to bytes
+	urlBytes := []byte(url)
+
+	// Hash the URL using the HashMsg function
+	hashedBytes := sigs.HashMsg(urlBytes)
+
+	// Encode the hashed bytes to a hex string for easier sharing
+	return hex.EncodeToString(hashedBytes)
 }
 
 func NewConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) (*Connector, error) {
 	NumberOfParallelConnections = nConns // set number of parallel connections requested by user (or default.)
 	connector := &Connector{
-		freeClients: make([]*rpcclient.Client, 0, nConns),
-		nodeUrl:     nodeUrl,
+		freeClients:   make([]*rpcclient.Client, 0, nConns),
+		nodeUrl:       nodeUrl,
+		hashedNodeUrl: HashURL(nodeUrl.Url),
 	}
 
 	rpcClient, err := connector.createConnection(ctx, nodeUrl, connector.numberOfFreeClients())
@@ -177,6 +192,11 @@ func (connector *Connector) increaseNumberOfClients(ctx context.Context, numberO
 		return
 	}
 	utils.LavaFormatDebug("Failed increasing number of clients")
+}
+
+// getting hashed url from connection. this is never changed. so its not locked.
+func (connector *Connector) GetUrlHash() string {
+	return connector.hashedNodeUrl
 }
 
 func (connector *Connector) GetRpc(ctx context.Context, block bool) (*rpcclient.Client, error) {
