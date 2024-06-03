@@ -2175,7 +2175,8 @@
                             },
                             {
                                 "name": "grpc-metadata-x-cosmos-block-height",
-                                "kind": "pass_both"
+                                "kind": "pass_both",
+                                "function_tag": "SET_LATEST_IN_METADATA"
                             }
                         ],
                         "inheritance_apis": [],
@@ -4687,7 +4688,8 @@
                         "headers": [
                             {
                                 "name": "x-cosmos-block-height",
-                                "kind": "pass_both"
+                                "kind": "pass_both",
+                                "function_tag": "SET_LATEST_IN_METADATA"
                             },
                             {
                                 "name": "grpc-metadata-x-cosmos-block-height",
