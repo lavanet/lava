@@ -64,12 +64,6 @@ services:
     volumes:
       - lava_data:/lava
     restart: always
-    healthcheck:
-      test: lavad status || exit 1
-      interval: 40s
-      timeout: 30s
-      retries: 3
-      start_period: 60s
     depends_on:
       lava-node-init:
         condition: service_completed_successfully
