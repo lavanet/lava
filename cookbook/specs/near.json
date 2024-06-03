@@ -489,6 +489,15 @@
                                         "expected_value": "testnet"
                                     }
                                 ]
+                            },
+                            {
+                                "name": "pruning",
+                                "values": [
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "42376888"
+                                    }
+                                ]
                             }
                         ]
                     }
