@@ -2,6 +2,7 @@ package statetracker
 
 import (
 	"context"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -69,6 +70,7 @@ func (cst *ConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates
 			numberOfAttempts := 0
 			for {
 				utils.LavaFormatError("Failed retry RegisterPairing", err, utils.LogAttr("attempt", numberOfAttempts), utils.Attribute{Key: "data", Value: consumerSessionManager.RPCEndpoint()})
+				time.Sleep(5 * time.Second) // sleep so we don't spam get pairing for no reason
 				err := pairingUpdater.RegisterPairing(ctx, consumerSessionManager)
 				if err == nil {
 					break

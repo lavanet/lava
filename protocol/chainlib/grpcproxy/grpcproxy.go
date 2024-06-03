@@ -3,6 +3,7 @@ package grpcproxy
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -79,7 +80,18 @@ func makeProxyFunc(callBack ProxyCallBack) grpc.StreamHandler {
 		if err != nil {
 			return err
 		}
-		stream.SetHeader(md)
+
+		// Convert metadata keys to lowercase
+		lowercaseMD := metadata.New(map[string]string{})
+		for k, v := range md {
+			lowerKey := strings.ToLower(k)
+			lowercaseMD[lowerKey] = v
+		}
+		md = lowercaseMD
+
+		if err := stream.SetHeader(md); err != nil {
+			utils.LavaFormatError("Got error when setting header", err, utils.LogAttr("headers", md))
+		}
 		return stream.SendMsg(respBytes)
 	}
 }
