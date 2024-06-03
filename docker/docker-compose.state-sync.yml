@@ -2,6 +2,7 @@
 services:
 
   lava-node-init:
+    # Update with the most recent supported version of lavad
     image: ghcr.io/lavanet/lava/lavad:v2.0.0
     environment:
       - CHAIN_ID=lava-testnet-2
@@ -52,6 +53,7 @@ services:
           condition: service_completed_successfully
 
   lava-node:
+    # Update with the most recent supported version of lavad
     image: ghcr.io/lavanet/lava/lavad:v2.0.0
     container_name: lava-node
     command: ["start"]
