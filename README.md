@@ -23,6 +23,11 @@ Lava is built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) whic
 
 **Note**: Requires [Go 1.20.5](https://golang.org/dl/)
 
+### Running Lava 
+
+The best way to start working with lava is to use docker, for additional reading go to:
+[Running via compose](docker/README.md)
+
 ### Installing development dependencies
 
 before running the scripts make sure you have go installed and added to $PATH, you can validate by running `which go`
