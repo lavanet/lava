@@ -929,11 +929,6 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endp
 	replyServer, err := endpointClient.RelaySubscribe(ctx, relayResult.Request)
 	// relayLatency := time.Since(relaySentTime) // TODO: use subscription QoS
 	if err != nil {
-		utils.LavaFormatError("subscribe relay failed", err,
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("originalError", err.Error()),
-		)
-
 		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
 			return utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "original error", Value: err.Error()})

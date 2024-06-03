@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
 
 	rpcclient "github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
@@ -102,8 +103,9 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 		utils.LavaFormatTrace("websocket context is done, removing websocket from active subscriptions",
 			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("dappKey", dappKey),
+			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("dappKey", dappKey),
 		)
 
 		if _, ok := cwsm.connectedDapps[dappKey]; ok {
@@ -122,6 +124,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		// Add to existing subscription
 		utils.LavaFormatTrace("found active subscription for given params",
 			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("dappKey", dappKey),
 		)
@@ -129,6 +132,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		if _, ok := activeSubscription.connectedDapps[dappKey]; ok {
 			utils.LavaFormatTrace("found active subscription for given params and dappKey",
 				utils.LogAttr("GUID", webSocketCtx),
+				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("dappKey", dappKey),
 			)
@@ -144,6 +148,8 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	utils.LavaFormatTrace("could not find active subscription for given params, creating new one",
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+		utils.LogAttr("dappKey", dappKey),
 	)
 
 	relayResult, err := cwsm.relaySender.SendParsedRelay(webSocketCtx, dappID, consumerIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
@@ -153,7 +159,9 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	utils.LavaFormatTrace("got relay result from SendParsedRelay",
 		utils.LogAttr("GUID", webSocketCtx),
+		utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+		utils.LogAttr("dappKey", dappKey),
 		utils.LogAttr("relayResult", relayResult),
 	)
 
@@ -162,15 +170,33 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	if replyServer == nil { // TODO: Handle nil replyServer
 		return nil, nil, utils.LavaFormatTrace("reply server is nil",
 			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("dappKey", dappKey),
 		)
 	}
+
+	// Cancel the context after 10 seconds, so we won't hang forever
+	go func() {
+		<-time.After(10 * time.Second)
+		if reply.Data == nil {
+			cwsm.relaySender.CancelSubscriptionContext(hashedParams)
+			utils.LavaFormatError("Timeout exceeded when waiting for first reply message from subscription, cancelling the context with the provider", nil,
+				utils.LogAttr("GUID", webSocketCtx),
+				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("dappKey", dappKey),
+			)
+		}
+	}()
 
 	select {
 	case <-(*replyServer).Context().Done(): // Make sure the reply server is open
 		utils.LavaFormatTrace("reply server context canceled",
 			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("dappKey", dappKey),
 		)
 
 		return nil, nil, utils.LavaFormatError("context canceled", nil)
@@ -182,13 +208,14 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 		utils.LavaFormatTrace("successfully got first reply",
 			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("dappKey", dappKey),
 			utils.LogAttr("reply", reply),
 		)
 	}
 
 	providerAddr := relayResult.ProviderInfo.ProviderAddress
-	cwsm.longLastingProvidersStorage.AddProvider(providerAddr)
 
 	// Parse the reply
 	var replyJson rpcclient.JsonrpcMessage
@@ -196,6 +223,8 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	if err != nil {
 		return nil, nil, utils.LavaFormatError("could not parse reply into json", err, utils.LogAttr("reply", reply.Data))
 	}
+
+	cwsm.longLastingProvidersStorage.AddProvider(providerAddr)
 
 	closeSubscriptionChan := make(chan *unsubscribeRelayData)
 	cwsm.activeSubscriptions[hashedParams] = &activeSubscriptionHolder{
