@@ -781,6 +781,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		}
 		relayLatency = time.Since(relaySentTime)
 		if rpccs.debugRelays {
+			providerNodeHashes := trailer.Get(chainlib.RPCProviderNodeAddressHash)
 			attributes := []utils.Attribute{
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("addon", relayRequest.RelayData.Addon),
@@ -797,6 +798,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LogAttr("replyErred", err != nil),
 				utils.LogAttr("replyLatestBlock", reply.GetLatestBlock()),
 				utils.LogAttr("method", chainMessage.GetApi().Name),
+				utils.LogAttr("providerNodeHashes", providerNodeHashes),
 			}
 			internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
 			if internalPath != "" {

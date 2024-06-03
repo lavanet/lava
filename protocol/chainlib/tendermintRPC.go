@@ -676,6 +676,9 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	}
 	httpClient := cp.httpClient
 
+	// appending hashed url
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.httpConnector.GetUrlHash()))
+
 	// construct the url by concatenating the node url with the path variable
 	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path
 
@@ -708,8 +711,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	res, err := httpClient.Do(req)
 	if res != nil {
 		// resp can be non nil on error
-		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
-		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+		grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))) // we ignore this error here since this code can be triggered not from grpc
 	}
 	if err != nil {
 		return nil, "", nil, err
@@ -759,6 +761,8 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		}
 		// return the rpc connection to the websocket pool after the function completes
 		defer cp.conn[internalPath].ReturnRpc(rpc)
+		// appending hashed url
+		grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn[internalPath].GetUrlHash()))
 	} else {
 		rpc, err = cp.httpConnector.GetRpc(ctx, true)
 		if err != nil {
@@ -766,6 +770,8 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		}
 		// return the rpc connection to the http pool after the function completes
 		defer cp.httpConnector.ReturnRpc(rpc)
+		// appending hashed url
+		grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.httpConnector.GetUrlHash()))
 	}
 
 	// create variables for the rpc message and reply message
