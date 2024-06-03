@@ -120,6 +120,10 @@ func (k Keeper) GetModuleAddress() string {
 	return k.accountKeeper.GetModuleAddress(types.ModuleName).String()
 }
 
+func (k Keeper) GetIbcIprpcReceiverBalance(ctx sdk.Context) sdk.Coins {
+	return k.bankKeeper.GetAllBalances(ctx, types.IbcIprpcReceiverAddress())
+}
+
 // BondedTargetFactor calculates the bonded target factor which is used to calculate the validators
 // block rewards
 func (k Keeper) BondedTargetFactor(ctx sdk.Context) cosmosMath.LegacyDec {

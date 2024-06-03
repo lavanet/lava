@@ -143,8 +143,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 	// leftovers will be transferred to the community pool
 	leftovers := sdk.NewCoin(fund.Denom, fund.Amount.Sub(monthlyFund.Amount.MulRaw(int64(duration))))
 	if !leftovers.IsZero() {
-		receiverName, _ := types.IbcIprpcReceiverAddress()
-		err := k.FundCommunityPoolFromModule(ctx, sdk.NewCoins(leftovers), receiverName)
+		err := k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(leftovers), types.IbcIprpcReceiverAddress())
 		if err != nil {
 			return utils.LavaFormatError("cannot transfer monthly fund leftovers to community pool for PendingIbcIprpcFund", err,
 				utils.LogAttr("creator", creator),
@@ -185,6 +184,8 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 			utils.LogAttr("expiry", expiry),
 		)
 	}
+
+	k.SetPendingIbcIprpcFund(ctx, pendingIbcIprpcFund)
 
 	return nil
 }
@@ -240,8 +241,7 @@ func (k Keeper) RemoveExpiredPendingIbcIprpcFunds(ctx sdk.Context) {
 		var val types.PendingIbcIprpcFund
 		k.cdc.MustUnmarshal(iterator.Value(), &val)
 		if val.IsExpired(ctx) {
-			receiverName, _ := types.IbcIprpcReceiverAddress()
-			err := k.FundCommunityPoolFromModule(ctx, sdk.NewCoins(val.Fund), receiverName)
+			err := k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(val.Fund), types.IbcIprpcReceiverAddress())
 			if err != nil {
 				utils.LavaFormatError("failed funding community pool from expired IBC IPRPC fund, removing without funding", err,
 					utils.LogAttr("pending_ibc_iprpc_fund", val.String()),

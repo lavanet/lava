@@ -15,10 +15,15 @@ func (im IprpcMemo) IsEqual(other IprpcMemo) bool {
 	return im.Creator == other.Creator && im.Duration == other.Duration && im.Spec == other.Spec
 }
 
-func IbcIprpcReceiverAddress() (receiverName string, receiverAddress sdk.AccAddress) {
-	receiverName = "iprpc"
-	return receiverName, authtypes.NewModuleAddress(receiverName)
+// IbcIprpcReceiverAddress returns a Bech32 address for the string "iprpc"
+// Note, the NewModuleAddress() function is used for convenience. The IbcIprpcReceiver is not a module account
+func IbcIprpcReceiverAddress() sdk.AccAddress {
+	return authtypes.NewModuleAddress(IbcIprpcReceiver)
 }
+
+const (
+	IbcIprpcReceiver = "iprpc"
+)
 
 const (
 	PendingIbcIprpcFundPrefix = "PendingIbcIprpcFund/"

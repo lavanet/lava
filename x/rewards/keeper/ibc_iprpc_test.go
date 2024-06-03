@@ -261,8 +261,8 @@ func TestPendingIbcIprpcFundsRemoveExpiredWithBeginBlock(t *testing.T) {
 
 	// advance block with 3 seconds to expire some of the PendingIbcIprpcFunds
 	// we set balance to the IBC IPRPC receiver address since it get funds only from the IBC middleware (which is not simulated)
-	_, iprpcReceiverAddr := types.IbcIprpcReceiverAddress()
-	ts.Keepers.BankKeeper.SetBalance(ctx, iprpcReceiverAddr, iprpcFunds)
+	err := ts.Keepers.BankKeeper.SetBalance(ctx, types.IbcIprpcReceiverAddress(), iprpcFunds)
+	require.NoError(t, err)
 	ts.AdvanceBlock(3 * time.Second)
 
 	// check that expired PendingIbcIprpcFunds were removed
@@ -430,11 +430,11 @@ func TestPendingIbcIprpcFundNewFunds(t *testing.T) {
 
 			// set the IPRPC receiver balance manually since we don't call the IBC middleware
 			// this is crucial since the leftover funds are taken from it to the community pool
-			_, iprpcReceiverAddr := types.IbcIprpcReceiverAddress()
-			ts.Keepers.BankKeeper.SetBalance(ctx, iprpcReceiverAddr, sdk.NewCoins(funds))
+			err := ts.Keepers.BankKeeper.SetBalance(ctx, types.IbcIprpcReceiverAddress(), sdk.NewCoins(funds))
+			require.NoError(t, err)
 
 			// create a new PendingIbcIprpcFund
-			err := keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
+			err = keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
 			if tt.success {
 				require.NoError(t, err)
 				latest := keeper.GetLatestPendingIbcIprpcFund(ts.Ctx)

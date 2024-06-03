@@ -102,8 +102,7 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 	}
 
 	// change the ibc-transfer packet receiver address to be a temp address and empty the memo
-	_, ibcIprpcReceiverAddress := types.IbcIprpcReceiverAddress()
-	data.Receiver = ibcIprpcReceiverAddress.String()
+	data.Receiver = types.IbcIprpcReceiverAddress().String()
 	data.Memo = ""
 	marshelledData, err := transfertypes.ModuleCdc.MarshalJSON(&data)
 	if err != nil {
@@ -113,21 +112,36 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 	}
 	packet.Data = marshelledData
 
+	// get the IBC IPRPC receiver balance before getting the new IBC tokens
+	balanceBefore := im.keeper.GetIbcIprpcReceiverBalance(ctx)
+
 	// call the next OnRecvPacket() of the transfer stack to make the IbcIprpcReceiver address get the IBC tokens
 	ack := im.app.OnRecvPacket(ctx, packet, relayer)
 	if ack == nil || !ack.Success() {
 		return ack
 	}
 
-	// set pending IPRPC over IBC requests on-chain
-	amount, ok := sdk.NewIntFromString(data.Amount)
-	if !ok {
-		utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("cannot decode coin amount"),
-			utils.LogAttr("data", data))
+	// get the IBC IPRPC receiver balance after getting the new IBC tokens and get the difference
+	// this is done to get the new tokens with the IBC denom
+	balanceAfter := im.keeper.GetIbcIprpcReceiverBalance(ctx)
+	ibcFundCoins := balanceAfter.Sub(balanceBefore...)
+	if ibcFundCoins.IsZero() {
+		utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("ibc iprpc receiver did not get new tokens"),
+			utils.LogAttr("data", data),
+		)
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
-	fund := sdk.NewCoin(data.Denom, amount)
-	err = im.keeper.NewPendingIbcIprpcFund(ctx, memo.Creator, memo.Spec, memo.Duration, fund)
+
+	// ibcFundCoins should have only one token since ibc-transfer allows sending only one type of token
+	if len(ibcFundCoins) != 1 {
+		utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("ibcFundCoins has more than one type of coins"),
+			utils.LogAttr("data", data),
+		)
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+
+	// set pending IPRPC over IBC requests on-chain
+	err = im.keeper.NewPendingIbcIprpcFund(ctx, memo.Creator, memo.Spec, memo.Duration, ibcFundCoins[0])
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
