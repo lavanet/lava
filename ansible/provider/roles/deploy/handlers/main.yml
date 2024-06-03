@@ -1,0 +1,16 @@
+# roles/deploy/handlers/main.yml
+---
+- name: Check and possibly restart docker service
+  block:
+    - name: Get container info
+      community.docker.docker_container_info:
+        name: "{{ project_unique_name }}"
+      register: container_info
+      listen: Check and possibly restart docker service
+
+    - name: Restart docker service if container exists
+      community.docker.docker_compose_v2:
+        project_src: "{{ project_path }}"
+        state: restarted
+      when: container_info.exists
+      listen: Check and possibly restart docker service

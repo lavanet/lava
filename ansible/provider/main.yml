@@ -1,0 +1,31 @@
+---
+# The main playbook for rpc provider deployment
+- name: Deploying and managing the RPC Provider Service
+  hosts: all
+  become: true
+  gather_facts: false
+  roles:
+    - role: deploy
+      tags:
+        - deploy
+  tasks:
+    - name: Run the service
+      community.docker.docker_compose_v2:
+        project_src: "{{ project_path }}"
+        state: present
+      tags:
+        - start
+    - name: Stop the service
+      community.docker.docker_compose_v2:
+        project_src: "{{ project_path }}"
+        state: stopped
+      tags:
+        - never
+        - stop
+    - name: Restart the service
+      community.docker.docker_compose_v2:
+        project_src: "{{ project_path }}"
+        state: restarted
+      tags:
+        - never
+        - restart

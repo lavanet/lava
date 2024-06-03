@@ -1,0 +1,17 @@
+endpoints:
+
+{% for chain in chains %}
+  #### {{ chain.name }} ####
+{% for endpoint in chain.endpoints %}
+  - api-interface: {{ endpoint.api_interface }}
+    chain-id: {{ endpoint.chain_id }}
+    network-address:
+      address: {{ endpoint.network_address }}
+      disable-tls: {{ endpoint.disable_tls | lower }}
+    node-urls:
+{% for url in endpoint.node_urls %}
+      - url: {{ url }}
+{% endfor %}
+{% endfor %}
+
+{% endfor %}

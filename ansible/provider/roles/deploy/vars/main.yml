@@ -1,0 +1,11 @@
+# roles/deploy/vars/main.yml
+
+# In Ansible, the priority of variable values is determined by 
+# the order in which they are defined, known as variable precedence.
+# Variables defined in roles/deploy/vars/main.yml can override the values set in the inventory
+# if they are specified later in the precedence order.
+
+# Examples:
+# network: testnet
+# provider_config:
+#   chain_id: lava-testnet-2

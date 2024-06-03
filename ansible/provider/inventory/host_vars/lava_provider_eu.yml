@@ -1,0 +1,141 @@
+# host_vars/lava_provider_eu.yml
+---
+ansible_host: xxx.xxx.xxx.xxx                                         # IP address of the host
+provider_name: michael                                                # This value is used to generate unique name for directory and Docker container.
+network: testnet
+
+# Container configuration
+container:
+  image: svetekllc/lava                                               # Docker image name
+  tag: v2.0.1-provider                                                # Docker image tag to specify version
+  limits:
+    cpu: 2                                                            # Maximum number of CPU cores the container can use
+    memory: 4gb                                                       # Maximum amount of memory the container can use
+  volume_path: /opt/{{ project_unique_name }}                         # Path where volumes are mounted in the host
+
+# Provider-specific configuration
+provider_config:
+  cache:
+    enable: true                                                      # Whether caching is enabled (true | false)
+    address: lava-cache                                               # Lava Cache service address (IP address | FQDN)
+    port: 23100                                                       # Lava Cache service port
+  chain_id: lava-testnet-2                                            # Blockchain network identifier
+  config_path: /root/.lava                                            # Path to provider configuration files
+  geolocation: 2                                                      # Geolocation ID, used for regional distinctions
+  log_level: info                                                     # Logging level
+  moniker: Michael                                                    # Custom name for the provider instance
+  rewards_storage_dir: rewards-storage                                # Directory for storing rewards data
+  public_rpc_url: https://public-rpc-testnet2.lavanet.xyz:443/rpc/    # Public URL for RPC connections
+  total_connections: 25                                               # Max number of simultaneous network connections
+
+# Wallet configuration
+wallet:
+  name: lava_michael                                                  # Wallet name
+  password: ""                                                        # Wallet password. Required if the keyring_backend parameter is equal: os, file
+  keyring_backend: test                                               # Backend system for managing keys and secrets
+
+# Network ports used by the provider
+provider_ports:
+  grpc: 22001                                                         # Port for gRPC service
+  metrics: 23001                                                      # Port for exposing metrics
+
+networks:
+  - lava                                                              # Network label used for Docker networking
+
+# Blockchain chains configurations
+chains:
+  - name: "Arbitrum mainnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "ARB1", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://arbitrum-mainnet:8545"] }
+
+  - name: "Avalanche mainnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "AVAX", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://avalanche-mainnet/ext/bc"] }
+
+  - name: "Axelar testnet"
+    endpoints:
+      - { api_interface: "tendermintrpc", chain_id: "AXELART", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://axelar-testnet:26657", "ws://axelar-testnet:26657/websocket"] }
+      - { api_interface: "grpc", chain_id: "AXELART", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["axelar-testnet:9090"] }
+      - { api_interface: "rest", chain_id: "AXELART", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://axelar-testnet:26317"] }
+
+  - name: "Axelar mainnet"
+    endpoints:
+      - { api_interface: "tendermintrpc", chain_id: "AXELAR", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://axelar-mainnet:26657", "ws://axelar-mainnet:26657/websocket"] }
+      - { api_interface: "grpc", chain_id: "AXELAR", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["axelar-mainnet:16090"] }
+      - { api_interface: "rest", chain_id: "AXELAR", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://axelar-mainnet:26317"] }
+
+  - name: "Binance mainnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "BSC", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://binance-mainnet"] }
+
+  - name: "Canto mainnet"
+    endpoints:
+      - { api_interface: "tendermintrpc", chain_id: "CANTO", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://canto-mainnet:26657", "ws://canto-mainnet:26657/websocket"] }
+      - { api_interface: "grpc", chain_id: "CANTO", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["canto-mainnet:9090"] }
+      - { api_interface: "jsonrpc", chain_id: "CANTO", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://canto-mainnet:8545"] }
+      - { api_interface: "rest", chain_id: "CANTO", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://canto-mainnet:1317"] }
+
+  - name: "Celestia mainnet"
+    endpoints:
+      - { api_interface: "tendermintrpc", chain_id: "CELESTIA", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://celestia-mainnet:26657", "ws://celestia-mainnet:26657/websocket"] }
+      - { api_interface: "grpc", chain_id: "CELESTIA", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["celestia-mainnet:9090"] }
+      - { api_interface: "jsonrpc", chain_id: "CELESTIA", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://celestia-mainnet-light:26658"] }
+      - { api_interface: "rest", chain_id: "CELESTIA", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://celestia-mainnet:1317"] }
+
+  - name: "Celo mainnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "CELO", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://celo-mainnet:8545"] }
+
+  - name: "CosmosHub mainnet"
+    endpoints:
+      - { api_interface: "tendermintrpc", chain_id: "COSMOSHUB", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://cosmos-mainnet:26657", "ws://cosmos-mainnet:26657/websocket"] }
+      - { api_interface: "grpc", chain_id: "COSMOSHUB", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["cosmos-mainnet:9090"] }
+      - { api_interface: "rest", chain_id: "COSMOSHUB", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://cosmos-mainnet:1317"] }
+
+  - name: "Ethereum mainnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "ETH1", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://ethereum-mainnet:8549"] }
+
+  - name: "Evmos testnet"
+    endpoints:
+      - { api_interface: "tendermintrpc", chain_id: "EVMOST", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://evmos-testnet:26657", "ws://evmos-testnet:26657/websocket"] }
+      - { api_interface: "grpc", chain_id: "EVMOST", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["evmos-testnet:9090"] }
+      - { api_interface: "jsonrpc", chain_id: "EVMOST", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://evmos-testnet:8545"] }
+      - { api_interface: "rest", chain_id: "EVMOST", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://evmos-testnet:1317"] }
+
+  - name: "Evmos mainnet"
+    endpoints:
+      - { api_interface: "tendermintrpc", chain_id: "EVMOS", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://evmos-mainnet:26657", "ws://evmos-mainnet:26657/websocket"] }
+      - { api_interface: "grpc", chain_id: "EVMOS", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["evmos-mainnet:9090"] }
+      - { api_interface: "jsonrpc", chain_id: "EVMOS", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://evmos-mainnet:8545"] }
+      - { api_interface: "rest", chain_id: "EVMOS", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://evmos-mainnet:1317"] }
+
+  - name: "Fantom mainnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "FTM250", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://fantom-mainnet:8545"] }
+
+  - name: "Lava testnet"
+    endpoints:
+      - { api_interface: "tendermintrpc", chain_id: "LAV1", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://lava-testnet:26657", "ws://lava-testnet:26657/websocket"] }
+      - { api_interface: "grpc", chain_id: "LAV1", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["lava-testnet:9090"] }
+      - { api_interface: "rest", chain_id: "LAV1", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://lava-testnet:1317"] }
+
+  - name: "Near testnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "NEART", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://near-testnet:3030"] }
+
+  - name: "Near mainnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "NEAR", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://near-mainnet:3030"] }
+
+  - name: "Polygon mainnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "POLYGON1", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://polygon-mainnet"] }
+
+  - name: "Solana mainnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "SOLANA", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://solana-mainnet"] }
+
+  - name: "Starknet mainnet"
+    endpoints:
+      - { api_interface: "jsonrpc", chain_id: "STRK", network_address: "0.0.0.0:22001", disable_tls: true, node_urls: ["http://starknet-mainnet:9545"] }
