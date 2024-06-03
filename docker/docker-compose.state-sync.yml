@@ -16,10 +16,9 @@ services:
   lava-node-config:
     image: ghcr.io/tomwright/dasel:v2.7.0
     entrypoint: ["sh", "-c"]
+    # Example variables for kjnodes nodes
     environment:
       - STATE_SYNC_RPC_1=https://lava-testnet.rpc.kjnodes.com:443
-      - STATE_SYNC_RPC_2=https://lava-testnet-rpc.polkachu.com:443
-      - STATE_SYNC_RPC_3=https://lava-testnet.rpc.nodex.one:443
       - GENESIS_ADDRESS=https://snapshots.kjnodes.com/lava-testnet/genesis.json
       - ADDRBOOK_ADDRESS=https://snapshots.kjnodes.com/lava-testnet/addrbook.json
       - NUM_BLOCKS=1500
