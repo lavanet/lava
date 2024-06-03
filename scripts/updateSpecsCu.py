@@ -30,9 +30,9 @@ def get_spec_ids(line):
     spec_ids = [spec_id.strip().split()[0] for spec_id in line.split(",")]
     return spec_ids
 
-# Use this func only if spec_add_ethereum.json is present in your folder
+# Use this func only if ethereum.json is present in your folder
 def find_non_eth_apis(apis):
-    with open("spec_add_ethereum.json", "r") as f_json:
+    with open("ethereum.json", "r") as f_json:
         json_data = json.load(f_json)
         for eth_api in json_data["proposal"]["specs"][0]["apis"]:
             if eth_api["name"] in apis:
@@ -44,10 +44,10 @@ def find_non_eth_apis(apis):
 
 # get a folder path from the CLI. Save all the files that start with "spec_add" in a list
 folder_path = sys.argv[1]
-spec_add_files = []
+files = []
 for filename in os.listdir(folder_path):
     if filename.startswith("spec_add"):
-        spec_add_files.append(filename)
+        files.append(filename)
 
 csv_data = []
 
@@ -71,7 +71,7 @@ print("\n#################################")
 print("### updateSpecsCu.py started! ###")
 print("#################################\n")
 
-for spec_file in spec_add_files:
+for spec_file in files:
     csv_apis_of_spec_without_apis = []
     api_changed_counter = 0
 

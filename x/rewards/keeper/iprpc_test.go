@@ -539,65 +539,78 @@ func TestIprpcMinCost(t *testing.T) {
 // 1. p1 provides service for both consumers, p2 provides service for c1 -> IPRPC reward should divide equally between p1 and p2
 // 2. both providers provide service for c2 -> No IPRPC rewards should be given
 func TestIprpcEligibleSubscriptions(t *testing.T) {
-	ts := newTester(t, true)
-	ts.setupForIprpcTests(true) // setup creates consumers and providers and funds IPRPC pool for mock2 spec
+	// do the test for the following consumers:
+	// 1. subscription owners
+	// 2. developers in the admin project
+	// 3. developers in a regular project that belongs to the subscriptions
+	const (
+		SUB_OWNERS                 = 0
+		DEVELOPERS_ADMIN_PROJECT   = 1
+		DEVELOPERS_REGULAR_PROJECT = 2
+	)
+	modes := []int{SUB_OWNERS, DEVELOPERS_ADMIN_PROJECT, DEVELOPERS_REGULAR_PROJECT}
 
-	c1Acc, c1 := ts.GetAccount(common.CONSUMER, 0)
-	c2Acc, _ := ts.GetAccount(common.CONSUMER, 1)
-	_, p1 := ts.GetAccount(common.PROVIDER, 0)
-	_, p2 := ts.GetAccount(common.PROVIDER, 1)
+	for _, mode := range modes {
+		ts := newTester(t, true)
+		ts.setupForIprpcTests(true) // setup creates consumers and providers and funds IPRPC pool for mock2 spec
 
-	// p1 provides service for both consumers, p2 provides service for c1
-	msg := ts.SendRelay(p1, c1Acc, []string{mockSpec2}, 100)
-	_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
-	require.NoError(t, err)
+		// add developers to the admin project of the subscription and add an additional project with developers
+		c1Acc, c2Acc := ts.getConsumersForIprpcSubTest(mode)
 
-	msg = ts.SendRelay(p1, c2Acc, []string{mockSpec2}, 100)
-	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
-	require.NoError(t, err)
+		// p1 provides service for both consumers, p2 provides service for c1
+		_, p1 := ts.GetAccount(common.PROVIDER, 0)
+		_, p2 := ts.GetAccount(common.PROVIDER, 1)
+		msg := ts.SendRelay(p1, c1Acc, []string{mockSpec2}, 100)
+		_, err := ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.NoError(t, err)
 
-	msg = ts.SendRelay(p2, c1Acc, []string{mockSpec2}, 100)
-	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
-	require.NoError(t, err)
+		msg = ts.SendRelay(p1, c2Acc, []string{mockSpec2}, 100)
+		_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.NoError(t, err)
 
-	// check expected reward for each provider, it should be equal (the service for c1 was equal)
-	res1, err := ts.QueryRewardsIprpcProviderRewardEstimation(p1)
-	require.NoError(t, err)
-	res2, err := ts.QueryRewardsIprpcProviderRewardEstimation(p2)
-	require.NoError(t, err)
-	require.True(t, res1.SpecFunds[0].Fund.IsEqual(res2.SpecFunds[0].Fund))
-	require.True(t, iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(2)).IsEqual(res1.SpecFunds[0].Fund))
+		msg = ts.SendRelay(p2, c1Acc, []string{mockSpec2}, 100)
+		_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.NoError(t, err)
 
-	// fund the pool again (advance month to apply)
-	_, err = ts.TxRewardsFundIprpc(c1, mockSpec2, 1, sdk.NewCoins(minIprpcCost.AddAmount(sdk.NewInt(10))))
-	require.NoError(ts.T, err)
-	ts.AdvanceMonths(1).AdvanceEpoch()
+		// check expected reward for each provider, it should be equal (the service for c1 was equal)
+		res1, err := ts.QueryRewardsIprpcProviderRewardEstimation(p1)
+		require.NoError(t, err)
+		res2, err := ts.QueryRewardsIprpcProviderRewardEstimation(p2)
+		require.NoError(t, err)
+		require.True(t, res1.SpecFunds[0].Fund.IsEqual(res2.SpecFunds[0].Fund))
+		require.True(t, iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(2)).IsEqual(res1.SpecFunds[0].Fund))
 
-	// provide service only for c2
-	msg = ts.SendRelay(p1, c2Acc, []string{mockSpec2}, 100)
-	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
-	require.NoError(t, err)
+		// fund the pool again (advance month to apply)
+		_, err = ts.TxRewardsFundIprpc(c1Acc.Addr.String(), mockSpec2, 1, sdk.NewCoins(minIprpcCost.AddAmount(sdk.NewInt(10))))
+		require.NoError(ts.T, err)
+		ts.AdvanceMonths(1).AdvanceEpoch()
 
-	msg = ts.SendRelay(p2, c2Acc, []string{mockSpec2}, 100)
-	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
-	require.NoError(t, err)
+		// provide service only for c2
+		msg = ts.SendRelay(p1, c2Acc, []string{mockSpec2}, 100)
+		_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.NoError(t, err)
 
-	// check none of the providers should get rewards
-	res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
-	require.NoError(t, err)
-	res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
-	require.NoError(t, err)
-	require.Len(t, res1.SpecFunds, 0)
-	require.Len(t, res2.SpecFunds, 0)
+		msg = ts.SendRelay(p2, c2Acc, []string{mockSpec2}, 100)
+		_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+		require.NoError(t, err)
 
-	// advance another month and see there are still no rewards
-	ts.AdvanceMonths(1).AdvanceEpoch()
-	res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
-	require.NoError(t, err)
-	res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
-	require.NoError(t, err)
-	require.Len(t, res1.SpecFunds, 0)
-	require.Len(t, res2.SpecFunds, 0)
+		// check none of the providers should get rewards
+		res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
+		require.NoError(t, err)
+		res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
+		require.NoError(t, err)
+		require.Len(t, res1.SpecFunds, 0)
+		require.Len(t, res2.SpecFunds, 0)
+
+		// advance another month and see there are still no rewards
+		ts.AdvanceMonths(1).AdvanceEpoch()
+		res1, err = ts.QueryRewardsIprpcProviderRewardEstimation(p1)
+		require.NoError(t, err)
+		res2, err = ts.QueryRewardsIprpcProviderRewardEstimation(p2)
+		require.NoError(t, err)
+		require.Len(t, res1.SpecFunds, 0)
+		require.Len(t, res2.SpecFunds, 0)
+	}
 }
 
 // TestMultipleIprpcSpec checks that rewards are distributed correctly when multiple specs are configured in the IPRPC pool
