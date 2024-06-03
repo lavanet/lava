@@ -34,6 +34,7 @@ services:
       dasel put -f /lava/.lava/config/app.toml -t string -v 0 'pruning-keep-every' &&
       dasel put -f /lava/.lava/config/app.toml -t string -v 19 'pruning-interval' &&
       dasel put -f /lava/.lava/config/app.toml -t string -v true 'api.enable' &&
+      
       LATEST_HEIGHT=$(curl -s $$STATE_SYNC_RPC_1/block | jq -r .result.block.header.height) &&
       SYNC_BLOCK_HEIGHT=$(($$LATEST_HEIGHT - $$NUM_BLOCKS)) &&
       SYNC_BLOCK_HASH=$(curl -s "$$STATE_SYNC_RPC_1/block?height=$$SYNC_BLOCK_HEIGHT" | jq -r .result.block_id.hash) &&
@@ -41,7 +42,8 @@ services:
       dasel put -f /lava/.lava/config/config.toml -t string -v true 'statesync.enable' &&
       dasel put -f /lava/.lava/config/config.toml -t string -v \"$$STATE_SYNC_RPC_1,$$STATE_SYNC_RPC_1\" 'statesync.rpc_servers' &&
       dasel put -f /lava/.lava/config/config.toml -t string -v \"$$SYNC_BLOCK_HEIGHT\" 'statesync.trust_height' &&
-      dasel put -f /lava/.lava/config/config.toml -t string -v \"$$SYNC_BLOCK_HASH\" 'statesync.trust_hash'
+      dasel put -f /lava/.lava/config/config.toml -t string -v \"$$SYNC_BLOCK_HASH\" 'statesync.trust_hash' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v \"tcp://0.0.0.0:26657\" 'rpc.laddr'
       "
     volumes:
       - lava_data:/lava
