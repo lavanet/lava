@@ -2460,6 +2460,7 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 
 	// try staking with 2*MAX_ENDPOINTS_AMOUNT_PER_GEO+1 endpoint in USE, should fail
 	acc, addr := ts.AddAccount(common.PROVIDER, 0, testStake)
+	d := common.MockDescription()
 	err := ts.StakeProviderExtra(
 		acc.GetVaultAddr(),
 		addr,
@@ -2467,7 +2468,11 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 		testStake/2,
 		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],
 		geolocations[0],
-		"dummy_provider",
+		d.Moniker,
+		d.Identity,
+		d.Website,
+		d.SecurityContact,
+		d.Details,
 	)
 	require.Error(t, err)
 
@@ -2480,7 +2485,11 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 		testStake/2,
 		validEndpointsArray,
 		geolocations[0]+geolocations[1],
-		"dummy_provider",
+		d.Moniker,
+		d.Identity,
+		d.Website,
+		d.SecurityContact,
+		d.Details,
 	)
 	require.NoError(t, err)
 
@@ -2493,7 +2502,11 @@ func TestMaxEndpointPerGeolocationLimit(t *testing.T) {
 		testStake/2,
 		endpoints[:(2*types.MAX_ENDPOINTS_AMOUNT_PER_GEO)+1],
 		geolocations[0],
-		"dummy_provider",
+		d.Moniker,
+		d.Identity,
+		d.Website,
+		d.SecurityContact,
+		d.Details,
 	)
 	require.Error(t, err)
 }

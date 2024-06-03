@@ -28,6 +28,7 @@ func (k Keeper) Provider(goCtx context.Context, req *types.QueryProviderRequest)
 		if !found {
 			continue
 		}
+		stakeEntry.Moniker = stakeEntry.Description.Moniker
 		stakeEntries = append(stakeEntries, stakeEntry)
 	}
 
