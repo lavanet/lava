@@ -20,12 +20,13 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-const (
-	listenerAddress     = "localhost:1234"
-	listenerAddressGrpc = "localhost:1235"
-	listenerAddressTcp  = "http://localhost:1234"
-	numberOfClients     = 5
+var (
+	listenerAddress     = "localhost:0"
+	listenerAddressGrpc = "localhost:0"
+	listenerAddressTcp  = ""
 )
+
+const numberOfClients = 5
 
 type Args struct{}
 
@@ -39,6 +40,7 @@ func (t *TimeServer) GiveServerTime(args *Args, reply *int64) error {
 
 func createGRPCServer(t *testing.T) *grpc.Server {
 	lis, err := net.Listen("tcp", listenerAddressGrpc)
+	listenerAddressGrpc = lis.Addr().String()
 	require.NoError(t, err)
 	s := grpc.NewServer()
 	go s.Serve(lis) // serve in a different thread
@@ -59,6 +61,7 @@ func (is *implementedLavanetLavaSpec) ShowChainInfo(ctx context.Context, req *pb
 
 func createGRPCServerWithRegisteredProto(t *testing.T) *grpc.Server {
 	lis, err := net.Listen("tcp", listenerAddressGrpc)
+	listenerAddressGrpc = lis.Addr().String()
 	require.NoError(t, err)
 	s := grpc.NewServer()
 	lavanetlavaspec := &implementedLavanetLavaSpec{}
@@ -79,6 +82,8 @@ func createRPCServer() net.Listener {
 	if err != nil {
 		log.Fatal("Listener error: ", err)
 	}
+	listenerAddress = listener.Addr().String()
+	listenerAddressTcp = "http://" + listenerAddress
 	// Serve accepts incoming HTTP connections on the listener l, creating
 	// a new service goroutine for each. The service goroutines read requests
 	// and then call handler to reply to them
