@@ -34,9 +34,9 @@ services:
       dasel put -f /lava/.lava/config/app.toml -t string -v custom 'pruning' &&
       dasel put -f /lava/.lava/config/app.toml -t string -v 100 'pruning-keep-recent' &&
       dasel put -f /lava/.lava/config/app.toml -t string -v 0 'pruning-keep-every' &&
-      dasel put -f /lava/.lava/config/app.toml -t string -v 19 'pruning-interval' &&
+      dasel put -f /lava/.lava/config/app.toml -t string -v 19 'pruning-interval' &&ß
 
-      LATEST_HEIGHT=$(curl -s $$STATE_SYNC_RPC/block | jq -r .result.block.header.height) &&
+      LATEST_HEIGHT=$(curl -s $$STATE_SYNC_RPC_1/block | jq -r .result.block.header.height) &&
       SYNC_BLOCK_HEIGHT=$(($$LATEST_HEIGHT - $$NUM_BLOCKS)) &&
       SYNC_BLOCK_HASH=$(curl -s "$$STATE_SYNC_RPC/block?height=$$SYNC_BLOCK_HEIGHT" | jq -r .result.block_id.hash) &&
 
