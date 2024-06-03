@@ -6,10 +6,11 @@ services:
     environment:
       - CHAIN_ID=lava-testnet-2
       - KEYRING_BACKEND=test
+      - MONIKER=DOCKER_COMPOSE_MONIKER
     command: >
       config chain-id $$CHAIN_ID && \
       lavad config keyring-backend $$KEYRING_BACKEND && \
-      lavad init DOCKER_MONIKER --chain-id $$CHAIN_ID
+      lavad init $$MONIKER --chain-id $$CHAIN_ID
     volumes:
       - lava_data:/lava
 
