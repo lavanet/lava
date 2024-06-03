@@ -50,3 +50,21 @@ runtime"). The default settings are usually suitable for all deployments.
   # to destroy the node:
   docker-compose --profile node --env-file env -f docker-compose.yml down
   ```
+
+## Running node using state-sync with docker-compose
+
+From the root path run:
+```sh
+docker compose -f docker/docker-compose.state-sync.yml -d
+```
+
+To test the setup run:
+```sh
+curl -X POST -H "Content-Type: application/json" localhost:26657 --data '{"jsonrpc": "2.0", "id": 1, "method": "status", "params": []}'
+```
+and expect to see the lastest block.
+
+You can run change the version of `lavad` using the `LAVAD_VERSION` var:
+```sh
+LAVAD_VERSION=v2.0.1 docker compose -f docker/docker-compose.state-sync.yml -d
+```
