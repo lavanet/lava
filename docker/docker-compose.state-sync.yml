@@ -34,7 +34,7 @@ services:
       dasel put -f /lava/.lava/config/app.toml -t string -v 0 'pruning-keep-every' &&
       dasel put -f /lava/.lava/config/app.toml -t string -v 19 'pruning-interval' &&
       dasel put -f /lava/.lava/config/app.toml -t string -v true 'api.enable' &&
-      
+
       LATEST_HEIGHT=$(curl -s $$STATE_SYNC_RPC_1/block | jq -r .result.block.header.height) &&
       SYNC_BLOCK_HEIGHT=$(($$LATEST_HEIGHT - $$NUM_BLOCKS)) &&
       SYNC_BLOCK_HASH=$(curl -s "$$STATE_SYNC_RPC_1/block?height=$$SYNC_BLOCK_HEIGHT" | jq -r .result.block_id.hash) &&
@@ -64,6 +64,12 @@ services:
     volumes:
       - lava_data:/lava
     restart: always
+    healthcheck:
+      test: lavad status || exit 1
+      interval: 40s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
     depends_on:
       lava-node-init:
         condition: service_completed_successfully
