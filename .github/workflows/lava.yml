@@ -382,7 +382,7 @@ jobs:
 
   build_docker:
     permissions:
-      contents: read
+      contents: write
       packages: write
     needs: [test-consensus, test-protocol]
     runs-on: ubuntu-latest
@@ -412,6 +412,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       - name: Build and push
         uses: docker/build-push-action@v5
+        continue-on-error: true
         with:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
