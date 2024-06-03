@@ -68,3 +68,15 @@ You can run change the version of `lavad` using the `LAVAD_VERSION` var:
 ```sh
 LAVAD_VERSION=v2.0.1 docker compose -f docker/docker-compose.state-sync.yml -d
 ```
+
+### Full configuration options:
+|Name            |Description                    
+|----------------|-------------------------------
+|LAVAD_VERSION   | The Lavad version to use            
+|CHAIN_ID        | The chain id          
+|KEYRING_BACKEND | The keyring backend 
+|MONIKER         | The moniker for the `init` command
+|STATE_SYNC_RPC_1| The RPC node to sync on
+|GENESIS_ADDRESS | The `genesis.json` URL
+|ADDRBOOK_ADDRESS| The `addrbook.json` URL
+|NUM_BLOCKS      | The number of blocks to sync on from behind the latest block
