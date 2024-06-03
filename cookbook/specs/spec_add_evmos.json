@@ -1827,6 +1827,9 @@
               },
               {
                 "name": "pruning",
+                "parse_directive": {
+                  "function_tag": "GET_BLOCK_BY_NUM"
+              },
                 "values": [
                   {
                     "latest_distance": 10000
