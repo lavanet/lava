@@ -45,3 +45,8 @@ func (piif PendingIbcIprpcFund) IsValid() bool {
 func (piif PendingIbcIprpcFund) IsExpired(ctx sdk.Context) bool {
 	return uint64(ctx.BlockTime().UTC().Unix()) >= piif.Expiry
 }
+
+const (
+	NewPendingIbcIprpcFundEventName            = "pending_ibc_iprpc_fund_created"
+	ExpiredPendingIbcIprpcFundRemovedEventName = "expired_pending_ibc_iprpc_fund_removed"
+)
