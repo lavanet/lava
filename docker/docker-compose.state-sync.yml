@@ -23,7 +23,7 @@ services:
       - P2P_SEEDS=3f472746f46493309650e5a033076689996c8881@lava-testnet.rpc.kjnodes.com:14459
       - GENESIS_ADDRESS=https://snapshots.kjnodes.com/lava-testnet/genesis.json
       - ADDRBOOK_ADDRESS=https://snapshots.kjnodes.com/lava-testnet/addrbook.json
-      - NUM_BLOCKS=150
+      - NUM_BLOCKS=1500
     command: >
       "
       apt-get -y update && apt-get install -y jq curl &&
@@ -41,7 +41,7 @@ services:
       SYNC_BLOCK_HASH=$(curl -s "$$STATE_SYNC_RPC_1/block?height=$$SYNC_BLOCK_HEIGHT" | jq -r .result.block_id.hash) &&
 
       dasel put -f /lava/.lava/config/config.toml -t string -v true 'statesync.enable' &&
-      dasel put -f /lava/.lava/config/config.toml -t string -v \"$$STATE_SYNC_RPC_1,$$STATE_SYNC_RPC_2,$$STATE_SYNC_RPC_3\" 'statesync.rpc_servers' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v \"$$STATE_SYNC_RPC_1,$$STATE_SYNC_RPC_1,$$STATE_SYNC_RPC_1\" 'statesync.rpc_servers' &&
       dasel put -f /lava/.lava/config/config.toml -t string -v \"$$SYNC_BLOCK_HEIGHT\" 'statesync.trust_height' &&
       dasel put -f /lava/.lava/config/config.toml -t string -v \"$$SYNC_BLOCK_HASH\" 'statesync.trust_hash'
       "
