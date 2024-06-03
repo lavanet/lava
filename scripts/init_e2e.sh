@@ -9,7 +9,7 @@ GASPRICE="0.000000001ulava"
 
 # Specs proposal
 echo ---- Specs proposal ----
-lavad tx gov submit-legacy-proposal spec-add ./cookbook/specs/ethereum.json,./cookbook/specs/cosmoswasm.json,./cookbook/specs/ibc.json,./cookbook/specs/tendermint.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/cosmossdk_full.json,./cookbook/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx gov submit-legacy-proposal spec-add ./cookbook/specs/ethereum.json,./cookbook/specs/ethermint.json,./cookbook/specs/cosmoswasm.json,./cookbook/specs/ibc.json,./cookbook/specs/tendermint.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/cosmossdk_full.json,./cookbook/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx gov vote 1 yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 sleep 6 # need to sleep because plan policies need the specs when setting chain policies verifications
