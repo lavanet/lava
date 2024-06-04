@@ -14,7 +14,9 @@ services:
       lavad init $$MONIKER --chain-id $$CHAIN_ID
     volumes:
       - lava_data:/lava
-
+    networks:
+      - lava_network
+    
   lava-node-config:
     image: ghcr.io/tomwright/dasel:v2.7.0
     entrypoint: ["sh", "-c"]
@@ -48,6 +50,8 @@ services:
       "
     volumes:
       - lava_data:/lava
+    networks:
+      - lava_network
     depends_on:
       lava-node-init:
           condition: service_completed_successfully
@@ -65,6 +69,8 @@ services:
       - '${LAVA_NODE_PORT_RPC:-26657}:26657'
     volumes:
       - lava_data:/lava
+    networks:
+      - lava_network
     restart: always
     depends_on:
       lava-node-init:
@@ -74,3 +80,6 @@ services:
 
 volumes:
   lava_data: 
+
+networks:
+  lava_network: 
