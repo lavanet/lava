@@ -5,9 +5,9 @@ services:
     # Update with the most recent supported version of lavad
     image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-v2.0.0}
     environment:
-      - CHAIN_ID=lava-testnet-2
-      - KEYRING_BACKEND=test
-      - MONIKER=DOCKER_COMPOSE_MONIKER
+      - CHAIN_ID=${CHAIN_ID:-lava-testnet-2}
+      - KEYRING_BACKEND=${KEYRING_BACKEND:-test}
+      - MONIKER=${MONIKER:-DOCKER_COMPOSE_MONIKER}
     command: >
       config chain-id $$CHAIN_ID && \
       lavad config keyring-backend $$KEYRING_BACKEND && \

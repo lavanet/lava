@@ -55,7 +55,7 @@ runtime"). The default settings are usually suitable for all deployments.
 
 From the root path run:
 ```sh
-docker compose -f docker/docker-compose.state-sync.yml -d
+docker compose -f docker/docker-compose.state-sync.yml up -d
 ```
 
 To test the setup run:
@@ -80,3 +80,9 @@ LAVAD_VERSION=v2.0.1 docker compose -f docker/docker-compose.state-sync.yml -d
 |GENESIS_ADDRESS | The `genesis.json` URL
 |ADDRBOOK_ADDRESS| The `addrbook.json` URL
 |NUM_BLOCKS      | The number of blocks to sync on from behind the latest block
+
+
+To clean the lava node setup including volumes run:
+```sh
+docker compose -f docker/docker-compose.state-sync.yml down -v
+```
