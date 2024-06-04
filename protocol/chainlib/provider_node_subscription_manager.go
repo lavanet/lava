@@ -1,4 +1,4 @@
-package rpcprovider
+package chainlib
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
@@ -32,8 +31,8 @@ type activeSubscription struct {
 }
 
 type ProviderNodeSubscriptionManager struct {
-	chainRouter         chainlib.ChainRouter
-	chainParser         chainlib.ChainParser
+	chainRouter         ChainRouter
+	chainParser         ChainParser
 	activeSubscriptions map[string]*activeSubscription // key is request params hash
 	currentEpoch        uint64
 	prevEpoch           uint64
@@ -41,7 +40,7 @@ type ProviderNodeSubscriptionManager struct {
 	lock                sync.RWMutex
 }
 
-func NewProviderNodeSubscriptionManager(chainRouter chainlib.ChainRouter, chainParser chainlib.ChainParser, currentEpoch, prevEpoch uint64, privKey *btcec.PrivateKey) *ProviderNodeSubscriptionManager {
+func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser ChainParser, currentEpoch, prevEpoch uint64, privKey *btcec.PrivateKey) *ProviderNodeSubscriptionManager {
 	utils.LavaFormatTrace("NewProviderNodeSubscriptionManager", utils.LogAttr("prevEpoch", prevEpoch), utils.LogAttr("currentEpoch", currentEpoch))
 	return &ProviderNodeSubscriptionManager{
 		chainRouter:         chainRouter,
@@ -53,7 +52,7 @@ func NewProviderNodeSubscriptionManager(chainRouter chainlib.ChainRouter, chainP
 	}
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage chainlib.ChainMessageForSend, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply) (subscriptionId string, err error) {
+func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessageForSend, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply) (subscriptionId string, err error) {
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() called", utils.LogAttr("consumerAddr", consumerAddr))
 
 	if pnsm == nil {
@@ -113,7 +112,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() did not found existing subscription, creating new one")
 
 		nodeChan := make(chan interface{})
-		var replyWrapper *chainlib.RelayReplyWrapper
+		var replyWrapper *RelayReplyWrapper
 		var clientSubscription *rpcclient.ClientSubscription
 		replyWrapper, subscriptionId, clientSubscription, _, _, err = pnsm.chainRouter.SendNodeMsg(ctx, nodeChan, chainMessage, nil)
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() subscription reply received",
@@ -228,7 +227,7 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 	}
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) getHashedParams(chainMessage chainlib.ChainMessageForSend) (hashedParams string, params []byte, err error) {
+func (pnsm *ProviderNodeSubscriptionManager) getHashedParams(chainMessage ChainMessageForSend) (hashedParams string, params []byte, err error) {
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	params, err = json.Marshal(rpcInputMessage.GetParams())
 	if err != nil {
@@ -328,7 +327,7 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(hashedParams s
 	}
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context, chainMessage chainlib.ChainMessageForSend, consumerAddr sdk.AccAddress, closeConsumerChannel bool) error {
+func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context, chainMessage ChainMessageForSend, consumerAddr sdk.AccAddress, closeConsumerChannel bool) error {
 	if pnsm == nil {
 		return nil
 	}

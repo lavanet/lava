@@ -58,7 +58,7 @@ type RPCProviderServer struct {
 	allowedMissingCUThreshold       float64
 	metrics                         *metrics.ProviderMetrics
 	relaysMonitor                   *metrics.RelaysMonitor
-	providerNodeSubscriptionManager *ProviderNodeSubscriptionManager
+	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 }
 
 type ReliabilityManagerInf interface {
@@ -94,7 +94,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	allowedMissingCUThreshold float64,
 	providerMetrics *metrics.ProviderMetrics,
 	relaysMonitor *metrics.RelaysMonitor,
-	providerNodeSubscriptionManager *ProviderNodeSubscriptionManager,
+	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter

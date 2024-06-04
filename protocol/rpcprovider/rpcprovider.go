@@ -464,10 +464,10 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 
 	prevEpoch := currEpoch - epochSize
-	var providerNodeSubscriptionManager *ProviderNodeSubscriptionManager
+	var providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	if rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC || rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
-		providerNodeSubscriptionManager = NewProviderNodeSubscriptionManager(chainRouter, chainParser, currEpoch, prevEpoch, rpcp.privKey)
+		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, currEpoch, prevEpoch, rpcp.privKey)
 	}
 
 	rpcProviderServer := &RPCProviderServer{}
