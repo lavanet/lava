@@ -461,7 +461,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 		}
 	}()
 
-	_, subscriptionId, err := rpcps.providerNodeSubscriptionManager.AddConsumer(ctx, request, chainMessage, consumerAddress, subscribeRepliesChan)
+	subscriptionId, err := rpcps.providerNodeSubscriptionManager.AddConsumer(ctx, request, chainMessage, consumerAddress, subscribeRepliesChan)
 	if err != nil {
 		// subscription failed due to node error mark session as done and return
 		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber) // subscription failed due to node error mark session as done and return

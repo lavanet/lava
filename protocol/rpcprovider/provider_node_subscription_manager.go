@@ -53,16 +53,16 @@ func NewProviderNodeSubscriptionManager(chainRouter chainlib.ChainRouter, chainP
 	}
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage chainlib.ChainMessageForSend, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply) (clientSubscription *rpcclient.ClientSubscription, subscriptionId string, err error) {
+func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage chainlib.ChainMessageForSend, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply) (subscriptionId string, err error) {
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() called", utils.LogAttr("consumerAddr", consumerAddr))
 
 	if pnsm == nil {
-		return nil, "", fmt.Errorf("ProviderNodeSubscriptionManager is nil")
+		return "", fmt.Errorf("ProviderNodeSubscriptionManager is nil")
 	}
 
 	hashedParams, params, err := pnsm.getHashedParams(chainMessage)
 	if err != nil {
-		return nil, "", err
+		return "", err
 	}
 
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() hashed params",
@@ -77,7 +77,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 
 	if pnsm.prevEpoch == pnsm.currentEpoch {
 		utils.LavaFormatWarning("AddConsumer() called with prevEpoch == currentEpoch", nil, utils.LogAttr("prevEpoch", pnsm.prevEpoch), utils.LogAttr("currentEpoch", pnsm.currentEpoch))
-		return nil, "", nil
+		return "", nil
 	}
 
 	var firstSetupReply *pairingtypes.RelayReply
@@ -91,7 +91,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch] = make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply])
 		} else if _, found := paramsChannelToConnectedConsumers.connectedConsumers[pnsm.currentEpoch][consumerAddrString]; found { // Consumer is already connected to this subscription in current epoch, dismiss
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() consumer is already connected, returning the existing subscription", utils.LogAttr("consumerAddr", consumerAddr))
-			return paramsChannelToConnectedConsumers.nodeSubscription, paramsChannelToConnectedConsumers.subscriptionID, nil
+			return paramsChannelToConnectedConsumers.subscriptionID, nil
 		}
 
 		// Check if the consumer already exist in prev epoch for the same reqParamHash
@@ -108,14 +108,14 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		}
 
 		firstSetupReply = paramsChannelToConnectedConsumers.firstSetupReply
-		clientSubscription = paramsChannelToConnectedConsumers.nodeSubscription
 		subscriptionId = paramsChannelToConnectedConsumers.subscriptionID
 	} else {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() did not found existing subscription, creating new one")
 
 		nodeChan := make(chan interface{})
-
-		replyWrapper, subscriptionId, clientSubscription, _, _, err := pnsm.chainRouter.SendNodeMsg(ctx, nodeChan, chainMessage, nil)
+		var replyWrapper *chainlib.RelayReplyWrapper
+		var clientSubscription *rpcclient.ClientSubscription
+		replyWrapper, subscriptionId, clientSubscription, _, _, err = pnsm.chainRouter.SendNodeMsg(ctx, nodeChan, chainMessage, nil)
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() subscription reply received",
 			utils.LogAttr("replyWrapper", replyWrapper),
 			utils.LogAttr("subscriptionId", subscriptionId),
@@ -123,18 +123,18 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			utils.LogAttr("err", err),
 		)
 		if err != nil {
-			return nil, "", utils.LavaFormatError("ProviderNodeSubscriptionManager: Subscription failed", err, utils.LogAttr("GUID", ctx), utils.LogAttr("params", params))
+			return "", utils.LavaFormatError("ProviderNodeSubscriptionManager: Subscription failed", err, utils.LogAttr("GUID", ctx), utils.LogAttr("params", params))
 		}
 
 		if replyWrapper == nil || replyWrapper.RelayReply == nil {
-			return nil, "", utils.LavaFormatError("Subscription failed, relayWrapper or RelayReply are nil", nil, utils.LogAttr("GUID", ctx))
+			return "", utils.LavaFormatError("Subscription failed, relayWrapper or RelayReply are nil", nil, utils.LogAttr("GUID", ctx))
 		}
 
 		reply := replyWrapper.RelayReply
 
 		err = pnsm.signReply(reply, consumerAddr, request, chainMessage.GetApiCollection())
 		if err != nil {
-			return nil, "", err
+			return "", err
 		}
 
 		if clientSubscription == nil {
@@ -144,7 +144,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			SafeChannelSender := common.NewSafeChannelSender(ctx, consumerChannel)
 			SafeChannelSender.Send(reply)
 
-			return nil, "", utils.LavaFormatWarning("subscription failed, node error", nil, utils.LogAttr("GUID", ctx), utils.LogAttr("reply", reply))
+			return "", utils.LavaFormatWarning("subscription failed, node error", nil, utils.LogAttr("GUID", ctx), utils.LogAttr("reply", reply))
 		}
 
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() subscription successful",
@@ -178,7 +178,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
 	pnsm.activeSubscriptions[hashedParams].connectedConsumers[pnsm.currentEpoch][consumerAddrString].Send(firstSetupReply)
 
-	return clientSubscription, subscriptionId, nil
+	return subscriptionId, nil
 }
 
 func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx context.Context, nodeChan chan interface{}, nodeErrChan <-chan error, hashedParams string) {
