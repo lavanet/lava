@@ -52,6 +52,8 @@ const (
 	AllProvidersMarker                   = "all"
 	ConsumerGrpcTLSFlagName              = "consumer-grpc-tls"
 	allowInsecureConsumerDialingFlagName = "allow-insecure-consumer-dialing"
+	singleProviderAddressFlagName        = "single-provider-address"
+	runOnceAndExitFlagName               = "run-once-and-exit"
 )
 
 func ParseEndpoints(keyName string, viper_endpoints *viper.Viper) (endpoints []*HealthRPCEndpoint, err error) {
@@ -142,8 +144,17 @@ reference_endpoints:
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			providerAddresses := viper.GetStringSlice(providerAddressesFlagName)
 			allProviders := viper.GetBool(AllProvidersFlagName)
-			if allProviders {
+			singleProvider := viper.GetString(singleProviderAddressFlagName)
+			if singleProvider != "" {
+				providerAddresses = []string{singleProvider}
+				utils.LavaFormatInfo("Health probe provider addresses set to a single provider address", utils.Attribute{Key: "provider", Value: singleProvider})
+			} else if allProviders {
 				providerAddresses = []string{AllProvidersMarker}
+				utils.LavaFormatInfo("Health probe provider addresses set to all")
+			}
+			runOnceAndExit := viper.GetBool(runOnceAndExitFlagName)
+			if runOnceAndExit {
+				utils.LavaFormatInfo("Run once and exit flag set")
 			}
 			subscriptionAddresses := viper.GetStringSlice(subscriptionAddressesFlagName)
 			keyName := consumerEndpointPropertyName
@@ -202,6 +213,9 @@ reference_endpoints:
 					healthMetrics.SetSuccess(identifier)
 					healthMetrics.SetAlertResults(identifier, activeAlerts, unhealthy, healthy)
 				}
+				if runOnceAndExit {
+					os.Exit(0)
+				}
 			}
 
 			RunHealthCheck(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
@@ -247,6 +261,9 @@ reference_endpoints:
 	cmdTestHealth.Flags().Bool(AllProvidersFlagName, false, "a flag to overwrite the provider addresses with all the currently staked providers")
 	cmdTestHealth.Flags().Bool(ConsumerGrpcTLSFlagName, true, "use tls configuration for grpc connections to your consumer")
 	cmdTestHealth.Flags().Bool(allowInsecureConsumerDialingFlagName, false, "used to test grpc, to allow insecure (self signed cert).")
+	cmdTestHealth.Flags().String(singleProviderAddressFlagName, "", "single provider address in bach32 to override config settings")
+	cmdTestHealth.Flags().Bool(runOnceAndExitFlagName, false, "exit after first run.")
+
 	viper.BindPFlag(queryRetriesFlagName, cmdTestHealth.Flags().Lookup(queryRetriesFlagName)) // bind the flag
 	flags.AddQueryFlagsToCmd(cmdTestHealth)
 	common.AddRollingLogConfig(cmdTestHealth)
