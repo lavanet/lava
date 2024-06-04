@@ -66,6 +66,14 @@ Adjust role-specific variables in `group_vars/all.yml` and `host_vars/*.yml` to 
 ## Deployment
 The deployment process involves setting directly configuring Docker networks, generating necessary configuration claims, and managing Docker containers through Docker Compose.
 
+### Prepare VM on clean system
+
+If you plan to deploy on a clean Debian or Ubuntu system without an installed Docker engine, use the `prepare` tag to install additional software:
+```bash
+ansible-playbook main.yml --tags prepare
+```
+![lava_prepare_gifsicle.gif](https://github.com/svetek/lava-ansible-deployment/blob/main/guides/lava_prepare_gifsicle.gif)
+
 ### Deploy the Service
 To deploy the RPC Provider Service:
 
@@ -74,6 +82,8 @@ ansible-playbook main.yml --tags deploy
 ```
 
 > Note that by default ```anisble-playbook main.yml``` command deploys and runs the service.
+
+![lava_cache_provider_gifsicle.gif](https://github.com/svetek/lava-ansible-deployment/blob/main/guides/lava_cache_provider_gifsicle.gif)
 
 ## Managing
 

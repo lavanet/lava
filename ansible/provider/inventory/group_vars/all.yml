@@ -4,7 +4,7 @@ ansible_user: root
 ansible_port: 22
 project_name: lava
 project_type: provider
-project_unique_name: "{{ project_name }}-{{ provider_name }}-{{ project_type }}"
+project_unique_name: "{{ project_name }}-{{ project_type }}"
 service_path: /opt/services                                                         # The docker-compose.yml and a variables file are located at this path.
 project_path: "{{ service_path }}/{{ project_unique_name }}"                        # Configuration files and a wallet are located at this path.
 volume_path: "{{ container.volume_path }}"

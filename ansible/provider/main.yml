@@ -3,8 +3,12 @@
 - name: Deploying and managing the RPC Provider Service
   hosts: all
   become: true
-  gather_facts: false
+  gather_facts: true
   roles:
+    - role: prepare
+      tags:
+        - never
+        - prepare
     - role: deploy
       tags:
         - deploy
