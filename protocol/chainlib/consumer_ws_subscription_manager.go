@@ -165,7 +165,6 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	)
 
 	replyServer := relayResult.GetReplyServer()
-	var reply pairingtypes.RelayReply
 	if replyServer == nil { // TODO: Handle nil replyServer
 		return nil, nil, utils.LavaFormatTrace("reply server is nil",
 			utils.LogAttr("GUID", webSocketCtx),
@@ -277,17 +276,18 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 
 			chainMessage, directiveHeaders, relayRequestData, err = cwsm.craftUnsubscribeMessage(hashedParams, dappID, userIp, metricsData)
 			if err != nil {
-				utils.LavaFormatError("could not craft unsubscribe message", err)
+				utils.LavaFormatError("could not craft unsubscribe message", err, utils.LogAttr("GUID", webSocketCtx))
 				return
 			}
 
 			stringJson, err := json.Marshal(chainMessage.GetRPCMessage())
 			if err != nil {
-				utils.LavaFormatError("could not marshal chain message", err)
+				utils.LavaFormatError("could not marshal chain message", err, utils.LogAttr("GUID", webSocketCtx))
 				return
 			}
 
 			utils.LavaFormatTrace("crafted unsubscribe message to send to the provider",
+				utils.LogAttr("GUID", webSocketCtx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("chainMessage", string(stringJson)),
 			)
@@ -307,10 +307,16 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 	for {
 		select {
 		case unsubscribeData = <-closeSubscriptionChan:
-			utils.LavaFormatTrace("requested to close subscription connection", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+			utils.LavaFormatTrace("requested to close subscription connection",
+				utils.LogAttr("GUID", webSocketCtx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
 			return
 		case <-(*replyServer).Context().Done():
-			utils.LavaFormatTrace("reply server context canceled", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+			utils.LavaFormatTrace("reply server context canceled",
+				utils.LogAttr("GUID", webSocketCtx),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
 			return
 		default:
 			var reply pairingtypes.RelayReply
@@ -321,37 +327,55 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				return
 			}
 
-			cwsm.handleSubscriptionNodeMessage(hashedParams, &reply, providerAddr)
+			err = cwsm.verifySubscriptionMessage(hashedParams, &reply, providerAddr)
+			if err != nil {
+				// Critical error, we need to close the connection
+				utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
+					utils.LogAttr("GUID", webSocketCtx),
+					utils.LogAttr("hashedParams", hashedParams),
+					utils.LogAttr("subscriptionMsg", reply.Data),
+				)
+				return
+			}
+
+			cwsm.handleSubscriptionNodeMessage(hashedParams, &reply)
 		}
 	}
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedParams string, subMsg *pairingtypes.RelayReply, providerAddr string) {
+func (cwsm *ConsumerWSSubscriptionManager) verifySubscriptionMessage(hashedParams string, subMsg *pairingtypes.RelayReply, providerAddr string) error {
+	cwsm.lock.RLock()
+	defer cwsm.lock.RUnlock()
+
+	activeSubscription := cwsm.activeSubscriptions[hashedParams]
+	filteredHeaders, _, ignoredHeaders := cwsm.chainParser.HandleHeaders(subMsg.Metadata, activeSubscription.subscriptionOrigRequestChainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+	subMsg.Metadata = filteredHeaders
+	err := lavaprotocol.VerifyRelayReply(context.Background(), subMsg, activeSubscription.subscriptionOrigRequest, providerAddr)
+	if err != nil {
+		return utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
+			utils.LogAttr("subscriptionMsg", subMsg.Data),
+			utils.LogAttr("hashedParams", hashedParams),
+			utils.LogAttr("originalRequest", activeSubscription.subscriptionOrigRequest),
+		)
+	}
+
+	subMsg.Metadata = append(subMsg.Metadata, ignoredHeaders...)
+
+	return nil
+}
+
+func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedParams string, subMsg *pairingtypes.RelayReply) error {
 	cwsm.lock.RLock()
 	defer cwsm.lock.RUnlock()
 
 	activeSubscription := cwsm.activeSubscriptions[hashedParams]
 
-	filteredHeaders, _, ignoredHeaders := cwsm.chainParser.HandleHeaders(subMsg.Metadata, activeSubscription.subscriptionOrigRequestChainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	subMsg.Metadata = filteredHeaders
-	err := lavaprotocol.VerifyRelayReply(context.Background(), subMsg, activeSubscription.subscriptionOrigRequest, providerAddr)
-	if err != nil {
-		utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
-			utils.LogAttr("subscriptionMsg", subMsg.Data),
-			utils.LogAttr("hashedParams", hashedParams),
-			utils.LogAttr("originalRequest", activeSubscription.subscriptionOrigRequest),
-		)
-		return
-	}
-
-	subMsg.Metadata = append(subMsg.Metadata, ignoredHeaders...)
-
-	for connectedDappKey := range cwsm.activeSubscriptions[hashedParams].connectedDapps {
+	for connectedDappKey := range activeSubscription.connectedDapps {
 		if _, ok := cwsm.connectedDapps[connectedDappKey]; !ok {
 			utils.LavaFormatError("connected dapp not found", nil,
 				utils.LogAttr("connectedDappKey", connectedDappKey),
 				utils.LogAttr("hashedParams", hashedParams),
-				utils.LogAttr("activeSubscriptions[hashedParams].connectedDapps", cwsm.activeSubscriptions[hashedParams].connectedDapps),
+				utils.LogAttr("activeSubscriptions[hashedParams].connectedDapps", activeSubscription.connectedDapps),
 				utils.LogAttr("connectedDapps", cwsm.connectedDapps),
 			)
 			continue
@@ -361,7 +385,7 @@ func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedP
 			utils.LavaFormatError("dapp is not connected to subscription", nil,
 				utils.LogAttr("connectedDappKey", connectedDappKey),
 				utils.LogAttr("hashedParams", hashedParams),
-				utils.LogAttr("activeSubscriptions[hashedParams].connectedDapps", cwsm.activeSubscriptions[hashedParams].connectedDapps),
+				utils.LogAttr("activeSubscriptions[hashedParams].connectedDapps", activeSubscription.connectedDapps),
 				utils.LogAttr("connectedDapps[connectedDappKey]", cwsm.connectedDapps[connectedDappKey]),
 			)
 			continue
@@ -369,6 +393,8 @@ func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedP
 
 		cwsm.connectedDapps[connectedDappKey][hashedParams].Send(subMsg)
 	}
+
+	return nil
 }
 
 func (cwsm *ConsumerWSSubscriptionManager) getHashedParams(chainMessage ChainMessageForSend) (hashedParams string, params []byte, err error) {
