@@ -12,9 +12,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -38,7 +40,8 @@ func CmdStakeProvider() *cobra.Command {
 		[geolocation] should be the geolocation codes to be staked for. You can also use the geolocation codes syntax: EU,AU,AF,etc. Note that this geolocation should be a union of the endpoints' geolocations.
 		[validator] delegate to a validator with the same amount with dualstaking, if not provided the validator will be chosen for best fit, when amount is decreasing to unbond, this determines the validator to extract funds from
 		
-		Note: The provider address is used when the user wishes to separate the account the holds its funds and the account that is used to operate the provider process (for enhance security). When specifying the provider address, it can be hardcoded or derived automatically from the keyring. If a provider address is not specified, the provider address will be the provider's vault address (that stakes).
+		Note: The provider address is used when the user wishes to separate the account the holds its funds and the account that is used to operate the provider process (for enhance security). When specifying the provider address, it can be hardcoded or derived automatically from the keyring. If a provider address is not specified, the provider address will be the vault address (that stakes). If a provider address is specified and is different than the vault address, you may use the "--grant-provider-gas-fees-auth" flag to let the vault account pay for the provider gas fees.
+		After that, to use the vault's funds for gas fees, use Cosmos' --fee-granter flag.
 		IMPORTANT: endpoint should not contain your node URL, it should point to the grpc listener of your provider service defined in your provider config or cli args`,
 		Example: `
 		lavad tx pairing stake-provider "ETH1" 500000ulava "my-provider.com:2221,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from provider-wallet --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -84,6 +87,18 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
+			grantProviderGasFeesAuthFlagUsed, err := cmd.Flags().GetBool(types.FlagGrantFeeAuth)
+			if err != nil {
+				return err
+			}
+			var feeGrantMsg *feegrant.MsgGrantAllowance
+			if grantProviderGasFeesAuthFlagUsed {
+				feeGrantMsg, err = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
+				if err != nil {
+					return err
+				}
+			}
+
 			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
 			if err != nil {
 				return err
@@ -100,6 +115,28 @@ func CmdStakeProvider() *cobra.Command {
 
 			validator := args[4]
 
+			identity, err := cmd.Flags().GetString(types.FlagIdentity)
+			if err != nil {
+				return err
+			}
+
+			website, err := cmd.Flags().GetString(types.FlagWebsite)
+			if err != nil {
+				return err
+			}
+
+			securityContact, err := cmd.Flags().GetString(types.FlagSecurityContact)
+			if err != nil {
+				return err
+			}
+
+			descriptionDetails, err := cmd.Flags().GetString(types.FlagDescriptionDetails)
+			if err != nil {
+				return err
+			}
+
+			description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
+
 			msg := types.NewMsgStakeProvider(
 				clientCtx.GetFromAddress().String(),
 				validator,
@@ -107,22 +144,32 @@ func CmdStakeProvider() *cobra.Command {
 				argAmount,
 				argEndpoints,
 				argGeolocation,
-				moniker,
 				delegationLimit,
 				commission,
 				provider,
+				description,
 			)
 
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+
+			msgs := []sdk.Msg{msg}
+			if feeGrantMsg != nil {
+				msgs = append(msgs, feeGrantMsg)
+			}
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msgs...)
 		},
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational address (address used to operate the provider process, default is vault address)")
+	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
+	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
+	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
+	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
+	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the provider use the vault address' funds for gas fees")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
@@ -141,7 +188,8 @@ func CmdBulkStakeProvider() *cobra.Command {
 		[geolocation] should be the geolocation code to be staked for
 		{repeat for another bulk} - creates a new Msg within the transaction with different arguments, can be used to run many changes in many chains without waiting for a new block
 		[validator] validator address to delegate, if not provided the validator will be chosen for you for best match
-		Note: The provider address can be hardcoded or derived automatically from the keyring. If a provider address is not specified, the provider address will be the provider's vault address (that stakes)`,
+		Note: The provider address can be hardcoded or derived automatically from the keyring. If a provider address is not specified, the provider address will be the vault address (that stakes). If a provider address is specified and is different than the vault address, you may use the "--grant-provider-gas-fees-auth" flag to let the vault account pay for the provider gas fees.
+		After that, to use the vault's funds for gas fees, use Cosmos' --fee-granter flag.`,
 		Example: `lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 		bulk send: two bulks, listen for ETH1,LAV1 in one endpoint and OSMOSIS,COSMOSHUB in another
 		lavad tx pairing bulk-stake-provider ETH1,LAV1 500000ulava "my-provider-grpc-addr.com:9090,1" 1 OSMOSIS,COSMOSHUB 500000ulava "my-other-grpc-addr.com:1111,1" 1 lava@valoper13w8ffww0akdyhgls2umvvudce3jxzw2s7fwcnk -y --from servicer1 --provider-moniker "my-moniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -164,14 +212,9 @@ func CmdBulkStakeProvider() *cobra.Command {
 				return err
 			}
 
-			providersFromFlag, err := cmd.Flags().GetString(types.FlagProvider)
+			providerFromFlag, err := cmd.Flags().GetString(types.FlagProvider)
 			if err != nil {
 				return err
-			}
-
-			customProviders := false
-			if providersFromFlag != "" {
-				customProviders = true
 			}
 
 			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
@@ -195,22 +238,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 				argChainIDs := args[0]
 				chainIDs := strings.Split(argChainIDs, ",")
 
-				providers := []string{}
-				if customProviders {
-					unparsedProviders := strings.Split(providersFromFlag, ",")
-					if len(unparsedProviders) != len(chainIDs) {
-						return nil, fmt.Errorf("providers amount (length %d) must match chain IDs amount (length %d)", len(unparsedProviders), len(chainIDs))
-					}
-
-					for _, o := range unparsedProviders {
-						provider, err := utils.ParseCLIAddress(clientCtx, o)
-						if err != nil {
-							return nil, err
-						}
-						providers = append(providers, provider)
-					}
-				}
-
 				argAmount, err := sdk.ParseCoinNormalized(args[1])
 				if err != nil {
 					return nil, err
@@ -221,15 +248,56 @@ func CmdBulkStakeProvider() *cobra.Command {
 					return nil, err
 				}
 
-				for i, chainID := range chainIDs {
+				identity, err := cmd.Flags().GetString(types.FlagIdentity)
+				if err != nil {
+					return nil, err
+				}
+
+				website, err := cmd.Flags().GetString(types.FlagWebsite)
+				if err != nil {
+					return nil, err
+				}
+
+				securityContact, err := cmd.Flags().GetString(types.FlagSecurityContact)
+				if err != nil {
+					return nil, err
+				}
+
+				descriptionDetails, err := cmd.Flags().GetString(types.FlagDescriptionDetails)
+				if err != nil {
+					return nil, err
+				}
+
+				description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
+
+				for _, chainID := range chainIDs {
 					if chainID == "" {
 						continue
 					}
-
 					provider := clientCtx.GetFromAddress().String()
-					if customProviders {
-						provider = providers[i]
+					if providerFromFlag != "" {
+						provider, err = utils.ParseCLIAddress(clientCtx, providerFromFlag)
+						if err != nil {
+							return nil, err
+						}
 					}
+
+					grantProviderGasFeesAuthFlagUsed, err := cmd.Flags().GetBool(types.FlagGrantFeeAuth)
+					if err != nil {
+						return nil, err
+					}
+					var feeGrantMsg *feegrant.MsgGrantAllowance
+					if grantProviderGasFeesAuthFlagUsed {
+						feeGrantMsg, err = CreateGrantFeeMsg(clientCtx.GetFromAddress().String(), provider)
+						if err != nil {
+							return nil, err
+						}
+					}
+
+					if feeGrantMsg != nil {
+						msgs = append(msgs, feeGrantMsg)
+					}
+
 					msg := types.NewMsgStakeProvider(
 						clientCtx.GetFromAddress().String(),
 						validator,
@@ -237,10 +305,10 @@ func CmdBulkStakeProvider() *cobra.Command {
 						argAmount,
 						allEndpoints,
 						argGeolocation,
-						moniker,
 						delegationLimit,
 						commission,
 						provider,
+						description,
 					)
 
 					if msg.DelegateLimit.Denom != commontypes.TokenDenom {
@@ -273,6 +341,11 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
 	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational addresses (addresses that are used to operate the provider process. default is vault address)")
+	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
+	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
+	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
+	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
+	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the provider use the vault address' funds for gas fees")
 	cmd.MarkFlagRequired(types.FlagMoniker)
 	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
@@ -364,4 +437,59 @@ func getValidator(clientCtx client.Context, provider string) string {
 		}
 	}
 	return validatorBiggest.OperatorAddress
+}
+
+// CreateGrantFeeMsg cosntructs a feegrant GrantAllowance msg for specific TXs to allow the provider use the vault's funds for gas fees
+func CreateGrantFeeMsg(granter string, grantee string) (*feegrant.MsgGrantAllowance, error) {
+	if grantee == granter {
+		// no need to grant allowance if the granter and grantee are the same (vault = provider)
+		return nil, nil //nolint
+	}
+	granterAcc, err := sdk.AccAddressFromBech32(granter)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed granting feegrant for gas fees for granter", err,
+			utils.LogAttr("granter", granter),
+		)
+	}
+
+	granteeAcc, err := sdk.AccAddressFromBech32(grantee)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed granting feegrant for gas fees for grantee", err,
+			utils.LogAttr("grantee", grantee),
+		)
+	}
+
+	grant, err := feegrant.NewAllowedMsgAllowance(&feegrant.BasicAllowance{}, []string{
+		// pairing module TXs
+		sdk.MsgTypeURL(&types.MsgRelayPayment{}),
+		sdk.MsgTypeURL(&types.MsgStakeProvider{}), // for modify-provider TX
+		sdk.MsgTypeURL(&types.MsgFreezeProvider{}),
+		sdk.MsgTypeURL(&types.MsgUnfreezeProvider{}),
+
+		// conflict module TXs
+		sdk.MsgTypeURL(&conflicttypes.MsgConflictVoteCommit{}),
+		sdk.MsgTypeURL(&conflicttypes.MsgConflictVoteReveal{}),
+	})
+	if err != nil {
+		return nil, utils.LavaFormatError("failed granting feegrant for gas fees", err,
+			utils.LogAttr("granter", granter),
+			utils.LogAttr("grantee", grantee),
+		)
+	}
+
+	msg, err := feegrant.NewMsgGrantAllowance(grant, granterAcc, granteeAcc)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed granting feegrant for gas fees", err,
+			utils.LogAttr("granter", granter),
+			utils.LogAttr("grantee", grantee),
+			utils.LogAttr("grant", grant.String()),
+		)
+	}
+
+	err = msg.ValidateBasic()
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }

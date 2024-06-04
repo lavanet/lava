@@ -23,6 +23,9 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 	}
 
 	stakeEntries := stakeStorage.GetStakeEntries()
+	for i := range stakeEntries {
+		stakeEntries[i].Moniker = stakeEntries[i].Description.Moniker
+	}
 
 	if !req.ShowFrozen {
 		stakeEntriesNoFrozen := []epochstoragetypes.StakeEntry{}

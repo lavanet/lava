@@ -5,12 +5,13 @@ const (
 	ProviderStakeUpdateEventName = "stake_update_provider"
 	ProviderUnstakeEventName     = "provider_unstake_commit"
 
-	RelayPaymentEventName       = "relay_payment"
-	ProviderJailedEventName     = "provider_jailed"
-	ProviderReportedEventName   = "provider_reported"
-	LatestBlocksReportEventName = "provider_latest_block_report"
-	RejectedCuEventName         = "rejected_cu"
-	UnstakeProposalEventName    = "unstake_gov_proposal"
+	RelayPaymentEventName            = "relay_payment"
+	ProviderTemporaryJailedEventName = "provider_temporary_jailed"
+	ProviderFreezeJailedEventName    = "provider_jailed"
+	ProviderReportedEventName        = "provider_reported"
+	LatestBlocksReportEventName      = "provider_latest_block_report"
+	RejectedCuEventName              = "rejected_cu"
+	UnstakeProposalEventName         = "unstake_gov_proposal"
 )
 
 // unstake description strings
@@ -25,7 +26,11 @@ const (
 	FlagCommission               = "delegate-commission"
 	FlagDelegationLimit          = "delegate-limit"
 	FlagProvider                 = "provider"
-	MAX_LEN_MONIKER              = 50
+	FlagIdentity                 = "identity"
+	FlagWebsite                  = "website"
+	FlagSecurityContact          = "security-contact"
+	FlagDescriptionDetails       = "description-details"
+	FlagGrantFeeAuth             = "grant-provider-gas-fees-auth"
 	MAX_ENDPOINTS_AMOUNT_PER_GEO = 5 // max number of endpoints per geolocation for provider stake entry
 )
 

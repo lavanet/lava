@@ -113,7 +113,7 @@ message QueryProviderRequest {
 }
   
 message QueryProviderResponse {
-	lavanet.lava.epochstorage.StakeEntry stakeEntry = 1 [(gogoproto.nullable) = false];
+	repeated lavanet.lava.epochstorage.StakeEntry stakeEntries = 1 [(gogoproto.nullable) = false];
 }
 
 message QueryGetPairingRequest {

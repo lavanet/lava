@@ -101,11 +101,11 @@ func (m *mockProviderStateTracker) TxRelayPayment(ctx context.Context, relayRequ
 	return nil
 }
 
-func (m *mockProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData) error {
+func (m *mockProviderStateTracker) SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
 	return nil
 }
 
-func (m *mockProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData) error {
+func (m *mockProviderStateTracker) SendVoteCommitment(voteID string, vote *reliabilitymanager.VoteData, specID string) error {
 	return nil
 }
 

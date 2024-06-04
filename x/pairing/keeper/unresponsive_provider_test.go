@@ -2,33 +2,35 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/x/pairing/keeper"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
-func (ts *tester) checkProviderFreeze(provider string, shouldFreeze bool) {
+func (ts *tester) checkProviderJailed(provider string, shouldFreeze bool) {
 	stakeEntry, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
 	require.True(ts.T, stakeStorageFound)
+	require.Equal(ts.T, shouldFreeze, stakeEntry.IsJailed(ts.Ctx.BlockTime().UTC().Unix()))
 	if shouldFreeze {
-		require.Equal(ts.T, uint64(epochstoragetypes.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
-	} else {
-		require.NotEqual(ts.T, uint64(epochstoragetypes.FROZEN_BLOCK), stakeEntry.StakeAppliedBlock)
+		jailDelta := keeper.SOFT_JAIL_TIME
+		if stakeEntry.Jails > keeper.SOFT_JAILS {
+			jailDelta = keeper.HARD_JAIL_TIME
+		}
+		require.InDelta(ts.T, stakeEntry.JailEndTime, ts.BlockTime().UTC().Unix(), float64(jailDelta))
 	}
 }
 
 func (ts *tester) checkComplainerReset(provider string, epoch uint64) {
 	// validate the complainers CU field in the unresponsive provider's providerPaymentStorage
 	// was reset after being punished (use the epoch from the relay - when it got reported)
-	pec, found := ts.Keepers.Pairing.GetProviderEpochComplainerCu(ts.Ctx, epoch, provider, ts.spec.Name)
-	require.Equal(ts.T, true, found)
-	require.Equal(ts.T, uint64(0), pec.ComplainersCu)
+	_, found := ts.Keepers.Pairing.GetProviderEpochComplainerCu(ts.Ctx, epoch, provider, ts.spec.Name)
+	require.Equal(ts.T, false, found)
 }
 
 func (ts *tester) checkProviderStaked(provider string) {
@@ -119,10 +121,10 @@ func TestUnresponsivenessStressTest(t *testing.T) {
 		largerConst = recommendedEpochNumToCollectPayment
 	}
 
-	ts.AdvanceEpochs(largerConst)
+	ts.AdvanceEpochs(largerConst, time.Nanosecond)
 
 	for i := 0; i < unresponsiveCount; i++ {
-		ts.checkProviderFreeze(providers[i].Addr.String(), true)
+		ts.checkProviderJailed(providers[i].Addr.String(), true)
 		ts.checkComplainerReset(providers[i].Addr.String(), relayEpoch)
 	}
 
@@ -185,9 +187,9 @@ func TestFreezingProviderForUnresponsiveness(t *testing.T) {
 		largerConst = recommendedEpochNumToCollectPayment
 	}
 
-	ts.AdvanceEpochs(largerConst)
+	ts.AdvanceEpochs(largerConst, time.Second)
 
-	ts.checkProviderFreeze(provider1, true)
+	ts.checkProviderJailed(provider1, true)
 	ts.checkComplainerReset(provider1, relayEpoch)
 	ts.checkProviderStaked(provider0)
 }
@@ -242,12 +244,12 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 		largerConst = recommendedEpochNumToCollectPayment
 	}
 
-	ts.AdvanceEpochs(largerConst)
+	ts.AdvanceEpochs(largerConst, time.Second)
 
-	ts.checkProviderFreeze(provider1, true)
+	ts.checkProviderJailed(provider1, true)
 	ts.checkComplainerReset(provider1, relayEpoch)
 
-	ts.AdvanceEpochs(2)
+	ts.AdvanceEpochs(2, time.Second)
 
 	// create more relay requests for provider0 that contain complaints about provider1
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
@@ -266,7 +268,7 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 	}
 
 	// test the provider is still frozen
-	ts.checkProviderFreeze(provider1, true)
+	ts.checkProviderJailed(provider1, true)
 }
 
 func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
@@ -303,14 +305,13 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 		}
 		// advance enough epochs so we can check punishment due to unresponsiveness
 		// (if the epoch is too early, there's no punishment)
-		ts.AdvanceEpochs(largerConst + recommendedEpochNumToCollectPayment)
+		ts.AdvanceEpochs(largerConst+recommendedEpochNumToCollectPayment, time.Nanosecond)
 
 		// find two providers in the pairing
 		pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
 		require.NoError(t, err)
 		provider0Provider := pairing.Providers[0].Address
 		provider1Provider := pairing.Providers[1].Address
-		provider0Vault := sdk.MustAccAddressFromBech32(pairing.Providers[0].Vault)
 
 		// create unresponsive data that includes provider1 being unresponsive
 		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1Provider}}
@@ -330,7 +331,7 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 				Relays:  lavaslices.Slice(relaySession),
 			}
 
-			ts.payAndVerifyBalance(relayPaymentMessage, clients[clientIndex].Addr, provider0Vault, true, true, 100)
+			ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 		}
 
 		// advance enough epochs so the unresponsive provider will be punished
@@ -338,9 +339,145 @@ func TestNotFreezingProviderForUnresponsivenessWithMinProviders(t *testing.T) {
 			largerConst = recommendedEpochNumToCollectPayment
 		}
 
-		ts.AdvanceEpochs(largerConst)
+		ts.AdvanceEpochs(largerConst, time.Nanosecond)
 
 		// test the unresponsive provider1 hasn't froze
-		ts.checkProviderFreeze(provider1Provider, play.shouldBeFrozen)
+		ts.checkProviderJailed(provider1Provider, play.shouldBeFrozen)
 	}
+}
+
+// Test to measure the time the check for unresponsiveness every epoch start takes
+func TestJailProviderForUnresponsiveness(t *testing.T) {
+	// setup test for unresponsiveness
+	clientsCount := 1
+	providersCount := 10
+
+	ts := newTester(t)
+	ts.setupForPayments(providersCount, clientsCount, providersCount-1) // set providers-to-pair
+
+	clients := ts.Accounts(common.CONSUMER)
+
+	recommendedEpochNumToCollectPayment := ts.Keepers.Pairing.RecommendedEpochNumToCollectPayment(ts.Ctx)
+
+	largerConst := types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER
+	if largerConst < types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS {
+		largerConst = types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS
+	}
+
+	// advance enough epochs so we can check punishment due to unresponsiveness
+	// (if the epoch is too early, there's no punishment)
+	ts.AdvanceEpochs(largerConst + recommendedEpochNumToCollectPayment)
+
+	// advance enough epochs so the unresponsive provider will be punished
+	if largerConst < recommendedEpochNumToCollectPayment {
+		largerConst = recommendedEpochNumToCollectPayment
+	}
+
+	// find two providers in the pairing
+	pairing, err := ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
+	require.NoError(t, err)
+	provider0 := pairing.Providers[0].Address
+	provider1 := pairing.Providers[1].Address
+
+	jailProvider := func() {
+		found := false
+		// make sure our provider is in the pairing
+		for !found {
+			ts.AdvanceEpoch(0)
+			pairing1, err := ts.QueryPairingVerifyPairing(ts.spec.Name, clients[0].Addr.String(), provider0, ts.BlockHeight())
+			require.NoError(t, err)
+
+			pairing2, err := ts.QueryPairingVerifyPairing(ts.spec.Name, clients[0].Addr.String(), provider1, ts.BlockHeight())
+			require.NoError(t, err)
+			found = pairing1.Valid && pairing2.Valid
+		}
+
+		// create relay requests for provider0 that contain complaints about provider1
+		unresponsiveProvidersData := []*types.ReportedProvider{{Address: provider1}}
+		relayEpoch := ts.BlockHeight()
+		cuSum := ts.spec.ApiCollections[0].Apis[0].ComputeUnits * 10
+
+		relaySession := ts.newRelaySession(provider0, 0, cuSum, relayEpoch, 0)
+		relaySession.UnresponsiveProviders = unresponsiveProvidersData
+		sig, err := sigs.Sign(clients[0].SK, *relaySession)
+		relaySession.Sig = sig
+		require.NoError(t, err)
+		relayPaymentMessage := types.MsgRelayPayment{
+			Creator: provider0,
+			Relays:  lavaslices.Slice(relaySession),
+		}
+		ts.relayPaymentWithoutPay(relayPaymentMessage, true)
+
+		ts.AdvanceEpochs(recommendedEpochNumToCollectPayment+1, 0)
+		ts.checkProviderJailed(provider1, true)
+		ts.checkComplainerReset(provider1, relayEpoch)
+		ts.checkProviderStaked(provider0)
+
+		res, err := ts.QueryPairingVerifyPairing(ts.spec.Name, clients[0].Addr.String(), provider1, ts.BlockHeight())
+		require.NoError(t, err)
+		require.False(t, res.Valid)
+	}
+
+	// jail first time
+	jailProvider()
+	// try to unfreeze with increase of self delegation
+	_, err = ts.TxDualstakingDelegate(provider1, provider1, ts.spec.Index, common.NewCoin(ts.TokenDenom(), 1))
+	require.Nil(t, err)
+
+	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
+	require.Nil(t, err)
+
+	ts.checkProviderJailed(provider1, true)
+
+	// advance epoch and one hour to leave jail
+	ts.AdvanceBlock(time.Hour)
+	ts.AdvanceEpoch(0)
+	ts.checkProviderJailed(provider1, false)
+
+	// jail second time
+	jailProvider()
+	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
+	require.Nil(t, err)
+
+	ts.checkProviderJailed(provider1, true)
+
+	// advance epoch and one hour to leave jail
+	ts.AdvanceBlock(time.Hour)
+	ts.AdvanceEpoch(0)
+	ts.checkProviderJailed(provider1, false)
+
+	// jail third time
+	jailProvider()
+	// try to unfreeze with increase of self delegation
+	_, err = ts.TxDualstakingDelegate(provider1, provider1, ts.spec.Index, common.NewCoin(ts.TokenDenom(), 1))
+	require.Nil(t, err)
+
+	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
+	require.NotNil(t, err)
+
+	// advance epoch and one hour to try leave jail
+	ts.AdvanceBlock(time.Hour)
+	ts.AdvanceEpoch(0)
+	ts.checkProviderJailed(provider1, true)
+
+	// advance epoch and 24 hour to try leave jail
+	ts.AdvanceBlock(24 * time.Hour)
+	ts.AdvanceEpoch(0)
+	ts.checkProviderJailed(provider1, false)
+
+	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
+	require.Nil(t, err)
+	ts.AdvanceEpochs(largerConst + recommendedEpochNumToCollectPayment)
+
+	// jail first time again
+	jailProvider()
+	_, err = ts.TxPairingUnfreezeProvider(provider1, ts.spec.Index)
+	require.Nil(t, err)
+
+	ts.checkProviderJailed(provider1, true)
+
+	// advance epoch and one hour to leave jail
+	ts.AdvanceBlock(time.Hour)
+	ts.AdvanceEpoch(0)
+	ts.checkProviderJailed(provider1, false)
 }

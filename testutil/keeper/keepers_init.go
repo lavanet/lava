@@ -453,16 +453,9 @@ func AdvanceToBlock(ctx context.Context, ks *Keepers, block uint64, customBlockT
 		return ctx
 	}
 
-	if len(customBlockTime) > 0 {
-		for uint64(unwrapedCtx.BlockHeight()) < block {
-			ctx = AdvanceBlock(ctx, ks, customBlockTime...)
-			unwrapedCtx = sdk.UnwrapSDKContext(ctx)
-		}
-	} else {
-		for uint64(unwrapedCtx.BlockHeight()) < block {
-			ctx = AdvanceBlock(ctx, ks)
-			unwrapedCtx = sdk.UnwrapSDKContext(ctx)
-		}
+	for uint64(unwrapedCtx.BlockHeight()) < block {
+		ctx = AdvanceBlock(ctx, ks, customBlockTime...)
+		unwrapedCtx = sdk.UnwrapSDKContext(ctx)
 	}
 
 	return ctx
@@ -476,10 +469,7 @@ func AdvanceEpoch(ctx context.Context, ks *Keepers, customBlockTime ...time.Dura
 	if err != nil {
 		panic(err)
 	}
-	if len(customBlockTime) > 0 {
-		return AdvanceToBlock(ctx, ks, nextEpochBlockNum, customBlockTime...)
-	}
-	return AdvanceToBlock(ctx, ks, nextEpochBlockNum)
+	return AdvanceToBlock(ctx, ks, nextEpochBlockNum, customBlockTime...)
 }
 
 // Make sure you save the new context

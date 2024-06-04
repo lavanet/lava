@@ -9,7 +9,7 @@
         "name": "namada se testnet",
         "enabled": true,
         "imports": [
-          "COSMOSSDK"
+          "TENDERMINT"
         ],
         "reliability_threshold": 268435455,
         "data_reliability_enabled": false,
@@ -66,33 +66,6 @@
                 }
               }
             ]
-          },
-          {
-            "enabled": false,
-            "collection_data": {
-              "api_interface": "rest",
-              "internal_path": "",
-              "type": "GET",
-              "add_on": ""
-            }
-          },
-          {
-            "enabled": false,
-            "collection_data": {
-              "api_interface": "rest",
-              "internal_path": "",
-              "type": "POST",
-              "add_on": ""
-            }
-          },
-          {
-            "enabled": false,
-            "collection_data": {
-              "api_interface": "grpc",
-              "internal_path": "",
-              "type": "",
-              "add_on": ""
-            }
           }
         ]
       }
