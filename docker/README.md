@@ -66,7 +66,7 @@ and expect to see the lastest block.
 
 You can run change the version of `lavad` using the `LAVAD_VERSION` var:
 ```sh
-LAVAD_VERSION=v2.0.1 docker compose -f docker/docker-compose.state-sync.yml -d
+LAVAD_VERSION=v2.0.1 docker compose -f docker/docker-compose.state-sync.yml up -d
 ```
 
 ### Full configuration options:
