@@ -3,8 +3,12 @@
 - name: Cache service deployment
   hosts: all
   become: true
-  gather_facts: false
+  gather_facts: true
   roles:
+    - role: prepare
+      tags:
+        - never
+        - prepare
     - role: deploy
       tags:
         - deploy

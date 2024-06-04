@@ -24,7 +24,13 @@ This `cache` directory contains Ansible playbooks and templates for deploying th
 
 The deployment process involves setting directly configuring Docker networks, generating necessary configuration claims, and managing Docker containers through Docker Compose.
 
-> Note that by default ```anisble-playbook main.yml``` command deploys and runs the service.
+### Prepare VM on clean system
+
+If you plan to deploy on a clean Debian or Ubuntu system without an installed Docker engine, use the `prepare` tag to install additional software:
+```bash
+ansible-playbook main.yml --tags prepare
+```
+![lava_prepare_gifsicle.gif](https://github.com/svetek/lava-ansible-deployment/blob/main/guides/lava_prepare_gifsicle.gif)
 
 ### Deploying the Cache Service
 
@@ -35,6 +41,10 @@ ansible-playbook main.yml --tags deploy
 ```
 
 This command executes the role that sets up directories, configures Docker Compose, and ensures that the network is ready for the service to run.
+
+> Note that by default ```anisble-playbook main.yml``` command deploys and runs the service.
+
+![lava_cache_provider_gifsicle.gif](https://github.com/svetek/lava-ansible-deployment/blob/main/guides/lava_cache_provider_gifsicle.gif)
 
 ## Managing
 The managing process involves such operations as: starting the service, stopping and restarting. They runs using corresponding tags.
