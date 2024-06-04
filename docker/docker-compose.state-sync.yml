@@ -20,10 +20,10 @@ services:
     entrypoint: ["sh", "-c"]
     # Example variables for kjnodes nodes
     environment:
-      - STATE_SYNC_RPC_1=https://lava-testnet.rpc.kjnodes.com:443
-      - GENESIS_ADDRESS=https://snapshots.kjnodes.com/lava-testnet/genesis.json
-      - ADDRBOOK_ADDRESS=https://snapshots.kjnodes.com/lava-testnet/addrbook.json
-      - NUM_BLOCKS=1500
+      - STATE_SYNC_RPC_1=${STATE_SYNC_RPC_1:-https://lava-testnet.rpc.kjnodes.com:443}
+      - GENESIS_ADDRESS=${GENESIS_ADDRESS:-https://snapshots.kjnodes.com/lava-testnet/genesis.json}
+      - ADDRBOOK_ADDRESS=${ADDRBOOK_ADDRESS:-https://snapshots.kjnodes.com/lava-testnet/addrbook.json}
+      - NUM_BLOCKS=${NUM_BLOCKS:-1500}
     command: >
       "
       apt-get -y update && apt-get install -y jq curl &&
