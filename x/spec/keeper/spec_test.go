@@ -811,11 +811,7 @@ func TestCookbookSpecs(t *testing.T) {
 
 	getToTopMostPath := "../../.././cookbook/specs/"
 	// base specs needs to be proposed first
-<<<<<<< HEAD
-	baseSpecs := []string{"spec_add_ibc.json", "spec_add_cosmoswasm.json", "spec_add_cosmossdk.json", "spec_add_cosmossdk_45.json", "spec_add_cosmossdk_full.json", "spec_add_ethereum.json","spec_add_ethermint.json", "spec_add_solana.json"}
-=======
 	baseSpecs := []string{"ibc.json", "tendermint.json", "ethermint.json", "cosmoswasm.json", "cosmossdk.json", "cosmossdk_45.json", "cosmossdk_full.json", "ethereum.json", "solana.json"}
->>>>>>> 64df2bfc7190d56d92988a32312f6bea4ed80763
 
 	Specs, err := getAllFilesInDirectory(getToTopMostPath)
 	require.NoError(t, err)
