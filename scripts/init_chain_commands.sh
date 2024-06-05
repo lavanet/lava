@@ -104,8 +104,8 @@ lavad tx dualstaking delegate $(lavad keys show servicer3 -a) ETH1 $(operator_ad
 echo; echo "#### Waiting 1 epoch ####"
 sleep_until_next_epoch
 
-# HEALTH_FILE="config/health_examples/health_template.yml"
-# create_health_config $HEALTH_FILE $(lavad keys show user1 -a) $(lavad keys show servicer2 -a) $(lavad keys show servicer3 -a)
+HEALTH_FILE="config/health_examples/health_template.yml"
+create_health_config $HEALTH_FILE $(lavad keys show user1 -a) $(lavad keys show servicer2 -a) $(lavad keys show servicer3 -a)
 
 lavad tx gov submit-legacy-proposal set-iprpc-data 1000000000ulava --min-cost 100ulava --add-subscriptions $(lavad keys show -a user1) --from alice -y
 wait_count_blocks 1
@@ -115,5 +115,5 @@ if [[ "$1" != "--skip-providers" ]]; then
 . ${__dir}/setup_providers.sh
 echo "letting providers start and running health check"
 sleep 10
-# lavap test health $HEALTH_FILE
+lavap test health $HEALTH_FILE
 fi
