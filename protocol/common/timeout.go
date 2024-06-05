@@ -19,6 +19,7 @@ const (
 	DefaultTimeout                      = 30 * time.Second
 	DefaultTimeoutLong                  = 3 * time.Minute
 	CacheTimeout                        = 50 * time.Millisecond
+	SubscriptionFirstReplyTimeout       = 10 * time.Second
 )
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {

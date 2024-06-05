@@ -976,7 +976,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	go func() {
 		for {
 			select {
-			case <-time.After(10 * time.Second):
+			case <-time.After(common.SubscriptionFirstReplyTimeout):
 				if reply.Data == nil {
 					utils.LavaFormatError("Timeout exceeded when waiting for first reply message from subscription, cancelling the context with the provider", nil,
 						utils.LogAttr("GUID", ctx),
