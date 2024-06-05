@@ -17,7 +17,6 @@ import (
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/sample"
 	planstypes "github.com/lavanet/lava/x/plans/types"
-	"github.com/lavanet/lava/x/rewards/types"
 	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -186,10 +185,10 @@ func (ts *tester) makeBondedRatioNonZero() {
 func (ts *tester) SendIprpcOverIbcTransferPacket(sender sdk.AccAddress, amount sdk.Coin) {
 	// get the sender's and IbcIprpcReceiver before sending the packet
 	senderBalanceBefore := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, sender, amount.Denom)
-	ibcIprpcReceiverBalanceBefore := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, types.IbcIprpcReceiverAddress(), amount.Denom)
+	ibcIprpcReceiverBalanceBefore := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, rewardstypes.IbcIprpcReceiverAddress(), amount.Denom)
 
 	// create packet data
-	memo, err := types.CreateIprpcMemo(sender.String(), mockSpec, 1)
+	memo, err := rewardstypes.CreateIprpcMemo(sender.String(), mockSpec, 1)
 	require.NoError(ts.T, err)
 	data := transfertypes.NewFungibleTokenPacketData(amount.Denom, amount.Amount.String(), sender.String(), "dummy", memo)
 	marshelledData, err := transfertypes.ModuleCdc.MarshalJSON(&data)
@@ -206,7 +205,7 @@ func (ts *tester) SendIprpcOverIbcTransferPacket(sender sdk.AccAddress, amount s
 
 	// verify the sender's balance went down and the IbcIprpcReceiver balance went up
 	senderBalanceAfter := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, sender, amount.Denom)
-	ibcIprpcReceiverBalanceAfter := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, types.IbcIprpcReceiverAddress(), amount.Denom)
+	ibcIprpcReceiverBalanceAfter := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, rewardstypes.IbcIprpcReceiverAddress(), amount.Denom)
 
 	senderDiff := senderBalanceBefore.Sub(senderBalanceAfter)
 	ibcIprpcReceiverDiff := ibcIprpcReceiverBalanceAfter.Sub(ibcIprpcReceiverBalanceBefore)
