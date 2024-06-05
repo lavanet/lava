@@ -114,7 +114,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType, internalPath)
 		if err != nil {
-			utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
+			utils.LavaFormatDebug("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
 			return nil, err
 		}
 
