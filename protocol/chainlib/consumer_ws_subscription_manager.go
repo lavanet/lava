@@ -27,7 +27,7 @@ type activeSubscriptionHolder struct {
 	subscriptionOrigRequest             *pairingtypes.RelayRequest
 	subscriptionOrigRequestChainMessage ChainMessage
 	subscriptionFirstReply              *rpcclient.JsonrpcMessage
-	replyServer                         *pairingtypes.Relayer_RelaySubscribeClient
+	replyServer                         pairingtypes.Relayer_RelaySubscribeClient
 	closeSubscriptionChan               chan *unsubscribeRelayData
 	connectedDapps                      map[string]struct{} // key is dapp key
 }
@@ -222,7 +222,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 	webSocketCtx context.Context,
 	dappID string,
 	userIp string,
-	replyServer *pairingtypes.Relayer_RelaySubscribeClient,
+	replyServer pairingtypes.Relayer_RelaySubscribeClient,
 	hashedParams string,
 	providerAddr string,
 	metricsData *metrics.RelayMetrics,
@@ -312,7 +312,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
 			return
-		case <-(*replyServer).Context().Done():
+		case <-replyServer.Context().Done():
 			utils.LavaFormatTrace("reply server context canceled",
 				utils.LogAttr("GUID", webSocketCtx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
@@ -320,7 +320,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			return
 		default:
 			var reply pairingtypes.RelayReply
-			err := (*replyServer).RecvMsg(&reply)
+			err := replyServer.RecvMsg(&reply)
 			if err != nil {
 				// The connection was closed by the provider
 				utils.LavaFormatTrace("error reading from subscription stream", utils.LogAttr("original error", err.Error()))

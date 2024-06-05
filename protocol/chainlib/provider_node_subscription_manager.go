@@ -126,7 +126,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		}
 
 		if replyWrapper == nil || replyWrapper.RelayReply == nil {
-			return "", utils.LavaFormatError("Subscription failed, relayWrapper or RelayReply are nil", nil, utils.LogAttr("GUID", ctx))
+			return "", utils.LavaFormatError("ProviderNodeSubscriptionManager: Subscription failed, relayWrapper or RelayReply are nil", nil, utils.LogAttr("GUID", ctx))
 		}
 
 		reply := replyWrapper.RelayReply
@@ -143,7 +143,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			SafeChannelSender := common.NewSafeChannelSender(ctx, consumerChannel)
 			SafeChannelSender.Send(reply)
 
-			return "", utils.LavaFormatWarning("subscription failed, node error", nil, utils.LogAttr("GUID", ctx), utils.LogAttr("reply", reply))
+			return "", utils.LavaFormatWarning("ProviderNodeSubscriptionManager: Subscription failed, node error", nil, utils.LogAttr("GUID", ctx), utils.LogAttr("reply", reply))
 		}
 
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() subscription successful",

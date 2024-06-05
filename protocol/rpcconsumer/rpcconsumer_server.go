@@ -959,7 +959,7 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 	)
 
-	relayResult.ReplyServer = &replyServer
+	relayResult.ReplyServer = replyServer
 	relayResult.Reply = reply
 	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession) // TODO: Elad - Use latest block from reply
 	return err

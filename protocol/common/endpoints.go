@@ -206,14 +206,14 @@ type RelayResult struct {
 	Request         *pairingtypes.RelayRequest
 	Reply           *pairingtypes.RelayReply
 	ProviderInfo    ProviderInfo
-	ReplyServer     *pairingtypes.Relayer_RelaySubscribeClient
+	ReplyServer     pairingtypes.Relayer_RelaySubscribeClient
 	Finalized       bool
 	ConflictHandler ConflictHandlerInterface
 	StatusCode      int
 	Quorum          int
 }
 
-func (rr *RelayResult) GetReplyServer() *pairingtypes.Relayer_RelaySubscribeClient {
+func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {
 	if rr == nil {
 		return nil
 	}
