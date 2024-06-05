@@ -46,6 +46,7 @@ const (
 	configFolder           = "./testutil/e2e/e2eProviderConfigs"
 	EmergencyModeStartLine = "+++++++++++ EMERGENCY MODE START ++++++++++"
 	EmergencyModeEndLine   = "+++++++++++ EMERGENCY MODE END ++++++++++"
+	NumberOfSpecs          = 10
 )
 
 var (
@@ -645,7 +646,7 @@ func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	// - produce 5 specs: ETH1, HOL1, SEP1, IBC,TENDERMINT , COSMOSSDK, LAV1 (via {ethereum,cosmoshub,lava})
 	// - produce 2 plans: "DefaultPlan", "EmergencyModePlan"
 
-	lt.checkStakeLava(2, 10, 4, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
+	lt.checkStakeLava(2, NumberOfSpecs, 4, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
 }
 
 func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
@@ -1225,7 +1226,7 @@ func runProtocolE2E(timeout time.Duration) {
 	// - produce 1 staked client (for each of ETH1, LAV1)
 	// - produce 1 subscription (for both ETH1, LAV1)
 
-	lt.checkStakeLava(2, 10, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	lt.checkStakeLava(2, NumberOfSpecs, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 

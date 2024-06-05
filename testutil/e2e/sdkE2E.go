@@ -124,7 +124,7 @@ func runSDKE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava(ctx)
 
-	lt.checkStakeLava(2, 9, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	lt.checkStakeLava(2, NumberOfSpecs, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
