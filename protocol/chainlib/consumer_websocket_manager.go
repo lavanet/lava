@@ -166,7 +166,7 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 			}
 
 			if IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
-				err := cwm.consumerWsSubscriptionManager.UnsubscribeAll(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, metricsData)
+				err := cwm.consumerWsSubscriptionManager.UnsubscribeAll(webSocketCtx, dappID, userIp, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from all subscription", err, utils.LogAttr("GUID", webSocketCtx))
 				}

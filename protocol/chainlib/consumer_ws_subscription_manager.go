@@ -513,7 +513,7 @@ func (cwsm *ConsumerWSSubscriptionManager) connectDappWithSubscription(dappKey s
 	cwsm.connectedDapps[dappKey][hashedParams] = webSocketChan
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) UnsubscribeAll(webSocketCtx context.Context, chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, dappID, consumerIp string, metricsData *metrics.RelayMetrics) error {
+func (cwsm *ConsumerWSSubscriptionManager) UnsubscribeAll(webSocketCtx context.Context, dappID, consumerIp string, metricsData *metrics.RelayMetrics) error {
 	utils.LavaFormatTrace("want to unsubscribe all",
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("dappID", dappID),
@@ -527,13 +527,11 @@ func (cwsm *ConsumerWSSubscriptionManager) UnsubscribeAll(webSocketCtx context.C
 
 	// Look for active connection
 	if _, ok := cwsm.connectedDapps[dappKey]; !ok {
-		utils.LavaFormatDebug("webSocket has no active subscriptions",
+		return utils.LavaFormatDebug("webSocket has no active subscriptions",
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("consumerIp", consumerIp),
 		)
-
-		return nil
 	}
 
 	for hashedParams := range cwsm.connectedDapps[dappKey] {
