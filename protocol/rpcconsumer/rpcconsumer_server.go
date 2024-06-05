@@ -562,7 +562,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling extensions.
 				relayRequestData.Extensions = []string{}    // reset request data extensions
 				extensions = []*spectypes.Extension{}       // reset extensions too so we wont hit SetDisallowDegradation
-
 			} else {
 				return err
 			}
