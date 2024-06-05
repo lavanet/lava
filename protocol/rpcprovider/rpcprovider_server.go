@@ -463,8 +463,8 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 
 	subscriptionId, err := rpcps.providerNodeSubscriptionManager.AddConsumer(ctx, request, chainMessage, consumerAddress, subscribeRepliesChan)
 	if err != nil {
-		// subscription failed due to node error mark session as done and return
-		relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber) // subscription failed due to node error mark session as done and return
+		// Subscription failed due to node error mark session as done and return
+		relayError := rpcps.providerSessionManager.OnSessionFailure(relaySession, relayNumber)
 		if relayError != nil {
 			utils.LavaFormatError("Error OnSessionDone", relayError)
 		}
@@ -475,7 +475,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 		)
 	}
 
-	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber) // TODO: Both consumer and provider should be mark failure on first message fail
+	relayError := rpcps.providerSessionManager.OnSessionDone(relaySession, relayNumber)
 	if relayError != nil {
 		utils.LavaFormatError("Error OnSessionDone", relayError)
 	}

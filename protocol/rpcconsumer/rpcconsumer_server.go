@@ -959,9 +959,6 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 	)
 
-	// TODO: need to check that if provider fails and returns error, this is reflected here and we run onSessionDone
-	// my thoughts are that this fails if the grpc fails not if the provider fails, and if the provider returns an error this is reflected by the Recv function on the chainListener calling us here
-	// and this is too late
 	relayResult.ReplyServer = &replyServer
 	relayResult.Reply = reply
 	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession) // TODO: Elad - Use latest block from reply
@@ -1021,6 +1018,15 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("reply", reply.Data),
+		)
+	}
+
+	if replyJson.Error != nil {
+		// Node error, subscription was not initialized, triggering OnSessionFailure
+		return nil, utils.LavaFormatError("error in reply from subscription", nil,
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("reply", replyJson),
 		)
 	}
 
