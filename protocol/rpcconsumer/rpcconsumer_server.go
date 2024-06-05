@@ -132,16 +132,13 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bool, error) {
 	if initialRelays {
 		// Only start after everything is initialized - check consumer session manager
-		err := rpccs.waitForPairing()
-		if err != nil {
-			return false, err
-		}
+		rpccs.waitForPairing()
 	}
 
 	return rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
 }
 
-func (rpccs *RPCConsumerServer) waitForPairing() error {
+func (rpccs *RPCConsumerServer) waitForPairing() {
 	reinitializedChan := make(chan bool)
 
 	go func() {
@@ -155,19 +152,19 @@ func (rpccs *RPCConsumerServer) waitForPairing() error {
 	}()
 
 	numberOfTimesChecked := 0
-	select {
-	case <-reinitializedChan:
-		break
-	case <-time.After(30 * time.Second):
-		numberOfTimesChecked += 1
-		utils.LavaFormatWarning("failed initial relays, csm was not initialized after timeout, or pairing list is empty for that chain", nil,
-			utils.LogAttr("times_checked", numberOfTimesChecked),
-			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
-			utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
-		)
+	for {
+		select {
+		case <-reinitializedChan:
+			return
+		case <-time.After(30 * time.Second):
+			numberOfTimesChecked += 1
+			utils.LavaFormatWarning("failed initial relays, csm was not initialized after timeout, or pairing list is empty for that chain", nil,
+				utils.LogAttr("times_checked", numberOfTimesChecked),
+				utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+				utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
+			)
+		}
 	}
-
-	return nil
 }
 
 func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage, err error) {
@@ -563,7 +560,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					return err
 				}
 				relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling extensions.
-				relayRequestData.Extensions = []string{}
+				relayRequestData.Extensions = []string{}    // reset request data extensions
+				extensions = []*spectypes.Extension{}       // reset extensions too so we wont hit SetDisallowDegradation
 			} else {
 				return err
 			}
@@ -574,7 +572,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 	// making sure next get sessions wont use regular providers
 	if len(extensions) > 0 {
-		relayProcessor.SetAllowSessionDegradation()
+		relayProcessor.SetDisallowDegradation()
 	}
 
 	// Iterate over the sessions map

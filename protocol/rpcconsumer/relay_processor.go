@@ -76,7 +76,7 @@ func (rp *RelayProcessor) GetAllowSessionDegradation() bool {
 }
 
 // in case we had an extension and managed to get a session successfully, we prevent session degradation.
-func (rp *RelayProcessor) SetAllowSessionDegradation() {
+func (rp *RelayProcessor) SetDisallowDegradation() {
 	atomic.StoreUint32(&rp.allowSessionDegradation, 1)
 }
 
