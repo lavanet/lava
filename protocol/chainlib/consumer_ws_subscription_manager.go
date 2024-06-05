@@ -91,21 +91,37 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	)
 
 	websocketRepliesChan := make(chan *pairingtypes.RelayReply)
-	websocketRepliesSafeChannelSender := common.NewSafeChannelSender[*pairingtypes.RelayReply](webSocketCtx, websocketRepliesChan)
+	websocketRepliesSafeChannelSender := common.NewSafeChannelSender(webSocketCtx, websocketRepliesChan)
+
+	closeWebsocketRepliesChan := make(chan struct{})
+	closeWebsocketRepliesChannel := func() {
+		select {
+		case closeWebsocketRepliesChan <- struct{}{}:
+		default:
+		}
+	}
 
 	// Remove the websocket from the active subscriptions, when the websocket is closed
 	go func() {
-		<-webSocketCtx.Done()
+		select {
+		case <-closeWebsocketRepliesChan:
+			utils.LavaFormatTrace("requested to close websocketRepliesChan",
+				utils.LogAttr("GUID", webSocketCtx),
+				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("dappKey", dappKey),
+			)
+		case <-webSocketCtx.Done():
+			utils.LavaFormatTrace("websocket context is done, removing websocket from active subscriptions",
+				utils.LogAttr("GUID", webSocketCtx),
+				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("dappKey", dappKey),
+			)
+		}
 
 		cwsm.lock.Lock()
 		defer cwsm.lock.Unlock()
-
-		utils.LavaFormatTrace("websocket context is done, removing websocket from active subscriptions",
-			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
-			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-			utils.LogAttr("dappKey", dappKey),
-		)
 
 		if _, ok := cwsm.connectedDapps[dappKey]; ok {
 			// The websocket can be closed before the first reply is received, so we need to check if the dapp was even added to the connectedDapps map
@@ -136,6 +152,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 				utils.LogAttr("dappKey", dappKey),
 			)
 
+			closeWebsocketRepliesChannel()
 			return activeSubscription.firstSubscriptionReply, nil, nil
 		}
 
@@ -153,6 +170,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	relayResult, err := cwsm.relaySender.SendParsedRelay(webSocketCtx, dappID, consumerIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
 	if err != nil {
+		closeWebsocketRepliesChannel()
 		return nil, nil, utils.LavaFormatError("could not send subscription relay", err)
 	}
 
@@ -165,8 +183,10 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	)
 
 	replyServer := relayResult.GetReplyServer()
-	if replyServer == nil { // TODO: Handle nil replyServer
-		return nil, nil, utils.LavaFormatTrace("reply server is nil",
+	if replyServer == nil {
+		// This code should never be reached, but just in case
+		closeWebsocketRepliesChannel()
+		return nil, nil, utils.LavaFormatError("reply server is nil, probably an error with the subscription initiation", nil,
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
@@ -176,6 +196,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	reply := *relayResult.Reply
 	if reply.Data == nil {
+		closeWebsocketRepliesChannel()
 		return nil, nil, utils.LavaFormatError("Reply data is nil", nil,
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
@@ -188,6 +209,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	var replyJson rpcclient.JsonrpcMessage
 	err = json.Unmarshal(reply.Data, &replyJson)
 	if err != nil {
+		closeWebsocketRepliesChannel()
 		return nil, nil, utils.LavaFormatError("could not parse reply into json", err,
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
