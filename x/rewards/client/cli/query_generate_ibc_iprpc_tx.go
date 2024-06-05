@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -128,27 +127,13 @@ func CmdQueryGenerateIbcIprpcTx() *cobra.Command {
 	return cmd
 }
 
-func createIbcIprpcMemo(creator string, spec string, duration string) (string, error) {
-	// sanity check
-	_, err := strconv.ParseUint(duration, 10, 64)
+func createIbcIprpcMemo(creator string, spec string, durationStr string) (string, error) {
+	duration, err := strconv.ParseUint(durationStr, 10, 64)
 	if err != nil {
 		return "", err
 	}
 
-	data := map[string]interface{}{
-		"iprpc": map[string]interface{}{
-			"creator":  creator,
-			"spec":     spec,
-			"duration": duration,
-		},
-	}
-
-	memo, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-
-	return string(memo), nil
+	return types.CreateIprpcMemo(creator, spec, duration)
 }
 
 // getFees returns a default fee in the native token of the node from which the ibc-transfer is sent (example: 1osmo)

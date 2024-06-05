@@ -157,7 +157,7 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		"expiry":       strconv.FormatUint(piif.Expiry, 10),
 	}, "New pending IBC IPRPC fund was created successfully")
 
-	return nil
+	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
 func (im IBCMiddleware) OnAcknowledgementPacket(

@@ -1,6 +1,9 @@
 package types
 
 import (
+	"encoding/json"
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
@@ -13,6 +16,25 @@ type IprpcMemo struct {
 
 func (im IprpcMemo) IsEqual(other IprpcMemo) bool {
 	return im.Creator == other.Creator && im.Duration == other.Duration && im.Spec == other.Spec
+}
+
+func CreateIprpcMemo(creator string, spec string, duration uint64) (memo string, err error) {
+	durationStr := strconv.FormatUint(duration, 10)
+
+	data := map[string]interface{}{
+		"iprpc": map[string]interface{}{
+			"creator":  creator,
+			"spec":     spec,
+			"duration": durationStr,
+		},
+	}
+
+	memoBytes, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+
+	return string(memoBytes), nil
 }
 
 // IbcIprpcReceiverAddress returns a Bech32 address for the string "iprpc"
