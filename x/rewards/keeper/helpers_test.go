@@ -10,11 +10,14 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/sample"
 	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/x/rewards/types"
 	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -34,6 +37,7 @@ var (
 		sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1100)),
 		sdk.NewCoin(ibcDenom, sdk.NewInt(500)),
 	)
+	mockSpec  string = "mockspec"
 	mockSpec2 string = "mock2"
 )
 
@@ -177,4 +181,35 @@ func (ts *tester) makeBondedRatioNonZero() {
 
 	bondedRatio = ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
 	require.True(ts.T, bondedRatio.Equal(sdk.NewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
+}
+
+func (ts *tester) SendIprpcOverIbcTransferPacket(sender sdk.AccAddress, amount sdk.Coin) {
+	// get the sender's and IbcIprpcReceiver before sending the packet
+	senderBalanceBefore := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, sender, amount.Denom)
+	ibcIprpcReceiverBalanceBefore := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, types.IbcIprpcReceiverAddress(), amount.Denom)
+
+	// create packet data
+	memo, err := types.CreateIprpcMemo(sender.String(), mockSpec, 1)
+	require.NoError(ts.T, err)
+	data := transfertypes.NewFungibleTokenPacketData(amount.Denom, amount.Amount.String(), sender.String(), "dummy", memo)
+	marshelledData, err := transfertypes.ModuleCdc.MarshalJSON(&data)
+	require.NoError(ts.T, err)
+
+	// create packet
+	packet := channeltypes.NewPacket(marshelledData, 0, "src", "srcc", "dest", "destc", clienttypes.ZeroHeight(), 1)
+
+	// call OnRecvPacket
+	ack := ts.IbcTransfer.OnRecvPacket(ts.Ctx, packet, sample.AccAddressObject())
+	if ack == nil || !ack.Success() {
+		require.FailNow(ts.T, "ibc transfer failed")
+	}
+
+	// verify the sender's balance went down and the IbcIprpcReceiver balance went up
+	senderBalanceAfter := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, sender, amount.Denom)
+	ibcIprpcReceiverBalanceAfter := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, types.IbcIprpcReceiverAddress(), amount.Denom)
+
+	senderDiff := senderBalanceBefore.Sub(senderBalanceAfter)
+	ibcIprpcReceiverDiff := ibcIprpcReceiverBalanceAfter.Sub(ibcIprpcReceiverBalanceBefore)
+	require.True(ts.T, senderDiff.IsEqual(ibcIprpcReceiverDiff))
+	require.True(ts.T, senderDiff.IsEqual(amount))
 }

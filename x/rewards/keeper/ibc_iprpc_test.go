@@ -260,10 +260,16 @@ func TestPendingIbcIprpcFundsRemoveExpiredWithBeginBlock(t *testing.T) {
 	keeper, ctx := ts.Keepers.Rewards, ts.Ctx
 	items := createNPendingIbcIprpcFunds(&keeper, ctx, 10)
 
-	// advance block with 3 seconds to expire some of the PendingIbcIprpcFunds
-	// we set balance to the IBC IPRPC receiver address since it get funds only from the IBC middleware (which is not simulated)
-	err := ts.Keepers.BankKeeper.SetBalance(ctx, types.IbcIprpcReceiverAddress(), iprpcFunds)
+	// let funder be the account that sends the ibc-transfer msg
+	funder := sample.AccAddressObject()
+	funderBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(10000)))
+	err := ts.Keepers.BankKeeper.SetBalance(ctx, funder, funderBalance)
 	require.NoError(t, err)
+
+	// IbcIprpcReceiver gets its balance via an IBC transfer
+	ts.SendIprpcOverIbcTransferPacket(funder, sdk.NewCoin(ts.TokenDenom(), iprpcFunds.AmountOf(ts.TokenDenom())))
+
+	// advance block with 3 seconds to expire some of the PendingIbcIprpcFunds
 	ts.AdvanceBlock(3 * time.Second)
 
 	// check that expired PendingIbcIprpcFunds were removed
@@ -429,10 +435,14 @@ func TestPendingIbcIprpcFundNewFunds(t *testing.T) {
 			spec := ts.Spec("mock")
 			funds := sdk.NewCoin(ts.TokenDenom(), tt.funds)
 
-			// set the IPRPC receiver balance manually since we don't call the IBC middleware
-			// this is crucial since the leftover funds are taken from it to the community pool
-			err := ts.Keepers.BankKeeper.SetBalance(ctx, types.IbcIprpcReceiverAddress(), sdk.NewCoins(funds))
+			// let funder be the account that sends the ibc-transfer msg
+			funder := sample.AccAddressObject()
+			funderBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(10000)))
+			err := ts.Keepers.BankKeeper.SetBalance(ctx, funder, funderBalance)
 			require.NoError(t, err)
+
+			// IbcIprpcReceiver gets its balance via an IBC transfer (leftover funds are taken from it to the community pool)
+			ts.SendIprpcOverIbcTransferPacket(funder, funds)
 
 			// create a new PendingIbcIprpcFund
 			piif, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
@@ -453,7 +463,7 @@ func TestPendingIbcIprpcFundNewFunds(t *testing.T) {
 
 // TestCoverIbcIprpcFundCost tests that the cover-ibc-iprpc-fund-cost transaction
 // Scenarios:
-//  0. Create 2 PendingIbcIprpcFund objects and fund IbcIprpcReceiver and gov. First with 101ulava for 2 months, second with
+//  0. Create 2 PendingIbcIprpcFund objects and fund IbcIprpcReceiver ("funder") and gov. First with 101ulava for 2 months, second with
 //     99ulava for 2 months. Expected: PendingIbcIprpcFund with 50ulava, PendingIbcIprpcFund with 49ulava, community pool 2ulava
 //  1. Cover costs with alice for first PendingIbcIprpcFund. Expect two iprpc rewards from next month of 50ulava, PendingIbcIprpcFund
 //     removed, IPRPC pool with 100ulava, second PendingIbcIprpcFund remains (49ulava), alice balance reduced by MinIprpcCost
@@ -464,17 +474,25 @@ func TestCoverIbcIprpcFundCost(t *testing.T) {
 	ts.setupForIprpcTests(false)
 	keeper, ctx := ts.Keepers.Rewards, ts.Ctx
 	spec := ts.Spec(mockSpec2)
+
+	// let funder be a dummy account to send the IBC transfer coins
+	// let alice be the account that cover costs
+	funder := sample.AccAddressObject()
+	funderBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(10000)))
+	err := ts.Keepers.BankKeeper.SetBalance(ctx, funder, funderBalance)
+	require.NoError(t, err)
+
 	alice := sample.AccAddressObject()
 	aliceBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(10000)))
-	err := ts.Keepers.BankKeeper.SetBalance(ctx, alice, aliceBalance)
+	err = ts.Keepers.BankKeeper.SetBalance(ctx, alice, aliceBalance)
 	require.NoError(t, err)
 
 	// fund IbcIprpcReceiver and gov module
-	// IbcIprpcReceiver gets the total coins that were sent
+	// IbcIprpcReceiver gets its balance via an IBC transfer
 	// gov module get a dummy balance, just to see it's not changing
-	ibcIprpcReceiverBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(200)))
-	err = ts.Keepers.BankKeeper.SetBalance(ctx, types.IbcIprpcReceiverAddress(), ibcIprpcReceiverBalance)
-	require.NoError(t, err)
+	ibcIprpcReceiverBalance := sdk.NewCoin(ts.TokenDenom(), math.NewInt(200))
+	ts.SendIprpcOverIbcTransferPacket(funder, ibcIprpcReceiverBalance)
+
 	govModuleBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.OneInt()))
 	govModule := ts.Keepers.AccountKeeper.GetModuleAddress("gov")
 	err = ts.Keepers.BankKeeper.SetBalance(ctx, govModule, govModuleBalance)
@@ -544,6 +562,6 @@ func TestCoverIbcIprpcFundCost(t *testing.T) {
 	iprpcPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.IprpcPoolName)
 	require.True(t, expectedIprpcPoolBalance.IsEqual(iprpcPoolBalance))
 
-	// verify that IbcIprpcReceiver has zero balance (to test that the SetBalance() is correct)
+	// verify that IbcIprpcReceiver has zero balance
 	require.Equal(t, int64(0), ts.GetBalance(types.IbcIprpcReceiverAddress()))
 }
