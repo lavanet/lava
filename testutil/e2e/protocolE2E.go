@@ -196,7 +196,7 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 }
 
 func (lt *lavaTest) stakeLava(ctx context.Context) {
-	command := "./scripts/init_e2e.sh"
+	command := "./scripts/test/init_e2e.sh"
 	logName := "01_stakeLava"
 	funcName := "stakeLava"
 
@@ -637,10 +637,10 @@ func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 // This would submit a proposal, vote then stake providers and clients for that network over lava
 func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	utils.LavaFormatInfo("Starting Lava over Lava Tests")
-	command := "./scripts/init_e2e_lava_over_lava.sh"
+	command := "./scripts/test/init_e2e_lava_over_lava.sh"
 	lt.execCommand(ctx, "startJSONRPCConsumer", "07_lavaOverLava", command, true)
 
-	// scripts/init_e2e.sh will:
+	// scripts/test/init_e2e.sh will:
 	// - produce 5 specs: ETH1, HOL1, SEP1, IBC,TENDERMINT , COSMOSSDK, LAV1 (via {ethereum,cosmoshub,lava})
 	// - produce 2 plans: "DefaultPlan", "EmergencyModePlan"
 
@@ -965,7 +965,7 @@ func (lt *lavaTest) checkQoS() error {
 }
 
 func (lt *lavaTest) startLavaInEmergencyMode(ctx context.Context, timeoutCommit int) {
-	command := "./scripts/emergency_mode.sh " + strconv.Itoa(timeoutCommit)
+	command := "./scripts/test/emergency_mode.sh " + strconv.Itoa(timeoutCommit)
 	logName := "10_StartLavaInEmergencyMode"
 	funcName := "startLavaInEmergencyMode"
 
@@ -1217,7 +1217,7 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava(ctx)
 
-	// scripts/init_e2e.sh will:
+	// scripts/test/init_e2e.sh will:
 	// - produce 4 specs: ETH1, HOL1, SEP1, IBC, TENDERMINT ,COSMOSSDK, LAV1 (via {ethereum,cosmoshub,lava})
 	// - produce 2 plans: "DefaultPlan", "EmergencyModePlan"
 	// - produce 5 staked providers (for each of ETH1, LAV1)

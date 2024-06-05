@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	commontypes "github.com/lavanet/lava/common/types"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 )
 
 const (

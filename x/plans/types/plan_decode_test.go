@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/utils/decoder"
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/require"
