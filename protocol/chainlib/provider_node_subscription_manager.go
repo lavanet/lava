@@ -52,6 +52,7 @@ func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser Cha
 	}
 }
 
+// TODO: Elad: Handle same consumer asking for same subscription twice
 func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessageForSend, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply) (subscriptionId string, err error) {
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() called", utils.LogAttr("consumerAddr", consumerAddr))
 
@@ -171,7 +172,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		pnsm.activeSubscriptions[hashedParams] = channelToConnectedConsumers
 		firstSetupReply = reply
 
-		go pnsm.listenForSubscriptionMessages(ctx, nodeChan, clientSubscription.Err(), hashedParams)
+		go pnsm.listenForSubscriptionMessages(ctx, cancellableCtx, nodeChan, clientSubscription.Err(), hashedParams)
 	}
 
 	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
@@ -200,21 +201,22 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
-			pnsm.closeNodeSubscription(hashedParams)
-			return
-		case <-pnsm.activeSubscriptions[hashedParams].cancellableContext.Done():
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() subscription context is done, ending subscription",
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-			)
-			pnsm.closeNodeSubscription(hashedParams)
+			func() {
+				pnsm.lock.Lock()
+				defer pnsm.lock.Unlock()
+				pnsm.closeNodeSubscription(hashedParams)
+			}()
 			return
 		case nodeErr := <-nodeErrChan:
 			utils.LavaFormatWarning("ProviderNodeSubscriptionManager:startListeningForSubscription() got error from node, ending subscription", nodeErr,
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
-			pnsm.closeNodeSubscription(hashedParams)
+			func() {
+				pnsm.lock.Lock()
+				defer pnsm.lock.Unlock()
+				pnsm.closeNodeSubscription(hashedParams)
+			}()
 			return
 		case nodeMsg := <-nodeChan:
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() got new message from node, ending subscription",
@@ -456,8 +458,8 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 			utils.LogAttr("params", params),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
-
 		pnsm.activeSubscriptions[hashedParams].cancellableContextCancelFunc() // This will trigger the cancellation of the subscription
+		pnsm.closeNodeSubscription(hashedParams)
 	} else {
 		utils.LavaFormatTrace(fmt.Sprintf("ProviderNodeSubscriptionManager:RemoveConsumer() still have %v epochs left in this subscription", epochsConnected),
 			utils.LogAttr("GUID", ctx),
@@ -473,9 +475,6 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 }
 
 func (pnsm *ProviderNodeSubscriptionManager) closeNodeSubscription(hashedParams string) error {
-	pnsm.lock.Lock()
-	defer pnsm.lock.Unlock()
-
 	if _, ok := pnsm.activeSubscriptions[hashedParams]; !ok {
 		return utils.LavaFormatError("closeNodeSubscription called with hashedParams that does not exist", nil, utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 	}
