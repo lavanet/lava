@@ -267,6 +267,7 @@ func (lt *lavaTest) checkStakeLava(
 	pairingQueryClient := pairingTypes.NewQueryClient(lt.grpcConn)
 	// check if all specs added exist
 	if len(specQueryRes.Spec) != specCount {
+		utils.LavaFormatError("Spec missing", nil, utils.LogAttr("have", len(specQueryRes.Spec)), utils.LogAttr("want", specCount))
 		panic("Staking Failed SPEC")
 	}
 	for _, spec := range specQueryRes.Spec {
@@ -1224,7 +1225,7 @@ func runProtocolE2E(timeout time.Duration) {
 	// - produce 1 staked client (for each of ETH1, LAV1)
 	// - produce 1 subscription (for both ETH1, LAV1)
 
-	lt.checkStakeLava(2, 9, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	lt.checkStakeLava(2, 10, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
