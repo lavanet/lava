@@ -21,6 +21,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 COPY . .
 
+ARG GIT_VERSION
+ARG GIT_COMMIT
+
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/root/go/pkg/mod \
     GOWORK=off go build \
@@ -50,6 +53,7 @@ EXPOSE 1317
 EXPOSE 8080
 # grpc
 EXPOSE 9090
+EXPOSE 9091
 # tendermint p2p
 EXPOSE 26656
 # tendermint rpc

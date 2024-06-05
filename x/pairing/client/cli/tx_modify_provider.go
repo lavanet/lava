@@ -118,9 +118,6 @@ func CmdModifyProvider() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				if providerEntry.Stake.Amount.GT(newStake.Amount) {
-					return utils.LavaFormatError("can't reduce provider stake", nil, utils.Attribute{Key: "current", Value: providerEntry.Stake}, utils.Attribute{Key: "requested", Value: providerEntry.Stake})
-				}
 				providerEntry.Stake = newStake
 			}
 			var geolocation int32
