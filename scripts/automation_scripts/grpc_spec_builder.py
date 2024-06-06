@@ -13,35 +13,35 @@ TEMPLATE = """
 
 # Lava:
 # grpc_server = "public-rpc.lavanet.xyz:9090"
-# spec_file_name = "spec_add_lava.json"
+# spec_file_name = "lava.json"
 # chainId = "JUN1"
 
 # Osmosis:
 # grpc_server = "grpc.osmosis.zone:9090"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_osmosis.json" 
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/osmosis.json" 
 
 # Cosmos
 # grpc_server = "gaia-node-1.lavapro.xyz:9090"
-# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/spec_add_cosmoshub.json" 
+# spec_current_file_path = "/home/user/go/src/lava/cookbook/specs/cosmoshub.json" 
 
 # Juno
 # grpc_server = "juno-node-1.lavapro.xyz:9090"
-# spec_file_name = "spec_add_juno.json"
+# spec_file_name = "juno.json"
 # chainId = "JUN1"
 
 # Evmos
 # grpc_server = "evmos-node-1.lavapro.xyz:9090"
-# spec_file_name = "spec_add_evmos.json"
+# spec_file_name = "evmos.json"
 # chainId = "EVMOS"
 
 # Axelar
 grpc_server = "grpc-axelar.stakerun.com:9090"
-spec_file_name = "spec_add_axelar.json"
+spec_file_name = "axelar.json"
 chainId = "AXELAR"
 
 # Canto
 # grpc_server = "canto-grpc.polkachu.com:15590"
-# spec_file_name = "spec_add_canto.json"
+# spec_file_name = "canto.json"
 # chainId = "CANTO"
 
 # 

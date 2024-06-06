@@ -23,11 +23,13 @@ import (
 )
 
 const (
-	ContextUserValueKeyDappID = "dappID"
-	RetryListeningInterval    = 10 // seconds
-	debug                     = false
-	refererMatchString        = "refererMatch"
-	relayMsgLogMaxChars       = 200
+	ContextUserValueKeyDappID  = "dappID"
+	RetryListeningInterval     = 10 // seconds
+	debug                      = false
+	refererMatchString         = "refererMatch"
+	relayMsgLogMaxChars        = 200
+	RPCProviderNodeAddressHash = "Lava-Provider-Node-Address-Hash"
+	RPCProviderNodeExtension   = "Lava-Provider-Node-Extension"
 )
 
 var InvalidResponses = []string{"null", "", "nil", "undefined"}
@@ -86,6 +88,7 @@ type BaseChainProxy struct {
 	averageBlockTime time.Duration
 	NodeUrl          common.NodeUrl
 	ChainID          string
+	HashedNodeUrl    string
 }
 
 // returns the node url and chain id for that proxy.
