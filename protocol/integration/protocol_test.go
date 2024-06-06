@@ -92,12 +92,28 @@ func checkGrpcServerStatusWithTimeout(url string, totalTimeout time.Duration) bo
 	return false
 }
 
-func isServerUp(url string) bool {
+func isServerUp(urlPath string) bool {
+	u, err := url.Parse(urlPath)
+	if err != nil {
+		panic(err)
+	}
+
+	switch {
+	case u.Scheme == "http":
+		return isHttpServerUp(urlPath)
+	case u.Scheme == "ws":
+		return isWebsocketServerUp(urlPath)
+	default:
+		panic("unsupported scheme")
+	}
+}
+
+func isHttpServerUp(urlPath string) bool {
 	client := http.Client{
 		Timeout: 20 * time.Millisecond,
 	}
 
-	resp, err := client.Get(url)
+	resp, err := client.Get(urlPath)
 	if err != nil {
 		return false
 	}
@@ -105,6 +121,15 @@ func isServerUp(url string) bool {
 	defer resp.Body.Close()
 
 	return resp.ContentLength > 0
+}
+
+func isWebsocketServerUp(urlPath string) bool {
+	client, _, err := websocket.DefaultDialer.Dial(urlPath, nil)
+	if err != nil {
+		return false
+	}
+	client.Close()
+	return true
 }
 
 func checkServerStatusWithTimeout(url string, totalTimeout time.Duration) bool {
@@ -167,6 +192,9 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	require.NoError(t, err)
 	// wait for consumer server to be up
 	consumerUp := checkServerStatusWithTimeout("http://"+consumerListenAddress, time.Millisecond*61)
+	require.True(t, consumerUp)
+
+	consumerUp = checkServerStatusWithTimeout("ws://"+consumerListenAddress+"/ws", time.Millisecond*61)
 	require.True(t, consumerUp)
 
 	return rpcConsumerServer
