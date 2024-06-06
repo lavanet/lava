@@ -43,7 +43,7 @@ init_install will install all necessary dependencies to develop on lava.
 ./scripts/init_install.sh
 ```
 
-## Building the binaries
+### Building the binaries
 
 LAVA_BINARY=all will build all lava binaries (lavad, lavap, lavavisor) and place them in the go bin path on your environment.
 
@@ -51,7 +51,7 @@ LAVA_BINARY=all will build all lava binaries (lavad, lavap, lavavisor) and place
 LAVA_BINARY=all make install
 ```
 
-### Building the binaries locally
+#### Building the binaries locally
 
 You can also build the binaries locally (path will be ./build/...) by running
 
@@ -59,7 +59,7 @@ You can also build the binaries locally (path will be ./build/...) by running
 LAVA_BINARY=all make build
 ```
 
-### Building only a specific binary
+#### Building only a specific binary
 
 it is possible to build only one binary: lavad/lavap/lavavisor
 
@@ -73,7 +73,7 @@ Or check out the latest [release](https://github.com/lavanet/lava/releases).
 
 You can add a useful autocomplete feature to `lavad` & `lavap` with a simple bash [script](https://github.com/lavanet/lava/blob/main/scripts/lava_auto_completion_install.sh).
 
-### Join Lava
+## Join Lava
 
 Join Lava's testnet, [read instructions here](https://docs.lavanet.xyz/testnet?utm_source=github.com&utm_medium=github&utm_campaign=readme)
 
