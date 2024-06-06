@@ -1,104 +1,159 @@
-# Submitting code contributions to Lava
+<!-- omit in toc -->
+# Contributing to Lava
 
-## Preface
+First off, thanks for taking the time to contribute! ❤️
 
-The Lava project continuously grows, both in terms of features and community size. It gets adopted by more and more organisations which entrust Lava to handle their critical production blockchain nodes. Thus, we need to take great care with any changes that affect compatibility, performance, scalability, stability and security of Lava. For this reason, every new feature or larger enhancement must be properly designed and discussed before it gets accepted into the code base.
+All types of contributions are encouraged and valued. See the [Table of Contents](#table-of-contents) for different ways to help and details about how this project handles them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and smooth out the experience for all involved. The community looks forward to your contributions. 🎉
 
-We do welcome and encourage everyone to participate in the Lava project, but please understand that we can't accept each and every contribution from the community, for various reasons.
+> And if you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which we would also be very happy about:
+> - Star the project
+> - Tweet about it
+> - Refer this project in your project's readme
+> - Mention the project at local meetups and tell your friends/colleagues
 
-If you want to submit code for a great new feature or enhancement, we kindly ask you to take a look at the
-enhancement process outlined below before you start to write code or submit a PR. This will ensure that your idea is well aligned with the project's strategy and technical requirements, and it will help greatly in getting your code merged into our code base.
+<!-- omit in toc -->
+## Table of Contents
 
-Before submitting code for a new feature (and also, to some extent, for more complex bug fixes) please
-[raise an Enhancement Proposal or Bug Issue](https://github.com/lavanet/lava/issues/new/choose)
-first.
+- [Code of Conduct](#code-of-conduct)
+- [I Have a Question](#i-have-a-question)
+- [I Want To Contribute](#i-want-to-contribute)
+  - [Reporting Bugs](#reporting-bugs)
+  - [Suggesting Enhancements](#suggesting-enhancements)
+  - [Your First Code Contribution](#your-first-code-contribution)
+  - [Improving The Documentation](#improving-the-documentation)
+- [Styleguides](#styleguides)
+  - [Commit Messages](#commit-messages)
+- [Join The Project Team](#join-the-project-team)שׂ
 
-Each enhancement proposal needs to go through our
-[triage process](#triage-process)
-before we accept code contributions.
 
-_Please_ do not spend too much time on larger features or refactorings before the corresponding enhancement has been triaged. This may save everyone some amount of frustration and time, as the enhancement proposal might be rejected, and the code would never get merged. However, sometimes it's helpful to have some PoC code along with a proposal.
+## Code of Conduct
 
-We will do our best to triage incoming enhancement proposals quickly, with one of the following outcomes:
+This project and everyone participating in it is governed by the
+[Lava Code of Conduct](https://github.com/lavanet/lavablob/master/CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code. Please report unacceptable behavior
+to <>.
 
-* Accepted
-* Rejected
-* Proposal requires a design document to be further discussed
 
-Depending on how many enhancement proposals we receive at given times, it may take some time until we can look at yours.
+## I Have a Question
 
-Also, please make sure you have read our
-[X Guide](x/README.md). It contains some invaluable information to get started with the complex code base that makes up Lava.
+> If you want to ask a question, we assume that you have read the available [Documentation](https://docs.lavanet.xyz/).
 
-## Quick start
+Before you ask a question, it is best to search for existing [Issues](https://github.com/lavanet/lava/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question in this issue. It is also advisable to search the internet for answers first.
 
-If you want a quick start contributing to Lava, take a look at issues that are labeled with
-[help wanted](https://github.com/lavanet/lava/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
-or
-[good first issue](https://github.com/lavanet/lava/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22).
+If you then still feel the need to ask a question and need clarification, we recommend the following:
 
-## Triage process
+- Open an [Issue](https://github.com/lavanet/lava/issues/new).
+- Provide as much context as you can about what you're running into.
+- Provide project and platform versions (nodejs, npm, etc), depending on what seems relevant.
 
-### Overview
+We will then take care of the issue as soon as possible.
 
-Our triage process for enhancements proposals ensures that we take a look at all incoming enhancements to determine whether we will accept code submissions to implement them.
+<!--
+You might want to create a separate issue tag for questions and include it in this description. People should then tag their issues accordingly.
 
-The process works as follows:
+Depending on how large the project is, you may want to outsource the questioning, e.g. to Stack Overflow or Gitter. You may add additional contact and information possibilities:
+- IRC
+- Slack
+- Gitter
+- Stack Overflow tag
+- Blog
+- FAQ
+- Roadmap
+- E-Mail List
+- Forum
+-->
 
-* New Enhancement Proposals raised on our GitHub issue tracker are moved to the _Incoming_ column of the project's board. These are the proposals that are in the queue for triage.
-* The _Active_ column holds the issues that are currently being triaged, or will be triaged next.
-* The _Accepted_ column holds the issues that have been triaged and are considered good to be implemented (e.g. the project agreed that the feature would be great to have)
-* The _Declined_ column holds the issues that were rejected during triage. The issue will be updated with information about why the proposal has been rejected.
-* The _Needs discussion_ column holds the issues that were found to require additional information, or even a design document, during triage.
+## I Want To Contribute
 
-### Triage cadence
+> ### Legal Notice <!-- omit in toc -->
+> When contributing to this project, you must agree that you have authored 100% of the content, that you have the necessary rights to the content and that the content you contribute may be provided under the project license.
 
-Triage of enhancement proposals is performed transparently, offline using issue comments and online in our weekly contributor's meeting. _Everyone_ is invited to participate in triaging, the process is not limited to participation only by maintainers.
+### Reporting Bugs
 
-Usually, we will triage enhancement proposals in a First-In-First-Out order, which mean that oldest proposals will be triaged first.
+<!-- omit in toc -->
+#### Before Submitting a Bug Report
 
-We aim to triage at least 10 proposals a week. Depending on our available time, we may be triaging a higher or lower number of proposals in any given week.
+A good bug report shouldn't leave others needing to chase you up for more information. Therefore, we ask you to investigate carefully, collect information and describe the issue in detail in your report. Please complete the following steps in advance to help us fix any potential bug as fast as possible.
 
-## Proposal states
+- Make sure that you are using the latest version.
+- Determine if your bug is really a bug and not an error on your side e.g. using incompatible environment components/versions (Make sure that you have read the [documentation](https://docs.lavanet.xyz/). If you are looking for support, you might want to check [this section](#i-have-a-question)).
+- To see if other users have experienced (and potentially already solved) the same issue you are having, check if there is not already a bug report existing for your bug or error in the [bug tracker](https://github.com/lavanet/lavaissues?q=label%3Abug).
+- Also make sure to search the internet (including Stack Overflow) to see if users outside of the GitHub community have discussed the issue.
+- Collect information about the bug:
+  - Stack trace (Traceback)
+  - OS, Platform and Version (Windows, Linux, macOS, x86, ARM)
+  - Version of the interpreter, compiler, SDK, runtime environment, package manager, depending on what seems relevant.
+  - Possibly your input and the output
+  - Can you reliably reproduce the issue? And can you also reproduce it with older versions?
 
-### Accepted proposals
+<!-- omit in toc -->
+#### How Do I Submit a Good Bug Report?
 
-When a proposal is considered _Accepted_, it was decided that this enhancement would be valuable to the community at large and fits into the overall strategic roadmap of the project.
+> You must never report security related issues, vulnerabilities or bugs including sensitive information to the issue tracker, or elsewhere in public. Instead sensitive bugs must be sent by email to <>.
+<!-- You may add a PGP key to allow the messages to be sent encrypted as well. -->
 
-Implementation of the issue may be started, either by the proposal's creator or another community member (including maintainers of the project).
+We use GitHub issues to track bugs and errors. If you run into an issue with the project:
 
-The issue should be refined enough by now to contain any concerns and guidelines to be taken into consideration during implementation.
+- Open an [Issue](https://github.com/lavanet/lava/issues/new). (Since we can't be sure at this point whether it is a bug or not, we ask you not to talk about a bug yet and not to label the issue.)
+- Explain the behavior you would expect and the actual behavior.
+- Please provide as much context as possible and describe the *reproduction steps* that someone else can follow to recreate the issue on their own. This usually includes your code. For good bug reports you should isolate the problem and create a reduced test case.
+- Provide the information you collected in the previous section.
 
-### Declined proposals
+Once it's filed:
 
-We don't decline proposals lightly, and we will do our best to give a proper reasoning why we think that the proposal does not fit with the future of the project. Reasons for declining proposals may be - amongst others - that the change would be breaking for many, or that it does not meet the strategic direction of the project. Usually, discussion will be facilitated with the enhancement's creator before declining a proposal.
+- The project team will label the issue accordingly.
+- A team member will try to reproduce the issue with your provided steps. If there are no reproduction steps or no obvious way to reproduce the issue, the team will ask you for those steps and mark the issue as `needs-repro`. Bugs with the `needs-repro` tag will not be addressed until they are reproduced.
+- If the team is able to reproduce the issue, it will be marked `needs-fix`, as well as possibly other tags (such as `critical`), and the issue will be left to be [implemented by someone](#your-first-code-contribution).
 
-Once a proposal is in _Declined_ state it's unlikely that we will accept code contributions for its implementation.
+<!-- You might want to create an issue template for bugs and errors that can be used as a guide and that defines the structure of the information to be included. If you do so, reference it here in the description. -->
 
-### Proposals that need discussion
 
-Sometimes, we can't completely understand a proposal from its GitHub issue and require more information on the original intent or on more details about the implementation. If we are confronted with such an issue during the triage, we move this issue to the _Needs discussion_ column to indicate that we expect the issue's creator to supply more information on their idea. We may ask you to provide this information, either by adding that information to the issue itself or by joining one of our
-[regular contributor's meeting](#regular-contributor-meeting)
-to discuss the proposal with us.
+### Suggesting Enhancements
 
-Also, issues that we find to require a more formal design document will be moved to this column.
+This section guides you through submitting an enhancement suggestion for Lava, **including completely new features and minor improvements to existing functionality**. Following these guidelines will help maintainers and the community to understand your suggestion and find related suggestions.
 
-## Design documents
+<!-- omit in toc -->
+#### Before Submitting an Enhancement
 
-For some enhancement proposals (especially those that will change behavior of Lava substantially, are attached with some caveats or where upgrade/downgrade paths are not clear), a more formal design document will be required in order to fully discuss and understand the enhancement in the broader community. This requirement is usually determined during triage. If you submitted an enhancement proposal, we may ask you to provide this more formal write down, along with some concerns or topics that need to be addressed.
+- Make sure that you are using the latest version.
+- Read the [documentation](https://docs.lavanet.xyz/) carefully and find out if the functionality is already covered, maybe by an individual configuration.
+- Perform a [search](https://github.com/lavanet/lava/issues) to see if the enhancement has already been suggested. If it has, add a comment to the existing issue instead of opening a new one.
+- Find out whether your idea fits with the scope and aims of the project. It's up to you to make a strong case to convince the project's developers of the merits of this feature. Keep in mind that we want features that will be useful to the majority of our users and not just a small subset. If you're just targeting a minority of users, consider writing an add-on/plugin library.
 
-Design documents are usually submitted as PR and use [this template](https://github.com/lavanet/lava/blob/master/docs/proposals/001-proposal-template.md) as a guide what kind of information we're looking for. Discussion will take place in the review process. When a design document gets merged, we consider it as approved and code can be written and submitted to implement this specific design.
+<!-- omit in toc -->
+#### How Do I Submit a Good Enhancement Suggestion?
 
-## Regular contributor meeting
+Enhancement suggestions are tracked as [GitHub issues](https://github.com/lavanet/lava/issues).
 
-Our community regularly meets virtually to discuss issues, ideas and enhancements around Lava. We do invite you to join this virtual meetings if you want to bring up certain things (including your enhancement proposals), participate in our triaging or just want to get to know other contributors.
+- Use a **clear and descriptive title** for the issue to identify the suggestion.
+- Provide a **step-by-step description of the suggested enhancement** in as many details as possible.
+- **Describe the current behavior** and **explain which behavior you expected to see instead** and why. At this point you can also tell which alternatives do not work for you.
+- You may want to **include screenshots and animated GIFs** which help you demonstrate the steps or point out the part which the suggestion is related to. You can use [this tool](https://www.cockos.com/licecap/) to record GIFs on macOS and Windows, and [this tool](https://github.com/colinkeenan/silentcast) or [this tool](https://github.com/GNOME/byzanz) on Linux. <!-- this should only be included if the project has a GUI -->
+- **Explain why this enhancement would be useful** to most Lava users. You may also want to point out the other projects that solved it better and which could serve as inspiration.
 
-The current cadence of our meetings is weekly, every Thursday at 8:15AM Pacific Time ([click here to check in your current timezone][1]). We use Zoom to conduct these meetings.
+<!-- You might want to create an issue template for enhancement suggestions that can be used as a guide and that defines the structure of the information to be included. If you do so, reference it here in the description. -->
 
-* [Agenda document (Google Docs, includes Zoom link)](https://docs.google.com/document/d/1xkoFkVviB70YBzSEa4bDnu-rUZ1sIFtwKKG1Uw8XsY8)
+### Your First Code Contribution
+<!-- TODO
+include Setup of env, IDE and typical getting started instructions?
 
-If you want to discuss something, we kindly ask you to put your item on the
-[agenda](https://docs.google.com/document/d/1xkoFkVviB70YBzSEa4bDnu-rUZ1sIFtwKKG1Uw8XsY8)
-for one of the upcoming meetings so that we can plan in the time for discussing it.
+-->
 
-[1]: https://www.timebie.com/std/pacific.php?q=081500
+### Improving The Documentation
+<!-- TODO
+Updating, improving and correcting the documentation
+
+-->
+
+## Styleguides
+### Commit Messages
+<!-- TODO
+
+-->
+
+## Join The Project Team
+<!-- TODO -->
+
+<!-- omit in toc -->
+## Attribution
+This guide is based on the **contributing-gen**. [Make your own](https://github.com/bttger/contributing-gen)!

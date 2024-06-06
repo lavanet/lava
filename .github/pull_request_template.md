@@ -31,7 +31,7 @@ I have...
 * [ ] targeted the `main` branch
 * [ ] provided a link to the relevant issue or specification
 * [ ] reviewed "Files changed" and left comments if necessary
-* [ ] included the necessary unit and integration
+* [ ] included the necessary unit and integration tests
 * [ ] updated the relevant documentation or specification, including comments for [documenting Go code](https://blog.golang.org/godoc)
 * [ ] confirmed all CI checks have passed
 
