@@ -25,7 +25,7 @@ An example of the expected IPRPC over IBC memo field:
   "iprpc": {
     "creator": "my-moniker",
     "spec": "ETH1",
-    "duration": 3
+    "duration": "3"
   }
 }
 

@@ -28,8 +28,9 @@ const (
 
 func CmdQueryGenerateIbcIprpcTx() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "generate-ibc-iprpc-tx [spec] [duration] [amount] [src-port] [src-channel] --from <alice> --node <node-URI>",
-		Short: `Query for generating an ibc-transfer TX JSON for IPRPC funding over IBC. 
+		Use:   "generate-ibc-iprpc-tx [spec] [duration] [amount] [src-port] [src-channel] --from <alice> --node <node-URI>",
+		Short: `Query for generating an ibc-transfer TX JSON for IPRPC funding over IBC`,
+		Long: `Query for generating an ibc-transfer TX JSON for IPRPC funding over IBC. 
 		The generated TX is a regular ibc-transfer TX with a custom memo. The memo holds the necessary information for a IPRPC over IBC request: 
 		creator, spec ID the user wishes to fund, and duration of the fund in months.
 		Note, the memo's spec ID field is not validated. A valid spec ID is one that is registered on-chain in the Lava blockchain. To 
