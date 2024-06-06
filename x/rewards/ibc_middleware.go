@@ -102,22 +102,10 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
-	// change the ibc-transfer packet receiver address to be a temp address and empty the memo
-	data.Receiver = types.IbcIprpcReceiverAddress().String()
-	data.Memo = ""
-	marshelledData, err := transfertypes.ModuleCdc.MarshalJSON(&data)
-	if err != nil {
-		utils.LavaFormatError("rewards module IBC middleware processing failed, cannot marshal packet data", err,
-			utils.LogAttr("data", data))
-		return channeltypes.NewErrorAcknowledgement(err)
-	}
-	packet.Data = marshelledData
-
 	// get the IBC IPRPC receiver balance before getting the new IBC tokens
 	balanceBefore := im.keeper.GetIbcIprpcReceiverBalance(ctx)
 
-	// call the next OnRecvPacket() of the transfer stack to make the IbcIprpcReceiver address get the IBC tokens
-	ack := im.app.OnRecvPacket(ctx, packet, relayer)
+	ack := im.sendIbcTransfer(ctx, packet, relayer, data.Sender, types.IbcIprpcReceiverAddress().String())
 	if ack == nil || !ack.Success() {
 		// we check for ack == nil because it means that IBC transfer module did not return an acknowledgement.
 		// This isn't necessarily an error, but it could indicate unexpected behavior or asynchronous processing
@@ -132,7 +120,7 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 	balanceAfter := im.keeper.GetIbcIprpcReceiverBalance(ctx)
 	ibcFundCoins := balanceAfter.Sub(balanceBefore...)
 	if ibcFundCoins.IsZero() {
-		utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("ibc iprpc receiver did not get new tokens"),
+		err := utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("ibc iprpc receiver did not get new tokens"),
 			utils.LogAttr("data", data),
 		)
 		return channeltypes.NewErrorAcknowledgement(err)
@@ -140,15 +128,23 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 
 	// ibcFundCoins should have only one token since ibc-transfer allows sending only one type of token
 	if len(ibcFundCoins) != 1 {
-		utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("ibcFundCoins has more than one type of coins"),
+		err := utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("ibcFundCoins has more than one type of coins"),
 			utils.LogAttr("data", data),
 		)
+		ack := im.sendIbcTransfer(ctx, packet, relayer, types.IbcIprpcReceiverAddress().String(), data.Sender)
+		if ack == nil || !ack.Success() {
+			err = errors.Join(err, types.ErrIbcTransferRevert)
+		}
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
 	// set pending IPRPC over IBC requests on-chain
 	piif, err := im.keeper.NewPendingIbcIprpcFund(ctx, memo.Creator, memo.Spec, memo.Duration, ibcFundCoins[0])
 	if err != nil {
+		ack := im.sendIbcTransfer(ctx, packet, relayer, types.IbcIprpcReceiverAddress().String(), data.Sender)
+		if ack == nil || !ack.Success() {
+			err = errors.Join(err, types.ErrIbcTransferRevert)
+		}
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
@@ -197,4 +193,28 @@ func (im IBCMiddleware) WriteAcknowledgement(ctx sdk.Context, chanCap *capabilit
 
 func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
 	return im.keeper.GetAppVersion(ctx, portID, channelID)
+}
+
+// sendIbcTransfer sends the ibc-transfer packet to the IBC Transfer module
+func (im IBCMiddleware) sendIbcTransfer(ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress, sender string, receiver string) exported.Acknowledgement {
+	// unmarshal the packet's data with the transfer module codec (expect an ibc-transfer packet)
+	var data transfertypes.FungibleTokenPacketData
+	if err := transfertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+
+	// change the ibc-transfer packet data with sender and receiver
+	data.Sender = sender
+	data.Receiver = receiver
+	data.Memo = ""
+	marshelledData, err := transfertypes.ModuleCdc.MarshalJSON(&data)
+	if err != nil {
+		utils.LavaFormatError("rewards module IBC middleware processing failed, cannot marshal packet data", err,
+			utils.LogAttr("data", data))
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+	packet.Data = marshelledData
+
+	// call the next OnRecvPacket() of the transfer stack to make the IBC Transfer module's OnRecvPacket send the IBC tokens
+	return im.app.OnRecvPacket(ctx, packet, relayer)
 }
