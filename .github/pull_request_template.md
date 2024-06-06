@@ -14,7 +14,7 @@ please add links to any relevant follow up issues.*
 
 I have...
 
-* [ ] read the [contribution guide](../CONTRIBUTING.md)
+* [ ] read the [contribution guide](https://github.com/lavanet/lavablob/main/CONTRIBUTING.md)
 * [ ] included the correct [type prefix](https://github.com/commitizen/conventional-commit-types/blob/v3.0.0/index.json) in the PR title, you can find examples of the prefixes below:
     <!-- * `feat`: A new feature
     * `fix`: A bug fix
