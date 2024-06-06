@@ -28,7 +28,7 @@ import (
 var startLavaLogName = "00_StartLava"
 
 func (lt *lavaTest) startLavaForPayment(ctx context.Context) {
-	command := "./scripts/start_env_dev_for_payment_e2e.sh"
+	command := "./scripts/test/start_env_dev_for_payment_e2e.sh"
 	logName := startLavaLogName
 	funcName := "startLava"
 
@@ -37,7 +37,7 @@ func (lt *lavaTest) startLavaForPayment(ctx context.Context) {
 }
 
 func (lt *lavaTest) stakeLavaForPayment(ctx context.Context) {
-	command := "./scripts/init_payment_e2e.sh"
+	command := "./scripts/test/init_payment_e2e.sh"
 	logName := "01_stakeLavaForPayment"
 	funcName := "stakeLavaForPayment"
 
@@ -314,7 +314,7 @@ func runPaymentE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLavaForPayment(ctx)
 
-	// scripts/init_payment_e2e.sh will:
+	// scripts/test/init_payment_e2e.sh will:
 	// - produce 2 spec: LAV1, COSMOS-SDK, IBC
 	// - produce 1 plan: "DefaultPlan"
 	// - produce 2 staked providers (for LAV1)

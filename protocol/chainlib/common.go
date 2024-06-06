@@ -29,6 +29,7 @@ const (
 	refererMatchString         = "refererMatch"
 	relayMsgLogMaxChars        = 200
 	RPCProviderNodeAddressHash = "Lava-Provider-Node-Address-Hash"
+	RPCProviderNodeExtension   = "Lava-Provider-Node-Extension"
 )
 
 var InvalidResponses = []string{"null", "", "nil", "undefined"}
