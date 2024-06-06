@@ -1,0 +1,39 @@
+---
+# The main playbook for nodes deployment
+- name: Deploying and managing the node Service
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - role: prepare
+      tags:
+        - never
+        - prepare
+    - role: deploy
+      tags:
+        - deploy
+    - role: snapshot
+      tags:
+        - never
+        - snapshot
+  tasks:
+    - name: Run the service
+      community.docker.docker_compose_v2:
+        project_src: "{{ project_path }}"
+        state: present
+      tags:
+        - start
+    - name: Stop the service
+      community.docker.docker_compose_v2:
+        project_src: "{{ project_path }}"
+        state: stopped
+      tags:
+        - never
+        - stop
+    - name: Restart the service
+      community.docker.docker_compose_v2:
+        project_src: "{{ project_path }}"
+        state: restarted
+      tags:
+        - never
+        - restart

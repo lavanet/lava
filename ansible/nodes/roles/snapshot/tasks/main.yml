@@ -1,0 +1,49 @@
+# roles/snapshot/tasks/main.yml
+---
+- name: Create unpack directory
+  ansible.builtin.file:
+    path: "{{ item.value.unpack_dir }}"
+    state: directory
+    mode: '0755'
+  loop: "{{ download_files | dict2items }}"
+  loop_control:
+    label: "{{ item.key }} & directory={{ item.value.unpack_dir }}"
+
+- name: Download files to tmp folder use aria2c
+  ansible.builtin.shell: aria2c -x6 --auto-file-renaming=false --continue=true {{ item.value.url }} --dir={{ download_tmp_dir }} --out={{ item.key }}.{{ item.value.file_ext }} 2>&1 >{{ download_tmp_dir }}/{{ item.key }}.{{ item.value.file_ext }}.output
+  async: 21600    # Maximum allowed time in Seconds
+  poll: 10        # Polling Interval in Seconds
+  loop: "{{ download_files | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}.{{ item.value.file_ext }}"
+
+- name: Extract tar.gz
+  ansible.builtin.shell: "tar -xzf {{ download_tmp_dir }}/{{ item.key }}.{{ item.value.file_ext }} -C {{ item.value.unpack_dir }}"
+  loop: "{{ download_files | dict2items }}"
+  when: item.value.file_ext == "tar.gz"
+
+- name: Extract tar.lz4
+  ansible.builtin.shell: "lz4 -c -d {{ download_tmp_dir }}/{{ item.key }}.{{ item.value.file_ext }} | tar -x -C {{ item.value.unpack_dir }}"
+  loop: "{{ download_files | dict2items }}"
+  when: item.value.file_ext == "tar.lz4"
+
+- name: Extract zip
+  ansible.builtin.shell: 'unzip -o {{ download_tmp_dir }}/{{ item.key }}.{{ item.value.file_ext }} -d {{ item.value.unpack_dir }}'
+  loop: "{{ download_files | dict2items }}"
+  when: item.value.file_ext == "zip"
+
+- name: Extract tar.zstd
+  ansible.builtin.shell: 'zstd -cd {{ download_tmp_dir }}/{{ item.key }}.{{ item.value.file_ext }} | tar -x -C {{ item.value.unpack_dir }}'
+  loop: "{{ download_files | dict2items }}"
+  when: item.value.file_ext == "tar.zstd"
+
+- name: none
+  ansible.builtin.shell: 'pwd'
+  loop: "{{ download_files | dict2items }}"
+  when: item.value.file_ext == "none"
+
+- name: Remove snapshot file (delete file)
+  ansible.builtin.file:
+    path: "{{ download_tmp_dir }}/{{ item.key }}.{{ item.value.file_ext }}"
+    state: absent
+  loop: "{{ download_files | dict2items }}"

@@ -1,0 +1,56 @@
+# roles/deploy/tasks/main.yml
+---
+- name: Create a directory for the Docker Compose file
+  ansible.builtin.file:
+    path: "{{ project_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Generate the Docker Compose file
+  ansible.builtin.template:
+    src: "docker-compose.yml.j2"
+    dest: "{{ project_path }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Generate the node.env file
+  ansible.builtin.template:
+    src: "{{ environment_template }}"
+    dest: "{{ project_path }}/node.env"
+    mode: "0644"
+
+- name: Create the data volume directory
+  ansible.builtin.file:
+    path: "{{ volume_path }}"
+    state: directory
+    mode: "0755"
+
+- name: Get volume information
+  community.docker.docker_volume_info:
+    name: "{{ project_unique_name }}"
+  register: volume_info
+
+- name: Create the data volume
+  when:
+    - volume_info.exists
+    - volume_info.volume.Options.device != volume_path
+  block:
+    - name: Get container information
+      community.docker.docker_container_info:
+        name: "{{ project_unique_name }}"
+      register: container_info
+
+    - name: Remove the container
+      community.docker.docker_container:
+        name: "{{ project_unique_name }}"
+        state: absent
+      when: container_info.exists
+
+    - name: Remove the volume
+      community.docker.docker_volume:
+        name: "{{ project_unique_name }}"
+        state: absent
+      when: volume_info.exists
+
+- name: Create a network
+  community.docker.docker_network:
+    name: "{{ project_name }}"

@@ -1,0 +1,9 @@
+# group_vars/all.yml
+---
+ansible_user: root
+ansible_port: 20022
+project_type: node
+project_unique_name: "{{ project_name }}{% if network %}-{{ network }}{% endif %}-{{ project_type }}"
+service_path: /opt/services
+project_path: "{{ service_path }}/{{ project_unique_name }}"
+volume_path: "{{ container.volume_path }}"

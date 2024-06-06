@@ -1,0 +1,21 @@
+# roles/snapshot/meta/main.yml
+---
+dependencies: []
+galaxy_info:
+  author: Michael
+  description: The role for managing the snapshot
+  company: Impulse Expert | https://impulse.expert
+  license: GPL
+  min_ansible_version: "2.9"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - xenial
+        - bionic
+        - focal
+    - name: Debian
+      versions:
+        - buster
+        - bullseye
+        - bookworm
+

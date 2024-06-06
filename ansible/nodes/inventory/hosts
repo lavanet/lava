@@ -1,0 +1,3 @@
+all:
+  hosts:
+    lava_testnet_node_eu:

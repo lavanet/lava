@@ -1,0 +1,48 @@
+---
+name: {{ project_unique_name }}
+
+services:
+  node:
+    image: {{ container.image }}:{{ container.tag }}
+    container_name: {{ project_unique_name }}
+    labels:
+      network: "{% if network %}{{ network }}{% else %}-no_network_set{% endif %}"
+    env_file:
+      - node.env
+    volumes:
+      - data:{{ node_config.config_path}}
+    ports:
+{% for key, value in node_ports.items() %}
+      - "{{ value }}:{{ value }}"
+{% endfor %}
+    networks:
+{% for value in networks %}
+      - {{ value }}
+{% endfor %}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "1"
+    deploy:
+      resources:
+        limits:
+          cpus: "{{ container.limits.cpu }}"
+          memory: "{{ container.limits.memory }}"
+    restart: unless-stopped
+
+volumes:
+  data:
+    name: {{ project_unique_name }}
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: {{ container.volume_path }}
+
+networks:
+{% for value in networks %}
+  {{ value }}:
+    name: {{ value }}
+    external: true
+{% endfor %}

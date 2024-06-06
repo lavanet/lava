@@ -1,0 +1,55 @@
+# host_vars/lava_testnet_node_eu.yml
+---
+ansible_host: xxx.xxx.xxx.xxx                                         # IP address of the host
+project_name: lava
+environment_template: node.env.j2
+network: testnet
+
+# Container configuration
+container:
+  image: svetekllc/lava                                               # Docker image name
+  tag: v2.0.0-node                                                    # Docker image tag to specify version
+  limits:
+    cpu: 2                                                            # Maximum number of CPU cores the container can use
+    memory: 4gb                                                      # Maximum amount of memory the container can use
+  volume_path: /opt/{{ project_unique_name }}                         # Path where volumes are mounted in the host
+
+# Node-specific configuration
+node_config:
+  moniker: Lava                                                       # Custom name for the provider instance
+  chain_id: lava-testnet-2                                            # Blockchain network identifier
+  log_level: info                                                     # Logging level
+  config_path: /root/.lava                                            # Path to provider configuration files
+  database_backend: goleveldb                                         # AppDBBackend defines the database backend type to use for the application and snapshots DBs.
+  addrbook_url: ""
+  genesis_url: https://raw.githubusercontent.com/lavanet/lava-config/main/testnet-2/genesis_json/genesis.json
+  peers: ""
+  seeds: d1730b774b7c1d52dd9f6ae874a56de958aa147e@139.45.205.60:23656,51789af428293359348020d298143946c9a0492e@5.161.132.110:26656,802e15de52338029c6e2de2901c8cdd75f15ee9b@64.120.88.81:23656
+  state_sync: false
+  diff_height: 1000
+  public_rpc_url: https://public-rpc-testnet2.lavanet.xyz:443/rpc/    # Public URL for RPC connections
+
+# Network ports used by the node
+node_ports:
+  grpc: 9090                                                          # Port for gRPC service
+  api: 1317                                                           # Port for REST API service
+  p2p: 26656                                                          # Port for P2P service
+  rpc: 26657                                                          # Port for RPC service
+  metrics: 26660                                                      # Port for Prometheus Metrics
+
+networks:
+  - lava                                                              # Network label used for Docker networking
+
+# Wallet configuration
+wallet:
+  name: lava                                                          # Wallet name
+  password: ""                                                        # Wallet password. Required if the keyring_backend parameter is equal: os, file
+  keyring_backend: test                                               # Backend system for managing keys and secrets
+
+# Download Snapshot configuration
+download_tmp_dir: "{{ volume_path }}"
+download_files:
+  snapshot:
+    url: https://testnet-files.itrocket.net/lava/snap_lava.tar.lz4
+    file_ext: tar.lz4                                                  # File type zip / tar.lz4 / tar.zstd / none
+    unpack_dir: "{{ volume_path }}"
