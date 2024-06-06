@@ -42,10 +42,11 @@ import (
 )
 
 const (
-	protocolLogsFolder     = "./testutil/e2e/protocolLogs/"
-	configFolder           = "./testutil/e2e/e2eProviderConfigs"
-	EmergencyModeStartLine = "+++++++++++ EMERGENCY MODE START ++++++++++"
-	EmergencyModeEndLine   = "+++++++++++ EMERGENCY MODE END ++++++++++"
+	protocolLogsFolder         = "./testutil/e2e/protocolLogs/"
+	configFolder               = "./testutil/e2e/e2eProviderConfigs"
+	EmergencyModeStartLine     = "+++++++++++ EMERGENCY MODE START ++++++++++"
+	EmergencyModeEndLine       = "+++++++++++ EMERGENCY MODE END ++++++++++"
+	NumberOfSpecsExpectedInE2E = 10
 )
 
 var (
@@ -196,7 +197,7 @@ func (lt *lavaTest) checkLava(timeout time.Duration) {
 }
 
 func (lt *lavaTest) stakeLava(ctx context.Context) {
-	command := "./scripts/init_e2e.sh"
+	command := "./scripts/test/init_e2e.sh"
 	logName := "01_stakeLava"
 	funcName := "stakeLava"
 
@@ -267,6 +268,7 @@ func (lt *lavaTest) checkStakeLava(
 	pairingQueryClient := pairingTypes.NewQueryClient(lt.grpcConn)
 	// check if all specs added exist
 	if len(specQueryRes.Spec) != specCount {
+		utils.LavaFormatError("Spec missing", nil, utils.LogAttr("have", len(specQueryRes.Spec)), utils.LogAttr("want", specCount))
 		panic("Staking Failed SPEC")
 	}
 	for _, spec := range specQueryRes.Spec {
@@ -637,14 +639,14 @@ func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 // This would submit a proposal, vote then stake providers and clients for that network over lava
 func (lt *lavaTest) lavaOverLava(ctx context.Context) {
 	utils.LavaFormatInfo("Starting Lava over Lava Tests")
-	command := "./scripts/init_e2e_lava_over_lava.sh"
+	command := "./scripts/test/init_e2e_lava_over_lava.sh"
 	lt.execCommand(ctx, "startJSONRPCConsumer", "07_lavaOverLava", command, true)
 
-	// scripts/init_e2e.sh will:
-	// - produce 5 specs: ETH1, HOL1, SEP1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
+	// scripts/test/init_e2e.sh will:
+	// - produce 5 specs: ETH1, HOL1, SEP1, IBC,TENDERMINT , COSMOSSDK, LAV1 (via {ethereum,cosmoshub,lava})
 	// - produce 2 plans: "DefaultPlan", "EmergencyModePlan"
 
-	lt.checkStakeLava(2, 8, 4, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
+	lt.checkStakeLava(2, NumberOfSpecsExpectedInE2E, 4, 5, checkedPlansE2E, checkedSpecsE2ELOL, checkedSubscriptionsLOL, "Lava Over Lava Test OK")
 }
 
 func (lt *lavaTest) checkRESTConsumer(rpcURL string, timeout time.Duration) {
@@ -965,7 +967,7 @@ func (lt *lavaTest) checkQoS() error {
 }
 
 func (lt *lavaTest) startLavaInEmergencyMode(ctx context.Context, timeoutCommit int) {
-	command := "./scripts/emergency_mode.sh " + strconv.Itoa(timeoutCommit)
+	command := "./scripts/test/emergency_mode.sh " + strconv.Itoa(timeoutCommit)
 	logName := "10_StartLavaInEmergencyMode"
 	funcName := "startLavaInEmergencyMode"
 
@@ -1217,14 +1219,14 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava(ctx)
 
-	// scripts/init_e2e.sh will:
-	// - produce 4 specs: ETH1, HOL1, SEP1, IBC, COSMOSSDK, LAV1 (via spec_add_{ethereum,cosmoshub,lava})
+	// scripts/test/init_e2e.sh will:
+	// - produce 4 specs: ETH1, HOL1, SEP1, IBC, TENDERMINT ,COSMOSSDK, LAV1 (via {ethereum,cosmoshub,lava})
 	// - produce 2 plans: "DefaultPlan", "EmergencyModePlan"
 	// - produce 5 staked providers (for each of ETH1, LAV1)
 	// - produce 1 staked client (for each of ETH1, LAV1)
 	// - produce 1 subscription (for both ETH1, LAV1)
 
-	lt.checkStakeLava(2, 8, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	lt.checkStakeLava(2, NumberOfSpecsExpectedInE2E, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 

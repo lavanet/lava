@@ -48,6 +48,13 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 		}`,
 		`{
 			"iprpc": {
+			  "creator": "mockspec",
+			  "spec": "mockspec",
+			  "duration": 3
+			}
+		}`,
+		`{
+			"iprpc": {
 			  "spec": "mockspec",
 			  "duration": "3"
 			}
@@ -85,7 +92,8 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 		NOT_JSON
 		JSON_NO_IPRPC
 		VALID_JSON_IPRPC
-		INVALID_CREATOR_JSON_IPRPC
+		EMPTY_CREATOR_JSON_IPRPC
+		CREATOR_IS_SPEC_JSON_IPRPC
 		MISSING_CREATOR_JSON_IPRPC
 		INVALID_SPEC_JSON_IPRPC
 		MISSING_SPEC_JSON_IPRPC
@@ -124,8 +132,14 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 			expectedMemo: types.IprpcMemo{Creator: "my-moniker", Spec: "mockspec", Duration: 3},
 		},
 		{
-			name:         "invalid memo iprpc json - invalid creator",
-			memoInd:      INVALID_CREATOR_JSON_IPRPC,
+			name:         "invalid memo iprpc json - invalid creator - empty creator",
+			memoInd:      EMPTY_CREATOR_JSON_IPRPC,
+			expectError:  types.ErrIprpcMemoInvalid,
+			expectedMemo: types.IprpcMemo{},
+		},
+		{
+			name:         "invalid memo iprpc json - invalid creator - creator is named like on-chain spec",
+			memoInd:      CREATOR_IS_SPEC_JSON_IPRPC,
 			expectError:  types.ErrIprpcMemoInvalid,
 			expectedMemo: types.IprpcMemo{},
 		},

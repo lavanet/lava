@@ -8,6 +8,8 @@ import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 type chainRouterEntry struct {
@@ -30,13 +32,16 @@ type chainRouterImpl struct {
 	chainProxyRouter map[lavasession.RouterKey][]chainRouterEntry
 }
 
-func (cri *chainRouterImpl) getChainProxySupporting(addon string, extensions []string) (ChainProxy, error) {
+func (cri *chainRouterImpl) getChainProxySupporting(ctx context.Context, addon string, extensions []string) (ChainProxy, error) {
 	cri.lock.RLock()
 	defer cri.lock.RUnlock()
 	wantedRouterKey := lavasession.NewRouterKey(extensions)
 	if chainProxyEntries, ok := cri.chainProxyRouter[wantedRouterKey]; ok {
 		for _, chainRouterEntry := range chainProxyEntries {
 			if chainRouterEntry.isSupporting(addon) {
+				if wantedRouterKey != lavasession.GetEmptyRouterKey() { // add trailer only when router key is not default (||)
+					grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeExtension, string(wantedRouterKey)))
+				}
 				return chainRouterEntry.ChainProxy, nil
 			}
 			if debug {
@@ -59,7 +64,7 @@ func (cri chainRouterImpl) ExtensionsSupported(extensions []string) bool {
 func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) {
 	// add the parsed addon from the apiCollection
 	addon := chainMessage.GetApiCollection().CollectionData.AddOn
-	selectedChainProxy, err := cri.getChainProxySupporting(addon, extensions)
+	selectedChainProxy, err := cri.getChainProxySupporting(ctx, addon, extensions)
 	if err != nil {
 		return nil, "", nil, common.NodeUrl{}, "", err
 	}

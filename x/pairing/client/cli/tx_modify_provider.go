@@ -10,8 +10,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -117,9 +117,6 @@ func CmdModifyProvider() *cobra.Command {
 				newStake, err := sdk.ParseCoinNormalized(newAmount)
 				if err != nil {
 					return err
-				}
-				if providerEntry.Stake.Amount.GT(newStake.Amount) {
-					return utils.LavaFormatError("can't reduce provider stake", nil, utils.Attribute{Key: "current", Value: providerEntry.Stake}, utils.Attribute{Key: "requested", Value: providerEntry.Stake})
 				}
 				providerEntry.Stake = newStake
 			}

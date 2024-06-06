@@ -119,6 +119,11 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 	// call the next OnRecvPacket() of the transfer stack to make the IbcIprpcReceiver address get the IBC tokens
 	ack := im.app.OnRecvPacket(ctx, packet, relayer)
 	if ack == nil || !ack.Success() {
+		// we check for ack == nil because it means that IBC transfer module did not return an acknowledgement.
+		// This isn't necessarily an error, but it could indicate unexpected behavior or asynchronous processing
+		// on the IBC transfer module's side (which returns a non-nil ack when executed without errors). Asynchronous
+		// processing can be queued processing of packets, interacting with external APIs and more. These can cause
+		// delays in the IBC-transfer's processing which will make the module return a nil ack until the processing is done.
 		return ack
 	}
 
@@ -157,7 +162,7 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		"expiry":       strconv.FormatUint(piif.Expiry, 10),
 	}, "New pending IBC IPRPC fund was created successfully")
 
-	return nil
+	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
 func (im IBCMiddleware) OnAcknowledgementPacket(

@@ -451,7 +451,7 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	nodeUrl.Url = strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/")
 	rcp := &RestChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: rpcProviderEndpoint.NodeUrls[0], ErrorHandler: &RestErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
+		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: rpcProviderEndpoint.NodeUrls[0], HashedNodeUrl: chainproxy.HashURL(nodeUrl.Url), ErrorHandler: &RestErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
 	}
 	return rcp, nil
 }
@@ -466,6 +466,9 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 		}
 	}
 	httpClient := rcp.httpClient
+
+	// appending hashed url
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, rcp.BaseChainProxy.HashedNodeUrl))
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.RestMessage)
@@ -513,8 +516,7 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	res, err := httpClient.Do(req)
 	if res != nil {
 		// resp can be non nil on error
-		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
-		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+		grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))) // we ignore this error here since this code can be triggered not from grpc
 	}
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
