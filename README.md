@@ -23,10 +23,16 @@ Lava is built using the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/) whic
 
 **Note**: Requires [Go 1.20.5](https://golang.org/dl/)
 
-### Running Lava 
+## Quick Start
  
 The best way to start working with lava is to use docker, for additional reading go to:
 [Running via compose](docker/README.md)
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for details on how to contribute. If you want to follow the updates or learn more about the latest design then join our [Discord](https://discord.gg/lavanetxyz).
+
+## Developing 
 
 ### Installing development dependencies
 
@@ -67,7 +73,7 @@ Or check out the latest [release](https://github.com/lavanet/lava/releases).
 
 You can add a useful autocomplete feature to `lavad` & `lavap` with a simple bash [script](https://github.com/lavanet/lava/blob/main/scripts/lava_auto_completion_install.sh).
 
-### Quick Start
+### Join Lava
 
 Join Lava's testnet, [read instructions here](https://docs.lavanet.xyz/testnet?utm_source=github.com&utm_medium=github&utm_campaign=readme)
 

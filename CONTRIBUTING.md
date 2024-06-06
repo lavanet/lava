@@ -133,24 +133,6 @@ Enhancement suggestions are tracked as [GitHub issues](https://github.com/lavane
 
 <!-- You might want to create an issue template for enhancement suggestions that can be used as a guide and that defines the structure of the information to be included. If you do so, reference it here in the description. -->
 
-### Your First Code Contribution
-<!-- TODO
-include Setup of env, IDE and typical getting started instructions?
-
--->
-
-### Improving The Documentation
-<!-- TODO
-Updating, improving and correcting the documentation
-
--->
-
-## Styleguides
-### Commit Messages
-<!-- TODO
-
--->
-
 ## Join The Project Team
 <!-- TODO -->
 
