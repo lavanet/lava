@@ -18,13 +18,6 @@ body:
         - label: I have searched the existing issues
           required: true
 
-  - type: markdown
-    attributes:
-      value: |
-        IMPORTANT: Prior to opening a bug report, check if it affects one of the core modules
-        and if its eligible for a bug bounty on `SECURITY.md`. Bugs that are not submitted
-        through the appropriate channels won't receive any bounty.
-
   - type: textarea
     id: what-happened
     attributes:
