@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -469,51 +470,68 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 
 type JrpcChainProxy struct {
 	BaseChainProxy
-	conn map[string]*chainproxy.Connector
+	webSocketConnectors map[string]*chainproxy.Connector
+	httpConnectors      map[string]*chainproxy.Connector
 }
 
 func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
+
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	nodeUrl := verifyJsonRPCEndpoint(rpcProviderEndpoint.NodeUrls)
 	cp := &JrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl, ErrorHandler: &JsonRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
-		conn:           map[string]*chainproxy.Connector{},
+		BaseChainProxy:      BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl, ErrorHandler: &JsonRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
+		webSocketConnectors: map[string]*chainproxy.Connector{},
+		httpConnectors:      map[string]*chainproxy.Connector{},
 	}
-	verifyRPCEndpoint(nodeUrl.Url)
+
 	internalPaths := map[string]struct{}{}
 	jsonRPCChainParser, ok := chainParser.(*JsonRPCChainParser)
 	if ok {
 		internalPaths = jsonRPCChainParser.GetInternalPaths()
 	}
-	internalPathsLength := len(internalPaths)
-	if internalPathsLength > 0 && internalPathsLength == len(rpcProviderEndpoint.NodeUrls) {
-		return cp, cp.startWithSpecificInternalPaths(ctx, nConns, rpcProviderEndpoint.NodeUrls, internalPaths)
-	} else if internalPathsLength > 0 && len(rpcProviderEndpoint.NodeUrls) > 1 {
-		// provider provided specific endpoints but not enough to fill all requirements
-		return nil, utils.LavaFormatError("Internal Paths specified but not all paths provided", nil, utils.Attribute{Key: "required", Value: internalPaths}, utils.Attribute{Key: "provided", Value: rpcProviderEndpoint.NodeUrls})
-	}
-	return cp, cp.start(ctx, nConns, nodeUrl, internalPaths)
+
+	return cp, cp.startWithSpecificInternalPaths(ctx, nConns, rpcProviderEndpoint.NodeUrls, internalPaths)
 }
 
 func (cp *JrpcChainProxy) startWithSpecificInternalPaths(ctx context.Context, nConns uint, nodeUrls []common.NodeUrl, internalPaths map[string]struct{}) error {
-	for _, url := range nodeUrls {
-		_, ok := internalPaths[url.InternalPath]
+	for _, nodeUrl := range nodeUrls {
+		_, ok := internalPaths[nodeUrl.InternalPath]
 		if !ok {
-			return utils.LavaFormatError("url.InternalPath was not found in internalPaths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "url.InternalPath", Value: url.InternalPath})
+			return utils.LavaFormatError("url.InternalPath was not found in internalPaths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "url.InternalPath", Value: nodeUrl.InternalPath})
 		}
-		utils.LavaFormatDebug("connecting", utils.Attribute{Key: "url", Value: url.String()})
-		conn, err := chainproxy.NewConnector(ctx, nConns, url)
+
+		utils.LavaFormatDebug("connecting", utils.Attribute{Key: "url", Value: nodeUrl.String()})
+
+		conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
 		if err != nil {
 			return err
 		}
-		cp.conn[url.InternalPath] = conn
+
+		u, err := url.Parse(nodeUrl.Url)
+		if err != nil {
+			utils.LavaFormatFatal("unparsable url", err, utils.LogAttr("url", nodeUrl.UrlStr()))
+		}
+
+		switch u.Scheme {
+		case "http", "https":
+			cp.httpConnectors[nodeUrl.InternalPath] = conn
+		case "ws", "wss":
+			cp.webSocketConnectors[nodeUrl.InternalPath] = conn
+		default:
+			return utils.LavaFormatError("URL scheme should be websocket (ws/wss) or (http/https), got: "+u.Scheme, nil,
+				utils.LogAttr("url", nodeUrl.UrlStr()),
+				utils.LogAttr("apiInterface", spectypes.APIInterfaceJsonRPC),
+			)
+		}
 	}
-	if len(cp.conn) != len(internalPaths) {
+
+	if len(cp.webSocketConnectors)+len(cp.httpConnectors) != len(internalPaths) {
 		return utils.LavaFormatError("missing connectors for a chain with internal paths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "nodeUrls", Value: nodeUrls})
 	}
+
 	return nil
 }
 
@@ -528,8 +546,8 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 		if err != nil {
 			return err
 		}
-		cp.conn[path] = conn
-		if cp.conn == nil {
+		cp.webSocketConnectors[path] = conn
+		if cp.webSocketConnectors == nil {
 			return errors.New("g_conn == nil")
 		}
 	}
@@ -538,11 +556,16 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 
 func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpcInterfaceMessages.JsonrpcBatchMessage, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, err error) {
 	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
+	connector, err := cp.getConnector(internalPath, false)
 	if err != nil {
 		return nil, err
 	}
-	defer cp.conn[internalPath].ReturnRpc(rpc)
+
+	rpc, err := connector.GetRpc(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	defer connector.ReturnRpc(rpc)
 	if len(nodeMessage.GetHeaders()) > 0 {
 		for _, metadata := range nodeMessage.GetHeaders() {
 			rpc.SetHeader(metadata.Name, metadata.Value)
@@ -605,11 +628,18 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		return reply, "", nil, err
 	}
 	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-	rpc, err := cp.conn[internalPath].GetRpc(ctx, true)
+
+	connector, err := cp.getConnector(internalPath, ch != nil)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	defer cp.conn[internalPath].ReturnRpc(rpc)
+
+	rpc, err := connector.GetRpc(ctx, true)
+	if err != nil {
+		return nil, "", nil, err
+	}
+	defer connector.ReturnRpc(rpc)
+
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage
 	var replyMessage *rpcInterfaceMessages.JsonrpcMessage
@@ -701,4 +731,27 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 
 	return reply, subscriptionID, sub, err
+}
+
+// For subscription, use webSocket connector, otherwise use http connector, and if not found, use webSocket
+func (cp *JrpcChainProxy) getConnector(internalPath string, isSubscription bool) (*chainproxy.Connector, error) {
+	if isSubscription {
+		connector, ok := cp.webSocketConnectors[internalPath]
+		if ok {
+			return connector, nil
+		}
+		return nil, utils.LavaFormatError("no webSocket connector found for subscription", nil, utils.LogAttr("internalPath", internalPath))
+	}
+
+	connector, ok := cp.httpConnectors[internalPath]
+	if ok {
+		return connector, nil
+	}
+
+	connector, ok = cp.webSocketConnectors[internalPath]
+	if ok {
+		return connector, nil
+	}
+
+	return nil, utils.LavaFormatError("connector not found", nil, utils.LogAttr("internalPath", internalPath))
 }
