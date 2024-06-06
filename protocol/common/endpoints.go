@@ -212,6 +212,7 @@ type RelayResult struct {
 	ConflictHandler ConflictHandlerInterface
 	StatusCode      int
 	Quorum          int
+	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
 }
 
 func (rr *RelayResult) GetReplyServer() *pairingtypes.Relayer_RelaySubscribeClient {
