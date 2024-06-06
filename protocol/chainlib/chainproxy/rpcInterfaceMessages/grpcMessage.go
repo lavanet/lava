@@ -44,14 +44,16 @@ func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (gm GrpcMessage) GetParams() interface{} {
-	if gm.Msg[0] == '{' || gm.Msg[0] == '[' {
-		var parsedData interface{}
-		err := json.Unmarshal(gm.Msg, &parsedData)
-		if err != nil {
-			utils.LavaFormatError("failed to unmarshal GetParams", err)
-			return nil
+	if len(gm.Msg) > 0 {
+		if gm.Msg[0] == '{' || gm.Msg[0] == '[' {
+			var parsedData interface{}
+			err := json.Unmarshal(gm.Msg, &parsedData)
+			if err != nil {
+				utils.LavaFormatError("failed to unmarshal GetParams", err)
+				return nil
+			}
+			return parsedData
 		}
-		return parsedData
 	}
 	parsedData, err := gm.dynamicResolve()
 	if err != nil {

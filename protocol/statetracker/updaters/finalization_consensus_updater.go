@@ -18,10 +18,11 @@ type FinalizationConsensusUpdater struct {
 	registeredFinalizationConsensuses []*lavaprotocol.FinalizationConsensus
 	nextBlockForUpdate                uint64
 	stateQuery                        *ConsumerStateQuery
+	specId                            string
 }
 
-func NewFinalizationConsensusUpdater(stateQuery *ConsumerStateQuery) *FinalizationConsensusUpdater {
-	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery}
+func NewFinalizationConsensusUpdater(stateQuery *ConsumerStateQuery, specId string) *FinalizationConsensusUpdater {
+	return &FinalizationConsensusUpdater{registeredFinalizationConsensuses: []*lavaprotocol.FinalizationConsensus{}, stateQuery: stateQuery, specId: specId}
 }
 
 func (fcu *FinalizationConsensusUpdater) RegisterFinalizationConsensus(finalizationConsensus *lavaprotocol.FinalizationConsensus) {
@@ -43,7 +44,7 @@ func (fcu *FinalizationConsensusUpdater) updateInner(latestBlock int64) {
 	}
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
-	_, epoch, nextBlockForUpdate, err := fcu.stateQuery.GetPairing(timeoutCtx, "", latestBlock)
+	_, epoch, nextBlockForUpdate, err := fcu.stateQuery.GetPairing(timeoutCtx, fcu.specId, latestBlock)
 	if err != nil {
 		utils.LavaFormatError("could not get block stats for finalization consensus updater, trying again next block", err, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		fcu.nextBlockForUpdate += 1
