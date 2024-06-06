@@ -53,10 +53,11 @@
                             {
                                 "name": "health",
                                 "parse_directive": {
-                                    "function_template": "{\"query\":\"{\n  health \n}\"}",
+                                    "function_template": "{\"query\":\"{ health }\"}",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
+                                            "0",
                                             "data",
                                             "health"
                                         ],
@@ -66,7 +67,7 @@
                                 },
                                 "values": [
                                     {
-                                        "expected_value": "true"
+                                        "expected_value": "%!s(bool=true)"
                                     }
                                 ]
                             }
