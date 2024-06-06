@@ -562,7 +562,7 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	websocketUrl, httpUrl := verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrls)
 	cp := &tendermintRpcChainProxy{
-		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: websocketUrl, ErrorHandler: &TendermintRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID}, webSocketConnectors: map[string]*chainproxy.Connector{}},
+		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: websocketUrl, ErrorHandler: &TendermintRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID}, conn: map[string]*chainproxy.Connector{}},
 		httpNodeUrl:    httpUrl,
 		httpConnector:  nil,
 	}
@@ -695,16 +695,19 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 	// Get rpc connection from the connection pool
 	var rpc *rpcclient.Client
 	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
-	connector, err := cp.getConnector(internalPath, ch != nil)
-	if err != nil {
-		return nil, "", nil, err
+
+	var connector *chainproxy.Connector
+	if ch != nil {
+		connector = cp.conn[internalPath]
+	} else {
+		connector = cp.httpConnector
 	}
 
 	rpc, err = connector.GetRpc(ctx, true)
 	if err != nil {
 		return nil, "", nil, err
 	}
-	// return the rpc connection to the connectors pool after the function completes
+	// return the rpc connection to the websocket pool after the function completes
 	defer connector.ReturnRpc(rpc)
 
 	// appending hashed url

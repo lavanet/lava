@@ -181,38 +181,18 @@ func addAttributeToError(key, value, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
-// rpc default endpoint should be websocket. otherwise return http
-func verifyJsonRPCEndpoint(endpoints []common.NodeUrl) (nodeUrl common.NodeUrl) {
-	var httpNodeUrl, wsNodeUrl *common.NodeUrl
-	for _, endpoint := range endpoints {
-		u, err := url.Parse(endpoint.Url)
-		if err != nil {
-			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint.UrlStr()})
-		}
-
-		switch u.Scheme {
-		case "http", "https":
-			if endpoint.InternalPath == "" {
-				e := endpoint
-				httpNodeUrl = &e
-			}
-			continue
-		case "ws", "wss":
-			if endpoint.InternalPath == "" {
-				e := endpoint
-				wsNodeUrl = &e
-			}
-			continue
-		default:
-			utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme+", By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score. if subscriptions are not applicable for this chain you can ignore this warning", nil)
-		}
+// rpc default endpoint should be websocket. otherwise return an error
+func verifyRPCEndpoint(endpoint string) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint})
 	}
-
-	if wsNodeUrl != nil {
-		return *wsNodeUrl
+	switch u.Scheme {
+	case "ws", "wss":
+		return
+	default:
+		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme+", By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score. if subscriptions are not applicable for this chain you can ignore this warning", nil)
 	}
-
-	return *httpNodeUrl
 }
 
 // rpc default endpoint should be websocket. otherwise return an error
@@ -222,7 +202,6 @@ func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint, ht
 		if err != nil {
 			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint.UrlStr()})
 		}
-
 		switch u.Scheme {
 		case "http", "https":
 			httpEndpoint = endpoint

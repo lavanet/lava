@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chaintracker"
