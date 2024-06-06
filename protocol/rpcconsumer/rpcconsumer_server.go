@@ -767,9 +767,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		metadataAdd := metadata.New(map[string]string{common.IP_FORWARDING_HEADER_NAME: consumerToken})
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
-		var trailer metadata.MD
-		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&trailer))
-		statuses := trailer.Get(common.StatusCodeMetadataKey)
+		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&relayResult.ProviderTrailer))
+		statuses := relayResult.ProviderTrailer.Get(common.StatusCodeMetadataKey)
 		if len(statuses) > 0 {
 			codeNum, errStatus := strconv.Atoi(statuses[0])
 			if errStatus != nil {
@@ -779,7 +778,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		}
 		relayLatency = time.Since(relaySentTime)
 		if rpccs.debugRelays {
-			providerNodeHashes := trailer.Get(chainlib.RPCProviderNodeAddressHash)
+			providerNodeHashes := relayResult.ProviderTrailer.Get(chainlib.RPCProviderNodeAddressHash)
 			attributes := []utils.Attribute{
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("addon", relayRequest.RelayData.Addon),
@@ -1060,6 +1059,15 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			})
 	}
 
+	// fetch trailer information from the provider by using the provider trailer field.
+	providerNodeExtensions := relayResult.ProviderTrailer.Get(chainlib.RPCProviderNodeExtension)
+	if len(providerNodeExtensions) > 0 {
+		extensionMD := pairingtypes.Metadata{
+			Name:  chainlib.RPCProviderNodeExtension,
+			Value: providerNodeExtensions[0],
+		}
+		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, extensionMD)
+	}
 	relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, metadataReply...)
 }
 
