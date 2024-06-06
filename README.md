@@ -81,5 +81,6 @@ Join Lava's testnet, [read instructions here](https://docs.lavanet.xyz/testnet?u
 
 ## Community
 
+- [Github Discussions](https://github.com/lavanet/lava/discussions)
 - [Discord](https://discord.gg/lavanetxyz)
 - [Twitter](https://twitter.com/lavanetxyz)
