@@ -156,7 +156,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	baseLatency := common.AverageWorldLatency / 2
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2)
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil)
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test")
 	consumerSessionManager.UpdateAllProviders(epoch, pairingList)
 
 	consumerConsistency := rpcconsumer.NewConsumerConsistency(specId)
@@ -440,7 +440,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 				seenError := false
 				statuses := map[int]struct{}{}
 				for i := 0; i <= 100; i++ {
-					client := http.Client{Timeout: 500 * time.Millisecond}
+					client := http.Client{}
 					req, err := http.NewRequest("GET", "http://"+consumerListenAddress+"/status", nil)
 					require.NoError(t, err)
 

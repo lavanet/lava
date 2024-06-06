@@ -132,16 +132,13 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bool, error) {
 	if initialRelays {
 		// Only start after everything is initialized - check consumer session manager
-		err := rpccs.waitForPairing()
-		if err != nil {
-			return false, err
-		}
+		rpccs.waitForPairing()
 	}
 
 	return rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
 }
 
-func (rpccs *RPCConsumerServer) waitForPairing() error {
+func (rpccs *RPCConsumerServer) waitForPairing() {
 	reinitializedChan := make(chan bool)
 
 	go func() {
@@ -154,17 +151,20 @@ func (rpccs *RPCConsumerServer) waitForPairing() error {
 		}
 	}()
 
-	select {
-	case <-reinitializedChan:
-		break
-	case <-time.After(30 * time.Second):
-		return utils.LavaFormatError("failed initial relays, csm was not initialized after timeout", nil,
-			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
-			utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
-		)
+	numberOfTimesChecked := 0
+	for {
+		select {
+		case <-reinitializedChan:
+			return
+		case <-time.After(30 * time.Second):
+			numberOfTimesChecked += 1
+			utils.LavaFormatWarning("failed initial relays, csm was not initialized after timeout, or pairing list is empty for that chain", nil,
+				utils.LogAttr("times_checked", numberOfTimesChecked),
+				utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+				utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
+			)
+		}
 	}
-
-	return nil
 }
 
 func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage, err error) {
@@ -551,22 +551,32 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	usedProviders := relayProcessor.GetUsedProviders()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
-		if lavasession.PairingListEmptyError.Is(err) && (addon != "" || len(extensions) > 0) {
-			err = utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
+		if lavasession.PairingListEmptyError.Is(err) {
+			if addon != "" {
+				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
+			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
+				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(chainMessage), virtualEpoch)
+				if err != nil {
+					return err
+				}
+				relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling extensions.
+				relayRequestData.Extensions = []string{}    // reset request data extensions
+				extensions = []*spectypes.Extension{}       // reset extensions too so we wont hit SetDisallowDegradation
+			} else {
+				return err
+			}
+		} else {
+			return err
 		}
-		return err
+	}
+
+	// making sure next get sessions wont use regular providers
+	if len(extensions) > 0 {
+		relayProcessor.SetDisallowDegradation()
 	}
 
 	// Iterate over the sessions map
 	for providerPublicAddress, sessionInfo := range sessions {
-		// in case we need to remove extensions from relay request data so the providers will get a normal relay.
-		if sessionInfo.RemoveExtensions {
-			if len(sessions) > 1 {
-				utils.LavaFormatError("Should not have more than one session when using RemoveExtensions", nil, utils.LogAttr("sessions", sessions))
-			}
-			relayProcessor.setSkipDataReliability(true) // disabling data reliability when disabling extensions.
-			relayRequestData.Extensions = []string{}
-		}
 		// Launch a separate goroutine for each session
 		go func(providerPublicAddress string, sessionInfo *lavasession.SessionInfo) {
 			// add ticker launch metrics
@@ -757,9 +767,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		metadataAdd := metadata.New(map[string]string{common.IP_FORWARDING_HEADER_NAME: consumerToken})
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
-		var trailer metadata.MD
-		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&trailer))
-		statuses := trailer.Get(common.StatusCodeMetadataKey)
+		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&relayResult.ProviderTrailer))
+		statuses := relayResult.ProviderTrailer.Get(common.StatusCodeMetadataKey)
 		if len(statuses) > 0 {
 			codeNum, errStatus := strconv.Atoi(statuses[0])
 			if errStatus != nil {
@@ -769,6 +778,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		}
 		relayLatency = time.Since(relaySentTime)
 		if rpccs.debugRelays {
+			providerNodeHashes := relayResult.ProviderTrailer.Get(chainlib.RPCProviderNodeAddressHash)
 			attributes := []utils.Attribute{
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("addon", relayRequest.RelayData.Addon),
@@ -785,6 +795,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 				utils.LogAttr("replyErred", err != nil),
 				utils.LogAttr("replyLatestBlock", reply.GetLatestBlock()),
 				utils.LogAttr("method", chainMessage.GetApi().Name),
+				utils.LogAttr("providerNodeHashes", providerNodeHashes),
 			}
 			internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
 			if internalPath != "" {
@@ -961,12 +972,10 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 		name := strings.ToLower(metaElement.Name)
 		switch name {
 		case common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME:
-			headerDirectives[name] = metaElement.Value
 		case common.RELAY_TIMEOUT_HEADER_NAME:
-			headerDirectives[name] = metaElement.Value
 		case common.EXTENSION_OVERRIDE_HEADER_NAME:
-			headerDirectives[name] = metaElement.Value
 		case common.FORCE_CACHE_REFRESH_HEADER_NAME:
+		case common.LAVA_DEBUG:
 			headerDirectives[name] = metaElement.Value
 		default:
 			metadataRet = append(metadataRet, metaElement)
@@ -1011,13 +1020,17 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 	}
 	metadataReply := []pairingtypes.Metadata{}
 	// add the provider that responded
-	if relayResult.GetProvider() != "" {
-		metadataReply = append(metadataReply,
-			pairingtypes.Metadata{
-				Name:  common.PROVIDER_ADDRESS_HEADER_NAME,
-				Value: relayResult.GetProvider(),
-			})
+
+	providerAddress := relayResult.GetProvider()
+	if providerAddress == "" {
+		providerAddress = "Cached"
 	}
+	metadataReply = append(metadataReply,
+		pairingtypes.Metadata{
+			Name:  common.PROVIDER_ADDRESS_HEADER_NAME,
+			Value: providerAddress,
+		})
+
 	// add the relay retried count
 	if protocolErrors > 0 {
 		metadataReply = append(metadataReply,
@@ -1046,6 +1059,15 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			})
 	}
 
+	// fetch trailer information from the provider by using the provider trailer field.
+	providerNodeExtensions := relayResult.ProviderTrailer.Get(chainlib.RPCProviderNodeExtension)
+	if len(providerNodeExtensions) > 0 {
+		extensionMD := pairingtypes.Metadata{
+			Name:  chainlib.RPCProviderNodeExtension,
+			Value: providerNodeExtensions[0],
+		}
+		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, extensionMD)
+	}
 	relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, metadataReply...)
 }
 

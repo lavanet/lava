@@ -56,11 +56,11 @@ func NewMetricService() *MetricService {
 			select {
 			case <-ticker.C:
 				{
-					utils.LavaFormatInfo("metric triggered, sending accumulated data to server")
+					utils.LavaFormatDebug("metric triggered, sending accumulated data to server")
 					result.SendEachProjectMetricData()
 				}
 			case metricData := <-mChannel:
-				utils.LavaFormatInfo("reading from chanel data")
+				utils.LavaFormatDebug("reading from chanel data")
 				result.storeAggregatedData(metricData)
 			}
 		}
@@ -73,7 +73,7 @@ func (m *MetricService) SendData(data RelayMetrics) {
 		select {
 		case m.MetricsChannel <- data:
 		default:
-			utils.LavaFormatInfo("channel is full, ignoring these data",
+			utils.LavaFormatDebug("channel is full, ignoring these data",
 				utils.Attribute{Key: "projectHash", Value: data.ProjectHash},
 				utils.Attribute{Key: "chainId", Value: data.ChainID},
 				utils.Attribute{Key: "apiType", Value: data.APIType},
