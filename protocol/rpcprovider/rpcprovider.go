@@ -457,17 +457,10 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		rpcp.providerMetricsManager.RegisterRelaysMonitor(chainID, apiInterface, relaysMonitor)
 	}
 
-	currEpoch := uint64(chainTracker.GetAtomicLatestBlockNum())
-	epochSize, err := rpcp.providerStateTracker.GetEpochSize(ctx)
-	if err != nil {
-		return utils.LavaFormatError("failed to get epoch size", err)
-	}
-
-	prevEpoch := currEpoch - epochSize
 	var providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	if rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceTendermintRPC || rpcProviderEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 		utils.LavaFormatTrace("Creating provider node subscription manager", utils.LogAttr("rpcProviderEndpoint", rpcProviderEndpoint))
-		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, currEpoch, prevEpoch, rpcp.privKey)
+		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcp.privKey)
 	}
 
 	rpcProviderServer := &RPCProviderServer{}
