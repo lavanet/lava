@@ -3,6 +3,8 @@ package common
 import (
 	"context"
 	"sync"
+
+	"github.com/lavanet/lava/utils"
 )
 
 type SafeChannelSender[T any] struct {
@@ -28,11 +30,16 @@ func (scs *SafeChannelSender[T]) Send(msg T) {
 	scs.lock.Lock()
 	defer scs.lock.Unlock()
 
+	if scs.closed {
+		utils.LavaFormatTrace("Attempted to send message to closed channel")
+		return
+	}
+
 	select {
 	case <-scs.ctx.Done():
-		return
 	case scs.ch <- msg:
-		return
+	default:
+		utils.LavaFormatTrace("Failed to send message to channel")
 	}
 }
 
