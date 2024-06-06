@@ -101,24 +101,27 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		}
 	}
 
+	go func() {
+		<-closeWebsocketRepliesChan
+		utils.LavaFormatTrace("requested to close websocketRepliesChan",
+			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("dappKey", dappKey),
+		)
+
+		websocketRepliesSafeChannelSender.Close()
+	}()
+
 	// Remove the websocket from the active subscriptions, when the websocket is closed
 	go func() {
-		select {
-		case <-closeWebsocketRepliesChan:
-			utils.LavaFormatTrace("requested to close websocketRepliesChan",
-				utils.LogAttr("GUID", webSocketCtx),
-				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
-				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-				utils.LogAttr("dappKey", dappKey),
-			)
-		case <-webSocketCtx.Done():
-			utils.LavaFormatTrace("websocket context is done, removing websocket from active subscriptions",
-				utils.LogAttr("GUID", webSocketCtx),
-				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
-				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-				utils.LogAttr("dappKey", dappKey),
-			)
-		}
+		<-webSocketCtx.Done()
+		utils.LavaFormatTrace("websocket context is done, removing websocket from active subscriptions",
+			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("dappKey", dappKey),
+		)
 
 		cwsm.lock.Lock()
 		defer cwsm.lock.Unlock()
@@ -128,7 +131,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 			cwsm.verifyAndDisconnectDappFromSubscription(webSocketCtx, dappKey, hashedParams, nil)
 		}
 
-		websocketRepliesSafeChannelSender.Close()
+		closeWebsocketRepliesChannel()
 	}()
 
 	cwsm.lock.Lock()
@@ -315,7 +318,8 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			)
 		}
 
-		err = cwsm.sendUnsubscribeMessage(context.Background(), dappID, userIp, chainMessage, directiveHeaders, relayRequestData, metricsData)
+		unsubscribeRelayCtx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
+		err = cwsm.sendUnsubscribeMessage(unsubscribeRelayCtx, dappID, userIp, chainMessage, directiveHeaders, relayRequestData, metricsData)
 		if err != nil {
 			utils.LavaFormatError("could not send unsubscribe message", err, utils.LogAttr("GUID", webSocketCtx))
 		}
