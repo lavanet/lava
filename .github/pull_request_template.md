@@ -27,10 +27,10 @@ I have...
     * `chore`: Other changes that don't modify src or test files
     * `revert`: Reverts a previous commit -->
 * [ ] confirmed `!` in the type prefix if API or client breaking change
-* [ ] targeted the correct branch
+* [ ] targeted the `main` branch
 * [ ] provided a link to the relevant issue or specification
 * [ ] reviewed "Files changed" and left comments if necessary
-* [ ] included the necessary unit and integration [tests](../CONTRIBUTING.md/testing)
+* [ ] included the necessary unit and integration
 * [ ] updated the relevant documentation or specification, including comments for [documenting Go code](https://blog.golang.org/godoc)
 * [ ] confirmed all CI checks have passed
 
@@ -38,8 +38,6 @@ I have...
 
 *All items are required. Please add a note if the item is not applicable and please add
 your handle next to the items reviewed if you only reviewed selected items.*
-
-Please see [Pull Request Reviewer section in the contributing guide](../CONTRIBUTING.md#reviewer) for more information on how to review a pull request.
 
 I have...
 
