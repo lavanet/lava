@@ -1004,10 +1004,10 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 		}
 		}
 
-		utils.LavaFormatTrace("successfully got first reply",
-			utils.LogAttr("GUID", ctx),
+	utils.LavaFormatTrace("successfully got first reply",
+		utils.LogAttr("GUID", ctx),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-		utils.LogAttr("reply", reply),
+		utils.LogAttr("reply", string(reply.Data)),
 	)
 
 	// Make sure we can parse the reply
