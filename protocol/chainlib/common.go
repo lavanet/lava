@@ -193,12 +193,14 @@ func verifyJsonRPCEndpoint(endpoints []common.NodeUrl) (nodeUrl common.NodeUrl) 
 		switch u.Scheme {
 		case "http", "https":
 			if endpoint.InternalPath == "" {
-				httpNodeUrl = &endpoint
+				e := endpoint
+				httpNodeUrl = &e
 			}
 			continue
 		case "ws", "wss":
 			if endpoint.InternalPath == "" {
-				wsNodeUrl = &endpoint
+				e := endpoint
+				wsNodeUrl = &e
 			}
 			continue
 		default:

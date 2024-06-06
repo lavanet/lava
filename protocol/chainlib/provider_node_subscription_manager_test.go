@@ -93,7 +93,7 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 				RelaySession: &pairingtypes.RelaySession{},
 			}
 
-			chainMessage, err := chainParser.ParseMsg("", []byte(play.subscriptionRequestData), play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			chainMessage, err := chainParser.ParseMsg("", play.subscriptionRequestData, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
 
 			// Create the provider node subscription manager

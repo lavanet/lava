@@ -77,7 +77,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			chainParser, _, _, _, _, err := CreateChainLibMocks(ts.Ctx, play.specId, play.apiInterface, nil, nil, "../../", nil)
 			require.NoError(t, err)
 
-			chainMessage1, err := chainParser.ParseMsg("", []byte(play.subscriptionRequestData1), play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			chainMessage1, err := chainParser.ParseMsg("", play.subscriptionRequestData1, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
 
 			relaySender := NewMockRelaySender(ctrl)
@@ -127,7 +127,10 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				EXPECT().
 				RecvMsg(gomock.Any()).
 				DoAndReturn(func(msg interface{}) error {
-					*msg.(*pairingtypes.RelayReply) = *relayResult1.Reply
+					relayReply, ok := msg.(*pairingtypes.RelayReply)
+					require.True(t, ok)
+
+					*relayReply = *relayResult1.Reply
 					return nil
 				}).
 				AnyTimes()
@@ -187,7 +190,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			}()
 
 			// Prepare for the next subscription
-			chainMessage2, err := chainParser.ParseMsg("", []byte(play.subscriptionRequestData2), play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			chainMessage2, err := chainParser.ParseMsg("", play.subscriptionRequestData2, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
 
 			relaySender.
@@ -227,7 +230,10 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				EXPECT().
 				RecvMsg(gomock.Any()).
 				DoAndReturn(func(msg interface{}) error {
-					*msg.(*pairingtypes.RelayReply) = *relayResult2.Reply
+					relayReply, ok := msg.(*pairingtypes.RelayReply)
+					require.True(t, ok)
+
+					*relayReply = *relayResult1.Reply
 					return nil
 				}).
 				AnyTimes()

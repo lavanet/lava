@@ -978,7 +978,7 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 
 func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, hashedParams string, replyServer *pairingtypes.Relayer_RelaySubscribeClient) (*pairingtypes.RelayReply, error) {
 	var reply pairingtypes.RelayReply
-	var gotFirstReplyChanOrErr = make(chan struct{})
+	gotFirstReplyChanOrErr := make(chan struct{})
 
 	// Cancel the context after 10 seconds, so we won't hang forever
 	go func() {
