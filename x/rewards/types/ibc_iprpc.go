@@ -68,4 +68,5 @@ func (piif PendingIbcIprpcFund) IsExpired(ctx sdk.Context) bool {
 const (
 	NewPendingIbcIprpcFundEventName            = "pending_ibc_iprpc_fund_created"
 	ExpiredPendingIbcIprpcFundRemovedEventName = "expired_pending_ibc_iprpc_fund_removed"
+	CoverIbcIprpcFundCostEventName             = "cover_ibc_iprpc_fund_cost"
 )

@@ -326,7 +326,7 @@ func TestBondedTargetFactorEdgeCases(t *testing.T) {
 				LeftoverBurnRate:                    types.DefaultLeftOverBurnRate,
 				MaxRewardBoost:                      types.DefaultMaxRewardBoost,
 				ValidatorsSubscriptionParticipation: types.DefaultValidatorsSubscriptionParticipation,
-				IbcIprpcExpiration:                  types.DefaultIbcIprpcKeyIbcIprpcExpiration,
+				IbcIprpcExpiration:                  types.DefaultIbcIprpcExpiration,
 			}
 			ts.Keepers.Rewards.SetParams(ts.Ctx, params)
 
