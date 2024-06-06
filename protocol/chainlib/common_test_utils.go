@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -86,7 +87,15 @@ func generateCombinations(arr []string) [][]string {
 
 // generates a chain parser, a chain fetcher messages based on it
 // apiInterface can either be an ApiInterface string as in spectypes.ApiInterfaceXXX or a number for an index in the apiCollections
-func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string, services []string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
+func CreateChainLibMocks(
+	ctx context.Context,
+	specIndex string,
+	apiInterface string,
+	httpServerCallback http.HandlerFunc,
+	wsServerCallback http.HandlerFunc,
+	getToTopMostPath string,
+	services []string,
+) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
 	closeServer = nil
 	spec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
@@ -114,6 +123,10 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		return nil, nil, nil, nil, nil, err
 	}
 
+	if httpServerCallback == nil {
+		httpServerCallback = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+	}
+
 	if apiInterface == spectypes.APIInterfaceGrpc {
 		// Start a new gRPC server using the buffered connection
 		grpcServer := grpc.NewServer()
@@ -127,7 +140,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: append(addons, extensionsList...)})
 		}
 		go func() {
-			service := myServiceImplementation{serverCallback: serverCallback}
+			service := myServiceImplementation{serverCallback: httpServerCallback}
 			tmservice.RegisterServiceServer(grpcServer, service)
 			gogoreflection.Register(grpcServer)
 			// Serve requests on the buffered connection
@@ -141,9 +154,23 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 			return nil, nil, nil, closeServer, nil, err
 		}
 	} else {
-		mockServer := httptest.NewServer(serverCallback)
-		closeServer = mockServer.Close
-		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL, Addons: addons})
+		var mockWebSocketServer *httptest.Server
+		var wsUrl string
+		if wsServerCallback != nil {
+			mockWebSocketServer = httptest.NewServer(wsServerCallback)
+			wsUrl = "ws" + strings.TrimPrefix(mockWebSocketServer.URL, "http")
+		}
+		mockHttpServer := httptest.NewServer(httpServerCallback)
+		closeServer = func() {
+			mockHttpServer.Close()
+			if wsServerCallback != nil {
+				mockWebSocketServer.Close()
+			}
+		}
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockHttpServer.URL, Addons: addons})
+		if wsServerCallback != nil {
+			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: nil})
+		}
 		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
 		if err != nil {
 			return nil, nil, nil, closeServer, nil, err

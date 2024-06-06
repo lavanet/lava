@@ -137,7 +137,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
 	})
-	chainParser, _, chainFetcher, _, _, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", nil)
+	chainParser, _, chainFetcher, _, _, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, nil, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainFetcher)
@@ -192,7 +192,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 		fmt.Fprint(w, string(data))
 	})
 
-	chainParser, chainRouter, chainFetcher, _, endpoint, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", addons)
+	chainParser, chainRouter, chainFetcher, _, endpoint, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, nil, "../../", addons)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainFetcher)
