@@ -138,7 +138,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				Return(relayResult1, nil).
 				Times(1) // Should call SendParsedRelay, because it is the first time we subscribe
 
-			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface)
+			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 
 			unsubscribeParamsExtractor := func(request ChainMessage, reply *rpcclient.JsonrpcMessage) string {
 				return ""
@@ -295,12 +295,13 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 	}
 }
 
-func CreateConsumerSessionManager(chainID, apiInterface string) *lavasession.ConsumerSessionManager {
+func CreateConsumerSessionManager(chainID, apiInterface, consumerPublicAddress string) *lavasession.ConsumerSessionManager {
 	rand.InitRandomSeed()
 	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 	return lavasession.NewConsumerSessionManager(
 		&lavasession.RPCEndpoint{NetworkAddress: "stub", ChainID: chainID, ApiInterface: apiInterface, TLSEnabled: false, HealthCheckPath: "/", Geolocation: 0},
 		provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1),
-		nil, nil, lavasession.NewLongLastingProvidersStorage(),
+		nil, nil, consumerPublicAddress,
+		lavasession.NewLongLastingProvidersStorage(),
 	)
 }

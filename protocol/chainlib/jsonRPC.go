@@ -642,7 +642,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	defer connector.ReturnRpc(rpc)
 
 	// appending hashed url
-	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn[internalPath].GetUrlHash()))
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, connector.GetUrlHash()))
 
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage
