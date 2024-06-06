@@ -1,13 +1,12 @@
 package keeper
 
 import (
-	"encoding/json"
 	"fmt"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/decoder"
 	"github.com/lavanet/lava/x/rewards/types"
 )
 
@@ -35,68 +34,43 @@ funds are saved in the IbcIprpcFund scaffolded map.
 // and holds valid values. If the memo is not in the right format, a custom error is returned so the packet will be skipped and
 // passed to the next IBC module in the transfer stack normally (and not return an error ack)
 func (k Keeper) ExtractIprpcMemoFromPacket(ctx sdk.Context, transferData transfertypes.FungibleTokenPacketData) (types.IprpcMemo, error) {
-	memo := types.IprpcMemo{}
-	transferMemo := make(map[string]interface{})
-	err := json.Unmarshal([]byte(transferData.Memo), &transferMemo)
-	if err != nil || transferMemo["iprpc"] == nil {
+	var memo types.IprpcMemo
+	err := decoder.Decode(transferData.Memo, "iprpc", &memo, nil, nil, nil)
+	if err != nil {
 		// memo is not for IPRPC over IBC, return custom error to skip processing for this packet
 		return types.IprpcMemo{}, types.ErrMemoNotIprpcOverIbc
 	}
-
-	if iprpcData, ok := transferMemo["iprpc"].(map[string]interface{}); ok {
-		// verify creator field
-		creator, ok := iprpcData["creator"]
-		if !ok {
-			return printInvalidMemoWarning(iprpcData, "memo data does not contain creator field")
-		}
-		creatorStr, ok := creator.(string)
-		if !ok {
-			return printInvalidMemoWarning(iprpcData, "memo's creator field is not string")
-		}
-		if creatorStr == "" {
-			return printInvalidMemoWarning(iprpcData, "memo's creator field cannot be empty")
-		}
-		memo.Creator = creatorStr
-
-		// verify spec field
-		spec, ok := iprpcData["spec"]
-		if !ok {
-			return printInvalidMemoWarning(iprpcData, "memo data does not contain spec field")
-		}
-		specStr, ok := spec.(string)
-		if !ok {
-			return printInvalidMemoWarning(iprpcData, "memo's spec field is not string")
-		}
-		_, found := k.specKeeper.GetSpec(ctx, specStr)
-		if !found {
-			return printInvalidMemoWarning(iprpcData, "memo's spec field does not exist on chain")
-		}
-		memo.Spec = specStr
-
-		// verify duration field
-		duration, ok := iprpcData["duration"]
-		if !ok {
-			return printInvalidMemoWarning(iprpcData, "memo data does not contain duration field")
-		}
-		durationStr, ok := duration.(string)
-		if !ok {
-			return printInvalidMemoWarning(iprpcData, "memo's duration field is not a string number")
-		}
-		durationUint64, err := strconv.ParseUint(durationStr, 10, 64)
-		if err != nil {
-			return printInvalidMemoWarning(iprpcData, "memo's duration field cannot be non-positive. err: "+err.Error())
-		}
-		memo.Duration = durationUint64
+	err = k.validateIprpcMemo(ctx, memo)
+	if err != nil {
+		return types.IprpcMemo{}, err
 	}
 
 	return memo, nil
 }
 
-func printInvalidMemoWarning(iprpcData map[string]interface{}, description string) (types.IprpcMemo, error) {
+func (k Keeper) validateIprpcMemo(ctx sdk.Context, memo types.IprpcMemo) error {
+	if _, found := k.specKeeper.GetSpec(ctx, memo.Spec); !found {
+		return printInvalidMemoWarning(memo, "memo's spec does not exist on chain")
+	}
+
+	if memo.Creator == "" {
+		return printInvalidMemoWarning(memo, "memo's creator cannot be empty")
+	} else if _, found := k.specKeeper.GetSpec(ctx, memo.Creator); found {
+		return printInvalidMemoWarning(memo, "memo's creator cannot be an on-chain spec index")
+	}
+
+	if memo.Duration == uint64(0) {
+		return printInvalidMemoWarning(memo, "memo's duration cannot be zero")
+	}
+
+	return nil
+}
+
+func printInvalidMemoWarning(memo types.IprpcMemo, description string) error {
 	utils.LavaFormatWarning("invalid ibc over iprpc memo", fmt.Errorf(description),
-		utils.LogAttr("data", iprpcData),
+		utils.LogAttr("memo", memo.String()),
 	)
-	return types.IprpcMemo{}, types.ErrIprpcMemoInvalid
+	return types.ErrIprpcMemoInvalid
 }
 
 func (k Keeper) SetPendingIprpcOverIbcFunds(ctx sdk.Context, memo types.IprpcMemo, amount sdk.Coin) error {

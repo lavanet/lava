@@ -24,6 +24,8 @@ message StakeEntry {
   BlockReport block_report = 13;
   string vault = 14;
   cosmos.staking.v1beta1.Description description = 15 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  uint64 jails = 16;
+  int64 jail_end_time = 17;
 }
 
 // BlockReport holds the most up-to-date info regarding blocks of the provider
