@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -29,8 +28,9 @@ const (
 
 func CmdQueryGenerateIbcIprpcTx() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "generate-ibc-iprpc-tx [spec] [duration] [amount] [src-port] [src-channel] --from <alice> --node <node-URI>",
-		Short: `Query for generating an ibc-transfer TX JSON for IPRPC funding over IBC. 
+		Use:   "generate-ibc-iprpc-tx [spec] [duration] [amount] [src-port] [src-channel] --from <alice> --node <node-URI>",
+		Short: `Query for generating an ibc-transfer TX JSON for IPRPC funding over IBC`,
+		Long: `Query for generating an ibc-transfer TX JSON for IPRPC funding over IBC. 
 		The generated TX is a regular ibc-transfer TX with a custom memo. The memo holds the necessary information for a IPRPC over IBC request: 
 		creator, spec ID the user wishes to fund, and duration of the fund in months.
 		Note, the memo's spec ID field is not validated. A valid spec ID is one that is registered on-chain in the Lava blockchain. To 
@@ -83,16 +83,11 @@ func CmdQueryGenerateIbcIprpcTx() *cobra.Command {
 			if len(args) != 5 {
 				return fmt.Errorf("not enough arguments for generating TX")
 			}
-			node, err := cmd.Flags().GetString(flags.FlagNode)
-			if err != nil {
-				return err
-			}
+
 			clientQueryCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
-			clientQueryCtx = clientQueryCtx.WithNodeURI(node)
-			clientCtx = clientCtx.WithNodeURI(node)
 
 			amount, err := sdk.ParseCoinNormalized(args[2])
 			if err != nil {
@@ -128,27 +123,13 @@ func CmdQueryGenerateIbcIprpcTx() *cobra.Command {
 	return cmd
 }
 
-func createIbcIprpcMemo(creator string, spec string, duration string) (string, error) {
-	// sanity check
-	_, err := strconv.ParseUint(duration, 10, 64)
+func createIbcIprpcMemo(creator string, spec string, durationStr string) (string, error) {
+	duration, err := strconv.ParseUint(durationStr, 10, 64)
 	if err != nil {
 		return "", err
 	}
 
-	data := map[string]interface{}{
-		"iprpc": map[string]interface{}{
-			"creator":  creator,
-			"spec":     spec,
-			"duration": duration,
-		},
-	}
-
-	memo, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-
-	return string(memo), nil
+	return types.CreateIprpcMemo(creator, spec, duration)
 }
 
 // getFees returns a default fee in the native token of the node from which the ibc-transfer is sent (example: 1osmo)
