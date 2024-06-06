@@ -23,7 +23,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
   - [Improving The Documentation](#improving-the-documentation)
 - [Styleguides](#styleguides)
   - [Commit Messages](#commit-messages)
-- [Join The Project Team](#join-the-project-team)שׂ
+- [Join The Project Team](#join-the-project-team)
 
 
 ## Code of Conduct
