@@ -138,13 +138,14 @@ func (rpcps *RPCProviderServer) initRelaysMonitor(ctx context.Context) {
 }
 
 func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.ChainMessage, err error) {
-	parsing, collectionData, ok := rpcps.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	parsing, apiCollection, ok := rpcps.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	if !ok {
 		return nil, utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil,
 			utils.LogAttr("chainID", rpcps.rpcProviderEndpoint.ChainID),
 			utils.LogAttr("APIInterface", rpcps.rpcProviderEndpoint.ApiInterface),
 		)
 	}
+	collectionData := apiCollection.CollectionData
 
 	path := parsing.ApiName
 	data := []byte(parsing.FunctionTemplate)
@@ -709,7 +710,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 
 	if dataReliabilityEnabled {
 		var err error
-		latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, err = rpcps.handleRelayDataReliability(ctx, request, chainMsg, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
+		latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, err = rpcps.GetParametersForRelayDataReliability(ctx, request, chainMsg, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
 		if err != nil {
 			return nil, err
 		}
@@ -742,7 +743,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 	}
 
 	if dataReliabilityEnabled {
-		err := rpcps.buildFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
+		err := rpcps.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
 		if err != nil {
 			return nil, err
 		}
@@ -902,12 +903,12 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 	if dataReliabilityEnabled {
 		blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := rpcps.chainParser.ChainBlockStats()
 		relayTimeout := chainlib.GetRelayTimeout(chainMessage, averageBlockTime)
-		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := rpcps.handleRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
+		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := rpcps.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
 		if err != nil {
 			return nil, err
 		}
 
-		err = rpcps.buildFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
+		err = rpcps.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
 		if err != nil {
 			return nil, err
 		}
@@ -924,7 +925,7 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 	return reply, nil
 }
 
-func (rpcps *RPCProviderServer) handleRelayDataReliability(
+func (rpcps *RPCProviderServer) GetParametersForRelayDataReliability(
 	ctx context.Context,
 	request *pairingtypes.RelayRequest,
 	chainMsg chainlib.ChainMessage,
@@ -972,7 +973,7 @@ func (rpcps *RPCProviderServer) handleRelayDataReliability(
 	return latestBlock, requestedBlockHash, requestedHashes, modifiedReqBlock, finalized, updatedChainMessage, nil
 }
 
-func (rpcps *RPCProviderServer) buildFinalizedBlockHashes(
+func (rpcps *RPCProviderServer) BuildRelayFinalizedBlockHashes(
 	ctx context.Context,
 	request *pairingtypes.RelayRequest,
 	reply *pairingtypes.RelayReply,

@@ -2,12 +2,14 @@ package chainlib
 
 import (
 	"context"
+	"net/url"
 	"sync"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -76,9 +78,24 @@ func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{},
 // batch nodeUrls with the same addons together in a copy
 func batchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint) map[lavasession.RouterKey]lavasession.RPCProviderEndpoint {
 	returnedBatch := map[lavasession.RouterKey]lavasession.RPCProviderEndpoint{}
+	defaultAddonRouterKey := lavasession.GetEmptyRouterKey()
+	var defaultNodeUrl common.NodeUrl
 	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
-		if existingEndpoint, ok := returnedBatch[lavasession.NewRouterKey(nodeUrl.Addons)]; !ok {
-			returnedBatch[lavasession.NewRouterKey(nodeUrl.Addons)] = lavasession.RPCProviderEndpoint{
+		routerKey := lavasession.NewRouterKey(nodeUrl.Addons)
+
+		u, err := url.Parse(nodeUrl.Url)
+		// Some parsing may fail because of gRPC
+		if err == nil && (u.Scheme == "ws" || u.Scheme == "wss") {
+			if routerKey == defaultAddonRouterKey {
+				// Copy the node url to be the default node url
+				defaultNodeUrl = nodeUrl
+			}
+			nodeUrl.Addons = append(nodeUrl.Addons, WebSocketExtension)
+			routerKey = lavasession.NewRouterKey(nodeUrl.Addons)
+		}
+
+		if existingEndpoint, ok := returnedBatch[routerKey]; !ok {
+			returnedBatch[routerKey] = lavasession.RPCProviderEndpoint{
 				NetworkAddress: rpcProviderEndpoint.NetworkAddress,
 				ChainID:        rpcProviderEndpoint.ChainID,
 				ApiInterface:   rpcProviderEndpoint.ApiInterface,
@@ -87,7 +104,18 @@ func batchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint
 			}
 		} else {
 			existingEndpoint.NodeUrls = append(existingEndpoint.NodeUrls, nodeUrl)
-			returnedBatch[lavasession.NewRouterKey(nodeUrl.Addons)] = existingEndpoint
+			returnedBatch[routerKey] = existingEndpoint
+		}
+	}
+
+	// If we didn't http node url, we need to set the websocket as the default router key
+	if _, ok := returnedBatch[defaultAddonRouterKey]; !ok {
+		returnedBatch[defaultAddonRouterKey] = lavasession.RPCProviderEndpoint{
+			NetworkAddress: rpcProviderEndpoint.NetworkAddress,
+			ChainID:        rpcProviderEndpoint.ChainID,
+			ApiInterface:   rpcProviderEndpoint.ApiInterface,
+			Geolocation:    rpcProviderEndpoint.Geolocation,
+			NodeUrls:       []common.NodeUrl{defaultNodeUrl},
 		}
 	}
 	return returnedBatch
@@ -138,6 +166,15 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 	}
 	if len(requiredMap) > len(supportedMap) {
 		return nil, utils.LavaFormatError("not all requirements supported in chainRouter, missing extensions or addons in definitions", nil, utils.Attribute{Key: "required", Value: requiredMap}, utils.Attribute{Key: "supported", Value: supportedMap})
+	}
+
+	_, apiCollection, hasSubscriptionInSpec := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SUBSCRIBE)
+	_, webSocketSupported := supportedMap[requirementSt{extensions: WebSocketExtension}]
+	if hasSubscriptionInSpec && apiCollection.Enabled && !webSocketSupported {
+		err := utils.LavaFormatError("subscriptions are not applicable for this chain, but websocket is not provided in 'supported' map. By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score.", nil)
+		if !IgnoreSubscriptionNotConfiguredError {
+			return nil, err
+		}
 	}
 
 	cri := chainRouterImpl{

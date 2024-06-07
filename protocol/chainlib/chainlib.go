@@ -15,6 +15,11 @@ import (
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
+var (
+	IgnoreSubscriptionNotConfiguredError     = true
+	IgnoreSubscriptionNotConfiguredErrorFlag = "ignore-subscription-not-configured-error"
+)
+
 func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC:
@@ -57,7 +62,7 @@ type ChainParser interface {
 	SetSpec(spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32)
-	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool)
+	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool)
 	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error)
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 	GetVerifications(supported []string) ([]VerificationContainer, error)

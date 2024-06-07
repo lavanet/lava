@@ -30,6 +30,7 @@ const (
 	relayMsgLogMaxChars        = 200
 	RPCProviderNodeAddressHash = "Lava-Provider-Node-Address-Hash"
 	RPCProviderNodeExtension   = "Lava-Provider-Node-Extension"
+	WebSocketExtension         = "websocket"
 )
 
 var InvalidResponses = []string{"null", "", "nil", "undefined"}
@@ -182,21 +183,27 @@ func addAttributeToError(key, value, errorMessage string) string {
 }
 
 // rpc default endpoint should be websocket. otherwise return an error
-func verifyRPCEndpoint(endpoint string) {
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint})
-	}
-	switch u.Scheme {
-	case "ws", "wss":
-		return
-	default:
-		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme+", By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score. if subscriptions are not applicable for this chain you can ignore this warning", nil)
+func verifyRPCEndpoint(endpoints []common.NodeUrl) {
+	for _, endpoint := range endpoints {
+		u, err := url.Parse(endpoint.Url)
+		if err != nil {
+			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint})
+		}
+
+		switch u.Scheme {
+		case "http", "https":
+			continue
+		case "ws", "wss":
+			continue
+		default:
+			utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil)
+		}
 	}
 }
 
 // rpc default endpoint should be websocket. otherwise return an error
 func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint, httpEndpoint common.NodeUrl) {
+	// TODO: Elad - change this
 	for _, endpoint := range endpoints {
 		u, err := url.Parse(endpoint.Url)
 		if err != nil {

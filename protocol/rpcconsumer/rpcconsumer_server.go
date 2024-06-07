@@ -181,13 +181,14 @@ func (rpccs *RPCConsumerServer) waitForPairing() {
 }
 
 func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage, err error) {
-	parsing, collectionData, ok := rpccs.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	parsing, apiCollection, ok := rpccs.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	if !ok {
 		return false, nil, nil, utils.LavaFormatWarning("did not send initial relays because the spec does not contain "+spectypes.FUNCTION_TAG_GET_BLOCKNUM.String(), nil,
 			utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
 			utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
 		)
 	}
+	collectionData := apiCollection.CollectionData
 
 	path := parsing.ApiName
 	data := []byte(parsing.FunctionTemplate)
@@ -688,8 +689,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			if chainlib.IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 				utils.LavaFormatTrace("inside sendRelayToProvider, relay is subscription", utils.LogAttr("requestData", localRelayRequestData.Data))
 
-				// TODO: select case with ticker of 10 seconds, defer the ticker closing, on ticker done, cancel the context
-				// On fail, try another provider
+				// TODO: Elad - Test that on fail, try another provider
 				params, err := json.Marshal(chainMessage.GetRPCMessage().GetParams())
 				if err != nil {
 					utils.LavaFormatError("could not marshal params", err)
@@ -952,7 +952,7 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 		return err
 	}
 
-	reply, err := rpccs.getFirstSubscriptionReply(ctx, hashedParams, &replyServer)
+	reply, err := rpccs.getFirstSubscriptionReply(ctx, hashedParams, replyServer)
 	if err != nil {
 		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
@@ -972,11 +972,12 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 
 	relayResult.ReplyServer = replyServer
 	relayResult.Reply = reply
-	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession) // TODO: Elad - Use latest block from reply
+	// TODO: Elad - Use latest block from reply
+	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession)
 	return err
 }
 
-func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, hashedParams string, replyServer *pairingtypes.Relayer_RelaySubscribeClient) (*pairingtypes.RelayReply, error) {
+func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, hashedParams string, replyServer pairingtypes.Relayer_RelaySubscribeClient) (*pairingtypes.RelayReply, error) {
 	var reply pairingtypes.RelayReply
 	gotFirstReplyChanOrErr := make(chan struct{})
 
@@ -999,13 +1000,13 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	}()
 
 	select {
-	case <-(*replyServer).Context().Done(): // Make sure the reply server is open
+	case <-replyServer.Context().Done(): // Make sure the reply server is open
 		return nil, utils.LavaFormatError("reply server context canceled before first time read", nil,
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 	default:
-		err := (*replyServer).RecvMsg(&reply)
+		err := replyServer.RecvMsg(&reply)
 		gotFirstReplyChanOrErr <- struct{}{}
 		if err != nil {
 			return nil, utils.LavaFormatError("Could not read reply from reply server", err,
@@ -1013,7 +1014,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
 		}
-		}
+	}
 
 	utils.LavaFormatTrace("successfully got first reply",
 		utils.LogAttr("GUID", ctx),
@@ -1032,6 +1033,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 		)
 	}
 
+	// TODO: Elad: test this
 	if replyJson.Error != nil {
 		// Node error, subscription was not initialized, triggering OnSessionFailure
 		return nil, utils.LavaFormatError("error in reply from subscription", nil,

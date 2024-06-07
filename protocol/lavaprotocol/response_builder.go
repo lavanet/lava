@@ -54,8 +54,22 @@ func CraftEmptyRPCResponseFromGenericMessage(message rpcInterfaceMessages.Generi
 func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.RelayRequest, pkey *btcSecp256k1.PrivateKey, reply *pairingtypes.RelayReply, signDataReliability bool) (*pairingtypes.RelayReply, error) {
 	// request is a copy of the original request, but won't modify it
 	// update relay request requestedBlock to the provided one in case it was arbitrary
+	utils.LavaFormatTrace("before UpdateRequestedBlock",
+		utils.LogAttr("requestData", string(request.RelayData.Data)),
+		utils.LogAttr("requestData.RequestedBlock", request.RelayData.RequestBlock),
+	)
 	UpdateRequestedBlock(request.RelayData, reply)
+	utils.LavaFormatTrace("after UpdateRequestedBlock",
+		utils.LogAttr("requestData", string(request.RelayData.Data)),
+		utils.LogAttr("requestData.RequestedBlock", request.RelayData.RequestBlock),
+	)
+
 	// Update signature,
+	utils.LavaFormatTrace("About to sign relay response",
+		utils.LogAttr("requestData", request.RelayData.String()),
+		utils.LogAttr("reply", string(reply.Data)),
+		utils.LogAttr("consumerAddress", consumerAddress.String()),
+	)
 	relayExchange := pairingtypes.NewRelayExchange(request, *reply)
 	sig, err := sigs.Sign(pkey, relayExchange)
 	if err != nil {
@@ -78,6 +92,11 @@ func SignRelayResponse(consumerAddress sdk.AccAddress, request pairingtypes.Rela
 }
 
 func VerifyRelayReply(ctx context.Context, reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, addr string) error {
+	utils.LavaFormatTrace("About to verify relay reply",
+		utils.LogAttr("reply", string(reply.Data)),
+		utils.LogAttr("relayRequestData", relayRequest.RelayData.String()),
+		utils.LogAttr("addr", addr),
+	)
 	relayExchange := pairingtypes.NewRelayExchange(*relayRequest, *reply)
 	serverKey, err := sigs.RecoverPubKey(relayExchange)
 	if err != nil {

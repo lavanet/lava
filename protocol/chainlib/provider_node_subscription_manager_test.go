@@ -97,7 +97,7 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create the provider node subscription manager
-			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, ts.Providers[0].SK)
+			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, nil, ts.Providers[0].SK)
 
 			consumerChannel := make(chan *pairingtypes.RelayReply)
 

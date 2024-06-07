@@ -482,10 +482,15 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	cp := &JrpcChainProxy{
-		BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: nodeUrl, ErrorHandler: &JsonRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
-		conn:           map[string]*chainproxy.Connector{},
+		BaseChainProxy: BaseChainProxy{
+			averageBlockTime: averageBlockTime,
+			NodeUrl:          nodeUrl,
+			ErrorHandler:     &JsonRPCErrorHandler{},
+			ChainID:          rpcProviderEndpoint.ChainID,
+		},
+		conn: map[string]*chainproxy.Connector{},
 	}
-	verifyRPCEndpoint(nodeUrl.Url)
+	verifyRPCEndpoint(rpcProviderEndpoint.NodeUrls)
 	internalPaths := map[string]struct{}{}
 	jsonRPCChainParser, ok := chainParser.(*JsonRPCChainParser)
 	if ok {
@@ -531,6 +536,7 @@ func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common
 		if err != nil {
 			return err
 		}
+
 		cp.conn[path] = conn
 		if cp.conn == nil {
 			return errors.New("g_conn == nil")

@@ -449,9 +449,9 @@
                                 "name": "subscribe",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 1000,
                                 "enabled": true,
@@ -521,9 +521,9 @@
                                 "name": "unsubscribe",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
@@ -539,9 +539,9 @@
                                 "name": "unsubscribe_all",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,

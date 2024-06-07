@@ -550,9 +550,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 type tendermintRpcChainProxy struct {
 	// embedding the jrpc chain proxy because the only diff is on parse message
 	JrpcChainProxy
-	httpNodeUrl   common.NodeUrl
-	httpConnector *chainproxy.Connector
-	httpClient    *http.Client
+	httpClient *http.Client
 }
 
 func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser) (ChainProxy, error) {
@@ -560,26 +558,22 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	websocketUrl, httpUrl := verifyTendermintEndpoint(rpcProviderEndpoint.NodeUrls)
-	cp := &tendermintRpcChainProxy{
-		JrpcChainProxy: JrpcChainProxy{BaseChainProxy: BaseChainProxy{averageBlockTime: averageBlockTime, NodeUrl: websocketUrl, ErrorHandler: &TendermintRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID}, conn: map[string]*chainproxy.Connector{}},
-		httpNodeUrl:    httpUrl,
-		httpConnector:  nil,
-	}
-	cp.addHttpConnector(ctx, nConns, httpUrl)
-	return cp, cp.start(ctx, nConns, websocketUrl, nil)
-}
+	verifyRPCEndpoint(rpcProviderEndpoint.NodeUrls)
 
-func (cp *tendermintRpcChainProxy) addHttpConnector(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) error {
-	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
-	if err != nil {
-		return err
+	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+	cp := &tendermintRpcChainProxy{
+		JrpcChainProxy: JrpcChainProxy{
+			BaseChainProxy: BaseChainProxy{
+				averageBlockTime: averageBlockTime,
+				NodeUrl:          nodeUrl,
+				ErrorHandler:     &TendermintRPCErrorHandler{},
+				ChainID:          rpcProviderEndpoint.ChainID,
+			},
+			conn: map[string]*chainproxy.Connector{},
+		},
 	}
-	cp.httpConnector = conn
-	if cp.httpConnector == nil {
-		return errors.New("g_conn == nil")
-	}
-	return nil
+
+	return cp, cp.start(ctx, nConns, nodeUrl, nil)
 }
 
 func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
@@ -610,25 +604,28 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		// return an error if the channel is not nil
 		return nil, "", nil, utils.LavaFormatError("Subscribe is not allowed on Tendermint URI", nil)
 	}
+
 	if cp.httpClient == nil {
 		cp.httpClient = &http.Client{
 			Timeout: 5 * time.Minute, // we are doing a timeout by request
 		}
 	}
+
 	httpClient := cp.httpClient
 
 	// appending hashed url
-	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.httpConnector.GetUrlHash()))
+	internalPath := chainMessage.GetApiCollection().GetCollectionData().InternalPath
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn[internalPath].GetUrlHash()))
 
 	// construct the url by concatenating the node url with the path variable
-	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path
+	url := cp.NodeUrl.Url + "/" + nodeMessage.Path
 
 	// set context with timeout
 	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
 	defer cancel()
 
 	// create a new http request
-	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, cp.httpNodeUrl.AuthConfig.AddAuthPath(url), nil)
+	req, err := http.NewRequestWithContext(connectCtx, http.MethodGet, cp.NodeUrl.AuthConfig.AddAuthPath(url), nil)
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
 		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
@@ -645,9 +642,9 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 		}
 	}
 
-	cp.httpNodeUrl.SetAuthHeaders(ctx, req.Header.Set)
+	cp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 
-	cp.httpNodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
+	cp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 	// send the http request and get the response
 	res, err := httpClient.Do(req)
 	if res != nil {
@@ -696,12 +693,7 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 	var rpc *rpcclient.Client
 	internalPath := chainMessage.GetApiCollection().CollectionData.InternalPath
 
-	var connector *chainproxy.Connector
-	if ch != nil {
-		connector = cp.conn[internalPath]
-	} else {
-		connector = cp.httpConnector
-	}
+	connector := cp.conn[internalPath]
 
 	rpc, err = connector.GetRpc(ctx, true)
 	if err != nil {

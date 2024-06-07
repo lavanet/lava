@@ -175,8 +175,9 @@ func TestParsingRequestedBlocksHeadersRest(t *testing.T) {
 			closeServer()
 		}
 	}()
-	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	parsingForCrafting, apiCollection, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	require.True(t, ok)
+	collectionData := apiCollection.CollectionData
 	headerParsingDirective, _, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	callbackHeaderNameToCheck = headerParsingDirective.GetApiName() // this causes the callback to modify the response to simulate a real behavior
 	require.True(t, ok)
@@ -245,8 +246,9 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 			closeServer()
 		}
 	}()
-	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	parsingForCrafting, apiCollection, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	require.True(t, ok)
+	collectionData := apiCollection.CollectionData
 	headerParsingDirective, _, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SET_LATEST_IN_METADATA)
 	callbackHeaderNameToCheck = headerParsingDirective.GetApiName() // this causes the callback to modify the response to simulate a real behavior
 	require.True(t, ok)

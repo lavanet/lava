@@ -11,12 +11,47 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/protocopy"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
+
+type relayFinalizationBlocksHandler interface {
+	GetParametersForRelayDataReliability(
+		ctx context.Context,
+		request *pairingtypes.RelayRequest,
+		chainMsg ChainMessage,
+		relayTimeout time.Duration,
+		blockLagForQosSync int64,
+		averageBlockTime time.Duration,
+		blockDistanceToFinalization,
+		blocksInFinalizationData uint32,
+	) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error)
+
+	BuildRelayFinalizedBlockHashes(
+		ctx context.Context,
+		request *pairingtypes.RelayRequest,
+		reply *pairingtypes.RelayReply,
+		latestBlock int64,
+		requestedHashes []*chaintracker.BlockStore,
+		updatedChainMessage bool,
+		relayTimeout time.Duration,
+		averageBlockTime time.Duration,
+		blockDistanceToFinalization uint32,
+		blocksInFinalizationData uint32,
+		modifiedReqBlock int64,
+	) (err error)
+}
+
+type connectedConsumerContainer struct {
+	consumerChannel   *common.SafeChannelSender[*pairingtypes.RelayReply]
+	firstSetupRequest *pairingtypes.RelayRequest
+}
 
 type activeSubscription struct {
 	cancellableContext           context.Context
@@ -25,31 +60,32 @@ type activeSubscription struct {
 	nodeSubscription             *rpcclient.ClientSubscription
 	subscriptionID               string
 	firstSetupReply              *pairingtypes.RelayReply
-	firstSetupRequest            *pairingtypes.RelayRequest
 	apiCollection                *spectypes.ApiCollection
-	connectedConsumers           map[string]*common.SafeChannelSender[*pairingtypes.RelayReply] // key is consumer address
+	connectedConsumers           map[string]*connectedConsumerContainer // key is consumer address
 }
 
 type ProviderNodeSubscriptionManager struct {
-	chainRouter         ChainRouter
-	chainParser         ChainParser
-	activeSubscriptions map[string]*activeSubscription // key is request params hash
-	privKey             *btcec.PrivateKey
-	lock                sync.RWMutex
+	chainRouter                    ChainRouter
+	chainParser                    ChainParser
+	relayFinalizationBlocksHandler relayFinalizationBlocksHandler
+	activeSubscriptions            map[string]*activeSubscription // key is request params hash
+	privKey                        *btcec.PrivateKey
+	lock                           sync.RWMutex
 }
 
-func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser ChainParser, privKey *btcec.PrivateKey) *ProviderNodeSubscriptionManager {
+func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser ChainParser, relayFinalizationBlocksHandler relayFinalizationBlocksHandler, privKey *btcec.PrivateKey) *ProviderNodeSubscriptionManager {
 	utils.LavaFormatTrace("NewProviderNodeSubscriptionManager")
 	return &ProviderNodeSubscriptionManager{
-		chainRouter:         chainRouter,
-		chainParser:         chainParser,
-		activeSubscriptions: make(map[string]*activeSubscription),
-		privKey:             privKey,
+		chainRouter:                    chainRouter,
+		chainParser:                    chainParser,
+		relayFinalizationBlocksHandler: relayFinalizationBlocksHandler,
+		activeSubscriptions:            make(map[string]*activeSubscription),
+		privKey:                        privKey,
 	}
 }
 
 // TODO: Elad: Handle same consumer asking for same subscription twice
-func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessageForSend, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply) (subscriptionId string, err error) {
+func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessage, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply) (subscriptionId string, err error) {
 	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() called", utils.LogAttr("consumerAddr", consumerAddr))
 
 	if pnsm == nil {
@@ -94,7 +130,16 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			utils.LogAttr("params", string(params)),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
-		paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString] = common.NewSafeChannelSender(ctx, consumerChannel)
+
+		paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString] = &connectedConsumerContainer{
+			consumerChannel:   common.NewSafeChannelSender(ctx, consumerChannel),
+			firstSetupRequest: &pairingtypes.RelayRequest{}, // Deep copy later	firstSetupChainMessage: chainMessage,
+		}
+
+		copyRequestErr := protocopy.DeepCopyProtoObject(request, paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString].firstSetupRequest)
+		if copyRequestErr != nil {
+			return "", utils.LavaFormatError("failed to copy subscription request", copyRequestErr)
+		}
 
 		firstSetupReply = paramsChannelToConnectedConsumers.firstSetupReply
 		subscriptionId = paramsChannelToConnectedConsumers.subscriptionID
@@ -104,7 +149,8 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		nodeChan := make(chan interface{})
 		var replyWrapper *RelayReplyWrapper
 		var clientSubscription *rpcclient.ClientSubscription
-		replyWrapper, subscriptionId, clientSubscription, _, _, err = pnsm.chainRouter.SendNodeMsg(ctx, nodeChan, chainMessage, nil)
+		// TODO: Elad - change to enum
+		replyWrapper, subscriptionId, clientSubscription, _, _, err = pnsm.chainRouter.SendNodeMsg(ctx, nodeChan, chainMessage, append(request.RelayData.Extensions, WebSocketExtension))
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() subscription reply received",
 			utils.LogAttr("replyWrapper", replyWrapper),
 			utils.LogAttr("subscriptionId", subscriptionId),
@@ -121,7 +167,13 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 
 		reply := replyWrapper.RelayReply
 
-		err = pnsm.signReply(reply, consumerAddr, request, chainMessage.GetApiCollection())
+		copiedRequest := &pairingtypes.RelayRequest{}
+		copyRequestErr := protocopy.DeepCopyProtoObject(request, copiedRequest)
+		if copyRequestErr != nil {
+			return "", utils.LavaFormatError("failed to copy subscription request", copyRequestErr)
+		}
+
+		err = pnsm.signReply(ctx, reply, consumerAddr, chainMessage, request)
 		if err != nil {
 			return "", err
 		}
@@ -150,13 +202,15 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			nodeSubscription:             clientSubscription,
 			subscriptionID:               subscriptionId,
 			firstSetupReply:              reply,
-			firstSetupRequest:            request,
 			apiCollection:                chainMessage.GetApiCollection(),
-			connectedConsumers:           make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
+			connectedConsumers:           make(map[string]*connectedConsumerContainer),
 		}
 
-		channelToConnectedConsumers.connectedConsumers = make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply])
-		channelToConnectedConsumers.connectedConsumers[consumerAddrString] = common.NewSafeChannelSender(ctx, consumerChannel)
+		channelToConnectedConsumers.connectedConsumers = make(map[string]*connectedConsumerContainer)
+		channelToConnectedConsumers.connectedConsumers[consumerAddrString] = &connectedConsumerContainer{
+			consumerChannel:   common.NewSafeChannelSender(ctx, consumerChannel),
+			firstSetupRequest: copiedRequest,
+		}
 
 		pnsm.activeSubscriptions[hashedParams] = channelToConnectedConsumers
 		firstSetupReply = reply
@@ -164,8 +218,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		go pnsm.listenForSubscriptionMessages(cancellableCtx, nodeChan, clientSubscription.Err(), hashedParams)
 	}
 
-	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
-	pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString].Send(firstSetupReply)
+	pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString].consumerChannel.Send(firstSetupReply)
 
 	return subscriptionId, nil
 }
@@ -214,7 +267,7 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("nodeMsg", nodeMsg),
 			)
-			pnsm.handleNewNodeMessage(hashedParams, nodeMsg)
+			pnsm.handleNewNodeMessage(ctx, hashedParams, nodeMsg)
 		}
 	}
 }
@@ -262,56 +315,117 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 	return marshalledMsg, nil
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) signReply(reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, request *pairingtypes.RelayRequest, apiCollection *spectypes.ApiCollection) error {
-	var ignoredMetadata []pairingtypes.Metadata
-	reply.Metadata, _, ignoredMetadata = pnsm.chainParser.HandleHeaders(reply.Metadata, apiCollection, spectypes.Header_pass_reply)
-
+func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, reply *pairingtypes.RelayReply, consumerAddr sdk.AccAddress, chainMessage ChainMessage, request *pairingtypes.RelayRequest) error {
+	// Send the first setup message to the consumer in a go routine because the blocking listening for this channel happens after this function
 	dataReliabilityEnabled, _ := pnsm.chainParser.DataReliabilityParams()
+	blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData := pnsm.chainParser.ChainBlockStats()
+	relayTimeout := GetRelayTimeout(chainMessage, averageBlockTime)
 
+	if dataReliabilityEnabled {
+		chainMsgLatestBlock, chainMsgEarliestBlock := chainMessage.RequestedBlock()
+		utils.LavaFormatTrace("Before GetParametersForRelayDataReliability",
+			utils.LogAttr("chainMsgLatestBlock", chainMsgLatestBlock),
+			utils.LogAttr("chainMsgEarliestBlock", chainMsgEarliestBlock),
+			utils.LogAttr("replyLatestBlock", reply.LatestBlock),
+			utils.LogAttr("requestRequestedBlock", request.RelayData.RequestBlock),
+		)
+		var err error
+		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
+		if err != nil {
+			return err
+		}
+
+		chainMsgLatestBlock, chainMsgEarliestBlock = chainMessage.RequestedBlock()
+		utils.LavaFormatTrace("After GetParametersForRelayDataReliability",
+			utils.LogAttr("chainMsgLatestBlock", chainMsgLatestBlock),
+			utils.LogAttr("chainMsgEarliestBlock", chainMsgEarliestBlock),
+			utils.LogAttr("replyLatestBlock", reply.LatestBlock),
+			utils.LogAttr("requestRequestedBlock", request.RelayData.RequestBlock),
+		)
+
+		err = pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
+		if err != nil {
+			return err
+		}
+
+		chainMsgLatestBlock, chainMsgEarliestBlock = chainMessage.RequestedBlock()
+		utils.LavaFormatTrace("After BuildRelayFinalizedBlockHashes",
+			utils.LogAttr("chainMsgLatestBlock", chainMsgLatestBlock),
+			utils.LogAttr("chainMsgEarliestBlock", chainMsgEarliestBlock),
+			utils.LogAttr("replyLatestBlock", reply.LatestBlock),
+			utils.LogAttr("requestRequestedBlock", request.RelayData.RequestBlock),
+		)
+	}
+
+	var ignoredMetadata []pairingtypes.Metadata
+	reply.Metadata, _, ignoredMetadata = pnsm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	reply, err := lavaprotocol.SignRelayResponse(consumerAddr, *request, pnsm.privKey, reply, dataReliabilityEnabled)
 	if err != nil {
 		return err
 	}
-
 	reply.Metadata = append(reply.Metadata, ignoredMetadata...) // appended here only after signing
 	return nil
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(hashedParams string, nodeMsg interface{}) {
+func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Context, hashedParams string, nodeMsg interface{}) {
 	pnsm.lock.RLock()
 	defer pnsm.lock.RUnlock()
 
 	// Sending message to all connected consumers
-	for consumerAddrString, consumerChannel := range pnsm.activeSubscriptions[hashedParams].connectedConsumers {
+	for consumerAddrString, connectedConsumerContainer := range pnsm.activeSubscriptions[hashedParams].connectedConsumers {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumer", utils.LogAttr("consumerAddr", consumerAddrString), utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 
-		request := pnsm.activeSubscriptions[hashedParams].firstSetupRequest
-			apiCollection := pnsm.activeSubscriptions[hashedParams].apiCollection
-
-			marshalledNodeMsg, err := pnsm.convertNodeMsgToMarshalledJsonRpcResponse(nodeMsg, apiCollection)
-			if err != nil {
-				utils.LavaFormatError("error converting node message", err)
-				return
-			}
-
-			relayMessageFromNode := &pairingtypes.RelayReply{
-				Data:     marshalledNodeMsg,
-				Metadata: []pairingtypes.Metadata{},
-			}
-
-			consumerAddr, err := sdk.AccAddressFromBech32(consumerAddrString)
-			if err != nil {
-				utils.LavaFormatError("error unmarshaling consumer address", err)
-				return
-			}
-
-			err = pnsm.signReply(relayMessageFromNode, consumerAddr, request, apiCollection)
-			if err != nil {
-				utils.LavaFormatError("error signing reply", err)
-				return
+		copiedRequest := &pairingtypes.RelayRequest{}
+		copyRequestErr := protocopy.DeepCopyProtoObject(connectedConsumerContainer.firstSetupRequest, copiedRequest)
+		if copyRequestErr != nil {
+			utils.LavaFormatError("failed to copy subscription request", copyRequestErr)
+			return
 		}
 
-		consumerChannel.Send(relayMessageFromNode)
+		extensionInfo := extensionslib.ExtensionInfo{LatestBlock: 0, ExtensionOverride: copiedRequest.RelayData.Extensions}
+		if extensionInfo.ExtensionOverride == nil { // in case consumer did not set an extension, we skip the extension parsing and we are sending it to the regular url
+			extensionInfo.ExtensionOverride = []string{}
+		}
+
+		chainMessage, err := pnsm.chainParser.ParseMsg(copiedRequest.RelayData.ApiUrl, copiedRequest.RelayData.Data, copiedRequest.RelayData.ConnectionType, copiedRequest.RelayData.GetMetadata(), extensionInfo)
+		if err != nil {
+			utils.LavaFormatError("failed to parse message", err)
+			return
+		}
+
+		apiCollection := pnsm.activeSubscriptions[hashedParams].apiCollection
+
+		marshalledNodeMsg, err := pnsm.convertNodeMsgToMarshalledJsonRpcResponse(nodeMsg, apiCollection)
+		if err != nil {
+			utils.LavaFormatError("error converting node message", err)
+			return
+		}
+
+		relayMessageFromNode := &pairingtypes.RelayReply{
+			Data:     marshalledNodeMsg,
+			Metadata: []pairingtypes.Metadata{},
+		}
+
+		consumerAddr, err := sdk.AccAddressFromBech32(consumerAddrString)
+		if err != nil {
+			utils.LavaFormatError("error unmarshalling consumer address", err)
+			return
+		}
+
+		err = pnsm.signReply(ctx, relayMessageFromNode, consumerAddr, chainMessage, copiedRequest)
+		if err != nil {
+			utils.LavaFormatError("error signing reply", err)
+			return
+		}
+
+		utils.LavaFormatDebug("Sending relay to consumer",
+			utils.LogAttr("requestRelayData", copiedRequest.RelayData),
+			utils.LogAttr("reply", marshalledNodeMsg),
+			utils.LogAttr("replyLatestBlock", relayMessageFromNode.LatestBlock),
+			utils.LogAttr("consumerAddr", consumerAddr),
+		)
+
+		connectedConsumerContainer.consumerChannel.Send(relayMessageFromNode)
 	}
 }
 
@@ -359,13 +473,13 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 		)
 
 		if closeConsumerChannel {
-				utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() closing consumer channel",
-					utils.LogAttr("GUID", ctx),
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() closing consumer channel",
+				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("consumerAddr", consumerAddr),
 				utils.LogAttr("params", params),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
-			openSubscriptions.connectedConsumers[consumerAddrString].Close()
+			openSubscriptions.connectedConsumers[consumerAddrString].consumerChannel.Close()
 		}
 
 		delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers, consumerAddrString)
@@ -405,7 +519,7 @@ func (pnsm *ProviderNodeSubscriptionManager) closeNodeSubscription(hashedParams 
 			utils.LogAttr("consumerAddr", consumerAddrString),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
-		consumerChannel.Close()
+		consumerChannel.consumerChannel.Close()
 	}
 
 	pnsm.activeSubscriptions[hashedParams].nodeSubscription.Unsubscribe()

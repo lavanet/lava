@@ -11,6 +11,7 @@ import (
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/protocol/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	plantypes "github.com/lavanet/lava/x/plans/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -209,8 +210,9 @@ func TestExtensions(t *testing.T) {
 	require.NoError(t, err)
 
 	chainParser.SetPolicy(&plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainId: specname, Requirements: []plantypes.ChainRequirement{{Collection: spectypes.CollectionData{ApiInterface: "jsonrpc"}, Extensions: []string{"archive"}}}}}}, specname, "jsonrpc")
-	parsingForCrafting, collectionData, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
+	parsingForCrafting, apiCollection, ok := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	require.True(t, ok)
+	collectionData := apiCollection.CollectionData
 	cuCost := uint64(0)
 	for _, api := range spec.ApiCollections[0].Apis {
 		if api.Name == parsingForCrafting.ApiName {
@@ -342,7 +344,7 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 	}()
 }
 
-func TestJsonRpcInternalPathsMultipleVersions(t *testing.T) {
+func TestJsonRpcInternalPathsMultipleVersionsStarkNet(t *testing.T) {
 	ctx := context.Background()
 	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
@@ -379,5 +381,72 @@ func TestJsonRpcInternalPathsMultipleVersions(t *testing.T) {
 	require.Equal(t, v6_path, collection.CollectionData.InternalPath)
 	if closeServer != nil {
 		closeServer()
+	}
+}
+
+func TestJsonRpcInternalPathsMultipleVersionsAvalanche(t *testing.T) {
+	type reqWithApiName struct {
+		apiName string
+		reqData []byte
+	}
+
+	// TODO: Add the empty path back in once the ETH spec will be fixed
+	// allPaths := []string{"", "/C/rpc", "/C/avax", "/P", "/X"}
+	allPaths := []string{"/C/rpc", "/C/avax", "/P", "/X"}
+	pathToReqData := map[string]reqWithApiName{
+		"/C/rpc": { // Eth jsonrpc path
+			apiName: "eth_blockNumber",
+			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "eth_blockNumber", "params": []}`),
+		},
+		"/C/avax": { // Avalanche jsonrpc path
+			apiName: "avax.export",
+			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "avax.export", "params": []}`),
+		},
+		"/P": { // Platform jsonrpc path
+			apiName: "platform.addDelegator",
+			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "platform.addDelegator", "params": []}`),
+		},
+		"/X": { // Avm jsonrpc path
+			apiName: "avm.getAssetDescription",
+			reqData: []byte(`{"jsonrpc": "2.0", "id": 1, "method": "avm.getAssetDescription", "params": []}`),
+		},
+	}
+
+	ctx := context.Background()
+	serverHandle := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"jsonrpc":"2.0","id":1,"result":"%s"}`, r.RequestURI)
+	})
+
+	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "AVAX", spectypes.APIInterfaceJsonRPC, serverHandle, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+
+	require.NoError(t, err)
+	require.NotNil(t, chainParser)
+	require.NotNil(t, chainProxy)
+	require.NotNil(t, chainFetcher)
+
+	for correctPath, reqDataWithApiName := range pathToReqData {
+		for _, path := range allPaths {
+			shouldErr := path != correctPath
+			t.Run(fmt.Sprintf("ApiName:%s,CorrectPath:%s,Path:%s,ShouldError:%v", reqDataWithApiName.apiName, correctPath, path, shouldErr), func(t *testing.T) {
+				chainMessage, err := chainParser.ParseMsg(path, reqDataWithApiName.reqData, http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+
+				if !shouldErr {
+					require.NoError(t, err)
+					api := chainMessage.GetApi()
+					collection := chainMessage.GetApiCollection()
+					require.Equal(t, reqDataWithApiName.apiName, api.Name)
+					require.Equal(t, correctPath, collection.CollectionData.InternalPath)
+				} else {
+					require.Error(t, err)
+					require.ErrorIs(t, err, common.APINotSupportedError)
+					require.Nil(t, chainMessage)
+				}
+			})
+		}
 	}
 }

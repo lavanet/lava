@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/protocopy"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
@@ -139,7 +140,6 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	activeSubscription, found := cwsm.activeSubscriptions[hashedParams]
 	if found {
-		// Add to existing subscription
 		utils.LavaFormatTrace("found active subscription for given params",
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
@@ -159,6 +159,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 			return activeSubscription.firstSubscriptionReply, nil, nil
 		}
 
+		// Add to existing subscription
 		cwsm.connectDappWithSubscription(dappKey, websocketRepliesSafeChannelSender, hashedParams)
 
 		return activeSubscription.firstSubscriptionReply, websocketRepliesChan, nil
@@ -208,6 +209,30 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		)
 	}
 
+	copiedRequest := &pairingtypes.RelayRequest{}
+	err = protocopy.DeepCopyProtoObject(relayResult.Request, copiedRequest)
+	if err != nil {
+		closeWebsocketRepliesChannel()
+		return nil, nil, utils.LavaFormatError("could not copy relay request", err,
+			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("dappKey", dappKey),
+		)
+	}
+
+	err = cwsm.verifySubscriptionMessage(hashedParams, chainMessage, relayResult.Request, &reply, relayResult.ProviderInfo.ProviderAddress)
+	if err != nil {
+		closeWebsocketRepliesChannel()
+		return nil, nil, utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
+			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("dappKey", dappKey),
+			utils.LogAttr("reply", string(reply.Data)),
+		)
+	}
+
 	// Parse the reply
 	var replyJson rpcclient.JsonrpcMessage
 	err = json.Unmarshal(reply.Data, &replyJson)
@@ -222,11 +247,19 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		)
 	}
 
+	utils.LavaFormatTrace("Adding new subscription",
+		utils.LogAttr("GUID", webSocketCtx),
+		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+		utils.LogAttr("dappKey", dappKey),
+		utils.LogAttr("dappID", dappID),
+		utils.LogAttr("consumerIp", consumerIp),
+	)
+
 	closeSubscriptionChan := make(chan *unsubscribeRelayData)
 	cwsm.activeSubscriptions[hashedParams] = &activeSubscriptionHolder{
 		firstSubscriptionReply:              &reply,
 		replyServer:                         replyServer,
-		subscriptionOrigRequest:             relayResult.Request,
+		subscriptionOrigRequest:             copiedRequest,
 		subscriptionOrigRequestChainMessage: chainMessage,
 		subscriptionFirstReply:              &replyJson,
 		closeSubscriptionChan:               closeSubscriptionChan,
@@ -353,48 +386,64 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				return
 			}
 
-			err = cwsm.verifySubscriptionMessage(hashedParams, &reply, providerAddr)
+			// TODO: Elad - Test this with 2 consumers and 1 provider
+
+			err = cwsm.handleSubscriptionNodeMessage(hashedParams, &reply, providerAddr)
 			if err != nil {
-				// Critical error, we need to close the connection
-				utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
-					utils.LogAttr("GUID", webSocketCtx),
+				utils.LavaFormatError("failed handling subscription message", err,
 					utils.LogAttr("hashedParams", hashedParams),
-					utils.LogAttr("subscriptionMsg", reply.Data),
+					utils.LogAttr("reply", reply),
 				)
 				return
 			}
-
-			cwsm.handleSubscriptionNodeMessage(hashedParams, &reply)
 		}
 	}
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) verifySubscriptionMessage(hashedParams string, subMsg *pairingtypes.RelayReply, providerAddr string) error {
-	cwsm.lock.RLock()
-	defer cwsm.lock.RUnlock()
-
-	activeSubscription := cwsm.activeSubscriptions[hashedParams]
-	filteredHeaders, _, ignoredHeaders := cwsm.chainParser.HandleHeaders(subMsg.Metadata, activeSubscription.subscriptionOrigRequestChainMessage.GetApiCollection(), spectypes.Header_pass_reply)
-	subMsg.Metadata = filteredHeaders
-	err := lavaprotocol.VerifyRelayReply(context.Background(), subMsg, activeSubscription.subscriptionOrigRequest, providerAddr)
+func (cwsm *ConsumerWSSubscriptionManager) verifySubscriptionMessage(hashedParams string, chainMessage ChainMessage, request *pairingtypes.RelayRequest, reply *pairingtypes.RelayReply, providerAddr string) error {
+	// Must be called under lock
+	lavaprotocol.UpdateRequestedBlock(request.RelayData, reply) // update relay request requestedBlock to the provided one in case it was arbitrary
+	filteredHeaders, _, ignoredHeaders := cwsm.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
+	reply.Metadata = filteredHeaders
+	err := lavaprotocol.VerifyRelayReply(context.Background(), reply, request, providerAddr)
 	if err != nil {
 		return utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
-			utils.LogAttr("subscriptionMsg", subMsg.Data),
+			utils.LogAttr("subscriptionMsg", reply.Data),
 			utils.LogAttr("hashedParams", hashedParams),
-			utils.LogAttr("originalRequest", activeSubscription.subscriptionOrigRequest),
+			utils.LogAttr("originalRequest", request),
 		)
 	}
 
-	subMsg.Metadata = append(subMsg.Metadata, ignoredHeaders...)
+	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
 
 	return nil
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedParams string, subMsg *pairingtypes.RelayReply) error {
+func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedParams string, subMsg *pairingtypes.RelayReply, providerAddr string) error {
 	cwsm.lock.RLock()
 	defer cwsm.lock.RUnlock()
 
 	activeSubscription := cwsm.activeSubscriptions[hashedParams]
+	copiedRequest := &pairingtypes.RelayRequest{}
+	err := protocopy.DeepCopyProtoObject(activeSubscription.subscriptionOrigRequest, copiedRequest)
+	if err != nil {
+		return utils.LavaFormatError("could not copy relay request", err,
+			utils.LogAttr("hashedParams", hashedParams),
+			utils.LogAttr("subscriptionMsg", subMsg.Data),
+			utils.LogAttr("providerAddr", providerAddr),
+		)
+	}
+
+	chainMessage := activeSubscription.subscriptionOrigRequestChainMessage
+	err = cwsm.verifySubscriptionMessage(hashedParams, chainMessage, copiedRequest, subMsg, providerAddr)
+	if err != nil {
+		// Critical error, we need to close the connection
+		return utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
+			utils.LogAttr("hashedParams", hashedParams),
+			utils.LogAttr("subscriptionMsg", subMsg.Data),
+			utils.LogAttr("providerAddr", providerAddr),
+		)
+	}
 
 	for connectedDappKey := range activeSubscription.connectedDapps {
 		if _, ok := cwsm.connectedDapps[connectedDappKey]; !ok {
