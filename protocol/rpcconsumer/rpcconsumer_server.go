@@ -1090,6 +1090,18 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 		}
 
 		currentReportedProviders := rpccs.consumerSessionManager.GetReportedProviders(uint64(relayResult.Request.RelaySession.Epoch))
+		if len(currentReportedProviders) > 0 {
+			reportedProvidersArray := make([]string, len(currentReportedProviders))
+			for idx, providerAddress := range currentReportedProviders {
+				reportedProvidersArray[idx] = providerAddress.Address
+			}
+			reportedProvidersString := fmt.Sprintf("%v", reportedProvidersArray)
+			reportedProvidersMD := pairingtypes.Metadata{
+				Name:  common.REPORTED_PROVIDERS_HEADER_NAME,
+				Value: reportedProvidersString,
+			}
+			relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, reportedProvidersMD)
+		}
 	}
 
 	relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, metadataReply...)

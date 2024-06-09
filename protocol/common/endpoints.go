@@ -25,6 +25,7 @@ const (
 	PROVIDER_LATEST_BLOCK_HEADER_NAME               = "Provider-Latest-Block"
 	GUID_HEADER_NAME                                = "Lava-Guid"
 	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
+	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
 	// these headers need to be lowercase
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
 	RELAY_TIMEOUT_HEADER_NAME             = "lava-relay-timeout"
