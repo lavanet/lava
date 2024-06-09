@@ -978,7 +978,7 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 		case common.EXTENSION_OVERRIDE_HEADER_NAME:
 		case common.FORCE_CACHE_REFRESH_HEADER_NAME:
 			headerDirectives[name] = metaElement.Value
-		case common.LAVA_DEBUG:
+		case common.LAVA_DEBUG_RELAY:
 			lavaDebugRelay = true
 		default:
 			metadataRet = append(metadataRet, metaElement)
