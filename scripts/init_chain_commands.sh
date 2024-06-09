@@ -9,8 +9,9 @@ screen -wipe
 GASPRICE="0.000000001ulava"
 
 echo; echo "#### Sending proposal for specs ####"
-# ,./cookbook/specs/spec_add_mantle.json
-lavad tx gov submit-legacy-proposal spec-add ./cookbook/specs/spec_add_ibc.json,./cookbook/specs/spec_add_cosmoswasm.json,./cookbook/specs/spec_add_cosmossdk.json,./cookbook/specs/spec_add_cosmossdk_45.json,./cookbook/specs/spec_add_cosmossdk_full.json,./cookbook/specs/spec_add_ethereum.json,./cookbook/specs/spec_add_cosmoshub.json,./cookbook/specs/spec_add_lava.json,./cookbook/specs/spec_add_osmosis.json,./cookbook/specs/spec_add_fantom.json,./cookbook/specs/spec_add_celo.json,./cookbook/specs/spec_add_optimism.json,./cookbook/specs/spec_add_arbitrum.json,./cookbook/specs/spec_add_starknet.json,./cookbook/specs/spec_add_aptos.json,./cookbook/specs/spec_add_juno.json,./cookbook/specs/spec_add_polygon.json,./cookbook/specs/spec_add_evmos.json,./cookbook/specs/spec_add_base.json,./cookbook/specs/spec_add_canto.json,./cookbook/specs/spec_add_sui.json,./cookbook/specs/spec_add_solana.json,./cookbook/specs/spec_add_bsc.json,./cookbook/specs/spec_add_axelar.json,./cookbook/specs/spec_add_avalanche.json,./cookbook/specs/spec_add_fvm.json,./cookbook/specs/spec_add_near.json,./cookbook/specs/spec_add_sqdsubgraph.json,./cookbook/specs/spec_add_agoric.json,./cookbook/specs/spec_add_koii.json,./cookbook/specs/spec_add_stargaze.json,./cookbook/specs/spec_add_blast.json,./cookbook/specs/spec_add_secret.json,./cookbook/specs/spec_add_celestia.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+cd ./cookbook/specs/
+lavad tx gov submit-legacy-proposal spec-add ./ibc.json,./tendermint.json,./cosmoswasm.json,./cosmossdk.json,./cosmossdk_45.json,./cosmossdk_full.json,./ethermint.json,./ethereum.json,./cosmoshub.json,./lava.json,./osmosis.json,./fantom.json,./celo.json,./optimism.json,./arbitrum.json,./starknet.json,./aptos.json,./juno.json,./polygon.json,./evmos.json,./base.json,./canto.json,./sui.json,./solana.json,./bsc.json,./axelar.json,./avalanche.json,./fvm.json,./near.json,./sqdsubgraph.json,./agoric.json,./koii.json,./stargaze.json,./blast.json,./secret.json,./celestia.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+cd ../../
 echo; echo "#### Waiting 2 blocks ####"
 wait_count_blocks 2
 

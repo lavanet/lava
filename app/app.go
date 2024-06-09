@@ -194,6 +194,8 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_1_1_0,
 	upgrades.Upgrade_1_2_0,
 	upgrades.Upgrade_2_0_0,
+	upgrades.Upgrade_2_1_0,
+	upgrades.Upgrade_2_1_1,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -281,6 +283,7 @@ var (
 		string(rewardsmoduletypes.ProvidersRewardsAllocationPool):        {authtypes.Minter, authtypes.Staking},
 		dualstakingmoduletypes.ModuleName:                                {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.IprpcPoolName):                         nil,
+		string(rewardsmoduletypes.PendingIprpcPoolName):                  nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )

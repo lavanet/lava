@@ -64,6 +64,8 @@ func TestRewardsModuleSetup(t *testing.T) {
 			require.Equal(t, (allocationPoolBalance/lifetime)-blockReward, pool.Balance.AmountOf(ts.BondDenom()).Int64())
 		case string(types.IprpcPoolName):
 			require.True(t, pool.Balance.Empty())
+		case string(types.PendingIprpcPoolName):
+			require.True(t, pool.Balance.Empty())
 		}
 	}
 

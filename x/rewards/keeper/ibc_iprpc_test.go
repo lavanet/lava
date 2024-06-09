@@ -9,9 +9,9 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/x/rewards/keeper"
 	"github.com/lavanet/lava/x/rewards/types"
 	"github.com/stretchr/testify/require"
@@ -28,56 +28,15 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 	memos := []string{
 		"",
 		"blabla",
-		`{
-			"client": "Bruce",
-		    "duration": "3"	
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "mockspec",
-			  "duration": "3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "",
-			  "spec": "mockspec",
-			  "duration": "3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "spec": "mockspec",
-			  "duration": "3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "other-mockspec",
-			  "duration": "3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "duration": "3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "mockspec",
-			  "duration": "-3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "mockspec"
-			}
-		}`,
+		`{"client":"bruce","duration":2}`,
+		`{"iprpc":{"creator":"my-moniker","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"mockspec","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"mockspec","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"my-moniker","duration":2,"spec":"other-mockspec"}}`,
+		`{"iprpc":{"creator":"my-moniker","duration":2}}`,
+		`{"iprpc":{"creator":"my-moniker","duration":-2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"my-moniker","spec":"mockspec"}}`,
 	}
 
 	const (
@@ -85,7 +44,8 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 		NOT_JSON
 		JSON_NO_IPRPC
 		VALID_JSON_IPRPC
-		INVALID_CREATOR_JSON_IPRPC
+		EMPTY_CREATOR_JSON_IPRPC
+		CREATOR_IS_SPEC_JSON_IPRPC
 		MISSING_CREATOR_JSON_IPRPC
 		INVALID_SPEC_JSON_IPRPC
 		MISSING_SPEC_JSON_IPRPC
@@ -121,11 +81,17 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 			name:         "memo iprpc json valid",
 			memoInd:      VALID_JSON_IPRPC,
 			expectError:  nil,
-			expectedMemo: types.IprpcMemo{Creator: "my-moniker", Spec: "mockspec", Duration: 3},
+			expectedMemo: types.IprpcMemo{Creator: "my-moniker", Spec: "mockspec", Duration: 2},
 		},
 		{
-			name:         "invalid memo iprpc json - invalid creator",
-			memoInd:      INVALID_CREATOR_JSON_IPRPC,
+			name:         "invalid memo iprpc json - invalid creator - empty creator",
+			memoInd:      EMPTY_CREATOR_JSON_IPRPC,
+			expectError:  types.ErrIprpcMemoInvalid,
+			expectedMemo: types.IprpcMemo{},
+		},
+		{
+			name:         "invalid memo iprpc json - invalid creator - creator is named like on-chain spec",
+			memoInd:      CREATOR_IS_SPEC_JSON_IPRPC,
 			expectError:  types.ErrIprpcMemoInvalid,
 			expectedMemo: types.IprpcMemo{},
 		},
@@ -312,7 +278,7 @@ func TestPendingIbcIprpcFundNew(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", tt.spec, 1, tt.funds)
+			_, _, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", tt.spec, 1, tt.funds)
 			if tt.success {
 				require.NoError(t, err)
 			} else {
@@ -434,18 +400,14 @@ func TestPendingIbcIprpcFundNewFunds(t *testing.T) {
 			require.NoError(t, err)
 
 			// create a new PendingIbcIprpcFund
-			piif, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
+			piif, leftovers, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
 			if tt.success {
 				require.NoError(t, err)
 				require.True(t, piif.Fund.Amount.Equal(tt.expectedFundsInPending))
+				require.True(t, leftovers.Amount.Equal(tt.expectedFundsInCommunity))
 			} else {
 				require.Error(t, err)
 			}
-
-			// check community pool balance
-			communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
-			communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
-			require.True(t, communityBalance.Equal(tt.expectedFundsInCommunity))
 		})
 	}
 }

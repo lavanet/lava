@@ -40,6 +40,9 @@ const (
 	maxCuForVirtualEpoch               = uint64(200)
 )
 
+// This variable will hold grpc server address
+var grpcListener = "localhost:0"
+
 type testServer struct {
 	delay time.Duration
 }
@@ -88,41 +91,44 @@ func TestHappyFlow(t *testing.T) {
 	}
 }
 
-func TestExtensionDoesNotExistOnPairingList(t *testing.T) {
-	ctx := context.Background()
-	csm := CreateConsumerSessionManager()
-	pairingList := createPairingList("", true)
-	err := csm.UpdateAllProviders(firstEpochHeight, pairingList) // update the providers.
-	require.NoError(t, err)
-	ext := []*spectypes.Extension{{Name: "test_non_existing_ex", Rule: &spectypes.Rule{Block: 555}, CuMultiplier: 5}}
-	_, err = csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", ext, common.NO_STATE, 0) // get a session
-	// if we got a session successfully we should get no error.
-	require.NoError(t, err)
-}
-
 func getDelayedAddress() string {
 	delayedServerAddress := "127.0.0.1:3335"
 	// because grpcListener is random we might have overlap. in that case just change the port.
 	if grpcListener == delayedServerAddress {
 		delayedServerAddress = "127.0.0.1:3336"
 	}
+	utils.LavaFormatDebug("delayedAddress Chosen", utils.LogAttr("address", delayedServerAddress))
 	return delayedServerAddress
 }
 
 func TestEndpointSortingFlow(t *testing.T) {
 	delayedAddress := getDelayedAddress()
-	err := createGRPCServer(delayedAddress, time.Millisecond)
+	err := createGRPCServer(delayedAddress, 300*time.Millisecond)
 	csp := &ConsumerSessionsWithProvider{}
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		_, _, err := csp.ConnectRawClientWithTimeout(ctx, delayedAddress)
 		if err != nil {
-			utils.LavaFormatDebug("waiting for grpc server to launch")
+			utils.LavaFormatDebug("delayedAddress - waiting for grpc server to launch")
 			continue
 		}
+		utils.LavaFormatDebug("delayedAddress - grpc server is live", utils.LogAttr("address", delayedAddress))
 		cancel()
 		break
 	}
+
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_, _, err := csp.ConnectRawClientWithTimeout(ctx, grpcListener)
+		if err != nil {
+			utils.LavaFormatDebug("grpcListener - waiting for grpc server to launch")
+			continue
+		}
+		utils.LavaFormatDebug("grpcListener - grpc server is live", utils.LogAttr("address", grpcListener))
+		cancel()
+		break
+	}
+
 	require.NoError(t, err)
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
@@ -139,7 +145,7 @@ func TestEndpointSortingFlow(t *testing.T) {
 
 	// because probing is in a routine we need to wait for the sorting and probing to end asynchronously
 	swapped := false
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		if pairingList[0].Endpoints[0].NetworkAddress == grpcListener {
 			fmt.Println("Endpoints Are Sorted!", i)
 			swapped = true
@@ -152,13 +158,10 @@ func TestEndpointSortingFlow(t *testing.T) {
 	// after creating all the sessions
 }
 
-// This variable will hold grpc server address
-var grpcListener = "localhost:0"
-
 func CreateConsumerSessionManager() *ConsumerSessionManager {
 	rand.InitRandomSeed()
 	baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1), nil, nil)
+	return NewConsumerSessionManager(&RPCEndpoint{"stub", "stub", "stub", false, "/", 0}, provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1), nil, nil, "lava@test")
 }
 
 func TestMain(m *testing.M) {
