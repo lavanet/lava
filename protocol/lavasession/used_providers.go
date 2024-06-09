@@ -195,6 +195,7 @@ func (up *UsedProviders) GetErroredProviders() map[string]struct{} {
 	defer up.lock.RUnlock()
 	return up.erroredProviders
 }
+
 func (up *UsedProviders) GetUnwantedProvidersToSend() map[string]struct{} {
 	if up == nil {
 		return map[string]struct{}{}
