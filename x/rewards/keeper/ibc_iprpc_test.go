@@ -278,7 +278,7 @@ func TestPendingIbcIprpcFundNew(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", tt.spec, 1, tt.funds)
+			_, _, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", tt.spec, 1, tt.funds)
 			if tt.success {
 				require.NoError(t, err)
 			} else {
@@ -337,18 +337,14 @@ func TestPendingIbcIprpcFundNewFunds(t *testing.T) {
 			require.NoError(t, err)
 
 			// create a new PendingIbcIprpcFund
-			piif, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
+			piif, leftovers, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
 			if tt.success {
 				require.NoError(t, err)
 				require.True(t, piif.Fund.Amount.Equal(tt.expectedFundsInPending))
+				require.True(t, leftovers.Amount.Equal(tt.expectedFundsInCommunity))
 			} else {
 				require.Error(t, err)
 			}
-
-			// check community pool balance
-			communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
-			communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
-			require.True(t, communityBalance.Equal(tt.expectedFundsInCommunity))
 		})
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
@@ -83,11 +84,12 @@ func printInvalidMemoWarning(memo types.IprpcMemo, description string) error {
 // upon expiration. The expiration period is determined by the reward module's parameter IbcIprpcExpiration.
 
 // NewPendingIbcIprpcFund sets a new PendingIbcIprpcFund object. It validates the input and sets the object with the right index and expiry
-func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec string, duration uint64, fund sdk.Coin) (types.PendingIbcIprpcFund, error) {
+func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec string, duration uint64, fund sdk.Coin) (newPendingIbcIprpcFund types.PendingIbcIprpcFund, leftovers sdk.Coin, err error) {
+	zeroCoin := sdk.NewCoin(fund.Denom, math.ZeroInt())
 	// validate spec and funds
 	_, found := k.specKeeper.GetSpec(ctx, spec)
 	if !found {
-		return types.PendingIbcIprpcFund{}, utils.LavaFormatError("spec not found", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+		return types.PendingIbcIprpcFund{}, zeroCoin, utils.LavaFormatError("spec not found", fmt.Errorf("cannot create PendingIbcIprpcFund"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("spec", spec),
 			utils.LogAttr("duration", duration),
@@ -95,7 +97,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 		)
 	}
 	if fund.IsNil() || !fund.IsValid() {
-		return types.PendingIbcIprpcFund{}, utils.LavaFormatError("invalid funds", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+		return types.PendingIbcIprpcFund{}, zeroCoin, utils.LavaFormatError("invalid funds", fmt.Errorf("cannot create PendingIbcIprpcFund"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("spec", spec),
 			utils.LogAttr("duration", duration),
@@ -107,7 +109,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 	// which assumes that each month will get the input fund
 	monthlyFund := sdk.NewCoin(fund.Denom, fund.Amount.QuoRaw(int64(duration)))
 	if monthlyFund.IsZero() {
-		return types.PendingIbcIprpcFund{}, utils.LavaFormatWarning("fund amount cannot be less than duration", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+		return types.PendingIbcIprpcFund{}, zeroCoin, utils.LavaFormatWarning("fund amount cannot be less than duration", fmt.Errorf("cannot create PendingIbcIprpcFund"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("spec", spec),
 			utils.LogAttr("duration", duration),
@@ -115,20 +117,8 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 		)
 	}
 
-	// leftovers will be transferred to the community pool
-	leftovers := sdk.NewCoin(fund.Denom, fund.Amount.Sub(monthlyFund.Amount.MulRaw(int64(duration))))
-	if !leftovers.IsZero() {
-		err := k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(leftovers), types.IbcIprpcReceiverAddress())
-		if err != nil {
-			return types.PendingIbcIprpcFund{}, utils.LavaFormatError("cannot transfer monthly fund leftovers to community pool for PendingIbcIprpcFund", err,
-				utils.LogAttr("creator", creator),
-				utils.LogAttr("spec", spec),
-				utils.LogAttr("duration", duration),
-				utils.LogAttr("funds", fund),
-				utils.LogAttr("leftovers", leftovers),
-			)
-		}
-	}
+	// leftovers will be transferred to the community pool in the calling function
+	leftovers = sdk.NewCoin(fund.Denom, fund.Amount.Sub(monthlyFund.Amount.MulRaw(int64(duration))))
 
 	// get index for the new object
 	latestPendingIbcIprpcFund := k.GetLatestPendingIbcIprpcFund(ctx)
@@ -151,7 +141,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 
 	// sanity check
 	if !pendingIbcIprpcFund.IsValid() {
-		return types.PendingIbcIprpcFund{}, utils.LavaFormatError("PendingIbcIprpcFund is invalid. expiry and duration must be positive, fund cannot be zero", fmt.Errorf("cannot create PendingIbcIprpcFund"),
+		return types.PendingIbcIprpcFund{}, zeroCoin, utils.LavaFormatError("PendingIbcIprpcFund is invalid. expiry and duration must be positive, fund cannot be zero", fmt.Errorf("cannot create PendingIbcIprpcFund"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("spec", spec),
 			utils.LogAttr("duration", duration),
@@ -162,7 +152,7 @@ func (k Keeper) NewPendingIbcIprpcFund(ctx sdk.Context, creator string, spec str
 
 	k.SetPendingIbcIprpcFund(ctx, pendingIbcIprpcFund)
 
-	return pendingIbcIprpcFund, nil
+	return pendingIbcIprpcFund, leftovers, nil
 }
 
 // SetPendingIbcIprpcFund set an PendingIbcIprpcFund in the PendingIbcIprpcFund store
@@ -263,4 +253,12 @@ func (k Keeper) CalcPendingIbcIprpcFundMinCost(ctx sdk.Context, pendingIbcIprpcF
 // CalcPendingIbcIprpcFundExpiration returns the expiration timestamp of a PendingIbcIprpcFund
 func (k Keeper) CalcPendingIbcIprpcFundExpiration(ctx sdk.Context) uint64 {
 	return uint64(ctx.BlockTime().Add(k.IbcIprpcExpiration(ctx)).UTC().Unix())
+}
+
+func (k Keeper) SendIbcTokensToPendingIprpcPool(ctx sdk.Context, amount sdk.Coin) error {
+	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, types.IbcIprpcReceiverAddress(), string(types.PendingIprpcPoolName), sdk.NewCoins(amount))
+}
+
+func (k Keeper) FundCommunityPoolFromIbcIprpcReceiver(ctx sdk.Context, amount sdk.Coin) error {
+	return k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(amount), types.IbcIprpcReceiverAddress())
 }

@@ -33,7 +33,8 @@ func CreateIprpcMemo(creator string, spec string, duration uint64) (memoStr stri
 	return string(bz), nil
 }
 
-// IbcIprpcReceiverAddress returns a Bech32 address for the string "iprpc"
+// IbcIprpcReceiverAddress is a temporary address that holds the funds from an IPRPC over IBC request. The funds are
+// then immediately transferred to the pending IPRPC pool
 // Note, the NewModuleAddress() function is used for convenience. The IbcIprpcReceiver is not a module account
 func IbcIprpcReceiverAddress() sdk.AccAddress {
 	return authtypes.NewModuleAddress(IbcIprpcReceiver)
@@ -67,4 +68,10 @@ func (piif PendingIbcIprpcFund) IsExpired(ctx sdk.Context) bool {
 const (
 	NewPendingIbcIprpcFundEventName            = "pending_ibc_iprpc_fund_created"
 	ExpiredPendingIbcIprpcFundRemovedEventName = "expired_pending_ibc_iprpc_fund_removed"
+)
+
+// Pending IPRPC Pool:
+// Pool that holds the funds of pending IPRPC fund requests (which originate from an ibc-transfer TX)
+const (
+	PendingIprpcPoolName Pool = "pending_iprpc_pool"
 )

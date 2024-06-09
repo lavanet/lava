@@ -87,6 +87,14 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
+	// sanity check: validate data
+	if err := data.ValidateBasic(); err != nil {
+		detaliedErr := utils.LavaFormatError("rewards module IBC middleware processing failed", err,
+			utils.LogAttr("data", data),
+		)
+		return channeltypes.NewErrorAcknowledgement(detaliedErr)
+	}
+
 	// extract the packet's memo
 	memo, err := im.keeper.ExtractIprpcMemoFromPacket(ctx, data)
 	if errors.Is(err, types.ErrMemoNotIprpcOverIbc) {
@@ -102,9 +110,24 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
-	// get the IBC IPRPC receiver balance before getting the new IBC tokens
-	balanceBefore := im.keeper.GetIbcIprpcReceiverBalance(ctx)
+	// create the IBC tokens to register it in the pending IPRPC over IBC object
+	amount, ok := sdk.NewIntFromString(data.Amount)
+	if !ok {
+		detaliedErr := utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("invalid amount in ibc-transfer data"),
+			utils.LogAttr("data", data),
+		)
+		return channeltypes.NewErrorAcknowledgement(detaliedErr)
+	}
+	ibcTokens := transfertypes.GetTransferCoin(packet.DestinationPort, packet.DestinationChannel, data.Denom, amount)
 
+	// set pending IPRPC over IBC requests on-chain
+	// leftovers are the tokens that were not registered in the PendingIbcIprpcFund objects due to int division
+	piif, leftovers, err := im.keeper.NewPendingIbcIprpcFund(ctx, memo.Creator, memo.Spec, memo.Duration, ibcTokens)
+	if err != nil {
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+
+	// send the IBC transfer to get the tokens (keep balance before for checks)
 	ack := im.sendIbcTransfer(ctx, packet, relayer, data.Sender, types.IbcIprpcReceiverAddress().String())
 	if ack == nil || !ack.Success() {
 		// we check for ack == nil because it means that IBC transfer module did not return an acknowledgement.
@@ -115,37 +138,37 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		return ack
 	}
 
-	// get the IBC IPRPC receiver balance after getting the new IBC tokens and get the difference
-	// this is done to get the new tokens with the IBC denom
-	balanceAfter := im.keeper.GetIbcIprpcReceiverBalance(ctx)
-	ibcFundCoins := balanceAfter.Sub(balanceBefore...)
-	if ibcFundCoins.IsZero() {
-		err := utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("ibc iprpc receiver did not get new tokens"),
-			utils.LogAttr("data", data),
-		)
-		return channeltypes.NewErrorAcknowledgement(err)
-	}
-
-	// ibcFundCoins should have only one token since ibc-transfer allows sending only one type of token
-	if len(ibcFundCoins) != 1 {
-		err := utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("ibcFundCoins has more than one type of coins"),
-			utils.LogAttr("data", data),
-		)
-		ack := im.sendIbcTransfer(ctx, packet, relayer, types.IbcIprpcReceiverAddress().String(), data.Sender)
-		if ack == nil || !ack.Success() {
-			err = errors.Join(err, types.ErrIbcTransferRevert)
+	// transfer the token from the temp IbcIprpcReceiverAddress to the pending IPRPC fund request pool
+	// we subtract the leftovers since they are not registered in the PendingIbcIprpcFund store
+	err1 := im.keeper.SendIbcTokensToPendingIprpcPool(ctx, ibcTokens.Sub(leftovers))
+	if err1 != nil {
+		// we couldn't transfer the funds to the pending IPRPC fund request pool, try moving it to the community pool
+		err2 := im.keeper.FundCommunityPoolFromIbcIprpcReceiver(ctx, ibcTokens)
+		if err2 != nil {
+			// community pool transfer failed, token kept locked in IbcIprpcReceiverAddress, return err ack
+			err := utils.LavaFormatError("could not send tokens from IbcIprpcReceiverAddress to pending IPRPC pool or community pool, tokens are locked in IbcIprpcReceiverAddress",
+				errors.Join(err1, err2),
+				utils.LogAttr("amount", ibcTokens.String()),
+				utils.LogAttr("sender", data.Sender),
+			)
+			return channeltypes.NewErrorAcknowledgement(err)
+		} else {
+			err := utils.LavaFormatError("could not send tokens from IbcIprpcReceiverAddress to pending IPRPC pool, sent to community pool", err1,
+				utils.LogAttr("amount", ibcTokens.String()),
+				utils.LogAttr("sender", data.Sender),
+			)
+			return channeltypes.NewErrorAcknowledgement(err)
 		}
-		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
-	// set pending IPRPC over IBC requests on-chain
-	piif, err := im.keeper.NewPendingIbcIprpcFund(ctx, memo.Creator, memo.Spec, memo.Duration, ibcFundCoins[0])
+	// transfer the leftover IBC tokens to the community pool
+	err = im.keeper.FundCommunityPoolFromIbcIprpcReceiver(ctx, leftovers)
 	if err != nil {
-		ack := im.sendIbcTransfer(ctx, packet, relayer, types.IbcIprpcReceiverAddress().String(), data.Sender)
-		if ack == nil || !ack.Success() {
-			err = errors.Join(err, types.ErrIbcTransferRevert)
-		}
-		return channeltypes.NewErrorAcknowledgement(err)
+		detailedErr := utils.LavaFormatError("could not send leftover tokens from IbcIprpcReceiverAddress to community pool, tokens are locked in IbcIprpcReceiverAddress", err,
+			utils.LogAttr("amount", leftovers.String()),
+			utils.LogAttr("sender", data.Sender),
+		)
+		return channeltypes.NewErrorAcknowledgement(detailedErr)
 	}
 
 	// make event
