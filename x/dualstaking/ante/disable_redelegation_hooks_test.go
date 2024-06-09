@@ -5,8 +5,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/x/dualstaking/ante"
 	"github.com/stretchr/testify/require"
 )

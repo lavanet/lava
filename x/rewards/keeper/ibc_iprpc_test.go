@@ -9,10 +9,10 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/lavanet/lava/testutil/sample"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/x/rewards/keeper"
 	"github.com/lavanet/lava/x/rewards/types"
 	"github.com/stretchr/testify/require"
@@ -29,56 +29,15 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 	memos := []string{
 		"",
 		"blabla",
-		`{
-			"client": "Bruce",
-		    "duration": "3"	
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "mockspec",
-			  "duration": "3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "",
-			  "spec": "mockspec",
-			  "duration": "3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "spec": "mockspec",
-			  "duration": "3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "other-mockspec",
-			  "duration": "3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "duration": "3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "mockspec",
-			  "duration": "-3"
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "mockspec"
-			}
-		}`,
+		`{"client":"bruce","duration":2}`,
+		`{"iprpc":{"creator":"my-moniker","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"mockspec","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"mockspec","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"my-moniker","duration":2,"spec":"other-mockspec"}}`,
+		`{"iprpc":{"creator":"my-moniker","duration":2}}`,
+		`{"iprpc":{"creator":"my-moniker","duration":-2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"my-moniker","spec":"mockspec"}}`,
 	}
 
 	const (
@@ -86,7 +45,8 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 		NOT_JSON
 		JSON_NO_IPRPC
 		VALID_JSON_IPRPC
-		INVALID_CREATOR_JSON_IPRPC
+		EMPTY_CREATOR_JSON_IPRPC
+		CREATOR_IS_SPEC_JSON_IPRPC
 		MISSING_CREATOR_JSON_IPRPC
 		INVALID_SPEC_JSON_IPRPC
 		MISSING_SPEC_JSON_IPRPC
@@ -122,11 +82,17 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 			name:         "memo iprpc json valid",
 			memoInd:      VALID_JSON_IPRPC,
 			expectError:  nil,
-			expectedMemo: types.IprpcMemo{Creator: "my-moniker", Spec: "mockspec", Duration: 3},
+			expectedMemo: types.IprpcMemo{Creator: "my-moniker", Spec: "mockspec", Duration: 2},
 		},
 		{
-			name:         "invalid memo iprpc json - invalid creator",
-			memoInd:      INVALID_CREATOR_JSON_IPRPC,
+			name:         "invalid memo iprpc json - invalid creator - empty creator",
+			memoInd:      EMPTY_CREATOR_JSON_IPRPC,
+			expectError:  types.ErrIprpcMemoInvalid,
+			expectedMemo: types.IprpcMemo{},
+		},
+		{
+			name:         "invalid memo iprpc json - invalid creator - creator is named like on-chain spec",
+			memoInd:      CREATOR_IS_SPEC_JSON_IPRPC,
 			expectError:  types.ErrIprpcMemoInvalid,
 			expectedMemo: types.IprpcMemo{},
 		},
@@ -313,7 +279,7 @@ func TestPendingIbcIprpcFundNew(t *testing.T) {
 
 	for _, tt := range template {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", tt.spec, 1, tt.funds)
+			_, _, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", tt.spec, 1, tt.funds)
 			if tt.success {
 				require.NoError(t, err)
 			} else {
@@ -435,25 +401,21 @@ func TestPendingIbcIprpcFundNewFunds(t *testing.T) {
 			require.NoError(t, err)
 
 			// create a new PendingIbcIprpcFund
-			piif, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
+			piif, leftovers, err := keeper.NewPendingIbcIprpcFund(ctx, "creator", spec.Index, tt.duration, funds)
 			if tt.success {
 				require.NoError(t, err)
 				require.True(t, piif.Fund.Amount.Equal(tt.expectedFundsInPending))
+				require.True(t, leftovers.Amount.Equal(tt.expectedFundsInCommunity))
 			} else {
 				require.Error(t, err)
 			}
-
-			// check community pool balance
-			communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
-			communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
-			require.True(t, communityBalance.Equal(tt.expectedFundsInCommunity))
 		})
 	}
 }
 
 // TestCoverIbcIprpcFundCost tests that the cover-ibc-iprpc-fund-cost transaction
 // Scenarios:
-//  0. Create 2 PendingIbcIprpcFund objects and fund IbcIprpcReceiver and gov. First with 101ulava for 2 months, second with
+//  0. Create 2 PendingIbcIprpcFund objects and fund PendingIprpcPool and gov. First with 101ulava for 2 months, second with
 //     99ulava for 2 months. Expected: PendingIbcIprpcFund with 50ulava, PendingIbcIprpcFund with 49ulava, community pool 2ulava
 //  1. Cover costs with alice for first PendingIbcIprpcFund. Expect two iprpc rewards from next month of 50ulava, PendingIbcIprpcFund
 //     removed, IPRPC pool with 100ulava, second PendingIbcIprpcFund remains (49ulava), alice balance reduced by MinIprpcCost
@@ -469,11 +431,15 @@ func TestCoverIbcIprpcFundCost(t *testing.T) {
 	err := ts.Keepers.BankKeeper.SetBalance(ctx, alice, aliceBalance)
 	require.NoError(t, err)
 
-	// fund IbcIprpcReceiver and gov module
-	// IbcIprpcReceiver gets the total coins that were sent
+	// set min IPRPC cost to be 50ulava (for validation checks later)
+	minCost := sdk.NewCoin(ts.TokenDenom(), math.NewInt(50))
+	keeper.SetMinIprpcCost(ctx, minCost)
+
+	// fund PendingIprpcPool and gov module
+	// PendingIprpcPool gets the total coins that were sent
 	// gov module get a dummy balance, just to see it's not changing
-	ibcIprpcReceiverBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(200)))
-	err = ts.Keepers.BankKeeper.SetBalance(ctx, types.IbcIprpcReceiverAddress(), ibcIprpcReceiverBalance)
+	pendingIprpcPoolBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(200)))
+	err = ts.Keepers.BankKeeper.SetBalance(ctx, keepertest.GetModuleAddress(string(types.PendingIprpcPoolName)), pendingIprpcPoolBalance)
 	require.NoError(t, err)
 	govModuleBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.OneInt()))
 	govModule := ts.Keepers.AccountKeeper.GetModuleAddress("gov")
@@ -481,25 +447,22 @@ func TestCoverIbcIprpcFundCost(t *testing.T) {
 	require.NoError(t, err)
 
 	// create PendingIbcIprpcFund objects
-	piif1, err := keeper.NewPendingIbcIprpcFund(ctx, alice.String(), spec.Index, 2, sdk.NewCoin(ts.TokenDenom(), math.NewInt(101)))
+	piif1, leftovers1, err := keeper.NewPendingIbcIprpcFund(ctx, alice.String(), spec.Index, 2, sdk.NewCoin(ts.TokenDenom(), math.NewInt(101)))
 	require.NoError(t, err)
 	require.True(t, piif1.Fund.Amount.Equal(math.NewInt(50)))
-	piif2, err := keeper.NewPendingIbcIprpcFund(ctx, alice.String(), spec.Index, 2, sdk.NewCoin(ts.TokenDenom(), math.NewInt(99)))
+	require.True(t, leftovers1.IsEqual(sdk.NewCoin(ts.TokenDenom(), math.OneInt())))
+	piif2, leftovers2, err := keeper.NewPendingIbcIprpcFund(ctx, alice.String(), spec.Index, 2, sdk.NewCoin(ts.TokenDenom(), math.NewInt(99)))
 	require.NoError(t, err)
 	require.True(t, piif2.Fund.Amount.Equal(math.NewInt(49)))
-
-	// check community pool balance
-	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
-	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
-	require.True(t, communityBalance.Equal(math.NewInt(2)))
+	require.True(t, leftovers2.IsEqual(sdk.NewCoin(ts.TokenDenom(), math.OneInt())))
 
 	// cover costs of first PendingIbcIprpcFund with alice
-	expectedMinCost := keeper.CalcPendingIbcIprpcFundMinCost(ctx, piif1).Amount.Int64()
+	expectedMinCost := sdk.NewCoin(minCost.Denom, minCost.Amount.MulRaw(int64(piif1.Duration)))
 	_, err = ts.TxRewardsCoverIbcIprpcFundCost(alice.String(), piif1.Index)
 	require.NoError(t, err)
 	_, found := keeper.GetPendingIbcIprpcFund(ctx, piif1.Index)
 	require.False(t, found)
-	require.Equal(t, expectedMinCost, aliceBalance.AmountOf(ts.TokenDenom()).Int64()-ts.GetBalance(alice))
+	require.Equal(t, expectedMinCost.Amount.Int64(), aliceBalance.AmountOf(ts.TokenDenom()).Int64()-ts.GetBalance(alice))
 
 	res, err := ts.QueryRewardsIprpcSpecReward(mockSpec2)
 	require.NoError(t, err)
@@ -544,6 +507,7 @@ func TestCoverIbcIprpcFundCost(t *testing.T) {
 	iprpcPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.IprpcPoolName)
 	require.True(t, expectedIprpcPoolBalance.IsEqual(iprpcPoolBalance))
 
-	// verify that IbcIprpcReceiver has zero balance (to test that the SetBalance() is correct)
-	require.Equal(t, int64(0), ts.GetBalance(types.IbcIprpcReceiverAddress()))
+	// verify that PendingIprpcPool has zero balance (to test that the SetBalance() is correct)
+	pendingIprpcPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.PendingIprpcPoolName)
+	require.True(t, pendingIprpcPoolBalance.Empty())
 }
