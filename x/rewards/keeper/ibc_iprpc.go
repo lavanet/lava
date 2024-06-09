@@ -206,7 +206,7 @@ func (k Keeper) RemoveExpiredPendingIbcIprpcFunds(ctx sdk.Context) {
 		var val types.PendingIbcIprpcFund
 		k.cdc.MustUnmarshal(iterator.Value(), &val)
 		if val.IsExpired(ctx) {
-			err := k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(val.Fund), types.IbcIprpcReceiverAddress())
+			err := k.FundCommunityPoolFromModule(ctx, sdk.NewCoins(val.Fund), string(types.PendingIprpcPoolName))
 			if err != nil {
 				utils.LavaFormatError("failed funding community pool from expired IBC IPRPC fund, removing without funding", err,
 					utils.LogAttr("pending_ibc_iprpc_fund", val.String()),

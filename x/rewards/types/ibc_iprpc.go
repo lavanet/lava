@@ -36,13 +36,13 @@ func CreateIprpcMemo(creator string, spec string, duration uint64) (memoStr stri
 // IbcIprpcReceiverAddress is a temporary address that holds the funds from an IPRPC over IBC request. The funds are
 // then immediately transferred to the pending IPRPC pool
 // Note, the NewModuleAddress() function is used for convenience. The IbcIprpcReceiver is not a module account
-func IbcIprpcReceiverAddress() sdk.AccAddress {
-	return authtypes.NewModuleAddress(IbcIprpcReceiver)
-}
-
 const (
 	IbcIprpcReceiver = "iprpc"
 )
+
+func IbcIprpcReceiverAddress() sdk.AccAddress {
+	return authtypes.NewModuleAddress(IbcIprpcReceiver)
+}
 
 const (
 	PendingIbcIprpcFundPrefix = "PendingIbcIprpcFund/"
