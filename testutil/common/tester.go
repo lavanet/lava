@@ -208,7 +208,6 @@ func (ts *Tester) SlashValidator(valAcc sigs.Account, fraction math.LegacyDec, p
 	ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, fraction, power, ts.Ctx.BlockHeight())
 
 	var req abci.RequestBeginBlock
-	req.ByzantineValidators = []abci.Misbehavior{{Type: abci.MisbehaviorType_DUPLICATE_VOTE, Validator: abci.Validator{Address: valConsAddr}}}
 	ts.Keepers.Dualstaking.BeginBlock(ts.Ctx, req)
 
 	// calculate expected burned tokens
