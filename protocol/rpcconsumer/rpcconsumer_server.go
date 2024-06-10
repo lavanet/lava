@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -358,7 +359,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	}
 
 	returnedResult, err := relayProcessor.ProcessingResult()
-	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors())
+	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, directiveHeaders)
 	if err != nil {
 		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
 	}
@@ -1152,7 +1153,7 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 		case common.RELAY_TIMEOUT_HEADER_NAME:
 		case common.EXTENSION_OVERRIDE_HEADER_NAME:
 		case common.FORCE_CACHE_REFRESH_HEADER_NAME:
-		case common.LAVA_DEBUG:
+		case common.LAVA_DEBUG_RELAY:
 			headerDirectives[name] = metaElement.Value
 		default:
 			metadataRet = append(metadataRet, metaElement)
@@ -1191,7 +1192,7 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 	chainMessage.SetForceCacheRefresh(ok)
 }
 
-func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64) {
+func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor *RelayProcessor, directiveHeaders map[string]string) {
 	if relayResult == nil {
 		return
 	}
@@ -1245,6 +1246,40 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 		}
 		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, extensionMD)
 	}
+
+	_, debugRelays := directiveHeaders[common.LAVA_DEBUG_RELAY]
+	if debugRelays {
+		erroredProviders := relayProcessor.GetUsedProviders().GetErroredProviders()
+		if len(erroredProviders) > 0 {
+			erroredProvidersArray := make([]string, len(erroredProviders))
+			idx := 0
+			for providerAddress := range erroredProviders {
+				erroredProvidersArray[idx] = providerAddress
+				idx++
+			}
+			erroredProvidersString := fmt.Sprintf("%v", erroredProvidersArray)
+			erroredProvidersMD := pairingtypes.Metadata{
+				Name:  common.ERRORED_PROVIDERS_HEADER_NAME,
+				Value: erroredProvidersString,
+			}
+			relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, erroredProvidersMD)
+		}
+
+		currentReportedProviders := rpccs.consumerSessionManager.GetReportedProviders(uint64(relayResult.Request.RelaySession.Epoch))
+		if len(currentReportedProviders) > 0 {
+			reportedProvidersArray := make([]string, len(currentReportedProviders))
+			for idx, providerAddress := range currentReportedProviders {
+				reportedProvidersArray[idx] = providerAddress.Address
+			}
+			reportedProvidersString := fmt.Sprintf("%v", reportedProvidersArray)
+			reportedProvidersMD := pairingtypes.Metadata{
+				Name:  common.REPORTED_PROVIDERS_HEADER_NAME,
+				Value: reportedProvidersString,
+			}
+			relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, reportedProvidersMD)
+		}
+	}
+
 	relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, metadataReply...)
 }
 
