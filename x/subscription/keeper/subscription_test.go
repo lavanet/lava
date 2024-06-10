@@ -8,10 +8,10 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"

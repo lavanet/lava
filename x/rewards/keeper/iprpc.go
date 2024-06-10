@@ -20,8 +20,8 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 	// calculate total funds to transfer to the IPRPC pool (input fund is monthly fund)
 	totalFunds := fund.MulInt(math.NewIntFromUint64(duration))
 
-	// if the fund TX originates from the gov module (keeper's authority field) it's not paying the minimum IPRPC cost
-	if creator != k.authority && creator != types.IbcIprpcReceiver {
+	// if the fund TX originates from the gov module (keeper's authority field) or the pending IPRPC pool it's not paying the minimum IPRPC cost
+	if creator != k.authority && creator != string(types.PendingIprpcPoolName) {
 		// check fund consists of minimum amount of ulava (min_iprpc_cost)
 		minIprpcFundCost := k.GetMinIprpcCost(ctx)
 		if fund.AmountOf(k.stakingKeeper.BondDenom(ctx)).LT(minIprpcFundCost.Amount) {
@@ -76,19 +76,15 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 	return nil
 }
 
-func (k Keeper) sendCoinsToIprpcPool(ctx sdk.Context, sender string, amount sdk.Coins) (err error) {
-	// sender is gov module - use SendCoinsFromModuleToModule
-	if sender == k.authority {
+func (k Keeper) sendCoinsToIprpcPool(ctx sdk.Context, sender string, amount sdk.Coins) error {
+	// sender is gov module or pending IPRPC pool - use SendCoinsFromModuleToModule
+	if sender == k.authority || sender == string(types.PendingIprpcPoolName) {
 		return k.bankKeeper.SendCoinsFromModuleToModule(ctx, sender, string(types.IprpcPoolName), amount)
 	}
 
-	// sender is account. check if IbcIprpcReceiver or not
-	addr := types.IbcIprpcReceiverAddress()
-	if sender != types.IbcIprpcReceiver {
-		addr, err = sdk.AccAddressFromBech32(sender)
-		if err != nil {
-			return err
-		}
+	addr, err := sdk.AccAddressFromBech32(sender)
+	if err != nil {
+		return err
 	}
 
 	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.IprpcPoolName), amount)

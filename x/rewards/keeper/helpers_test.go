@@ -12,11 +12,13 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/sample"
+	commontypes "github.com/lavanet/lava/utils/common/types"
+	"github.com/lavanet/lava/utils/sigs"
 	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/x/projects/types"
 	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -147,6 +149,53 @@ func (ts *tester) createIbcTransferPacketData(memo string) transfertypes.Fungibl
 	return transfertypes.NewFungibleTokenPacketData(ts.TokenDenom(), "100000", sample.AccAddress(), sample.AccAddress(), memo)
 }
 
+// getConsumersForIprpcSubTest is a helper function specifically for the TestIprpcEligibleSubscriptions unit test
+// this function returns two consumer addresses to test depending on the input mode:
+//
+//	SUB_OWNERS                 = 0
+//	DEVELOPERS_ADMIN_PROJECT   = 1
+//	DEVELOPERS_REGULAR_PROJECT = 2
+//
+// this function assumes that ts.setupForIprpcTests ran before it
+func (ts *tester) getConsumersForIprpcSubTest(mode int) (sigs.Account, sigs.Account) {
+	switch mode {
+	case 0:
+		sub1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
+		sub2Acc, _ := ts.GetAccount(common.CONSUMER, 1)
+		return sub1Acc, sub2Acc
+	case 1:
+		sub1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
+		sub2Acc, _ := ts.GetAccount(common.CONSUMER, 1)
+		adminDev1, _ := ts.AddAccount(common.CONSUMER, 2, testBalance*10000)
+		adminDev2, _ := ts.AddAccount(common.CONSUMER, 3, testBalance*10000)
+		res1, err := ts.QueryProjectDeveloper(sub1Acc.Addr.String())
+		require.NoError(ts.T, err)
+		res2, err := ts.QueryProjectDeveloper(sub2Acc.Addr.String())
+		require.NoError(ts.T, err)
+		err = ts.TxProjectAddKeys(res1.Project.Index, sub1Acc.Addr.String(), types.ProjectDeveloperKey(adminDev1.Addr.String()))
+		require.NoError(ts.T, err)
+		err = ts.TxProjectAddKeys(res2.Project.Index, sub2Acc.Addr.String(), types.ProjectDeveloperKey(adminDev2.Addr.String()))
+		require.NoError(ts.T, err)
+		return adminDev1, adminDev2
+	case 2:
+		sub1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
+		sub2Acc, _ := ts.GetAccount(common.CONSUMER, 1)
+		dev1, _ := ts.AddAccount(common.CONSUMER, 2, testBalance*10000)
+		dev2, _ := ts.AddAccount(common.CONSUMER, 3, testBalance*10000)
+		err := ts.TxSubscriptionAddProject(sub1Acc.Addr.String(), types.ProjectData{
+			Name: "test1", Enabled: true, ProjectKeys: []types.ProjectKey{{Key: dev1.Addr.String(), Kinds: 2}},
+		})
+		require.NoError(ts.T, err)
+		err = ts.TxSubscriptionAddProject(sub2Acc.Addr.String(), types.ProjectData{
+			Name: "test2", Enabled: true, ProjectKeys: []types.ProjectKey{{Key: dev2.Addr.String(), Kinds: 2}},
+		})
+		require.NoError(ts.T, err)
+		return dev1, dev2
+	}
+
+	return sigs.Account{}, sigs.Account{}
+}
+
 // deductParticipationFees calculates the validators and community participation
 // fees and returns the providers reward after deducting them
 func (ts *tester) DeductParticipationFees(reward math.Int) (updatedReward math.Int, valParticipation math.Int, communityParticipation math.Int) {
@@ -182,20 +231,20 @@ func (ts *tester) makeBondedRatioNonZero() {
 	require.True(ts.T, bondedRatio.Equal(sdk.NewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
 }
 
-func (ts *tester) SendIprpcOverIbcTransferPacket(sender sdk.AccAddress, amount sdk.Coin) {
-	// get the sender's and IbcIprpcReceiver before sending the packet
+func (ts *tester) SendIprpcOverIbcTransferPacket(sender sdk.AccAddress, amount sdk.Coin, duration uint64) {
+	// get the sender's and PendingIprpcPool before sending the packet
 	senderBalanceBefore := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, sender, amount.Denom)
-	ibcIprpcReceiverBalanceBefore := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, rewardstypes.IbcIprpcReceiverAddress(), amount.Denom)
+	pendingIprpcPoolBalanceBefore := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.PendingIprpcPoolName)
 
 	// create packet data
-	memo, err := rewardstypes.CreateIprpcMemo(sender.String(), mockSpec, 1)
+	memo, err := rewardstypes.CreateIprpcMemo(sender.String(), mockSpec, duration)
 	require.NoError(ts.T, err)
 	data := transfertypes.NewFungibleTokenPacketData(amount.Denom, amount.Amount.String(), sender.String(), "dummy", memo)
 	marshelledData, err := transfertypes.ModuleCdc.MarshalJSON(&data)
 	require.NoError(ts.T, err)
 
 	// create packet
-	packet := channeltypes.NewPacket(marshelledData, 0, "src", "srcc", "dest", "destc", clienttypes.ZeroHeight(), 1)
+	packet := channeltypes.NewPacket(marshelledData, 0, testkeeper.MockSrcPort, testkeeper.MockSrcChannel, testkeeper.MockDestPort, testkeeper.MockDestChannel, clienttypes.ZeroHeight(), 1)
 
 	// call OnRecvPacket
 	ack := ts.IbcTransfer.OnRecvPacket(ts.Ctx, packet, sample.AccAddressObject())
@@ -203,12 +252,21 @@ func (ts *tester) SendIprpcOverIbcTransferPacket(sender sdk.AccAddress, amount s
 		require.FailNow(ts.T, "ibc transfer failed")
 	}
 
-	// verify the sender's balance went down and the IbcIprpcReceiver balance went up
+	// verify the sender's balance went down and the PendingIprpcPool balance went up
 	senderBalanceAfter := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, sender, amount.Denom)
-	ibcIprpcReceiverBalanceAfter := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, rewardstypes.IbcIprpcReceiverAddress(), amount.Denom)
+	pendingIprpcPoolBalanceAfter := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.PendingIprpcPoolName)
 
-	senderDiff := senderBalanceBefore.Sub(senderBalanceAfter)
-	ibcIprpcReceiverDiff := ibcIprpcReceiverBalanceAfter.Sub(ibcIprpcReceiverBalanceBefore)
-	require.True(ts.T, senderDiff.IsEqual(ibcIprpcReceiverDiff))
-	require.True(ts.T, senderDiff.IsEqual(amount))
+	senderDiff := sdk.NewCoins(senderBalanceBefore.Sub(senderBalanceAfter))
+	require.True(ts.T, senderDiff.IsEqual(sdk.NewCoins(amount)))
+
+	// pending pool gets the funds after going through the IBC channel -> check balance with ibc denom (subtracting leftovers)
+	pendingIprpcPoolDiff := pendingIprpcPoolBalanceAfter.Sub(pendingIprpcPoolBalanceBefore...)
+	leftoversAmount := amount.Amount.ModRaw(int64(duration))
+	ibcTokens := transfertypes.GetTransferCoin(packet.DestinationPort, packet.DestinationChannel, amount.Denom, amount.Amount)
+	expectedIbcSenderDiff := sdk.NewCoins(sdk.NewCoin(ibcTokens.Denom, ibcTokens.Amount.Sub(leftoversAmount)))
+	require.True(ts.T, expectedIbcSenderDiff.IsEqual(pendingIprpcPoolDiff))
+}
+
+func GetIbcCoins(amount sdk.Coin) sdk.Coin {
+	return transfertypes.GetTransferCoin(testkeeper.MockDestPort, testkeeper.MockDestChannel, amount.Denom, amount.Amount)
 }

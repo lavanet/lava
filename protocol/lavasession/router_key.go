@@ -24,3 +24,7 @@ func NewRouterKey(extensions []string) RouterKey {
 	sort.Strings(uniqueExtensionsSlice)
 	return RouterKey(sep + strings.Join(uniqueExtensionsSlice, sep) + sep)
 }
+
+func GetEmptyRouterKey() RouterKey {
+	return NewRouterKey([]string{})
+}

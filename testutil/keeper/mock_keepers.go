@@ -173,6 +173,13 @@ type mockIbcTransferKeeper struct {
 	bankKeeper mockBankKeeper
 }
 
+const (
+	MockSrcPort     = "src"
+	MockSrcChannel  = "srcc"
+	MockDestPort    = "dest"
+	MockDestChannel = "destc"
+)
+
 func NewMockIbcTransferKeeper(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, paramSpace paramstypes.Subspace, authKeeper mockAccountKeeper, bankKeeper mockBankKeeper) mockIbcTransferKeeper {
 	return mockIbcTransferKeeper{
 		storeKey:   storeKey,
@@ -228,18 +235,19 @@ func (k mockIbcTransferKeeper) OnRecvPacket(ctx sdk.Context, packet channeltypes
 		return channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid amount in transfer data: %s", data.Amount))
 	}
 
-	// sub balance from sender, add balance to receiver
+	// sub balance from sender in original denom, add balance to receiver (on other chain) with IBC Denom
 	coins := sdk.NewCoins(sdk.NewCoin(data.Denom, amount))
 	err = k.bankKeeper.SubFromBalance(senderAcc, coins)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
-	err = k.bankKeeper.AddToBalance(receiverAcc, coins)
+	ibcCoins := sdk.NewCoins(ibctransfertypes.GetTransferCoin(packet.DestinationPort, packet.DestinationChannel, data.Denom, amount))
+	err = k.bankKeeper.AddToBalance(receiverAcc, ibcCoins)
 	if err != nil {
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
-	return channeltypes.NewResultAcknowledgement([]byte{})
+	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
 
 func (k mockIbcTransferKeeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte, relayer sdk.AccAddress) error {

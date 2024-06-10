@@ -2,49 +2,49 @@ package types
 
 import (
 	"encoding/json"
-	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
-type IprpcMemo struct {
-	Creator  string `json:"creator"`
-	Spec     string `json:"spec"`
-	Duration uint64 `json:"duration"`
-}
-
 func (im IprpcMemo) IsEqual(other IprpcMemo) bool {
 	return im.Creator == other.Creator && im.Duration == other.Duration && im.Spec == other.Spec
 }
 
-func CreateIprpcMemo(creator string, spec string, duration uint64) (memo string, err error) {
-	durationStr := strconv.FormatUint(duration, 10)
-
-	data := map[string]interface{}{
-		"iprpc": map[string]interface{}{
-			"creator":  creator,
-			"spec":     spec,
-			"duration": durationStr,
-		},
+func CreateIprpcMemo(creator string, spec string, duration uint64) (memoStr string, err error) {
+	memo := IprpcMemo{
+		Creator:  creator,
+		Spec:     spec,
+		Duration: duration,
 	}
 
-	memoBytes, err := json.Marshal(data)
+	// memo wrapper allows marshaling the memo as a nested JSON with a primary key "iprpc"
+	memoWrapper := struct {
+		Iprpc IprpcMemo `json:"iprpc"`
+	}{
+		Iprpc: memo,
+	}
+
+	bz, err := json.Marshal(memoWrapper)
 	if err != nil {
 		return "", err
 	}
 
-	return string(memoBytes), nil
+	return string(bz), nil
 }
 
-// IbcIprpcReceiverAddress returns a Bech32 address for the string "iprpc"
+// IbcIprpcReceiverAddress is a temporary address that holds the funds from an IPRPC over IBC request. The funds are
+// then immediately transferred to the pending IPRPC pool
 // Note, the NewModuleAddress() function is used for convenience. The IbcIprpcReceiver is not a module account
 func IbcIprpcReceiverAddress() sdk.AccAddress {
 	return authtypes.NewModuleAddress(IbcIprpcReceiver)
 }
 
 const (
-	IbcIprpcReceiver          = "iprpc"
+	IbcIprpcReceiver = "iprpc"
+)
+
+const (
 	PendingIbcIprpcFundPrefix = "PendingIbcIprpcFund/"
 )
 
@@ -68,4 +68,10 @@ func (piif PendingIbcIprpcFund) IsExpired(ctx sdk.Context) bool {
 const (
 	NewPendingIbcIprpcFundEventName            = "pending_ibc_iprpc_fund_created"
 	ExpiredPendingIbcIprpcFundRemovedEventName = "expired_pending_ibc_iprpc_fund_removed"
+)
+
+// Pending IPRPC Pool:
+// Pool that holds the funds of pending IPRPC fund requests (which originate from an ibc-transfer TX)
+const (
+	PendingIprpcPoolName Pool = "pending_iprpc_pool"
 )
