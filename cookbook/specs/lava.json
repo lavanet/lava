@@ -1261,7 +1261,7 @@
                                     },
                                     {
                                         "extension": "archive",
-                                        "latest_distance": 600000
+                                        "expected_value": "340778"
                                     }
                                 ]
                             }
@@ -2477,7 +2477,7 @@
                                     },
                                     {
                                         "extension": "archive",
-                                        "latest_distance": 600000
+                                        "expected_value": "340778"
                                     }
                                 ]
                             }
@@ -2521,7 +2521,7 @@
                                     },
                                     {
                                         "extension": "archive",
-                                        "latest_distance": 600000
+                                        "expected_value": "340778"
                                     }
                                 ]
                             }
