@@ -51,11 +51,11 @@ type ConsumerSessionManager struct {
 	reportedProviders *ReportedProviders
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
-	pairingPurge                map[string]*ConsumerSessionsWithProvider
-	providerOptimizer           ProviderOptimizer
-	consumerMetricsManager      *metrics.ConsumerMetricsManager
-	consumerPublicAddress       string
-	longLastingProvidersStorage *LongLastingProvidersStorage
+	pairingPurge                       map[string]*ConsumerSessionsWithProvider
+	providerOptimizer                  ProviderOptimizer
+	consumerMetricsManager             *metrics.ConsumerMetricsManager
+	consumerPublicAddress              string
+	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
 }
 
 // this is being read in multiple locations and but never changes so no need to lock.
@@ -150,7 +150,7 @@ func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []
 // will remain open forever.
 func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
 	for providerAddr, purgedPairing := range csm.pairingPurge {
-		if csm.longLastingProvidersStorage.IsProviderLongLasting(providerAddr) {
+		if csm.activeSubscriptionProvidersStorage.IsProviderCurrentlyUsed(providerAddr) {
 			utils.LavaFormatTrace("skipping purge for long lasting provider",
 				utils.LogAttr("providerAddr", providerAddr),
 			)
@@ -1049,7 +1049,7 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, longLastingProvidersStorage *LongLastingProvidersStorage) *ConsumerSessionManager {
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter),
 		consumerMetricsManager: consumerMetricsManager,
@@ -1057,6 +1057,6 @@ func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer Provi
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
-	csm.longLastingProvidersStorage = longLastingProvidersStorage
+	csm.activeSubscriptionProvidersStorage = activeSubscriptionProvidersStorage
 	return csm
 }

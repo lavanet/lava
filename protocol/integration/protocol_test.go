@@ -183,7 +183,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	baseLatency := common.AverageWorldLatency / 2
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2)
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewLongLastingProvidersStorage())
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
 	consumerSessionManager.UpdateAllProviders(epoch, pairingList)
 
 	consumerConsistency := rpcconsumer.NewConsumerConsistency(specId)

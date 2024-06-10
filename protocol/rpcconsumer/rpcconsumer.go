@@ -194,7 +194,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
 	policyUpdaters := syncMapPolicyUpdaters{}
-	longLastingProvidersStorage := lavasession.NewLongLastingProvidersStorage()
+	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
@@ -287,7 +287,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			}
 
 			// Register For Updates
-			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), longLastingProvidersStorage)
+			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
 			var relaysMonitor *metrics.RelaysMonitor
@@ -311,12 +311,12 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 					return string(params)
 				}
-				consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, "", chainParser, longLastingProvidersStorage, paramsExtractorFunc)
+				consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, "", chainParser, activeSubscriptionProvidersStorage, paramsExtractorFunc)
 			case spectypes.APIInterfaceJsonRPC:
 				paramsExtractorFunc := func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
 					return string(reply.Result)
 				}
-				consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, http.MethodPost, chainParser, longLastingProvidersStorage, paramsExtractorFunc)
+				consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, http.MethodPost, chainParser, activeSubscriptionProvidersStorage, paramsExtractorFunc)
 			}
 
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})

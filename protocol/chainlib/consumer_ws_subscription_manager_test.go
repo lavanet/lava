@@ -148,7 +148,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			}
 
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewLongLastingProvidersStorage(), unsubscribeParamsExtractor)
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), unsubscribeParamsExtractor)
 
 			// Start a new subscription for the first time, called SendParsedRelay once
 			ctx := utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
@@ -308,6 +308,6 @@ func CreateConsumerSessionManager(chainID, apiInterface, consumerPublicAddress s
 		&lavasession.RPCEndpoint{NetworkAddress: "stub", ChainID: chainID, ApiInterface: apiInterface, TLSEnabled: false, HealthCheckPath: "/", Geolocation: 0},
 		provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, 0, baseLatency, 1),
 		nil, nil, consumerPublicAddress,
-		lavasession.NewLongLastingProvidersStorage(),
+		lavasession.NewActiveSubscriptionProvidersStorage(),
 	)
 }

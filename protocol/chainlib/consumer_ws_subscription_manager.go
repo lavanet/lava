@@ -34,16 +34,16 @@ type activeSubscriptionHolder struct {
 }
 
 type ConsumerWSSubscriptionManager struct {
-	connectedDapps              map[string]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply] // first key is dapp key, second key is hashed params
-	activeSubscriptions         map[string]*activeSubscriptionHolder                                      // key is params hash
-	relaySender                 RelaySender
-	consumerSessionManager      *lavasession.ConsumerSessionManager
-	chainParser                 ChainParser
-	refererData                 *RefererData
-	connectionType              string
-	longLastingProvidersStorage *lavasession.LongLastingProvidersStorage
-	unsubscribeParamsExtractor  func(request ChainMessage, reply *rpcclient.JsonrpcMessage) string
-	lock                        sync.RWMutex
+	connectedDapps                     map[string]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply] // first key is dapp key, second key is hashed params
+	activeSubscriptions                map[string]*activeSubscriptionHolder                                      // key is params hash
+	relaySender                        RelaySender
+	consumerSessionManager             *lavasession.ConsumerSessionManager
+	chainParser                        ChainParser
+	refererData                        *RefererData
+	connectionType                     string
+	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage
+	unsubscribeParamsExtractor         func(request ChainMessage, reply *rpcclient.JsonrpcMessage) string
+	lock                               sync.RWMutex
 }
 
 func NewConsumerWSSubscriptionManager(
@@ -52,19 +52,19 @@ func NewConsumerWSSubscriptionManager(
 	refererData *RefererData,
 	connectionType string,
 	chainParser ChainParser,
-	longLastingProvidersStorage *lavasession.LongLastingProvidersStorage,
+	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage,
 	unsubscribeParamsExtractor func(request ChainMessage, reply *rpcclient.JsonrpcMessage) string,
 ) *ConsumerWSSubscriptionManager {
 	return &ConsumerWSSubscriptionManager{
-		connectedDapps:              make(map[string]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
-		activeSubscriptions:         make(map[string]*activeSubscriptionHolder),
-		consumerSessionManager:      consumerSessionManager,
-		chainParser:                 chainParser,
-		refererData:                 refererData,
-		relaySender:                 relaySender,
-		connectionType:              connectionType,
-		longLastingProvidersStorage: longLastingProvidersStorage,
-		unsubscribeParamsExtractor:  unsubscribeParamsExtractor,
+		connectedDapps:                     make(map[string]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
+		activeSubscriptions:                make(map[string]*activeSubscriptionHolder),
+		consumerSessionManager:             consumerSessionManager,
+		chainParser:                        chainParser,
+		refererData:                        refererData,
+		relaySender:                        relaySender,
+		connectionType:                     connectionType,
+		activeSubscriptionProvidersStorage: activeSubscriptionProvidersStorage,
+		unsubscribeParamsExtractor:         unsubscribeParamsExtractor,
 	}
 }
 
@@ -267,7 +267,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	}
 
 	providerAddr := relayResult.ProviderInfo.ProviderAddress
-	cwsm.longLastingProvidersStorage.AddProvider(providerAddr)
+	cwsm.activeSubscriptionProvidersStorage.AddProvider(providerAddr)
 	cwsm.connectDappWithSubscription(dappKey, websocketRepliesSafeChannelSender, hashedParams)
 
 	// Need to be run once for subscription
@@ -359,7 +359,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 
 		delete(cwsm.activeSubscriptions, hashedParams)
 
-		cwsm.longLastingProvidersStorage.RemoveProvider(providerAddr)
+		cwsm.activeSubscriptionProvidersStorage.RemoveProvider(providerAddr)
 		cwsm.relaySender.CancelSubscriptionContext(hashedParams)
 	}()
 
