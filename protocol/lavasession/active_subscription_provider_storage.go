@@ -1,16 +1,23 @@
 package lavasession
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/lavanet/lava/utils"
+)
 
 // stores all providers that are currently used to stream subscriptions.
+
 type ActiveSubscriptionProvidersStorage struct {
-	lock      sync.RWMutex
-	providers map[string]struct{}
+	lock          sync.RWMutex
+	providers     map[string]struct{}
+	purgeWhenDone map[string]func()
 }
 
 func NewActiveSubscriptionProvidersStorage() *ActiveSubscriptionProvidersStorage {
 	return &ActiveSubscriptionProvidersStorage{
-		providers: map[string]struct{}{},
+		providers:     map[string]struct{}{},
+		purgeWhenDone: map[string]func(){},
 	}
 }
 
@@ -26,6 +33,12 @@ func (asps *ActiveSubscriptionProvidersStorage) RemoveProvider(providerAddress s
 	defer asps.lock.Unlock()
 
 	delete(asps.providers, providerAddress)
+	purgeCallBack, ok := asps.purgeWhenDone[providerAddress]
+	if ok {
+		utils.LavaFormatTrace("RemoveProvider, Purging provider on callback", utils.LogAttr("address", providerAddress))
+		purgeCallBack()
+		delete(asps.purgeWhenDone, providerAddress)
+	}
 }
 
 func (asps *ActiveSubscriptionProvidersStorage) IsProviderCurrentlyUsed(providerAddress string) bool {
@@ -34,4 +47,10 @@ func (asps *ActiveSubscriptionProvidersStorage) IsProviderCurrentlyUsed(provider
 
 	_, ok := asps.providers[providerAddress]
 	return ok
+}
+
+func (asps *ActiveSubscriptionProvidersStorage) addToPurgeWhenDone(providerAddress string, purgeCallback func()) {
+	asps.lock.Lock()
+	defer asps.lock.Unlock()
+	asps.purgeWhenDone[providerAddress] = purgeCallback
 }

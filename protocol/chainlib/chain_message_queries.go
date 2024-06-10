@@ -3,7 +3,6 @@ package chainlib
 import (
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/x/spec/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
 func ShouldSendToAllProviders(chainMessage ChainMessage) bool {
@@ -26,7 +25,7 @@ func GetStateful(chainMessage ChainMessageForSend) uint32 {
 	return chainMessage.GetApi().Category.Stateful
 }
 
-func GetParseDirective(api *spectypes.Api, apiCollection *spectypes.ApiCollection) *types.ParseDirective {
+func GetParseDirective(api *types.Api, apiCollection *types.ApiCollection) *types.ParseDirective {
 	chainMessageApiName := api.Name
 	for _, parseDirective := range apiCollection.GetParseDirectives() {
 		if parseDirective.ApiName == chainMessageApiName {

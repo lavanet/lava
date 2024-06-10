@@ -201,7 +201,6 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 	blockSeen := response.relayResult.Reply.LatestBlock
 	// nil safe
 	rp.consumerConsistency.SetSeenBlock(blockSeen, rp.dappID, rp.consumerIp)
-	utils.LavaFormatTrace("@@@@ setting seen block", utils.LogAttr("block", blockSeen))
 	// on subscribe results, we just append to successful results instead of parsing results because we already have a validation.
 	if chainlib.IsFunctionTagOfType(rp.chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 		rp.successResults = append(rp.successResults, response.relayResult)

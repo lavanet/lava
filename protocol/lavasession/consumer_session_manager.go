@@ -150,26 +150,26 @@ func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []
 // will remain open forever.
 func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
 	for providerAddr, purgedPairing := range csm.pairingPurge {
-		if csm.activeSubscriptionProvidersStorage.IsProviderCurrentlyUsed(providerAddr) {
-			utils.LavaFormatTrace("skipping purge for long lasting provider",
-				utils.LogAttr("providerAddr", providerAddr),
-			)
-			continue
-		} else {
-			utils.LavaFormatTrace("provider is not long lasting",
-				utils.LogAttr("providerAddr", providerAddr),
-			)
-		}
-
-		for _, endpoint := range purgedPairing.Endpoints {
-			if endpoint.connection != nil {
-				utils.LavaFormatTrace("purging connection",
-					utils.LogAttr("providerAddr", providerAddr),
-					utils.LogAttr("endpoint", endpoint.NetworkAddress),
-				)
-				endpoint.connection.Close()
+		callbackPurge := func() {
+			for _, endpoint := range purgedPairing.Endpoints {
+				if endpoint.connection != nil {
+					utils.LavaFormatTrace("purging connection",
+						utils.LogAttr("providerAddr", providerAddr),
+						utils.LogAttr("endpoint", endpoint.NetworkAddress),
+					)
+					endpoint.connection.Close()
+				}
 			}
 		}
+		// on cases where there is still an active subscription over the epoch handover, we purge the connection when subscription ends.
+		if csm.activeSubscriptionProvidersStorage.IsProviderCurrentlyUsed(providerAddr) {
+			utils.LavaFormatTrace("skipping purge for provider, as its currently used in a subscription",
+				utils.LogAttr("providerAddr", providerAddr),
+			)
+			csm.activeSubscriptionProvidersStorage.addToPurgeWhenDone(providerAddr, callbackPurge)
+			continue
+		}
+		callbackPurge()
 	}
 }
 
