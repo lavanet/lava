@@ -244,3 +244,11 @@ var Upgrade_2_0_0 = Upgrade{
 		Added: []string{packetforwardtypes.StoreKey},
 	},
 }
+
+var Upgrade_2_2_0 = Upgrade{
+	UpgradeName:          "v2.2.0",
+	CreateUpgradeHandler: defaultUpgradeHandler,
+	StoreUpgrades: store.StoreUpgrades{
+		Added: []string{packetforwardtypes.StoreKey},
+	},
+}
