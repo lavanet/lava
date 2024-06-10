@@ -316,12 +316,12 @@ func (cf *ChainFetcher) constructRelayData(conectionType string, path string, da
 
 func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
 	parsing, apiCollection, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
-	collectionData := apiCollection.CollectionData
-
 	tagName := spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM.String()
 	if !ok {
 		return "", utils.LavaFormatError(tagName+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
+	collectionData := apiCollection.CollectionData
+
 	if parsing.FunctionTemplate == "" {
 		return "", utils.LavaFormatError(tagName+" missing function template", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}

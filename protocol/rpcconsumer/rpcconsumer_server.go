@@ -687,7 +687,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(chainId, apiInterface)
 			defer func() { go rpccs.rpcConsumerLogs.SetRelayReturnedFromProviderMetric(chainId, apiInterface) }()
 
-			if chainlib.IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
+			if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 				utils.LavaFormatTrace("inside sendRelayToProvider, relay is subscription", utils.LogAttr("requestData", localRelayRequestData.Data))
 
 				// TODO: Elad - Test that on fail, try another provider

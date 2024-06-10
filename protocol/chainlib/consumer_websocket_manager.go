@@ -156,35 +156,33 @@ func (cwm *ConsumerWebsocketManager) ListenForMessages() {
 			continue
 		}
 
-		if !IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
-			if IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
+		if !IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
+			if IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
 				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from subscription", err, utils.LogAttr("GUID", webSocketCtx))
 				}
 				continue
-			}
-
-			if IsOfFunctionType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
+			} else if IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
 				err := cwm.consumerWsSubscriptionManager.UnsubscribeAll(webSocketCtx, dappID, userIp, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from all subscription", err, utils.LogAttr("GUID", webSocketCtx))
 				}
 				continue
-			}
-
-			// One shot relay
-			relayResult, err := cwm.relaySender.SendParsedRelay(webSocketCtx, dappID, userIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
-			if err != nil {
-				formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not send parsed relay", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
-				if formatterMsg != nil {
-					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
+			} else {
+				// Normal relay over websocket. (not subscription related)
+				relayResult, err := cwm.relaySender.SendParsedRelay(webSocketCtx, dappID, userIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
+				if err != nil {
+					formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not send parsed relay", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+					if formatterMsg != nil {
+						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
+					}
 				}
-			}
 
-			// No need to verify signature since this is already happening inside the SendParsedRelay flow
-			websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: relayResult.GetReply().Data}
-			continue
+				// No need to verify signature since this is already happening inside the SendParsedRelay flow
+				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: relayResult.GetReply().Data}
+				continue
+			}
 		}
 
 		// Subscription flow

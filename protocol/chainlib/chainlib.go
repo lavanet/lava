@@ -95,6 +95,7 @@ type ChainMessageForSend interface {
 	GetApi() *spectypes.Api
 	GetRPCMessage() rpcInterfaceMessages.GenericMessage
 	GetApiCollection() *spectypes.ApiCollection
+	GetParseDirective() *spectypes.ParseDirective
 }
 
 type HealthReporter interface {

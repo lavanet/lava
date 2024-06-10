@@ -249,6 +249,7 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 		msg:                      &batchMessage,
 		earliestRequestedBlock:   earliestRequestedBlock,
 		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
+		parseDirective:           GetParseDirective(serviceApi, apiCollection),
 	}
 	return nodeMsg, err
 }
@@ -260,6 +261,7 @@ func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, request
 		latestRequestedBlock:     requestedBlock,
 		msg:                      msg,
 		resultErrorParsingMethod: msg.CheckResponseError,
+		parseDirective:           GetParseDirective(serviceApi, apiCollection),
 	}
 	return nodeMsg
 }

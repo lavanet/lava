@@ -49,7 +49,7 @@ wait_next_block
 
 screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
 $PROVIDER1_LISTENER LAV1 rest '$LAVA_REST' \
-$PROVIDER1_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC' \
+$PROVIDER1_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC_WS' \
 $PROVIDER1_LISTENER LAV1 grpc '$LAVA_GRPC' \
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer1 --chain-id lava --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
 
