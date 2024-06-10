@@ -19,6 +19,12 @@ message Specfund {
     ];
 }
 
+message IprpcMemo {
+    string creator = 1;
+    string spec = 2;
+    uint64 duration = 3; // Iprpc fund period in months
+}
+
 message PendingIbcIprpcFund {
     uint64 index = 1;     // unique index
     string creator = 2;

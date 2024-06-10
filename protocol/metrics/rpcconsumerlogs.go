@@ -118,7 +118,7 @@ func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.
 	if err != nil {
 		errMessage := err.Error()
 		if strings.Contains(errMessage, webSocketCloseMessage) {
-			utils.LavaFormatInfo("Websocket connection closed by the user, " + errMessage)
+			utils.LavaFormatDebug("Websocket connection closed by the user, " + errMessage)
 			return
 		}
 		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, timeTaken, err)

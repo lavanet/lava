@@ -404,7 +404,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 
 func newGrpcChainProxy(ctx context.Context, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface, rpcProviderEndpoint lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
-		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
+		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID, HashedNodeUrl: chainproxy.HashURL(rpcProviderEndpoint.NodeUrls[0].Url)},
 		descriptorsCache: &grpcDescriptorCache{},
 	}
 	cp.conn = conn
@@ -439,6 +439,9 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		return nil, "", nil, utils.LavaFormatError("grpc get connection failed ", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	defer cp.conn.ReturnRpc(conn)
+
+	// appending hashed url
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.BaseChainProxy.HashedNodeUrl))
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.GrpcMessage)
@@ -546,8 +549,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, handlingError
 		}
 		// set status code for user header
-		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(int(statusCode)))
-		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+		grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(int(statusCode)))) // we ignore this error here since this code can be triggered not from grpc
 		reply := &RelayReplyWrapper{
 			StatusCode: int(statusCode),
 			RelayReply: &pairingtypes.RelayReply{
@@ -565,8 +567,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	}
 	// set response status code
 	validResponseStatus := http.StatusOK
-	trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(validResponseStatus))
-	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+	grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(validResponseStatus))) // we ignore this error here since this code can be triggered not from grpc
 	// create reply wrapper
 	reply := &RelayReplyWrapper{
 		StatusCode: validResponseStatus, // status code is used only for rest at the moment

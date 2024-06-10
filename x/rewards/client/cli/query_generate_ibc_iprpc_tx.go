@@ -83,16 +83,11 @@ func CmdQueryGenerateIbcIprpcTx() *cobra.Command {
 			if len(args) != 5 {
 				return fmt.Errorf("not enough arguments for generating TX")
 			}
-			node, err := cmd.Flags().GetString(flags.FlagNode)
-			if err != nil {
-				return err
-			}
+
 			clientQueryCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
-			clientQueryCtx = clientQueryCtx.WithNodeURI(node)
-			clientCtx = clientCtx.WithNodeURI(node)
 
 			amount, err := sdk.ParseCoinNormalized(args[2])
 			if err != nil {
