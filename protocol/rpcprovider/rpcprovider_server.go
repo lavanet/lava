@@ -397,7 +397,7 @@ func (rpcps *RPCProviderServer) SendProof(ctx context.Context, epoch uint64, req
 	return nil
 }
 
-func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBlockHeight uint64, request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer, chainMessage chainlib.ChainMessage, consumerAddress sdk.AccAddress, relaySession *lavasession.SingleProviderSession, relayNumber uint64) (subscribed bool, errRet error) {
+func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBlockHeight uint64, request *pairingtypes.RelayRequest, srv pairingtypes.Relayer_RelaySubscribeServer, chainMessage chainlib.ChainMessage, consumerAddress sdk.AccAddress, relaySession *lavasession.SingleProviderSession, relayNumber uint64) (subscribedSuccessfully bool, errRet error) {
 	subscribeRepliesChan := make(chan *pairingtypes.RelayReply)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -423,7 +423,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 
 				err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, true)
 				if err != nil {
-					utils.LavaFormatError("Error RemoveConsumer", err, utils.LogAttr("GUID", ctx))
+					errRet = utils.LavaFormatError("Error RemoveConsumer", err, utils.LogAttr("GUID", ctx))
 				}
 				return
 			case subscribeReply, ok := <-subscribeRepliesChan:
@@ -454,7 +454,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 
 					return
 				} else {
-					subscribed = true
+					subscribedSuccessfully = true
 				}
 
 				utils.LavaFormatTrace("Sending data to consumer",
@@ -491,7 +491,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	wg.Wait() // Block until subscription is done
 
 	rpcps.rewardServer.SubscribeEnded(consumerAddress.String(), requestBlockHeight, subscriptionId)
-	return subscribed, errRet
+	return subscribedSuccessfully, errRet
 }
 
 // verifies basic relay fields, and gets a provider session

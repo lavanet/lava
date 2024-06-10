@@ -74,7 +74,6 @@ type ProviderNodeSubscriptionManager struct {
 }
 
 func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser ChainParser, relayFinalizationBlocksHandler relayFinalizationBlocksHandler, privKey *btcec.PrivateKey) *ProviderNodeSubscriptionManager {
-	utils.LavaFormatTrace("NewProviderNodeSubscriptionManager")
 	return &ProviderNodeSubscriptionManager{
 		chainRouter:                    chainRouter,
 		chainParser:                    chainParser,
@@ -86,7 +85,7 @@ func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser Cha
 
 // TODO: Elad: Handle same consumer asking for same subscription twice
 func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessage, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply) (subscriptionId string, err error) {
-	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() called", utils.LogAttr("consumerAddr", consumerAddr))
+	utils.LavaFormatTrace("[AddConsumer] called", utils.LogAttr("consumerAddr", consumerAddr))
 
 	if pnsm == nil {
 		return "", fmt.Errorf("ProviderNodeSubscriptionManager is nil")
@@ -97,7 +96,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		return "", err
 	}
 
-	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() hashed params",
+	utils.LavaFormatTrace("[AddConsumer] hashed params",
 		utils.LogAttr("params", string(params)),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 	)
@@ -109,22 +108,22 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 
 	var firstSetupReply *pairingtypes.RelayReply
 
-	paramsChannelToConnectedConsumers, found := pnsm.activeSubscriptions[hashedParams]
-	if found {
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() found existing subscription",
+	paramsChannelToConnectedConsumers, foundSubscriptionHash := pnsm.activeSubscriptions[hashedParams]
+	if foundSubscriptionHash {
+		utils.LavaFormatTrace("[AddConsumer] found existing subscription",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", string(params)),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 
-		if _, found := paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString]; found { // Consumer is already connected to this subscription, dismiss
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() consumer is already connected, returning the existing subscription", utils.LogAttr("consumerAddr", consumerAddr))
+		if _, foundConsumer := paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString]; foundConsumer { // Consumer is already connected to this subscription, dismiss
+			utils.LavaFormatTrace("[AddConsumer] consumer is already connected, returning the existing subscription", utils.LogAttr("consumerAddr", consumerAddr))
 			return paramsChannelToConnectedConsumers.subscriptionID, nil
 		}
 
 		// Add the new entry for the consumer
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() consumer does not exist in the subscription, adding",
+		utils.LavaFormatTrace("[AddConsumer] consumer does not exist in the subscription, adding",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", string(params)),
@@ -142,16 +141,22 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		}
 
 		firstSetupReply = paramsChannelToConnectedConsumers.firstSetupReply
+		// making sure to sign the reply before returning it to the consumer. this will replace the sig field with the correct value
+		// (and not the signature for another consumer)
+		signingError := pnsm.signReply(ctx, firstSetupReply, consumerAddr, chainMessage, request)
+		if signingError != nil {
+			return "", utils.LavaFormatError("AddConsumer failed signing reply", signingError)
+		}
+
 		subscriptionId = paramsChannelToConnectedConsumers.subscriptionID
 	} else {
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() did not found existing subscription, creating new one")
+		utils.LavaFormatTrace("[AddConsumer] did not found existing subscription, creating new one")
 
 		nodeChan := make(chan interface{})
 		var replyWrapper *RelayReplyWrapper
 		var clientSubscription *rpcclient.ClientSubscription
-		// TODO: Elad - change to enum
 		replyWrapper, subscriptionId, clientSubscription, _, _, err = pnsm.chainRouter.SendNodeMsg(ctx, nodeChan, chainMessage, append(request.RelayData.Extensions, WebSocketExtension))
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() subscription reply received",
+		utils.LavaFormatTrace("[AddConsumer] subscription reply received",
 			utils.LogAttr("replyWrapper", replyWrapper),
 			utils.LogAttr("subscriptionId", subscriptionId),
 			utils.LogAttr("clientSubscription", clientSubscription),
@@ -188,7 +193,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			return "", utils.LavaFormatWarning("ProviderNodeSubscriptionManager: Subscription failed, node error", nil, utils.LogAttr("GUID", ctx), utils.LogAttr("reply", reply))
 		}
 
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:AddConsumer() subscription successful",
+		utils.LavaFormatTrace("[AddConsumer] subscription successful",
 			utils.LogAttr("subscriptionId", subscriptionId),
 			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("firstSetupReplyData", reply.Data),
@@ -218,6 +223,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		go pnsm.listenForSubscriptionMessages(cancellableCtx, nodeChan, clientSubscription.Err(), hashedParams)
 	}
 
+	// send the first reply to the consumer, reply needs to be signed.
 	pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString].consumerChannel.Send(firstSetupReply)
 
 	return subscriptionId, nil
@@ -439,7 +445,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 		return err
 	}
 
-	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() requested to remove consumer from subscription",
+	utils.LavaFormatTrace("[RemoveConsumer] requested to remove consumer from subscription",
 		utils.LogAttr("GUID", ctx),
 		utils.LogAttr("consumerAddr", consumerAddr),
 		utils.LogAttr("params", params),
@@ -453,7 +459,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 
 	openSubscriptions, ok := pnsm.activeSubscriptions[hashedParams]
 	if !ok {
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no subscription found for params, subscription is already closed",
+		utils.LavaFormatTrace("[RemoveConsumer] no subscription found for params, subscription is already closed",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", params),
@@ -464,7 +470,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 
 	// Remove consumer from connected consumers
 	if _, ok := openSubscriptions.connectedConsumers[consumerAddrString]; ok {
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() found consumer connected consumers",
+		utils.LavaFormatTrace("[RemoveConsumer] found consumer connected consumers",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", params),
@@ -473,7 +479,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 		)
 
 		if closeConsumerChannel {
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() closing consumer channel",
+			utils.LavaFormatTrace("[RemoveConsumer] closing consumer channel",
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("consumerAddr", consumerAddr),
 				utils.LogAttr("params", params),
@@ -484,7 +490,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 
 		delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers, consumerAddrString)
 		if len(pnsm.activeSubscriptions[hashedParams].connectedConsumers) == 0 {
-			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() no more connected consumers",
+			utils.LavaFormatTrace("[RemoveConsumer] no more connected consumers",
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("consumerAddr", consumerAddr),
 				utils.LogAttr("params", params),
@@ -495,7 +501,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 			pnsm.closeNodeSubscription(hashedParams)
 		}
 	} else {
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() consumer not found in connected consumers",
+		utils.LavaFormatTrace("[RemoveConsumer] consumer not found in connected consumers",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", params),
@@ -504,7 +510,7 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 		)
 	}
 
-	utils.LavaFormatTrace("ProviderNodeSubscriptionManager:RemoveConsumer() removed consumer", utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("params", params))
+	utils.LavaFormatTrace("[RemoveConsumer] removed consumer", utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("params", params))
 	return nil
 }
 
