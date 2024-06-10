@@ -385,9 +385,6 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				utils.LavaFormatTrace("error reading from subscription stream", utils.LogAttr("original error", err.Error()))
 				return
 			}
-
-			// TODO: Elad - Test this with 2 consumers and 1 provider
-
 			err = cwsm.handleSubscriptionNodeMessage(hashedParams, &reply, providerAddr)
 			if err != nil {
 				utils.LavaFormatError("failed handling subscription message", err,
