@@ -2,14 +2,33 @@ package chainlib
 
 import (
 	"context"
+	"log"
+	"net"
+	"os"
 	"testing"
+	"time"
 
+	gojson "github.com/goccy/go-json"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
+	"github.com/gofiber/fiber/v2/middleware/favicon"
+	"github.com/gofiber/websocket/v2"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	testcommon "github.com/lavanet/lava/testutil/common"
+	"github.com/lavanet/lava/utils"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
+
+var (
+	listenerAddressTcp  = "localhost:0"
+	listenerAddressHttp = ""
+	listenerAddressWs   = ""
+)
+
+type TimeServer int64
 
 func TestChainRouterWithDisabledWebSocketInSpec(t *testing.T) {
 	ctx := context.Background()
@@ -355,10 +374,11 @@ func TestChainRouterWithDisabledWebSocketInSpec(t *testing.T) {
 		t.Run(play.name, func(t *testing.T) {
 			nodeUrls := []common.NodeUrl{}
 			for _, service := range play.services {
-				nodeUrl := common.NodeUrl{Url: "http://127.0.0.1:0"}
+				nodeUrl := common.NodeUrl{Url: listenerAddressHttp}
 				nodeUrl.Addons = service.services
 				nodeUrls = append(nodeUrls, nodeUrl)
 			}
+
 			endpoint.NodeUrls = nodeUrls
 			_, err := GetChainRouter(ctx, 1, endpoint, chainParser)
 			if play.success {
@@ -498,175 +518,72 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 		success  bool
 	}{
 		{
-			name: "empty services, except websocket",
+			name: "empty services",
 			services: []servicesStruct{{
-				services: []string{WebSocketExtension},
-			}},
-			success: false,
-		},
-		{
-			name: "only websocket",
-			services: []servicesStruct{{
-				services: []string{WebSocketExtension},
-			}},
-			success: true,
-		},
-		{
-			name: "one-addon, without websocket addon",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0]},
-			}},
-			success: false,
-		},
-		{
-			name: "one-addon, with websocket addon",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0]},
-			}, {
-				services: []string{WebSocketExtension},
-			}},
-			success: true,
-		},
-		{
-			name: "one-extension, without websocket",
-			services: []servicesStruct{{
-				services: []string{extensionsOptions[0]},
-			}},
-			success: false,
-		},
-		{
-			name: "one-extension, with websocket",
-			services: []servicesStruct{{
-				services: []string{extensionsOptions[0]},
-			}, {
-				services: []string{WebSocketExtension},
-			}},
-			success: false,
-		},
-		{
-			name: "one-extension, with empty services, without websocket",
-			services: []servicesStruct{{
-				services: []string{extensionsOptions[0]},
-			}, {
 				services: []string{},
 			}},
-			success: false,
+			success: true,
 		},
 		{
-			name: "one-extension, with empty services, with websocket",
+			name: "one-addon",
+			services: []servicesStruct{{
+				services: []string{addonsOptions[0]},
+			}},
+			success: true,
+		},
+		{
+			name: "one-extension",
 			services: []servicesStruct{{
 				services: []string{extensionsOptions[0]},
-			}, {
-				services: []string{WebSocketExtension},
-			}},
-			success: true,
-		},
-		{
-			name: "two-addons together, without websocket",
-			services: []servicesStruct{{
-				services: addonsOptions,
 			}},
 			success: false,
 		},
 		{
-			name: "two-addons together, with websocket",
-			services: []servicesStruct{{
-				services: append(addonsOptions, WebSocketExtension),
-			}},
+			name: "one-extension with empty services",
+			services: []servicesStruct{
+				{
+					services: []string{extensionsOptions[0]},
+				},
+				{
+					services: []string{},
+				},
+			},
 			success: true,
 		},
 		{
-			name: "two-addons together, with separated websocket",
+			name: "two-addons together",
 			services: []servicesStruct{{
 				services: addonsOptions,
-			}, {
-				services: []string{WebSocketExtension},
 			}},
 			success: true,
 		},
 		{
-			name: "two-addons, separated, without websocket",
+			name: "two-addons, separated",
 			services: []servicesStruct{{
 				services: []string{addonsOptions[0]},
 			}, {
 				services: []string{addonsOptions[1]},
 			}},
-			success: false,
-		},
-		{
-			name: "two-addons, separated, with websocket",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0]},
-			}, {
-				services: []string{addonsOptions[1]},
-			}, {
-				services: []string{WebSocketExtension},
-			}},
 			success: true,
 		},
 		{
-			name: "addon + extension only, without websocket",
+			name: "addon + extension only",
 			services: []servicesStruct{{
 				services: []string{addonsOptions[0], extensionsOptions[0]},
 			}},
 			success: false,
 		},
 		{
-			name: "addon + extension only, with websocket",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], WebSocketExtension},
-			}},
-			success: false,
-		},
-		{
-			name: "addon + extension only, with websocket separated",
+			name: "addon + extension, addon",
 			services: []servicesStruct{{
 				services: []string{addonsOptions[0], extensionsOptions[0]},
-			}, {
-				services: []string{WebSocketExtension},
-			}},
-			success: false,
-		},
-		{
-			name: "addon + extension, addon, without websocket",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0]},
-			}},
-			success: false,
-		},
-		{
-			name: "addon + extension, addon, with websocket in first",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], WebSocketExtension},
 			}, {
 				services: []string{addonsOptions[0]},
 			}},
 			success: true,
 		},
 		{
-			name: "addon + extension, addon, with websocket in second",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0], WebSocketExtension},
-			}},
-			success: true,
-		},
-		{
-			name: "addon + extension, addon, with websocket separated",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0]},
-			}, {
-				services: []string{WebSocketExtension},
-			}},
-			success: true,
-		},
-		{
-			name: "two addons + extension, addon, without websocket",
+			name: "two addons + extension, addon",
 			services: []servicesStruct{{
 				services: []string{addonsOptions[0], addonsOptions[1], extensionsOptions[0]},
 			}, {
@@ -675,36 +592,7 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 			success: false,
 		},
 		{
-			name: "two addons + extension, addon, with websocket in first",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], addonsOptions[1], extensionsOptions[0], WebSocketExtension},
-			}, {
-				services: []string{addonsOptions[0]},
-			}},
-			success: false,
-		},
-		{
-			name: "two addons + extension, addon, with websocket in second",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], addonsOptions[1], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0], WebSocketExtension},
-			}},
-			success: false,
-		},
-		{
-			name: "two addons + extension, addon, with websocket separated",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], addonsOptions[1], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0]},
-			}, {
-				services: []string{WebSocketExtension},
-			}},
-			success: false,
-		},
-		{
-			name: "addons + extension, two addons, without websocket",
+			name: "addons + extension, two addons",
 			services: []servicesStruct{{
 				services: []string{addonsOptions[0], extensionsOptions[0]},
 			}, {
@@ -713,36 +601,7 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 			success: true,
 		},
 		{
-			name: "addons + extension, two addons, with websocket in first",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], WebSocketExtension},
-			}, {
-				services: []string{addonsOptions[0], addonsOptions[1]},
-			}},
-			success: true,
-		},
-		{
-			name: "addons + extension, two addons, with websocket in second",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0], addonsOptions[1], WebSocketExtension},
-			}},
-			success: true,
-		},
-		{
-			name: "addons + extension, two addons, with websocket separated",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0], addonsOptions[1]},
-			}, {
-				services: []string{WebSocketExtension},
-			}},
-			success: true,
-		},
-		{
-			name: "addons + two extensions, addon extension, without websocket",
+			name: "addons + two extensions, addon extension",
 			services: []servicesStruct{{
 				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
 			}, {
@@ -751,105 +610,60 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 			success: false,
 		},
 		{
-			name: "addons + two extensions, addon extension, with websocket in first",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1], WebSocketExtension},
-			}, {
-				services: []string{addonsOptions[0], extensionsOptions[1]},
-			}},
-			success: false,
-		},
-		{
-			name: "addons + two extensions, addon extension, with websocket in second",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
-			}, {
-				services: []string{addonsOptions[0], extensionsOptions[1], WebSocketExtension},
-			}},
-			success: false,
-		},
-		{
-			name: "addons + two extensions, addon extension, with websocket separated",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
-			}, {
-				services: []string{addonsOptions[0], extensionsOptions[1]},
-			}, {
-				services: []string{WebSocketExtension},
-			}},
-			success: false,
-		},
-		{
-			name: "addons + two extensions, addon, without websocket",
+			name: "addons + two extensions, addon",
 			services: []servicesStruct{{
 				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
 			}, {
 				services: []string{addonsOptions[0]},
-			}},
-			success: false,
-		},
-		{
-			name: "addons + two extensions, addon, with websocket in first",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1], WebSocketExtension},
-			}, {
-				services: []string{addonsOptions[0]},
-			}},
-			success: false,
-		},
-		{
-			name: "addons + two extensions, addon, with websocket in second",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
-			}, {
-				services: []string{addonsOptions[0], WebSocketExtension},
-			}},
-			success: false,
-		},
-		{
-			name: "addons + two extensions, addon, with websocket separated",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
-			}, {
-				services: []string{addonsOptions[0], WebSocketExtension},
-			}, {
-				services: []string{WebSocketExtension},
 			}},
 			success: false,
 		},
 		{
 			name: "addons + two extensions, other addon",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
-			}, {
-				services: []string{addonsOptions[1], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0], extensionsOptions[1]},
-			}},
+			services: []servicesStruct{
+				{
+					services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
+				},
+				{
+					services: []string{addonsOptions[1], extensionsOptions[0]},
+				},
+				{
+					services: []string{addonsOptions[0], extensionsOptions[1]},
+				},
+			},
 			success: false,
 		},
 		{
 			name: "addons + two extensions, addon ext1, addon ext2",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
-			}, {
-				services: []string{addonsOptions[0], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0], extensionsOptions[1]},
-			}},
+			services: []servicesStruct{
+				{
+					services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
+				},
+				{
+					services: []string{addonsOptions[0], extensionsOptions[0]},
+				},
+				{
+					services: []string{addonsOptions[0], extensionsOptions[1]},
+				},
+			},
 			success: false,
 		},
 		{
 			name: "addons + two extensions, works",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
-			}, {
-				services: []string{addonsOptions[0], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0], extensionsOptions[1]},
-			}, {
-				services: []string{addonsOptions[0]},
-			}},
+			services: []servicesStruct{
+				{
+					services: []string{addonsOptions[0], extensionsOptions[0], extensionsOptions[1]},
+				},
+				{
+					services: []string{addonsOptions[0], extensionsOptions[0]},
+				},
+				{
+					services: []string{addonsOptions[0], extensionsOptions[1]},
+				},
+				{
+					services: []string{addonsOptions[0]},
+				},
+			},
 			success: true,
 		},
 		{
@@ -872,35 +686,47 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 		},
 		{
 			name: "addon1 + ext, addon 2 + ext, addon 1",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[1], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0]},
-			}},
+			services: []servicesStruct{
+				{
+					services: []string{addonsOptions[0], extensionsOptions[0]},
+				},
+				{
+					services: []string{addonsOptions[1], extensionsOptions[0]},
+				},
+				{
+					services: []string{addonsOptions[0]},
+				},
+			},
 			success: false,
 		},
 		{
 			name: "addon1 + ext, addon 2 + ext, addon 1,addon2",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[1], extensionsOptions[0]},
-			}, {
-				services: []string{addonsOptions[0]},
-			}, {
-				services: []string{addonsOptions[1]},
-			}},
+			services: []servicesStruct{
+				{
+					services: []string{addonsOptions[0], extensionsOptions[0]},
+				},
+				{
+					services: []string{addonsOptions[1], extensionsOptions[0]},
+				},
+				{
+					services: []string{addonsOptions[0]},
+				},
+				{
+					services: []string{addonsOptions[1]},
+				},
+			},
 			success: true,
 		},
 		{
 			name: "addon, ext",
-			services: []servicesStruct{{
-				services: []string{addonsOptions[0]},
-			}, {
-				services: []string{extensionsOptions[0]},
-			}},
+			services: []servicesStruct{
+				{
+					services: []string{addonsOptions[0]},
+				},
+				{
+					services: []string{extensionsOptions[0]},
+				},
+			},
 			success: true,
 		},
 	}
@@ -908,8 +734,10 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 		t.Run(play.name, func(t *testing.T) {
 			nodeUrls := []common.NodeUrl{}
 			for _, service := range play.services {
-				nodeUrl := common.NodeUrl{Url: "http://127.0.0.1:0"}
+				nodeUrl := common.NodeUrl{Url: listenerAddressHttp}
 				nodeUrl.Addons = service.services
+				nodeUrls = append(nodeUrls, nodeUrl)
+				nodeUrl.Url = listenerAddressWs
 				nodeUrls = append(nodeUrls, nodeUrl)
 			}
 			endpoint.NodeUrls = nodeUrls
@@ -921,6 +749,87 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 			}
 		})
 	}
+}
+
+func createRPCServer() net.Listener {
+	listener, err := net.Listen("tcp", listenerAddressTcp)
+	if err != nil {
+		log.Fatal("Listener error: ", err)
+	}
+
+	app := fiber.New(fiber.Config{
+		JSONEncoder: gojson.Marshal,
+		JSONDecoder: gojson.Unmarshal,
+	})
+	app.Use(favicon.New())
+	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
+	app.Use("/ws", func(c *fiber.Ctx) error {
+		// IsWebSocketUpgrade returns true if the client
+		// requested upgrade to the WebSocket protocol.
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
+
+	app.Get("/ws", websocket.New(func(c *websocket.Conn) {
+		defer c.Close()
+		for {
+			// Read message from WebSocket
+			mt, message, err := c.ReadMessage()
+			if err != nil {
+				log.Println("Read error:", err)
+				break
+			}
+
+			// Print the message to the console
+			log.Printf("Received: %s", message)
+
+			// Echo the message back
+			err = c.WriteMessage(mt, message)
+			if err != nil {
+				log.Println("Write error:", err)
+				break
+			}
+		}
+	}))
+
+	listenerAddressTcp = listener.Addr().String()
+	listenerAddressHttp = "http://" + listenerAddressTcp
+	listenerAddressWs = "ws://" + listenerAddressTcp + "/ws"
+	// Serve accepts incoming HTTP connections on the listener l, creating
+	// a new service goroutine for each. The service goroutines read requests
+	// and then call handler to reply to them
+	go app.Listener(listener)
+
+	return listener
+}
+
+func TestMain(m *testing.M) {
+	listener := createRPCServer()
+	for {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		_, err := rpcclient.DialContext(ctx, listenerAddressHttp)
+		_, err2 := rpcclient.DialContext(ctx, listenerAddressWs)
+		if err2 != nil {
+			utils.LavaFormatDebug("waiting for grpc server to launch")
+			continue
+		}
+		if err != nil {
+			utils.LavaFormatDebug("waiting for grpc server to launch")
+			continue
+		}
+		cancel()
+		break
+	}
+
+	utils.LavaFormatDebug("listening on", utils.LogAttr("address", listenerAddressHttp))
+
+	// Start running tests.
+	code := m.Run()
+	listener.Close()
+	os.Exit(code)
 }
 
 // TODO: Elad: add websocket tests

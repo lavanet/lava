@@ -196,7 +196,7 @@ func verifyRPCEndpoint(endpoints []common.NodeUrl) {
 		case "ws", "wss":
 			continue
 		default:
-			utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme, nil)
+			utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), or http (http/https) got: "+u.Scheme, nil)
 		}
 	}
 }
