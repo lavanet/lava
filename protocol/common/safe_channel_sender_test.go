@@ -30,7 +30,7 @@ func TestSafeChannelSender(t *testing.T) {
 			}
 		}()
 
-		// wait for the routine to wait for the channel
+		// wait for the routine to listen to the channel
 		<-time.After(time.Second * 1)
 		sender.Send(msg)
 		sender.Close()
