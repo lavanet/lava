@@ -201,36 +201,6 @@ func verifyRPCEndpoint(endpoints []common.NodeUrl) {
 	}
 }
 
-// rpc default endpoint should be websocket. otherwise return an error
-func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint, httpEndpoint common.NodeUrl) {
-	// TODO: Elad - change this
-	for _, endpoint := range endpoints {
-		u, err := url.Parse(endpoint.Url)
-		if err != nil {
-			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint.UrlStr()})
-		}
-		switch u.Scheme {
-		case "http", "https":
-			httpEndpoint = endpoint
-		case "ws", "wss":
-			websocketEndpoint = endpoint
-		default:
-			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss) or (http/https), got: "+u.Scheme, nil)
-		}
-	}
-
-	if websocketEndpoint.String() == "" || httpEndpoint.String() == "" {
-		utils.LavaFormatError("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
-			utils.Attribute{Key: "websocket", Value: websocketEndpoint.String()}, utils.Attribute{Key: "http", Value: httpEndpoint.String()})
-		if httpEndpoint.String() != "" {
-			return httpEndpoint, httpEndpoint
-		} else {
-			utils.LavaFormatFatal("Tendermint Provider was not provided with http url. please provide a url that starts with http/https", nil)
-		}
-	}
-	return websocketEndpoint, httpEndpoint
-}
-
 func ListenWithRetry(app *fiber.App, address string) {
 	for {
 		err := app.Listen(address)
