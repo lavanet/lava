@@ -165,9 +165,10 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 			require.False(t, ok)
 
 			consumerChannel = make(chan *pairingtypes.RelayReply)
-
+			waitTestToEnd := make(chan bool)
 			// Read the consumer channel that simulates consumer
 			go func() {
+				defer func() { waitTestToEnd <- true }()
 				reply := <-consumerChannel
 				require.NotNil(t, reply)
 				require.Equal(t, string(play.subscriptionFirstReply), string(reply.Data))
@@ -180,6 +181,9 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 			require.NotEmpty(t, subscriptionId)
 
 			wg.Wait() // Make sure the subscription manager sent another message to the node
+
+			// making sure our routine ended, otherwise the routine can read the wrong play.subscriptionFirstReply
+			<-waitTestToEnd
 		})
 	}
 }
