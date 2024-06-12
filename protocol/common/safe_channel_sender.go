@@ -3,9 +3,12 @@ package common
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/lavanet/lava/utils"
 )
+
+const retryAttemptsForChannelWrite = 10
 
 type SafeChannelSender[T any] struct {
 	ctx       context.Context
@@ -35,11 +38,20 @@ func (scs *SafeChannelSender[T]) Send(msg T) {
 		return
 	}
 
-	select {
-	case <-scs.ctx.Done():
-	case scs.ch <- msg:
-	default:
-		utils.LavaFormatTrace("Failed to send message to channel")
+	shouldBreak := false
+	for retry := 0; retry < retryAttemptsForChannelWrite; retry++ {
+		select {
+		case <-scs.ctx.Done():
+		// trying to write to the channel, if the channel is not ready this will fail and retry again up to retryAttemptsForChannelWrite times
+		case scs.ch <- msg:
+			shouldBreak = true
+		default:
+			utils.LavaFormatTrace("Failed to send message to channel", utils.LogAttr("attempt", retry))
+		}
+		if shouldBreak {
+			break
+		}
+		time.Sleep(time.Millisecond) // wait 1 millisecond between each attempt to write to the channel
 	}
 }
 
