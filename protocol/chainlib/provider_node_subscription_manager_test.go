@@ -15,8 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type RelayFinalizationBlocksHandlerMock struct {
-}
+type RelayFinalizationBlocksHandlerMock struct{}
 
 func (rf *RelayFinalizationBlocksHandlerMock) GetParametersForRelayDataReliability(
 	ctx context.Context,
