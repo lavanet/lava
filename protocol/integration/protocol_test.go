@@ -195,9 +195,10 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	// wait for consumer server to be up
 	consumerUp := checkServerStatusWithTimeout("http://"+consumerListenAddress, time.Millisecond*61)
 	require.True(t, consumerUp)
-
-	consumerUp = checkServerStatusWithTimeout("ws://"+consumerListenAddress+"/ws", time.Millisecond*61)
-	require.True(t, consumerUp)
+	if rpcEndpoint.ApiInterface == "tendermintrpc" || rpcEndpoint.ApiInterface == "jsonrpc" {
+		consumerUp = checkServerStatusWithTimeout("ws://"+consumerListenAddress+"/ws", time.Millisecond*61)
+		require.True(t, consumerUp)
+	}
 
 	return rpcConsumerServer
 }
