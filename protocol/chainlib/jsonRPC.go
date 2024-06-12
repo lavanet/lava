@@ -364,7 +364,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
 		})
 
-		consumerWebsocketManager.ListenForMessages()
+		consumerWebsocketManager.ListenToMessages()
 	})
 	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
 	app.Get("/ws", websocketCallbackWithDappID)

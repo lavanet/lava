@@ -384,7 +384,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
 		})
 
-		consumerWebsocketManager.ListenForMessages()
+		consumerWebsocketManager.ListenToMessages()
 	})
 	websocketCallbackWithDappID := constructFiberCallbackWithHeaderAndParameterExtraction(webSocketCallback, apil.logger.StoreMetricData)
 	app.Get("/ws", websocketCallbackWithDappID)
