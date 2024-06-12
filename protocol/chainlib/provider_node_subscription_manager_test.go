@@ -5,13 +5,47 @@ import (
 	"net/http"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/protocol/chaintracker"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
+
+type RelayFinalizationBlocksHandlerMock struct {
+}
+
+func (rf *RelayFinalizationBlocksHandlerMock) GetParametersForRelayDataReliability(
+	ctx context.Context,
+	request *pairingtypes.RelayRequest,
+	chainMsg ChainMessage,
+	relayTimeout time.Duration,
+	blockLagForQosSync int64,
+	averageBlockTime time.Duration,
+	blockDistanceToFinalization,
+	blocksInFinalizationData uint32,
+) (latestBlock int64, requestedBlockHash []byte, requestedHashes []*chaintracker.BlockStore, modifiedReqBlock int64, finalized, updatedChainMessage bool, err error) {
+	return 0, []byte{}, []*chaintracker.BlockStore{}, 0, true, true, nil
+}
+
+func (rf *RelayFinalizationBlocksHandlerMock) BuildRelayFinalizedBlockHashes(
+	ctx context.Context,
+	request *pairingtypes.RelayRequest,
+	reply *pairingtypes.RelayReply,
+	latestBlock int64,
+	requestedHashes []*chaintracker.BlockStore,
+	updatedChainMessage bool,
+	relayTimeout time.Duration,
+	averageBlockTime time.Duration,
+	blockDistanceToFinalization uint32,
+	blocksInFinalizationData uint32,
+	modifiedReqBlock int64,
+) (err error) {
+	return nil
+}
 
 func TestSubscriptionManager_HappyFlow(t *testing.T) {
 	playbook := []struct {
@@ -97,7 +131,8 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create the provider node subscription manager
-			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, nil, ts.Providers[0].SK)
+			mockRpcProvider := &RelayFinalizationBlocksHandlerMock{}
+			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, mockRpcProvider, ts.Providers[0].SK)
 
 			consumerChannel := make(chan *pairingtypes.RelayReply)
 
