@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
 
@@ -85,6 +87,29 @@ func generateCombinations(arr []string) [][]string {
 	return append(combinationsWithoutFirst, combinationsWithFirst...)
 }
 
+func genericWebSocketHandler() http.HandlerFunc {
+	upGrader := websocket.Upgrader{}
+
+	// Create a simple websocket server that mocks the node
+	return func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upGrader.Upgrade(w, r, nil)
+		if err != nil {
+			fmt.Println(err)
+			panic("got error in upgrader")
+		}
+		defer conn.Close()
+
+		for {
+			// Read the request
+			messageType, message, err := conn.ReadMessage()
+			if err != nil {
+				panic("got error in ReadMessage")
+			}
+			fmt.Println("got message", message, messageType)
+		}
+	}
+}
+
 // generates a chain parser, a chain fetcher messages based on it
 // apiInterface can either be an ApiInterface string as in spectypes.ApiInterfaceXXX or a number for an index in the apiCollections
 func CreateChainLibMocks(
@@ -127,6 +152,10 @@ func CreateChainLibMocks(
 		httpServerCallback = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
 	}
 
+	if wsServerCallback == nil {
+		wsServerCallback = genericWebSocketHandler()
+	}
+
 	if apiInterface == spectypes.APIInterfaceGrpc {
 		// Start a new gRPC server using the buffered connection
 		grpcServer := grpc.NewServer()
@@ -156,21 +185,15 @@ func CreateChainLibMocks(
 	} else {
 		var mockWebSocketServer *httptest.Server
 		var wsUrl string
-		if wsServerCallback != nil {
-			mockWebSocketServer = httptest.NewServer(wsServerCallback)
-			wsUrl = "ws" + strings.TrimPrefix(mockWebSocketServer.URL, "http")
-		}
+		mockWebSocketServer = httptest.NewServer(wsServerCallback)
+		wsUrl = "ws" + strings.TrimPrefix(mockWebSocketServer.URL, "http")
 		mockHttpServer := httptest.NewServer(httpServerCallback)
 		closeServer = func() {
 			mockHttpServer.Close()
-			if wsServerCallback != nil {
-				mockWebSocketServer.Close()
-			}
+			mockWebSocketServer.Close()
 		}
 		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockHttpServer.URL, Addons: addons})
-		if wsServerCallback != nil {
-			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: nil})
-		}
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: nil})
 		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
 		if err != nil {
 			return nil, nil, nil, closeServer, nil, err
