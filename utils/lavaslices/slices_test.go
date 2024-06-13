@@ -191,6 +191,14 @@ func TestMedianUint64(t *testing.T) {
 	}
 }
 
+func TestMedianPrecision(t *testing.T) {
+	t.Run("test large int64", func(t *testing.T) {
+		const largeInt = 9007199254740993
+		median := Median([]int64{largeInt, largeInt})
+		require.Equal(t, int64(largeInt), median)
+	})
+}
+
 func TestPercentile(t *testing.T) {
 	// test it equals median
 	for _, tt := range []struct {

@@ -79,10 +79,9 @@ func Median[T Number](slice []T) T {
 	if data_len == 0 {
 		return 0
 	} else if data_len%2 == 0 {
-		left := float64(slice[data_len/2-1])
-		right := float64(slice[data_len/2])
-		avg := (left + right) / 2
-		return T(avg)
+		left := slice[data_len/2-1]
+		right := slice[data_len/2]
+		return (left + right) / 2
 	} else {
 		return slice[(data_len-1)/2]
 	}
