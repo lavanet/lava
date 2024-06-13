@@ -8,10 +8,10 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
@@ -1454,7 +1454,7 @@ func TestSubscriptionCuExhaustAndUpgrade(t *testing.T) {
 	ts.TxCreateValidator(validationAcc, math.NewInt(testBalance))
 
 	acc, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	err := ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, testStake, nil, 0, "provider")
+	err := ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, testStake, nil, 0, "provider", "", "", "", "")
 	require.NoError(t, err)
 
 	// Trigger changes
@@ -2604,7 +2604,7 @@ func TestUpgradedSubscriptionCredit(t *testing.T) {
 	validationAcc, _ := ts.AddAccount(common.VALIDATOR, 0, testBalance)
 	ts.TxCreateValidator(validationAcc, math.NewInt(testBalance))
 	acc, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	err = ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, testStake, nil, 0, "provider")
+	err = ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, testStake, nil, 0, "provider", "", "", "", "")
 	require.NoError(t, err)
 	ts.AdvanceEpoch(10 * time.Minute) // Trigger changes
 

@@ -1,9 +1,10 @@
 package metrics
 
 import (
-	"encoding/json"
 	"strings"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/utils"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"

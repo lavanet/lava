@@ -2,13 +2,14 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"os"
 	"strings"
 	"syscall"
+
+	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"

@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/utils"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/x/pairing/types"
 )
 

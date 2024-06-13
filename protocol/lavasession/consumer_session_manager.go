@@ -53,6 +53,7 @@ type ConsumerSessionManager struct {
 	pairingPurge           map[string]*ConsumerSessionsWithProvider
 	providerOptimizer      ProviderOptimizer
 	consumerMetricsManager *metrics.ConsumerMetricsManager
+	consumerPublicAddress  string
 }
 
 // this is being read in multiple locations and but never changes so no need to lock.
@@ -314,8 +315,16 @@ func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions 
 	csm.lock.Lock() // lock write
 	defer csm.lock.Unlock()
 	if len(csm.getValidAddresses(addon, extensions)) == 0 { // re verify it didn't change while waiting for lock.
-		utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
 		csm.setValidAddressesToDefaultValue(addon, extensions)
+		// only if length is larger than 0 after reset we actually reset. otherwise we don't have any providers for addon or extension
+		if len(csm.getValidAddresses(addon, extensions)) != 0 {
+			utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+		} else {
+			utils.LavaFormatWarning("No providers for asked addon or extension, list is empty after trying to reset", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+			if addon == "" && len(extensions) == 0 {
+				utils.LavaFormatError("User subscription might have expired or not purchased properly, pairing list is empty after reset.", nil, utils.LogAttr("consumer_address", csm.consumerPublicAddress))
+			}
+		}
 		csm.numberOfResets += 1
 	}
 	// if len(csm.validAddresses) != 0 meaning we had a reset (or an epoch change), so we need to return the numberOfResets which is currently in csm
@@ -344,6 +353,12 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, ext
 	return numberOfResets
 }
 
+func (csm *ConsumerSessionManager) getValidAddressesLengthForExtensionOrAddon(addon string, extensions []string) int {
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+	return len(csm.getValidAddresses(addon, extensions))
+}
+
 func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders UsedProvidersInf, tempIgnoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensionNames []string, stateful uint32, virtualEpoch uint64) (sessionWithProviderMap SessionWithProviderMap, err error) {
 	sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch)
 	if err != nil {
@@ -352,24 +367,7 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders U
 			var errOnRetry error
 			sessionWithProviderMap, errOnRetry = csm.tryGetConsumerSessionWithProviderFromBlockedProviderList(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, usedProviders)
 			if errOnRetry != nil {
-				// we validate currently used providers are 0 meaning we didn't find a valid extension provider
-				// so we don't return an invalid error while waiting for a reply for a valid provider.
-				// in the case we do not have any relays sent at the moment we get a provider from the regular list
-				if usedProviders.CurrentlyUsed() == 0 && PairingListEmptyError.Is(errOnRetry) && (len(extensionNames) > 0) {
-					var errGetRegularProvider error
-					emptyExtensionNames := []string{}
-					sessionWithProviderMap, errGetRegularProvider = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, emptyExtensionNames, stateful, virtualEpoch)
-					if errGetRegularProvider != nil {
-						return nil, err // return original error (getValidConsumerSessionsWithProvider)
-					}
-					for key := range sessionWithProviderMap {
-						sessionWithProviderMap[key].RemoveExtensions = true
-					}
-					// print a warning in case we got a provider who does not support that addon or extension.
-					utils.LavaFormatWarning("No Providers For Addon Or Extension, using regular provider for relay", errOnRetry, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensionNames), utils.LogAttr("providers_chosen", sessionWithProviderMap))
-				} else {
-					return nil, err // return original error (getValidConsumerSessionsWithProvider)
-				}
+				return nil, err // return original error (getValidConsumerSessionsWithProvider)
 			}
 		} else {
 			return nil, err
@@ -416,15 +414,6 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	sessions := make(ConsumerSessionsMap, wantedSession)
 	for {
 		for providerAddress, sessionWithProvider := range sessionWithProviderMap {
-			// adding a protection when using RemoveAddonsAndExtensions to use only one session.
-			// we can get here if we wanted 3 archive and got 2 only because one couldn't connect,
-			// so we tried getting more sessions and got a regular provider due to no pairings available.
-			// in that case just return the current sessions that we do have.
-			if sessionWithProvider.RemoveExtensions && len(sessions) >= 1 {
-				utils.LavaFormatDebug("Too many sessions when using RemoveAddonAndExtensions session", utils.LogAttr("sessions", sessions), utils.LogAttr("wanted_to_add", sessionWithProvider))
-				// in that case we just return the sessions we already have.
-				return sessions, nil
-			}
 			// Extract values from session with provider
 			consumerSessionsWithProvider := sessionWithProvider.SessionsWithProvider
 			sessionEpoch := sessionWithProvider.CurrentEpoch
@@ -519,7 +508,6 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					Session:           consumerSession,
 					Epoch:             sessionEpoch,
 					ReportedProviders: reportedProviders,
-					RemoveExtensions:  sessionWithProvider.RemoveExtensions,
 				}
 
 				// adding qos summery for error parsing.
@@ -700,7 +688,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	// Fetch provider addresses
 	providerAddresses, err := csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful)
 	if err != nil {
-		utils.LavaFormatInfo(csm.rpcEndpoint.ChainID+" could not get a provider addresses", utils.LogAttr("error", err))
+		utils.LavaFormatDebug(csm.rpcEndpoint.ChainID+" could not get a provider addresses", utils.LogAttr("error", err))
 		return nil, err
 	}
 
@@ -876,7 +864,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
 	consecutiveErrors := uint64(len(consumerSession.ConsecutiveErrors))
 	parentConsumerSessionsWithProvider := consumerSession.Parent // must read this pointer before unlocking
-	csm.updateMetricsManager(consumerSession)
+	csm.updateMetricsManager(consumerSession, time.Duration(0), false)
 	// finished with consumerSession here can unlock.
 	consumerSession.Free(errorReceived) // we unlock before we change anything in the parent ConsumerSessionsWithProvider
 
@@ -952,13 +940,13 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	// calculate QoS
 	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
 	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
-	csm.updateMetricsManager(consumerSession)
+	csm.updateMetricsManager(consumerSession, currentLatency, !isHangingApi) // apply latency only for non hanging apis
 	return nil
 }
 
 // updates QoS metrics for a provider
 // consumerSession should still be locked when accessing this method as it fetches information from the session it self
-func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleConsumerSession) {
+func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleConsumerSession, relayLatency time.Duration, sessionSuccessful bool) {
 	if csm.consumerMetricsManager == nil {
 		return
 	}
@@ -979,7 +967,7 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
 
 	go func() {
-		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum)
+		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
 		// in case we blocked the session add it to our block sessions metric
 		if blockedSession {
 			csm.consumerMetricsManager.AddNumberOfBlockedSessionMetric(chainId, apiInterface, publicProviderAddress)
@@ -1041,10 +1029,11 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter) *ConsumerSessionManager {
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter),
 		consumerMetricsManager: consumerMetricsManager,
+		consumerPublicAddress:  consumerPublicAddress,
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer

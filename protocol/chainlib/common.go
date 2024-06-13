@@ -2,7 +2,6 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
@@ -23,10 +23,13 @@ import (
 )
 
 const (
-	ContextUserValueKeyDappID = "dappID"
-	RetryListeningInterval    = 10 // seconds
-	refererMatchString        = "refererMatch"
-	relayMsgLogMaxChars       = 200
+	ContextUserValueKeyDappID  = "dappID"
+	RetryListeningInterval     = 10 // seconds
+	debug                      = false
+	refererMatchString         = "refererMatch"
+	relayMsgLogMaxChars        = 200
+	RPCProviderNodeAddressHash = "Lava-Provider-Node-Address-Hash"
+	RPCProviderNodeExtension   = "Lava-Provider-Node-Extension"
 )
 
 var InvalidResponses = []string{"null", "", "nil", "undefined"}
@@ -85,6 +88,7 @@ type BaseChainProxy struct {
 	averageBlockTime time.Duration
 	NodeUrl          common.NodeUrl
 	ChainID          string
+	HashedNodeUrl    string
 }
 
 // returns the node url and chain id for that proxy.
@@ -163,7 +167,7 @@ func constructFiberCallbackWithHeaderAndParameterExtractionAndReferer(callbackTo
 }
 
 func convertToJsonError(errorMsg string) string {
-	jsonResponse, err := json.Marshal(fiber.Map{
+	jsonResponse, err := gojson.Marshal(fiber.Map{
 		"error": errorMsg,
 	})
 	if err != nil {
@@ -331,7 +335,10 @@ func GetRelayTimeout(chainMessage ChainMessageForSend, averageBlockTime time.Dur
 
 // setup a common preflight and cors configuration allowing wild cards and preflight caching.
 func createAndSetupBaseAppListener(cmdFlags common.ConsumerCmdFlags, healthCheckPath string, healthReporter HealthReporter) *fiber.App {
-	app := fiber.New(fiber.Config{})
+	app := fiber.New(fiber.Config{
+		JSONEncoder: gojson.Marshal,
+		JSONDecoder: gojson.Unmarshal,
+	})
 	app.Use(favicon.New())
 	app.Use(compress.New(compress.Config{Level: compress.LevelBestSpeed}))
 	app.Use(func(c *fiber.Ctx) error {

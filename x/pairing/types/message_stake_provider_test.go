@@ -6,12 +6,14 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	commontypes "github.com/lavanet/lava/common/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/testutil/sample"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
+	d := stakingtypes.NewDescription("dummy", "", "", "", "")
 	tests := []struct {
 		name string
 		msg  MsgStakeProvider
@@ -21,7 +23,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			name: "invalid address",
 			msg: MsgStakeProvider{
 				Creator:            "invalid_address",
-				Moniker:            "dummyMoniker",
+				Description:        d,
 				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
 				DelegateCommission: 100,
 				Validator:          sample.ValAddress(),
@@ -34,7 +36,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			name: "invalid provider address",
 			msg: MsgStakeProvider{
 				Creator:            sample.AccAddress(),
-				Moniker:            "dummyMoniker",
+				Description:        d,
 				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
 				DelegateCommission: 100,
 				Validator:          sample.ValAddress(),
@@ -47,7 +49,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			name: "invalid validator address",
 			msg: MsgStakeProvider{
 				Creator:            sample.AccAddress(),
-				Moniker:            "dummyMoniker",
+				Description:        d,
 				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
 				DelegateCommission: 100,
 				Validator:          "invalid_address",
@@ -60,7 +62,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			name: "invalid amount",
 			msg: MsgStakeProvider{
 				Creator:            sample.AccAddress(),
-				Moniker:            "dummyMoniker",
+				Description:        d,
 				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
 				DelegateCommission: 100,
 				Validator:          sample.ValAddress(),
@@ -72,7 +74,7 @@ func TestMsgStakeProvider_ValidateBasic(t *testing.T) {
 			name: "valid address",
 			msg: MsgStakeProvider{
 				Creator:            sample.AccAddress(),
-				Moniker:            "dummyMoniker",
+				Description:        d,
 				DelegateLimit:      types.NewCoin(commontypes.TokenDenom, types.ZeroInt()),
 				DelegateCommission: 100,
 				Validator:          sample.ValAddress(),

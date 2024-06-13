@@ -7,8 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	sdkerrors "cosmossdk.io/errors"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -37,7 +35,7 @@ type FinalizationConsensus struct {
 	lock                                         sync.RWMutex
 	currentEpoch                                 uint64
 	prevLatestBlockByMedian                      uint64 // for caching
-	specId                                       string
+	SpecId                                       string
 }
 
 type providerDataContainer struct {
@@ -52,7 +50,7 @@ type providerDataContainer struct {
 
 func NewFinalizationConsensus(specId string) *FinalizationConsensus {
 	return &FinalizationConsensus{
-		specId: specId,
+		SpecId: specId,
 		currentEpochBlockToHashesToAgreeingProviders: make(BlockToHashesToAgreeingProviders),
 		prevEpochBlockToHashesToAgreeingProviders:    make(BlockToHashesToAgreeingProviders),
 	}
@@ -116,7 +114,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 
 	logSuccessUpdate := func() {
 		utils.LavaFormatTrace("finalization information update successfully",
-			utils.LogAttr("specId", fc.specId),
+			utils.LogAttr("specId", fc.SpecId),
 			utils.LogAttr("finalizationData", finalizedBlocks),
 			utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentEpochBlockToHashesToAgreeingProviders),
 		)
@@ -126,7 +124,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	foundDiscrepancy, discrepancyBlock := fc.findDiscrepancy(finalizedBlocks, fc.currentEpochBlockToHashesToAgreeingProviders)
 	if foundDiscrepancy {
 		utils.LavaFormatTrace("found discrepancy for provider",
-			utils.LogAttr("specId", fc.specId),
+			utils.LogAttr("specId", fc.SpecId),
 			utils.LogAttr("currentEpoch", fc.currentEpoch),
 			utils.LogAttr("provider", providerAddress),
 			utils.LogAttr("discrepancyBlock", discrepancyBlock),
@@ -250,7 +248,7 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 
 	if fc.currentEpoch < epoch {
 		utils.LavaFormatTrace("finalization information epoch changed",
-			utils.LogAttr("specId", fc.specId),
+			utils.LogAttr("specId", fc.SpecId),
 			utils.LogAttr("epoch", epoch),
 		)
 
@@ -320,7 +318,7 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser chainlib.Cha
 	providersMedianOfLatestBlock := medianOfExpectedBlocks + int64(blockDistanceForFinalizedData)
 
 	utils.LavaFormatTrace("finalization information",
-		utils.LogAttr("specId", fc.specId),
+		utils.LogAttr("specId", fc.SpecId),
 		utils.LogAttr("mapExpectedBlockHeights", mapExpectedBlockHeights),
 		utils.LogAttr("medianOfExpectedBlocks", medianOfExpectedBlocks),
 		utils.LogAttr("latestBlock", fc.prevLatestBlockByMedian),
@@ -330,7 +328,7 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser chainlib.Cha
 	if medianOfExpectedBlocks > 0 && uint64(providersMedianOfLatestBlock) > fc.prevLatestBlockByMedian {
 		if uint64(providersMedianOfLatestBlock) > fc.prevLatestBlockByMedian+1000 && fc.prevLatestBlockByMedian > 0 {
 			utils.LavaFormatError("uncontinuous jump in finalization data", nil,
-				utils.LogAttr("specId", fc.specId),
+				utils.LogAttr("specId", fc.SpecId),
 				utils.LogAttr("prevEpochBlockToHashesToAgreeingProviders", fc.prevEpochBlockToHashesToAgreeingProviders),
 				utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentEpochBlockToHashesToAgreeingProviders),
 				utils.LogAttr("latestBlock", fc.prevLatestBlockByMedian),

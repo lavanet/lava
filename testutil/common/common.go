@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
@@ -38,16 +39,20 @@ func StakeAccount(t *testing.T, ctx context.Context, keepers testkeeper.Keepers,
 		Amount:             sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.NewInt(stake)),
 		Geolocation:        1,
 		Endpoints:          endpoints,
-		Moniker:            "prov",
 		DelegateLimit:      sdk.NewCoin(keepers.StakingKeeper.BondDenom(sdk.UnwrapSDKContext(ctx)), sdk.ZeroInt()),
 		DelegateCommission: 100,
 		Validator:          sdk.ValAddress(validator.Addr).String(),
+		Description:        MockDescription(),
 	})
 	require.NoError(t, err)
 }
 
 func BuySubscription(ctx context.Context, keepers testkeeper.Keepers, servers testkeeper.Servers, acc sigs.Account, plan string) {
 	servers.SubscriptionServer.Buy(ctx, &subscriptiontypes.MsgBuy{Creator: acc.Addr.String(), Consumer: acc.Addr.String(), Index: plan, Duration: 1})
+}
+
+func MockDescription() stakingtypes.Description {
+	return stakingtypes.NewDescription("prov", "iden", "web", "sec", "details")
 }
 
 func BuildRelayRequest(ctx context.Context, provider string, contentHash []byte, cuSum uint64, spec string, qos *pairingtypes.QualityOfServiceReport) *pairingtypes.RelaySession {

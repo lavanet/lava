@@ -6,6 +6,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/testutil/common"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/client/cli"
@@ -14,53 +15,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Test that the optional moniker argument in StakeProvider doesn't break anything
-func TestStakeProviderWithMoniker(t *testing.T) {
-	ts := newTester(t)
-
-	tests := []struct {
-		name         string
-		moniker      string
-		validStake   bool
-		validMoniker bool
-	}{
-		{"NormalMoniker", "exampleMoniker", true, true},
-		{"WeirdCharsMoniker", "ビッグファームへようこそ", true, true},
-		{"OversizedMoniker", "aReallyReallyReallyReallyReallyReallyReallyLongMoniker", false, false}, // too long
-	}
-
-	for it, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ts.AdvanceEpoch()
-
-			// Note: using the same "ts" means each provider added gets a new index ("it")
-			err := ts.addProviderMoniker(1, tt.moniker)
-			require.Equal(t, tt.validStake, err == nil, err)
-			_, provider := ts.GetAccount(common.PROVIDER, it)
-
-			ts.AdvanceEpoch()
-
-			// Get the stake entry and check the provider is staked
-			stakeEntry, foundProvider := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
-			require.Equal(t, tt.validStake, foundProvider)
-
-			// Check the assigned moniker
-			if tt.validMoniker {
-				require.Equal(t, tt.moniker, stakeEntry.Moniker)
-			} else {
-				require.NotEqual(t, tt.moniker, stakeEntry.Moniker)
-			}
-		})
-	}
-}
-
-func TestModifyStakeProviderWithMoniker(t *testing.T) {
+func TestModifyStakeProviderWithDescription(t *testing.T) {
 	ts := newTester(t)
 
 	ts.AdvanceEpoch()
 
-	moniker := "exampleMoniker"
-	err := ts.addProviderMoniker(1, moniker)
+	err := ts.addProvider(1)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -69,19 +29,18 @@ func TestModifyStakeProviderWithMoniker(t *testing.T) {
 	// Get the stake entry and check the provider is staked
 	stakeEntry, foundProvider := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAddr)
 	require.True(t, foundProvider)
-	require.Equal(t, moniker, stakeEntry.Moniker)
+	require.True(t, stakeEntry.Description.Equal(common.MockDescription()))
 
-	// modify moniker
-	moniker = "anotherExampleMoniker"
-	err = ts.StakeProviderExtra(providerAcct.GetVaultAddr(), providerAddr, ts.spec, testStake, nil, 0, moniker)
+	// modify description
+	dNew := stakingtypes.NewDescription("bla", "blan", "bal", "lala", "asdasd")
+	err = ts.StakeProviderExtra(providerAcct.GetVaultAddr(), providerAddr, ts.spec, testStake, nil, 0, dNew.Moniker, dNew.Identity, dNew.Website, dNew.SecurityContact, dNew.Details)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
 	// Get the stake entry and check the provider is staked
 	stakeEntry, foundProvider = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, providerAddr)
 	require.True(t, foundProvider)
-
-	require.Equal(t, moniker, stakeEntry.Moniker)
+	require.True(t, stakeEntry.Description.Equal(dNew))
 }
 
 func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
@@ -248,7 +207,7 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 					endpoints[i].ApiInterfaces = []string{"stub"}
 					endpoints[i].Addons = []string{}
 				}
-				_, err = ts.TxPairingStakeProvider(provider, acc.GetVaultAddr(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, "prov")
+				_, err = ts.TxPairingStakeProvider(provider, acc.GetVaultAddr(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, common.MockDescription())
 				require.NoError(t, err)
 			} else {
 				require.Error(t, err)
@@ -698,7 +657,7 @@ func TestStakeEndpoints(t *testing.T) {
 
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
-			_, err := ts.TxPairingStakeProvider(providerAddr, providerAcc.GetVaultAddr(), ts.spec.Index, amount, play.endpoints, play.geolocation, "prov")
+			_, err := ts.TxPairingStakeProvider(providerAddr, providerAcc.GetVaultAddr(), ts.spec.Index, amount, play.endpoints, play.geolocation, common.MockDescription())
 			if play.success {
 				require.NoError(t, err)
 
@@ -755,7 +714,7 @@ func TestStakeProviderLimits(t *testing.T) {
 	for it, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			providerAcct, addr := ts.AddAccount(common.PROVIDER, it+1, tt.stake)
-			err := ts.StakeProviderExtra(providerAcct.GetVaultAddr(), addr, ts.spec, tt.stake, nil, 0, "")
+			err := ts.StakeProviderExtra(providerAcct.GetVaultAddr(), addr, ts.spec, tt.stake, nil, 0, "", "", "", "", "")
 			if !tt.isStaked {
 				require.Error(t, err)
 				return
@@ -782,7 +741,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 
 	// stake minSelfDelegation+1 -> provider staked but frozen
 	providerAcc, provider := ts.AddAccount(common.PROVIDER, 1, minSelfDelegation.Amount.Int64()+1)
-	err := ts.StakeProviderExtra(providerAcc.GetVaultAddr(), provider, ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "")
+	err := ts.StakeProviderExtra(providerAcc.GetVaultAddr(), provider, ts.spec, minSelfDelegation.Amount.Int64()+1, nil, 0, "", "", "", "", "")
 	require.NoError(t, err)
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
@@ -831,14 +790,14 @@ func TestCommisionChange(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	_, provider := ts.AddAccount(common.PROVIDER, 1, ts.spec.MinStakeProvider.Amount.Int64())
-	_, err := ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 50, 100)
+	_, err := ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 50, 100, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// there are no delegations, can change as much as we want
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 55, 120)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 55, 120, "", "", "", "", "")
 	require.NoError(t, err)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 60, 140)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 60, 140, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// add delegator and delegate to provider
@@ -849,20 +808,20 @@ func TestCommisionChange(t *testing.T) {
 	ts.AdvanceBlock(time.Hour * 25) // advance time to allow changes
 
 	// now changes are limited
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 61, 139)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, 139, "", "", "", "", "")
 	require.NoError(t, err)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 62, 138)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, 138, "", "", "", "", "")
 	require.Error(t, err)
 
 	ts.AdvanceBlock(time.Hour * 25)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 62, 138)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, 138, "", "", "", "", "")
 	require.NoError(t, err)
 
 	ts.AdvanceBlock(time.Hour * 25)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, "", 68, 100)
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 68, 100, "", "", "", "", "")
 	require.Error(t, err)
 }
 
@@ -904,7 +863,7 @@ func TestVaultProviderNewStakeEntry(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			vaultBefore := ts.GetBalance(tt.vault)
 			providerBefore := ts.GetBalance(tt.provider)
-			err := ts.StakeProviderExtra(tt.vault.String(), tt.provider.String(), tt.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+			err := ts.StakeProviderExtra(tt.vault.String(), tt.provider.String(), tt.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "", "", "", "", "")
 			vaultAfter := ts.GetBalance(tt.vault)
 			providerAfter := ts.GetBalance(tt.provider)
 
@@ -964,7 +923,7 @@ func TestVaultProviderExistingStakeEntry(t *testing.T) {
 	ts := newTester(t)
 
 	p1Acc, _ := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	err := ts.StakeProviderExtra(p1Acc.GetVaultAddr(), p1Acc.Addr.String(), ts.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+	err := ts.StakeProviderExtra(p1Acc.GetVaultAddr(), p1Acc.Addr.String(), ts.spec, testStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "", "", "", "", "")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -983,7 +942,7 @@ func TestVaultProviderExistingStakeEntry(t *testing.T) {
 			beforeVault := ts.GetBalance(tt.vault)
 			beforeProvider := ts.GetBalance(tt.provider)
 			fundsToStake := testStake + (100 * int64(i+1)) // funds to stake. needs to change each iteration for the checks below
-			err := ts.StakeProviderExtra(tt.vault.String(), tt.provider.String(), tt.spec, fundsToStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "test")
+			err := ts.StakeProviderExtra(tt.vault.String(), tt.provider.String(), tt.spec, fundsToStake, []epochstoragetypes.Endpoint{{Geolocation: 1}}, 1, "", "", "", "", "")
 			afterVault := ts.GetBalance(tt.vault)
 			afterProvider := ts.GetBalance(tt.provider)
 
@@ -1055,7 +1014,7 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 	const (
 		STAKE = iota + 1
 		ENDPOINTS_GEOLOCATION
-		MONIKER
+		DESCRIPTION
 		DELEGATE_LIMIT
 		DELEGATE_COMMISSION
 		PROVIDER
@@ -1070,7 +1029,7 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		// vault can change anything
 		{"stake change vault", vault, STAKE, true},
 		{"endpoints_geo change vault", vault, ENDPOINTS_GEOLOCATION, true},
-		{"moniker change vault", vault, MONIKER, true},
+		{"description change vault", vault, DESCRIPTION, true},
 		{"delegate total change vault", vault, DELEGATE_LIMIT, true},
 		{"delegate commission change vault", vault, DELEGATE_COMMISSION, true},
 		{"provider change vault", vault, PROVIDER, true},
@@ -1078,7 +1037,7 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		// provider can't change stake/delegation related properties
 		{"stake change provider", provider, STAKE, false},
 		{"endpoints_geo change provider", provider, ENDPOINTS_GEOLOCATION, true},
-		{"moniker change provider", provider, MONIKER, true},
+		{"description change provider", provider, DESCRIPTION, true},
 		{"delegate total change provider", provider, DELEGATE_LIMIT, false},
 		{"delegate commission change provider", provider, DELEGATE_COMMISSION, false},
 		{"provider change provider", provider, PROVIDER, true},
@@ -1093,10 +1052,10 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 				Amount:             stakeEntry.Stake,
 				Geolocation:        stakeEntry.Geolocation,
 				Endpoints:          stakeEntry.Endpoints,
-				Moniker:            stakeEntry.Moniker,
 				DelegateLimit:      stakeEntry.DelegateLimit,
 				DelegateCommission: stakeEntry.DelegateCommission,
 				Address:            stakeEntry.Address,
+				Description:        stakeEntry.Description,
 			}
 
 			switch tt.stakeChange {
@@ -1105,8 +1064,8 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 			case ENDPOINTS_GEOLOCATION:
 				msg.Endpoints = []epochstoragetypes.Endpoint{{Geolocation: 2}}
 				msg.Geolocation = 2
-			case MONIKER:
-				msg.Moniker = "test2"
+			case DESCRIPTION:
+				msg.Description = stakingtypes.NewDescription("bla", "bla", "", "", "")
 			case DELEGATE_LIMIT:
 				msg.DelegateLimit = msg.DelegateLimit.AddAmount(math.NewInt(100))
 			case DELEGATE_COMMISSION:
@@ -1122,9 +1081,13 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 				msg.Amount,
 				msg.Endpoints,
 				msg.Geolocation,
-				msg.Moniker,
 				msg.DelegateCommission,
 				msg.DelegateLimit.Amount.Uint64(),
+				msg.Description.Moniker,
+				msg.Description.Identity,
+				msg.Description.Website,
+				msg.Description.SecurityContact,
+				msg.Description.Details,
 			)
 			if tt.valid {
 				require.NoError(t, err)
