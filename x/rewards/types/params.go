@@ -42,8 +42,8 @@ var (
 )
 
 var (
-	KeyIbcIprpcExpiration                              = []byte("IbcIprpcKeyIbcIprpcExpiration")
-	DefaultIbcIprpcKeyIbcIprpcExpiration time.Duration = time.Hour * 24 * 30 * 3 // 3 months
+	KeyIbcIprpcExpiration                   = []byte("IbcIprpcExpiration")
+	DefaultIbcIprpcExpiration time.Duration = time.Hour * 24 * 30 * 3 // 3 months
 )
 
 // ParamKeyTable the param key table for launch module
@@ -81,7 +81,7 @@ func DefaultParams() Params {
 		DefaultLeftOverBurnRate,
 		DefaultMaxRewardBoost,
 		DefaultValidatorsSubscriptionParticipation,
-		DefaultIbcIprpcKeyIbcIprpcExpiration,
+		DefaultIbcIprpcExpiration,
 	)
 }
 

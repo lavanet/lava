@@ -14,8 +14,9 @@ var _ = strconv.Itoa(0)
 
 func CmdCoverIbcIprpcFundCost() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "cover-ibc-iprpc-fund-cost [index] --from <creator>",
-		Short: `Apply a pending IBC IPRPC fund by paying its mandatory minimum cost of funding the IPRPC pool. Find your desired 
+		Use:   "cover-ibc-iprpc-fund-cost [index] --from <creator>",
+		Short: "Apply a pending IBC IPRPC fund by paying its mandatory minimum cost of funding the IPRPC pool",
+		Long: `Apply a pending IBC IPRPC fund by paying its mandatory minimum cost of funding the IPRPC pool. Find your desired 
 		fund's index and cost by using the query pending-ibc-iprpc-funds. By sending this message, the full cost of the fund will be 
 		paid automatically. Then, the pending fund's coins will be sent to the IPRPC pool.`,
 		Example: `lavad tx rewards cover-ibc-iprpc-fund-cost 4 --from alice`,

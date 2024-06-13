@@ -65,8 +65,3 @@ type ProviderCuType struct {
 	Provider string
 	CU       uint64
 }
-
-// IPRPC over IBC
-const (
-	CoverIbcIprpcFundCostEventName = "cover_ibc_iprpc_fund_cost"
-)
