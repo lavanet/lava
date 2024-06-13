@@ -110,7 +110,7 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
-	// create the IBC tokens to register it in the pending IPRPC over IBC object
+	// get the IBC tokens that were transferred to the IbcIprpcReceiverAddress
 	amount, ok := sdk.NewIntFromString(data.Amount)
 	if !ok {
 		detaliedErr := utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("invalid amount in ibc-transfer data"),
@@ -127,7 +127,7 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
-	// send the IBC transfer to get the tokens (keep balance before for checks)
+	// send the IBC transfer to get the tokens
 	ack := im.sendIbcTransfer(ctx, packet, relayer, data.Sender, types.IbcIprpcReceiverAddress().String())
 	if ack == nil || !ack.Success() {
 		// we check for ack == nil because it means that IBC transfer module did not return an acknowledgement.
@@ -135,6 +135,7 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		// on the IBC transfer module's side (which returns a non-nil ack when executed without errors). Asynchronous
 		// processing can be queued processing of packets, interacting with external APIs and more. These can cause
 		// delays in the IBC-transfer's processing which will make the module return a nil ack until the processing is done.
+		im.keeper.RemovePendingIbcIprpcFund(ctx, piif.Index)
 		return ack
 	}
 

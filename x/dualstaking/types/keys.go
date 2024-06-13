@@ -32,6 +32,9 @@ const (
 
 	// DisableDualstakingHooks prefix
 	DisableDualstakingHookPrefix = "disable-dualstaking-hooks"
+
+	// SlashedValidators prefix
+	SlashedValidatorsPrefix = "slashed-validators"
 )
 
 func KeyPrefix(p string) []byte {
