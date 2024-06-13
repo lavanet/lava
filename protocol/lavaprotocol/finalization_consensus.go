@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -136,7 +137,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 		foundDiscrepancy, discrepancyBlock = fc.findDiscrepancy(finalizedBlocks, fc.prevEpochBlockToHashesToAgreeingProviders)
 		if foundDiscrepancy {
 			utils.LavaFormatTrace("found discrepancy for provider with previous epoch",
-				utils.LogAttr("specId", fc.specId),
+				utils.LogAttr("specId", fc.SpecId),
 				utils.LogAttr("currentEpoch", fc.currentEpoch),
 				utils.LogAttr("provider", providerAddress),
 				utils.LogAttr("discrepancyBlock", discrepancyBlock),
