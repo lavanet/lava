@@ -19,6 +19,11 @@ const (
 	DefaultTimeout                      = 30 * time.Second
 	DefaultTimeoutLong                  = 3 * time.Minute
 	CacheTimeout                        = 50 * time.Millisecond
+	// On subscriptions we must use context.Background(),
+	// we cant have a context.WithTimeout() context, meaning we can hang for ever.
+	// to avoid that we introduced a first reply timeout using a routine.
+	// if the first reply doesn't return after the specified timeout a timeout error will occur
+	SubscriptionFirstReplyTimeout = 10 * time.Second
 )
 
 func LocalNodeTimePerCu(cu uint64) time.Duration {

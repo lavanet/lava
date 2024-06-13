@@ -68,7 +68,7 @@ func (cp RestMessage) GetParams() interface{} {
 
 func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
 	// return rm.SetLatestBlockWithHeader(latestBlock, modifyContent)
-	// removed until behaviour inconsistency with the cosmos sdk header is solved
+	// removed until behavior inconsistency with the cosmos sdk header is solved
 	return false
 	// if !done else we need a different setter
 }
@@ -81,6 +81,10 @@ func (cp RestMessage) GetResult() json.RawMessage {
 
 func (cp RestMessage) GetMethod() string {
 	return cp.Path
+}
+
+func (cp RestMessage) GetID() json.RawMessage {
+	return nil
 }
 
 // ParseBlock parses default block number from string to int

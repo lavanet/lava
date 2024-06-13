@@ -50,10 +50,11 @@ type ConsumerSessionManager struct {
 	reportedProviders *ReportedProviders
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
-	pairingPurge           map[string]*ConsumerSessionsWithProvider
-	providerOptimizer      ProviderOptimizer
-	consumerMetricsManager *metrics.ConsumerMetricsManager
-	consumerPublicAddress  string
+	pairingPurge                       map[string]*ConsumerSessionsWithProvider
+	providerOptimizer                  ProviderOptimizer
+	consumerMetricsManager             *metrics.ConsumerMetricsManager
+	consumerPublicAddress              string
+	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
 }
 
 // this is being read in multiple locations and but never changes so no need to lock.
@@ -147,12 +148,27 @@ func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []
 // otherwise golang garbage collector is not closing network connections and they
 // will remain open forever.
 func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
-	for _, purgedPairing := range csm.pairingPurge {
-		for _, endpoint := range purgedPairing.Endpoints {
-			if endpoint.connection != nil {
-				endpoint.connection.Close()
+	for providerAddr, purgedPairing := range csm.pairingPurge {
+		callbackPurge := func() {
+			for _, endpoint := range purgedPairing.Endpoints {
+				if endpoint.connection != nil {
+					utils.LavaFormatTrace("purging connection",
+						utils.LogAttr("providerAddr", providerAddr),
+						utils.LogAttr("endpoint", endpoint.NetworkAddress),
+					)
+					endpoint.connection.Close()
+				}
 			}
 		}
+		// on cases where there is still an active subscription over the epoch handover, we purge the connection when subscription ends.
+		if csm.activeSubscriptionProvidersStorage.IsProviderCurrentlyUsed(providerAddr) {
+			utils.LavaFormatTrace("skipping purge for provider, as its currently used in a subscription",
+				utils.LogAttr("providerAddr", providerAddr),
+			)
+			csm.activeSubscriptionProvidersStorage.addToPurgeWhenDone(providerAddr, callbackPurge)
+			continue
+		}
+		callbackPurge()
 	}
 }
 
@@ -1029,7 +1045,7 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string) *ConsumerSessionManager {
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter),
 		consumerMetricsManager: consumerMetricsManager,
@@ -1037,5 +1053,6 @@ func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer Provi
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
+	csm.activeSubscriptionProvidersStorage = activeSubscriptionProvidersStorage
 	return csm
 }

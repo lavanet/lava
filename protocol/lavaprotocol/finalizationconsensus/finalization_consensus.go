@@ -1,4 +1,4 @@
-package lavaprotocol
+package finalizationconsensus
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/lavaslices"
@@ -19,6 +19,10 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
+
+type ChainBlockStatsGetter interface {
+	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32)
+}
 
 type BlockToHashesToAgreeingProviders map[int64]map[string]map[string]providerDataContainer // first key is block num, second key is block hash, third key is provider address
 
@@ -299,7 +303,7 @@ func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlock
 
 // Returns the expected latest block to be at based on the current finalization data, and the number of providers we have information for.
 // It does the calculation on finalized entries then extrapolates the ending based on blockDistance
-func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
+func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser ChainBlockStatsGetter) (expectedBlockHeight int64, numOfProviders int) {
 	fc.lock.RLock()
 	defer fc.lock.RUnlock()
 
@@ -355,16 +359,16 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	relayFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(relayRequest.RelaySession, reply, consumerAcc)
 	recoveredProviderPubKey, err := sigs.RecoverPubKey(relayFinalization)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatWarning("Finalization data verification failed, RecoverPubKey returned error", err)
 	}
 
 	recoveredProviderAddr, err := sdk.AccAddressFromHexUnsafe(recoveredProviderPubKey.Address().String())
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatWarning("Finalization data verification failed, AccAddressFromHexUnsafe returned error", err)
 	}
 
 	if recoveredProviderAddr.String() != providerAddr {
-		return nil, utils.LavaFormatError("provider address mismatch in finalization data ", ProviderFinalizationDataError,
+		return nil, utils.LavaFormatError("provider address mismatch in finalization data ", common.ProviderFinalizationDataError,
 			utils.LogAttr("parsed Address", recoveredProviderAddr.String()),
 			utils.LogAttr("expected address", providerAddr),
 		)
@@ -373,7 +377,7 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	finalizedBlocks = map[int64]string{}
 	err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", ProviderFinalizationDataError,
+		return nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", common.ProviderFinalizationDataError,
 			utils.LogAttr("FinalizedBlocksHashes", string(reply.FinalizedBlocksHashes)),
 			utils.LogAttr("errMsg", err.Error()),
 		)
@@ -389,7 +393,7 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	requestBlock := relayRequest.RelayData.RequestBlock
 
 	if providerLatestBlock < lavaslices.Min([]int64{seenBlock, requestBlock}) {
-		return nil, utils.LavaFormatError("provider response does not meet consistency requirements", ProviderFinalizationDataError,
+		return nil, utils.LavaFormatError("provider response does not meet consistency requirements", common.ProviderFinalizationDataError,
 			utils.LogAttr("ProviderAddress", relayRequest.RelaySession.Provider),
 			utils.LogAttr("providerLatestBlock", providerLatestBlock),
 			utils.LogAttr("seenBlock", seenBlock),
@@ -407,7 +411,7 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 	maxBlockNum := int64(0)
 
 	if int64(len(finalizedBlocks)) != blocksInFinalizationProof {
-		return utils.LavaFormatError("Simulation: provider returned incorrect number of finalized blocks", ProviderFinalizationDataAccountabilityError,
+		return utils.LavaFormatError("Simulation: provider returned incorrect number of finalized blocks", common.ProviderFinalizationDataAccountabilityError,
 			utils.LogAttr("Provider", providerAddr),
 			utils.LogAttr("blocksInFinalizationProof", blocksInFinalizationProof),
 			utils.LogAttr("len(finalizedBlocks)", len(finalizedBlocks)),
@@ -418,7 +422,7 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 	for blockNum := range finalizedBlocks {
 		// Check if finalized
 		if !spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceForFinalization) {
-			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability", ProviderFinalizationDataAccountabilityError,
+			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability", common.ProviderFinalizationDataAccountabilityError,
 				utils.LogAttr("blockNum", blockNum),
 				utils.LogAttr("latestBlock", latestBlock),
 				utils.LogAttr("Provider", providerAddr),
@@ -441,7 +445,7 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 	// Check for consecutive blocks
 	nonConsecutiveIndex, isConsecutive := lavaslices.IsSliceConsecutive(sorted)
 	if !isConsecutive {
-		return utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", ProviderFinalizationDataAccountabilityError,
+		return utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", common.ProviderFinalizationDataAccountabilityError,
 			utils.LogAttr("currBlock", sorted[nonConsecutiveIndex]),
 			utils.LogAttr("prevBlock", sorted[nonConsecutiveIndex-1]),
 			utils.LogAttr("providerAddr", providerAddr),
@@ -451,7 +455,7 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 
 	// Check that latest finalized block address + 1 points to a non finalized block
 	if spectypes.IsFinalizedBlock(maxBlockNum+1, latestBlock, blockDistanceForFinalization) {
-		return utils.LavaFormatError("Simulation: provider returned finalized hashes for an older latest block", ProviderFinalizationDataAccountabilityError,
+		return utils.LavaFormatError("Simulation: provider returned finalized hashes for an older latest block", common.ProviderFinalizationDataAccountabilityError,
 			utils.LogAttr("maxBlockNum", maxBlockNum),
 			utils.LogAttr("latestBlock", latestBlock),
 			utils.LogAttr("Provider", providerAddr),
@@ -461,7 +465,7 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 
 	// New reply should have blocknum >= from block same provider
 	if latestSessionBlock > latestBlock {
-		return utils.LavaFormatError("Simulation: Provider supplied an older latest block than it has previously", ProviderFinalizationDataAccountabilityError,
+		return utils.LavaFormatError("Simulation: Provider supplied an older latest block than it has previously", common.ProviderFinalizationDataAccountabilityError,
 			utils.LogAttr("session.LatestBlock", latestSessionBlock),
 			utils.LogAttr("latestBlock", latestBlock),
 			utils.LogAttr("Provider", providerAddr),

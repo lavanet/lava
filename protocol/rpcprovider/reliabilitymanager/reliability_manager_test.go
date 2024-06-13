@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
+	"github.com/lavanet/lava/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/protocol/statetracker"
@@ -89,11 +90,11 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		reply.FinalizedBlocksHashes = jsonStr
 		reply.LatestBlock = latestBlock
-		reply, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
+		reply, err = common.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
 		require.NoError(t, err)
-		err = lavaprotocol.VerifyRelayReply(ctx, reply, relay, provider_address.String())
+		err = common.VerifyRelayReply(ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
-		_, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = finalizationconsensus.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 
 		relayResult := &common.RelayResult{
@@ -122,11 +123,11 @@ func TestFullFlowReliabilityCompare(t *testing.T) {
 		require.NoError(t, err)
 		replyDR.FinalizedBlocksHashes = jsonStr
 		replyDR.LatestBlock = latestBlock
-		replyDR, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true)
+		replyDR, err = common.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true)
 		require.NoError(t, err)
-		err = lavaprotocol.VerifyRelayReply(ctx, replyDR, relayDR, providerDR_address.String())
+		err = common.VerifyRelayReply(ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
-		_, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = finalizationconsensus.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
 			Request:      relayDR,
@@ -185,7 +186,7 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, string(replyDataBuf))
 		})
-		chainParser, chainProxy, chainFetcher, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../../", nil)
+		chainParser, chainProxy, chainFetcher, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -247,11 +248,11 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		require.NoError(t, err)
 		reply.FinalizedBlocksHashes = jsonStr
 		reply.LatestBlock = latestBlock
-		reply, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
+		reply, err = common.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
 		require.NoError(t, err)
-		err = lavaprotocol.VerifyRelayReply(ts.Ctx, reply, relay, provider_address.String())
+		err = common.VerifyRelayReply(ts.Ctx, reply, relay, provider_address.String())
 		require.NoError(t, err)
-		_, err = lavaprotocol.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = finalizationconsensus.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 
 		relayResult := &common.RelayResult{
@@ -289,13 +290,13 @@ func TestFullFlowReliabilityConflict(t *testing.T) {
 		replyDR.FinalizedBlocksHashes = jsonStr
 		replyDR.LatestBlock = latestBlock
 
-		replyDR, err = lavaprotocol.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true)
+		replyDR, err = common.SignRelayResponse(extractedConsumerAddress, *relayDR, providerDR_sk, replyDR, true)
 		require.NoError(t, err)
 
-		err = lavaprotocol.VerifyRelayReply(ts.Ctx, replyDR, relayDR, providerDR_address.String())
+		err = common.VerifyRelayReply(ts.Ctx, replyDR, relayDR, providerDR_address.String())
 		require.NoError(t, err)
 
-		_, err = lavaprotocol.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
+		_, err = finalizationconsensus.VerifyFinalizationData(replyDR, relayDR, providerDR_address.String(), consumer_address, int64(0), 0, 1)
 		require.NoError(t, err)
 		relayResultDR := &common.RelayResult{
 			Request:      relayDR,

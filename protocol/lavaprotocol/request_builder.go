@@ -104,30 +104,9 @@ func ConstructRelayRequest(ctx context.Context, privKey *btcec.PrivateKey, lavaC
 	return relayRequest, nil
 }
 
-func UpdateRequestedBlock(request *pairingtypes.RelayPrivateData, response *pairingtypes.RelayReply) {
-	// since sometimes the user is sending requested block that is a magic like latest, or earliest we need to specify to the reliability what it is
-	request.RequestBlock = ReplaceRequestedBlock(request.RequestBlock, response.LatestBlock)
-}
-
 // currently used when cache hits. we don't want DR.
 func SetRequestedBlockNotApplicable(request *pairingtypes.RelayPrivateData) {
 	request.RequestBlock = spectypes.NOT_APPLICABLE
-}
-
-func ReplaceRequestedBlock(requestedBlock, latestBlock int64) int64 {
-	switch requestedBlock {
-	case spectypes.LATEST_BLOCK:
-		return latestBlock
-	case spectypes.SAFE_BLOCK:
-		return latestBlock
-	case spectypes.FINALIZED_BLOCK:
-		return latestBlock
-	case spectypes.PENDING_BLOCK:
-		return latestBlock
-	case spectypes.EARLIEST_BLOCK:
-		return spectypes.NOT_APPLICABLE // TODO: add support for earliest block reliability
-	}
-	return requestedBlock
 }
 
 func VerifyReliabilityResults(ctx context.Context, originalResult, dataReliabilityResult *common.RelayResult, apiCollection *spectypes.ApiCollection, headerFilterer HeaderFilterer) (conflicts *conflicttypes.ResponseConflict) {

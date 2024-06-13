@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -57,11 +59,11 @@ func TestSignAndExtractResponse(t *testing.T) {
 	require.NoError(t, err)
 	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = 123
-	reply, err = SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
+	reply, err = common.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
 	require.NoError(t, err)
-	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
+	err = common.VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
-	_, err = VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
+	_, err = finalizationconsensus.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 	require.NoError(t, err)
 }
 
@@ -107,10 +109,10 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	require.NoError(t, err)
 	reply.FinalizedBlocksHashes = jsonStr
 	reply.LatestBlock = latestBlock
-	reply, err = SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
+	reply, err = common.SignRelayResponse(extractedConsumerAddress, *relay, provider_sk, reply, true)
 	require.NoError(t, err)
-	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
+	err = common.VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
-	_, err = VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
+	_, err = finalizationconsensus.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 	require.NoError(t, err)
 }

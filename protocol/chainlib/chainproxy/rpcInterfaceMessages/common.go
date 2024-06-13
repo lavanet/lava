@@ -29,7 +29,12 @@ func (pri ParsableRPCInput) GetResult() json.RawMessage {
 	return pri.Result
 }
 
+func (pri ParsableRPCInput) GetID() json.RawMessage {
+	return nil
+}
+
 type GenericMessage interface {
 	GetHeaders() []pairingtypes.Metadata
 	DisableErrorHandling()
+	GetParams() interface{}
 }
