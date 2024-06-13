@@ -14,7 +14,7 @@ var _ = strconv.Itoa(0)
 func CmdQueryPendingIbcIprpcFunds() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pending-ibc-iprpc-funds [filter: index/creator/spec]",
-		Short: `Query to show pending IBC IPRPC funds`,
+		Short: "Query for pending IBC IPRPC funds",
 		Long: `Query for pending IBC IPRPC funds. Use the optional filter argument to get a specific fund (using its index),
 		funds of a specific creator or funds for a specific spec. Each fund has its own cost which is derived from the minimum IPRPC
 		cost for funding the IPRPC pool, multiplied by the fund's duration. To cover the cost and apply the pending fund, use 

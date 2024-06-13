@@ -108,5 +108,5 @@ func (k Keeper) ChangeDelegationTimestampForTesting(ctx sdk.Context, index strin
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	k.HandleSlashedValidators(ctx, req)
+	k.HandleSlashedValidators(ctx)
 }

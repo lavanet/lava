@@ -10,12 +10,42 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/lavanet/lava/utils"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 )
+
+type SafeBuffer struct {
+	buffer bytes.Buffer
+	mu     sync.Mutex
+}
+
+func (sb *SafeBuffer) WriteString(s string) (int, error) {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buffer.WriteString(s)
+}
+
+func (sb *SafeBuffer) String() string {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buffer.String()
+}
+
+func (sb *SafeBuffer) Write(p []byte) (int, error) {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buffer.Write(p)
+}
+
+func (sb *SafeBuffer) Bytes() []byte {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.buffer.Bytes()
+}
 
 // PairingList struct is used to store seed provider information for lavaOverLava
 type PairingList struct {
@@ -33,7 +63,7 @@ type Pair struct {
 	PublicAddress string `json:"publicAddress"`
 }
 
-func RunSDKTest(testFile string, privateKey string, publicKey string, logs *bytes.Buffer, badgePort string) error {
+func RunSDKTest(testFile string, privateKey string, publicKey string, logs *SafeBuffer, badgePort string) error {
 	utils.LavaFormatInfo("[+] Starting SDK test", utils.LogAttr("test_file", testFile))
 	// Prepare command for running test
 	cmd := exec.Command("ts-node", testFile)
@@ -69,7 +99,7 @@ func RunSDKTest(testFile string, privateKey string, publicKey string, logs *byte
 	return nil
 }
 
-func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey string, publicKey string, logs *bytes.Buffer, badgePort string) {
+func RunSDKTests(ctx context.Context, grpcConn *grpc.ClientConn, privateKey string, publicKey string, logs *SafeBuffer, badgePort string) {
 	defer func() {
 		// Delete the file directly without checking if it exists
 		os.Remove("testutil/e2e/sdk/pairingList.json")

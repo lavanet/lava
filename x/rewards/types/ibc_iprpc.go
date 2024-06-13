@@ -40,6 +40,13 @@ func IbcIprpcReceiverAddress() sdk.AccAddress {
 	return authtypes.NewModuleAddress(IbcIprpcReceiver)
 }
 
+// Pending IPRPC Pool:
+// Pool that holds the funds of pending IPRPC fund requests (which originate from an ibc-transfer TX)
+const (
+	PendingIprpcPoolName Pool = "pending_iprpc_pool"
+)
+
+// PendingIbcIprpcFund methods and constants
 const (
 	IbcIprpcReceiver = "iprpc"
 )
@@ -69,10 +76,4 @@ const (
 	NewPendingIbcIprpcFundEventName            = "pending_ibc_iprpc_fund_created"
 	ExpiredPendingIbcIprpcFundRemovedEventName = "expired_pending_ibc_iprpc_fund_removed"
 	CoverIbcIprpcFundCostEventName             = "cover_ibc_iprpc_fund_cost"
-)
-
-// Pending IPRPC Pool:
-// Pool that holds the funds of pending IPRPC fund requests (which originate from an ibc-transfer TX)
-const (
-	PendingIprpcPoolName Pool = "pending_iprpc_pool"
 )
