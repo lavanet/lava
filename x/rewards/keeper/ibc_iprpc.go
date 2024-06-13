@@ -73,7 +73,10 @@ func printInvalidMemoWarning(memo types.IprpcMemo, description string) error {
 	return types.ErrIprpcMemoInvalid
 }
 
-func (k Keeper) SetPendingIprpcOverIbcFunds(ctx sdk.Context, memo types.IprpcMemo, amount sdk.Coin) error {
-	// TODO: implement
-	return nil
+func (k Keeper) SendIbcTokensToPendingIprpcPool(ctx sdk.Context, amount sdk.Coin) error {
+	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, types.IbcIprpcReceiverAddress(), string(types.PendingIprpcPoolName), sdk.NewCoins(amount))
+}
+
+func (k Keeper) FundCommunityPoolFromIbcIprpcReceiver(ctx sdk.Context, amount sdk.Coin) error {
+	return k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(amount), types.IbcIprpcReceiverAddress())
 }
