@@ -265,7 +265,6 @@ type GrpcChainListener struct {
 	logger         *metrics.RPCConsumerLogs
 	chainParser    *GrpcChainParser
 	healthReporter HealthReporter
-	refererData    *RefererData
 }
 
 func NewGrpcChainListener(
@@ -275,7 +274,6 @@ func NewGrpcChainListener(
 	healthReporter HealthReporter,
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
-	refererData *RefererData,
 ) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
@@ -284,7 +282,6 @@ func NewGrpcChainListener(
 		rpcConsumerLogs,
 		chainParser.(*GrpcChainParser),
 		healthReporter,
-		refererData,
 	}
 	return chainListener
 }
