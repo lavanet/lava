@@ -47,6 +47,7 @@ type PaymentRequest struct {
 	Description         string
 	ChainID             string
 	ConsumerRewardsKey  string
+	Provider            string
 }
 
 func (pr *PaymentRequest) String() string {
@@ -800,6 +801,10 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		if err != nil {
 			return nil, err
 		}
+		providerString, ok := attributes["provider"]
+		if !ok {
+			utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field provider", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
+		}
 		payment := &PaymentRequest{
 			CU:                  cu,
 			BlockHeightDeadline: block,
@@ -809,6 +814,7 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 			Description:         description,
 			UniqueIdentifier:    uniqueID,
 			ChainID:             chainID,
+			Provider:            providerString,
 		}
 		payments = append(payments, payment)
 	}

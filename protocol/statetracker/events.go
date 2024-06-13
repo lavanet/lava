@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/goccy/go-json"
 
 	"github.com/cometbft/cometbft/abci/types"
@@ -21,10 +22,12 @@ import (
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/chaintracker"
+	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
 	updaters "github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
 	"github.com/lavanet/lava/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cobra"
 )
 
@@ -123,6 +126,82 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	case <-signalChan:
 		utils.LavaFormatInfo("events signalChan")
 	}
+	return nil
+}
+
+func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, blockEnd int64) error {
+	ctx, cancel := context.WithCancel(ctx)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	defer func() {
+		signal.Stop(signalChan)
+		cancel()
+	}()
+	resultStatus, err := clientCtx.Client.Status(ctx)
+	if err != nil {
+		return err
+	}
+	latestHeight := resultStatus.SyncInfo.LatestBlockHeight
+	if latestHeight < blockStart {
+		return utils.LavaFormatError("requested blocks is bigger than latest block height", nil, utils.Attribute{Key: "blockStart", Value: blockStart}, utils.Attribute{Key: "latestHeight", Value: latestHeight})
+	}
+	if latestHeight < blockEnd {
+		return utils.LavaFormatError("requested blocks is bigger than latest block height", nil, utils.Attribute{Key: "blockEnd", Value: blockEnd}, utils.Attribute{Key: "latestHeight", Value: latestHeight})
+	}
+	utils.LavaFormatDebug("chain latest block", utils.LogAttr("block", latestHeight))
+
+	for block := blockStart; block < blockEnd; block++ {
+		utils.LavaFormatInfo("fetching block", utils.LogAttr("block", block))
+		brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
+		if err != nil {
+			utils.LavaFormatFatal("invalid blockResults provider", err)
+		}
+		var blockResults *coretypes.ResultBlockResults
+		for retry := 0; retry < 3; retry++ {
+			blockResults, err = brp.BlockResults(ctx, &block)
+			if err != nil {
+				utils.LavaFormatWarning("@@@@ failed fetching block results will retry", err, utils.LogAttr("block_number", block))
+				continue
+			}
+			break
+		}
+		if blockResults == nil {
+			utils.LavaFormatError("Failed fetching block results 3 times, continuing...", err, utils.LogAttr("block_number", block))
+			continue
+		}
+		var payments []*rewardserver.PaymentRequest
+		transactionResults := blockResults.TxsResults
+		for _, tx := range transactionResults {
+			events := tx.Events
+			for _, event := range events {
+				if event.Type == utils.EventPrefix+pairingtypes.RelayPaymentEventName {
+					utils.LavaFormatDebug("test", utils.LogAttr("test", event.Attributes))
+					paymentList, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, block)
+					if err != nil {
+						utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event}, utils.Attribute{Key: "block", Value: block})
+						continue
+					}
+					if debug {
+						utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
+					}
+					payments = append(payments, paymentList...)
+				}
+			}
+		}
+
+		for _, payment := range payments {
+			utils.LavaFormatDebug("payments description", utils.LogAttr("desc", payment.Description))
+			utils.LavaFormatDebug("payments", utils.LogAttr("payment", payment))
+			// updatable, foundUpdatable := pu.paymentUpdatable[payment.Description]
+			// if foundUpdatable {
+			// 	relevantPayments += 1
+			// 	(*updatable).PaymentHandler(payment)
+			// }
+		}
+
+	}
+
+	utils.LavaFormatDebug("finished test")
 	return nil
 }
 
@@ -305,6 +384,70 @@ lavad test events 100 5000 --value banana // show all events from 5000-5100 and 
 	cmdEvents.Flags().String(FlagHasAttributeName, "", "only show events containing specific attribute name")
 	cmdEvents.Flags().String(FlagShowAttributeName, "", "only show a specific attribute name, and no other attributes")
 	cmdEvents.Flags().Bool(FlagDisableInteractiveShell, false, "a flag to disable the shell printing interactive prints, used when scripting the command")
+	return cmdEvents
+}
+
+func CreateRelayPaymentCSVCobraCommand() *cobra.Command {
+	cmdEvents := &cobra.Command{
+		Use:   `relay-payment-csv [block_start(int)] [block_end(int)]`,
+		Short: `reads relay payment events from the start block to end block, creating a reward csv for all chains`,
+		Long:  `reads relay payment events from the start block to end block, creating a reward csv for all chains`,
+		Example: `lavap test relay-payment-csv 100 200
+		`,
+		Args: cobra.RangeArgs(2, 2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			// handle flags, pass necessary fields
+			ctx := context.Background()
+			networkChainId, err := cmd.Flags().GetString(flags.FlagChainID)
+			if err != nil {
+				return err
+			}
+			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read log level flag", err)
+			}
+
+			blockStart, err := strconv.ParseInt(args[0], 0, 64)
+			if err != nil {
+				utils.LavaFormatFatal("failed to parse blocks as a number", err)
+			}
+			utils.LavaFormatInfo("block start", utils.LogAttr("block_start", blockStart))
+			if blockStart < 0 {
+				return fmt.Errorf("block start is below zero", blockStart)
+			}
+
+			blockEnd, err := strconv.ParseInt(args[1], 0, 64)
+			if err != nil {
+				utils.LavaFormatFatal("failed to parse blocks as a number", err)
+			}
+			utils.LavaFormatInfo("block end", utils.LogAttr("block_end", blockEnd))
+			if blockEnd < 0 {
+				return fmt.Errorf("block end is below zero", blockEnd)
+			}
+
+			utils.SetGlobalLoggingLevel(logLevel)
+			clientCtx = clientCtx.WithChainID(networkChainId)
+			_, err = tx.NewFactoryCLI(clientCtx, cmd.Flags())
+			if err != nil {
+				utils.LavaFormatFatal("failed to parse blocks as a number", err)
+			}
+			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
+			rand.InitRandomSeed()
+			return paymentsLookup(ctx, clientCtx, blockStart, blockEnd)
+		},
+	}
+	flags.AddQueryFlagsToCmd(cmdEvents)
+	flags.AddKeyringFlags(cmdEvents.Flags())
+	cmdEvents.Flags().String(flags.FlagFrom, "", "Name or address of wallet from which to read address, and look for it in value")
+	cmdEvents.Flags().Duration(FlagTimeout, 5*time.Minute, "the time to listen for events, defaults to 5m")
+	cmdEvents.Flags().Bool(FlagBreak, false, "if true will break after reading the specified amount of blocks instead of listening forward")
+	cmdEvents.Flags().String(flags.FlagChainID, app.Name, "network chain id")
+	cmdEvents.Flags().String(FlagHasAttributeName, "", "only show events containing specific attribute name")
+	cmdEvents.Flags().String(FlagShowAttributeName, "", "only show a specific attribute name, and no other attributes")
 	return cmdEvents
 }
 
