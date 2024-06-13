@@ -152,6 +152,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 		}
 	}
 
+	// Found discrepancy, create finalization conflict
 	replyFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(relaySession, reply, consumerAddress)
 	finalizationConflict = &conflicttypes.FinalizationConflict{RelayFinalization_0: &replyFinalization}
 
@@ -172,6 +173,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 			logSuccessUpdate()
 			finalizationConflict.RelayFinalization_1 = relayFinalization
 
+			// We now want to block this provider, so we wrap the error with lavasession.BlockProviderError which will be caught later
 			errWrapped = sdkerrors.Wrap(lavasession.BlockProviderError, fmt.Sprintf("found same provider conflict on block [%d], provider address [%s]", discrepancyBlock, providerAddress))
 			return finalizationConflict, errWrapped
 		} else if otherBlockHash == "" {
