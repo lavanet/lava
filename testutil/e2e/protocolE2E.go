@@ -29,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	commonconsts "github.com/lavanet/lava/testutil/common/consts"
+	"github.com/lavanet/lava/testutil/e2e/sdk"
 	"github.com/lavanet/lava/utils"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
 	pairingTypes "github.com/lavanet/lava/x/pairing/types"
@@ -64,7 +65,7 @@ type lavaTest struct {
 	protocolPath         string
 	lavadArgs            string
 	consumerArgs         string
-	logs                 map[string]*bytes.Buffer
+	logs                 map[string]*sdk.SafeBuffer
 	commands             map[string]*exec.Cmd
 	providerType         map[string][]epochStorageTypes.Endpoint
 	wg                   sync.WaitGroup
@@ -86,7 +87,7 @@ func init() {
 
 func (lt *lavaTest) execCommandWithRetry(ctx context.Context, funcName string, logName string, command string) {
 	utils.LavaFormatDebug("Executing command " + command)
-	lt.logs[logName] = new(bytes.Buffer)
+	lt.logs[logName] = &sdk.SafeBuffer{}
 
 	cmd := exec.CommandContext(ctx, "", "")
 	cmd.Args = strings.Fields(command)
@@ -129,7 +130,7 @@ func (lt *lavaTest) execCommand(ctx context.Context, funcName string, logName st
 		}
 	}()
 
-	lt.logs[logName] = new(bytes.Buffer)
+	lt.logs[logName] = &sdk.SafeBuffer{}
 
 	cmd := exec.CommandContext(ctx, "", "")
 	utils.LavaFormatInfo("Executing Command: " + command)
@@ -806,14 +807,16 @@ func (lt *lavaTest) saveLogs() {
 
 		lines := strings.Split(logBuffer.String(), "\n")
 		errorLines := []string{}
-		for _, line := range lines {
+		for idx, line := range lines {
 			if fileName == "00_StartLava" { // TODO remove this and solve the errors
 				break
 			}
 			if strings.Contains(line, EmergencyModeStartLine) {
+				utils.LavaFormatInfo("Found Emergency start line", utils.LogAttr("file", fileName), utils.LogAttr("Line index", idx))
 				reachedEmergencyModeLine = true
 			}
 			if strings.Contains(line, EmergencyModeEndLine) {
+				utils.LavaFormatInfo("Found Emergency end line", utils.LogAttr("file", fileName), utils.LogAttr("Line index", idx))
 				reachedEmergencyModeLine = false
 			}
 			if strings.Contains(line, " ERR ") || strings.Contains(line, "[Error]" /* sdk errors*/) {
@@ -885,7 +888,7 @@ func (lt *lavaTest) checkQoS() error {
 	for provider := range providerCU {
 		// Get sequence number of provider
 		logNameAcc := "8_authAccount" + fmt.Sprintf("%02d", providerIdx)
-		lt.logs[logNameAcc] = new(bytes.Buffer)
+		lt.logs[logNameAcc] = &sdk.SafeBuffer{}
 
 		fetchAccCommand := lt.lavadPath + " query account " + provider + " --output=json"
 		cmdAcc := exec.CommandContext(context.Background(), "", "")
@@ -921,7 +924,7 @@ func (lt *lavaTest) checkQoS() error {
 		sequence = strconv.Itoa(int(sequenceInt))
 		//
 		logName := "9_QoS_" + fmt.Sprintf("%02d", providerIdx)
-		lt.logs[logName] = new(bytes.Buffer)
+		lt.logs[logName] = &sdk.SafeBuffer{}
 
 		txQueryCommand := lt.lavadPath + " query tx --type=acc_seq " + provider + "/" + sequence
 
@@ -992,6 +995,30 @@ func (lt *lavaTest) markEmergencyModeLogsStart() {
 		utils.LavaFormatInfo("Adding EmergencyMode Start Line to", utils.LogAttr("log_name", log))
 		if err != nil {
 			utils.LavaFormatError("Failed Writing to buffer", err, utils.LogAttr("key", log))
+		}
+
+		// Verify that the EmergencyModeStartLine is in the last 20 lines
+		contents := buffer.String()
+		lines := strings.Split(contents, "\n")
+		start := len(lines) - 21 // -21 because we want to check the last 20 lines, and -1 for 0-indexing
+		if start < 0 {
+			start = 0
+		}
+		last20Lines := lines[start : len(lines)-1] // Exclude the last empty string after the final split
+		// Check if EmergencyModeStartLine is present in the last 20 lines
+		found := false
+		indexFound := 0
+		for idx, line := range last20Lines {
+			if strings.Contains(line, EmergencyModeStartLine) {
+				found = true
+				indexFound = idx
+				break
+			}
+		}
+		if found {
+			utils.LavaFormatInfo("Successfully verified EmergencyMode Start Line in the last 20 lines", utils.LogAttr("log_name", log), utils.LogAttr("line", indexFound))
+		} else {
+			utils.LavaFormatError("Verification failed for EmergencyMode Start Line in the last 20 lines", nil, utils.LogAttr("log_name", log))
 		}
 	}
 }
@@ -1191,7 +1218,7 @@ func runProtocolE2E(timeout time.Duration) {
 		protocolPath: gopath + "/bin/lavap",
 		lavadArgs:    "--geolocation 1 --log_level debug",
 		consumerArgs: " --allow-insecure-provider-dialing",
-		logs:         make(map[string]*bytes.Buffer),
+		logs:         make(map[string]*sdk.SafeBuffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 		logPath:      protocolLogsFolder,

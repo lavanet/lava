@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/cmd/lavad/cmd"
 	commonconsts "github.com/lavanet/lava/testutil/common/consts"
+	e2esdk "github.com/lavanet/lava/testutil/e2e/sdk"
 	"github.com/lavanet/lava/utils"
 	dualstakingTypes "github.com/lavanet/lava/x/dualstaking/types"
 	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -283,7 +283,7 @@ func runPaymentE2E(timeout time.Duration) {
 		protocolPath: gopath + lavapPath,
 		lavadArgs:    "--geolocation 1 --log_level debug",
 		consumerArgs: " --allow-insecure-provider-dialing",
-		logs:         make(map[string]*bytes.Buffer),
+		logs:         make(map[string]*e2esdk.SafeBuffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 		logPath:      protocolLogsFolder,
