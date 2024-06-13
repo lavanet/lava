@@ -22,7 +22,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/utils"
 	lavaslices "github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/x/dualstaking/types"
@@ -177,7 +176,7 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 // modifyStakeEntryDelegation modifies the (epochstorage) stake-entry of the provider for a chain based on the action (increase or decrease).
 func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, increase bool) (err error) {
 	stakeEntry, exists := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
-	if !exists {
+	if !exists || provider != stakeEntry.Address {
 		if increase {
 			return epochstoragetypes.ErrProviderNotStaked
 		}
@@ -185,15 +184,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		return nil
 	}
 
-	// Sanity check
-	if stakeEntry.Address != provider {
-		return utils.LavaFormatError("critical: delegate/un-delegate with provider address mismatch", sdkerrors.ErrInvalidAddress,
-			utils.Attribute{Key: "provider", Value: provider},
-			utils.Attribute{Key: "address", Value: stakeEntry.Address},
-		)
-	}
-
-	if delegator == provider {
+	if delegator == stakeEntry.Vault {
 		if increase {
 			stakeEntry.Stake = stakeEntry.Stake.Add(amount)
 		} else {
@@ -214,15 +205,17 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 	}
 
 	details := map[string]string{
-		"provider":        stakeEntry.Address,
-		"chain_id":        stakeEntry.Chain,
-		"moniker":         stakeEntry.Moniker,
-		"stake":           stakeEntry.Stake.String(),
-		"effective_stake": stakeEntry.EffectiveStake().String() + stakeEntry.Stake.Denom,
+		"provider_vault":    stakeEntry.Vault,
+		"provider_provider": stakeEntry.Address,
+		"chain_id":          stakeEntry.Chain,
+		"moniker":           stakeEntry.Description.Moniker,
+		"description":       stakeEntry.Description.String(),
+		"stake":             stakeEntry.Stake.String(),
+		"effective_stake":   stakeEntry.EffectiveStake().String() + stakeEntry.Stake.Denom,
 	}
 
 	if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
-		err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Address)
+		err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Vault)
 		if err != nil {
 			return utils.LavaFormatError("can't remove stake Entry after decreasing provider self delegation", err,
 				utils.Attribute{Key: "provider", Value: stakeEntry.Address},
@@ -238,7 +231,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, chainID).String()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
 		stakeEntry.Freeze()
-	} else if delegator == provider && stakeEntry.IsFrozen() {
+	} else if delegator == stakeEntry.Vault && stakeEntry.IsFrozen() && !stakeEntry.IsJailed(ctx.BlockTime().UTC().Unix()) {
 		stakeEntry.UnFreeze(k.epochstorageKeeper.GetCurrentNextEpoch(ctx) + 1)
 	}
 

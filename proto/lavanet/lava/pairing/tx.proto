@@ -6,6 +6,8 @@ import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "lavanet/lava/epochstorage/endpoint.proto";
 import "lavanet/lava/pairing/relay.proto";
+import "cosmos/staking/v1beta1/staking.proto";
+import "amino/amino.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
@@ -25,10 +27,12 @@ message MsgStakeProvider {
   cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
   repeated lavanet.lava.epochstorage.Endpoint endpoints = 4 [(gogoproto.nullable) = false];
   int32 geolocation = 5;
-  string moniker = 6;
+  reserved 6;
   cosmos.base.v1beta1.Coin delegate_limit = 7 [(gogoproto.nullable) = false];
   uint64 delegate_commission = 8; // delegation commission (precentage 0-100)
   string validator = 9;
+  string address = 10;
+  cosmos.staking.v1beta1.Description description = 11 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
 message MsgStakeProviderResponse {

@@ -3,7 +3,6 @@ package chainlib
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
@@ -403,7 +404,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 
 func newGrpcChainProxy(ctx context.Context, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface, rpcProviderEndpoint lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
-		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID},
+		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID, HashedNodeUrl: chainproxy.HashURL(rpcProviderEndpoint.NodeUrls[0].Url)},
 		descriptorsCache: &grpcDescriptorCache{},
 	}
 	cp.conn = conn
@@ -438,6 +439,9 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		return nil, "", nil, utils.LavaFormatError("grpc get connection failed ", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
 	defer cp.conn.ReturnRpc(conn)
+
+	// appending hashed url
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.BaseChainProxy.HashedNodeUrl))
 
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.GrpcMessage)
@@ -533,21 +537,6 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
 	defer cancel()
 	err = conn.Invoke(connectCtx, "/"+nodeMessage.Path, msg, response, grpc.Header(&respHeaders))
-	// Extract status code from response headers
-	statusCodeHeader := respHeaders.Get("grpc-status")
-	if len(statusCodeHeader) > 0 {
-		statusCodeTest, err := strconv.Atoi(statusCodeHeader[0])
-		if err != nil {
-			// Handle error
-			utils.LavaFormatError("Error:", err, utils.LogAttr("statusCode", statusCodeTest))
-		} else {
-			// Use the status code
-			utils.LavaFormatDebug("Status Code:", utils.LogAttr("statusCode", statusCodeTest))
-		}
-	} else {
-		utils.LavaFormatDebug("NO Status Code:")
-		// No status code found in response headers
-	}
 	if err != nil {
 		// Validate if the error is related to the provider connection to the node or it is a valid error
 		// in case the error is valid (e.g. bad input parameters) the error will return in the form of a valid error reply
@@ -559,6 +548,8 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		if handlingError != nil {
 			return nil, "", nil, handlingError
 		}
+		// set status code for user header
+		grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(int(statusCode)))) // we ignore this error here since this code can be triggered not from grpc
 		reply := &RelayReplyWrapper{
 			StatusCode: int(statusCode),
 			RelayReply: &pairingtypes.RelayReply{
@@ -574,8 +565,12 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	if err != nil {
 		return nil, "", nil, utils.LavaFormatError("proto.Marshal(response) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 	}
+	// set response status code
+	validResponseStatus := http.StatusOK
+	grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(validResponseStatus))) // we ignore this error here since this code can be triggered not from grpc
+	// create reply wrapper
 	reply := &RelayReplyWrapper{
-		StatusCode: http.StatusOK, // status code is used only for rest at the moment
+		StatusCode: validResponseStatus, // status code is used only for rest at the moment
 		RelayReply: &pairingtypes.RelayReply{
 			Data:     respBytes,
 			Metadata: convertToMetadataMapOfSlices(respHeaders),

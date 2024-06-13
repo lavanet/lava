@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chaintracker"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
@@ -33,14 +35,14 @@ import (
 var (
 	seed       int64
 	randomizer *sigs.ZeroReader
-	addressGen uniqueAddresGenerator
+	addressGen uniqueAddressGenerator
 )
 
 func TestMain(m *testing.M) {
 	// This code will run once before any test cases are executed.
 	seed = time.Now().Unix()
 	rand.SetSpecificSeed(seed)
-	addressGen = uniqueAddresGenerator{}
+	addressGen = uniqueAddressGenerator{}
 	randomizer = sigs.NewZeroReader(seed)
 	lavasession.AllowInsecureConnectionToProviders = true
 	// Run the actual tests
@@ -54,7 +56,7 @@ func TestMain(m *testing.M) {
 func isGrpcServerUp(url string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*50)
 	defer cancel()
-	conn, err := lavasession.ConnectGRPCClient(context.Background(), url, true)
+	conn, err := lavasession.ConnectGRPCClient(context.Background(), url, true, false, false)
 	if err != nil {
 		return false
 	}
@@ -154,7 +156,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	baseLatency := common.AverageWorldLatency / 2
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2)
-	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil)
+	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test")
 	consumerSessionManager.UpdateAllProviders(epoch, pairingList)
 
 	consumerConsistency := rpcconsumer.NewConsumerConsistency(specId)
@@ -189,6 +191,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 		w.WriteHeader(status)
 		fmt.Fprint(w, string(data))
 	})
+
 	chainParser, chainRouter, chainFetcher, _, endpoint, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, "../../", addons)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
@@ -240,7 +243,8 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 		ConsistencyCallback: nil,
 		Pmetrics:            nil,
 	}
-	mockChainFetcher := NewMockChainFetcher(1000, 10, nil)
+
+	mockChainFetcher := NewMockChainFetcher(1000, int64(blocksToSaveChainTracker), nil)
 	chainTracker, err := chaintracker.NewChainTracker(ctx, mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, account.Addr.String(), chainRouter, chainParser)
@@ -404,7 +408,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 					counter[id]++
 					handler := func(req []byte, header http.Header) (data []byte, status int) {
 						time.Sleep(3 * time.Millisecond) // cause timeout for providers we got a reply for so others get chosen with a bigger likelihood
-						return providers[id].replySetter.replyDataBuf, http.StatusOK
+						return providers[id-1].replySetter.replyDataBuf, http.StatusOK
 					}
 					providers[id-1].replySetter.handler = handler
 				}
@@ -436,7 +440,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 				seenError := false
 				statuses := map[int]struct{}{}
 				for i := 0; i <= 100; i++ {
-					client := http.Client{Timeout: 500 * time.Millisecond}
+					client := http.Client{}
 					req, err := http.NewRequest("GET", "http://"+consumerListenAddress+"/status", nil)
 					require.NoError(t, err)
 
@@ -547,6 +551,117 @@ func TestConsumerProviderTx(t *testing.T) {
 			require.NoError(t, err)
 			resp.Body.Close()
 			require.Equal(t, `{"result": 2}`, string(bodyBytes))
+		})
+	}
+}
+
+func TestConsumerProviderJsonRpcWithNullID(t *testing.T) {
+	playbook := []struct {
+		name         string
+		specId       string
+		method       string
+		expected     string
+		apiInterface string
+	}{
+		{
+			name:         "jsonrpc",
+			specId:       "ETH1",
+			method:       "eth_blockNumber",
+			expected:     `{"jsonrpc":"2.0","id":null,"result":{}}`,
+			apiInterface: spectypes.APIInterfaceJsonRPC,
+		},
+		{
+			name:         "tendermintrpc",
+			specId:       "LAV1",
+			method:       "status",
+			expected:     `{"jsonrpc":"2.0","result":{}}`,
+			apiInterface: spectypes.APIInterfaceTendermintRPC,
+		},
+	}
+	for _, play := range playbook {
+		t.Run(play.name, func(t *testing.T) {
+			ctx := context.Background()
+			// can be any spec and api interface
+			specId := play.specId
+			apiInterface := play.apiInterface
+			epoch := uint64(100)
+			requiredResponses := 1
+			lavaChainID := "lava"
+			numProviders := 5
+
+			consumerListenAddress := addressGen.GetAddress()
+			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+			type providerData struct {
+				account          sigs.Account
+				endpoint         *lavasession.RPCProviderEndpoint
+				server           *rpcprovider.RPCProviderServer
+				replySetter      *ReplySetter
+				mockChainFetcher *MockChainFetcher
+			}
+			providers := []providerData{}
+
+			for i := 0; i < numProviders; i++ {
+				// providerListenAddress := "localhost:111" + strconv.Itoa(i)
+				account := sigs.GenerateDeterministicFloatingKey(randomizer)
+				providerDataI := providerData{account: account}
+				providers = append(providers, providerDataI)
+			}
+			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+			for i := 0; i < numProviders; i++ {
+				ctx := context.Background()
+				providerDataI := providers[i]
+				listenAddress := addressGen.GetAddress()
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil))
+				providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
+			}
+			for i := 0; i < numProviders; i++ {
+				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
+					PublicLavaAddress: providers[i].account.Addr.String(),
+					Endpoints: []*lavasession.Endpoint{
+						{
+							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
+							Enabled:        true,
+							Geolocation:    1,
+						},
+					},
+					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+					MaxComputeUnits:  10000,
+					UsedComputeUnits: 0,
+					PairingEpoch:     epoch,
+				}
+			}
+			rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+			require.NotNil(t, rpcconsumerServer)
+
+			for i := 0; i < numProviders; i++ {
+				handler := func(req []byte, header http.Header) (data []byte, status int) {
+					var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+					err := json.Unmarshal(req, &jsonRpcMessage)
+					require.NoError(t, err)
+
+					response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %v}`, string(jsonRpcMessage.ID))
+					return []byte(response), http.StatusOK
+				}
+				providers[i].replySetter.handler = handler
+			}
+
+			client := http.Client{Timeout: 500 * time.Millisecond}
+			jsonMsg := fmt.Sprintf(`{"jsonrpc":"2.0","method":"%v","params": [], "id":null}`, play.method)
+			msgBuffer := bytes.NewBuffer([]byte(jsonMsg))
+			req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress, msgBuffer)
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+
+			bodyBytes, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, resp.StatusCode, string(bodyBytes))
+
+			resp.Body.Close()
+
+			require.Equal(t, play.expected, string(bodyBytes))
 		})
 	}
 }

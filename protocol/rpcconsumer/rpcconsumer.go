@@ -282,7 +282,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			}
 
 			// Register For Updates
-			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager)
+			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String())
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
 			var relaysMonitor *metrics.RelaysMonitor
@@ -312,13 +312,18 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	relaysMonitorAggregator.StartMonitoring(ctx)
 
 	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
-	for chain := range chainMutexes {
-		policyUpdater, ok := policyUpdaters.Load(chain)
+	for chainId := range chainMutexes {
+		policyUpdater, ok := policyUpdaters.Load(chainId)
 		if !ok {
-			utils.LavaFormatError("could not load policy Updater for chain", nil, utils.LogAttr("chain", chain))
+			utils.LavaFormatError("could not load policy Updater for chain", nil, utils.LogAttr("chain", chainId))
 			continue
 		}
-		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater)
+		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater, chainId)
+		emergencyTracker, ok := consumerStateTracker.ConsumerEmergencyTrackerInf.(*statetracker.EmergencyTracker)
+		if !ok {
+			utils.LavaFormatFatal("Failed converting consumerStateTracker.ConsumerEmergencyTrackerInf to *statetracker.EmergencyTracker", nil, utils.LogAttr("chain", chainId))
+		}
+		consumerStateTracker.RegisterForPairingUpdates(ctx, emergencyTracker, chainId)
 	}
 
 	utils.LavaFormatInfo("RPCConsumer done setting up all endpoints, ready for requests")
@@ -398,6 +403,10 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			lavasession.AllowInsecureConnectionToProviders = viper.GetBool(lavasession.AllowInsecureConnectionToProvidersFlag)
 			if lavasession.AllowInsecureConnectionToProviders {
 				utils.LavaFormatWarning("AllowInsecureConnectionToProviders is set to true, this should be used only in development", nil, utils.Attribute{Key: lavasession.AllowInsecureConnectionToProvidersFlag, Value: lavasession.AllowInsecureConnectionToProviders})
+			}
+			lavasession.AllowGRPCCompressionForConsumerProviderCommunication = viper.GetBool(lavasession.AllowGRPCCompressionFlag)
+			if lavasession.AllowGRPCCompressionForConsumerProviderCommunication {
+				utils.LavaFormatInfo("AllowGRPCCompressionForConsumerProviderCommunication is set to true, messages will be compressed", utils.Attribute{Key: lavasession.AllowGRPCCompressionFlag, Value: lavasession.AllowGRPCCompressionForConsumerProviderCommunication})
 			}
 
 			var rpcEndpoints []*lavasession.RPCEndpoint
@@ -545,6 +554,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.MarkFlagRequired(common.GeolocationFlag)
 	cmdRPCConsumer.Flags().Bool("secure", false, "secure sends reliability on every message")
 	cmdRPCConsumer.Flags().Bool(lavasession.AllowInsecureConnectionToProvidersFlag, false, "allow insecure provider-dialing. used for development and testing")
+	cmdRPCConsumer.Flags().Bool(lavasession.AllowGRPCCompressionFlag, false, "allow messages to be compressed when communicating between the consumer and provider")
 	cmdRPCConsumer.Flags().Bool(common.TestModeFlagName, false, "test mode causes rpcconsumer to send dummy data and print all of the metadata in it's listeners")
 	cmdRPCConsumer.Flags().String(performance.PprofAddressFlagName, "", "pprof server address, used for code profiling")
 	cmdRPCConsumer.Flags().String(performance.CacheFlagName, "", "address for a cache server to improve performance")

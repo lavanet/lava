@@ -1,9 +1,11 @@
 package rpcInterfaceMessages
 
 import (
-	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	"github.com/fullstorydev/grpcurl"
 	"github.com/gogo/status"
@@ -32,21 +34,26 @@ type GrpcMessage struct {
 }
 
 func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
-	// grpc doesn't get here as it returns a real error
+	// grpc status code different than OK or 0 is a node error.
+	if httpStatusCode != 0 && httpStatusCode != http.StatusOK {
+		return true, ""
+	}
 	return false, ""
 }
 
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
 func (gm GrpcMessage) GetParams() interface{} {
-	if gm.Msg[0] == '{' || gm.Msg[0] == '[' {
-		var parsedData interface{}
-		err := json.Unmarshal(gm.Msg, &parsedData)
-		if err != nil {
-			utils.LavaFormatError("failed to unmarshal GetParams", err)
-			return nil
+	if len(gm.Msg) > 0 {
+		if gm.Msg[0] == '{' || gm.Msg[0] == '[' {
+			var parsedData interface{}
+			err := json.Unmarshal(gm.Msg, &parsedData)
+			if err != nil {
+				utils.LavaFormatError("failed to unmarshal GetParams", err)
+				return nil
+			}
+			return parsedData
 		}
-		return parsedData
 	}
 	parsedData, err := gm.dynamicResolve()
 	if err != nil {

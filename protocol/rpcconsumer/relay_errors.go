@@ -77,7 +77,7 @@ func (r *RelayErrors) GetBestErrorMessageForUser() RelayError {
 	if bestIndex != -1 {
 		// Return the chosen error.
 		// Print info for the consumer to know which errors happened
-		utils.LavaFormatInfo("Failed all relays", utils.LogAttr("error_map", errorMap))
+		utils.LavaFormatDebug("Failed all relays", utils.LogAttr("error_map", errorMap))
 		return r.relayErrors[bestIndex]
 	}
 	// if we didn't manage to find any index return all.

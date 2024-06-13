@@ -85,7 +85,7 @@ func CmdAccountInfo() *cobra.Command {
 				})
 				if err == nil && len(response.StakeEntry) > 0 {
 					for _, provider := range response.StakeEntry {
-						if provider.Address == address {
+						if provider.IsAddressVaultOrProvider(address) {
 							if provider.StakeAppliedBlock > uint64(currentBlock) {
 								info.Frozen = append(info.Frozen, provider)
 							} else {
@@ -103,7 +103,7 @@ func CmdAccountInfo() *cobra.Command {
 			if err == nil {
 				if len(unstakeEntriesAllChains.StakeStorage.StakeEntries) > 0 {
 					for _, unstakingProvider := range unstakeEntriesAllChains.StakeStorage.StakeEntries {
-						if unstakingProvider.Address == address {
+						if unstakingProvider.IsAddressVaultOrProvider(address) {
 							info.Unstaked = append(info.Unstaked, unstakingProvider)
 						}
 					}

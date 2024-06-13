@@ -3,10 +3,11 @@ package rpcprovider
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec"
@@ -41,6 +42,10 @@ const (
 )
 
 var RPCProviderStickinessHeaderName = "X-Node-Sticky"
+
+const (
+	RPCProviderAddressHeader = "Lava-Provider-Address"
+)
 
 type RPCProviderServer struct {
 	cache                     *performance.Cache
@@ -760,6 +765,7 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		}
 		// add stickiness header
 		chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderStickinessHeaderName, Value: common.GetUniqueToken(consumerAddr.String(), common.GetTokenFromGrpcContext(ctx))}})
+		chainMsg.AppendHeader([]pairingtypes.Metadata{{Name: RPCProviderAddressHeader, Value: rpcps.providerAddress.String()}})
 		if debugConsistency {
 			utils.LavaFormatDebug("adding stickiness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(consumerAddr.String(), common.GetIpFromGrpcContext(ctx))))
 		}

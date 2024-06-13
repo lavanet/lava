@@ -25,19 +25,22 @@ type PairingUpdater struct {
 	nextBlockForUpdate         uint64
 	stateQuery                 *ConsumerStateQuery
 	pairingUpdatables          []*PairingUpdatable
+	specId                     string
 }
 
-func NewPairingUpdater(stateQuery *ConsumerStateQuery) *PairingUpdater {
-	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery}
+func NewPairingUpdater(stateQuery *ConsumerStateQuery, specId string) *PairingUpdater {
+	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery, specId: specId}
 }
 
 func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {
 	chainID := consumerSessionManager.RPCEndpoint().ChainID
-	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(context.Background(), chainID, -1)
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, -1)
 	if err != nil {
 		return err
 	}
-	pu.updateConsummerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
+	pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
 	if nextBlockForUpdate > pu.nextBlockForUpdate {
 		// make sure we don't update twice, this updates pu.nextBlockForUpdate
 		pu.Update(int64(nextBlockForUpdate))
@@ -56,7 +59,7 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 func (pu *PairingUpdater) RegisterPairingUpdatable(ctx context.Context, pairingUpdatable *PairingUpdatable) error {
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
-	_, epoch, _, err := pu.stateQuery.GetPairing(ctx, "", -1)
+	_, epoch, _, err := pu.stateQuery.GetPairing(ctx, pu.specId, -1)
 	if err != nil {
 		return err
 	}
@@ -92,7 +95,7 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 		}
 		for _, consumerSessionManager := range consumerSessionManagerList {
 			// same pairing for all apiInterfaces, they pick the right endpoints from inside using our filter function
-			err = pu.updateConsummerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
+			err = pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
 			if err != nil {
 				utils.LavaFormatError("failed updating consumer session manager", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "apiInterface", Value: consumerSessionManager.RPCEndpoint().ApiInterface}, utils.Attribute{Key: "pairingListLen", Value: len(pairingList)})
 				continue
@@ -103,7 +106,7 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 	// get latest epoch from cache
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	_, epoch, _, err := pu.stateQuery.GetPairing(timeoutCtx, "", latestBlock)
+	_, epoch, _, err := pu.stateQuery.GetPairing(timeoutCtx, pu.specId, latestBlock)
 	if err != nil {
 		utils.LavaFormatError("could not update pairing for updatables, trying again next block", err)
 		nextBlockForUpdateList = append(nextBlockForUpdateList, pu.nextBlockForUpdate+1)
@@ -131,7 +134,7 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 	pu.updateInner(latestBlock)
 }
 
-func (pu *PairingUpdater) updateConsummerSessionManager(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, consumerSessionManager *lavasession.ConsumerSessionManager, epoch uint64) (err error) {
+func (pu *PairingUpdater) updateConsumerSessionManager(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, consumerSessionManager *lavasession.ConsumerSessionManager, epoch uint64) (err error) {
 	pairingListForThisCSM, err := pu.filterPairingListByEndpoint(ctx, planstypes.Geolocation(consumerSessionManager.RPCEndpoint().Geolocation), pairingList, consumerSessionManager.RPCEndpoint(), epoch)
 	if err != nil {
 		return err

@@ -6,8 +6,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/epochstorage/types"
 	v3 "github.com/lavanet/lava/x/epochstorage/types/migrations/v3"
 	v4 "github.com/lavanet/lava/x/epochstorage/types/migrations/v4"
+	v6 "github.com/lavanet/lava/x/epochstorage/types/migrations/v6"
 )
 
 type Migrator struct {
@@ -124,6 +126,53 @@ func (m Migrator) Migrate4to5(ctx sdk.Context) error {
 			StakeStorages[st].StakeEntries[s].DelegateCommission = 100
 		}
 		m.keeper.SetStakeStorage(ctx, StakeStorages[st])
+	}
+
+	return nil
+}
+
+// Migrate5to6 goes over all existing stake entries and populates the new vault address field with the stake entry address
+func (m Migrator) Migrate5to6(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate: epochstorage to include provider and vault addresses")
+
+	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(types.StakeStorageKeyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var stakeStorageV6 v6.StakeStorage
+		m.keeper.cdc.MustUnmarshal(iterator.Value(), &stakeStorageV6)
+
+		for i := range stakeStorageV6.StakeEntries {
+			stakeStorageV6.StakeEntries[i].Vault = stakeStorageV6.StakeEntries[i].Address
+		}
+
+		store.Set(iterator.Key(), m.keeper.cdc.MustMarshal(&stakeStorageV6))
+	}
+
+	return nil
+}
+
+// Migrate6to7 goes over all existing stake entries and populates the new description field with current moniker
+func (m Migrator) Migrate6to7(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate: epochstorage to include detailed description")
+
+	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(types.StakeStorageKeyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var stakeStorageV7 types.StakeStorage
+		m.keeper.cdc.MustUnmarshal(iterator.Value(), &stakeStorageV7)
+
+		for i := range stakeStorageV7.StakeEntries {
+			stakeStorageV7.StakeEntries[i].Description.Moniker = stakeStorageV7.StakeEntries[i].Moniker
+			stakeStorageV7.StakeEntries[i].Moniker = ""
+		}
+
+		store.Set(iterator.Key(), m.keeper.cdc.MustMarshal(&stakeStorageV7))
 	}
 
 	return nil

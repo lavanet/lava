@@ -2,12 +2,15 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/goccy/go-json"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -111,7 +114,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType, internalPath)
 		if err != nil {
-			utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
+			utils.LavaFormatDebug("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
 			return nil, err
 		}
 
@@ -370,7 +373,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
 			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
-				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), nil, websockConn)
+				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), websockConn.RemoteAddr().String(), nil, websockConn)
 			}
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
@@ -439,7 +442,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			apil.logger.LogTestMode(fiberCtx)
 		}
 
-		consumerIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
+		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
 
@@ -459,9 +462,9 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			utils.LogAttr("headers", headers),
 		)
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		relayResult, err := apil.relaySender.SendRelay(ctx, path, msg, http.MethodPost, dappID, consumerIp, metricsData, headers)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path, msg, http.MethodPost, dappID, userIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, msg, metadataValues, nil)
+			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
@@ -645,8 +648,6 @@ func (cp *JrpcChainProxy) sendBatchMessage(ctx context.Context, nodeMessage *rpc
 }
 
 func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
-	// Get node
-
 	rpcInputMessage := chainMessage.GetRPCMessage()
 	nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcMessage)
 	if !ok {
@@ -667,6 +668,10 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		return nil, "", nil, err
 	}
 	defer cp.conn[internalPath].ReturnRpc(rpc)
+
+	// appending hashed url
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn[internalPath].GetUrlHash()))
+
 	// Call our node
 	var rpcMessage *rpcclient.JsonrpcMessage
 	var replyMessage *rpcInterfaceMessages.JsonrpcMessage

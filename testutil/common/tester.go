@@ -114,7 +114,12 @@ func (ts *Tester) SetupAccounts(numSub, numAdm, numDev int) *Tester {
 
 func (ts *Tester) AddAccount(kind string, idx int, balance int64) (sigs.Account, string) {
 	name := kind + strconv.Itoa(idx)
-	ts.accounts[name] = CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
+	acc := CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
+	if kind == PROVIDER {
+		vault := CreateNewAccount(ts.GoCtx, *ts.Keepers, balance)
+		acc.Vault = &vault
+	}
+	ts.accounts[name] = acc
 	return ts.Account(name)
 }
 
@@ -150,17 +155,23 @@ func (ts *Tester) AccountsMap() map[string]sigs.Account {
 	return ts.accounts
 }
 
-func (ts *Tester) StakeProvider(addr string, spec spectypes.Spec, amount int64) error {
-	return ts.StakeProviderExtra(addr, spec, amount, nil, 0, "prov")
+func (ts *Tester) StakeProvider(vault string, provider string, spec spectypes.Spec, amount int64) error {
+	d := MockDescription()
+	return ts.StakeProviderExtra(vault, provider, spec, amount, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
 }
 
 func (ts *Tester) StakeProviderExtra(
-	addr string,
+	vault string,
+	provider string,
 	spec spectypes.Spec,
 	amount int64,
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
 	moniker string,
+	identity string,
+	website string,
+	securityContact string,
+	descriptionDetails string,
 ) error {
 	// if geoloc left zero, use default 1
 	if geoloc == 0 {
@@ -186,7 +197,8 @@ func (ts *Tester) StakeProviderExtra(
 	}
 
 	stake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(amount))
-	_, err := ts.TxPairingStakeProvider(addr, spec.Index, stake, endpoints, geoloc, moniker)
+	description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
+	_, err := ts.TxPairingStakeProvider(vault, provider, spec.Index, stake, endpoints, geoloc, description)
 
 	return err
 }
@@ -553,38 +565,45 @@ func (ts *Tester) TxProjectSetPolicy(projectID, subkey string, policy *planstype
 
 // TxPairingStakeProvider: implement 'tx pairing stake-provider'
 func (ts *Tester) TxPairingStakeProvider(
-	addr string,
+	vault string,
+	provider string,
 	chainID string,
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
-	moniker string,
+	description stakingtypes.Description,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgStakeProvider{
-		Creator:            addr,
+		Creator:            vault,
 		Validator:          sdk.ValAddress(val.Addr).String(),
 		ChainID:            chainID,
 		Amount:             amount,
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
-		Moniker:            moniker,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
 		DelegateCommission: 100,
+		Address:            provider,
+		Description:        description,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
 
 // TxPairingStakeProvider: implement 'tx pairing stake-provider'
 func (ts *Tester) TxPairingStakeProviderFull(
-	addr string,
+	vault string,
+	provider string,
 	chainID string,
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
-	moniker string,
 	commission uint64,
 	delegateLimit uint64,
+	moniker string,
+	identity string,
+	website string,
+	securityContact string,
+	descriptionDetails string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	// if geoloc left zero, use default 1
@@ -610,38 +629,41 @@ func (ts *Tester) TxPairingStakeProviderFull(
 		}
 	}
 
+	description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
+
 	msg := &pairingtypes.MsgStakeProvider{
-		Creator:            addr,
+		Creator:            vault,
 		Validator:          sdk.ValAddress(val.Addr).String(),
 		ChainID:            chainID,
 		Amount:             amount,
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
-		Moniker:            moniker,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.NewIntFromUint64(delegateLimit)),
 		DelegateCommission: commission,
+		Address:            provider,
+		Description:        description,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
 
 // TxPairingUnstakeProvider: implement 'tx pairing unstake-provider'
 func (ts *Tester) TxPairingUnstakeProvider(
-	addr string,
+	vault string,
 	chainID string,
 ) (*pairingtypes.MsgUnstakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgUnstakeProvider{
 		Validator: sdk.ValAddress(val.Addr).String(),
-		Creator:   addr,
+		Creator:   vault,
 		ChainID:   chainID,
 	}
 	return ts.Servers.PairingServer.UnstakeProvider(ts.GoCtx, msg)
 }
 
 // TxPairingRelayPayment: implement 'tx pairing relay-payment'
-func (ts *Tester) TxPairingRelayPayment(addr string, rs ...*pairingtypes.RelaySession) (*pairingtypes.MsgRelayPaymentResponse, error) {
+func (ts *Tester) TxPairingRelayPayment(provider string, rs ...*pairingtypes.RelaySession) (*pairingtypes.MsgRelayPaymentResponse, error) {
 	msg := &pairingtypes.MsgRelayPayment{
-		Creator:           addr,
+		Creator:           provider,
 		Relays:            rs,
 		DescriptionString: "test",
 	}
@@ -792,6 +814,17 @@ func (ts *Tester) QueryPairingGetPairing(chainID, client string) (*pairingtypes.
 	return ts.Keepers.Pairing.GetPairing(ts.GoCtx, msg)
 }
 
+// QueryPairingProviderPairingChance implements 'q pairing get-pairing'
+func (ts *Tester) QueryPairingProviderPairingChance(provider string, chainID string, geolocation int32, cluster string) (*pairingtypes.QueryProviderPairingChanceResponse, error) {
+	msg := &pairingtypes.QueryProviderPairingChanceRequest{
+		Provider:    provider,
+		ChainID:     chainID,
+		Geolocation: geolocation,
+		Cluster:     cluster,
+	}
+	return ts.Keepers.Pairing.ProviderPairingChance(ts.GoCtx, msg)
+}
+
 // QueryPairingProviders: implement 'q pairing providers'
 func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingtypes.QueryProvidersResponse, error) {
 	msg := &pairingtypes.QueryProvidersRequest{
@@ -799,6 +832,15 @@ func (ts *Tester) QueryPairingProviders(chainID string, frozen bool) (*pairingty
 		ShowFrozen: frozen,
 	}
 	return ts.Keepers.Pairing.Providers(ts.GoCtx, msg)
+}
+
+// QueryPairingProvider: implement 'q pairing provider'
+func (ts *Tester) QueryPairingProvider(address string, chainID string) (*pairingtypes.QueryProviderResponse, error) {
+	msg := &pairingtypes.QueryProviderRequest{
+		Address: address,
+		ChainID: chainID,
+	}
+	return ts.Keepers.Pairing.Provider(ts.GoCtx, msg)
 }
 
 // QueryPairingVerifyPairing implements 'q pairing verfy-pairing'
@@ -1128,8 +1170,14 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 	// setup providers
 	start = len(ts.Accounts(PROVIDER))
 	for i := 0; i < providers; i++ {
-		_, addr := ts.AddAccount(PROVIDER, start+i, balance)
-		err := ts.StakeProviderExtra(addr, spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, "prov"+strconv.Itoa(start+i))
+		acc, provider := ts.AddAccount(PROVIDER, start+i, balance)
+		d := MockDescription()
+		moniker := d.Moniker + strconv.Itoa(start+i)
+		identity := d.Identity + strconv.Itoa(start+i)
+		website := d.Website + strconv.Itoa(start+i)
+		securityContact := d.SecurityContact + strconv.Itoa(start+i)
+		details := d.Details + strconv.Itoa(start+i)
+		err := ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, moniker, identity, website, securityContact, details)
 		if err != nil {
 			return err
 		}

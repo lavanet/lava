@@ -2,11 +2,12 @@ package reliabilitymanager
 
 import (
 	"context"
-	"encoding/json"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/lavanet/lava/protocol/chainlib"
@@ -28,8 +29,8 @@ const (
 )
 
 type TxSender interface {
-	SendVoteReveal(voteID string, vote *VoteData) error
-	SendVoteCommitment(voteID string, vote *VoteData) error
+	SendVoteReveal(voteID string, vote *VoteData, specID string) error
+	SendVoteCommitment(voteID string, vote *VoteData, specID string) error
 }
 
 type ChainTrackerInf interface {
@@ -79,7 +80,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		}
 		utils.LavaFormatInfo(" Received Vote Reveal for vote, sending Reveal for result",
 			utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "voteData", Value: vote})
-		rm.txSender.SendVoteReveal(voteID, vote)
+		rm.txSender.SendVoteReveal(voteID, vote, voteParams.ChainID)
 		return nil
 	} else {
 		// new vote
@@ -130,7 +131,7 @@ func (rm *ReliabilityManager) VoteHandler(voteParams *VoteParams, nodeHeight uin
 		vote = &VoteData{RelayDataHash: replyDataHash, Nonce: nonce, CommitHash: commitHash}
 		rm.votes[voteID] = vote
 		utils.LavaFormatInfo("Received Vote start, sending commitment for result", utils.Attribute{Key: "voteID", Value: voteID}, utils.Attribute{Key: "voteData", Value: vote})
-		rm.txSender.SendVoteCommitment(voteID, vote)
+		rm.txSender.SendVoteCommitment(voteID, vote, voteParams.ChainID)
 		return nil
 	}
 }
