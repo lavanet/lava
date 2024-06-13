@@ -13,7 +13,7 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/dgraph-io/ristretto"
-	"github.com/lavanet/lava/protocol/lavaprotocol"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/lavaslices"
@@ -94,7 +94,7 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	originalRequestedBlock := relayCacheGet.RequestedBlock // save requested block prior to swap
 	if originalRequestedBlock < 0 {                        // we need to fetch stored latest block information.
 		getLatestBlock := s.getLatestBlock(latestBlockKey(relayCacheGet.ChainId, ""))
-		relayCacheGet.RequestedBlock = lavaprotocol.ReplaceRequestedBlock(originalRequestedBlock, getLatestBlock)
+		relayCacheGet.RequestedBlock = common.ReplaceRequestedBlock(originalRequestedBlock, getLatestBlock)
 	}
 
 	utils.LavaFormatDebug("Got Cache Get", utils.Attribute{Key: "request_hash", Value: string(relayCacheGet.RequestHash)},
