@@ -11,5 +11,4 @@ var (
 	ErrFundIprpc           = sdkerrors.Register(ModuleName, 1, "fund iprpc TX failed")
 	ErrMemoNotIprpcOverIbc = sdkerrors.Register(ModuleName, 2, "ibc-transfer packet's memo is not in the right format of IPRPC over IBC")
 	ErrIprpcMemoInvalid    = sdkerrors.Register(ModuleName, 3, "ibc-transfer packet's memo of IPRPC over IBC is invalid")
-	ErrIbcTransferRevert   = sdkerrors.Register(ModuleName, 4, "ibc-transfer revert failed")
 )
