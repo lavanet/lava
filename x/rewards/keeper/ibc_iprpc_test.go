@@ -19,63 +19,15 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 	memos := []string{
 		"",
 		"blabla",
-		`{
-			"client": "Bruce",
-		    "duration": 3	
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "mockspec",
-			  "duration": 3
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "",
-			  "spec": "mockspec",
-			  "duration": 3
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "mockspec",
-			  "spec": "mockspec",
-			  "duration": 3
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "spec": "mockspec",
-			  "duration": 3
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "other-mockspec",
-			  "duration": 3
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "duration": 3
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "mockspec",
-			  "duration": -3
-			}
-		}`,
-		`{
-			"iprpc": {
-			  "creator": "my-moniker",
-			  "spec": "mockspec"
-			}
-		}`,
+		`{"client":"bruce","duration":2}`,
+		`{"iprpc":{"creator":"my-moniker","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"mockspec","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"mockspec","duration":2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"my-moniker","duration":2,"spec":"other-mockspec"}}`,
+		`{"iprpc":{"creator":"my-moniker","duration":2}}`,
+		`{"iprpc":{"creator":"my-moniker","duration":-2,"spec":"mockspec"}}`,
+		`{"iprpc":{"creator":"my-moniker","spec":"mockspec"}}`,
 	}
 
 	const (
@@ -120,7 +72,7 @@ func TestParseIprpcOverIbcMemo(t *testing.T) {
 			name:         "memo iprpc json valid",
 			memoInd:      VALID_JSON_IPRPC,
 			expectError:  nil,
-			expectedMemo: types.IprpcMemo{Creator: "my-moniker", Spec: "mockspec", Duration: 3},
+			expectedMemo: types.IprpcMemo{Creator: "my-moniker", Spec: "mockspec", Duration: 2},
 		},
 		{
 			name:         "invalid memo iprpc json - invalid creator - empty creator",

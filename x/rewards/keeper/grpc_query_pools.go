@@ -37,6 +37,10 @@ func (k Keeper) Pools(goCtx context.Context, req *types.QueryPoolsRequest) (*typ
 			Name:    string(types.IprpcPoolName),
 			Balance: k.TotalPoolTokens(ctx, types.IprpcPoolName),
 		},
+		{
+			Name:    string(types.PendingIprpcPoolName),
+			Balance: k.TotalPoolTokens(ctx, types.PendingIprpcPoolName),
+		},
 	}
 
 	estimatedBlocksToRefill := k.BlocksToNextTimerExpiry(ctx)
