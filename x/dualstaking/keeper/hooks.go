@@ -68,6 +68,9 @@ func (h Hooks) AfterDelegationModified(ctx sdk.Context, delAddr sdk.AccAddress, 
 }
 
 func (h Hooks) BeforeValidatorSlashed(ctx sdk.Context, valAddr sdk.ValAddress, fraction sdk.Dec) error {
+	slashedValidators := h.k.GetSlashedValidators(ctx)
+	slashedValidators = append(slashedValidators, valAddr.String())
+	h.k.SetSlashedValidators(ctx, slashedValidators)
 	return nil
 }
 
