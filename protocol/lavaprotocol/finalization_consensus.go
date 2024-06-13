@@ -270,6 +270,8 @@ func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlock
 
 	now := time.Now()
 	calcExpectedBlocks := func(mapExpectedBlockHeights map[string]int64, blockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders) map[string]int64 {
+		// Since we are looking for the maximum block height, we need to sort the block heights in ascending order.
+		// This will ensure that mapExpectedBlockHeights will contain the maximum block height for each provider.
 		sortedBlockHeights := maps.StableSortedKeys(blockToHashesToAgreeingProviders)
 		for _, blockHeight := range sortedBlockHeights {
 			blockHashesToAgreeingProviders := blockToHashesToAgreeingProviders[blockHeight]
