@@ -23,7 +23,7 @@ func NewUsedProviders(directiveHeaders map[string]string) *UsedProviders {
 			}
 		}
 	}
-	return &UsedProviders{providers: map[string]struct{}{}, unwantedProviders: unwantedProviders, blockOnSyncLoss: map[string]struct{}{}}
+	return &UsedProviders{providers: map[string]struct{}{}, unwantedProviders: unwantedProviders, blockOnSyncLoss: map[string]struct{}{}, erroredProviders: map[string]struct{}{}}
 }
 
 type UsedProviders struct {
@@ -31,6 +31,7 @@ type UsedProviders struct {
 	providers           map[string]struct{}
 	selecting           bool
 	unwantedProviders   map[string]struct{}
+	erroredProviders    map[string]struct{} // providers who returned protocol errors (used to debug relays for now)
 	blockOnSyncLoss     map[string]struct{}
 	sessionsLatestBatch int
 }
@@ -100,6 +101,7 @@ func (up *UsedProviders) RemoveUsed(provider string, err error) {
 	up.lock.Lock()
 	defer up.lock.Unlock()
 	if err != nil {
+		up.erroredProviders[provider] = struct{}{}
 		if shouldRetryWithThisError(err) {
 			_, ok := up.blockOnSyncLoss[provider]
 			if !ok && IsSessionSyncLoss(err) {
@@ -183,6 +185,15 @@ func (up *UsedProviders) tryLockSelection() bool {
 		return true
 	}
 	return false
+}
+
+func (up *UsedProviders) GetErroredProviders() map[string]struct{} {
+	if up == nil {
+		return map[string]struct{}{}
+	}
+	up.lock.RLock()
+	defer up.lock.RUnlock()
+	return up.erroredProviders
 }
 
 func (up *UsedProviders) GetUnwantedProvidersToSend() map[string]struct{} {

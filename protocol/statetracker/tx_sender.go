@@ -18,11 +18,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
 	updaters "github.com/lavanet/lava/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/utils"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )

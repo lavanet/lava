@@ -57,7 +57,7 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 	downtimePercentage, scaledAvailabilityScore := CalculateAvailabilityScore(&cs.QoSInfo)
 	cs.QoSInfo.LastQoSReport.Availability = scaledAvailabilityScore
 	if sdk.OneDec().GT(cs.QoSInfo.LastQoSReport.Availability) {
-		utils.LavaFormatInfo("QoS Availability report", utils.Attribute{Key: "Availability", Value: cs.QoSInfo.LastQoSReport.Availability}, utils.Attribute{Key: "down percent", Value: downtimePercentage})
+		utils.LavaFormatDebug("QoS Availability report", utils.Attribute{Key: "Availability", Value: cs.QoSInfo.LastQoSReport.Availability}, utils.Attribute{Key: "down percent", Value: downtimePercentage})
 	}
 
 	latencyScore := sdk.MinDec(sdk.OneDec(), sdk.NewDecFromInt(sdk.NewInt(int64(expectedLatency))).Quo(sdk.NewDecFromInt(sdk.NewInt(int64(latency)))))

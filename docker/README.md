@@ -51,47 +51,38 @@ runtime"). The default settings are usually suitable for all deployments.
   docker-compose --profile node --env-file env -f docker-compose.yml down
   ```
 
-**Run Lava Portal / Provider**
+## Running node using state-sync with docker-compose
 
-This section is outdated and is temporarily removed.
+From the root path run:
+```sh
+docker compose -f docker/docker-compose.state-sync.yml up -d
+```
 
-<!--
-1. Create a lava user and fund it.
-  ```
-  export LAVA_HOME='.lava'
-  export LAVA_USER='my-user'
+To test the setup run:
+```sh
+curl -X POST -H "Content-Type: application/json" localhost:26657 --data '{"jsonrpc": "2.0", "id": 1, "method": "status", "params": []}'
+```
+and expect to see the lastest block.
 
-  # create a new user, and then show its address
-  build/lavad keys add $LAVA_USER --home $LAVA_HOME --keyring-backend test
-  build/lavad keys list --home $LAVA_HOME --keyring-backend test list
+You can run change the version of `lavad` using the `LAVAD_VERSION` var:
+```sh
+LAVAD_VERSION=v2.0.1 docker compose -f docker/docker-compose.state-sync.yml up -d
+```
 
-  LAVA_ADDR=$(lavad keys show "${LAVA_USER}" --home $LAVA_HOME --keyring-backend test | \
-      grep address | awk '{print $2}')
+### Full configuration options:
+|Name            |Description                    
+|----------------|-------------------------------
+|LAVAD_VERSION   | The Lavad version to use            
+|CHAIN_ID        | The chain id          
+|KEYRING_BACKEND | The keyring backend 
+|MONIKER         | The moniker for the `init` command
+|STATE_SYNC_RPC_1| The RPC node to sync on
+|GENESIS_ADDRESS | The `genesis.json` URL
+|ADDRBOOK_ADDRESS| The `addrbook.json` URL
+|NUM_BLOCKS      | The number of blocks to sync on from behind the latest block
 
-  # fund the new user: see https://docs.lavanet.xyz/faucet
 
-  # verify the user has funds
-  build/lavad query bank balances $LAVA_ADDR --home $LAVA_HOME --denom ulava \
-      --node http://public-rpc.lavanet.xyz:80/rpc/
-  ```
-
-2. Review the settings in `docker/env`. Fill in all the mandatory values
-for the 'portal' / 'provider' role.
-
-3. Use the following the commands to create/start/stop/destroy the node (for
-'provider' replace the role 'portal' with 'provider'):
-  ```
-  # operate in docker/ directory:
-  cd docker/
-
-  # to start the portal/provider:
-  docker-compose --profile portal --env-file env -f docker-compose.yml up
-
-  # to stop/start the portal/provider:
-  docker-compose --profile portal --env-file env -f docker-compose.yml stop
-  docker-compose --profile portal --env-file env -f docker-compose.yml start
-
-  # to destroy the portal/provider:
-  docker-compose --profile portal --env-file env -f docker-compose.yml down
-  ```
--->
+To clean the lava node setup including volumes run:
+```sh
+docker compose -f docker/docker-compose.state-sync.yml down -v
+```

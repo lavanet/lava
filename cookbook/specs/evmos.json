@@ -870,6 +870,10 @@
                 "values": [
                   {
                     "latest_distance": 10000
+                  },
+                  {
+                    "extension": "archive",
+                    "latest_distance": 1000000
                   }
                 ]
               }
@@ -1460,6 +1464,10 @@
                 "values": [
                   {
                     "latest_distance": 10000
+                  },
+                  {
+                    "extension": "archive",
+                    "latest_distance": 1000000
                   }
                 ]
               }
@@ -1550,13 +1558,16 @@
               },
               {
                 "name": "pruning",
+                "parse_directive": {
+                  "function_tag": "GET_BLOCK_BY_NUM"
+              },
                 "values": [
                   {
-                    "expected_value": ""
+                    "latest_distance": 10000
                   },
                   {
                     "extension": "archive",
-                    "expected_value": ""
+                    "latest_distance": 1000000
                   }
                 ]
               }
