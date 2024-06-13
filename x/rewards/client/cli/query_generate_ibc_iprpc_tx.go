@@ -174,7 +174,6 @@ func getTimeoutHeight(clientQueryCtx client.Context, portId string, channelId st
 	clientHeight, ok := clientState.GetLatestHeight().(clienttypes.Height)
 	if !ok {
 		return clienttypes.ZeroHeight(), fmt.Errorf("invalid height type. expected type: %T, got: %T", clienttypes.Height{}, clientState.GetLatestHeight())
-
 	}
 
 	defaultTimeoutHeightStr := ibctransfertypes.DefaultRelativePacketTimeoutHeight
@@ -190,5 +189,5 @@ func getTimeoutHeight(clientQueryCtx client.Context, portId string, channelId st
 }
 
 func escapeMemo(memo string) string {
-	return fmt.Sprintf("%q", string(memo))
+	return fmt.Sprintf("%q", memo)
 }
