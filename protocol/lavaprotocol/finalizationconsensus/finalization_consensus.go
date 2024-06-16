@@ -35,6 +35,20 @@ func (b BlockToHashesToAgreeingProviders) String() string {
 	return string(ret)
 }
 
+type FinalizationConsensusInf interface {
+	UpdateFinalizedHashes(
+		blockDistanceForFinalizedData int64,
+		consumerAddress sdk.AccAddress,
+		providerAddress string,
+		finalizedBlocks map[int64]string,
+		relaySession *pairingtypes.RelaySession,
+		reply *pairingtypes.RelayReply,
+	) (finalizationConflict *conflicttypes.FinalizationConflict, err error)
+	GetExpectedBlockHeight(chainParser ChainBlockStatsGetter) (expectedBlockHeight int64, numOfProviders int)
+	NewEpoch(epoch uint64)
+	String() string
+}
+
 type FinalizationConsensus struct {
 	currentEpochBlockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders
 	prevEpochBlockToHashesToAgreeingProviders    BlockToHashesToAgreeingProviders

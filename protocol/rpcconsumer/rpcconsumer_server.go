@@ -58,7 +58,7 @@ type RPCConsumerServer struct {
 	privKey                        *btcec.PrivateKey
 	consumerTxSender               ConsumerTxSender
 	requiredResponses              int
-	finalizationConsensus          *finalizationconsensus.FinalizationConsensus
+	finalizationConsensus          finalizationconsensus.FinalizationConsensusInf
 	lavaChainID                    string
 	ConsumerAddress                sdk.AccAddress
 	consumerConsistency            *ConsumerConsistency
@@ -84,7 +84,7 @@ type ConsumerTxSender interface {
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
 	chainParser chainlib.ChainParser,
-	finalizationConsensus *finalizationconsensus.FinalizationConsensus,
+	finalizationConsensus finalizationconsensus.FinalizationConsensusInf,
 	consumerSessionManager *lavasession.ConsumerSessionManager,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
