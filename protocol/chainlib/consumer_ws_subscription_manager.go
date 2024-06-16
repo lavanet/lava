@@ -68,6 +68,40 @@ func NewConsumerWSSubscriptionManager(
 	}
 }
 
+// must be called while locked!
+// checking whether hashed params exist in storage, if it does return the subscription stream and indicate it was found.
+// otherwise return false
+func (cwsm *ConsumerWSSubscriptionManager) checkForActiveSubscription(webSocketCtx context.Context, hashedParams string, chainMessage ChainMessage, dappKey string, websocketRepliesSafeChannelSender *common.SafeChannelSender[*pairingtypes.RelayReply]) (*pairingtypes.RelayReply, bool) {
+	activeSubscription, found := cwsm.activeSubscriptions[hashedParams]
+	if found {
+		defer cwsm.lock.Unlock() // in case we found an active subscription, we will return for any case, we will defer the unlock here.
+		utils.LavaFormatTrace("found active subscription for given params",
+			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("dappKey", dappKey),
+		)
+
+		if _, ok := activeSubscription.connectedDapps[dappKey]; ok {
+			utils.LavaFormatTrace("found active subscription for given params and dappKey",
+				utils.LogAttr("GUID", webSocketCtx),
+				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("dappKey", dappKey),
+			)
+
+			return activeSubscription.firstSubscriptionReply, true // found and already active
+		}
+
+		// Add to existing subscription
+		cwsm.connectDappWithSubscription(dappKey, websocketRepliesSafeChannelSender, hashedParams)
+
+		return activeSubscription.firstSubscriptionReply, false // found and not active, register new.
+	}
+	// not found, need to apply new message
+	return nil, false
+}
+
 func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	webSocketCtx context.Context,
 	chainMessage ChainMessage,
@@ -135,34 +169,28 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		closeWebsocketRepliesChannel()
 	}()
 
-	cwsm.lock.Lock()
-	defer cwsm.lock.Unlock()
-
-	activeSubscription, found := cwsm.activeSubscriptions[hashedParams]
-	if found {
-		utils.LavaFormatTrace("found active subscription for given params",
-			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
-			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-			utils.LogAttr("dappKey", dappKey),
-		)
-
-		if _, ok := activeSubscription.connectedDapps[dappKey]; ok {
-			utils.LavaFormatTrace("found active subscription for given params and dappKey",
-				utils.LogAttr("GUID", webSocketCtx),
-				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
-				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-				utils.LogAttr("dappKey", dappKey),
-			)
-
-			closeWebsocketRepliesChannel()
-			return activeSubscription.firstSubscriptionReply, nil, nil
+	// using a function to avoid unlock mistakes
+	firstSubscriptionReply, returnWebsocketRepliesChan := func() (*pairingtypes.RelayReply, bool) {
+		cwsm.lock.Lock()
+		defer cwsm.lock.Unlock()
+		firstSubscriptionReply, alreadyActiveSubscription := cwsm.checkForActiveSubscription(webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender)
+		if firstSubscriptionReply != nil {
+			if alreadyActiveSubscription { // same dapp Id, no need for new channel
+				closeWebsocketRepliesChannel()
+				return firstSubscriptionReply, false
+			}
+			// Added to existing subscriptions with a new dappId.
+			return firstSubscriptionReply, true
 		}
-
-		// Add to existing subscription
-		cwsm.connectDappWithSubscription(dappKey, websocketRepliesSafeChannelSender, hashedParams)
-
-		return activeSubscription.firstSubscriptionReply, websocketRepliesChan, nil
+		// if we reached here, the subscription is currently not registered, we will need to check again later when we apply the subscription, and
+		// handle the case where two subscriptions were launched at the same time.
+		return nil, false
+	}()
+	if firstSubscriptionReply != nil {
+		if returnWebsocketRepliesChan {
+			return firstSubscriptionReply, websocketRepliesChan, nil
+		}
+		return firstSubscriptionReply, nil, nil
 	}
 
 	utils.LavaFormatTrace("could not find active subscription for given params, creating new one",
@@ -255,6 +283,21 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		utils.LogAttr("consumerIp", consumerIp),
 	)
 
+	cwsm.lock.Lock()
+	defer cwsm.lock.Unlock()
+
+	// in case we had two subscriptions with the same hash at the same time, we will find one of them active here.
+	firstSubscriptionReply, alreadyActiveSubscription := cwsm.checkForActiveSubscription(webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender)
+	if firstSubscriptionReply != nil {
+		if alreadyActiveSubscription {
+			closeWebsocketRepliesChannel()
+			return firstSubscriptionReply, nil, nil
+		}
+		// Add to existing subscription
+		return firstSubscriptionReply, websocketRepliesChan, nil
+	}
+
+	// we don't have a subscription of this hashedParams stored, create a new one.
 	closeSubscriptionChan := make(chan *unsubscribeRelayData)
 	cwsm.activeSubscriptions[hashedParams] = &activeSubscriptionHolder{
 		firstSubscriptionReply:                  &reply,
@@ -580,7 +623,6 @@ func (cwsm *ConsumerWSSubscriptionManager) sendUnsubscribeMessage(ctx context.Co
 
 func (cwsm *ConsumerWSSubscriptionManager) connectDappWithSubscription(dappKey string, webSocketChan *common.SafeChannelSender[*pairingtypes.RelayReply], hashedParams string) {
 	// Must be called under a lock
-
 	cwsm.activeSubscriptions[hashedParams].connectedDapps[dappKey] = struct{}{}
 	if _, ok := cwsm.connectedDapps[dappKey]; !ok {
 		cwsm.connectedDapps[dappKey] = make(map[string]*common.SafeChannelSender[*pairingtypes.RelayReply])
