@@ -385,7 +385,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				utils.LavaFormatTrace("error reading from subscription stream", utils.LogAttr("original error", err.Error()))
 				return
 			}
-			err = cwsm.handleSubscriptionNodeMessage(hashedParams, &reply, providerAddr)
+			err = cwsm.handleIncomingSubscriptionNodeMessage(hashedParams, &reply, providerAddr)
 			if err != nil {
 				utils.LavaFormatError("failed handling subscription message", err,
 					utils.LogAttr("hashedParams", hashedParams),
@@ -416,7 +416,7 @@ func (cwsm *ConsumerWSSubscriptionManager) verifySubscriptionMessage(hashedParam
 	return nil
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedParams string, subMsg *pairingtypes.RelayReply, providerAddr string) error {
+func (cwsm *ConsumerWSSubscriptionManager) handleIncomingSubscriptionNodeMessage(hashedParams string, subscriptionRelayReplyMsg *pairingtypes.RelayReply, providerAddr string) error {
 	cwsm.lock.RLock()
 	defer cwsm.lock.RUnlock()
 
@@ -426,22 +426,23 @@ func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedP
 	if err != nil {
 		return utils.LavaFormatError("could not copy relay request", err,
 			utils.LogAttr("hashedParams", hashedParams),
-			utils.LogAttr("subscriptionMsg", subMsg.Data),
+			utils.LogAttr("subscriptionMsg", subscriptionRelayReplyMsg.Data),
 			utils.LogAttr("providerAddr", providerAddr),
 		)
 	}
 
 	chainMessage := activeSubscription.subscriptionOrigRequestChainMessage
-	err = cwsm.verifySubscriptionMessage(hashedParams, chainMessage, copiedRequest, subMsg, providerAddr)
+	err = cwsm.verifySubscriptionMessage(hashedParams, chainMessage, copiedRequest, subscriptionRelayReplyMsg, providerAddr)
 	if err != nil {
 		// Critical error, we need to close the connection
 		return utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
 			utils.LogAttr("hashedParams", hashedParams),
-			utils.LogAttr("subscriptionMsg", subMsg.Data),
+			utils.LogAttr("subscriptionMsg", subscriptionRelayReplyMsg.Data),
 			utils.LogAttr("providerAddr", providerAddr),
 		)
 	}
 
+	// message is valid, we can now distribute the message to all active listening users.
 	for connectedDappKey := range activeSubscription.connectedDapps {
 		if _, ok := cwsm.connectedDapps[connectedDappKey]; !ok {
 			utils.LavaFormatError("connected dapp not found", nil,
@@ -462,8 +463,10 @@ func (cwsm *ConsumerWSSubscriptionManager) handleSubscriptionNodeMessage(hashedP
 			)
 			continue
 		}
-
-		cwsm.connectedDapps[connectedDappKey][hashedParams].Send(subMsg)
+		// set seen block
+		cwsm.relaySender.SetConsistencySeenBlock(subscriptionRelayReplyMsg.LatestBlock, connectedDappKey)
+		// send the reply to the user
+		cwsm.connectedDapps[connectedDappKey][hashedParams].Send(subscriptionRelayReplyMsg)
 	}
 
 	return nil

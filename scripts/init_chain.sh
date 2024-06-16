@@ -63,7 +63,6 @@ else
         | jq '.app_state.pairing.params.recommendedEpochNumToCollectPayment = "2"' \
     )
 fi
-        # | jq '.app_state.epochstorage.params.epochBlocks = "200"' \
 
 echo -n "$data" > "$path$genesis"
 

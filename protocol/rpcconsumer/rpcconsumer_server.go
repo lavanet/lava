@@ -143,6 +143,10 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	return nil
 }
 
+func (rpccs *RPCConsumerServer) SetConsistencySeenBlock(blockSeen int64, key string) {
+	rpccs.consumerConsistency.SetSeenBlockFromKey(blockSeen, key)
+}
+
 func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bool, error) {
 	if initialRelays {
 		// Only start after everything is initialized - check consumer session manager
@@ -690,7 +694,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			if chainlib.IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 				utils.LavaFormatTrace("inside sendRelayToProvider, relay is subscription", utils.LogAttr("requestData", localRelayRequestData.Data))
 
-				// TODO: Elad - Test that on fail, try another provider
 				params, err := json.Marshal(chainMessage.GetRPCMessage().GetParams())
 				if err != nil {
 					utils.LavaFormatError("could not marshal params", err)
@@ -973,8 +976,8 @@ func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hash
 
 	relayResult.ReplyServer = replyServer
 	relayResult.Reply = reply
-	// TODO: Elad - Use latest block from reply
-	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession)
+	latestBlock := relayResult.Reply.LatestBlock
+	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession, latestBlock)
 	return err
 }
 
@@ -1034,7 +1037,6 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 		)
 	}
 
-	// TODO: Elad: test this
 	if replyJson.Error != nil {
 		// Node error, subscription was not initialized, triggering OnSessionFailure
 		return nil, utils.LavaFormatError("error in reply from subscription", nil,

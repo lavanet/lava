@@ -1025,12 +1025,13 @@ func (csm *ConsumerSessionManager) GetAtomicPairingAddressesLength() uint64 {
 }
 
 // On a successful Subscribe relay
-func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *SingleConsumerSession) error {
+func (csm *ConsumerSessionManager) OnSessionDoneIncreaseCUOnly(consumerSession *SingleConsumerSession, latestServicedBlock int64) error {
 	if err := consumerSession.VerifyLock(); err != nil {
 		return sdkerrors.Wrapf(err, "OnSessionDoneIncreaseRelayAndCu consumerSession.lock must be locked before accessing this method")
 	}
 
-	defer consumerSession.Free(nil)                        // we need to be locked here, if we didn't get it locked we try lock anyway
+	defer consumerSession.Free(nil) // we need to be locked here, if we didn't get it locked we try lock anyway
+	consumerSession.LatestBlock = latestServicedBlock
 	consumerSession.CuSum += consumerSession.LatestRelayCu // add CuSum to current cu usage.
 	consumerSession.LatestRelayCu = 0                      // reset cu just in case
 	consumerSession.ConsecutiveErrors = []error{}

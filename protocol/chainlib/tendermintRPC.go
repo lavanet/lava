@@ -807,9 +807,8 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		subscriptionID, ok = paramsMap["query"].(string)
 		if !ok {
 			utils.LavaFormatTrace("could not get subscriptionID from query params", utils.LogAttr("params", params))
-			// This is probably because of a misuse, return error
+			// This is probably because of a misuse, therefore the provider will return a node error to the user as the subscription failed
 			subscriptionID = ""
-			// return nil, "", nil, utils.LavaFormatError("unknown subscriptionID type on tendermint subscribe", nil)
 		}
 	}
 

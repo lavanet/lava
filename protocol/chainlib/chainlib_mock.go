@@ -606,6 +606,11 @@ func NewMockRelaySender(ctrl *gomock.Controller) *MockRelaySender {
 	return mock
 }
 
+func (m *MockRelaySender) SetConsistencySeenBlock(blockSeen int64, key string)() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetConsistencySeenBlock", blockSeen, key)
+}
+
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockRelaySender) EXPECT() *MockRelaySenderMockRecorder {
 	return m.recorder

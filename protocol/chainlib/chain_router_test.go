@@ -831,5 +831,3 @@ func TestMain(m *testing.M) {
 	listener.Close()
 	os.Exit(code)
 }
-
-// TODO: Elad: add websocket tests
