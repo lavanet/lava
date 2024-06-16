@@ -2,7 +2,9 @@ package statetracker
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"sort"
@@ -38,6 +40,7 @@ const (
 	FlagBreak                   = "break"
 	FlagHasAttributeName        = "has-attribute"
 	FlagShowAttributeName       = "show-attribute"
+	FlagReset                   = "reset"
 	FlagDisableInteractiveShell = "disable-interactive"
 )
 
@@ -129,7 +132,117 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	return nil
 }
 
-func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, blockEnd int64) error {
+func exportPaymentsToCSV(data ProviderRewards, fromBlock int64, toBlock int64, currentBlock int64, tryLoadingPreviousInformation bool, resetState bool) (int64, ProviderRewards) {
+	// if we don't have reset state, and this is the first loop iteration (first write)
+	// we want to attempt reading the csv file from disk, if it exists..
+	// if it does, attempt reading the block information and skipping block reads.
+	skipBlocks := int64(0) // will indicate the for loop to skip the amount of blocks we already parsed.
+	newData := data
+	fileNameEnding := "_relay_payments.csv"
+	for chainId := range data {
+		fileName := chainId + fileNameEnding
+		if !resetState && tryLoadingPreviousInformation {
+			// utils.LavaFormatDebug("")
+			if _, err := os.Stat(fileName); os.IsNotExist(err) {
+				utils.LavaFormatInfo("did not find previous csv files to attempt reload")
+				continue
+			}
+			// Open the CSV file
+			file, err := os.Open(fileName)
+			if err != nil {
+				log.Fatalf("Failed to open the CSV file: %v", err)
+			}
+			defer file.Close()
+
+			// Create a new CSV reader
+			reader := csv.NewReader(file)
+
+			// Read all records from the CSV
+			records, err := reader.ReadAll()
+			if err != nil {
+				log.Fatalf("Failed to read the CSV file: %v", err)
+			}
+			if len(records) == 0 {
+				continue
+			}
+			successful := false
+			// Create a slice to hold the data
+			for i, record := range records {
+				if i == 0 {
+					// Skip the header row
+					continue
+				}
+				cu, ok1 := strconv.Atoi(record[2])
+				numberOfRelay, ok2 := strconv.Atoi(record[3])
+				startBlock, ok3 := strconv.Atoi(record[4])
+				_, ok4 := strconv.Atoi(record[5])
+				latestParsedBlock, ok5 := strconv.Atoi(record[6])
+
+				if int64(startBlock) != fromBlock {
+					utils.LavaFormatWarning("start block on csv doesnt match current start block, cant use info. starting from scratch", nil, utils.LogAttr("start_block", fromBlock), utils.LogAttr("start_block_in_file", startBlock), utils.LogAttr("fileName", fileName))
+					break
+				}
+				if int64(latestParsedBlock) > toBlock {
+					utils.LavaFormatWarning("latest parsed block on csv > to block. starting from scratch", nil, utils.LogAttr("latestParsedBlock", latestParsedBlock), utils.LogAttr("toBlock", toBlock), utils.LogAttr("fileName", fileName))
+					break
+				}
+
+				if ok1 != nil || ok2 != nil || ok3 != nil || ok4 != nil || ok5 != nil {
+					utils.LavaFormatError("failed converting one of the records", nil, utils.LogAttr("record", record))
+					break
+				}
+				chainId := record[0]
+				providerAddress := record[1]
+
+				_, ok := newData[chainId]
+				if !ok {
+					newData[chainId] = make(map[string]*providerStats)
+				}
+				newData[chainId][providerAddress] = &providerStats{cuSum: int64(cu), totalNumberOfRelays: int64(numberOfRelay)}
+				successful = true
+				skipBlocks = int64(latestParsedBlock)
+			}
+			if successful {
+				utils.LavaFormatInfo("Successfully loaded information from csv", utils.LogAttr("filename", fileName), utils.LogAttr("skip_blocks", skipBlocks))
+			}
+		}
+	}
+
+	for chainId, chainData := range newData {
+		fileName := chainId + fileNameEnding
+
+		file, err := os.Create(fileName)
+		if err != nil {
+			utils.LavaFormatError("failed creating file", err, utils.LogAttr("name", fileName))
+			continue
+		}
+		defer file.Close()
+
+		writer := csv.NewWriter(file)
+		defer writer.Flush()
+
+		// Write CSV data
+		values := [][]string{{"chain_id", "provider_address", "cu", "number_of_relay", "start_block", "end_block", "latest_parsed_block"}}
+		for providerAddress, providerStats := range chainData {
+			values = append(values, []string{chainId, providerAddress, strconv.FormatInt(providerStats.cuSum, 10), strconv.FormatInt(providerStats.totalNumberOfRelays, 10), strconv.FormatInt(fromBlock, 10), strconv.FormatInt(toBlock, 10), strconv.FormatInt(currentBlock, 10)})
+		}
+		if err := writer.WriteAll(values); err != nil {
+			utils.LavaFormatError("failed WriteAll file", err, utils.LogAttr("name", fileName))
+			continue
+		}
+	}
+	return skipBlocks, newData
+}
+
+type providerStats struct {
+	cuSum               int64
+	totalNumberOfRelays int64
+}
+
+// per chain per provider, accumulated cu
+type ProviderRewards map[string]map[string]*providerStats
+
+func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, blockEnd int64, resetState bool) error {
 	ctx, cancel := context.WithCancel(ctx)
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt)
@@ -150,7 +263,13 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 	}
 	utils.LavaFormatDebug("chain latest block", utils.LogAttr("block", latestHeight))
 
+	providerRewards := make(ProviderRewards)
+	skipToBlock := int64(0) // used when loading csv from disk.
 	for block := blockStart; block < blockEnd; block++ {
+		if block <= skipToBlock {
+			utils.LavaFormatInfo("Skipping blocks due to csv info found on disk", utils.LogAttr("block", block))
+			continue
+		}
 		utils.LavaFormatInfo("fetching block", utils.LogAttr("block", block))
 		brp, err := updaters.TryIntoTendermintRPC(clientCtx.Client)
 		if err != nil {
@@ -158,7 +277,9 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 		}
 		var blockResults *coretypes.ResultBlockResults
 		for retry := 0; retry < 3; retry++ {
-			blockResults, err = brp.BlockResults(ctx, &block)
+			ctxWithTimeout, cancelContextWithTimeout := context.WithTimeout(ctx, time.Second*30)
+			blockResults, err = brp.BlockResults(ctxWithTimeout, &block)
+			cancelContextWithTimeout()
 			if err != nil {
 				utils.LavaFormatWarning("@@@@ failed fetching block results will retry", err, utils.LogAttr("block_number", block))
 				continue
@@ -175,7 +296,6 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 			events := tx.Events
 			for _, event := range events {
 				if event.Type == utils.EventPrefix+pairingtypes.RelayPaymentEventName {
-					utils.LavaFormatDebug("test", utils.LogAttr("test", event.Attributes))
 					paymentList, err := rewardserver.BuildPaymentFromRelayPaymentEvent(event, block)
 					if err != nil {
 						utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event}, utils.Attribute{Key: "block", Value: block})
@@ -189,15 +309,22 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 			}
 		}
 
+		utils.LavaFormatDebug("Parsing payment", utils.LogAttr("block", block), utils.LogAttr("number_of_payments", len(payments)))
 		for _, payment := range payments {
-			utils.LavaFormatDebug("payments description", utils.LogAttr("desc", payment.Description))
-			utils.LavaFormatDebug("payments", utils.LogAttr("payment", payment))
-			// updatable, foundUpdatable := pu.paymentUpdatable[payment.Description]
-			// if foundUpdatable {
-			// 	relevantPayments += 1
-			// 	(*updatable).PaymentHandler(payment)
-			// }
+			_, ok := providerRewards[payment.ChainID]
+			if !ok {
+				providerRewards[payment.ChainID] = make(map[string]*providerStats)
+			}
+			_, okAddress := providerRewards[payment.ChainID][payment.ProviderAddress]
+			if !okAddress {
+				providerRewards[payment.ChainID][payment.ProviderAddress] = &providerStats{}
+			}
+			providerRewards[payment.ChainID][payment.ProviderAddress].cuSum += int64(payment.CU)
+			providerRewards[payment.ChainID][payment.ProviderAddress].totalNumberOfRelays += int64(payment.RelayNumber)
 		}
+
+		skipToBlock, providerRewards = exportPaymentsToCSV(providerRewards, blockStart, blockEnd, block, block == blockStart, resetState)
+		utils.LavaFormatDebug("saved info to file for block", utils.LogAttr("block", block))
 
 	}
 
@@ -410,6 +537,10 @@ func CreateRelayPaymentCSVCobraCommand() *cobra.Command {
 			if err != nil {
 				utils.LavaFormatFatal("failed to read log level flag", err)
 			}
+			resetState, err := cmd.Flags().GetBool(FlagReset)
+			if err != nil {
+				utils.LavaFormatFatal("failed to read reset flag", err)
+			}
 
 			blockStart, err := strconv.ParseInt(args[0], 0, 64)
 			if err != nil {
@@ -437,14 +568,14 @@ func CreateRelayPaymentCSVCobraCommand() *cobra.Command {
 			}
 			utils.LavaFormatInfo("lavad Binary Version: " + version.Version)
 			rand.InitRandomSeed()
-			return paymentsLookup(ctx, clientCtx, blockStart, blockEnd)
+			return paymentsLookup(ctx, clientCtx, blockStart, blockEnd, resetState)
 		},
 	}
 	flags.AddQueryFlagsToCmd(cmdEvents)
 	flags.AddKeyringFlags(cmdEvents.Flags())
 	cmdEvents.Flags().String(flags.FlagFrom, "", "Name or address of wallet from which to read address, and look for it in value")
 	cmdEvents.Flags().Duration(FlagTimeout, 5*time.Minute, "the time to listen for events, defaults to 5m")
-	cmdEvents.Flags().Bool(FlagBreak, false, "if true will break after reading the specified amount of blocks instead of listening forward")
+	cmdEvents.Flags().Bool(FlagReset, false, "if true will remove existing information and replace it with new, meaning it wont try to load existing information from the csv file.")
 	cmdEvents.Flags().String(flags.FlagChainID, app.Name, "network chain id")
 	cmdEvents.Flags().String(FlagHasAttributeName, "", "only show events containing specific attribute name")
 	cmdEvents.Flags().String(FlagShowAttributeName, "", "only show a specific attribute name, and no other attributes")
