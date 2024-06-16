@@ -160,7 +160,9 @@ func exportPaymentsToCSV(data ProviderRewards, fromBlock int64, toBlock int64, c
 			// Read all records from the CSV
 			records, err := reader.ReadAll()
 			if err != nil {
-				log.Fatalf("Failed to read the CSV file: %v", err)
+				// by deferring the fatal we make sure file.close will run.
+				defer log.Fatalf("Failed to read the CSV file: %v", err)
+				return 0, newData
 			}
 			if len(records) == 0 {
 				continue
@@ -322,10 +324,8 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 			providerRewards[payment.ChainID][payment.ProviderAddress].cuSum += int64(payment.CU)
 			providerRewards[payment.ChainID][payment.ProviderAddress].totalNumberOfRelays += int64(payment.RelayNumber)
 		}
-
 		skipToBlock, providerRewards = exportPaymentsToCSV(providerRewards, blockStart, blockEnd, block, block == blockStart, resetState)
 		utils.LavaFormatDebug("saved info to file for block", utils.LogAttr("block", block))
-
 	}
 
 	utils.LavaFormatDebug("finished test")
@@ -548,7 +548,7 @@ func CreateRelayPaymentCSVCobraCommand() *cobra.Command {
 			}
 			utils.LavaFormatInfo("block start", utils.LogAttr("block_start", blockStart))
 			if blockStart < 0 {
-				return fmt.Errorf("block start is below zero", blockStart)
+				utils.LavaFormatFatal("block start is below zero", nil, utils.LogAttr("blockStart", blockStart))
 			}
 
 			blockEnd, err := strconv.ParseInt(args[1], 0, 64)
@@ -557,7 +557,7 @@ func CreateRelayPaymentCSVCobraCommand() *cobra.Command {
 			}
 			utils.LavaFormatInfo("block end", utils.LogAttr("block_end", blockEnd))
 			if blockEnd < 0 {
-				return fmt.Errorf("block end is below zero", blockEnd)
+				utils.LavaFormatFatal("block end is below zero", nil, utils.LogAttr("blockEnd", blockEnd))
 			}
 
 			utils.SetGlobalLoggingLevel(logLevel)
