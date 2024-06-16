@@ -846,10 +846,10 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 
 	// check if need to block & report
 	var blockProvider, reportProvider bool
-	if ReportAndBlockProviderError.Is(errorReceived) {
+	if sdkerrors.IsOf(errorReceived, ReportAndBlockProviderError) {
 		blockProvider = true
 		reportProvider = true
-	} else if BlockProviderError.Is(errorReceived) {
+	} else if sdkerrors.IsOf(errorReceived, BlockProviderError) {
 		blockProvider = true
 	}
 

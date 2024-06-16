@@ -55,7 +55,7 @@ func VerifyRelayReply(ctx context.Context, reply *pairingtypes.RelayReply, relay
 		return utils.LavaFormatWarning("Relay reply verification failed, AccAddressFromHexUnsafe returned error", err, utils.LogAttr("GUID", ctx))
 	}
 	if serverAddr.String() != addr {
-		return utils.LavaFormatError("reply server address mismatch", ProviderFinalizationDataError,
+		return utils.LavaFormatError("reply server address mismatch", ProviderFinalizationDataAccountabilityError,
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("parsedAddress", serverAddr.String()),
 			utils.LogAttr("expectedAddress", addr),

@@ -932,7 +932,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	if enabled {
 		finalizedBlocks, err := finalizationconsensus.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
 		if err != nil {
-			if common.ProviderFinalizationDataAccountabilityError.Is(err) {
+			if sdkerrors.IsOf(common.ProviderFinalizationDataAccountabilityError) {
 				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider))
 			}
 			return 0, err, false
