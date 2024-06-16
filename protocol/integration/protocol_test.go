@@ -324,7 +324,6 @@ func TestConsumerProviderBasic(t *testing.T) {
 	providers := []providerData{}
 
 	for i := 0; i < numProviders; i++ {
-		// providerListenAddress := "localhost:111" + strconv.Itoa(i)
 		account := sigs.GenerateDeterministicFloatingKey(randomizer)
 		providerDataI := providerData{account: account}
 		providers = append(providers, providerDataI)
@@ -401,7 +400,6 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 			providers := []providerData{}
 
 			for i := 0; i < numProviders; i++ {
-				// providerListenAddress := "localhost:111" + strconv.Itoa(i)
 				account := sigs.GenerateDeterministicFloatingKey(randomizer)
 				providerDataI := providerData{account: account}
 				providers = append(providers, providerDataI)
@@ -643,7 +641,6 @@ func TestConsumerProviderJsonRpcWithNullID(t *testing.T) {
 			providers := []providerData{}
 
 			for i := 0; i < numProviders; i++ {
-				// providerListenAddress := "localhost:111" + strconv.Itoa(i)
 				account := sigs.GenerateDeterministicFloatingKey(randomizer)
 				providerDataI := providerData{account: account}
 				providers = append(providers, providerDataI)
@@ -754,7 +751,6 @@ func TestConsumerProviderSubscriptionsHappyFlow(t *testing.T) {
 			providers := []providerData{}
 
 			for i := 0; i < numProviders; i++ {
-				// providerListenAddress := "localhost:111" + strconv.Itoa(i)
 				account := sigs.GenerateDeterministicFloatingKey(randomizer)
 				providerDataI := providerData{account: account}
 				providers = append(providers, providerDataI)
