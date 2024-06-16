@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 	// This code will run once before any test cases are executed.
 	seed = time.Now().Unix()
 	rand.SetSpecificSeed(seed)
-	addressGen = uniqueAddressGenerator{}
+	addressGen = NewUniqueAddressGenerator()
 	randomizer = sigs.NewZeroReader(seed)
 	lavasession.AllowInsecureConnectionToProviders = true
 	// Run the actual tests
