@@ -83,7 +83,6 @@ func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser Cha
 	}
 }
 
-// TODO: Elad: Handle same consumer asking for same subscription twice
 func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessage, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply) (subscriptionId string, err error) {
 	utils.LavaFormatTrace("[AddConsumer] called", utils.LogAttr("consumerAddr", consumerAddr))
 
@@ -117,19 +116,27 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 
-		if _, foundConsumer := paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString]; foundConsumer { // Consumer is already connected to this subscription, dismiss
-			utils.LavaFormatTrace("[AddConsumer] consumer is already connected, returning the existing subscription", utils.LogAttr("consumerAddr", consumerAddr))
+		if consumerContainer, foundConsumer := paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString]; foundConsumer { // Consumer is already connected to this subscription, dismiss
+			// if the consumer exists and channel is already active, and the consumer tried to resubscribe, we assume the connection was interrupted, we disconnect the previous channel and reconnect the incoming channel.
+			utils.LavaFormatWarning("consumer tried to subscribe twice to the same subscription hash, disconnecting the previous one and attaching incoming channel", nil,
+				utils.LogAttr("consumerAddr", consumerAddr),
+				utils.LogAttr("hashedParams", hashedParams),
+				utils.LogAttr("params_provided", chainMessage.GetRPCMessage().GetParams()),
+			)
+			// disconnecting the previous channel, attaching new channel, and returning subscription Id.
+			consumerContainer.consumerChannel.Close()
+			consumerContainer.consumerChannel = common.NewSafeChannelSender(ctx, consumerChannel)
 			return paramsChannelToConnectedConsumers.subscriptionID, nil
+		} else {
+			utils.LavaFormatTrace("[AddConsumer] consumer does not exist in the subscription, adding",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("consumerAddr", consumerAddr),
+				utils.LogAttr("params", string(params)),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
 		}
 
 		// Add the new entry for the consumer
-		utils.LavaFormatTrace("[AddConsumer] consumer does not exist in the subscription, adding",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("consumerAddr", consumerAddr),
-			utils.LogAttr("params", string(params)),
-			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-		)
-
 		paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString] = &connectedConsumerContainer{
 			consumerChannel:   common.NewSafeChannelSender(ctx, consumerChannel),
 			firstSetupRequest: &pairingtypes.RelayRequest{}, // Deep copy later	firstSetupChainMessage: chainMessage,
