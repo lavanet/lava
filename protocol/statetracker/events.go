@@ -200,7 +200,7 @@ func exportPaymentsToCSV(data ProviderRewards, fromBlock int64, toBlock int64, c
 				if !ok {
 					newData[chainId] = make(map[string]*providerStats)
 				}
-				newData[chainId][providerAddress] = &providerStats{cuSum: int64(cu), totalNumberOfRelays: int64(numberOfRelay)}
+				newData[chainId][providerAddress] = &providerStats{cuSum: uint64(cu), totalNumberOfRelays: uint64(numberOfRelay)}
 				successful = true
 				skipBlocks = int64(latestParsedBlock)
 			}
@@ -226,7 +226,7 @@ func exportPaymentsToCSV(data ProviderRewards, fromBlock int64, toBlock int64, c
 		// Write CSV data
 		values := [][]string{{"chain_id", "provider_address", "cu", "number_of_relay", "start_block", "end_block", "latest_parsed_block"}}
 		for providerAddress, providerStats := range chainData {
-			values = append(values, []string{chainId, providerAddress, strconv.FormatInt(providerStats.cuSum, 10), strconv.FormatInt(providerStats.totalNumberOfRelays, 10), strconv.FormatInt(fromBlock, 10), strconv.FormatInt(toBlock, 10), strconv.FormatInt(currentBlock, 10)})
+			values = append(values, []string{chainId, providerAddress, strconv.FormatUint(providerStats.cuSum, 10), strconv.FormatUint(providerStats.totalNumberOfRelays, 10), strconv.FormatInt(fromBlock, 10), strconv.FormatInt(toBlock, 10), strconv.FormatInt(currentBlock, 10)})
 		}
 		if err := writer.WriteAll(values); err != nil {
 			utils.LavaFormatError("failed WriteAll file", err, utils.LogAttr("name", fileName))
@@ -237,8 +237,8 @@ func exportPaymentsToCSV(data ProviderRewards, fromBlock int64, toBlock int64, c
 }
 
 type providerStats struct {
-	cuSum               int64
-	totalNumberOfRelays int64
+	cuSum               uint64
+	totalNumberOfRelays uint64
 }
 
 // per chain per provider, accumulated cu
@@ -321,8 +321,8 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 			if !okAddress {
 				providerRewards[payment.ChainID][payment.ProviderAddress] = &providerStats{}
 			}
-			providerRewards[payment.ChainID][payment.ProviderAddress].cuSum += int64(payment.CU)
-			providerRewards[payment.ChainID][payment.ProviderAddress].totalNumberOfRelays += int64(payment.RelayNumber)
+			providerRewards[payment.ChainID][payment.ProviderAddress].cuSum += payment.CU
+			providerRewards[payment.ChainID][payment.ProviderAddress].totalNumberOfRelays += payment.RelayNumber
 		}
 		skipToBlock, providerRewards = exportPaymentsToCSV(providerRewards, blockStart, blockEnd, block, block == blockStart, resetState)
 		utils.LavaFormatDebug("saved info to file for block", utils.LogAttr("block", block))
