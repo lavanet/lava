@@ -415,25 +415,14 @@
                             {
                                 "name": "pruning",
                                 "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
-                                    "function_tag": "VERIFICATION",
-                                    "result_parsing": {
-                                        "parser_arg": [
-                                            "0",
-                                            "sync_info",
-                                            "earliest_block_height"
-                                        ],
-                                        "parser_func": "PARSE_CANONICAL"
-                                    },
-                                    "api_name": "status"
-                                },
+                                    "function_tag": "GET_BLOCK_BY_NUM"},
                                 "values": [
                                     {
                                         "latest_distance": 64800
                                     },
                                     {
                                         "extension": "archive",
-                                        "expected_value": "9820210"
+                                        "latest_distance": 9820210
                                     }
                                 ]
                             }
@@ -493,22 +482,12 @@
                             {
                                 "name": "pruning",
                                 "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"block_id\":42376888},\"id\":1}",
-                                    "function_tag": "VERIFICATION",
-                                    "result_parsing": {
-                                        "parser_arg": [
-                                            "0",
-                                            "header",
-                                            "height"
-                                        ],
-                                        "parser_func": "PARSE_CANONICAL"
-                                    },
-                                    "api_name": "block"
+                                    "function_tag": "GET_BLOCK_BY_NUM"
                                 },
                                 "values": [
                                     {
                                         "extension": "archive",
-                                        "expected_value": "42376888"
+                                        "latest_distance": 42376888
                                     }
                                 ]
                             }
