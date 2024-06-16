@@ -67,6 +67,7 @@ type RPCConsumerServer struct {
 	reporter                       metrics.Reporter
 	debugRelays                    bool
 	connectedSubscriptionsContexts map[string]*CancelableContextHolder
+	chainListener                  chainlib.ChainListener
 	connectedSubscriptionsLock     sync.RWMutex
 }
 
@@ -117,12 +118,12 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.debugRelays = cmdFlags.DebugRelays
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 
-	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
+	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
 	if err != nil {
 		return err
 	}
 
-	go chainListener.Serve(ctx, cmdFlags)
+	go rpccs.chainListener.Serve(ctx, cmdFlags)
 
 	initialRelays := true
 	rpccs.relaysMonitor = relaysMonitor
@@ -141,6 +142,10 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 		rpccs.sendCraftedRelaysWrapper(true)
 	}
 	return nil
+}
+
+func (rpccs *RPCConsumerServer) GetListeningAddress() string {
+	return rpccs.chainListener.GetListeningAddress()
 }
 
 func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bool, error) {

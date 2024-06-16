@@ -194,11 +194,19 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	require.NoError(t, err)
 	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, account.SK, lavaChainID, nil, rpcconsumerLogs, account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
+
+	// wait for consumer to finish initialization
+	listeningAddr := rpcConsumerServer.GetListeningAddress()
+	for listeningAddr == "" {
+		time.Sleep(10 * time.Millisecond)
+		listeningAddr = rpcConsumerServer.GetListeningAddress()
+	}
+
 	// wait for consumer server to be up
-	consumerUp := checkServerStatusWithTimeout("http://"+consumerListenAddress, time.Millisecond*61)
+	consumerUp := checkServerStatusWithTimeout("http://"+listeningAddr, time.Millisecond*61)
 	require.True(t, consumerUp)
 	if rpcEndpoint.ApiInterface == "tendermintrpc" || rpcEndpoint.ApiInterface == "jsonrpc" {
-		consumerUp = checkServerStatusWithTimeout("ws://"+consumerListenAddress+"/ws", time.Millisecond*61)
+		consumerUp = checkServerStatusWithTimeout("ws://"+listeningAddr+"/ws", time.Millisecond*61)
 		require.True(t, consumerUp)
 	}
 

@@ -138,6 +138,7 @@ type RelaySender interface {
 
 type ChainListener interface {
 	Serve(ctx context.Context, cmdFlags common.ConsumerCmdFlags)
+	GetListeningAddress() string
 }
 
 type ChainRouter interface {
