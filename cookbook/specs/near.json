@@ -486,6 +486,9 @@
                                 },
                                 "values": [
                                     {
+                                        "latest_distance": 64800
+                                    },
+                                    {
                                         "extension": "archive",
                                         "latest_distance": 42376888
                                     }
