@@ -24,13 +24,13 @@ type unsubscribeRelayData struct {
 }
 
 type activeSubscriptionHolder struct {
-	firstSubscriptionReply              *pairingtypes.RelayReply
-	subscriptionOrigRequest             *pairingtypes.RelayRequest
-	subscriptionOrigRequestChainMessage ChainMessage
-	subscriptionFirstReply              *rpcclient.JsonrpcMessage
-	replyServer                         pairingtypes.Relayer_RelaySubscribeClient
-	closeSubscriptionChan               chan *unsubscribeRelayData
-	connectedDapps                      map[string]struct{} // key is dapp key
+	firstSubscriptionReply                  *pairingtypes.RelayReply
+	subscriptionOriginalRequest             *pairingtypes.RelayRequest
+	subscriptionOriginalRequestChainMessage ChainMessage
+	firstSubscriptionReplyAsJsonrpcMessage  *rpcclient.JsonrpcMessage
+	replyServer                             pairingtypes.Relayer_RelaySubscribeClient
+	closeSubscriptionChan                   chan *unsubscribeRelayData
+	connectedDapps                          map[string]struct{} // key is dapp key
 }
 
 type ConsumerWSSubscriptionManager struct {
@@ -234,8 +234,8 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	}
 
 	// Parse the reply
-	var replyJson rpcclient.JsonrpcMessage
-	err = json.Unmarshal(reply.Data, &replyJson)
+	var replyJsonrpcMessage rpcclient.JsonrpcMessage
+	err = json.Unmarshal(reply.Data, &replyJsonrpcMessage)
 	if err != nil {
 		closeWebsocketRepliesChannel()
 		return nil, nil, utils.LavaFormatError("could not parse reply into json", err,
@@ -257,13 +257,13 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	closeSubscriptionChan := make(chan *unsubscribeRelayData)
 	cwsm.activeSubscriptions[hashedParams] = &activeSubscriptionHolder{
-		firstSubscriptionReply:              &reply,
-		replyServer:                         replyServer,
-		subscriptionOrigRequest:             copiedRequest,
-		subscriptionOrigRequestChainMessage: chainMessage,
-		subscriptionFirstReply:              &replyJson,
-		closeSubscriptionChan:               closeSubscriptionChan,
-		connectedDapps:                      map[string]struct{}{dappKey: {}},
+		firstSubscriptionReply:                  &reply,
+		firstSubscriptionReplyAsJsonrpcMessage:  &replyJsonrpcMessage,
+		replyServer:                             replyServer,
+		subscriptionOriginalRequest:             copiedRequest,
+		subscriptionOriginalRequestChainMessage: chainMessage,
+		closeSubscriptionChan:                   closeSubscriptionChan,
+		connectedDapps:                          map[string]struct{}{dappKey: {}},
 	}
 
 	providerAddr := relayResult.ProviderInfo.ProviderAddress
@@ -422,7 +422,7 @@ func (cwsm *ConsumerWSSubscriptionManager) handleIncomingSubscriptionNodeMessage
 
 	activeSubscription := cwsm.activeSubscriptions[hashedParams]
 	copiedRequest := &pairingtypes.RelayRequest{}
-	err := protocopy.DeepCopyProtoObject(activeSubscription.subscriptionOrigRequest, copiedRequest)
+	err := protocopy.DeepCopyProtoObject(activeSubscription.subscriptionOriginalRequest, copiedRequest)
 	if err != nil {
 		return utils.LavaFormatError("could not copy relay request", err,
 			utils.LogAttr("hashedParams", hashedParams),
@@ -431,7 +431,7 @@ func (cwsm *ConsumerWSSubscriptionManager) handleIncomingSubscriptionNodeMessage
 		)
 	}
 
-	chainMessage := activeSubscription.subscriptionOrigRequestChainMessage
+	chainMessage := activeSubscription.subscriptionOriginalRequestChainMessage
 	err = cwsm.verifySubscriptionMessage(hashedParams, chainMessage, copiedRequest, subscriptionRelayReplyMsg, providerAddr)
 	if err != nil {
 		// Critical error, we need to close the connection
@@ -506,8 +506,8 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 }
 
 func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams, dappID, consumerIp string, metricsData *metrics.RelayMetrics) (ChainMessage, map[string]string, *pairingtypes.RelayPrivateData, error) {
-	request := cwsm.activeSubscriptions[hashedParams].subscriptionOrigRequestChainMessage
-	reply := cwsm.activeSubscriptions[hashedParams].subscriptionFirstReply
+	request := cwsm.activeSubscriptions[hashedParams].subscriptionOriginalRequestChainMessage
+	reply := cwsm.activeSubscriptions[hashedParams].firstSubscriptionReplyAsJsonrpcMessage
 
 	// Get the unsubscribe params
 	unsubscribeParams := cwsm.unsubscribeParamsExtractor(request, reply)
