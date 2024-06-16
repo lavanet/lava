@@ -173,7 +173,11 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	firstSubscriptionReply, returnWebsocketRepliesChan := func() (*pairingtypes.RelayReply, bool) {
 		cwsm.lock.Lock()
 		defer cwsm.lock.Unlock()
-		firstSubscriptionReply, alreadyActiveSubscription := cwsm.checkForActiveSubscription(webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender)
+
+		firstSubscriptionReply, alreadyActiveSubscription := cwsm.checkForActiveSubscription(
+			webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender,
+		)
+
 		if firstSubscriptionReply != nil {
 			if alreadyActiveSubscription { // same dapp Id, no need for new channel
 				closeWebsocketRepliesChannel()
@@ -182,10 +186,12 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 			// Added to existing subscriptions with a new dappId.
 			return firstSubscriptionReply, true
 		}
+
 		// if we reached here, the subscription is currently not registered, we will need to check again later when we apply the subscription, and
 		// handle the case where two subscriptions were launched at the same time.
 		return nil, false
 	}()
+
 	if firstSubscriptionReply != nil {
 		if returnWebsocketRepliesChan {
 			return firstSubscriptionReply, websocketRepliesChan, nil
