@@ -174,11 +174,11 @@ func exportPaymentsToCSV(data ProviderRewards, fromBlock int64, toBlock int64, c
 					// Skip the header row
 					continue
 				}
-				cu, ok1 := strconv.Atoi(record[2])
-				numberOfRelay, ok2 := strconv.Atoi(record[3])
-				startBlock, ok3 := strconv.Atoi(record[4])
-				_, ok4 := strconv.Atoi(record[5])
-				latestParsedBlock, ok5 := strconv.Atoi(record[6])
+				cu, ok1 := strconv.ParseUint(record[2], 10, 64)
+				numberOfRelay, ok2 := strconv.ParseUint(record[3], 10, 64)
+				startBlock, ok3 := strconv.ParseUint(record[4], 10, 64)
+				_, ok4 := strconv.ParseUint(record[5], 10, 64)
+				latestParsedBlock, ok5 := strconv.ParseUint(record[6], 10, 64)
 
 				if int64(startBlock) != fromBlock {
 					utils.LavaFormatWarning("start block on csv doesnt match current start block, cant use info. starting from scratch", nil, utils.LogAttr("start_block", fromBlock), utils.LogAttr("start_block_in_file", startBlock), utils.LogAttr("fileName", fileName))
@@ -200,7 +200,7 @@ func exportPaymentsToCSV(data ProviderRewards, fromBlock int64, toBlock int64, c
 				if !ok {
 					newData[chainId] = make(map[string]*providerStats)
 				}
-				newData[chainId][providerAddress] = &providerStats{cuSum: uint64(cu), totalNumberOfRelays: uint64(numberOfRelay)}
+				newData[chainId][providerAddress] = &providerStats{cuSum: cu, totalNumberOfRelays: numberOfRelay}
 				successful = true
 				skipBlocks = int64(latestParsedBlock)
 			}
