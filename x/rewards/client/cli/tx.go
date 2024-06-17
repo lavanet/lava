@@ -43,6 +43,7 @@ func GetTxCmd() *cobra.Command {
 
 	cmd.AddCommand(CmdFundIprpc())
 	cmd.AddCommand(CmdCoverIbcIprpcFundCost())
+	cmd.AddCommand(CmdTxSubmitIbcIprpcProposal())
 	// this line is used by starport scaffolding # 1
 
 	return cmd
