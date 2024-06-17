@@ -500,7 +500,7 @@
                                 ]
                             },
                             {
-                                "name": "pruning",
+                                "name": "pruning-archive",
                                 "parse_directive": {
                                     "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"block_id\":42376888},\"id\":1}",
                                     "function_tag": "VERIFICATION",
