@@ -37,12 +37,11 @@ import (
 )
 
 const (
-	DefaultRPCConsumerFileName    = "rpcconsumer.yml"
-	DebugRelaysFlagName           = "debug-relays"
-	DebugProbesFlagName           = "debug-probes"
-	refererBackendAddressFlagName = "referer-be-address"
-	refererMarkerFlagName         = "referer-marker"
-	reportsSendBEAddress          = "reports-be-address"
+	DefaultRPCConsumerFileName = "rpcconsumer.yml"
+	DebugRelaysFlagName        = "debug-relays"
+	DebugProbesFlagName        = "debug-probes"
+	refererMarkerFlagName      = "referer-marker"
+	reportsSendBEAddress       = "reports-be-address"
 )
 
 var (
@@ -126,7 +125,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	if common.IsTestMode(ctx) {
 		testModeWarn("RPCConsumer running tests")
 	}
-	options.refererData.ReferrerClient = metrics.NewConsumerReferrerClient(options.refererData.Address)
 	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddressess.ReportsAddressFlag)
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{NetworkAddress: options.analyticsServerAddressess.MetricsListenAddress, AddMethodsApiGauge: options.analyticsServerAddressess.AddApiMethodCallsMetrics}) // start up prometheus metrics
 	consumerUsageserveManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddressess.RelayServerAddress)                                                                                                                                    // start up relay server reporting
@@ -519,10 +517,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			var refererData *chainlib.RefererData
-			if viper.GetString(refererBackendAddressFlagName) != "" || viper.GetString(refererMarkerFlagName) != "" {
+			if viper.GetString(refererMarkerFlagName) != "" {
 				refererData = &chainlib.RefererData{
-					Address: viper.GetString(refererBackendAddressFlagName), // address is used to send to a backend if necessary
-					Marker:  viper.GetString(refererMarkerFlagName),         // marker is necessary to unwrap paths
+					Marker: viper.GetString(refererMarkerFlagName), // marker is necessary to unwrap paths
 				}
 			}
 
@@ -573,7 +570,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	// Relays health check related flags
 	cmdRPCConsumer.Flags().Bool(common.RelaysHealthEnableFlag, RelaysHealthEnableFlagDefault, "enables relays health check")
 	cmdRPCConsumer.Flags().Duration(common.RelayHealthIntervalFlag, RelayHealthIntervalFlagDefault, "interval between relay health checks")
-	cmdRPCConsumer.Flags().String(refererBackendAddressFlagName, "", "address to send referer to")
 	cmdRPCConsumer.Flags().String(refererMarkerFlagName, "lava-referer-", "the string marker to identify referer")
 	cmdRPCConsumer.Flags().String(reportsSendBEAddress, "", "address to send reports to")
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")

@@ -352,7 +352,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			if !ok {
 				apil.logger.AnalyzeWebSocketErrorAndWriteMessage(websockConn, messageType, nil, msgSeed, []byte("Unable to extract dappID"), spectypes.APIInterfaceJsonRPC, time.Since(startTime))
 			}
-			refererMatch, ok := websockConn.Locals(refererMatchString).(string)
 			ctx, cancel := context.WithCancel(context.Background())
 			guid := utils.GenerateUniqueIdentifier()
 			ctx = utils.WithUniqueIdentifier(ctx, guid)
@@ -372,9 +371,6 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			)
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), http.MethodPost, dappID, websockConn.RemoteAddr().String(), metricsData, nil)
-			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
-				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), websockConn.RemoteAddr().String(), nil, websockConn)
-			}
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
 			go apil.logger.AddMetricForWebSocket(metricsData, err, websockConn)
@@ -461,11 +457,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
-		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path, msg, http.MethodPost, dappID, userIp, metricsData, headers)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
-		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 		if err != nil {

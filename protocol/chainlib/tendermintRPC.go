@@ -392,12 +392,8 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 				utils.LogAttr("dappID", dappID),
 			)
 			msgSeed = strconv.FormatUint(guid, 10)
-			refererMatch, ok := websocketConn.Locals(refererMatchString).(string)
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, websocketConn.RemoteAddr().String(), metricsData, nil)
-			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
-				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), websocketConn.RemoteAddr().String(), nil, websocketConn)
-			}
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
 			go apil.logger.AddMetricForWebSocket(metricsData, err, websocketConn)
@@ -476,12 +472,8 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
-		refererMatch := fiberCtx.Params(refererMatchString, "")
 		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, "", dappID, userIp, metricsData, headers)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
-		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
 
@@ -542,11 +534,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("headers", headers),
 		)
 		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
-		refererMatch := fiberCtx.Params(refererMatchString, "")
 		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, userIp, metricsData, headers)
-		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, path, userIp, metadataValues, nil)
-		}
 		msgSeed := strconv.FormatUint(guid, 10)
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
