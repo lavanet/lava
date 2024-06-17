@@ -2,13 +2,13 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
 
 	"github.com/btcsuite/btcd/btcec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gojson "github.com/goccy/go-json"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
@@ -290,7 +290,7 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 
 func (pnsm *ProviderNodeSubscriptionManager) getHashedParams(chainMessage ChainMessageForSend) (hashedParams string, params []byte, err error) {
 	rpcInputMessage := chainMessage.GetRPCMessage()
-	params, err = json.Marshal(rpcInputMessage.GetParams())
+	params, err = gojson.Marshal(rpcInputMessage.GetParams())
 	if err != nil {
 		return "", nil, utils.LavaFormatError("could not marshal params", err)
 	}
@@ -323,7 +323,7 @@ func (pnsm *ProviderNodeSubscriptionManager) convertNodeMsgToMarshalledJsonRpcRe
 		return nil, fmt.Errorf("unsupported API interface: %s", apiCollection.GetCollectionData().ApiInterface)
 	}
 
-	marshalledMsg, err := json.Marshal(convertedMsg)
+	marshalledMsg, err := gojson.Marshal(convertedMsg)
 	if err != nil {
 		return nil, err
 	}

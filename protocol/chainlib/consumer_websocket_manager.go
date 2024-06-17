@@ -2,11 +2,11 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"strconv"
 	"sync"
 	"time"
 
+	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/websocket/v2"
 	formatter "github.com/lavanet/lava/ecosystem/cache/format"
 	"github.com/lavanet/lava/protocol/common"
@@ -199,7 +199,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 
 			// Handle the case when the error is a method not found error
 			if common.APINotSupportedError.Is(err) {
-				msgData, err := json.Marshal(common.JsonRpcMethodNotFoundError)
+				msgData, err := gojson.Marshal(common.JsonRpcMethodNotFoundError)
 				if err != nil {
 					continue
 				}

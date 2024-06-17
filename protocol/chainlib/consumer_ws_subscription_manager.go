@@ -2,10 +2,10 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 
+	gojson "github.com/goccy/go-json"
 	rpcclient "github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
@@ -269,7 +269,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	// Parse the reply
 	var replyJsonrpcMessage rpcclient.JsonrpcMessage
-	err = json.Unmarshal(reply.Data, &replyJsonrpcMessage)
+	err = gojson.Unmarshal(reply.Data, &replyJsonrpcMessage)
 	if err != nil {
 		closeWebsocketRepliesChannel()
 		return nil, nil, utils.LavaFormatError("could not parse reply into json", err,
@@ -387,7 +387,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				return
 			}
 
-			stringJson, err := json.Marshal(chainMessage.GetRPCMessage())
+			stringJson, err := gojson.Marshal(chainMessage.GetRPCMessage())
 			if err != nil {
 				utils.LavaFormatError("could not marshal chain message", err, utils.LogAttr("GUID", webSocketCtx))
 				return
@@ -523,7 +523,7 @@ func (cwsm *ConsumerWSSubscriptionManager) handleIncomingSubscriptionNodeMessage
 }
 
 func (cwsm *ConsumerWSSubscriptionManager) getHashedParams(chainMessage ChainMessageForSend) (hashedParams string, params []byte, err error) {
-	params, err = json.Marshal(chainMessage.GetRPCMessage().GetParams())
+	params, err = gojson.Marshal(chainMessage.GetRPCMessage().GetParams())
 	if err != nil {
 		return "", nil, utils.LavaFormatError("could not marshal params", err)
 	}
@@ -690,7 +690,7 @@ func (cwsm *ConsumerWSSubscriptionManager) verifyAndDisconnectDappFromSubscripti
 	// Must be called under lock
 
 	sendSubscriptionNotFoundErrorToWebSocket := func() error {
-		jsonError, err := json.Marshal(common.JsonRpcSubscriptionNotFoundError)
+		jsonError, err := gojson.Marshal(common.JsonRpcSubscriptionNotFoundError)
 		if err != nil {
 			return utils.LavaFormatError("could not marshal error response", err)
 		}
