@@ -26,7 +26,7 @@ Spec | lava_spec_modify | Tx | sent upon modifying an existing spec proposal pas
 * all added events should start with "lava_" for differentiation between cosmos and tendermint events and custom lava events
 * events should have an indicative name, stating what is the action that is logged
 * error events should be created too, starting with ERR_, for failed state transitions.
-* a wrapper for all events exist in utils/lavalog.go
+* a wrapper for all events that exist in utils/lavalog.go
 ```
 utils.LogLavaEvent()
 utils.LavaError()
