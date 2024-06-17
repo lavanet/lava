@@ -2,7 +2,6 @@ package rpcconsumer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	gojson "github.com/goccy/go-json"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -303,7 +304,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			switch rpcEndpoint.ApiInterface {
 			case spectypes.APIInterfaceTendermintRPC:
 				paramsExtractorFunc := func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
-					params, err := json.Marshal(request.GetRPCMessage().GetParams())
+					params, err := gojson.Marshal(request.GetRPCMessage().GetParams())
 					if err != nil {
 						utils.LavaFormatWarning("failed marshaling params", err, utils.LogAttr("request", request))
 						return ""
