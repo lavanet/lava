@@ -338,39 +338,16 @@ func (pnsm *ProviderNodeSubscriptionManager) signReply(ctx context.Context, repl
 	relayTimeout := GetRelayTimeout(chainMessage, averageBlockTime)
 
 	if dataReliabilityEnabled {
-		chainMsgLatestBlock, chainMsgEarliestBlock := chainMessage.RequestedBlock()
-		utils.LavaFormatTrace("Before GetParametersForRelayDataReliability",
-			utils.LogAttr("chainMsgLatestBlock", chainMsgLatestBlock),
-			utils.LogAttr("chainMsgEarliestBlock", chainMsgEarliestBlock),
-			utils.LogAttr("replyLatestBlock", reply.LatestBlock),
-			utils.LogAttr("requestRequestedBlock", request.RelayData.RequestBlock),
-		)
 		var err error
 		latestBlock, _, requestedHashes, modifiedReqBlock, _, updatedChainMessage, err := pnsm.relayFinalizationBlocksHandler.GetParametersForRelayDataReliability(ctx, request, chainMessage, relayTimeout, blockLagForQosSync, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData)
 		if err != nil {
 			return err
 		}
 
-		chainMsgLatestBlock, chainMsgEarliestBlock = chainMessage.RequestedBlock()
-		utils.LavaFormatTrace("After GetParametersForRelayDataReliability",
-			utils.LogAttr("chainMsgLatestBlock", chainMsgLatestBlock),
-			utils.LogAttr("chainMsgEarliestBlock", chainMsgEarliestBlock),
-			utils.LogAttr("replyLatestBlock", reply.LatestBlock),
-			utils.LogAttr("requestRequestedBlock", request.RelayData.RequestBlock),
-		)
-
 		err = pnsm.relayFinalizationBlocksHandler.BuildRelayFinalizedBlockHashes(ctx, request, reply, latestBlock, requestedHashes, updatedChainMessage, relayTimeout, averageBlockTime, blockDistanceToFinalization, blocksInFinalizationData, modifiedReqBlock)
 		if err != nil {
 			return err
 		}
-
-		chainMsgLatestBlock, chainMsgEarliestBlock = chainMessage.RequestedBlock()
-		utils.LavaFormatTrace("After BuildRelayFinalizedBlockHashes",
-			utils.LogAttr("chainMsgLatestBlock", chainMsgLatestBlock),
-			utils.LogAttr("chainMsgEarliestBlock", chainMsgEarliestBlock),
-			utils.LogAttr("replyLatestBlock", reply.LatestBlock),
-			utils.LogAttr("requestRequestedBlock", request.RelayData.RequestBlock),
-		)
 	}
 
 	var ignoredMetadata []pairingtypes.Metadata
