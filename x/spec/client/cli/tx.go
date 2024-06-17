@@ -17,6 +17,7 @@ import (
 	"github.com/lavanet/lava/x/spec/client/utils"
 	"github.com/lavanet/lava/x/spec/types"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -42,7 +43,7 @@ func GetTxCmd() *cobra.Command {
 	}
 
 	// this line is used by starport scaffolding # 1
-
+	cmd.AddCommand(NewAddSpecsTxCmd())
 	return cmd
 }
 
@@ -126,5 +127,63 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 	}
 	cmd.Flags().Bool(devTestFlagName, false, "set to true to modify the average block time for lava spec")
 	cmd.Flags().Bool(expeditedFlagName, false, "set to true to make the spec proposal expedited")
+	return cmd
+}
+
+// NewAddSpecsTxCmd returns a CLI command handler for creating
+// a add spec transaction
+func NewAddSpecsTxCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "spec-add [proposal-file,proposal-file,...]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Submit a spec add",
+		Long: strings.TrimSpace(
+			fmt.Sprintf(`send a transaction to add or modify existing user specs.
+Example:
+$ %s tx spec spec-add <path/to/proposal.json> --from=<key_or_address>
+`,
+				version.AppName,
+			),
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+			proposal, err := utils.ParseSpecAddProposalJSON(clientCtx.LegacyAmino, args[0])
+			if err != nil {
+				return err
+			}
+
+			from := clientCtx.GetFromAddress()
+			content := &proposal.Proposal
+
+			devTest, err := cmd.Flags().GetBool(devTestFlagName)
+			if err == nil && devTest {
+				// modify the lava spec for dev tests
+				for idx, spec := range content.Specs {
+					if spec.Index == "LAV1" {
+						utilslib.LavaFormatInfo("modified lava spec time for dev tests")
+						content.Specs[idx].AverageBlockTime = (1 * time.Second).Milliseconds()
+						for collection := range content.Specs[idx].ApiCollections {
+							for verification := range content.Specs[idx].ApiCollections[collection].Verifications {
+								if content.Specs[idx].ApiCollections[collection].Verifications[verification].Name == "chain-id" {
+									content.Specs[idx].ApiCollections[collection].Verifications[verification].Values[0].ExpectedValue = "*"
+								}
+								if content.Specs[idx].ApiCollections[collection].Verifications[verification].Name == "pruning" {
+									content.Specs[idx].ApiCollections[collection].Verifications = append(content.Specs[idx].ApiCollections[collection].Verifications[:verification], content.Specs[idx].ApiCollections[collection].Verifications[verification+1:]...)
+								}
+							}
+						}
+					}
+				}
+			}
+
+			msgAddSpecs := types.NewMsgAddSpecs(from.String(), content.Specs)
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msgAddSpecs)
+		},
+	}
+	cmd.Flags().Bool(devTestFlagName, false, "set to true to modify the average block time for lava spec")
+	flags.AddTxFlagsToCmd(cmd)
 	return cmd
 }
