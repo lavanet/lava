@@ -7,7 +7,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 )
 
-func checkSpecProposal(spec Spec) error {
+func (spec Spec) ValidateBasic() error {
 	if len(strings.TrimSpace(spec.Name)) == 0 {
 		return sdkerrors.Wrapf(ErrBlankSpecName, "spec name cannot be blank %v", spec)
 	}

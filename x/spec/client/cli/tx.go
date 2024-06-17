@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -89,10 +88,6 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 
 			from := clientCtx.GetFromAddress()
 			content := &proposal.Proposal
-			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
-			if err != nil {
-				return err
-			}
 
 			devTest, err := cmd.Flags().GetBool(devTestFlagName)
 			if err == nil && devTest {
@@ -115,14 +110,13 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 				}
 			}
 
-			contentAny, err := codectypes.NewAnyWithValue(content)
+			deposit, err := sdk.ParseCoinsNormalized(proposal.Deposit)
 			if err != nil {
 				return err
 			}
 
-			msgExecLegacy := govv1.NewMsgExecLegacyContent(contentAny, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-
-			submitPropMsg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgExecLegacy}, deposit, from.String(), proposal.Proposal.Description, proposal.Proposal.Title, "Add a new spec", isExpedited)
+			msgAddSpecs := types.NewMsgAddSpecs(authtypes.NewModuleAddress(govtypes.ModuleName).String(), content.Specs)
+			submitPropMsg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{msgAddSpecs}, deposit, from.String(), proposal.Proposal.Description, proposal.Proposal.Title, "Add a new spec", isExpedited)
 			if err != nil {
 				return err
 			}

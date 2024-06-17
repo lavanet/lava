@@ -24,7 +24,7 @@ func v_35_0(
 		params := lk.SpecKeeper.GetParams(ctx)
 		params.AllowlistedExpeditedMsgs = []string{
 			proto.MessageName(&protocoltypes.MsgSetVersion{}),
-			proto.MessageName(&spectypes.SpecAddProposal{}),
+			proto.MessageName(&spectypes.MsgAddSpecs{}),
 			proto.MessageName(&ibctypes.ClientUpdateProposal{}),
 			proto.MessageName(&ibctypes.UpgradeProposal{}),
 		}

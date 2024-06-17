@@ -1,8 +1,6 @@
 package types
 
 import (
-	"math"
-
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -47,7 +45,7 @@ func (msg *MsgAddSpecs) ValidateBasic() error {
 	}
 
 	for _, v := range msg.Specs {
-		_, err := v.ValidateSpec(math.MaxUint64)
+		err := v.ValidateBasic()
 		if err != nil {
 			return err
 		}

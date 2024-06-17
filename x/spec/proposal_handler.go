@@ -2,7 +2,6 @@ package spec
 
 import (
 	"fmt"
-	"log"
 
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
@@ -13,7 +12,6 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/spec/keeper"
 	"github.com/lavanet/lava/x/spec/types"
 )
 
@@ -70,18 +68,4 @@ func HandleParameterChangeProposal(ctx sdk.Context, k paramkeeper.Keeper, p *par
 	ss.Set(ctx, epochstoragetypes.KeyLatestParamChange, uint64(ctx.BlockHeight())) // set the LatestParamChange
 
 	return nil
-}
-
-// NewSpecProposalsHandler creates a new governance Handler for a Spec
-func NewSpecProposalsHandler(k keeper.Keeper) v1beta1.Handler {
-	return func(ctx sdk.Context, content v1beta1.Content) error {
-		switch c := content.(type) {
-		case *types.SpecAddProposal:
-			return k.HandleSpecs(ctx, c.Specs, k.GetAuthority())
-
-		default:
-			log.Println("unrecognized spec proposal content")
-			return sdkerrors.Wrapf(legacyerrors.ErrUnknownRequest, "unrecognized spec proposal content type: %T", c)
-		}
-	}
 }

@@ -383,14 +383,7 @@ func SimulatePlansDelProposal(ctx sdk.Context, plansKeeper planskeeper.Keeper, p
 }
 
 func SimulateSpecAddProposal(ctx sdk.Context, specKeeper speckeeper.Keeper, specsToPropose []spectypes.Spec) error {
-	proposal := spectypes.NewSpecAddProposal("mockProposal", "mockProposal specs add for testing", specsToPropose)
-	err := proposal.ValidateBasic()
-	if err != nil {
-		return err
-	}
-	proposalHandler := spec.NewSpecProposalsHandler(specKeeper)
-	err = proposalHandler(ctx, proposal)
-	return err
+	return specKeeper.HandleSpecs(ctx, specsToPropose, specKeeper.GetAuthority())
 }
 
 func SimulateUnstakeProposal(ctx sdk.Context, pairingKeeper pairingkeeper.Keeper, providersInfo []pairingtypes.ProviderUnstakeInfo, delegatorsSlashing []pairingtypes.DelegatorSlashing) error {

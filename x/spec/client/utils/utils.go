@@ -17,15 +17,21 @@ import (
 
 type (
 	SpecAddProposalJSON struct {
-		Proposal types.SpecAddProposal `json:"proposal"`
-		Deposit  string                `json:"deposit" yaml:"deposit"`
+		Title       string       `json:"title"`
+		Description string       `json:"description"`
+		Specs       []types.Spec `json:"specs"`
+	}
+
+	SpecAddProposalWithDepositJSON struct {
+		Proposal SpecAddProposalJSON `json:"proposal"`
+		Deposit  string              `json:"deposit" yaml:"deposit"`
 	}
 )
 
 // Parse spec add proposal JSON form file
-func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret SpecAddProposalJSON, err error) {
+func ParseSpecAddProposalJSON(cdc *codec.LegacyAmino, proposalFile string) (ret SpecAddProposalWithDepositJSON, err error) {
 	for _, fileName := range strings.Split(proposalFile, ",") {
-		proposal := SpecAddProposalJSON{}
+		proposal := SpecAddProposalWithDepositJSON{}
 
 		contents, err := os.ReadFile(fileName)
 		if err != nil {
