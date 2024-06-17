@@ -4,16 +4,20 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/utils/sigs"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,6 +34,22 @@ type finalizationTestInsertion struct {
 	success         bool
 	relaySession    *pairingtypes.RelaySession
 	relayReply      *pairingtypes.RelayReply
+}
+
+var (
+	seed       int64
+	randomizer *sigs.ZeroReader
+)
+
+func TestMain(m *testing.M) {
+	seed = time.Now().Unix()
+	randomizer = sigs.NewZeroReader(seed)
+	// Run the actual tests
+	exitCode := m.Run()
+	if exitCode != 0 {
+		utils.LavaFormatDebug("failed tests seed", utils.Attribute{Key: "seed", Value: seed})
+	}
+	os.Exit(exitCode)
 }
 
 func createStubHashes(from, to uint64, identifier string) map[int64]string {
@@ -346,5 +366,82 @@ func TestQoS(t *testing.T) {
 				require.Equal(t, int64(0), interpolation)
 			})
 		}
+	}
+}
+
+func BenchmarkFinalizationConsensusGetExpectedBlockHeight(b *testing.B) {
+	ctx := context.Background()
+	specId := "LAV1"
+	apiInterface := spectypes.APIInterfaceJsonRPC
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+	})
+	chainParser, _, chainFetcher, _, _, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, nil, "../../../", nil)
+	require.NoError(b, err)
+	require.NotNil(b, chainParser)
+	require.NotNil(b, chainFetcher)
+
+	finalizationConsensus := NewFinalizationConsensus("LAV1")
+	_, _, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
+	relaySession := &pairingtypes.RelaySession{
+		SpecId:                specId,
+		ContentHash:           []byte{},
+		SessionId:             uint64(1),
+		CuSum:                 0,
+		Provider:              "provider1",
+		RelayNum:              1,
+		QosReport:             &pairingtypes.QualityOfServiceReport{},
+		Epoch:                 int64(1),
+		UnresponsiveProviders: nil,
+		LavaChainId:           "lava",
+		Sig:                   []byte{},
+	}
+
+	relayReply := &pairingtypes.RelayReply{
+		LatestBlock:           int64(100),
+		FinalizedBlocksHashes: []byte{},
+		SigBlocks:             []byte{},
+		Metadata:              []pairingtypes.Metadata{},
+	}
+
+	account := sigs.GenerateDeterministicFloatingKey(randomizer)
+
+	finalizationConsensus.NewEpoch(1)
+
+	numberOfBlocks := 4500
+	numberOfProviders := 24
+
+	fmt.Println("Starting to propagate finalized hashes")
+
+	for i := 0; i < numberOfProviders; i++ {
+		for j := 0; j < numberOfBlocks; j += 6 {
+			hashes := make(map[int64]string)
+			for k := j; k < j+6; k++ {
+				hashes[int64(k)] = fmt.Sprintf("hash%d", k)
+			}
+
+			finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), account.Addr, fmt.Sprintf("provider%d", i), hashes, relaySession, relayReply)
+		}
+	}
+	fmt.Println("Epoch 1 done")
+	finalizationConsensus.NewEpoch(2)
+	for i := 0; i < numberOfProviders; i++ {
+		for j := numberOfBlocks; j < numberOfBlocks*2; j += 6 {
+			hashes := make(map[int64]string)
+			for k := j; k < j+6; k++ {
+				hashes[int64(k)] = fmt.Sprintf("hash%d", k)
+			}
+
+			finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), account.Addr, fmt.Sprintf("provider%d", i), hashes, relaySession, relayReply)
+		}
+	}
+
+	fmt.Println("Done propagating finalized hashes")
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		finalizationConsensus.GetExpectedBlockHeight(chainParser)
 	}
 }
