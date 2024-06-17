@@ -47,7 +47,7 @@ List the specific goals of the proposal and their measurable results. How will w
 
 ### Non-Goals
 
-What is out of scope for this proposal? Listing non-goals helps to focus discussion and make
+What is out of the scope for this proposal? Listing non-goals helps to focus discussion and make
 progress.
 
 ## Proposal
@@ -86,7 +86,7 @@ What are the risks of this proposal and how do we mitigate. Think broadly.
 For example, consider
 both security and how this will impact the larger Kubernetes ecosystem.
 
-Consider including folks that also work outside your immediate sub-project.
+Consider including folks who also work outside your immediate sub-project.
 
 
 ### Upgrade / Downgrade Strategy
