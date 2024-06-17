@@ -300,25 +300,25 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			rpcConsumerServer := &RPCConsumerServer{}
 
 			var consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
-
+			var specMethodType string
+			var paramsExtractorFunc func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string
 			switch rpcEndpoint.ApiInterface {
 			case spectypes.APIInterfaceTendermintRPC:
-				paramsExtractorFunc := func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
+				paramsExtractorFunc = func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
 					params, err := gojson.Marshal(request.GetRPCMessage().GetParams())
 					if err != nil {
 						utils.LavaFormatWarning("failed marshaling params", err, utils.LogAttr("request", request))
 						return ""
 					}
-
 					return string(params)
 				}
-				consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, "", chainParser, activeSubscriptionProvidersStorage, paramsExtractorFunc)
 			case spectypes.APIInterfaceJsonRPC:
-				paramsExtractorFunc := func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
+				paramsExtractorFunc = func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
 					return string(reply.Result)
 				}
-				consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, http.MethodPost, chainParser, activeSubscriptionProvidersStorage, paramsExtractorFunc)
+				specMethodType = http.MethodPost
 			}
+			consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, paramsExtractorFunc)
 
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)
