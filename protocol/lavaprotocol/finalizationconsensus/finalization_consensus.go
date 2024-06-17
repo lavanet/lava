@@ -46,6 +46,7 @@ type FinalizationConsensus struct {
 	currentEpoch                                 uint64
 	prevLatestBlockByMedian                      uint64 // for caching
 	SpecId                                       string
+	highestRecordedBlockHeight                   int64
 }
 
 type providerDataContainer struct {
@@ -98,6 +99,10 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 			utils.LogAttr("blockHash", blockHash),
 			utils.LogAttr("provider", providerAcc),
 		)
+
+		if blockNum > fc.highestRecordedBlockHeight {
+			fc.highestRecordedBlockHeight = blockNum
+		}
 	}
 }
 
@@ -267,10 +272,6 @@ func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlock
 	// It accounts for both the current and previous epochs, determining the maximum block height from both and adjusting the expected heights accordingly to not exceed this maximum.
 	// The method merges results from both epochs, with the previous epoch's data processed first.
 
-	currentEpochMaxBlockHeight := maps.GetMaxKey(fc.currentEpochBlockToHashesToAgreeingProviders)
-	prevEpochMaxBlockHeight := maps.GetMaxKey(fc.prevEpochBlockToHashesToAgreeingProviders)
-	highestBlockNumber := utils.Max(currentEpochMaxBlockHeight, prevEpochMaxBlockHeight)
-
 	now := time.Now()
 	calcExpectedBlocks := func(mapExpectedBlockHeights map[string]int64, blockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders) map[string]int64 {
 		// Since we are looking for the maximum block height, we need to sort the block heights in ascending order.
@@ -283,9 +284,10 @@ func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlock
 					interpolation := InterpolateBlocks(now, providerDataContainer.LatestBlockTime, averageBlockTime_ms)
 					expected := providerDataContainer.LatestFinalizedBlock + interpolation
 					// limit the interpolation to the highest seen block height
-					if expected > highestBlockNumber {
-						expected = highestBlockNumber
+					if expected > fc.highestRecordedBlockHeight {
+						expected = fc.highestRecordedBlockHeight
 					}
+
 					mapExpectedBlockHeights[providerAddress] = expected
 				}
 			}
