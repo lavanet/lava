@@ -470,6 +470,7 @@ func (cwsm *ConsumerWSSubscriptionManager) handleIncomingSubscriptionNodeMessage
 	defer cwsm.lock.RUnlock()
 
 	activeSubscription := cwsm.activeSubscriptions[hashedParams]
+	// we need to copy the original message because the verify changes the requested block every time.
 	copiedRequest := &pairingtypes.RelayRequest{}
 	err := protocopy.DeepCopyProtoObject(activeSubscription.subscriptionOriginalRequest, copiedRequest)
 	if err != nil {
@@ -512,7 +513,7 @@ func (cwsm *ConsumerWSSubscriptionManager) handleIncomingSubscriptionNodeMessage
 			)
 			continue
 		}
-		// set seen block
+		// set consistency seen block
 		cwsm.relaySender.SetConsistencySeenBlock(subscriptionRelayReplyMsg.LatestBlock, connectedDappKey)
 		// send the reply to the user
 		cwsm.connectedDapps[connectedDappKey][hashedParams].Send(subscriptionRelayReplyMsg)
