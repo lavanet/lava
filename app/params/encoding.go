@@ -7,7 +7,7 @@ import (
 )
 
 // EncodingConfig specifies the concrete encoding types to use for a given app.
-// This is provided for compatibility between protobuf and amino implementations.
+// This is provided to ensure compatibility between protobuf and amino implementations.
 type EncodingConfig struct {
 	InterfaceRegistry types.InterfaceRegistry
 	Marshaler         codec.Codec
