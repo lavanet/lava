@@ -388,6 +388,7 @@ func (k Keeper) HandleSpecs(ctx sdk.Context, specs []types.Spec, creator string)
 			}
 		}
 
+		spec.UserSpec = creator != k.authority
 		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
 		k.SetSpec(ctx, spec)
 
