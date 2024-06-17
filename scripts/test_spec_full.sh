@@ -135,7 +135,7 @@ copy_content() {
     local end_line="$2"
     local index="$3"
     local url="$4"
-    awk -v s="$start_line" -v e="$end_line" -v idx="$index" -v url="$url" 'NR >= s && NR <= e {sub("RELACE_THIS_URL", url, $0);sub("INDEX_RELACE_THIS", idx, $0);print}' "$input_yaml" >> "$output_yaml"
+    awk -v s="$start_line" -v e="$end_line" -v idx="$index" -v url="$url" 'NR >= s && NR <= e {sub("REPLACE_THIS_URL", url, $0);sub("INDEX_REPLACE_THIS", idx, $0);print}' "$input_yaml" >> "$output_yaml"
 }
 
 head -n 1 "$input_yaml" >> "$output_yaml"
