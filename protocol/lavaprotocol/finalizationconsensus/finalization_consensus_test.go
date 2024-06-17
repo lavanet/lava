@@ -172,7 +172,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 		}
 		for _, play := range playbook {
 			t.Run(chainID+":"+play.name, func(t *testing.T) {
-				finalizationConsensus := &FinalizationConsensus{}
+				finalizationConsensus := NewFinalizationConsensus(chainID)
 				finalizationConsensus.NewEpoch(epoch)
 				// check updating hashes works
 				for _, insertion := range play.finalizationInsertions {
@@ -250,7 +250,7 @@ func TestQoS(t *testing.T) {
 					finalizationInsertionForProviders(chainID, epoch, 204, 2, 3, true, "", blocksInFinalizationProof, blockDistanceForFinalizedData)...),
 					finalizationInsertionForProviders(chainID, epoch, 205, 2, 3, true, "", blocksInFinalizationProof, blockDistanceForFinalizedData)...)
 
-				finalizationConsensus := &FinalizationConsensus{}
+				finalizationConsensus := NewFinalizationConsensus(chainID)
 				finalizationConsensus.NewEpoch(epoch)
 				for _, insertion := range finalizationInsertions {
 					_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), sdk.AccAddress{}, insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
@@ -344,7 +344,7 @@ func TestQoS(t *testing.T) {
 					finalizationInsertionForProviders(chainID, epoch, 202, 2, 1, true, "", blocksInFinalizationProof, blockDistanceForFinalizedData)[0],
 				}
 
-				finalizationConsensus = &FinalizationConsensus{}
+				finalizationConsensus = NewFinalizationConsensus(chainID)
 				finalizationConsensus.NewEpoch(epoch)
 				for _, insertion := range finalizationInsertionsSpreadBlocks {
 					_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), sdk.AccAddress{}, insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
