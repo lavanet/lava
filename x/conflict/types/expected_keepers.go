@@ -36,6 +36,7 @@ type EpochstorageKeeper interface {
 type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive, found bool, providersType spectypes.Spec_ProvidersTypes)
 	IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock, latestBlock int64) bool
+	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 }
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)

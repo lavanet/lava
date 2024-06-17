@@ -91,7 +91,7 @@ type SubscriptionKeeper interface {
 	GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string
 	GetTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, block uint64) (cu uint64, found bool, key string)
 	CalcTotalMonthlyReward(ctx sdk.Context, totalAmount math.Int, trackedCu uint64, totalCuUsedBySub uint64) math.Int
-	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, block uint64) error
+	AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cu uint64, block uint64, userSpec bool) error
 	GetAllSubscriptionsIndices(ctx sdk.Context) []string
 	AppendAdjustment(ctx sdk.Context, consumer string, provider string, totalConsumerUsage uint64, usageWithThisProvider uint64)
 	CalculateParticipationFees(ctx sdk.Context, reward sdk.Coin) (sdk.Coins, sdk.Coins, error)
