@@ -200,6 +200,9 @@ func StrValue(val interface{}) string {
 		st_val = value.Error()
 	case []error:
 		for _, err := range value {
+			if err == nil {
+				continue
+			}
 			st_val += err.Error() + ";"
 		}
 	case []string:
