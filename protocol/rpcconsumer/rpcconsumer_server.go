@@ -2,13 +2,14 @@ package rpcconsumer
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec"
