@@ -57,6 +57,7 @@ func specKeeper() (*keeper.Keeper, sdk.Context, error) {
 		memStoreKey,
 		paramsSubspace,
 		nil,
+		"",
 	)
 
 	ctx := sdk.NewContext(stateStore, tmproto.Header{}, false, log.NewNopLogger())

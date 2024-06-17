@@ -21,6 +21,7 @@ type (
 		paramstore paramtypes.Subspace
 
 		stakingKeeper types.StakingKeeper
+		authority     string
 	}
 )
 
@@ -30,6 +31,7 @@ func NewKeeper(
 	memKey storetypes.StoreKey,
 	ps paramtypes.Subspace,
 	stakingKeeper types.StakingKeeper,
+	authority string,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -42,6 +44,7 @@ func NewKeeper(
 		memKey:        memKey,
 		paramstore:    ps,
 		stakingKeeper: stakingKeeper,
+		authority:     authority,
 	}
 }
 
@@ -50,3 +53,5 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {}
+
+func (k Keeper) GetAuthority() string { return k.authority }

@@ -253,7 +253,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	init_balance()
 	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Distribution = distributionkeeper.NewKeeper(cdc, distributionStoreKey, ks.AccountKeeper, ks.BankKeeper, ks.StakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace, ks.StakingKeeper)
+	ks.Spec = *speckeeper.NewKeeper(cdc, specStoreKey, specMemStoreKey, specparamsSubspace, ks.StakingKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Epochstorage = *epochstoragekeeper.NewKeeper(cdc, epochStoreKey, epochMemStoreKey, epochparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, ks.StakingKeeper)
 	ks.FixationStoreKeeper = fixationkeeper.NewKeeper(cdc, ks.TimerStoreKeeper, ks.Epochstorage.BlocksToSaveRaw)
 	ks.Dualstaking = *dualstakingkeeper.NewKeeper(cdc, dualstakingStoreKey, dualstakingMemStoreKey, dualstakingparamsSubspace, &ks.BankKeeper, &ks.StakingKeeper, &ks.AccountKeeper, ks.Epochstorage, ks.Spec, ks.FixationStoreKeeper)

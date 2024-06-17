@@ -480,6 +480,7 @@ func New(
 		keys[specmoduletypes.MemStoreKey],
 		app.GetSubspace(specmoduletypes.ModuleName),
 		app.StakingKeeper,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 	specModule := specmodule.NewAppModule(appCodec, app.SpecKeeper, app.AccountKeeper, app.BankKeeper)
 

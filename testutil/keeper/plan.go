@@ -63,7 +63,7 @@ func PlanKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		memStoreKey,
 		paramsSubspace,
 		epochstorageKeeper,
-		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec, nil),
+		speckeeper.NewKeeper(cdc, nil, nil, paramsSubspaceSpec, nil, ""),
 		fixationkeeper.NewKeeper(cdc, timerstorekeeper.NewKeeper(cdc), epochstorageKeeper.BlocksToSaveRaw),
 		nil,
 	)
