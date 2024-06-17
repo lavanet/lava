@@ -74,7 +74,6 @@ func NewConsumerWSSubscriptionManager(
 func (cwsm *ConsumerWSSubscriptionManager) checkForActiveSubscription(webSocketCtx context.Context, hashedParams string, chainMessage ChainMessage, dappKey string, websocketRepliesSafeChannelSender *common.SafeChannelSender[*pairingtypes.RelayReply]) (*pairingtypes.RelayReply, bool) {
 	activeSubscription, found := cwsm.activeSubscriptions[hashedParams]
 	if found {
-		defer cwsm.lock.Unlock() // in case we found an active subscription, we will return for any case, we will defer the unlock here.
 		utils.LavaFormatTrace("found active subscription for given params",
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
