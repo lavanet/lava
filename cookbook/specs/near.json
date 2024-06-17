@@ -415,28 +415,37 @@
                             {
                                 "name": "pruning",
                                 "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
+                                    "function_tag": "GET_BLOCK_BY_NUM"
+                                    },
+                                "values": [
+                                    {
+                                        "latest_distance": 64800
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"block_id\":9820210},\"id\":1}",
                                     "function_tag": "VERIFICATION",
                                     "result_parsing": {
                                         "parser_arg": [
                                             "0",
-                                            "sync_info",
-                                            "earliest_block_height"
+                                            "header",
+                                            "height"
                                         ],
                                         "parser_func": "PARSE_CANONICAL"
                                     },
-                                    "api_name": "status"
+                                    "api_name": "block"
                                 },
                                 "values": [
-                                    {
-                                        "latest_distance": 64800
-                                    },
                                     {
                                         "extension": "archive",
                                         "expected_value": "9820210"
                                     }
                                 ]
                             }
+                            
                         ],
                         "extensions": [
                             {
