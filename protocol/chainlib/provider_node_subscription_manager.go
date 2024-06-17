@@ -49,8 +49,9 @@ type relayFinalizationBlocksHandler interface {
 }
 
 type connectedConsumerContainer struct {
-	consumerChannel   *common.SafeChannelSender[*pairingtypes.RelayReply]
-	firstSetupRequest *pairingtypes.RelayRequest
+	consumerChannel    *common.SafeChannelSender[*pairingtypes.RelayReply]
+	firstSetupRequest  *pairingtypes.RelayRequest
+	consumerSDKAddress sdk.AccAddress
 }
 
 type activeSubscription struct {
@@ -138,8 +139,9 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 
 		// Add the new entry for the consumer
 		paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString] = &connectedConsumerContainer{
-			consumerChannel:   common.NewSafeChannelSender(ctx, consumerChannel),
-			firstSetupRequest: &pairingtypes.RelayRequest{}, // Deep copy later	firstSetupChainMessage: chainMessage,
+			consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
+			firstSetupRequest:  &pairingtypes.RelayRequest{}, // Deep copy later	firstSetupChainMessage: chainMessage,
+			consumerSDKAddress: consumerAddr,
 		}
 
 		copyRequestErr := protocopy.DeepCopyProtoObject(request, paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString].firstSetupRequest)
@@ -220,8 +222,9 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 
 		channelToConnectedConsumers.connectedConsumers = make(map[string]*connectedConsumerContainer)
 		channelToConnectedConsumers.connectedConsumers[consumerAddrString] = &connectedConsumerContainer{
-			consumerChannel:   common.NewSafeChannelSender(ctx, consumerChannel),
-			firstSetupRequest: copiedRequest,
+			consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
+			firstSetupRequest:  copiedRequest,
+			consumerSDKAddress: consumerAddr,
 		}
 
 		pnsm.activeSubscriptions[hashedParams] = channelToConnectedConsumers
@@ -419,13 +422,7 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 			Metadata: []pairingtypes.Metadata{},
 		}
 
-		consumerAddr, err := sdk.AccAddressFromBech32(consumerAddrString)
-		if err != nil {
-			utils.LavaFormatError("error unmarshalling consumer address", err)
-			return
-		}
-
-		err = pnsm.signReply(ctx, relayMessageFromNode, consumerAddr, chainMessage, copiedRequest)
+		err = pnsm.signReply(ctx, relayMessageFromNode, connectedConsumerContainer.consumerSDKAddress, chainMessage, copiedRequest)
 		if err != nil {
 			utils.LavaFormatError("error signing reply", err)
 			return
@@ -435,7 +432,7 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 			utils.LogAttr("requestRelayData", copiedRequest.RelayData),
 			utils.LogAttr("reply", marshalledNodeMsg),
 			utils.LogAttr("replyLatestBlock", relayMessageFromNode.LatestBlock),
-			utils.LogAttr("consumerAddr", consumerAddr),
+			utils.LogAttr("consumerAddr", connectedConsumerContainer.consumerSDKAddress),
 		)
 
 		connectedConsumerContainer.consumerChannel.Send(relayMessageFromNode)
