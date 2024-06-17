@@ -416,7 +416,7 @@
                                 "name": "pruning",
                                 "parse_directive": {
                                     "function_tag": "GET_BLOCK_BY_NUM"
-                                    },
+                                },
                                 "values": [
                                     {
                                         "latest_distance": 64800
@@ -424,7 +424,7 @@
                                 ]
                             },
                             {
-                                "name": "pruning",
+                                "name": "pruning-archive",
                                 "parse_directive": {
                                     "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"block_id\":9820210},\"id\":1}",
                                     "function_tag": "VERIFICATION",
