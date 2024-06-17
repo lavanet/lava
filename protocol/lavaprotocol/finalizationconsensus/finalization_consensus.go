@@ -14,7 +14,6 @@ import (
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/maps"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
@@ -39,14 +38,21 @@ type FinalizationConsensusInf interface {
 	NewEpoch(epoch uint64)
 }
 
+type providerLatestBlockTimeAndFinalizedBlockContainer struct {
+	LatestBlockTime      time.Time
+	LatestFinalizedBlock int64
+}
+
 type FinalizationConsensus struct {
-	currentEpochBlockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders
-	prevEpochBlockToHashesToAgreeingProviders    BlockToHashesToAgreeingProviders
-	lock                                         sync.RWMutex
-	currentEpoch                                 uint64
-	prevLatestBlockByMedian                      uint64 // for caching
-	SpecId                                       string
-	highestRecordedBlockHeight                   int64
+	currentEpochBlockToHashesToAgreeingProviders         BlockToHashesToAgreeingProviders
+	prevEpochBlockToHashesToAgreeingProviders            BlockToHashesToAgreeingProviders
+	lock                                                 sync.RWMutex
+	currentEpoch                                         uint64
+	prevLatestBlockByMedian                              uint64 // for caching
+	SpecId                                               string
+	highestRecordedBlockHeight                           int64
+	currentEpochLatestProviderBlockTimeAndFinalizedBlock map[string]providerLatestBlockTimeAndFinalizedBlockContainer
+	prevEpochLatestProviderBlockTimeAndFinalizedBlock    map[string]providerLatestBlockTimeAndFinalizedBlockContainer
 }
 
 type providerDataContainer struct {
@@ -62,8 +68,10 @@ type providerDataContainer struct {
 func NewFinalizationConsensus(specId string) *FinalizationConsensus {
 	return &FinalizationConsensus{
 		SpecId: specId,
-		currentEpochBlockToHashesToAgreeingProviders: make(BlockToHashesToAgreeingProviders),
-		prevEpochBlockToHashesToAgreeingProviders:    make(BlockToHashesToAgreeingProviders),
+		currentEpochBlockToHashesToAgreeingProviders:         make(BlockToHashesToAgreeingProviders),
+		prevEpochBlockToHashesToAgreeingProviders:            make(BlockToHashesToAgreeingProviders),
+		currentEpochLatestProviderBlockTimeAndFinalizedBlock: make(map[string]providerLatestBlockTimeAndFinalizedBlockContainer),
+		prevEpochLatestProviderBlockTimeAndFinalizedBlock:    make(map[string]providerLatestBlockTimeAndFinalizedBlockContainer),
 	}
 }
 
@@ -73,15 +81,23 @@ func GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData int64) i
 }
 
 func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDistanceForFinalizedData int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelaySession, providerAcc string) {
+	latestBlockTime := time.Now()
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:          GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData),
-		LatestBlockTime:               time.Now(),
+		LatestBlockTime:               latestBlockTime,
 		FinalizedBlocksHashes:         finalizedBlocks,
 		SigBlocks:                     reply.SigBlocks,
 		LatestBlock:                   latestBlock,
 		BlockDistanceFromFinalization: blockDistanceForFinalizedData,
 		RelaySession:                  *req,
 	}
+
+	fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock[providerAcc] = providerLatestBlockTimeAndFinalizedBlockContainer{
+		LatestFinalizedBlock: newProviderDataContainer.LatestFinalizedBlock,
+		LatestBlockTime:      latestBlockTime,
+	}
+
+	maxBlockNum := int64(0)
 
 	for blockNum, blockHash := range finalizedBlocks {
 		if _, ok := fc.currentEpochBlockToHashesToAgreeingProviders[blockNum]; !ok {
@@ -100,9 +116,13 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 			utils.LogAttr("provider", providerAcc),
 		)
 
-		if blockNum > fc.highestRecordedBlockHeight {
-			fc.highestRecordedBlockHeight = blockNum
+		if blockNum > maxBlockNum {
+			maxBlockNum = blockNum
 		}
+	}
+
+	if maxBlockNum > fc.highestRecordedBlockHeight {
+		fc.highestRecordedBlockHeight = maxBlockNum
 	}
 }
 
@@ -263,6 +283,10 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 		// means it's time to refresh the epoch
 		fc.prevEpochBlockToHashesToAgreeingProviders = fc.currentEpochBlockToHashesToAgreeingProviders
 		fc.currentEpochBlockToHashesToAgreeingProviders = BlockToHashesToAgreeingProviders{}
+
+		fc.prevEpochLatestProviderBlockTimeAndFinalizedBlock = fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock
+		fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock = make(map[string]providerLatestBlockTimeAndFinalizedBlockContainer)
+
 		fc.currentEpoch = epoch
 	}
 }
@@ -273,31 +297,19 @@ func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlock
 	// The method merges results from both epochs, with the previous epoch's data processed first.
 
 	now := time.Now()
-	calcExpectedBlocks := func(mapExpectedBlockHeights map[string]int64, blockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders) map[string]int64 {
-		// Since we are looking for the maximum block height, we need to sort the block heights in ascending order.
-		// This will ensure that mapExpectedBlockHeights will contain the maximum block height for each provider.
-		sortedBlockHeights := maps.StableSortedKeys(blockToHashesToAgreeingProviders)
-		for _, blockHeight := range sortedBlockHeights {
-			blockHashesToAgreeingProviders := blockToHashesToAgreeingProviders[blockHeight]
-			for _, agreeingProviders := range blockHashesToAgreeingProviders {
-				for providerAddress, providerDataContainer := range agreeingProviders {
-					interpolation := InterpolateBlocks(now, providerDataContainer.LatestBlockTime, averageBlockTime_ms)
-					expected := providerDataContainer.LatestFinalizedBlock + interpolation
-					// limit the interpolation to the highest seen block height
-					if expected > fc.highestRecordedBlockHeight {
-						expected = fc.highestRecordedBlockHeight
-					}
-
-					mapExpectedBlockHeights[providerAddress] = expected
-				}
-			}
-		}
-		return mapExpectedBlockHeights
-	}
 	mapExpectedBlockHeights := map[string]int64{}
-	// prev must be before current because we overwrite
-	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.prevEpochBlockToHashesToAgreeingProviders)
-	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.currentEpochBlockToHashesToAgreeingProviders)
+	for providerAddress, latestProviderContainer := range fc.prevEpochLatestProviderBlockTimeAndFinalizedBlock {
+		interpolation := InterpolateBlocks(now, latestProviderContainer.LatestBlockTime, averageBlockTime_ms)
+		expected := latestProviderContainer.LatestFinalizedBlock + interpolation
+		mapExpectedBlockHeights[providerAddress] = expected
+	}
+
+	for providerAddress, latestProviderContainer := range fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock {
+		interpolation := InterpolateBlocks(now, latestProviderContainer.LatestBlockTime, averageBlockTime_ms)
+		expected := latestProviderContainer.LatestFinalizedBlock + interpolation
+		mapExpectedBlockHeights[providerAddress] = expected
+	}
+
 	return mapExpectedBlockHeights
 }
 
