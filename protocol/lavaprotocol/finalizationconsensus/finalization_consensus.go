@@ -26,15 +26,6 @@ type ChainBlockStatsGetter interface {
 }
 
 type BlockToHashesToAgreeingProviders map[int64]map[string]map[string]providerDataContainer // first key is block num, second key is block hash, third key is provider address
-
-func (b BlockToHashesToAgreeingProviders) String() string {
-	ret, err := json.Marshal(b)
-	if err != nil {
-		return ""
-	}
-	return string(ret)
-}
-
 type FinalizationConsensusInf interface {
 	UpdateFinalizedHashes(
 		blockDistanceForFinalizedData int64,
@@ -46,7 +37,6 @@ type FinalizationConsensusInf interface {
 	) (finalizationConflict *conflicttypes.FinalizationConflict, err error)
 	GetExpectedBlockHeight(chainParser ChainBlockStatsGetter) (expectedBlockHeight int64, numOfProviders int)
 	NewEpoch(epoch uint64)
-	String() string
 }
 
 type FinalizationConsensus struct {
@@ -79,14 +69,6 @@ func NewFinalizationConsensus(specId string) *FinalizationConsensus {
 func GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData int64) int64 {
 	finalization_criteria := blockDistanceForFinalizedData
 	return latestBlock - finalization_criteria
-}
-
-// print the current status
-func (fc *FinalizationConsensus) String() string {
-	fc.lock.RLock()
-	defer fc.lock.RUnlock()
-	mapExpectedBlockHeights := fc.getExpectedBlockHeightsOfProviders(10 * time.Millisecond) // it's not super important so we hardcode this
-	return fmt.Sprintf("{FinalizationConsensus: {mapExpectedBlockHeights:%v} epoch: %d latestBlockByMedian %d}", mapExpectedBlockHeights, fc.currentEpoch, &fc.prevLatestBlockByMedian)
 }
 
 func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDistanceForFinalizedData int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelaySession, providerAcc string) {
@@ -136,7 +118,6 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 		utils.LavaFormatTrace("finalization information update successfully",
 			utils.LogAttr("specId", fc.SpecId),
 			utils.LogAttr("finalizationData", finalizedBlocks),
-			utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentEpochBlockToHashesToAgreeingProviders),
 		)
 	}
 
@@ -351,8 +332,6 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser ChainBlockSt
 		if uint64(providersMedianOfLatestBlock) > fc.prevLatestBlockByMedian+1000 && fc.prevLatestBlockByMedian > 0 {
 			utils.LavaFormatError("uncontinuous jump in finalization data", nil,
 				utils.LogAttr("specId", fc.SpecId),
-				utils.LogAttr("prevEpochBlockToHashesToAgreeingProviders", fc.prevEpochBlockToHashesToAgreeingProviders),
-				utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentEpochBlockToHashesToAgreeingProviders),
 				utils.LogAttr("latestBlock", fc.prevLatestBlockByMedian),
 				utils.LogAttr("providersMedianOfLatestBlock", providersMedianOfLatestBlock),
 			)
