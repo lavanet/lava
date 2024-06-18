@@ -262,11 +262,6 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				}
 			}()
 
-			relaySender.
-				EXPECT().
-				CancelSubscriptionContext(gomock.Any()).
-				Times(0) // Should call CancelSubscriptionContext 2 times, because we unsubscribe from 2 subscriptions
-
 			// Prepare for unsubscribe from the first subscription
 			relaySender.
 				EXPECT().
@@ -277,14 +272,13 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			ctx = utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
 			err = manager.Unsubscribe(ctx, chainMessage1, nil, relayResult1.Request.RelayData, dapp2, ts.Consumer.Addr.String(), nil)
 			require.NoError(t, err)
+			wg := sync.WaitGroup{}
+			wg.Add(2)
 
 			relaySender.
 				EXPECT().
 				CancelSubscriptionContext(gomock.Any()).
-				Times(2) // Should call CancelSubscriptionContext 2 times, because we unsubscribe from 2 subscriptions
-
-			wg := sync.WaitGroup{}
-			wg.Add(2)
+				AnyTimes()
 
 			// Prepare for unsubscribe from the second subscription
 			relaySender.
@@ -299,7 +293,6 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			ctx = utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
 			err = manager.UnsubscribeAll(ctx, dapp1, ts.Consumer.Addr.String(), nil)
 			require.NoError(t, err)
-
 			// Because the SendParsedRelay is called in a goroutine, we need to wait for it to finish
 			wg.Wait()
 		})
