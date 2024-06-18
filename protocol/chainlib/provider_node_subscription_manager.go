@@ -125,8 +125,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 				utils.LogAttr("params_provided", chainMessage.GetRPCMessage().GetParams()),
 			)
 			// disconnecting the previous channel, attaching new channel, and returning subscription Id.
-			consumerContainer.consumerChannel.Close()
-			consumerContainer.consumerChannel = common.NewSafeChannelSender(ctx, consumerChannel)
+			consumerContainer.consumerChannel.ReplaceChannel(consumerChannel)
 			return paramsChannelToConnectedConsumers.subscriptionID, nil
 		} else {
 			utils.LavaFormatTrace("[AddConsumer] consumer does not exist in the subscription, adding",

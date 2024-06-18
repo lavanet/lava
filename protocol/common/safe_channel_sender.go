@@ -55,6 +55,22 @@ func (scs *SafeChannelSender[T]) Send(msg T) {
 	}
 }
 
+func (scs *SafeChannelSender[T]) ReplaceChannel(ch chan<- T) {
+	scs.lock.Lock()
+	defer scs.lock.Unlock()
+
+	if scs.closed {
+		return
+	}
+
+	// check wether the incoming channel is different than the one we currently have.
+	// this helps us avoids closing our channel and holding a closed channel causing Close to panic.
+	if scs.ch != ch {
+		close(scs.ch)
+		scs.ch = ch
+	}
+}
+
 func (scs *SafeChannelSender[T]) Close() {
 	scs.lock.Lock()
 	defer scs.lock.Unlock()

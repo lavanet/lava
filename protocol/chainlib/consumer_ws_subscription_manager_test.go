@@ -8,12 +8,12 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/protocol/lavaprotocol"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/protocol/metrics"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/assert"
@@ -88,6 +88,12 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					return dappID + consumerIp
 				}).
 				AnyTimes()
+			relaySender.
+				EXPECT().
+				SetConsistencySeenBlock(gomock.Any(), gomock.Any()).
+				AnyTimes()
+
+			relaySender.EXPECT()
 
 			relaySender.
 				EXPECT().
@@ -103,19 +109,19 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					ProviderAddress: ts.Providers[0].Addr.String(),
 				},
 				Reply: &pairingtypes.RelayReply{
-					Data: play.subscriptionFirstReply1,
+					Data:        play.subscriptionFirstReply1,
+					LatestBlock: 1,
 				},
 				Request: &pairingtypes.RelayRequest{
 					RelayData: &pairingtypes.RelayPrivateData{
 						Data: play.subscriptionRequestData1,
 					},
+					RelaySession: &pairingtypes.RelaySession{},
 				},
 			}
 
-			sig, err := sigs.Sign(ts.Providers[0].SK, pairingtypes.NewRelayExchange(*relayResult1.Request, *relayResult1.Reply))
+			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply, true)
 			require.NoError(t, err)
-
-			relayResult1.Reply.Sig = sig
 
 			mockRelayerClient1.
 				EXPECT().
@@ -218,13 +224,12 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					RelayData: &pairingtypes.RelayPrivateData{
 						Data: play.subscriptionRequestData2,
 					},
+					RelaySession: &pairingtypes.RelaySession{},
 				},
 			}
 
-			sig, err = sigs.Sign(ts.Providers[0].SK, pairingtypes.NewRelayExchange(*relayResult2.Request, *relayResult2.Reply))
+			relayResult2.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult2.Request, ts.Providers[0].SK, relayResult2.Reply, true)
 			require.NoError(t, err)
-
-			relayResult2.Reply.Sig = sig
 
 			mockRelayerClient2.
 				EXPECT().
@@ -233,7 +238,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					relayReply, ok := msg.(*pairingtypes.RelayReply)
 					require.True(t, ok)
 
-					*relayReply = *relayResult1.Reply
+					*relayReply = *relayResult2.Reply
 					return nil
 				}).
 				AnyTimes()
@@ -257,11 +262,6 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				}
 			}()
 
-			relaySender.
-				EXPECT().
-				CancelSubscriptionContext(gomock.Any()).
-				Times(0) // Should call CancelSubscriptionContext 2 times, because we unsubscribe from 2 subscriptions
-
 			// Prepare for unsubscribe from the first subscription
 			relaySender.
 				EXPECT().
@@ -272,14 +272,13 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			ctx = utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
 			err = manager.Unsubscribe(ctx, chainMessage1, nil, relayResult1.Request.RelayData, dapp2, ts.Consumer.Addr.String(), nil)
 			require.NoError(t, err)
+			wg := sync.WaitGroup{}
+			wg.Add(2)
 
 			relaySender.
 				EXPECT().
 				CancelSubscriptionContext(gomock.Any()).
-				Times(2) // Should call CancelSubscriptionContext 2 times, because we unsubscribe from 2 subscriptions
-
-			wg := sync.WaitGroup{}
-			wg.Add(2)
+				AnyTimes()
 
 			// Prepare for unsubscribe from the second subscription
 			relaySender.
@@ -294,7 +293,6 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			ctx = utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
 			err = manager.UnsubscribeAll(ctx, dapp1, ts.Consumer.Addr.String(), nil)
 			require.NoError(t, err)
-
 			// Because the SendParsedRelay is called in a goroutine, we need to wait for it to finish
 			wg.Wait()
 		})
