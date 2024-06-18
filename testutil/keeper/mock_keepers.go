@@ -4,9 +4,17 @@ import (
 	"fmt"
 	"time"
 
+	"cosmossdk.io/math"
 	tenderminttypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	"github.com/cosmos/ibc-go/v7/modules/core/exported"
 )
 
 // account keeper mock
@@ -156,6 +164,101 @@ func (k mockBankKeeper) BlockedAddr(addr sdk.AccAddress) bool {
 	return false
 }
 
+// Mock IBC transfer keeper
+type mockIbcTransferKeeper struct {
+	storeKey   storetypes.StoreKey
+	cdc        codec.BinaryCodec
+	paramSpace paramstypes.Subspace
+	authKeeper mockAccountKeeper
+	bankKeeper mockBankKeeper
+}
+
+const (
+	MockSrcPort     = "src"
+	MockSrcChannel  = "srcc"
+	MockDestPort    = "dest"
+	MockDestChannel = "destc"
+)
+
+func NewMockIbcTransferKeeper(storeKey storetypes.StoreKey, cdc codec.BinaryCodec, paramSpace paramstypes.Subspace, authKeeper mockAccountKeeper, bankKeeper mockBankKeeper) mockIbcTransferKeeper {
+	return mockIbcTransferKeeper{
+		storeKey:   storeKey,
+		cdc:        cdc,
+		paramSpace: paramSpace,
+		authKeeper: authKeeper,
+		bankKeeper: bankKeeper,
+	}
+}
+
+func (k mockIbcTransferKeeper) OnChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string, portID string, channelID string, channelCap *capabilitytypes.Capability, counterparty channeltypes.Counterparty, version string) (string, error) {
+	return "", nil
+}
+
+func (k mockIbcTransferKeeper) OnChanOpenTry(ctx sdk.Context, order channeltypes.Order, connectionHops []string, portID, channelID string, channelCap *capabilitytypes.Capability, counterparty channeltypes.Counterparty, counterpartyVersion string) (version string, err error) {
+	return "", nil
+}
+
+func (k mockIbcTransferKeeper) OnChanOpenAck(ctx sdk.Context, portID, channelID string, counterpartyChannelID string, counterpartyVersion string) error {
+	return nil
+}
+
+func (k mockIbcTransferKeeper) OnChanOpenConfirm(ctx sdk.Context, portID, channelID string) error {
+	return nil
+}
+
+func (k mockIbcTransferKeeper) OnChanCloseInit(ctx sdk.Context, portID, channelID string) error {
+	return nil
+}
+
+func (k mockIbcTransferKeeper) OnChanCloseConfirm(ctx sdk.Context, portID, channelID string) error {
+	return nil
+}
+
+func (k mockIbcTransferKeeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress) exported.Acknowledgement {
+	// get data from packet
+	var data ibctransfertypes.FungibleTokenPacketData
+	if err := ibctransfertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+
+	// parse data
+	senderAcc, err := sdk.AccAddressFromBech32(data.Sender)
+	if err != nil {
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+	receiverAcc, err := sdk.AccAddressFromBech32(data.Receiver)
+	if err != nil {
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+	amount, ok := math.NewIntFromString(data.Amount)
+	if !ok {
+		return channeltypes.NewErrorAcknowledgement(fmt.Errorf("invalid amount in transfer data: %s", data.Amount))
+	}
+
+	// sub balance from sender in original denom, add balance to receiver (on other chain) with IBC Denom
+	coins := sdk.NewCoins(sdk.NewCoin(data.Denom, amount))
+	err = k.bankKeeper.SubFromBalance(senderAcc, coins)
+	if err != nil {
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+	ibcCoins := sdk.NewCoins(ibctransfertypes.GetTransferCoin(packet.DestinationPort, packet.DestinationChannel, data.Denom, amount))
+	err = k.bankKeeper.AddToBalance(receiverAcc, ibcCoins)
+	if err != nil {
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+
+	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+}
+
+func (k mockIbcTransferKeeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, acknowledgement []byte, relayer sdk.AccAddress) error {
+	return nil
+}
+
+func (k mockIbcTransferKeeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, relayer sdk.AccAddress) error {
+	return nil
+}
+
+// Mock BlockStore
 type MockBlockStore struct {
 	height       int64
 	blockHistory map[int64]*tenderminttypes.Block
