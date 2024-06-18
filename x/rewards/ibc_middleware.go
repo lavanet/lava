@@ -117,39 +117,27 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		// on the IBC transfer module's side (which returns a non-nil ack when executed without errors). Asynchronous
 		// processing can be queued processing of packets, interacting with external APIs and more. These can cause
 		// delays in the IBC-transfer's processing which will make the module return a nil ack until the processing is done.
+		// Asyncronous acks are handled in the WriteAcknowledgement middleware method.
 		return ack
 	}
 
 	// get the IBC tokens that were transferred to the IbcIprpcReceiverAddress
 	amount, ok := sdk.NewIntFromString(data.Amount)
 	if !ok {
-		detaliedErr := utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("invalid amount in ibc-transfer data"),
+		detailedErr := utils.LavaFormatError("rewards module IBC middleware processing failed", fmt.Errorf("invalid amount in ibc-transfer data"),
 			utils.LogAttr("data", data),
 		)
-		return channeltypes.NewErrorAcknowledgement(detaliedErr)
+		return channeltypes.NewErrorAcknowledgement(detailedErr)
 	}
 	ibcTokens := transfertypes.GetTransferCoin(packet.DestinationPort, packet.DestinationChannel, data.Denom, amount)
 
-	// transfer the token from the temp IbcIprpcReceiverAddress to the pending IPRPC fund request pool
-	err1 := im.keeper.SendIbcTokensToPendingIprpcPool(ctx, ibcTokens)
-	if err1 != nil {
-		// we couldn't transfer the funds to the pending IPRPC fund request pool, try moving it to the community pool
-		err2 := im.keeper.FundCommunityPoolFromIbcIprpcReceiver(ctx, ibcTokens)
-		if err2 != nil {
-			// community pool transfer failed, token kept locked in IbcIprpcReceiverAddress, return err ack
-			err := utils.LavaFormatError("could not send tokens from IbcIprpcReceiverAddress to pending IPRPC pool or community pool, tokens are locked in IbcIprpcReceiverAddress",
-				errors.Join(err1, err2),
-				utils.LogAttr("amount", ibcTokens.String()),
-				utils.LogAttr("sender", data.Sender),
-			)
-			return channeltypes.NewErrorAcknowledgement(err)
-		} else {
-			err := utils.LavaFormatError("could not send tokens from IbcIprpcReceiverAddress to pending IPRPC pool, sent to community pool", err1,
-				utils.LogAttr("amount", ibcTokens.String()),
-				utils.LogAttr("sender", data.Sender),
-			)
-			return channeltypes.NewErrorAcknowledgement(err)
-		}
+	// send the IBC tokens from IbcIprpcReceiver to PendingIprpcPool
+	err = im.keeper.SendIbcIprpcReceiverTokensToPendingIprpcPool(ctx, ibcTokens)
+	if err != nil {
+		detailedErr := utils.LavaFormatError("sending token from IbcIprpcReceiver to the PendingIprpcPool failed", err,
+			utils.LogAttr("sender", data.Sender),
+		)
+		return channeltypes.NewErrorAcknowledgement(detailedErr)
 	}
 
 	// TODO: define a PendingIbcIprpcFund store to keep track on pending requests. Also create an event that
@@ -182,10 +170,41 @@ func (im IBCMiddleware) SendPacket(ctx sdk.Context, chanCap *capabilitytypes.Cap
 	return im.keeper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
+// WriteAcknowledgement is called when handling async acks. Since the OnRecvPacket code returns on a nil ack (which indicates
+// that an async ack will occur), funds can stay stuck in the IbcIprpcReceiver account (which is a temp account that should
+// not hold funds). This code simply does the missing functionaliy that OnRecvPacket would do if the ack was not nil.
 func (im IBCMiddleware) WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet exported.PacketI,
 	ack exported.Acknowledgement,
 ) error {
-	return im.keeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
+	err := im.keeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
+	if err != nil {
+		return err
+	}
+
+	// unmarshal the packet's data with the transfer module codec (expect an ibc-transfer packet)
+	var data transfertypes.FungibleTokenPacketData
+	if err := transfertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+		return err
+	}
+
+	// sanity check: validate data
+	if err := data.ValidateBasic(); err != nil {
+		return utils.LavaFormatError("handling async transfer packet failed", err,
+			utils.LogAttr("data", data),
+		)
+	}
+
+	// get the IBC tokens that were transferred to the IbcIprpcReceiverAddress
+	amount, ok := sdk.NewIntFromString(data.Amount)
+	if !ok {
+		return utils.LavaFormatError("handling async transfer packet failed", fmt.Errorf("invalid amount in ibc-transfer data"),
+			utils.LogAttr("data", data),
+		)
+	}
+	ibcTokens := transfertypes.GetTransferCoin(packet.GetDestPort(), packet.GetDestChannel(), data.Denom, amount)
+
+	// send the tokens from the IbcIprpcReceiver to the PendingIprpcPool
+	return im.keeper.SendIbcIprpcReceiverTokensToPendingIprpcPool(ctx, ibcTokens)
 }
 
 func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
