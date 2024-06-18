@@ -256,6 +256,68 @@ func (k Keeper) CalcPendingIbcIprpcFundExpiration(ctx sdk.Context) uint64 {
 	return uint64(ctx.BlockTime().Add(k.IbcIprpcExpiration(ctx)).UTC().Unix())
 }
 
+// CoverIbcIprpcFundCost covers the cost of a PendingIbcIprpcFund by sending the min cost funds to the IBC IPRPC receiver
+// address and call FundIprpc(). Finally, it removes the PendingIbcIprpcFund object from the store
+func (k Keeper) CoverIbcIprpcFundCost(ctx sdk.Context, creator string, index uint64) (costCovered sdk.Coin, err error) {
+	zeroCoin := sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt())
+	creatorAddr, err := sdk.AccAddressFromBech32(creator)
+	if err != nil {
+		return zeroCoin, utils.LavaFormatWarning("invalid creator address. not Bech32", types.ErrCoverIbcIprpcFundCostFailed,
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("index", index),
+		)
+	}
+
+	// get the PendingIbcIprpcFund with index
+	piif, found := k.GetPendingIbcIprpcFund(ctx, index)
+	if !found {
+		return zeroCoin, utils.LavaFormatWarning("PendingIbcIprpcFund not found", types.ErrCoverIbcIprpcFundCostFailed,
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("index", index),
+		)
+	}
+
+	// sanity check: PendingIbcIprpcFund is not expired
+	if piif.IsExpired(ctx) {
+		k.RemovePendingIbcIprpcFund(ctx, index)
+		return zeroCoin, utils.LavaFormatWarning("PendingIbcIprpcFund with index is expired (deleted fund)", types.ErrCoverIbcIprpcFundCostFailed,
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("index", index),
+		)
+	}
+
+	// send the min cost to the ValidatorsRewardsAllocationPoolName (gov module doesn't pay min cost)
+	cost := zeroCoin
+	if creator != k.authority {
+		cost = k.CalcPendingIbcIprpcFundMinCost(ctx, piif)
+		err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, creatorAddr, string(types.ValidatorsRewardsAllocationPoolName), sdk.NewCoins(cost))
+		if err != nil {
+			return zeroCoin, utils.LavaFormatWarning(types.ErrCoverIbcIprpcFundCostFailed.Error(), err,
+				utils.LogAttr("creator", creator),
+				utils.LogAttr("index", index),
+			)
+		}
+	}
+
+	// fund the iprpc pool from PendingIprpcPool (inside, the PendingIprpcPool and the gov module are not paying the min cost)
+	err = k.FundIprpc(ctx, string(types.PendingIprpcPoolName), piif.Duration, sdk.NewCoins(piif.Fund), piif.Spec)
+	if err != nil {
+		return zeroCoin, utils.LavaFormatWarning(types.ErrCoverIbcIprpcFundCostFailed.Error(), err,
+			utils.LogAttr("creator", creator),
+			utils.LogAttr("index", index),
+		)
+	}
+
+	// remove the PendingIbcIprpcFund
+	k.RemovePendingIbcIprpcFund(ctx, index)
+
+	return cost, nil
+}
+
+func (k Keeper) SendIbcTokensToPendingIprpcPool(ctx sdk.Context, amount sdk.Coin) error {
+	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, types.IbcIprpcReceiverAddress(), string(types.PendingIprpcPoolName), sdk.NewCoins(amount))
+}
+
 func (k Keeper) FundCommunityPoolFromIbcIprpcReceiver(ctx sdk.Context, amount sdk.Coin) error {
 	return k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(amount), types.IbcIprpcReceiverAddress())
 }

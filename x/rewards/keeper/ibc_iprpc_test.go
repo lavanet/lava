@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
+	"github.com/lavanet/lava/testutil/sample"
 	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/x/rewards/keeper"
 	"github.com/lavanet/lava/x/rewards/types"
@@ -405,4 +406,104 @@ func TestPendingIbcIprpcFundNewFunds(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestCoverIbcIprpcFundCost tests that the cover-ibc-iprpc-fund-cost transaction
+// Scenarios:
+//  0. Create 2 PendingIbcIprpcFund objects and fund PendingIprpcPool and gov. First with 101ulava for 2 months, second with
+//     99ulava for 2 months. Expected: PendingIbcIprpcFund with 50ulava, PendingIbcIprpcFund with 49ulava, community pool 2ulava
+//  1. Cover costs with alice for first PendingIbcIprpcFund. Expect two iprpc rewards from next month of 50ulava, PendingIbcIprpcFund
+//     removed, IPRPC pool with 100ulava, second PendingIbcIprpcFund remains (49ulava), alice balance reduced by MinIprpcCost
+//  2. Cover costs with gov module for second PendingIbcIprpcFund. Expect two iprpc rewards from next month of 99ulava, PendingIbcIprpcFund
+//     removed, IPRPC pool with 198ulava, gov module balance not reduced by MinIprpcCost
+func TestCoverIbcIprpcFundCost(t *testing.T) {
+	ts := newTester(t, true)
+	ts.setupForIprpcTests(false)
+	keeper, ctx := ts.Keepers.Rewards, ts.Ctx
+	spec := ts.Spec(mockSpec2)
+	alice := sample.AccAddressObject()
+	aliceBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(10000)))
+	err := ts.Keepers.BankKeeper.SetBalance(ctx, alice, aliceBalance)
+	require.NoError(t, err)
+
+	// set min IPRPC cost to be 50ulava (for validation checks later)
+	minCost := sdk.NewCoin(ts.TokenDenom(), math.NewInt(50))
+	keeper.SetMinIprpcCost(ctx, minCost)
+
+	// fund PendingIprpcPool and gov module
+	// PendingIprpcPool gets the total coins that were sent
+	// gov module get a dummy balance, just to see it's not changing
+	pendingIprpcPoolBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(200)))
+	err = ts.Keepers.BankKeeper.SetBalance(ctx, keepertest.GetModuleAddress(string(types.PendingIprpcPoolName)), pendingIprpcPoolBalance)
+	require.NoError(t, err)
+	govModuleBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.OneInt()))
+	govModule := ts.Keepers.AccountKeeper.GetModuleAddress("gov")
+	err = ts.Keepers.BankKeeper.SetBalance(ctx, govModule, govModuleBalance)
+	require.NoError(t, err)
+
+	// create PendingIbcIprpcFund objects
+	piif1, leftovers1, err := keeper.NewPendingIbcIprpcFund(ctx, alice.String(), spec.Index, 2, sdk.NewCoin(ts.TokenDenom(), math.NewInt(101)))
+	require.NoError(t, err)
+	require.True(t, piif1.Fund.Amount.Equal(math.NewInt(50)))
+	require.True(t, leftovers1.IsEqual(sdk.NewCoin(ts.TokenDenom(), math.OneInt())))
+	piif2, leftovers2, err := keeper.NewPendingIbcIprpcFund(ctx, alice.String(), spec.Index, 2, sdk.NewCoin(ts.TokenDenom(), math.NewInt(99)))
+	require.NoError(t, err)
+	require.True(t, piif2.Fund.Amount.Equal(math.NewInt(49)))
+	require.True(t, leftovers2.IsEqual(sdk.NewCoin(ts.TokenDenom(), math.OneInt())))
+
+	// cover costs of first PendingIbcIprpcFund with alice
+	expectedMinCost := sdk.NewCoin(minCost.Denom, minCost.Amount.MulRaw(int64(piif1.Duration)))
+	_, err = ts.TxRewardsCoverIbcIprpcFundCost(alice.String(), piif1.Index)
+	require.NoError(t, err)
+	_, found := keeper.GetPendingIbcIprpcFund(ctx, piif1.Index)
+	require.False(t, found)
+	require.Equal(t, expectedMinCost.Amount.Int64(), aliceBalance.AmountOf(ts.TokenDenom()).Int64()-ts.GetBalance(alice))
+
+	res, err := ts.QueryRewardsIprpcSpecReward(mockSpec2)
+	require.NoError(t, err)
+	expectedIprpcRewards := []types.IprpcReward{
+		{Id: 1, SpecFunds: []types.Specfund{{Spec: mockSpec2, Fund: sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(50)))}}},
+		{Id: 2, SpecFunds: []types.Specfund{{Spec: mockSpec2, Fund: sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(50)))}}},
+	}
+	require.Len(t, res.IprpcRewards, len(expectedIprpcRewards))
+	for i := range res.IprpcRewards {
+		require.Equal(t, expectedIprpcRewards[i].Id, res.IprpcRewards[i].Id)
+		require.ElementsMatch(t, expectedIprpcRewards[i].SpecFunds, res.IprpcRewards[i].SpecFunds)
+	}
+
+	val, found := keeper.GetPendingIbcIprpcFund(ctx, piif2.Index)
+	require.True(t, found)
+	require.True(t, val.IsEqual(piif2))
+
+	expectedIprpcPoolBalance := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(100)))
+	iprpcPoolBalance := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.IprpcPoolName)
+	require.True(t, expectedIprpcPoolBalance.IsEqual(iprpcPoolBalance))
+
+	// cover costs of first PendingIbcIprpcFund with gov
+	_, err = ts.TxRewardsCoverIbcIprpcFundCost(govModule.String(), piif2.Index)
+	require.NoError(t, err)
+	_, found = keeper.GetPendingIbcIprpcFund(ctx, piif2.Index)
+	require.False(t, found)
+	require.Equal(t, int64(0), govModuleBalance.AmountOf(ts.TokenDenom()).Int64()-ts.GetBalance(govModule))
+
+	res, err = ts.QueryRewardsIprpcSpecReward(mockSpec2)
+	require.NoError(t, err)
+	expectedIprpcRewards = []types.IprpcReward{
+		{Id: 1, SpecFunds: []types.Specfund{{Spec: mockSpec2, Fund: sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(99)))}}},
+		{Id: 2, SpecFunds: []types.Specfund{{Spec: mockSpec2, Fund: sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(99)))}}},
+	}
+	require.Len(t, res.IprpcRewards, len(expectedIprpcRewards))
+	for i := range res.IprpcRewards {
+		require.Equal(t, expectedIprpcRewards[i].Id, res.IprpcRewards[i].Id)
+		require.ElementsMatch(t, expectedIprpcRewards[i].SpecFunds, res.IprpcRewards[i].SpecFunds)
+	}
+
+	expectedIprpcPoolBalance = sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(198)))
+	iprpcPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.IprpcPoolName)
+	require.True(t, expectedIprpcPoolBalance.IsEqual(iprpcPoolBalance))
+
+	// verify that PendingIprpcPool has 2ulava balance (since we didn't use the IBC middleware, the leftovers
+	// of both IPRPC over IBC were not sent to the community pool)
+	pendingIprpcPoolBalance = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.PendingIprpcPoolName)
+	require.True(t, pendingIprpcPoolBalance.IsEqual(sdk.NewCoins(leftovers1.Add(leftovers2))))
 }

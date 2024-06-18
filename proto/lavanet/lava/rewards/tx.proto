@@ -12,6 +12,7 @@ option go_package = "github.com/lavanet/lava/x/rewards/types";
 service Msg {
     rpc SetIprpcData(MsgSetIprpcData) returns (MsgSetIprpcDataResponse);
     rpc FundIprpc(MsgFundIprpc) returns (MsgFundIprpcResponse);
+    rpc CoverIbcIprpcFundCost(MsgCoverIbcIprpcFundCost) returns (MsgCoverIbcIprpcFundCostResponse);
     // this line is used by starport scaffolding # proto/tx/rpc
 }
 
@@ -35,6 +36,14 @@ message MsgFundIprpc {
 }
 
 message MsgFundIprpcResponse {
+}
+
+message MsgCoverIbcIprpcFundCost {
+    string creator = 1;
+    uint64 index = 2; // PendingIbcIprpcFund index
+}
+
+message MsgCoverIbcIprpcFundCostResponse {
 }
 
 // this line is used by starport scaffolding # proto/tx/message
