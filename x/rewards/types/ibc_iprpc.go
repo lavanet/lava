@@ -49,3 +49,30 @@ func IbcIprpcReceiverAddress() sdk.AccAddress {
 const (
 	PendingIprpcPoolName Pool = "pending_iprpc_pool"
 )
+
+// PendingIbcIprpcFund methods and constants
+const (
+	PendingIbcIprpcFundPrefix = "PendingIbcIprpcFund/"
+)
+
+func (piif PendingIbcIprpcFund) IsEqual(other PendingIbcIprpcFund) bool {
+	return piif.Index == other.Index && piif.Creator == other.Creator && piif.Spec == other.Spec &&
+		piif.Duration == other.Duration && piif.Expiry == other.Expiry && piif.Fund.IsEqual(other.Fund)
+}
+
+func (piif PendingIbcIprpcFund) IsEmpty() bool {
+	return piif.IsEqual(PendingIbcIprpcFund{})
+}
+
+func (piif PendingIbcIprpcFund) IsValid() bool {
+	return piif.Expiry > 0 && piif.Fund.IsValid() && piif.Fund.Amount.IsPositive() && piif.Duration > 0
+}
+
+func (piif PendingIbcIprpcFund) IsExpired(ctx sdk.Context) bool {
+	return uint64(ctx.BlockTime().UTC().Unix()) >= piif.Expiry
+}
+
+const (
+	NewPendingIbcIprpcFundEventName            = "pending_ibc_iprpc_fund_created"
+	ExpiredPendingIbcIprpcFundRemovedEventName = "expired_pending_ibc_iprpc_fund_removed"
+)

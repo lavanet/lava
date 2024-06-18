@@ -3,6 +3,7 @@ package rewards
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
@@ -25,6 +26,24 @@ func TestGenesis(t *testing.T) {
 			},
 		},
 		IprpcRewardsCurrent: 2,
+		PendingIbcIprpcFunds: []types.PendingIbcIprpcFund{
+			{
+				Index:    1,
+				Creator:  "1",
+				Spec:     "s1",
+				Duration: 1,
+				Fund:     sdk.NewCoin("denom", math.OneInt()),
+				Expiry:   1,
+			},
+			{
+				Index:    2,
+				Creator:  "2",
+				Spec:     "s2",
+				Duration: 2,
+				Fund:     sdk.NewCoin("denom", math.OneInt().AddRaw(1)),
+				Expiry:   2,
+			},
+		},
 		// this line is used by starport scaffolding # genesis/test/state
 	}
 
@@ -40,5 +59,6 @@ func TestGenesis(t *testing.T) {
 
 	require.ElementsMatch(t, genesisState.IprpcRewards, got.IprpcRewards)
 	require.Equal(t, genesisState.IprpcRewardsCurrent, got.IprpcRewardsCurrent)
+	require.ElementsMatch(t, genesisState.PendingIbcIprpcFunds, got.PendingIbcIprpcFunds)
 	// this line is used by starport scaffolding # genesis/test/assert
 }

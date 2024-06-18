@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils/maps"
 	"github.com/lavanet/lava/x/rewards/types"
 )
 
@@ -36,13 +37,13 @@ func (k Keeper) SetIprpcRewardsCurrentId(ctx sdk.Context, current uint64) {
 func (k Keeper) SetIprpcReward(ctx sdk.Context, iprpcReward types.IprpcReward) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.IprpcRewardPrefix))
 	b := k.cdc.MustMarshal(&iprpcReward)
-	store.Set(GetIprpcRewardIDBytes(iprpcReward.Id), b)
+	store.Set(maps.GetIDBytes(iprpcReward.Id), b)
 }
 
 // GetIprpcReward returns a IprpcReward from its id
 func (k Keeper) GetIprpcReward(ctx sdk.Context, id uint64) (val types.IprpcReward, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.IprpcRewardPrefix))
-	b := store.Get(GetIprpcRewardIDBytes(id))
+	b := store.Get(maps.GetIDBytes(id))
 	if b == nil {
 		return val, false
 	}
@@ -53,7 +54,7 @@ func (k Keeper) GetIprpcReward(ctx sdk.Context, id uint64) (val types.IprpcRewar
 // RemoveIprpcReward removes a IprpcReward from the store
 func (k Keeper) RemoveIprpcReward(ctx sdk.Context, id uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.IprpcRewardPrefix))
-	store.Delete(GetIprpcRewardIDBytes(id))
+	store.Delete(maps.GetIDBytes(id))
 }
 
 // GetAllIprpcReward returns all IprpcReward
@@ -70,18 +71,6 @@ func (k Keeper) GetAllIprpcReward(ctx sdk.Context) (list []types.IprpcReward) {
 	}
 
 	return
-}
-
-// GetIprpcRewardIDBytes returns the byte representation of the ID
-func GetIprpcRewardIDBytes(id uint64) []byte {
-	bz := make([]byte, 8)
-	binary.BigEndian.PutUint64(bz, id)
-	return bz
-}
-
-// GetIprpcRewardIDFromBytes returns ID in uint64 format from a byte array
-func GetIprpcRewardIDFromBytes(bz []byte) uint64 {
-	return binary.BigEndian.Uint64(bz)
 }
 
 // PopIprpcReward gets the lowest id IprpcReward object and removes it

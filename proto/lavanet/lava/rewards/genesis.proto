@@ -20,5 +20,6 @@ message GenesisState {
   cosmos.base.v1beta1.Coin min_iprpc_cost = 5 [(gogoproto.nullable) = false];
   repeated IprpcReward iprpc_rewards = 6 [(gogoproto.nullable) = false];
   uint64 iprpc_rewards_current = 7;
+  repeated PendingIbcIprpcFund pending_ibc_iprpc_funds = 8 [(gogoproto.nullable) = false];
   // this line is used by starport scaffolding # genesis/proto/state
 }
