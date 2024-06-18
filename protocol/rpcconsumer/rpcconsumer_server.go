@@ -718,7 +718,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 				errResponse = rpccs.relaySubscriptionInner(ctxHolder.Ctx, hashedParams, endpointClient, singleConsumerSession, localRelayResult)
 				if errResponse != nil {
-					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse, utils.LogAttr("Request data", localRelayRequestData))
+					utils.LavaFormatError("Failed relaySubscriptionInner", errResponse,
+						utils.LogAttr("Request", localRelayRequestData),
+						utils.LogAttr("Request data", string(localRelayRequestData.Data)),
+					)
 				}
 
 				return
