@@ -18,11 +18,15 @@ Please note that this module replaces Cosmos SDK's mint module, which is typical
     * [Validators Rewards Pool](#validators-rewards-pool)
     * [Providers Rewards Pool](#providers-rewards-pool)
   * [IPRPC](#iprpc)
+    * [IPRPC over IBC](#iprpc-over-ibc)
 * [Parameters](#parameters)
   * [MinBondedTarget](#minbondedtarget)
   * [MaxBondedTarget](#maxbondedtarget)
   * [LowFactor](#lowfactor)
   * [LeftOverBurnRate](#leftoverburnrate)
+  * [MaxRewardsBoost](#maxrewardsboost)
+  * [ValidatorsSubscriptionParticipation](#validatorssubscriptionparticipation)
+  * [IbcIprpcExpiration](#ibciprpcexpiration)
 * [Queries](#queries)
 * [Transactions](#transactions)
 * [Proposals](#proposals)
@@ -124,6 +128,26 @@ Users have the freedom to fund the pool with any token of their choice, for any 
 
 In order to fund the IPRPC pool, the user's funds must cover the monthly minimum IPRPC cost, a parameter determined by governance. This minimum IPRPC cost will be subtracted from the monthly emission.
 
+#### IPRPC over IBC
+
+To ease the funding process of funding the IPRPC pool, users can send an `ibc-transfer` transaction to fund the IPRPC pool directly from the source chain. For example, using IPRPC over IBC allows funding the IPRPC pool by sending a single `ibc-transfer` to an Osmosis node.
+
+To make the `ibc-transfer` transaction fund the IPRPC pool, it must contain a custom memo with the following format:
+
+```json
+{
+  "iprpc": {
+    "creator": "alice",
+    "spec": "ETH1",
+    "duration": "3"
+  }
+}
+```
+
+The creator field can be any name, the spec field must be an on-chain spec ID, and the duration should be the funding period (in months). Users can use the `generate-ibc-iprpc-tx` helper command with the `--memo-only` flag to generate a valid IPRPC memo. If the flag is not included, this command creates a valid `ibc-transfer` transaction JSON with a custom memo. The only remaining step is to sign and send the transaction.
+
+As mentioned above, funding the IPRPC pool requires a fee derived from the monthly minimum IPRPC cost. Because of that, all IPRPC over IBC requests are considered a pending IPRPC fund request until the fee is paid. To view the current pending requests, users can use the `pending-ibc-iprpc-funds` query and cover the minimum cost using the `cover-ibc-iprpc-fund-cost` transaction. The expiration of pending IPRPC fund requests is dictated by the `IbcIprpcExpiration`, which equals the expiration period in months.
+
 ## Parameters
 
 The rewards module contains the following parameters:
@@ -136,6 +160,7 @@ The rewards module contains the following parameters:
 | LeftOverBurnRate                       | math.LegacyDec          | 1                |
 | MaxRewardsBoost                        | uint64                  | 5                |
 | ValidatorsSubscriptionParticipation    | math.LegacyDec          | 0.05             |
+| IbcIprpcExpiration                     | uint64                  | 3                |
 
 ### MinBondedTarget
 
@@ -176,6 +201,10 @@ MaxRewardsBoost is a multiplier that determines the maximum bonus for provider r
 
 ValidatorsSubscriptionParticipation is used to calculate the providers rewards participation fees.
 
+### IbcIprpcExpiration
+
+IbcIprpcExpiration determines the pending IPRPC over IBC fund requests expiration in months.
+
 ## Queries
 
 The rewards module supports the following queries:
@@ -188,6 +217,8 @@ The rewards module supports the following queries:
 | `show-iprpc-data`   | none            | shows the IPRPC data that includes the minimum IPRPC cost and a list of IPRPC eligible subscriptions                 |
 | `iprpc-provider-reward`   | provider (string)            | shows the estimated IPRPC rewards for a specific provider (relative to its serviced CU) for the upcoming monthly emission                 |
 | `iprpc-spec-rewards`   | spec (string, optional)            | shows a specific spec's IPRPC rewards (for the entire period). If no spec is given, all IPRPC rewards are shown                 |
+| `generate-ibc-iprpc-tx`   | spec (string), duration (uint64, in months), amount (sdk.Coin, optional), src-port (string, optional), src-channel (string, optional), --from (string, mandatory), --node (string, mandatory), --memo-only (optional)            | generates an `ibc-transfer` transaction JSON that can be used to fund the IPRPC pool over IBC. To generate only the custom memo that triggers the IPRPC funding, use the `--memo-only` flag.                 |
+| `pending-ibc-iprpc-funds`   | filter (string, optional)            | Lists the pending IPRPC over IBC fund requests. Use the optional filter to filter by index, creator, or spec. Each entry is shown with the minimum IPRPC cost that needs to be paid to apply it.                  |
 
 Note, use the provider's operator address for the `iprpc-provider-reward` query. For more information on the operator and vault addresses see the pairing module's [README.md](../pairing/README.md).
 
@@ -200,6 +231,7 @@ The rewards module supports the following transactions:
 | Transaction      | Arguments       | What it does                                  |
 | ---------- | --------------- | ----------------------------------------------|
 | `fund-iprpc`     | spec (string), duration (uint64, in months), coins (sdk.Coins, for example: `100ulava,50ibctoken`)  | fund the IPRPC pool to a specific spec with ulava or IBC wrapped tokens. The tokens will be vested for `duration` months.                  |
+| `cover-ibc-iprpc-fund-cost`     | index (uint64)  | cover the costs of a pending IPRPC over IBC fund request by index. The required minimum IPRPC cost is automatically paid by the transaction sender.                  |
 
 Please note that the coins specified in the `fund-iprpc` transaction is the monthly emission fund. For instance, if you specify a fund of 100ulava for a duration of three months, providers will receive 100ulava each month, not 33ulava.
 
@@ -230,3 +262,6 @@ The rewards module has the following events:
 | `set_iprpc_data`     | a successful setting of IPRPC data   |
 | `fund_iprpc`     | a successful funding of the IPRPC pool   |
 | `transfer_iprpc_reward_to_next_month`     | a successful transfer of the current month's IPRPC reward to the next month. Happens when there are no providers eligible for IPRPC rewards in the current month   |
+| `pending_ibc_iprpc_fund_created`     | a successful IPRPC over IBC fund request which creates a pending fund request entry on-chain   |
+| `cover_ibc_iprpc_fund_cost`     | a successful cost coverage of a pending IPRPC fund request that applies the request and funds the IPRPC pool   |
+| `expired_pending_ibc_iprpc_fund_removed`     | a successful removal of an expired pending IPRPC fund request   |
