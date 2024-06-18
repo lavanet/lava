@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"errors"
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -73,10 +74,35 @@ func printInvalidMemoWarning(memo types.IprpcMemo, description string) error {
 	return types.ErrIprpcMemoInvalid
 }
 
-func (k Keeper) SendIbcTokensToPendingIprpcPool(ctx sdk.Context, amount sdk.Coin) error {
-	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, types.IbcIprpcReceiverAddress(), string(types.PendingIprpcPoolName), sdk.NewCoins(amount))
-}
+// SendIbcIprpcReceiverTokensToPendingIprpcPool sends tokens from the IbcIprpcReceiver to the PendingIprpcPool as part of the IPRPC over IBC mechanism
+// if the transfer fails, we try to transfer the tokens to the community pool
+func (k Keeper) SendIbcIprpcReceiverTokensToPendingIprpcPool(ctx sdk.Context, amount sdk.Coin) error {
+	// sanity check: IbcIprpcReceiver has enough funds to send
+	ibcIprpcReceiverBalances := k.bankKeeper.GetAllBalances(ctx, types.IbcIprpcReceiverAddress())
+	if ibcIprpcReceiverBalances.AmountOf(amount.Denom).LT(amount.Amount) {
+		return utils.LavaFormatError("critical: IbcIprpcReceiver does not have enough funds to send to PendingIprpcPool", fmt.Errorf("send funds to PendingIprpcPool failed"),
+			utils.LogAttr("IbcIprpcReceiver_balance", ibcIprpcReceiverBalances.AmountOf(amount.Denom)),
+			utils.LogAttr("amount_to_send_to_PendingIprpcPool", amount.Amount),
+		)
+	}
 
-func (k Keeper) FundCommunityPoolFromIbcIprpcReceiver(ctx sdk.Context, amount sdk.Coin) error {
-	return k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(amount), types.IbcIprpcReceiverAddress())
+	// transfer the token from the temp IbcIprpcReceiverAddress to the pending IPRPC fund request pool
+	err1 := k.bankKeeper.SendCoinsFromAccountToModule(ctx, types.IbcIprpcReceiverAddress(), string(types.PendingIprpcPoolName), sdk.NewCoins(amount))
+	if err1 != nil {
+		// we couldn't transfer the funds to the pending IPRPC fund request pool, try moving it to the community pool
+		err2 := k.distributionKeeper.FundCommunityPool(ctx, sdk.NewCoins(amount), types.IbcIprpcReceiverAddress())
+		if err2 != nil {
+			// community pool transfer failed, token kept locked in IbcIprpcReceiverAddress, return err ack
+			return utils.LavaFormatError("could not send tokens from IbcIprpcReceiverAddress to pending IPRPC pool or community pool, tokens are locked in IbcIprpcReceiverAddress",
+				errors.Join(err1, err2),
+				utils.LogAttr("amount", amount),
+			)
+		} else {
+			return utils.LavaFormatError("could not send tokens from IbcIprpcReceiverAddress to pending IPRPC pool, sent to community pool", err1,
+				utils.LogAttr("amount", amount),
+			)
+		}
+	}
+
+	return nil
 }
