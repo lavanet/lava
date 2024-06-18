@@ -42,7 +42,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -o /lava/build/lavad \
     /lava/cmd/lavad/main.go
 
-RUN go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@${COSMOVISOR_VERSION}
+RUN go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@"${COSMOVISOR_VERSION}"
 
 FROM ${RUNNER_IMAGE}
 
