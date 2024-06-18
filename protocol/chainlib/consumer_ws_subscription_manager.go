@@ -403,12 +403,19 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 		err = cwsm.sendUnsubscribeMessage(unsubscribeRelayCtx, dappID, userIp, chainMessage, directiveHeaders, relayRequestData, metricsData)
 		if err != nil {
 			utils.LavaFormatError("could not send unsubscribe message", err, utils.LogAttr("GUID", webSocketCtx))
+		} else {
+			utils.LavaFormatTrace("success sending unsubscribe message, deleting hashed params from activeSubscriptions",
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("chainMessage", cwsm.activeSubscriptions),
+			)
 		}
-
 		delete(cwsm.activeSubscriptions, hashedParams)
+		utils.LavaFormatTrace("after delete")
 
 		cwsm.activeSubscriptionProvidersStorage.RemoveProvider(providerAddr)
+		utils.LavaFormatTrace("after remove")
 		cwsm.relaySender.CancelSubscriptionContext(hashedParams)
+		utils.LavaFormatTrace("after cancel")
 	}()
 
 	for {
