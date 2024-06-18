@@ -159,7 +159,7 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 			err = pnsm.RemoveConsumer(ts.Ctx, chainMessage, ts.Consumer.Addr, true)
 			require.NoError(t, err)
 
-			// Make sure the consumer channel is closed
+			// Make sure both the consumer channels are closed
 			_, ok := <-consumerChannel
 			require.False(t, ok)
 
