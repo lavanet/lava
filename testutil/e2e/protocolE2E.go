@@ -1291,7 +1291,6 @@ func (lt *lavaTest) runWebSocketSubscriptionTest(tendermintConsumerWebSocketURL 
 	utils.LavaFormatInfo("Unsubscribing from NewBlock events on web socket 1")
 	msgData := createSubscriptionJsonRpcMessage(UNSUBSCRIBE)
 	err := webSocketClient1.WriteJSON(msgData)
-
 	if err != nil {
 		panic(err)
 	}
