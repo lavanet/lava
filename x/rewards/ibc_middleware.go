@@ -117,7 +117,7 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		// on the IBC transfer module's side (which returns a non-nil ack when executed without errors). Asynchronous
 		// processing can be queued processing of packets, interacting with external APIs and more. These can cause
 		// delays in the IBC-transfer's processing which will make the module return a nil ack until the processing is done.
-		// Asyncronous acks are handled in the WriteAcknowledgement middleware method.
+		// Asynchronous acks are handled in the WriteAcknowledgement middleware method.
 		return ack
 	}
 
@@ -172,7 +172,7 @@ func (im IBCMiddleware) SendPacket(ctx sdk.Context, chanCap *capabilitytypes.Cap
 
 // WriteAcknowledgement is called when handling async acks. Since the OnRecvPacket code returns on a nil ack (which indicates
 // that an async ack will occur), funds can stay stuck in the IbcIprpcReceiver account (which is a temp account that should
-// not hold funds). This code simply does the missing functionaliy that OnRecvPacket would do if the ack was not nil.
+// not hold funds). This code simply does the missing functionally that OnRecvPacket would do if the ack was not nil.
 func (im IBCMiddleware) WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet exported.PacketI,
 	ack exported.Acknowledgement,
 ) error {
