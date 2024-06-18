@@ -39,6 +39,7 @@ func (k Keeper) ExtractIprpcMemoFromPacket(ctx sdk.Context, transferData transfe
 	err := decoder.Decode(transferData.Memo, "iprpc", &memo, nil, nil, nil)
 	if err != nil {
 		// memo is not for IPRPC over IBC, return custom error to skip processing for this packet
+		utils.LavaFormatWarning("memo is not in IPRPC over IBC format", err, utils.LogAttr("memo", memo))
 		return types.IprpcMemo{}, types.ErrMemoNotIprpcOverIbc
 	}
 	err = k.validateIprpcMemo(ctx, memo)
@@ -95,11 +96,13 @@ func (k Keeper) SendIbcIprpcReceiverTokensToPendingIprpcPool(ctx sdk.Context, am
 			// community pool transfer failed, token kept locked in IbcIprpcReceiverAddress, return err ack
 			return utils.LavaFormatError("could not send tokens from IbcIprpcReceiverAddress to pending IPRPC pool or community pool, tokens are locked in IbcIprpcReceiverAddress",
 				errors.Join(err1, err2),
-				utils.LogAttr("amount", amount),
+				utils.LogAttr("IbcIprpcReceiver_balance", ibcIprpcReceiverBalances.AmountOf(amount.Denom)),
+				utils.LogAttr("amount_to_send_to_PendingIprpcPool", amount.Amount),
 			)
 		} else {
 			return utils.LavaFormatError("could not send tokens from IbcIprpcReceiverAddress to pending IPRPC pool, sent to community pool", err1,
-				utils.LogAttr("amount", amount),
+				utils.LogAttr("IbcIprpcReceiver_balance", ibcIprpcReceiverBalances.AmountOf(amount.Denom)),
+				utils.LogAttr("amount_to_send_to_PendingIprpcPool", amount.Amount),
 			)
 		}
 	}
