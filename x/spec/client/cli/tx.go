@@ -43,7 +43,7 @@ func GetTxCmd() *cobra.Command {
 	}
 
 	// this line is used by starport scaffolding # 1
-	cmd.AddCommand(NewAddSpecsTxCmd())
+	cmd.AddCommand(CmdTxAddSpecs())
 	return cmd
 }
 
@@ -130,9 +130,9 @@ $ %s tx gov spec-proposal spec-add <path/to/proposal.json> --from=<key_or_addres
 	return cmd
 }
 
-// NewAddSpecsTxCmd returns a CLI command handler for creating
+// CmdTxAddSpecs returns a CLI command handler for creating
 // a add spec transaction
-func NewAddSpecsTxCmd() *cobra.Command {
+func CmdTxAddSpecs() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "spec-add [proposal-file,proposal-file,...]",
 		Args:  cobra.ExactArgs(1),

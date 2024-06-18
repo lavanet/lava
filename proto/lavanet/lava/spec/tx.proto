@@ -17,7 +17,7 @@ service Msg {
 
 message MsgAddSpecs {
     string creator = 1;
-    repeated Spec specs = 3 [(gogoproto.nullable) = false]; 
+    repeated Spec specs = 2 [(gogoproto.nullable) = false]; 
 }
 
 message MsgAddSpecsResponse {

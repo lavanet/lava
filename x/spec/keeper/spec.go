@@ -382,7 +382,7 @@ func (k Keeper) HandleSpecs(ctx sdk.Context, specs []types.Spec, creator string)
 					return utils.LavaFormatWarning("user cannot change spec which he is not a contributor at", nil)
 				}
 			} else {
-				if sdk.SliceContains(spec.Contributor, creator) {
+				if !sdk.SliceContains(spec.Contributor, creator) {
 					spec.Contributor = append(spec.Contributor, creator)
 				}
 			}
