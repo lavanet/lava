@@ -47,6 +47,11 @@ service Query {
   rpc IprpcSpecReward(QueryIprpcSpecRewardRequest) returns (QueryIprpcSpecRewardResponse) {
     option (google.api.http).get = "/lavanet/lava/rewards/iprpc_spec_reward/{spec}";
   }
+
+  // PendingIbcIprpcFunds queries for a spec's IPRPC reward
+  rpc PendingIbcIprpcFunds(QueryPendingIbcIprpcFundsRequest) returns (QueryPendingIbcIprpcFundsResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/pending_ibc_iprpc_funds/{filter}";
+  }
   // this line is used by starport scaffolding # 2
 }
 
@@ -132,6 +137,21 @@ message QueryIprpcSpecRewardRequest {
 message QueryIprpcSpecRewardResponse {
   repeated IprpcReward iprpc_rewards = 1 [(gogoproto.nullable) = false];
   uint64 current_month_id = 2;
+}
+
+// QueryPendingIbcIprpcFundsRequest is request type for the Query/PendingIbcIprpcFund RPC method.
+message QueryPendingIbcIprpcFundsRequest {
+  string filter = 1; // can be an uint64 index, creator name and spec name
+}
+
+message PendingIbcIprpcFundInfo {
+  PendingIbcIprpcFund pending_ibc_iprpc_fund = 1 [(gogoproto.nullable) = false];
+  cosmos.base.v1beta1.Coin cost = 2 [(gogoproto.nullable) = false]; // equals to min_iprpc_cost * duration
+}
+
+// QueryPendingIbcIprpcFundsResponse is response type for the Query/PendingIbcIprpcFund RPC method.
+message QueryPendingIbcIprpcFundsResponse {
+  repeated PendingIbcIprpcFundInfo pending_ibc_iprpc_funds_info = 1 [(gogoproto.nullable) = false];
 }
 
 // this line is used by starport scaffolding # 3

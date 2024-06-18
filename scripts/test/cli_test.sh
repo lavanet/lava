@@ -186,6 +186,7 @@ trace lavad q rewards show-iprpc-data > /dev/null
 trace lavad q rewards iprpc-provider-reward > /dev/null
 trace lavad q rewards iprpc-spec-reward > /dev/null
 trace lavad q rewards provider-reward >/dev/null
+trace lavad q rewards pending-ibc-iprpc-funds > /dev/null
 
 echo "Testing rewards tx commands"
 trace lavad tx rewards fund-iprpc ETH1 4 100000ulava --from alice >/dev/null
