@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/gorilla/websocket"
 	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/testutil/e2e/sdk"
 	"github.com/lavanet/lava/utils"
@@ -1188,6 +1189,134 @@ func (lt *lavaTest) getKeyAddress(key string) string {
 	return string(output)
 }
 
+func (lt *lavaTest) runWebSocketSubscriptionTest(tendermintConsumerWebSocketURL string) {
+	utils.LavaFormatInfo("Starting WebSocket Subscription Test")
+
+	createWebSocketClient := func() *websocket.Conn {
+		websocketDialer := websocket.Dialer{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+
+		header := make(http.Header)
+
+		webSocketClient, _, err := websocketDialer.DialContext(context.Background(), tendermintConsumerWebSocketURL, header)
+		if err != nil {
+			panic(err)
+		}
+
+		return webSocketClient
+	}
+
+	const (
+		SUBSCRIBE   = "subscribe"
+		UNSUBSCRIBE = "unsubscribe"
+	)
+
+	createSubscriptionJsonRpcMessage := func(method string) map[string]interface{} {
+		return map[string]interface{}{
+			"jsonrpc": "2.0",
+			"method":  method,
+			"id":      1,
+			"params": map[string]interface{}{
+				"query": "tm.event = 'NewBlock'",
+			},
+		}
+	}
+
+	subscribeToNewBlockEvents := func(webSocketClient *websocket.Conn) {
+		msgData := createSubscriptionJsonRpcMessage(SUBSCRIBE)
+		err := webSocketClient.WriteJSON(msgData)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	webSocketClient1NewBlockMsgCount := 0
+	webSocketClient2NewBlockMsgCount := 0
+
+	webSocketShouldListen := true
+	defer func() {
+		webSocketShouldListen = false
+	}()
+
+	startWebSocketReader := func(webSocketClient *websocket.Conn, counter *int) {
+		for {
+			_, message, err := webSocketClient.ReadMessage()
+			if err != nil {
+				if webSocketShouldListen {
+					panic(err)
+				}
+
+				// Once the test is done, we can safely ignore the error
+				return
+			}
+
+			if strings.Contains(string(message), "NewBlock") {
+				*counter++
+			}
+		}
+	}
+
+	// Start a 2 websocket clients and connect them to tendermint consumer endpoint
+	utils.LavaFormatInfo("Setting up web socket client 1")
+	webSocketClient1 := createWebSocketClient()
+	utils.LavaFormatInfo("Setting up web socket client 2")
+	webSocketClient2 := createWebSocketClient()
+
+	// Start a reader for each client to count the number of NewBlock messages received
+	utils.LavaFormatInfo("Start listening for NewBlock messages on web socket 1")
+	go startWebSocketReader(webSocketClient1, &webSocketClient1NewBlockMsgCount)
+	utils.LavaFormatInfo("Start listening for NewBlock messages on web socket 2")
+	go startWebSocketReader(webSocketClient2, &webSocketClient2NewBlockMsgCount)
+
+	// Subscribe to new block events
+	utils.LavaFormatInfo("Subscribing to NewBlock events on web socket 1")
+	subscribeToNewBlockEvents(webSocketClient1)
+	utils.LavaFormatInfo("Subscribing to NewBlock events on web socket 2")
+	subscribeToNewBlockEvents(webSocketClient2)
+
+	// Wait for 10 blocks
+	utils.LavaFormatInfo("Sleeping for 12 seconds to receive blocks")
+	time.Sleep(12 * time.Second)
+
+	utils.LavaFormatInfo("Making sure both clients received at least 10 blocks")
+	// Check the both clients received at least 10 blocks
+	if webSocketClient1NewBlockMsgCount < 10 || webSocketClient2NewBlockMsgCount < 10 {
+		panic(fmt.Sprintf("both clients should have received at least 10 blocks, got for websocket1: %d, and for websocket2: %d",
+			webSocketClient1NewBlockMsgCount, webSocketClient2NewBlockMsgCount))
+	}
+
+	// Unsubscribe one client
+	utils.LavaFormatInfo("Unsubscribing from NewBlock events on web socket 1")
+	msgData := createSubscriptionJsonRpcMessage(UNSUBSCRIBE)
+	err := webSocketClient1.WriteJSON(msgData)
+
+	if err != nil {
+		panic(err)
+	}
+
+	// Make sure that the unsubscribed client stops receiving blocks
+	webSocketClient1NewBlockMsgCountAfterUnsubscribe := webSocketClient1NewBlockMsgCount
+
+	utils.LavaFormatInfo("Sleeping for 7 seconds to make sure unsubscribed client stops receiving blocks")
+	time.Sleep(7 * time.Second)
+
+	if webSocketClient1NewBlockMsgCount != webSocketClient1NewBlockMsgCountAfterUnsubscribe {
+		panic("unsubscribed client should not receive new blocks")
+	}
+
+	webSocketShouldListen = false
+
+	// Disconnect both websocket clients
+	utils.LavaFormatInfo("Closing web socket 1")
+	webSocketClient1.Close()
+	utils.LavaFormatInfo("Closing web socket 2")
+	webSocketClient2.Close()
+
+	utils.LavaFormatInfo("WebSocket Subscription Test OK")
+}
+
 func calculateProviderCU(pairingClient pairingTypes.QueryClient) (map[string]uint64, error) {
 	providerCU := make(map[string]uint64)
 	res, err := pairingClient.ProvidersEpochCu(context.Background(), &pairingTypes.QueryProvidersEpochCuRequest{})
@@ -1343,6 +1472,8 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("GRPC TEST OK")
 
 	lt.checkResponse("http://127.0.0.1:3340", "http://127.0.0.1:3341", "127.0.0.1:3342")
+
+	lt.runWebSocketSubscriptionTest("ws://127.0.0.1:3340/websocket")
 
 	lt.checkQoS()
 
