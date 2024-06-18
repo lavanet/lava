@@ -122,7 +122,7 @@ fi
 
 ## Handle Provider ##
 
-input_yaml="${__dir}/../config/provider_examples/test_spec_template_archive.yml" #if testing archive change to test_spec_template_archive.yml
+input_yaml="${__dir}/../config/provider_examples/test_spec_template.yml" #if testing archive change to test_spec_template_archive.yml
 output_yaml="${LOGS_DIR}/provider.yml"
 
 line_numbers=()
