@@ -1283,10 +1283,6 @@ func (lt *lavaTest) runWebSocketSubscriptionTest(tendermintConsumerWebSocketURL 
 			}
 
 			if strings.Contains(string(message), "NewBlock") {
-				utils.LavaFormatDebug("Received NewBlock message",
-					utils.LogAttr("message", string(message)),
-					utils.LogAttr("websocket", webSocketName),
-				)
 				incrementNewBlockMessageCount(subscriptionContainer)
 			}
 		}
