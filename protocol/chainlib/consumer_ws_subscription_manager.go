@@ -33,6 +33,18 @@ type activeSubscriptionHolder struct {
 	connectedDapps                          map[string]struct{} // key is dapp key
 }
 
+// by using the broadcast manager, we make sure we don't have a race between read and writes and make sure we don't hang for ever
+type pendingSubscriptionsBroadcastManager struct {
+	broadcastChannelList []chan bool
+}
+
+func (psbm *pendingSubscriptionsBroadcastManager) broadcastToChannelList(value bool) {
+	for _, ch := range psbm.broadcastChannelList {
+		utils.LavaFormatTrace("broadcastToChannelList Notified pending subscriptions", utils.LogAttr("success", value))
+		ch <- value
+	}
+}
+
 type ConsumerWSSubscriptionManager struct {
 	connectedDapps                     map[string]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply] // first key is dapp key, second key is hashed params
 	activeSubscriptions                map[string]*activeSubscriptionHolder                                      // key is params hash
@@ -43,6 +55,7 @@ type ConsumerWSSubscriptionManager struct {
 	connectionType                     string
 	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage
 	unsubscribeParamsExtractor         func(request ChainMessage, reply *rpcclient.JsonrpcMessage) string
+	currentlyPendingSubscriptions      map[string]*pendingSubscriptionsBroadcastManager
 	lock                               sync.RWMutex
 }
 
@@ -58,6 +71,7 @@ func NewConsumerWSSubscriptionManager(
 	return &ConsumerWSSubscriptionManager{
 		connectedDapps:                     make(map[string]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
 		activeSubscriptions:                make(map[string]*activeSubscriptionHolder),
+		currentlyPendingSubscriptions:      make(map[string]*pendingSubscriptionsBroadcastManager),
 		consumerSessionManager:             consumerSessionManager,
 		chainParser:                        chainParser,
 		refererData:                        refererData,
@@ -101,6 +115,77 @@ func (cwsm *ConsumerWSSubscriptionManager) checkForActiveSubscription(webSocketC
 	return nil, false
 }
 
+func (cwsm *ConsumerWSSubscriptionManager) failedPendingSubscription(hashedParams string) {
+	cwsm.lock.Lock()
+	defer cwsm.lock.Unlock()
+	pendingSubscriptionChannel, ok := cwsm.currentlyPendingSubscriptions[hashedParams]
+	if !ok {
+		utils.LavaFormatError("failed fetching hashed params in failedPendingSubscriptions", nil, utils.LogAttr("hash", hashedParams), utils.LogAttr("cwsm.currentlyPendingSubscriptions", cwsm.currentlyPendingSubscriptions))
+	} else {
+		pendingSubscriptionChannel.broadcastToChannelList(false)
+		delete(cwsm.currentlyPendingSubscriptions, hashedParams) // removed pending
+	}
+}
+
+// must be called under a lock.
+func (cwsm *ConsumerWSSubscriptionManager) successfulPendingSubscription(hashedParams string) {
+	pendingSubscriptionChannel, ok := cwsm.currentlyPendingSubscriptions[hashedParams]
+	if !ok {
+		utils.LavaFormatError("failed fetching hashed params in successfulPendingSubscription", nil, utils.LogAttr("hash", hashedParams), utils.LogAttr("cwsm.currentlyPendingSubscriptions", cwsm.currentlyPendingSubscriptions))
+	} else {
+		pendingSubscriptionChannel.broadcastToChannelList(true)
+		delete(cwsm.currentlyPendingSubscriptions, hashedParams) // removed pending
+	}
+}
+
+func (cwsm *ConsumerWSSubscriptionManager) checkForPendingSubscriptions(hashedParams string) (chan bool, bool) {
+	cwsm.lock.Lock()
+	defer cwsm.lock.Unlock()
+	pendingSubscriptionBroadcastManager, ok := cwsm.currentlyPendingSubscriptions[hashedParams]
+	if !ok {
+		// we didn't find hashed params for pending subscriptions, we can create a new subscription
+		utils.LavaFormatTrace("No pending subscription for incoming hashed params found", utils.LogAttr("params", hashedParams))
+		// by using a buffered channel we make sure there is no race condition between the read and write to the channel preventing
+		// hanging forever. when a buffered channel
+		cwsm.currentlyPendingSubscriptions[hashedParams] = &pendingSubscriptionsBroadcastManager{}
+		return nil, ok
+	}
+	utils.LavaFormatTrace("found subscription for incoming hashed params, registering our channel", utils.LogAttr("params", hashedParams))
+	listenChan := make(chan bool, 1)
+	// we append the broadcast manager our new buffered channel and make sure we don't miss out on the update by making it buffered
+	pendingSubscriptionBroadcastManager.broadcastChannelList = append(pendingSubscriptionBroadcastManager.broadcastChannelList, listenChan)
+	return listenChan, ok
+}
+
+func (cwsm *ConsumerWSSubscriptionManager) checkForActiveSubscriptionWithLock(
+	webSocketCtx context.Context,
+	hashedParams string,
+	chainMessage ChainMessage,
+	dappKey string,
+	websocketRepliesSafeChannelSender *common.SafeChannelSender[*pairingtypes.RelayReply],
+	closeWebsocketRepliesChannel func(),
+) (*pairingtypes.RelayReply, bool) {
+	cwsm.lock.Lock()
+	defer cwsm.lock.Unlock()
+
+	firstSubscriptionReply, alreadyActiveSubscription := cwsm.checkForActiveSubscription(
+		webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender,
+	)
+
+	if firstSubscriptionReply != nil {
+		if alreadyActiveSubscription { // same dapp Id, no need for new channel
+			closeWebsocketRepliesChannel()
+			return firstSubscriptionReply, false
+		}
+		// Added to existing subscriptions with a new dappId.
+		return firstSubscriptionReply, true
+	}
+
+	// if we reached here, the subscription is currently not registered, we will need to check again later when we apply the subscription, and
+	// handle the case where two identical subscriptions were launched at the same time.
+	return nil, false
+}
+
 func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	webSocketCtx context.Context,
 	chainMessage ChainMessage,
@@ -135,6 +220,12 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		}
 	}
 
+	// called after send relay failure or parsing failure afterwards
+	onSubscriptionFailure := func() {
+		cwsm.failedPendingSubscription(hashedParams)
+		closeWebsocketRepliesChannel()
+	}
+
 	go func() {
 		<-closeWebsocketRepliesChan
 		utils.LavaFormatTrace("requested to close websocketRepliesChan",
@@ -164,38 +255,34 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 			// The websocket can be closed before the first reply is received, so we need to check if the dapp was even added to the connectedDapps map
 			cwsm.verifyAndDisconnectDappFromSubscription(webSocketCtx, dappKey, hashedParams, nil)
 		}
-
 		closeWebsocketRepliesChannel()
 	}()
 
-	// using a function to avoid unlock mistakes
-	firstSubscriptionReply, returnWebsocketRepliesChan := func() (*pairingtypes.RelayReply, bool) {
-		cwsm.lock.Lock()
-		defer cwsm.lock.Unlock()
-
-		firstSubscriptionReply, alreadyActiveSubscription := cwsm.checkForActiveSubscription(
-			webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender,
-		)
-
-		if firstSubscriptionReply != nil {
-			if alreadyActiveSubscription { // same dapp Id, no need for new channel
-				closeWebsocketRepliesChannel()
-				return firstSubscriptionReply, false
-			}
-			// Added to existing subscriptions with a new dappId.
-			return firstSubscriptionReply, true
-		}
-
-		// if we reached here, the subscription is currently not registered, we will need to check again later when we apply the subscription, and
-		// handle the case where two subscriptions were launched at the same time.
-		return nil, false
-	}()
-
+	firstSubscriptionReply, returnWebsocketRepliesChan := cwsm.checkForActiveSubscriptionWithLock(webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender, closeWebsocketRepliesChannel)
 	if firstSubscriptionReply != nil {
 		if returnWebsocketRepliesChan {
 			return firstSubscriptionReply, websocketRepliesChan, nil
 		}
 		return firstSubscriptionReply, nil, nil
+	}
+
+	pendingSubscriptionChannel, foundPendingSubscription := cwsm.checkForPendingSubscriptions(hashedParams)
+	if foundPendingSubscription {
+		utils.LavaFormatTrace("Found pending subscription, waiting for it to complete")
+		res := <-pendingSubscriptionChannel
+		utils.LavaFormatTrace("Finished pending for subscription, have results", utils.LogAttr("success", res))
+		if res {
+			firstSubscriptionReply, returnWebsocketRepliesChan := cwsm.checkForActiveSubscriptionWithLock(webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender, closeWebsocketRepliesChannel)
+			if firstSubscriptionReply != nil {
+				if returnWebsocketRepliesChan {
+					return firstSubscriptionReply, websocketRepliesChan, nil
+				}
+				return firstSubscriptionReply, nil, nil
+			}
+			utils.LavaFormatError("failed getting a result when channel indicated we got a successful relay", nil)
+		}
+		// failed the subscription attempt, will retry using current relay.
+		utils.LavaFormatTrace("Failed the subscription attempt, retrying with the incoming message", utils.LogAttr("hash", hashedParams))
 	}
 
 	utils.LavaFormatTrace("could not find active subscription for given params, creating new one",
@@ -207,7 +294,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	relayResult, err := cwsm.relaySender.SendParsedRelay(webSocketCtx, dappID, consumerIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
 	if err != nil {
-		closeWebsocketRepliesChannel()
+		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("could not send subscription relay", err)
 	}
 
@@ -222,7 +309,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	replyServer := relayResult.GetReplyServer()
 	if replyServer == nil {
 		// This code should never be reached, but just in case
-		closeWebsocketRepliesChannel()
+		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("reply server is nil, probably an error with the subscription initiation", nil,
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
@@ -233,7 +320,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	reply := *relayResult.Reply
 	if reply.Data == nil {
-		closeWebsocketRepliesChannel()
+		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("Reply data is nil", nil,
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
@@ -245,7 +332,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	copiedRequest := &pairingtypes.RelayRequest{}
 	err = protocopy.DeepCopyProtoObject(relayResult.Request, copiedRequest)
 	if err != nil {
-		closeWebsocketRepliesChannel()
+		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("could not copy relay request", err,
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
@@ -256,7 +343,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	err = cwsm.verifySubscriptionMessage(hashedParams, chainMessage, relayResult.Request, &reply, relayResult.ProviderInfo.ProviderAddress)
 	if err != nil {
-		closeWebsocketRepliesChannel()
+		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
@@ -270,7 +357,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	var replyJsonrpcMessage rpcclient.JsonrpcMessage
 	err = gojson.Unmarshal(reply.Data, &replyJsonrpcMessage)
 	if err != nil {
-		closeWebsocketRepliesChannel()
+		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("could not parse reply into json", err,
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
@@ -290,18 +377,6 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	cwsm.lock.Lock()
 	defer cwsm.lock.Unlock()
-
-	// in case we had two subscriptions with the same hash at the same time, we will find one of them active here.
-	firstSubscriptionReply, alreadyActiveSubscription := cwsm.checkForActiveSubscription(webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender)
-	if firstSubscriptionReply != nil {
-		if alreadyActiveSubscription {
-			closeWebsocketRepliesChannel()
-			return firstSubscriptionReply, nil, nil
-		}
-		// Add to existing subscription
-		return firstSubscriptionReply, websocketRepliesChan, nil
-	}
-
 	// we don't have a subscription of this hashedParams stored, create a new one.
 	closeSubscriptionChan := make(chan *unsubscribeRelayData)
 	cwsm.activeSubscriptions[hashedParams] = &activeSubscriptionHolder{
@@ -317,7 +392,8 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	providerAddr := relayResult.ProviderInfo.ProviderAddress
 	cwsm.activeSubscriptionProvidersStorage.AddProvider(providerAddr)
 	cwsm.connectDappWithSubscription(dappKey, websocketRepliesSafeChannelSender, hashedParams)
-
+	// trigger success for other pending subscriptions
+	cwsm.successfulPendingSubscription(hashedParams)
 	// Need to be run once for subscription
 	go cwsm.listenForSubscriptionMessages(webSocketCtx, dappID, consumerIp, replyServer, hashedParams, providerAddr, metricsData, closeSubscriptionChan)
 
