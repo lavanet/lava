@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	tmclient "github.com/cometbft/cometbft/rpc/client/http"
@@ -1205,6 +1206,8 @@ func (lt *lavaTest) getKeyAddress(key string) string {
 func (lt *lavaTest) runWebSocketSubscriptionTest(tendermintConsumerWebSocketURL string) {
 	utils.LavaFormatInfo("Starting WebSocket Subscription Test")
 
+	subscriptionsCount := 5
+
 	createWebSocketClient := func() *websocket.Conn {
 		websocketDialer := websocket.Dialer{
 			ReadBufferSize:  1024,
@@ -1249,15 +1252,25 @@ func (lt *lavaTest) runWebSocketSubscriptionTest(tendermintConsumerWebSocketURL 
 		}
 	}
 
-	webSocketClient1NewBlockMsgCount := 0
-	webSocketClient2NewBlockMsgCount := 0
-
 	webSocketShouldListen := true
 	defer func() {
 		webSocketShouldListen = false
 	}()
 
-	startWebSocketReader := func(webSocketClient *websocket.Conn, counter *int) {
+	type subscriptionContainer struct {
+		newBlockMessageCount int32
+		webSocketClient      *websocket.Conn
+	}
+
+	incrementNewBlockMessageCount := func(sc *subscriptionContainer) {
+		atomic.AddInt32(&sc.newBlockMessageCount, 1)
+	}
+
+	readNewBlockMessageCount := func(subscriptionContainer *subscriptionContainer) int32 {
+		return atomic.LoadInt32(&subscriptionContainer.newBlockMessageCount)
+	}
+
+	startWebSocketReader := func(webSocketName string, webSocketClient *websocket.Conn, subscriptionContainer *subscriptionContainer) {
 		for {
 			_, message, err := webSocketClient.ReadMessage()
 			if err != nil {
@@ -1270,65 +1283,88 @@ func (lt *lavaTest) runWebSocketSubscriptionTest(tendermintConsumerWebSocketURL 
 			}
 
 			if strings.Contains(string(message), "NewBlock") {
-				*counter++
+				utils.LavaFormatDebug("Received NewBlock message",
+					utils.LogAttr("message", string(message)),
+					utils.LogAttr("websocket", webSocketName),
+				)
+				incrementNewBlockMessageCount(subscriptionContainer)
 			}
 		}
 	}
 
-	// Start a 2 websocket clients and connect them to tendermint consumer endpoint
-	utils.LavaFormatInfo("Setting up web socket client 1")
-	webSocketClient1 := createWebSocketClient()
-	utils.LavaFormatInfo("Setting up web socket client 2")
-	webSocketClient2 := createWebSocketClient()
+	startSubscriptions := func(count int) []*subscriptionContainer {
+		subscriptionContainers := []*subscriptionContainer{}
+		// Start a websocket clients and connect them to tendermint consumer endpoint
+		for i := 0; i < count; i++ {
+			utils.LavaFormatInfo("Setting up web socket client " + strconv.Itoa(i+1))
+			webSocketClient := createWebSocketClient()
 
-	// Start a reader for each client to count the number of NewBlock messages received
-	utils.LavaFormatInfo("Start listening for NewBlock messages on web socket 1")
-	go startWebSocketReader(webSocketClient1, &webSocketClient1NewBlockMsgCount)
-	utils.LavaFormatInfo("Start listening for NewBlock messages on web socket 2")
-	go startWebSocketReader(webSocketClient2, &webSocketClient2NewBlockMsgCount)
+			subscriptionContainer := &subscriptionContainer{
+				webSocketClient:      webSocketClient,
+				newBlockMessageCount: 0,
+			}
 
-	// Subscribe to new block events
-	utils.LavaFormatInfo("Subscribing to NewBlock events on web socket 1")
-	subscribeToNewBlockEvents(webSocketClient1)
-	utils.LavaFormatInfo("Subscribing to NewBlock events on web socket 2")
-	subscribeToNewBlockEvents(webSocketClient2)
+			// Start a reader for each client to count the number of NewBlock messages received
+			utils.LavaFormatInfo("Start listening for NewBlock messages on web socket " + strconv.Itoa(i+1))
+
+			go startWebSocketReader("webSocketClient"+strconv.Itoa(i+1), webSocketClient, subscriptionContainer)
+
+			// Subscribe to new block events
+			utils.LavaFormatInfo("Subscribing to NewBlock events on web socket " + strconv.Itoa(i+1))
+
+			subscribeToNewBlockEvents(webSocketClient)
+			subscriptionContainers = append(subscriptionContainers, subscriptionContainer)
+		}
+
+		return subscriptionContainers
+	}
+
+	subscriptions := startSubscriptions(subscriptionsCount)
 
 	// Wait for 10 blocks
 	utils.LavaFormatInfo("Sleeping for 12 seconds to receive blocks")
 	time.Sleep(12 * time.Second)
 
-	utils.LavaFormatInfo("Making sure both clients received at least 10 blocks")
-	// Check the both clients received at least 10 blocks
-	if webSocketClient1NewBlockMsgCount < 10 || webSocketClient2NewBlockMsgCount < 10 {
-		panic(fmt.Sprintf("both clients should have received at least 10 blocks, got for websocket1: %d, and for websocket2: %d",
-			webSocketClient1NewBlockMsgCount, webSocketClient2NewBlockMsgCount))
+	utils.LavaFormatDebug("Looping through subscription containers",
+		utils.LogAttr("subscriptionContainers", subscriptions),
+	)
+	// Check the all web socket clients received at least 10 blocks
+	for i := 0; i < subscriptionsCount; i++ {
+		utils.LavaFormatInfo("Making sure both clients received at least 10 blocks")
+		if subscriptions[i] == nil {
+			panic("subscriptionContainers[" + strconv.Itoa(i+1) + "] is nil")
+		}
+		newBlockMessageCount := readNewBlockMessageCount(subscriptions[i])
+		if newBlockMessageCount < 10 {
+			panic(fmt.Sprintf("subscription should have received at least 10 blocks, got: %d", newBlockMessageCount))
+		}
 	}
 
 	// Unsubscribe one client
 	utils.LavaFormatInfo("Unsubscribing from NewBlock events on web socket 1")
 	msgData := createSubscriptionJsonRpcMessage(UNSUBSCRIBE)
-	err := webSocketClient1.WriteJSON(msgData)
+	err := subscriptions[0].webSocketClient.WriteJSON(msgData)
 	if err != nil {
 		panic(err)
 	}
 
 	// Make sure that the unsubscribed client stops receiving blocks
-	webSocketClient1NewBlockMsgCountAfterUnsubscribe := webSocketClient1NewBlockMsgCount
+	webSocketClient1NewBlockMsgCountAfterUnsubscribe := readNewBlockMessageCount(subscriptions[0])
 
 	utils.LavaFormatInfo("Sleeping for 7 seconds to make sure unsubscribed client stops receiving blocks")
 	time.Sleep(7 * time.Second)
 
-	if webSocketClient1NewBlockMsgCount != webSocketClient1NewBlockMsgCountAfterUnsubscribe {
+	if readNewBlockMessageCount(subscriptions[0]) != webSocketClient1NewBlockMsgCountAfterUnsubscribe {
 		panic("unsubscribed client should not receive new blocks")
 	}
 
 	webSocketShouldListen = false
 
-	// Disconnect both websocket clients
-	utils.LavaFormatInfo("Closing web socket 1")
-	webSocketClient1.Close()
-	utils.LavaFormatInfo("Closing web socket 2")
-	webSocketClient2.Close()
+	// Disconnect all websocket clients
+	for i := 0; i < subscriptionsCount; i++ {
+		utils.LavaFormatInfo("Closing web socket " + strconv.Itoa(i+1))
+		subscriptions[i].webSocketClient.Close()
+	}
 
 	utils.LavaFormatInfo("WebSocket Subscription Test OK")
 }
