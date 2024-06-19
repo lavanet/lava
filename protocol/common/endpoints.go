@@ -55,7 +55,7 @@ func (nurl NodeUrl) String() string {
 	urlStr := nurl.UrlStr()
 
 	if len(nurl.Addons) > 0 {
-		return urlStr + "(" + strings.Join(nurl.Addons, ",") + ")"
+		return urlStr + ", addons: (" + strings.Join(nurl.Addons, ",") + ")"
 	}
 	return urlStr
 }
