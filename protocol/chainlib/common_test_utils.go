@@ -107,6 +107,8 @@ func genericWebSocketHandler() http.HandlerFunc {
 				panic("got error in ReadMessage")
 			}
 			fmt.Println("got message", message, messageType)
+			conn.WriteMessage(messageType, message)
+			fmt.Println("writing message", message, messageType)
 		}
 	}
 }
