@@ -801,9 +801,22 @@ func (lt *lavaTest) saveLogs() {
 			panic(err)
 		}
 		writer := bufio.NewWriter(file)
-		writer.Write(logBuffer.Bytes())
-		writer.Flush()
-		utils.LavaFormatDebug("writing file", []utils.Attribute{{Key: "fileName", Value: fileName}, {Key: "lines", Value: len(logBuffer.Bytes())}}...)
+		var bytesWritten int
+		bytesWritten, err = writer.Write(logBuffer.Bytes())
+		if err != nil {
+			utils.LavaFormatError("Error writing to file", err)
+		} else {
+			err = writer.Flush()
+			if err != nil {
+				utils.LavaFormatError("Error flushing writer", err)
+			} else {
+				utils.LavaFormatDebug("success writing to file",
+					utils.LogAttr("fileName", fileName),
+					utils.LogAttr("bytesWritten", bytesWritten),
+					utils.LogAttr("lines", len(logBuffer.Bytes())),
+				)
+			}
+		}
 		file.Close()
 
 		lines := strings.Split(logBuffer.String(), "\n")
