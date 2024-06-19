@@ -357,7 +357,11 @@ func (al *Alerting) ProvidersAlerts(healthResults *HealthResults) {
 			latestBlock := healthResults.LatestBlocks[specId]
 			if latestBlock > data.Block {
 				gap := latestBlock - data.Block
-				timeGap := time.Duration(gap*healthResults.Specs[specId].AverageBlockTime) * time.Millisecond
+				specHealthResult, ok := healthResults.Specs[specId]
+				if !ok {
+					utils.LavaFormatFatal("Invalid specid - missing in healthResults", nil, utils.Attribute{Key: "specId", Value: specId})
+				}
+				timeGap := time.Duration(gap*specHealthResult.AverageBlockTime) * time.Millisecond
 				if timeGap > al.allowedTimeGapVsReference {
 					attrs = append(attrs, AlertAttribute{entity: provider, data: fmt.Sprintf("block gap: %s/%s", utils.StrValue(data.Block), utils.StrValue(latestBlock))})
 				}
