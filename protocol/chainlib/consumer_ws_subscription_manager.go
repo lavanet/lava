@@ -145,14 +145,13 @@ func (cwsm *ConsumerWSSubscriptionManager) checkForPendingSubscriptions(hashedPa
 	if !ok {
 		// we didn't find hashed params for pending subscriptions, we can create a new subscription
 		utils.LavaFormatTrace("No pending subscription for incoming hashed params found", utils.LogAttr("params", hashedParams))
-		// by using a buffered channel we make sure there is no race condition between the read and write to the channel preventing
-		// hanging forever. when a buffered channel
+		// create pending subscription broadcast manager for other users to sync on the same relay.
 		cwsm.currentlyPendingSubscriptions[hashedParams] = &pendingSubscriptionsBroadcastManager{}
 		return nil, ok
 	}
 	utils.LavaFormatTrace("found subscription for incoming hashed params, registering our channel", utils.LogAttr("params", hashedParams))
+	// by creating a buffered channel we make sure that we wont miss out on the update between the time we register and listen to the channel
 	listenChan := make(chan bool, 1)
-	// we append the broadcast manager our new buffered channel and make sure we don't miss out on the update by making it buffered
 	pendingSubscriptionBroadcastManager.broadcastChannelList = append(pendingSubscriptionBroadcastManager.broadcastChannelList, listenChan)
 	return listenChan, ok
 }
@@ -269,6 +268,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	pendingSubscriptionChannel, foundPendingSubscription := cwsm.checkForPendingSubscriptions(hashedParams)
 	if foundPendingSubscription {
 		utils.LavaFormatTrace("Found pending subscription, waiting for it to complete")
+		// this is a buffered channel, it wont get stuck even if it is written to before the time we listen
 		res := <-pendingSubscriptionChannel
 		utils.LavaFormatTrace("Finished pending for subscription, have results", utils.LogAttr("success", res))
 		if res {
