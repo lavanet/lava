@@ -1213,10 +1213,14 @@ func (lt *lavaTest) runWebSocketSubscriptionTest(tendermintConsumerWebSocketURL 
 
 		header := make(http.Header)
 
-		webSocketClient, _, err := websocketDialer.DialContext(context.Background(), tendermintConsumerWebSocketURL, header)
+		webSocketClient, resp, err := websocketDialer.DialContext(context.Background(), tendermintConsumerWebSocketURL, header)
 		if err != nil {
 			panic(err)
 		}
+		utils.LavaFormatDebug("Dialed WebSocket Successful",
+			utils.LogAttr("url", tendermintConsumerWebSocketURL),
+			utils.LogAttr("response", resp),
+		)
 
 		return webSocketClient
 	}
