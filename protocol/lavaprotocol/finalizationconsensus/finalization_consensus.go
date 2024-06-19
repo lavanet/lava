@@ -92,9 +92,12 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 		RelaySession:                  *req,
 	}
 
-	fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock[providerAcc] = providerLatestBlockTimeAndFinalizedBlockContainer{
-		LatestFinalizedBlock: newProviderDataContainer.LatestFinalizedBlock,
-		LatestBlockTime:      latestBlockTime,
+	previousProviderContainer, foundPrevious := fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock[providerAcc]
+	if !foundPrevious || newProviderDataContainer.LatestFinalizedBlock > previousProviderContainer.LatestFinalizedBlock {
+		fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock[providerAcc] = providerLatestBlockTimeAndFinalizedBlockContainer{
+			LatestFinalizedBlock: newProviderDataContainer.LatestFinalizedBlock,
+			LatestBlockTime:      latestBlockTime,
+		}
 	}
 
 	maxBlockNum := int64(0)
