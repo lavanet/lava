@@ -363,6 +363,10 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 	pnsm.lock.RLock()
 	defer pnsm.lock.RUnlock()
 
+	if _, ok := pnsm.activeSubscriptions[hashedParams]; !ok {
+		utils.LavaFormatDebug("No hashed params in handleNewNodeMessage, connection might have been closed", utils.LogAttr("hash", hashedParams))
+		return
+	}
 	// Sending message to all connected consumers
 	for consumerAddrString, connectedConsumerContainer := range pnsm.activeSubscriptions[hashedParams].connectedConsumers {
 		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumer", utils.LogAttr("consumerAddr", consumerAddrString), utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
