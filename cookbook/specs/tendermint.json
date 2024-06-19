@@ -449,11 +449,11 @@
                                 "name": "subscribe",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 1000,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -521,16 +521,16 @@
                                 "name": "unsubscribe",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": true,
-                                    "subscription": false,
+                                    "subscription": true,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
@@ -539,16 +539,16 @@
                                 "name": "unsubscribe_all",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": true,
-                                    "subscription": false,
+                                    "subscription": true,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
@@ -618,6 +618,20 @@
                                     "encoding": "base64"
                                 },
                                 "api_name": "earliest_block"
+                            },
+                            {
+                                "function_tag": "SUBSCRIBE",
+                                "api_name": "subscribe"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"unsubscribe\",\"params\":%s,\"id\":1}",
+                                "function_tag": "UNSUBSCRIBE",
+                                "api_name": "unsubscribe"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"unsubscribe_all\",\"params\":[],\"id\":1}",
+                                "function_tag": "UNSUBSCRIBE_ALL",
+                                "api_name": "unsubscribe_all"
                             }
                         ],
                         "verifications": [

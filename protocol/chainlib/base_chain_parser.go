@@ -189,12 +189,14 @@ func (bcp *BaseChainParser) SeparateAddonsExtensions(supported []string) (addons
 			if supportedToCheck == "" {
 				continue
 			}
-			if bcp.isExtension(supportedToCheck) {
+			if bcp.isExtension(supportedToCheck) || supportedToCheck == WebSocketExtension {
 				extensions = append(extensions, supportedToCheck)
 				continue
 			}
 			// neither is an error
-			err = utils.LavaFormatError("invalid supported to check, is neither an addon or an extension", err, utils.Attribute{Key: "spec", Value: bcp.spec.Index}, utils.Attribute{Key: "supported", Value: supportedToCheck})
+			err = utils.LavaFormatError("invalid supported to check, is neither an addon or an extension", err,
+				utils.Attribute{Key: "spec", Value: bcp.spec.Index},
+				utils.Attribute{Key: "supported", Value: supportedToCheck})
 		}
 	}
 	return addons, extensions, err
@@ -252,7 +254,7 @@ func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[str
 	bcp.extensionParser.SetConfiguredExtensions(extensionParser.GetConfiguredExtensions())
 }
 
-func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool) {
+func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool) {
 	bcp.rwLock.RLock()
 	defer bcp.rwLock.RUnlock()
 
@@ -260,7 +262,7 @@ func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing
 	if !ok {
 		return nil, nil, false
 	}
-	return val.Parsing, &val.ApiCollection.CollectionData, ok
+	return val.Parsing, val.ApiCollection, ok
 }
 
 func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *baseChainMessageContainer, extensionInfo extensionslib.ExtensionInfo) {

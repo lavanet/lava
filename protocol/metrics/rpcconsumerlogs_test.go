@@ -60,7 +60,9 @@ func TestAnalyzeWebSocketErrorAndWriteMessage(t *testing.T) {
 		mt, _, _ := c.ReadMessage()
 		plog, _ := NewRPCConsumerLogs(nil, nil)
 		responseError := errors.New("response error")
-		plog.AnalyzeWebSocketErrorAndWriteMessage(c, mt, responseError, "seed", []byte{}, "rpcType", 1*time.Millisecond)
+		formatterMsg := plog.AnalyzeWebSocketErrorAndGetFormattedMessage(c.LocalAddr().String(), responseError, "seed", []byte{}, "rpcType", 1*time.Millisecond)
+		assert.NotNil(t, formatterMsg)
+		c.WriteMessage(mt, formatterMsg)
 	}))
 
 	listenFunc := func() {

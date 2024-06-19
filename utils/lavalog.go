@@ -343,3 +343,7 @@ func FormatLongString(msg string, maxCharacters int) string {
 	}
 	return msg
 }
+
+func ToHexString(hash string) string {
+	return fmt.Sprintf("%x", hash)
+}

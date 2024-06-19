@@ -26,9 +26,16 @@ type baseChainMessageContainer struct {
 	extensions             []*spectypes.Extension
 	timeoutOverride        time.Duration
 	forceCacheRefresh      bool
+	parseDirective         *spectypes.ParseDirective // setting the parse directive related to the api, can be nil
+
 	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
 	// and validate it doesn't contain a node error
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+}
+
+// returning parse directive for the api. can be nil.
+func (pm *baseChainMessageContainer) GetParseDirective() *spectypes.ParseDirective {
+	return pm.parseDirective
 }
 
 // not necessary for base chain message.

@@ -55,7 +55,7 @@ func (nurl NodeUrl) String() string {
 	urlStr := nurl.UrlStr()
 
 	if len(nurl.Addons) > 0 {
-		return urlStr + "(" + strings.Join(nurl.Addons, ",") + ")"
+		return urlStr + ", addons: (" + strings.Join(nurl.Addons, ",") + ")"
 	}
 	return urlStr
 }
@@ -209,7 +209,7 @@ type RelayResult struct {
 	Request         *pairingtypes.RelayRequest
 	Reply           *pairingtypes.RelayReply
 	ProviderInfo    ProviderInfo
-	ReplyServer     *pairingtypes.Relayer_RelaySubscribeClient
+	ReplyServer     pairingtypes.Relayer_RelaySubscribeClient
 	Finalized       bool
 	ConflictHandler ConflictHandlerInterface
 	StatusCode      int
@@ -217,7 +217,7 @@ type RelayResult struct {
 	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
 }
 
-func (rr *RelayResult) GetReplyServer() *pairingtypes.Relayer_RelaySubscribeClient {
+func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {
 	if rr == nil {
 		return nil
 	}

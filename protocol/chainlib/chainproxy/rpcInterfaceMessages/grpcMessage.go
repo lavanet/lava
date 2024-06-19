@@ -103,6 +103,10 @@ func (gm GrpcMessage) GetMethod() string {
 	return gm.Path
 }
 
+func (gm GrpcMessage) GetID() json.RawMessage {
+	return nil
+}
+
 func (gm GrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
 	if gm.methodDesc == nil {
