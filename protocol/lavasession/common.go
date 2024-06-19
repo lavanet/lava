@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	"golang.org/x/exp/slices"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -60,7 +61,7 @@ const (
 
 func IsSessionSyncLoss(err error) bool {
 	code := status.Code(err)
-	return code == codes.Code(SessionOutOfSyncError.ABCICode())
+	return code == codes.Code(SessionOutOfSyncError.ABCICode()) || sdkerrors.IsOf(err, SessionOutOfSyncError)
 }
 
 func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, skipTLS bool, allowCompression bool) (*grpc.ClientConn, error) {
