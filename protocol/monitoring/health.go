@@ -304,7 +304,6 @@ func RunHealth(ctx context.Context,
 			}
 
 			for _, providerEntry := range response.StakeEntry {
-
 				if len(providerAddresses) > 0 {
 					found := false
 					for _, address := range providerAddresses {
@@ -626,7 +625,6 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 	checkProviderEndpoints := func(providerEntry epochstoragetypes.StakeEntry) {
 		defer wg.Done()
 		for _, endpoint := range providerEntry.Endpoints {
-
 			checkOneProvider := func(endpoint epochstoragetypes.Endpoint, apiInterface string, addon string, providerEntry epochstoragetypes.StakeEntry) (time.Duration, string, int64, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
 
