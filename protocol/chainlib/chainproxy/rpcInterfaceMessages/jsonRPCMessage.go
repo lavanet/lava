@@ -119,6 +119,10 @@ func (cp JsonrpcMessage) GetResult() json.RawMessage {
 	return cp.Result
 }
 
+func (cp JsonrpcMessage) GetID() json.RawMessage {
+	return cp.ID
+}
+
 func (cp JsonrpcMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
@@ -156,6 +160,11 @@ func (jbm *JsonrpcBatchMessage) UpdateLatestBlockInMessage(latestBlock uint64, m
 
 func (jbm *JsonrpcBatchMessage) GetBatch() []rpcclient.BatchElemWithId {
 	return jbm.batch
+}
+
+func (jbm JsonrpcBatchMessage) GetParams() interface{} {
+	utils.LavaFormatWarning("Someone called GetParams() on a batch message, which does not make sense", nil)
+	return [][]byte{}
 }
 
 func NewBatchMessage(msgs []JsonrpcMessage) (JsonrpcBatchMessage, error) {

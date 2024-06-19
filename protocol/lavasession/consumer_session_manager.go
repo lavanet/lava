@@ -50,10 +50,11 @@ type ConsumerSessionManager struct {
 	reportedProviders *ReportedProviders
 	// pairingPurge - contains all pairings that are unwanted this epoch, keeps them in memory in order to avoid release.
 	// (if a consumer session still uses one of them or we want to report it.)
-	pairingPurge           map[string]*ConsumerSessionsWithProvider
-	providerOptimizer      ProviderOptimizer
-	consumerMetricsManager *metrics.ConsumerMetricsManager
-	consumerPublicAddress  string
+	pairingPurge                       map[string]*ConsumerSessionsWithProvider
+	providerOptimizer                  ProviderOptimizer
+	consumerMetricsManager             *metrics.ConsumerMetricsManager
+	consumerPublicAddress              string
+	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
 }
 
 // this is being read in multiple locations and but never changes so no need to lock.
@@ -147,12 +148,27 @@ func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []
 // otherwise golang garbage collector is not closing network connections and they
 // will remain open forever.
 func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
-	for _, purgedPairing := range csm.pairingPurge {
-		for _, endpoint := range purgedPairing.Endpoints {
-			if endpoint.connection != nil {
-				endpoint.connection.Close()
+	for providerAddr, purgedPairing := range csm.pairingPurge {
+		callbackPurge := func() {
+			for _, endpoint := range purgedPairing.Endpoints {
+				if endpoint.connection != nil {
+					utils.LavaFormatTrace("purging connection",
+						utils.LogAttr("providerAddr", providerAddr),
+						utils.LogAttr("endpoint", endpoint.NetworkAddress),
+					)
+					endpoint.connection.Close()
+				}
 			}
 		}
+		// on cases where there is still an active subscription over the epoch handover, we purge the connection when subscription ends.
+		if csm.activeSubscriptionProvidersStorage.IsProviderCurrentlyUsed(providerAddr) {
+			utils.LavaFormatTrace("skipping purge for provider, as its currently used in a subscription",
+				utils.LogAttr("providerAddr", providerAddr),
+			)
+			csm.activeSubscriptionProvidersStorage.addToPurgeWhenDone(providerAddr, callbackPurge)
+			continue
+		}
+		callbackPurge()
 	}
 }
 
@@ -423,6 +439,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			if err != nil {
 				// verify err is AllProviderEndpointsDisabled and report.
 				if AllProviderEndpointsDisabledError.Is(err) {
+					tempIgnoredProviders.providers[providerAddress] = struct{}{}
 					err = csm.blockProvider(providerAddress, true, sessionEpoch, MaxConsecutiveConnectionAttempts, 0, csm.GenerateReconnectCallback(consumerSessionsWithProvider)) // reporting and blocking provider this epoch
 					if err != nil {
 						if !EpochMismatchError.Is(err) {
@@ -450,12 +467,17 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			// Get session from endpoint or create new or continue. if more than 10 connections are open.
 			consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint, numberOfResets)
 			if err != nil {
-				utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", utils.Attribute{Key: "Error", Value: err.Error()})
+				utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint",
+					utils.LogAttr("providerAddress", providerAddress),
+					utils.LogAttr("validAddresses", csm.validAddresses),
+					utils.LogAttr("Error", err.Error()),
+				)
 				if MaximumNumberOfSessionsExceededError.Is(err) {
 					// we can get a different provider, adding this provider to the list of providers to skip on.
 					tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				} else if MaximumNumberOfBlockListedSessionsError.Is(err) {
-					// provider has too many block listed sessions. we block it until the next epoch.
+					// provider has too many block listed sessions. we block it until the next epoch and ignore it so it won't pop up again when resetting the provider list.
+					tempIgnoredProviders.providers[providerAddress] = struct{}{}
 					err = csm.blockProvider(providerAddress, false, sessionEpoch, 0, 0, nil)
 					if err != nil {
 						utils.LavaFormatError("Failed to block provider: ", err)
@@ -830,10 +852,10 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 
 	// check if need to block & report
 	var blockProvider, reportProvider bool
-	if ReportAndBlockProviderError.Is(errorReceived) {
+	if sdkerrors.IsOf(errorReceived, ReportAndBlockProviderError) {
 		blockProvider = true
 		reportProvider = true
-	} else if BlockProviderError.Is(errorReceived) {
+	} else if sdkerrors.IsOf(errorReceived, BlockProviderError) {
 		blockProvider = true
 	}
 
@@ -842,7 +864,11 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	consumerSession.errorsCount += 1
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times or session went out of sync we block it.
 	if len(consumerSession.ConsecutiveErrors) > MaximumNumberOfFailuresAllowedPerConsumerSession || IsSessionSyncLoss(errorReceived) {
-		utils.LavaFormatDebug("Blocking consumer session", utils.LogAttr("ConsecutiveErrors", consumerSession.ConsecutiveErrors), utils.LogAttr("errorsCount", consumerSession.errorsCount), utils.Attribute{Key: "id", Value: consumerSession.SessionId})
+		utils.LavaFormatDebug("Blocking consumer session",
+			utils.LogAttr("ConsecutiveErrors", consumerSession.ConsecutiveErrors),
+			utils.LogAttr("errorsCount", consumerSession.errorsCount),
+			utils.LogAttr("id", consumerSession.SessionId),
+		)
 		consumerSession.BlockListed = true // block this session from future usages
 
 		// check if this session is a redemption session meaning we already blocked and reported the provider if it was necessary.
@@ -1029,7 +1055,7 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string) *ConsumerSessionManager {
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter),
 		consumerMetricsManager: consumerMetricsManager,
@@ -1037,5 +1063,6 @@ func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer Provi
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
+	csm.activeSubscriptionProvidersStorage = activeSubscriptionProvidersStorage
 	return csm
 }

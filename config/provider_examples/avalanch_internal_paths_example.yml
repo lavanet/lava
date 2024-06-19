@@ -1,14 +1,14 @@
-# this example show cases how you can setup Avalanche  
+# this example show cases how you can setup Avalanche
 endpoints:
-    - api-interface: jsonrpc
-      chain-id: AVAX
-      network-address: 127.0.0.1:2221
-      node-urls:
-        - url: ws://127.0.0.1:3333/C/rpc/ws
-          internal-path: "/C/rpc" # c chain like specified in the spec
-        - url: https://127.0.0.1:3334/C/avax
-          internal-path: "/C/avax" # c/avax like specified in the spec
-        - url: https://127.0.0.1:3335/X
-          internal-path: "/X" # x chain like specified in the spec
-        - url: https://127.0.0.1:3336/P
-          internal-path: "/P" # p chain like specified in the spec
+  - api-interface: jsonrpc
+    chain-id: AVAX
+    network-address: 127.0.0.1:2221
+    node-urls:
+      - url: ws://127.0.0.1:3333/C/rpc/ws
+        internal-path: "/C/rpc" # c chain like specified in the spec
+      - url: https://127.0.0.1:3334/C/avax
+        internal-path: "/C/avax" # c/avax like specified in the spec
+      - url: https://127.0.0.1:3335/X
+        internal-path: "/X" # x chain like specified in the spec
+      - url: https://127.0.0.1:3336/P
+        internal-path: "/P" # p chain like specified in the spec

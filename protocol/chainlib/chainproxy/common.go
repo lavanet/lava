@@ -89,6 +89,10 @@ func (dri DefaultRPCInput) GetResult() json.RawMessage {
 	return dri.Result
 }
 
+func (dri DefaultRPCInput) GetID() json.RawMessage {
+	return nil
+}
+
 func (dri DefaultRPCInput) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }

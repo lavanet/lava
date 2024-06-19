@@ -1,7 +1,8 @@
-package lavaprotocol
+package finalizationconsensus
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -9,34 +10,49 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/chainlib"
+	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/maps"
 	"github.com/lavanet/lava/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 )
 
-type BlockToHashesToAgreeingProviders map[int64]map[string]map[string]providerDataContainer // first key is block num, second key is block hash, third key is provider address
+type ChainBlockStatsGetter interface {
+	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32)
+}
 
-func (b BlockToHashesToAgreeingProviders) String() string {
-	ret, err := json.Marshal(b)
-	if err != nil {
-		return ""
-	}
-	return string(ret)
+type BlockToHashesToAgreeingProviders map[int64]map[string]map[string]providerDataContainer // first key is block num, second key is block hash, third key is provider address
+type FinalizationConsensusInf interface {
+	UpdateFinalizedHashes(
+		blockDistanceForFinalizedData int64,
+		consumerAddress sdk.AccAddress,
+		providerAddress string,
+		finalizedBlocks map[int64]string,
+		relaySession *pairingtypes.RelaySession,
+		reply *pairingtypes.RelayReply,
+	) (finalizationConflict *conflicttypes.FinalizationConflict, err error)
+	GetExpectedBlockHeight(chainParser ChainBlockStatsGetter) (expectedBlockHeight int64, numOfProviders int)
+	NewEpoch(epoch uint64)
+}
+
+type providerLatestBlockTimeAndFinalizedBlockContainer struct {
+	LatestBlockTime      time.Time
+	LatestFinalizedBlock int64
 }
 
 type FinalizationConsensus struct {
-	currentEpochBlockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders
-	prevEpochBlockToHashesToAgreeingProviders    BlockToHashesToAgreeingProviders
-	lock                                         sync.RWMutex
-	currentEpoch                                 uint64
-	prevLatestBlockByMedian                      uint64 // for caching
-	SpecId                                       string
+	currentEpochBlockToHashesToAgreeingProviders         BlockToHashesToAgreeingProviders
+	prevEpochBlockToHashesToAgreeingProviders            BlockToHashesToAgreeingProviders
+	lock                                                 sync.RWMutex
+	currentEpoch                                         uint64
+	prevLatestBlockByMedian                              uint64 // for caching
+	SpecId                                               string
+	highestRecordedBlockHeight                           int64
+	currentEpochLatestProviderBlockTimeAndFinalizedBlock map[string]providerLatestBlockTimeAndFinalizedBlockContainer
+	prevEpochLatestProviderBlockTimeAndFinalizedBlock    map[string]providerLatestBlockTimeAndFinalizedBlockContainer
 }
 
 type providerDataContainer struct {
@@ -52,8 +68,10 @@ type providerDataContainer struct {
 func NewFinalizationConsensus(specId string) *FinalizationConsensus {
 	return &FinalizationConsensus{
 		SpecId: specId,
-		currentEpochBlockToHashesToAgreeingProviders: make(BlockToHashesToAgreeingProviders),
-		prevEpochBlockToHashesToAgreeingProviders:    make(BlockToHashesToAgreeingProviders),
+		currentEpochBlockToHashesToAgreeingProviders:         make(BlockToHashesToAgreeingProviders),
+		prevEpochBlockToHashesToAgreeingProviders:            make(BlockToHashesToAgreeingProviders),
+		currentEpochLatestProviderBlockTimeAndFinalizedBlock: make(map[string]providerLatestBlockTimeAndFinalizedBlockContainer),
+		prevEpochLatestProviderBlockTimeAndFinalizedBlock:    make(map[string]providerLatestBlockTimeAndFinalizedBlockContainer),
 	}
 }
 
@@ -62,24 +80,27 @@ func GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData int64) i
 	return latestBlock - finalization_criteria
 }
 
-// print the current status
-func (fc *FinalizationConsensus) String() string {
-	fc.lock.RLock()
-	defer fc.lock.RUnlock()
-	mapExpectedBlockHeights := fc.getExpectedBlockHeightsOfProviders(10 * time.Millisecond) // it's not super important so we hardcode this
-	return fmt.Sprintf("{FinalizationConsensus: {mapExpectedBlockHeights:%v} epoch: %d latestBlockByMedian %d}", mapExpectedBlockHeights, fc.currentEpoch, &fc.prevLatestBlockByMedian)
-}
-
 func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDistanceForFinalizedData int64, finalizedBlocks map[int64]string, reply *pairingtypes.RelayReply, req *pairingtypes.RelaySession, providerAcc string) {
+	latestBlockTime := time.Now()
 	newProviderDataContainer := providerDataContainer{
 		LatestFinalizedBlock:          GetLatestFinalizedBlock(latestBlock, blockDistanceForFinalizedData),
-		LatestBlockTime:               time.Now(),
+		LatestBlockTime:               latestBlockTime,
 		FinalizedBlocksHashes:         finalizedBlocks,
 		SigBlocks:                     reply.SigBlocks,
 		LatestBlock:                   latestBlock,
 		BlockDistanceFromFinalization: blockDistanceForFinalizedData,
 		RelaySession:                  *req,
 	}
+
+	previousProviderContainer, foundPrevious := fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock[providerAcc]
+	if !foundPrevious || newProviderDataContainer.LatestFinalizedBlock > previousProviderContainer.LatestFinalizedBlock {
+		fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock[providerAcc] = providerLatestBlockTimeAndFinalizedBlockContainer{
+			LatestFinalizedBlock: newProviderDataContainer.LatestFinalizedBlock,
+			LatestBlockTime:      latestBlockTime,
+		}
+	}
+
+	maxBlockNum := int64(0)
 
 	for blockNum, blockHash := range finalizedBlocks {
 		if _, ok := fc.currentEpochBlockToHashesToAgreeingProviders[blockNum]; !ok {
@@ -97,6 +118,14 @@ func (fc *FinalizationConsensus) insertProviderToConsensus(latestBlock, blockDis
 			utils.LogAttr("blockHash", blockHash),
 			utils.LogAttr("provider", providerAcc),
 		)
+
+		if blockNum > maxBlockNum {
+			maxBlockNum = blockNum
+		}
+	}
+
+	if maxBlockNum > fc.highestRecordedBlockHeight {
+		fc.highestRecordedBlockHeight = maxBlockNum
 	}
 }
 
@@ -117,7 +146,6 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 		utils.LavaFormatTrace("finalization information update successfully",
 			utils.LogAttr("specId", fc.SpecId),
 			utils.LogAttr("finalizationData", finalizedBlocks),
-			utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentEpochBlockToHashesToAgreeingProviders),
 		)
 	}
 
@@ -164,17 +192,18 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 				utils.LogAttr("discrepancyBlock", discrepancyBlock),
 				utils.LogAttr("blockHash", blockHash),
 			)
-			relayFinalization, errWrapped := fc.createRelayFinalizationFromProviderDataContainer(providerPrevReply, consumerAddress)
-			if errWrapped != nil {
-				return nil, errWrapped
+			relayFinalization, err := fc.createRelayFinalizationFromProviderDataContainer(providerPrevReply, consumerAddress)
+			if err != nil {
+				return nil, err
 			}
 
 			logSuccessUpdate()
 			finalizationConflict.RelayFinalization_1 = relayFinalization
 
 			// We now want to block this provider, so we wrap the error with lavasession.BlockProviderError which will be caught later
-			errWrapped = sdkerrors.Wrap(lavasession.BlockProviderError, fmt.Sprintf("found same provider conflict on block [%d], provider address [%s]", discrepancyBlock, providerAddress))
-			return finalizationConflict, errWrapped
+			err = sdkerrors.Wrap(errors.Join(lavasession.BlockProviderError, lavasession.SessionOutOfSyncError),
+				fmt.Sprintf("found same provider conflict on block [%d], provider address [%s]", discrepancyBlock, providerAddress))
+			return finalizationConflict, err
 		} else if otherBlockHash == "" {
 			// Use some other hash to create proof, in case of no same provider conflict
 			otherBlockHash = blockHash
@@ -203,6 +232,7 @@ func (fc *FinalizationConsensus) UpdateFinalizedHashes(blockDistanceForFinalized
 	}
 
 	logSuccessUpdate()
+	// We don't block the provider here, as we found a conflict with another provider, and we don't know which one is correct
 	return finalizationConflict, fmt.Errorf("found finalization conflict on block %d between provider [%s] and provider [%s] ", discrepancyBlock, providerAddress, otherProviderAddress)
 }
 
@@ -256,6 +286,10 @@ func (fc *FinalizationConsensus) NewEpoch(epoch uint64) {
 		// means it's time to refresh the epoch
 		fc.prevEpochBlockToHashesToAgreeingProviders = fc.currentEpochBlockToHashesToAgreeingProviders
 		fc.currentEpochBlockToHashesToAgreeingProviders = BlockToHashesToAgreeingProviders{}
+
+		fc.prevEpochLatestProviderBlockTimeAndFinalizedBlock = fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock
+		fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock = make(map[string]providerLatestBlockTimeAndFinalizedBlockContainer)
+
 		fc.currentEpoch = epoch
 	}
 }
@@ -265,41 +299,26 @@ func (fc *FinalizationConsensus) getExpectedBlockHeightsOfProviders(averageBlock
 	// It accounts for both the current and previous epochs, determining the maximum block height from both and adjusting the expected heights accordingly to not exceed this maximum.
 	// The method merges results from both epochs, with the previous epoch's data processed first.
 
-	currentEpochMaxBlockHeight := maps.GetMaxKey(fc.currentEpochBlockToHashesToAgreeingProviders)
-	prevEpochMaxBlockHeight := maps.GetMaxKey(fc.prevEpochBlockToHashesToAgreeingProviders)
-	highestBlockNumber := utils.Max(currentEpochMaxBlockHeight, prevEpochMaxBlockHeight)
-
 	now := time.Now()
-	calcExpectedBlocks := func(mapExpectedBlockHeights map[string]int64, blockToHashesToAgreeingProviders BlockToHashesToAgreeingProviders) map[string]int64 {
-		// Since we are looking for the maximum block height, we need to sort the block heights in ascending order.
-		// This will ensure that mapExpectedBlockHeights will contain the maximum block height for each provider.
-		sortedBlockHeights := maps.StableSortedKeys(blockToHashesToAgreeingProviders)
-		for _, blockHeight := range sortedBlockHeights {
-			blockHashesToAgreeingProviders := blockToHashesToAgreeingProviders[blockHeight]
-			for _, agreeingProviders := range blockHashesToAgreeingProviders {
-				for providerAddress, providerDataContainer := range agreeingProviders {
-					interpolation := InterpolateBlocks(now, providerDataContainer.LatestBlockTime, averageBlockTime_ms)
-					expected := providerDataContainer.LatestFinalizedBlock + interpolation
-					// limit the interpolation to the highest seen block height
-					if expected > highestBlockNumber {
-						expected = highestBlockNumber
-					}
-					mapExpectedBlockHeights[providerAddress] = expected
-				}
-			}
-		}
-		return mapExpectedBlockHeights
-	}
 	mapExpectedBlockHeights := map[string]int64{}
-	// prev must be before current because we overwrite
-	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.prevEpochBlockToHashesToAgreeingProviders)
-	mapExpectedBlockHeights = calcExpectedBlocks(mapExpectedBlockHeights, fc.currentEpochBlockToHashesToAgreeingProviders)
+	for providerAddress, latestProviderContainer := range fc.prevEpochLatestProviderBlockTimeAndFinalizedBlock {
+		interpolation := InterpolateBlocks(now, latestProviderContainer.LatestBlockTime, averageBlockTime_ms)
+		expected := latestProviderContainer.LatestFinalizedBlock + interpolation
+		mapExpectedBlockHeights[providerAddress] = expected
+	}
+
+	for providerAddress, latestProviderContainer := range fc.currentEpochLatestProviderBlockTimeAndFinalizedBlock {
+		interpolation := InterpolateBlocks(now, latestProviderContainer.LatestBlockTime, averageBlockTime_ms)
+		expected := latestProviderContainer.LatestFinalizedBlock + interpolation
+		mapExpectedBlockHeights[providerAddress] = expected
+	}
+
 	return mapExpectedBlockHeights
 }
 
 // Returns the expected latest block to be at based on the current finalization data, and the number of providers we have information for.
 // It does the calculation on finalized entries then extrapolates the ending based on blockDistance
-func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser chainlib.ChainParser) (expectedBlockHeight int64, numOfProviders int) {
+func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser ChainBlockStatsGetter) (expectedBlockHeight int64, numOfProviders int) {
 	fc.lock.RLock()
 	defer fc.lock.RUnlock()
 
@@ -330,8 +349,6 @@ func (fc *FinalizationConsensus) GetExpectedBlockHeight(chainParser chainlib.Cha
 		if uint64(providersMedianOfLatestBlock) > fc.prevLatestBlockByMedian+1000 && fc.prevLatestBlockByMedian > 0 {
 			utils.LavaFormatError("uncontinuous jump in finalization data", nil,
 				utils.LogAttr("specId", fc.SpecId),
-				utils.LogAttr("prevEpochBlockToHashesToAgreeingProviders", fc.prevEpochBlockToHashesToAgreeingProviders),
-				utils.LogAttr("currentBlockToHashesToAgreeingProviders", fc.currentEpochBlockToHashesToAgreeingProviders),
 				utils.LogAttr("latestBlock", fc.prevLatestBlockByMedian),
 				utils.LogAttr("providersMedianOfLatestBlock", providersMedianOfLatestBlock),
 			)
@@ -355,16 +372,17 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	relayFinalization := conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(relayRequest.RelaySession, reply, consumerAcc)
 	recoveredProviderPubKey, err := sigs.RecoverPubKey(relayFinalization)
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatWarning("Finalization data verification failed, RecoverPubKey returned error", err)
 	}
 
 	recoveredProviderAddr, err := sdk.AccAddressFromHexUnsafe(recoveredProviderPubKey.Address().String())
 	if err != nil {
-		return nil, err
+		return nil, utils.LavaFormatWarning("Finalization data verification failed, AccAddressFromHexUnsafe returned error", err)
 	}
 
 	if recoveredProviderAddr.String() != providerAddr {
-		return nil, utils.LavaFormatError("provider address mismatch in finalization data ", ProviderFinalizationDataError,
+		return nil, utils.LavaFormatError("provider address mismatch in finalization data ",
+			errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.BlockProviderError, lavasession.SessionOutOfSyncError),
 			utils.LogAttr("parsed Address", recoveredProviderAddr.String()),
 			utils.LogAttr("expected address", providerAddr),
 		)
@@ -373,7 +391,8 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	finalizedBlocks = map[int64]string{}
 	err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", ProviderFinalizationDataError,
+		return nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data",
+			errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.BlockProviderError, lavasession.SessionOutOfSyncError),
 			utils.LogAttr("FinalizedBlocksHashes", string(reply.FinalizedBlocksHashes)),
 			utils.LogAttr("errMsg", err.Error()),
 		)
@@ -389,7 +408,8 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	requestBlock := relayRequest.RelayData.RequestBlock
 
 	if providerLatestBlock < lavaslices.Min([]int64{seenBlock, requestBlock}) {
-		return nil, utils.LavaFormatError("provider response does not meet consistency requirements", ProviderFinalizationDataError,
+		return nil, utils.LavaFormatError("provider response does not meet consistency requirements",
+			errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.SessionOutOfSyncError),
 			utils.LogAttr("ProviderAddress", relayRequest.RelaySession.Provider),
 			utils.LogAttr("providerLatestBlock", providerLatestBlock),
 			utils.LogAttr("seenBlock", seenBlock),
@@ -407,7 +427,8 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 	maxBlockNum := int64(0)
 
 	if int64(len(finalizedBlocks)) != blocksInFinalizationProof {
-		return utils.LavaFormatError("Simulation: provider returned incorrect number of finalized blocks", ProviderFinalizationDataAccountabilityError,
+		return utils.LavaFormatError("Simulation: provider returned incorrect number of finalized blocks",
+			errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.BlockProviderError, lavasession.SessionOutOfSyncError),
 			utils.LogAttr("Provider", providerAddr),
 			utils.LogAttr("blocksInFinalizationProof", blocksInFinalizationProof),
 			utils.LogAttr("len(finalizedBlocks)", len(finalizedBlocks)),
@@ -418,7 +439,8 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 	for blockNum := range finalizedBlocks {
 		// Check if finalized
 		if !spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceForFinalization) {
-			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability", ProviderFinalizationDataAccountabilityError,
+			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability",
+				errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.BlockProviderError, lavasession.SessionOutOfSyncError),
 				utils.LogAttr("blockNum", blockNum),
 				utils.LogAttr("latestBlock", latestBlock),
 				utils.LogAttr("Provider", providerAddr),
@@ -441,7 +463,7 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 	// Check for consecutive blocks
 	nonConsecutiveIndex, isConsecutive := lavaslices.IsSliceConsecutive(sorted)
 	if !isConsecutive {
-		return utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", ProviderFinalizationDataAccountabilityError,
+		return utils.LavaFormatError("Simulation: provider returned non consecutive finalized blocks reply", common.ProviderFinalizationDataAccountabilityError,
 			utils.LogAttr("currBlock", sorted[nonConsecutiveIndex]),
 			utils.LogAttr("prevBlock", sorted[nonConsecutiveIndex-1]),
 			utils.LogAttr("providerAddr", providerAddr),
@@ -451,7 +473,7 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 
 	// Check that latest finalized block address + 1 points to a non finalized block
 	if spectypes.IsFinalizedBlock(maxBlockNum+1, latestBlock, blockDistanceForFinalization) {
-		return utils.LavaFormatError("Simulation: provider returned finalized hashes for an older latest block", ProviderFinalizationDataAccountabilityError,
+		return utils.LavaFormatError("Simulation: provider returned finalized hashes for an older latest block", common.ProviderFinalizationDataAccountabilityError,
 			utils.LogAttr("maxBlockNum", maxBlockNum),
 			utils.LogAttr("latestBlock", latestBlock),
 			utils.LogAttr("Provider", providerAddr),
@@ -461,7 +483,7 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 
 	// New reply should have blocknum >= from block same provider
 	if latestSessionBlock > latestBlock {
-		return utils.LavaFormatError("Simulation: Provider supplied an older latest block than it has previously", ProviderFinalizationDataAccountabilityError,
+		return utils.LavaFormatError("Simulation: Provider supplied an older latest block than it has previously", common.ProviderFinalizationDataAccountabilityError,
 			utils.LogAttr("session.LatestBlock", latestSessionBlock),
 			utils.LogAttr("latestBlock", latestBlock),
 			utils.LogAttr("Provider", providerAddr),

@@ -1,19 +1,23 @@
-package lavaprotocol
+package finalizationconsensus
 
 import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/utils/sigs"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,6 +34,22 @@ type finalizationTestInsertion struct {
 	success         bool
 	relaySession    *pairingtypes.RelaySession
 	relayReply      *pairingtypes.RelayReply
+}
+
+var (
+	seed       int64
+	randomizer *sigs.ZeroReader
+)
+
+func TestMain(m *testing.M) {
+	seed = time.Now().Unix()
+	randomizer = sigs.NewZeroReader(seed)
+	// Run the actual tests
+	exitCode := m.Run()
+	if exitCode != 0 {
+		utils.LavaFormatDebug("failed tests seed", utils.Attribute{Key: "seed", Value: seed})
+	}
+	os.Exit(exitCode)
 }
 
 func createStubHashes(from, to uint64, identifier string) map[int64]string {
@@ -77,7 +97,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 	chainsToTest := []string{"APT1", "LAV1", "ETH1"}
 	for _, chainID := range chainsToTest {
 		ctx := context.Background()
-		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../", nil)
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, nil, "../../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -152,7 +172,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 		}
 		for _, play := range playbook {
 			t.Run(chainID+":"+play.name, func(t *testing.T) {
-				finalizationConsensus := &FinalizationConsensus{}
+				finalizationConsensus := NewFinalizationConsensus(chainID)
 				finalizationConsensus.NewEpoch(epoch)
 				// check updating hashes works
 				for _, insertion := range play.finalizationInsertions {
@@ -189,7 +209,7 @@ func TestQoS(t *testing.T) {
 		for _, chainID := range chainsToTest {
 			t.Run(chainID, func(t *testing.T) {
 				ctx := context.Background()
-				chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../", nil)
+				chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, nil, "../../../", nil)
 				if closeServer != nil {
 					defer closeServer()
 				}
@@ -230,7 +250,7 @@ func TestQoS(t *testing.T) {
 					finalizationInsertionForProviders(chainID, epoch, 204, 2, 3, true, "", blocksInFinalizationProof, blockDistanceForFinalizedData)...),
 					finalizationInsertionForProviders(chainID, epoch, 205, 2, 3, true, "", blocksInFinalizationProof, blockDistanceForFinalizedData)...)
 
-				finalizationConsensus := &FinalizationConsensus{}
+				finalizationConsensus := NewFinalizationConsensus(chainID)
 				finalizationConsensus.NewEpoch(epoch)
 				for _, insertion := range finalizationInsertions {
 					_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), sdk.AccAddress{}, insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
@@ -324,7 +344,7 @@ func TestQoS(t *testing.T) {
 					finalizationInsertionForProviders(chainID, epoch, 202, 2, 1, true, "", blocksInFinalizationProof, blockDistanceForFinalizedData)[0],
 				}
 
-				finalizationConsensus = &FinalizationConsensus{}
+				finalizationConsensus = NewFinalizationConsensus(chainID)
 				finalizationConsensus.NewEpoch(epoch)
 				for _, insertion := range finalizationInsertionsSpreadBlocks {
 					_, err := finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), sdk.AccAddress{}, insertion.providerAddr, insertion.finalizedBlocks, insertion.relaySession, insertion.relayReply)
@@ -347,4 +367,179 @@ func TestQoS(t *testing.T) {
 			})
 		}
 	}
+}
+
+func BenchmarkFinalizationConsensusGetExpectedBlockHeight(b *testing.B) {
+	ctx := context.Background()
+	specId := "LAV1"
+	apiInterface := spectypes.APIInterfaceJsonRPC
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+	})
+	chainParser, _, chainFetcher, _, _, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, nil, "../../../", nil)
+	require.NoError(b, err)
+	require.NotNil(b, chainParser)
+	require.NotNil(b, chainFetcher)
+
+	finalizationConsensus := NewFinalizationConsensus("LAV1")
+	_, _, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
+	relaySession := &pairingtypes.RelaySession{
+		SpecId:                specId,
+		ContentHash:           []byte{},
+		SessionId:             uint64(1),
+		CuSum:                 0,
+		Provider:              "provider1",
+		RelayNum:              1,
+		QosReport:             &pairingtypes.QualityOfServiceReport{},
+		Epoch:                 int64(1),
+		UnresponsiveProviders: nil,
+		LavaChainId:           "lava",
+		Sig:                   []byte{},
+	}
+
+	relayReply := &pairingtypes.RelayReply{
+		LatestBlock:           int64(100),
+		FinalizedBlocksHashes: []byte{},
+		SigBlocks:             []byte{},
+		Metadata:              []pairingtypes.Metadata{},
+	}
+
+	account := sigs.GenerateDeterministicFloatingKey(randomizer)
+
+	finalizationConsensus.NewEpoch(1)
+
+	numberOfBlocks := 4500
+	numberOfProviders := 24
+
+	fmt.Println("Starting to propagate finalized hashes")
+
+	for i := 0; i < numberOfProviders; i++ {
+		for j := 0; j < numberOfBlocks; j += 6 {
+			hashes := make(map[int64]string)
+			for k := j; k < j+6; k++ {
+				hashes[int64(k)] = fmt.Sprintf("hash%d", k)
+			}
+
+			finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), account.Addr, fmt.Sprintf("provider%d", i), hashes, relaySession, relayReply)
+		}
+	}
+	fmt.Println("Epoch 1 done")
+	finalizationConsensus.NewEpoch(2)
+	for i := 0; i < numberOfProviders; i++ {
+		for j := numberOfBlocks; j < numberOfBlocks*2; j += 6 {
+			hashes := make(map[int64]string)
+			for k := j; k < j+6; k++ {
+				hashes[int64(k)] = fmt.Sprintf("hash%d", k)
+			}
+
+			finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), account.Addr, fmt.Sprintf("provider%d", i), hashes, relaySession, relayReply)
+		}
+	}
+
+	fmt.Println("Done propagating finalized hashes")
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		finalizationConsensus.GetExpectedBlockHeight(chainParser)
+	}
+}
+
+func BenchmarkFinalizationConsensusUpdateFinalizedHashes(b *testing.B) {
+	ctx := context.Background()
+	specId := "LAV1"
+	apiInterface := spectypes.APIInterfaceJsonRPC
+
+	chainParser, _, chainFetcher, _, _, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, nil, nil, "../../../", nil)
+	require.NoError(b, err)
+	require.NotNil(b, chainParser)
+	require.NotNil(b, chainFetcher)
+
+	providerAddr := "provider1"
+
+	_, _, blockDistanceForFinalizedData, _ := chainParser.ChainBlockStats()
+	relaySession := &pairingtypes.RelaySession{
+		SpecId:                specId,
+		ContentHash:           []byte{},
+		SessionId:             uint64(1),
+		CuSum:                 0,
+		Provider:              providerAddr,
+		RelayNum:              1,
+		QosReport:             &pairingtypes.QualityOfServiceReport{},
+		Epoch:                 int64(1),
+		UnresponsiveProviders: nil,
+		LavaChainId:           "lava",
+		Sig:                   []byte{},
+	}
+
+	relayReply := &pairingtypes.RelayReply{
+		LatestBlock:           int64(100),
+		FinalizedBlocksHashes: []byte{},
+		SigBlocks:             []byte{},
+		Metadata:              []pairingtypes.Metadata{},
+	}
+
+	account := sigs.GenerateDeterministicFloatingKey(randomizer)
+	blockDistanceForFinalizedDataInt := int64(blockDistanceForFinalizedData)
+
+	blocksCountInFinalization := 6
+	newEpochInterval := 10
+
+	b.Run("without proof data", func(b *testing.B) {
+		finalizationConsensus := NewFinalizationConsensus(specId)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			b.StopTimer()
+			hashes := make(map[int64]string)
+
+			b.StartTimer()
+			finalizationConsensus.UpdateFinalizedHashes(blockDistanceForFinalizedDataInt, account.Addr, providerAddr, hashes, relaySession, relayReply)
+		}
+	})
+
+	b.Run("without conflict", func(b *testing.B) {
+		finalizationConsensus := NewFinalizationConsensus(specId)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			b.StopTimer()
+			hashes := make(map[int64]string)
+			for k := 0; k < blocksCountInFinalization; k++ {
+				hashes[int64(i*blocksCountInFinalization+k)] = fmt.Sprintf("hash%d", i*blocksCountInFinalization+k)
+			}
+
+			if i%newEpochInterval == 0 {
+				finalizationConsensus.NewEpoch(uint64(i))
+			}
+
+			b.StartTimer()
+			finalizationConsensus.UpdateFinalizedHashes(blockDistanceForFinalizedDataInt, account.Addr, providerAddr, hashes, relaySession, relayReply)
+		}
+	})
+
+	b.Run("with conflict", func(b *testing.B) {
+		finalizationConsensus := NewFinalizationConsensus(specId)
+		b.ReportAllocs()
+		b.ResetTimer()
+
+		for i := 0; i < b.N; i++ {
+			b.StopTimer()
+			hashes := make(map[int64]string)
+			for k := 0; k < blocksCountInFinalization; k++ {
+				hashes[int64(i*blocksCountInFinalization+k)] = fmt.Sprintf("hash%d", i*blocksCountInFinalization+k)
+			}
+
+			finalizationConsensus.UpdateFinalizedHashes(blockDistanceForFinalizedDataInt, account.Addr, providerAddr, hashes, relaySession, relayReply)
+
+			hashes = make(map[int64]string)
+			for k := 0; k < blocksCountInFinalization; k++ {
+				hashes[int64(i*blocksCountInFinalization+k)] = fmt.Sprintf("dhash%d", i*blocksCountInFinalization+k)
+			}
+
+			b.StartTimer()
+			finalizationConsensus.UpdateFinalizedHashes(blockDistanceForFinalizedDataInt, account.Addr, providerAddr, hashes, relaySession, relayReply)
+		}
+	})
 }
