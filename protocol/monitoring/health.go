@@ -699,7 +699,15 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 
 				probeLatency, version, latestBlockFromProbe, err := checkOneProvider(endpoint, endpointService.ApiInterface, endpointService.Addon, providerEntry)
 
-				utils.LavaFormatDebug("[+] checked provider", utils.LogAttr("endpoint", endpoint), utils.LogAttr("apiInterface", endpointService.ApiInterface), utils.LogAttr("addon", endpointService.Addon), utils.LogAttr("providerEntry", providerEntry))
+				utils.LavaFormatDebug("[+] checked provider",
+					utils.LogAttr("endpoint", endpoint),
+					utils.LogAttr("apiInterface", endpointService.ApiInterface),
+					utils.LogAttr("addon", endpointService.Addon),
+					utils.LogAttr("providerEntry", providerEntry),
+					utils.LogAttr("probeLatency", probeLatency),
+					utils.LogAttr("version", version),
+					utils.LogAttr("latestBlockFromProbe", latestBlockFromProbe),
+					utils.LogAttr("error", err))
 
 				if err != nil {
 					errMsg := prettifyProviderError(err)
