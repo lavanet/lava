@@ -210,7 +210,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 			if err != nil {
 				utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 			} else {
-				relayResult, err := relayProcessor.ProcessingResult()
+				relayResult, err := relayProcessor.ProcessingResult(false)
 				if err == nil {
 					utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderInfo.ProviderAddress}}...)
 					rpccs.relaysMonitor.LogRelay()
@@ -316,7 +316,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, dappID, consumerIp, chainMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
 	}
 
-	returnedResult, err := relayProcessor.ProcessingResult()
+	returnedResult, err := relayProcessor.ProcessingResult(rpccs.debugRelays)
 	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, directiveHeaders)
 	if err != nil {
 		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
@@ -359,6 +359,9 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	// a channel to be notified processing was done, true means we have results and can return
 	gotResults := make(chan bool)
 	processingTimeout, relayTimeout := rpccs.getProcessingTimeout(chainMessage)
+	if rpccs.debugRelays {
+		utils.LavaFormatDebug("Relay initiated with the following timeout schedule", utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("newRelayTimeout", relayTimeout))
+	}
 	// create the processing timeout prior to entering the method so it wont reset every time
 	processingCtx, processingCtxCancel := context.WithTimeout(ctx, processingTimeout)
 	defer processingCtxCancel()
@@ -410,7 +413,11 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor)
 			go validateReturnCondition(err)
 			go readResultsFromProcessor()
-			numberOfRetriesLaunched++
+			// increase number of retries launched only if we still have pairing available, if we exhausted the list we don't want to break early
+			// so it will just wait for the entire duration of the relay
+			if !lavasession.PairingListEmptyError.Is(err) {
+				numberOfRetriesLaunched++
+			}
 		case <-startNewBatchTicker.C:
 			// only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
 			if relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
@@ -420,7 +427,11 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 				go validateReturnCondition(err)
 				// add ticker launch metrics
 				go rpccs.rpcConsumerLogs.SetRelaySentByNewBatchTickerMetric(rpccs.getChainIdAndApiInterface())
-				numberOfRetriesLaunched++
+				// increase number of retries launched only if we still have pairing available, if we exhausted the list we don't want to break early
+				// so it will just wait for the entire duration of the relay
+				if !lavasession.PairingListEmptyError.Is(err) {
+					numberOfRetriesLaunched++
+				}
 			}
 		case returnErr := <-returnCondition:
 			// we use this channel because there could be a race condition between us releasing the provider and about to send the return
@@ -574,6 +585,17 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// making sure next get sessions wont use regular providers
 	if len(extensions) > 0 {
 		relayProcessor.SetDisallowDegradation()
+	}
+
+	if rpccs.debugRelays {
+		utils.LavaFormatDebug("[Before Send] returned the following sessions",
+			utils.LogAttr("sessions", sessions),
+			utils.LogAttr("usedProviders.GetUnwantedProvidersToSend", usedProviders.GetUnwantedProvidersToSend()),
+			utils.LogAttr("usedProviders.GetErroredProviders", usedProviders.GetErroredProviders()),
+			utils.LogAttr("addons", addon),
+			utils.LogAttr("extensions", extensions),
+			utils.LogAttr("AllowSessionDegradation", relayProcessor.GetAllowSessionDegradation()),
+		)
 	}
 
 	// Iterate over the sessions map
@@ -762,6 +784,9 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	endpointClient := *singleConsumerSession.Endpoint.Client
 	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress
 	relayRequest := relayResult.Request
+	if rpccs.debugRelays {
+		utils.LavaFormatDebug("Sending relay", utils.LogAttr("timeout", relayTimeout), utils.LogAttr("GUID", ctx), utils.LogAttr("provider", relayRequest.RelaySession.Provider))
+	}
 	callRelay := func() (reply *pairingtypes.RelayReply, relayLatency time.Duration, err error, backoff bool) {
 		relaySentTime := time.Now()
 		connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
