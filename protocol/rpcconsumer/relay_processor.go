@@ -390,7 +390,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 // if return strategy == get_first: return the first success, if none: get best node error
 // if strategy == quorum get majority of node responses
 // on error: we will return a placeholder relayResult, with a provider address and a status code
-func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult, processingError error) {
+func (rp *RelayProcessor) ProcessingResult(debugRelay bool) (returnedResult *common.RelayResult, processingError error) {
 	if rp == nil {
 		return nil, utils.LavaFormatError("RelayProcessor.ProcessingResult is nil, misuse detected", nil)
 	}
@@ -407,6 +407,21 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 	nodeResults := rp.nodeResultsInner()
 	// there are not enough successes, let's check if there are enough node errors
+
+	if debugRelay {
+		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
+		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.requiredSuccesses", rp.requiredSuccesses))
+		utils.LavaFormatDebug("[Processing Debug] number of node results", utils.LogAttr("len(rp.successResults)", len(rp.successResults)), utils.LogAttr("len(rp.nodeResponseErrors.relayErrors)", len(rp.nodeResponseErrors.relayErrors)), utils.LogAttr("len(rp.protocolResponseErrors.relayErrors)", len(rp.protocolResponseErrors.relayErrors)))
+		for idx, result := range rp.successResults {
+			utils.LavaFormatDebug("[Processing Debug] success result", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+		}
+		for idx, result := range rp.nodeResponseErrors.relayErrors {
+			utils.LavaFormatDebug("[Processing Debug] node result", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+		}
+		for idx, result := range rp.protocolResponseErrors.relayErrors {
+			utils.LavaFormatDebug("[Processing Debug] protocol error", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+		}
+	}
 
 	if len(nodeResults) >= rp.requiredSuccesses {
 		if rp.selection == Quorum {
