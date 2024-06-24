@@ -22,7 +22,7 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 	return nil
 }
 
-// MigrateVersion2To3 removes all the old payment objects (to get a fresh start for the new ones)
+// MigrateVersion3To4 initializes the new QosSum field in all ProviderConsumerEpochCu objects so it won't be nil
 func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
 	pcecs := m.keeper.GetAllProviderConsumerEpochCuStore(ctx)
 	for i := range pcecs {
