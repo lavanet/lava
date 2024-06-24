@@ -1,0 +1,12 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+
+import "gogoproto/gogo.proto";
+
+// QosFrac holds the numerator and denominator of the QoS excellence score
+message QosFrac{
+    string num = 1 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", (gogoproto.nullable) = false];
+    string denom = 2 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", (gogoproto.nullable) = false];
+}
