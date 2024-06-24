@@ -1,17 +1,15 @@
 # syntax=docker/dockerfile:1
 
 ARG GO_VERSION="1.20"
-ARG RUNNER_IMAGE="gcr.io/distroless/static-debian12"
+ARG RUNNER_IMAGE="debian:12-slim"
 ARG BUILD_TAGS="netgo,ledger,muslc"
-ARG COSMOVISOR_VERSION="v1.5.0"
 
-FROM golang:${GO_VERSION}-alpine3.18 as builder
+FROM golang:${GO_VERSION} as builder
 
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     ca-certificates \
-    build-base \
-    linux-headers \
-    binutils-gold
+    build-essential \
+    binutils-gold 
 
 WORKDIR /lava
 
@@ -44,21 +42,27 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 ARG COSMOVISOR_VERSION="v1.5.0"
 
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/root/go/pkg/mod \
+    go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@${COSMOVISOR_VERSION}
+
 FROM ${RUNNER_IMAGE}
 
 COPY --from=builder /lava/build/lavad /bin/lavad
 COPY --from=builder /go/bin/cosmovisor /bin/cosmovisor
 
-ENV HOME /lava
+ENV HOME=/lava
 
-ENV DAEMON_NAME lavad
-ENV DAEMON_HOME ${HOME}/.lavad
-ENV DAEMON_ALLOW_DOWNLOAD_BINARIES true
-ENV DAEMON_RESTART_AFTER_UPGRADE true 
-ENV DAEMON_LOG_BUFFER_SIZE 512
-ENV UNSAFE_SKIP_BACKUP true
+ENV DAEMON_NAME=lavad
+ENV DAEMON_HOME=${HOME}/.lava
+ENV DAEMON_ALLOW_DOWNLOAD_BINARIES=true
+ENV DAEMON_RESTART_AFTER_UPGRADE=true 
+ENV DAEMON_LOG_BUFFER_SIZE=512
+ENV UNSAFE_SKIP_BACKUP=true
 
 WORKDIR $HOME
+
+RUN /bin/cosmovisor init /bin/lavad
 
 # lava api
 EXPOSE 1317
