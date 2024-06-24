@@ -6,7 +6,7 @@ ARG BUILD_TAGS="netgo,ledger,muslc"
 
 FROM golang:${GO_VERSION} as builder
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     build-essential \
     binutils-gold 
@@ -48,9 +48,9 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM ${RUNNER_IMAGE}
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates 
-    
+
 COPY --from=builder /lava/build/lavad /bin/lavad
 COPY --from=builder /go/bin/cosmovisor /bin/cosmovisor
 
