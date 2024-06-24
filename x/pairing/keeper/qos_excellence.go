@@ -12,8 +12,8 @@ import (
 // TODO: implement UpdateProviderQos(payments)
 
 // GetQos gets a provider's QoS excellence report from the providerQosFS
-func (k Keeper) GetQos(ctx sdk.Context, chainID string, cluster string, provider string) (types.QualityOfServiceReport, error) {
-	var qos types.QualityOfServiceReport
+func (k Keeper) GetQos(ctx sdk.Context, chainID string, cluster string, provider string) (types.QosFrac, error) {
+	var qos types.QosFrac
 	key := types.ProviderQosKey(provider, chainID, cluster)
 	found := k.providerQosFS.FindEntry(ctx, key, uint64(ctx.BlockHeight()), &qos)
 	if !found {

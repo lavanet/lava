@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	cosmosmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
@@ -1131,13 +1132,14 @@ func TestGeolocationPairingScores(t *testing.T) {
 			stakeEntries := providersRes.StakeEntry
 			providerScores := []*pairingscores.PairingScore{}
 
-			subRes, err := ts.QuerySubscriptionCurrent(tt.dev.Addr.String())
-			require.NoError(t, err)
-			cluster := subRes.Sub.Cluster
+			// subRes, err := ts.QuerySubscriptionCurrent(tt.dev.Addr.String())
+			// require.NoError(t, err)
+			// cluster := subRes.Sub.Cluster
 
 			for i := range stakeEntries {
 				// TODO: require err to be nil once the providerQosFS's update is implemented
-				qos, _ := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Address)
+				// qos, _ := ts.Keepers.Pairing.GetQos(ts.Ctx, ts.spec.Index, cluster, stakeEntries[i].Address)
+				qos := types.QualityOfServiceReport{Latency: cosmosmath.LegacyOneDec(), Sync: cosmosmath.LegacyOneDec(), Availability: cosmosmath.LegacyOneDec()}
 				providerScore := pairingscores.NewPairingScore(&stakeEntries[i], qos)
 				providerScores = append(providerScores, providerScore)
 			}
