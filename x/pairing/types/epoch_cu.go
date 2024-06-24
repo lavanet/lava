@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"cosmossdk.io/math"
 )
 
 const (
@@ -34,6 +36,10 @@ func ProviderEpochCuKey(epoch uint64, provider string, chainID string) []byte {
 
 func ProviderConsumerEpochCuKey(epoch uint64, provider string, project string, chainID string) []byte {
 	return append(EncodeBlock(epoch), []byte(strings.Join([]string{provider, project, chainID}, " "))...)
+}
+
+func NewProviderConsumerEpochCu() ProviderConsumerEpochCu {
+	return ProviderConsumerEpochCu{Cu: 0, QosSum: math.LegacyZeroDec(), QosAmount: 0}
 }
 
 func DecodeUniqueEpochSessionKey(key string) (epoch uint64, provider string, chainID string, project string, sessionID uint64, err error) {

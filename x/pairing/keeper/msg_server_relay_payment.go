@@ -167,7 +167,15 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		// if they failed (one relay should affect all of them). From here on, every check will
 		// fail the TX ***
 
-		totalCUInEpochForUserProvider := epochCuCache.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, relay.Provider, relay.CuSum, relay.SessionId)
+		totalCUInEpochForUserProvider, err := epochCuCache.AddEpochPayment(ctx, relay.SpecId, epochStart, project.Index, relay.Provider, relay.CuSum, relay.SessionId, relay.QosExcellenceReport)
+		if err != nil {
+			return nil, utils.LavaFormatError("could not add epoch payment", err,
+				utils.Attribute{Key: "chainID", Value: relay.SpecId},
+				utils.Attribute{Key: "block", Value: epochStart},
+				utils.Attribute{Key: "provider", Value: relay.Provider},
+				utils.Attribute{Key: "project", Value: project.Index},
+			)
+		}
 		if badgeFound {
 			k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
 		}

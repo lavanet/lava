@@ -6,7 +6,7 @@ import (
 )
 
 // AddEpochPayment adds a new epoch payment and returns the updated CU used between provider and project
-func (k EpochCuCache) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, project string, provider string, cu uint64, sessionID uint64) uint64 {
+func (k EpochCuCache) AddEpochPayment(ctx sdk.Context, chainID string, epoch uint64, project string, provider string, cu uint64, sessionID uint64, qosExcellence *types.QualityOfServiceReport) (uint64, error) {
 	// register new epoch session (not checking double spend because it's already checked before calling this function)
 	k.SetUniqueEpochSession(ctx, epoch, provider, project, chainID, sessionID)
 
@@ -22,12 +22,17 @@ func (k EpochCuCache) AddEpochPayment(ctx sdk.Context, chainID string, epoch uin
 	// update provider CU for the specific project
 	pcec, found := k.GetProviderConsumerEpochCuCached(ctx, epoch, provider, project, chainID)
 	if !found {
-		pcec = types.ProviderConsumerEpochCu{Cu: cu}
+		pcec = types.NewProviderConsumerEpochCu()
+		pcec.Cu = cu
 	} else {
 		pcec.Cu += cu
 	}
+	pcec, err := k.AggregateQosExcellence(pcec, qosExcellence)
+	if err != nil {
+		return 0, err
+	}
 	k.SetProviderConsumerEpochCuCached(ctx, epoch, provider, project, chainID, pcec)
-	return pcec.Cu
+	return pcec.Cu, nil
 }
 
 // Function to remove epoch payment objects from deleted epochs (older than the chain's memory)
