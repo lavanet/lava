@@ -28,7 +28,7 @@ const (
 	BestResult                  // get the best result, even if it means waiting
 )
 
-func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage, consumerConsistency *ConsumerConsistency, dappID string, consumerIp string) *RelayProcessor {
+func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage, consumerConsistency *ConsumerConsistency, dappID string, consumerIp string, debugRelay bool) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
 	if chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
@@ -49,6 +49,7 @@ func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProvi
 		consumerConsistency:    consumerConsistency,
 		dappID:                 dappID,
 		consumerIp:             consumerIp,
+		debugRelay:             debugRelay,
 	}
 }
 
@@ -67,6 +68,7 @@ type RelayProcessor struct {
 	dappID                  string
 	consumerIp              string
 	skipDataReliability     bool
+	debugRelay              bool
 	allowSessionDegradation uint32 // used in the scenario where extension was previously used.
 }
 
@@ -390,7 +392,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 // if return strategy == get_first: return the first success, if none: get best node error
 // if strategy == quorum get majority of node responses
 // on error: we will return a placeholder relayResult, with a provider address and a status code
-func (rp *RelayProcessor) ProcessingResult(debugRelay bool) (returnedResult *common.RelayResult, processingError error) {
+func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult, processingError error) {
 	if rp == nil {
 		return nil, utils.LavaFormatError("RelayProcessor.ProcessingResult is nil, misuse detected", nil)
 	}
@@ -408,7 +410,7 @@ func (rp *RelayProcessor) ProcessingResult(debugRelay bool) (returnedResult *com
 	nodeResults := rp.nodeResultsInner()
 	// there are not enough successes, let's check if there are enough node errors
 
-	if debugRelay {
+	if rp.debugRelay {
 		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
 		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.requiredSuccesses", rp.requiredSuccesses))
 		utils.LavaFormatDebug("[Processing Debug] number of node results", utils.LogAttr("len(rp.successResults)", len(rp.successResults)), utils.LogAttr("len(rp.nodeResponseErrors.relayErrors)", len(rp.nodeResponseErrors.relayErrors)), utils.LogAttr("len(rp.protocolResponseErrors.relayErrors)", len(rp.protocolResponseErrors.relayErrors)))
