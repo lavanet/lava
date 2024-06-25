@@ -283,14 +283,23 @@ func RunHealth(ctx context.Context,
 		return nil, utils.LavaFormatWarning("[-] populating specs", <-errCh)
 	}
 	pairingQuerier := pairingtypes.NewQueryClient(clientCtx)
-	utils.LavaFormatDebug("[+] getting provider entries")
+
+	utils.LavaFormatDebug("[+] Starting to get provider entries")
+
 	stakeEntries := map[LavaEntity]epochstoragetypes.StakeEntry{}
 	var mutex sync.Mutex // Mutex to protect concurrent access to stakeEntries
-	wgspecs.Add(len(healthResults.getSpecs()))
+	if lookupSpecsFromArg == nil {
+		wgspecs.Add(len(healthResults.getSpecs()))
+	}
+
 	processSpecProviders := func(specId string) {
-		defer wgspecs.Done()
+		if lookupSpecsFromArg == nil {
+			defer wgspecs.Done()
+		}
+
 		var err error
 		for i := 0; i < BasicQueryRetries; i++ {
+			utils.LavaFormatDebug("[+] Attempting to query providers", utils.LogAttr("attempt", i+1), utils.LogAttr("specId", specId))
 			var response *pairingtypes.QueryProvidersResponse
 			queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 			response, err = pairingQuerier.Providers(queryCtx, &pairingtypes.QueryProvidersRequest{
@@ -299,6 +308,7 @@ func RunHealth(ctx context.Context,
 			})
 			cancel()
 			if err != nil || response == nil {
+				utils.LavaFormatDebug("[!] Query failed or no response", utils.LogAttr("error", err), utils.LogAttr("response", response))
 				time.Sleep(QuerySleepTime)
 				continue
 			}
@@ -325,10 +335,11 @@ func RunHealth(ctx context.Context,
 				apiInterfaces := chainIdToApiInterfaces[specId]
 				// just to check if this is a provider we need to check we need one of the apiInterfaces
 				if len(apiInterfaces) == 0 {
-					utils.LavaFormatError("invalid state len(apiInterfaces) == 0", nil, utils.LogAttr("specId", specId))
+					utils.LavaFormatError("[!] invalid state len(apiInterfaces) == 0", nil, utils.LogAttr("specId", specId))
 					// shouldn't happen
 					continue
 				}
+
 				lookupKey := LavaEntity{
 					Address:      providerEntry.Address,
 					SpecId:       specId,
@@ -336,6 +347,7 @@ func RunHealth(ctx context.Context,
 				}
 
 				mutex.Lock() // Lock before updating stakeEntries
+
 				if _, ok := healthResults.getProviderData(lookupKey); ok || getAllProviders {
 					if providerEntry.StakeAppliedBlock > uint64(currentBlock) {
 						healthResults.FreezeProvider(providerKey)
@@ -343,22 +355,28 @@ func RunHealth(ctx context.Context,
 						stakeEntries[providerKey] = providerEntry
 					}
 				}
+
 				mutex.Unlock()
 			}
-			return
+			break
 		}
 		if err != nil {
+			utils.LavaFormatError("[!] Error after retries", err)
 			select {
 			case errCh <- err:
+				utils.LavaFormatDebug("[+] Error sent to channel", utils.LogAttr("error", err))
 			default:
+				utils.LavaFormatDebug("[!] Error channel full, error not sent", utils.LogAttr("error", err))
 			}
 		}
 	}
 	// get provider stake entries for each spec or only for the ones given as arguments
 	if lookupSpecsFromArg != nil {
 		for specId := range healthResults.getSpecs() {
+			utils.LavaFormatDebug("[+] Processing specId", utils.LogAttr("specId", specId)) // Print the specId being processed
 			for _, arg := range lookupSpecsFromArg {
 				if arg == strings.ToUpper(specId) {
+					utils.LavaFormatDebug("[+] Match found for specId", utils.LogAttr("specId", specId)) // Print when a match is found
 					processSpecProviders(specId)
 					break
 				}
@@ -370,7 +388,9 @@ func RunHealth(ctx context.Context,
 		}
 	}
 
-	wgspecs.Wait()
+	if lookupSpecsFromArg == nil {
+		wgspecs.Wait()
+	}
 
 	// check for mismtaches in the pairings query and the arguments
 	// This flow can be triggered with the following command:
@@ -395,6 +415,7 @@ func RunHealth(ctx context.Context,
 	if len(errCh) > 0 {
 		return nil, utils.LavaFormatWarning("[-] processing providers entries", <-errCh)
 	}
+
 	utils.LavaFormatDebug("[+] checking subscriptions")
 	err = checkSubscriptions(ctx, clientCtx, subscriptionAddresses, healthResults)
 	if err != nil {
