@@ -27,6 +27,7 @@ func NewProject(subscriptionAddress, projectName string, enable bool) (Project, 
 		SubscriptionPolicy: nil,
 		UsedCu:             0,
 		Enabled:            enable,
+		UsedCuInLastMonth:  0,
 	}, nil
 }
 

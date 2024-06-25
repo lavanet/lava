@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	"github.com/lavanet/lava/x/projects/types"
 	"github.com/stretchr/testify/require"
@@ -25,6 +26,8 @@ func newTester(t *testing.T) *tester {
 	ts := &tester{Tester: *common.NewTester(t)}
 	ts.AddPlan("free", common.CreateMockPlan())
 	ts.AddPolicy("mock", common.CreateMockPolicy())
+	ts.AddSpec("mock", common.CreateMockSpec())
+	ts.AddAccount(common.VALIDATOR, 0, 20000) // for stake provider TX to work
 	return ts
 }
 
@@ -1316,4 +1319,52 @@ func TestMaxKeysInProject(t *testing.T) {
 		ProjectKeys: dummyKeys,
 	})
 	require.Error(t, err)
+}
+
+// TestProjectUsedCuLastMonth tests the following scenario:
+//  1. Provider sends relay payment of 1000CU -> project's usedCu = 1000
+//  2. Advance a month -> project's usedCu = 0 and usedCuInLastMonth = 1000
+func TestProjectUsedCuLastMonth(t *testing.T) {
+	ts := newTester(t)
+	consumerAcc, consumer := ts.AddAccount(common.CONSUMER, 0, 20000)
+	_, provider := ts.AddAccount(common.PROVIDER, 0, 20000)
+	spec := ts.Spec("mock")
+	ts.StakeProvider(provider, provider, spec, 10000)
+	ts.AdvanceEpoch()
+
+	// buy subscription (has one auto-generated admin project)
+	_, err := ts.TxSubscriptionBuy(consumer, consumer, "free", 1, true, false)
+	require.NoError(t, err)
+	_, err = ts.QueryProjectDeveloper(consumer)
+	require.NoError(t, err)
+
+	// send relay payment
+	relaySession := &pairingtypes.RelaySession{
+		Provider:    provider,
+		ContentHash: []byte("content"),
+		SessionId:   0,
+		SpecId:      spec.Index,
+		CuSum:       1000,
+		Epoch:       int64(ts.EpochStart(ts.BlockHeight())),
+		RelayNum:    0,
+	}
+
+	sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+	require.Nil(ts.T, err)
+	relaySession.Sig = sig
+
+	_, err = ts.TxPairingRelayPayment(provider, relaySession)
+	require.NoError(t, err)
+
+	// verify project has usedCu = 1000
+	res, err := ts.QueryProjectDeveloper(consumer)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1000), res.Project.UsedCu)
+
+	// advance a month, verify project has usedCu = 0 and usedCuInLastMonth = 1000
+	ts.AdvanceMonths(1).AdvanceEpoch()
+	res, err = ts.QueryProjectDeveloper(consumer)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), res.Project.UsedCu)
+	require.Equal(t, uint64(1000), res.Project.UsedCuInLastMonth)
 }

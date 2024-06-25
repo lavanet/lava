@@ -16,6 +16,7 @@ message Project {
     uint64 used_cu = 7;
     lavanet.lava.plans.Policy subscription_policy = 8 [(gogoproto.jsontag) = "subscription_policy"];
     uint64 snapshot = 9; // snapshot id to uniquely identify snapshots
+    uint64 used_cu_in_last_month = 10;
 }
 
 message ProjectKey {

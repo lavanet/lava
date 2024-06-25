@@ -297,6 +297,7 @@ func (k Keeper) snapshotProject(ctx sdk.Context, projectID string, block uint64)
 		return
 	}
 
+	project.UsedCuInLastMonth = project.UsedCu
 	project.UsedCu = 0
 	project.Snapshot += 1
 
