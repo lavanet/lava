@@ -27,8 +27,10 @@ const (
 	BlockedProviderSessionUnusedStatus = uint32(0)
 )
 
-var retrySecondChanceAfter = time.Minute * 3
-var DebugProbes = false
+var (
+	retrySecondChanceAfter = time.Minute * 3
+	DebugProbes            = false
+)
 
 // created with NewConsumerSessionManager
 type ConsumerSessionManager struct {
