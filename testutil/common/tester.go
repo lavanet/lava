@@ -156,7 +156,8 @@ func (ts *Tester) AccountsMap() map[string]sigs.Account {
 }
 
 func (ts *Tester) StakeProvider(vault string, provider string, spec spectypes.Spec, amount int64) error {
-	return ts.StakeProviderExtra(vault, provider, spec, amount, nil, 0, "prov")
+	d := MockDescription()
+	return ts.StakeProviderExtra(vault, provider, spec, amount, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
 }
 
 func (ts *Tester) StakeProviderExtra(
@@ -167,6 +168,10 @@ func (ts *Tester) StakeProviderExtra(
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
 	moniker string,
+	identity string,
+	website string,
+	securityContact string,
+	descriptionDetails string,
 ) error {
 	// if geoloc left zero, use default 1
 	if geoloc == 0 {
@@ -192,7 +197,8 @@ func (ts *Tester) StakeProviderExtra(
 	}
 
 	stake := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(amount))
-	_, err := ts.TxPairingStakeProvider(vault, provider, spec.Index, stake, endpoints, geoloc, moniker)
+	description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
+	_, err := ts.TxPairingStakeProvider(vault, provider, spec.Index, stake, endpoints, geoloc, description)
 
 	return err
 }
@@ -214,7 +220,6 @@ func (ts *Tester) SlashValidator(valAcc sigs.Account, fraction math.LegacyDec, p
 	ts.Keepers.SlashingKeeper.Slash(ts.Ctx, valConsAddr, fraction, power, ts.Ctx.BlockHeight())
 
 	var req abci.RequestBeginBlock
-	req.ByzantineValidators = []abci.Misbehavior{{Type: abci.MisbehaviorType_DUPLICATE_VOTE, Validator: abci.Validator{Address: valConsAddr}}}
 	ts.Keepers.Dualstaking.BeginBlock(ts.Ctx, req)
 
 	// calculate expected burned tokens
@@ -566,7 +571,7 @@ func (ts *Tester) TxPairingStakeProvider(
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
-	moniker string,
+	description stakingtypes.Description,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	msg := &pairingtypes.MsgStakeProvider{
@@ -576,10 +581,10 @@ func (ts *Tester) TxPairingStakeProvider(
 		Amount:             amount,
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
-		Moniker:            moniker,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.ZeroInt()),
 		DelegateCommission: 100,
 		Address:            provider,
+		Description:        description,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
@@ -592,9 +597,13 @@ func (ts *Tester) TxPairingStakeProviderFull(
 	amount sdk.Coin,
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
-	moniker string,
 	commission uint64,
 	delegateLimit uint64,
+	moniker string,
+	identity string,
+	website string,
+	securityContact string,
+	descriptionDetails string,
 ) (*pairingtypes.MsgStakeProviderResponse, error) {
 	val, _ := ts.GetAccount(VALIDATOR, 0)
 	// if geoloc left zero, use default 1
@@ -620,6 +629,8 @@ func (ts *Tester) TxPairingStakeProviderFull(
 		}
 	}
 
+	description := stakingtypes.NewDescription(moniker, identity, website, securityContact, descriptionDetails)
+
 	msg := &pairingtypes.MsgStakeProvider{
 		Creator:            vault,
 		Validator:          sdk.ValAddress(val.Addr).String(),
@@ -627,10 +638,10 @@ func (ts *Tester) TxPairingStakeProviderFull(
 		Amount:             amount,
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
-		Moniker:            moniker,
 		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.NewIntFromUint64(delegateLimit)),
 		DelegateCommission: commission,
 		Address:            provider,
+		Description:        description,
 	}
 	return ts.Servers.PairingServer.StakeProvider(ts.GoCtx, msg)
 }
@@ -1160,7 +1171,13 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 	start = len(ts.Accounts(PROVIDER))
 	for i := 0; i < providers; i++ {
 		acc, provider := ts.AddAccount(PROVIDER, start+i, balance)
-		err := ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, "prov"+strconv.Itoa(start+i))
+		d := MockDescription()
+		moniker := d.Moniker + strconv.Itoa(start+i)
+		identity := d.Identity + strconv.Itoa(start+i)
+		website := d.Website + strconv.Itoa(start+i)
+		securityContact := d.SecurityContact + strconv.Itoa(start+i)
+		details := d.Details + strconv.Itoa(start+i)
+		err := ts.StakeProviderExtra(acc.GetVaultAddr(), provider, spec, spec.MinStakeProvider.Amount.Int64(), nil, 1, moniker, identity, website, securityContact, details)
 		if err != nil {
 			return err
 		}

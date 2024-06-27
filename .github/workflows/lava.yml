@@ -21,11 +21,6 @@ jobs:
       with:
         go-version-file: go.mod
         cache-dependency-path: go.sum
-    # Setup Paths
-    - name: home
-      run:  pwd && ls -l
-    - name: ls usr 
-      run: ls -l /home/runner/work/lava/lava
     - name: cp lava
       run:  cp -r ~/work/lava/lava ~/go/lava 
     - name: export PATH
@@ -34,14 +29,6 @@ jobs:
       run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
     - name: export LAVA
       run: export LAVA=/home/runner/work/lava/lava
-    - name: go env
-      run:  go env
-    - name: pwd
-      run: pwd
-    - name: tree
-      run: tree
-    - name: ls -l
-      run: ls -l
 
     ######################################################
     ### Run Consensus unitests
@@ -51,18 +38,7 @@ jobs:
         go install github.com/jstemmer/go-junit-report/v2@latest
         go test -v ./utils/... | go-junit-report -iocopy -set-exit-code -out utils-report.xml  
         go test -v ./common/... | go-junit-report -iocopy -set-exit-code -out common-report.xml  
-        go test -v ./x/pairing/... | go-junit-report -iocopy -set-exit-code -out pairing-report.xml  
-        go test -v ./x/epochstorage/... | go-junit-report -iocopy -set-exit-code -out epochstorage-report.xml  
-        go test -v ./x/spec/... | go-junit-report -iocopy -set-exit-code -out spec-report.xml  
-        go test -v ./x/conflict/... | go-junit-report -iocopy -set-exit-code -out conflict-report.xml  
-        go test -v ./x/plans/... | go-junit-report -iocopy -set-exit-code -out plans-report.xml  
-        go test -v ./x/projects/... | go-junit-report -iocopy -set-exit-code -out projects-report.xml  
-        go test -v ./x/subscription/... | go-junit-report -iocopy -set-exit-code -out subscription-report.xml  
-        go test -v ./x/dualstaking/... | go-junit-report -iocopy -set-exit-code -out dualstaking-report.xml  
-        go test -v ./x/fixationstore/... | go-junit-report -iocopy -set-exit-code -out fixationstore-report.xml  
-        go test -v ./x/timerstore/... | go-junit-report -iocopy -set-exit-code -out timerstore-report.xml  
-        go test -v ./x/downtime/... | go-junit-report -iocopy -set-exit-code -out downtime-report.xml  
-        go test -v ./x/rewards/... | go-junit-report -iocopy -set-exit-code -out rewards-report.xml  
+        go test -v ./x/... | go-junit-report -iocopy -set-exit-code -out x-report.xml  
     
     - name: Upload Test Results
       if: always()
@@ -79,12 +55,6 @@ jobs:
       with:
         go-version-file: go.mod
         cache-dependency-path: go.sum
-
-    # Setup Paths
-    - name: home
-      run:  pwd && ls -l
-    - name: ls usr 
-      run: ls -l /home/runner/work/lava/lava
     - name: cp lava
       run:  cp -r ~/work/lava/lava ~/go/lava 
     - name: export GOPATH
@@ -93,14 +63,6 @@ jobs:
       run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/:$GOPATH/bin
     - name: export LAVA
       run: export LAVA=/home/runner/work/lava/lava
-    - name: go env
-      run:  go env
-    - name: pwd
-      run: pwd
-    - name: tree
-      run: tree
-    - name: ls -l
-      run: ls -l
 
     ######################################################
     ### Run protocol unitests
@@ -217,6 +179,13 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/06_RPCConsumer* --include="*errors*"
+      
+      - name: Upload Protocol E2E Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Protocol E2E Logs
+          path: "testutil/e2e/protocolLogs/*"
 
   test-sdk-e2e:
     runs-on: ubuntu-latest
@@ -327,6 +296,13 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/sdkLogs/01_sdkTest* --include="*errors*"
+      
+      - name: Upload SDK E2E Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDK E2E Logs
+          path: "testutil/e2e/sdkLogs/*"
 
   test-payment-e2e:
     runs-on: ubuntu-latest
@@ -382,6 +358,13 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/06_RPCConsumer* --include="*errors*"
+    
+      - name: Upload Payment E2E Logs 
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Payment E2E Logs
+          path: "testutil/e2e/protocolLogs/*"
 
   report-tests-results:
     runs-on: ubuntu-latest
@@ -396,7 +379,50 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           files: "artifacts/**/*.xml"
-                    
+
+  build_docker:
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+    needs: [test-consensus, test-protocol]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        binary: [lavap, lavad]
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: "lavanet/lava/${{ matrix.binary }}"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3      
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}  
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        continue-on-error: true
+        with:
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          file: cmd/${{ matrix.binary }}/Dockerfile
+          build-args: |
+            GIT_VERSION="${{ steps.meta.outputs.version }}"
+            GIT_COMMIT="${{ github.sha }}"
+          push: true
+
   build_and_package:
     name: ${{ matrix.binary }}-${{ matrix.targetos }}-${{ matrix.arch }}
     needs: [test-consensus, test-protocol]
