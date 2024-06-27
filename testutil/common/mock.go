@@ -17,9 +17,11 @@ func CreateMockSpec() spectypes.Spec {
 	spec.BlockDistanceForFinalizedData = 0
 	spec.DataReliabilityEnabled = true
 	spec.MinStakeProvider = sdk.NewCoin(commonconsts.TestTokenDenom, sdk.NewInt(1000))
-	spec.ApiCollections = []*spectypes.ApiCollection{{Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: "stub", Type: "GET"}, Apis: []*spectypes.Api{{Name: specName + "API", ComputeUnits: 100, Enabled: true}}}}
-	spec.BlockDistanceForFinalizedData = 0
+	spec.ApiCollections = []*spectypes.ApiCollection{{Enabled: true, CollectionData: spectypes.CollectionData{ApiInterface: spectypes.APIInterfaceJsonRPC, Type: "GET"}, Apis: []*spectypes.Api{{Name: specName + "API", ComputeUnits: 100, Enabled: true}}}}
+	spec.BlocksInFinalizationProof = 10
 	spec.Shares = 1
+	spec.AverageBlockTime = 10000
+	spec.AllowedBlockLagForQosSync = 5
 	return spec
 }
 
