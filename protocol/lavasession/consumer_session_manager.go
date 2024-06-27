@@ -25,9 +25,9 @@ const (
 	debug                              = false
 	BlockedProviderSessionUsedStatus   = uint32(1)
 	BlockedProviderSessionUnusedStatus = uint32(0)
-	RetrySecondChanceAfter             = time.Minute * 3
 )
 
+var retrySecondChanceAfter = time.Minute * 3
 var DebugProbes = false
 
 // created with NewConsumerSessionManager
@@ -810,7 +810,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 		if runSecondChance {
 			// if we decide to allow a second chance, this provider will return to our list of valid providers (if it exists)
 			go func() {
-				<-time.After(RetrySecondChanceAfter)
+				<-time.After(retrySecondChanceAfter)
 				// check epoch is still relevant, if not just return
 				if sessionEpoch != csm.atomicReadCurrentEpoch() {
 					return
@@ -836,7 +836,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 
 	if reportProvider { // Report provider flow
 		if allowSecondChance { // on epoch change, we don't report providers immediately we allow them a recovery phase.
-			if _, ok := csm.secondChanceGivenToAddresses[address]; !ok {
+			if _, ok := csm.secondChanceGivenToAddresses[address]; ok {
 				// already exists in second chance, need to block.
 				csm.reportedProviders.ReportProvider(address, errors, disconnections, reconnectCallback)
 			} else {
