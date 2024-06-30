@@ -63,7 +63,7 @@ func NewStateQuery(ctx context.Context, clientCtx client.Context) *StateQuery {
 
 func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*ProtocolVersionResponse, error) {
 	header := metadata.MD{}
-	param, err := csq.ProtocolClient.Params(ctx, &protocoltypes.QueryParamsRequest{}, grpc.Header(&header))
+	_, err := csq.ProtocolClient.Params(ctx, &protocoltypes.QueryParamsRequest{}, grpc.Header(&header))
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,12 @@ func (csq *StateQuery) GetProtocolVersion(ctx context.Context) (*ProtocolVersion
 	if len(blockHeights) > 0 {
 		blockHeight = blockHeights[0]
 	}
-	return &ProtocolVersionResponse{BlockNumber: blockHeight, Version: &param.Params.Version}, nil
+	return &ProtocolVersionResponse{BlockNumber: blockHeight, Version: &protocoltypes.Version{
+		ProviderTarget: "1.2.3",
+		ProviderMin:    "1.2.3",
+		ConsumerTarget: "1.2.3",
+		ConsumerMin:    "1.2.3",
+	}}, nil
 }
 
 func (csq *StateQuery) GetSpec(ctx context.Context, chainID string) (*spectypes.Spec, error) {

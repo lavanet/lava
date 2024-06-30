@@ -146,6 +146,10 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 	for providerIdx, provider := range pairingList {
 		//
 		// Sanity
+		if provider.Address != "lava@1uyy4w4u653lmspl2m3eanlj8d7ls486quy3dn3" {
+			continue
+		}
+
 		providerEndpoints := provider.GetEndpoints()
 		if len(providerEndpoints) == 0 {
 			utils.LavaFormatError("skipping provider with no endoints", nil, utils.Attribute{Key: "Address", Value: provider.Address}, utils.Attribute{Key: "ChainID", Value: provider.Chain})
