@@ -883,8 +883,9 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	}
 
 	consumerSession.QoSInfo.TotalRelays++
-	errorsForConsumerSession := append(consumerSession.ConsecutiveErrors, errorReceived)
-	consumerSession.ConsecutiveErrors = errorsForConsumerSession
+	consumerSession.ConsecutiveErrors = append(consumerSession.ConsecutiveErrors, errorReceived)
+	// copy consecutive errors for report.
+	errorsForConsumerSession := consumerSession.ConsecutiveErrors
 	consumerSession.errorsCount += 1
 	// set allow second change if we want to allow the provider to return the pool without being reported if the downtime was temporary.
 	allowSecondChance := false
