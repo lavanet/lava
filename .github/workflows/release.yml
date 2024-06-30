@@ -90,3 +90,23 @@ jobs:
             GIT_VERSION="${{ steps.meta.outputs.version }}"
             GIT_COMMIT="${{ github.sha }}"
           push: true
+      - name: Extract metadata (cosmovisor)
+        if: ${{ matrix.binary }} == 'lavad
+        id: meta-cosmovisor
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cosmovisor
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        if: ${{ matrix.binary }} == 'lavad
+        with:
+          tags: ${{ steps.meta-cosmovisor.outputs.tags }}
+          labels: ${{ steps.meta-cosmovisor.outputs.labels }}
+          file: cmd/${{ matrix.binary }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            GIT_VERSION="${{ steps.meta-cosmovisor.outputs.version }}"
+            GIT_COMMIT="${{ github.sha }}"
+          push: true
