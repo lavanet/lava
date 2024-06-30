@@ -58,9 +58,7 @@ services:
 
   lava-node-cosmovisor:
     # Update with the most recent supported version of lavad
-    build:
-      context: ..
-      dockerfile: cmd/lavad/Dockerfile.Cosmovisor
+    image: ghcr.io/lavanet/lava/lavad-cosmovisor
     container_name: lava-node-cosmovisor
     command: ["run", "start"]
     ports:
