@@ -155,26 +155,25 @@ func (up *UsedProviders) setUnwanted(provider string) {
 	up.unwantedProviders[provider] = struct{}{}
 }
 
-func (up *UsedProviders) TryLockSelection(ctx context.Context) bool {
+func (up *UsedProviders) TryLockSelection(ctx context.Context) error {
 	if up == nil {
-		return true
+		return nil
 	}
 	for counter := 0; counter < MaximumNumberOfSelectionLockAttempts; counter++ {
 		select {
 		case <-ctx.Done():
-			return false
+			return ContextDoneNoNeedToLockSelectionError
 		default:
 			canSelect := up.tryLockSelection()
 			if canSelect {
-				return true
+				return nil
 			}
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
 
 	// if we got here we failed locking the selection.
-	utils.LavaFormatError("Failed locking selection after MaximumNumberOfSelectionLockAttempts", nil)
-	return false
+	return utils.LavaFormatError("Failed locking selection after MaximumNumberOfSelectionLockAttempts", nil)
 }
 
 func (up *UsedProviders) tryLockSelection() bool {
