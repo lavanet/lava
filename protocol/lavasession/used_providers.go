@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
-const MaximumNumberOfSelectionLockAttempts = 10000
+const MaximumNumberOfSelectionLockAttempts = 500
 
 func NewUsedProviders(directiveHeaders map[string]string) *UsedProviders {
 	unwantedProviders := map[string]struct{}{}
@@ -168,7 +168,7 @@ func (up *UsedProviders) TryLockSelection(ctx context.Context) error {
 			if canSelect {
 				return nil
 			}
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(5 * time.Millisecond)
 		}
 	}
 
