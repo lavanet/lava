@@ -17,6 +17,7 @@ const (
 	AverageWorldLatency                 = 300 * time.Millisecond
 	CommunicateWithLocalLavaNodeTimeout = (3 * time.Second) + AverageWorldLatency
 	DefaultTimeout                      = 30 * time.Second
+	DefaultTimeoutLongIsh               = 1 * time.Minute
 	DefaultTimeoutLong                  = 3 * time.Minute
 	CacheTimeout                        = 50 * time.Millisecond
 )
@@ -72,7 +73,10 @@ type TimeoutInfo struct {
 
 func GetTimeoutForProcessing(relayTimeout time.Duration, timeoutInfo TimeoutInfo) time.Duration {
 	ctxTimeout := DefaultTimeout
-	if timeoutInfo.Hanging || timeoutInfo.CU > 100 || timeoutInfo.Stateful == CONSISTENCY_SELECT_ALL_PROVIDERS {
+	if timeoutInfo.CU >= 50 { // for heavyish relays we set longish timeout :)
+		ctxTimeout = DefaultTimeoutLongIsh
+	}
+	if timeoutInfo.Hanging || timeoutInfo.CU >= 100 || timeoutInfo.Stateful == CONSISTENCY_SELECT_ALL_PROVIDERS {
 		ctxTimeout = DefaultTimeoutLong
 	}
 	if relayTimeout > ctxTimeout {

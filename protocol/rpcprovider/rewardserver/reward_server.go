@@ -47,6 +47,8 @@ type PaymentRequest struct {
 	Description         string
 	ChainID             string
 	ConsumerRewardsKey  string
+	ProviderAddress     string
+	RelayNumber         uint64
 }
 
 func (pr *PaymentRequest) String() string {
@@ -800,6 +802,20 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		if err != nil {
 			return nil, err
 		}
+
+		// if these fail we don't fail the method, worst case scenario they will be empty. these fields are used for event parsing
+		providerString, ok := attributes["provider"]
+		if !ok {
+			utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field provider", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
+		}
+		relayNumberString, ok := attributes["relayNumber"]
+		if !ok {
+			utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field relayNumber", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
+		}
+		relayNumber, err := strconv.ParseUint(relayNumberString, 10, 64)
+		if err != nil {
+			utils.LavaFormatError("failed building PaymentRequest from relay_payment failed parsing uint from relay number string", err, utils.Attribute{Key: "relayNumberString", Value: relayNumberString}, utils.Attribute{Key: "idx", Value: idx})
+		}
 		payment := &PaymentRequest{
 			CU:                  cu,
 			BlockHeightDeadline: block,
@@ -809,6 +825,8 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 			Description:         description,
 			UniqueIdentifier:    uniqueID,
 			ChainID:             chainID,
+			ProviderAddress:     providerString,
+			RelayNumber:         relayNumber,
 		}
 		payments = append(payments, payment)
 	}
