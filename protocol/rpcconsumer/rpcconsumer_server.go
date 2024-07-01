@@ -1015,7 +1015,7 @@ func (rpccs *RPCConsumerServer) LavaDirectiveHeaders(metadata []pairingtypes.Met
 	headerDirectives := map[string]string{}
 	for _, metaElement := range metadata {
 		name := strings.ToLower(metaElement.Name)
-		if _, found := common.SPECIAL_LAVA_HEADERS[name]; found {
+		if _, found := common.SPECIAL_LAVA_DIRECTIVE_HEADERS[name]; found {
 			headerDirectives[name] = metaElement.Value
 		} else {
 			metadataRet = append(metadataRet, metaElement)
