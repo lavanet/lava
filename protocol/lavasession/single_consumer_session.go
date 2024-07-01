@@ -25,6 +25,7 @@ type SingleConsumerSession struct {
 	ConsecutiveErrors []error
 	errorsCount       uint64
 	relayProcessor    UsedProvidersInf
+	lbProviderKey     string
 }
 
 // returns the expected latency to a threshold.
@@ -147,4 +148,12 @@ func (consumerSession *SingleConsumerSession) VerifyLock() error {
 		return LockMisUseDetectedError
 	}
 	return nil
+}
+
+func (consumerSession *SingleConsumerSession) GetLbProviderKey() string {
+	return consumerSession.lbProviderKey
+}
+
+func (consumerSession *SingleConsumerSession) SetLbProviderKey(newLbProviderKey string) {
+	consumerSession.lbProviderKey = newLbProviderKey
 }

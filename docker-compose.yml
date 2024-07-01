@@ -1,0 +1,112 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: openresty/openresty:latest
+    depends_on:
+      - provider3
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./ssl:/etc/nginx/ssl
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    ports:
+      - "80:80"
+      - "443:443"
+
+  consumer:
+    image: lavap
+    depends_on:
+      - nginx
+    ports:
+      - "3334:3334"
+      - "3335:3335"
+      - "3336:3336"
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    command:
+      [
+        "rpcconsumer",
+        "consumer_examples/lava_example.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "user1",
+        "--geolocation",
+        "2",
+        "--log_level",
+        "trace",
+        "--allow-insecure-provider-dialing",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]
+
+  # provider1:
+  #   image: lavap
+  #   environment:
+  #     - SERVICE_HOST=host.docker.internal
+  #   command:
+  #     [
+  #       "rpcprovider",
+  #       "provider_examples/lava_example1.yml",
+  #       "--chain-id",
+  #       "lava",
+  #       "--from",
+  #       "servicer1",
+  #       "--log_level",
+  #       "debug",
+  #       "--geolocation",
+  #       "2",
+  #       "--keyring-backend",
+  #       "test",
+  #       "--node",
+  #       "tcp://host.docker.internal:26657",
+  #     ]
+
+  # provider2:
+  #   image: lavap
+  #   environment:
+  #     - SERVICE_HOST=host.docker.internal
+  #   command:
+  #     [
+  #       "rpcprovider",
+  #       "provider_examples/lava_example2.yml",
+  #       "--chain-id",
+  #       "lava",
+  #       "--from",
+  #       "servicer2",
+  #       "--log_level",
+  #       "debug",
+  #       "--geolocation",
+  #       "2",
+  #       "--keyring-backend",
+  #       "test",
+  #       "--node",
+  #       "tcp://host.docker.internal:26657",
+  #     ]
+
+  provider3:
+    image: lavap
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    ports:
+      - "2223:2223"
+    command:
+      [
+        "rpcprovider",
+        "provider_examples/lava_example3.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer3",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]

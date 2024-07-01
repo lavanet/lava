@@ -768,7 +768,10 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		metadataAdd := metadata.New(map[string]string{common.IP_FORWARDING_HEADER_NAME: consumerToken})
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
+		ctx = rpccs.setContextWithLbProviderKeyMetadata(ctx, singleConsumerSession)
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&relayResult.ProviderTrailer))
+		// set the new lb provider key from the reply server metadata, if exists
+		rpccs.storeNewLbPRoviderKeyFromReplyServerMetadata(ctx, relayResult, singleConsumerSession)
 		statuses := relayResult.ProviderTrailer.Get(common.StatusCodeMetadataKey)
 		if len(statuses) > 0 {
 			codeNum, errStatus := strconv.Atoi(statuses[0])
@@ -853,18 +856,25 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 
 func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, endpointClient pairingtypes.RelayerClient, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult) (err error) {
 	// relaySentTime := time.Now()
-	replyServer, err := endpointClient.RelaySubscribe(ctx, relayResult.Request)
+	ctx = rpccs.setContextWithLbProviderKeyMetadata(ctx, singleConsumerSession)
+	replyServer, err := endpointClient.RelaySubscribe(ctx, relayResult.Request, grpc.Trailer(&relayResult.ProviderTrailer))
 	// relayLatency := time.Since(relaySentTime) // TODO: use subscription QoS
 	if err != nil {
 		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {
-			return utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "original error", Value: err.Error()})
+			return utils.LavaFormatError("subscribe relay failed onSessionFailure errored", errReport,
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("originalError", err.Error()),
+			)
 		}
 		return err
 	}
 	// TODO: need to check that if provider fails and returns error, this is reflected here and we run onSessionDone
 	// my thoughts are that this fails if the grpc fails not if the provider fails, and if the provider returns an error this is reflected by the Recv function on the chainListener calling us here
 	// and this is too late
+
+	// set the new lb provider key from the reply server metadata, if exists
+	rpccs.storeNewLbPRoviderKeyFromReplyServerMetadata(ctx, relayResult, singleConsumerSession)
 	relayResult.ReplyServer = &replyServer
 	err = rpccs.consumerSessionManager.OnSessionDoneIncreaseCUOnly(singleConsumerSession)
 	return err
@@ -1109,3 +1119,48 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 func (rpccs *RPCConsumerServer) IsHealthy() bool {
 	return rpccs.relaysMonitor.IsHealthy()
 }
+
+func (rpccs *RPCConsumerServer) setContextWithLbProviderKeyMetadata(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession) context.Context {
+	lbProviderKey := singleConsumerSession.GetLbProviderKey()
+	if lbProviderKey != "" {
+		utils.LavaFormatTrace("setting load balancer provider key to header",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("lbProviderKey", lbProviderKey),
+		)
+
+		return metadata.AppendToOutgoingContext(ctx, common.LB_PROVIDER_KEY_HEADER_NAME, lbProviderKey)
+	}
+
+	return ctx
+}
+
+func (rpccs *RPCConsumerServer) storeNewLbPRoviderKeyFromReplyServerMetadata(ctx context.Context, relayResult *common.RelayResult, singleConsumerSession *lavasession.SingleConsumerSession) {
+	headerValues := relayResult.ProviderTrailer.Get(common.LB_PROVIDER_KEY_HEADER_NAME)
+	if len(headerValues) > 0 {
+		lbProviderKey := headerValues[0]
+		utils.LavaFormatTrace("storing load balancer provider key",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("lbProviderKey", lbProviderKey),
+		)
+		singleConsumerSession.SetLbProviderKey(lbProviderKey)
+	}
+}
+
+// func (rpccs *RPCConsumerServer) setNewLbPRoviderKeyFromRelayReply(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession) {
+// 	maybe := metadata.ValueFromIncomingContext(ctx, common.LB_PROVIDER_KEY_HEADER_NAME)
+// 	utils.LavaFormatTrace("maybe?", utils.LogAttr("maybe", maybe))
+
+// 	if relayReplyHeaders, ok := metadata.FromIncomingContext(ctx); ok {
+// 		utils.LavaFormatTrace("headers", utils.LogAttr("relayReplyHeaders", relayReplyHeaders))
+// 		if headerValues := relayReplyHeaders.Get(common.LB_PROVIDER_KEY_HEADER_NAME); len(headerValues) > 0 {
+// 			lbProviderKey := headerValues[0]
+// 			utils.LavaFormatTrace("setting load balancer provider key from reply server metadata",
+// 				utils.LogAttr("GUID", ctx),
+// 				utils.LogAttr("lbProviderKey", lbProviderKey),
+// 			)
+// 			singleConsumerSession.SetLbProviderKey(lbProviderKey)
+// 		}
+// 	} else {
+// 		utils.LavaFormatTrace("no headers found in relay reply")
+// 	}
+// }

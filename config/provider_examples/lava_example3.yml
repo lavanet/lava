@@ -1,0 +1,23 @@
+endpoints:
+  - api-interface: tendermintrpc
+    chain-id: LAV1
+    network-address:
+      address: "0.0.0.0:2223"
+      disable-tls: true
+    node-urls:
+      - url: ws://host.docker.internal:26657/websocket
+      - url: http://host.docker.internal:26657
+  - api-interface: grpc
+    chain-id: LAV1
+    network-address:
+      address: "0.0.0.0:2223"
+      disable-tls: true
+    node-urls:
+      - url: host.docker.internal:9090
+  - api-interface: rest
+    chain-id: LAV1
+    network-address:
+      address: "0.0.0.0:2223"
+      disable-tls: true
+    node-urls:
+      - url: http://host.docker.internal:1317

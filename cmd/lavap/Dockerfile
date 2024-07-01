@@ -19,8 +19,6 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/root/go/pkg/mod \
     go mod download
 
-COPY . .
-
 ARG GIT_VERSION
 ARG GIT_COMMIT
 
@@ -59,4 +57,4 @@ EXPOSE 26656
 # tendermint rpc
 EXPOSE 26657
 
-ENTRYPOINT ["lavap"]
+ENTRYPOINT ["/bin/bash"]
