@@ -3,8 +3,6 @@ version: "3.8"
 services:
   nginx:
     image: openresty/openresty:latest
-    depends_on:
-      - provider3
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ./ssl:/etc/nginx/ssl
@@ -76,7 +74,7 @@ services:
         "--chain-id",
         "lava",
         "--from",
-        "servicer2",
+        "servicer1",
         "--log_level",
         "debug",
         "--geolocation",
@@ -98,7 +96,7 @@ services:
         "--chain-id",
         "lava",
         "--from",
-        "servicer3",
+        "servicer1",
         "--log_level",
         "debug",
         "--geolocation",

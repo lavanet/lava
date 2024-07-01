@@ -82,7 +82,7 @@ BASE_CHAINS="LAV1"
 # echo; echo "#### Staking provider 3 ####"
 # lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "$PROVIDER3_LISTENER,1" 1 $(operator_address) -y --delegate-commission 50 --delegate-limit $PROVIDERSTAKE --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "nginx:80,1" 1 $(operator_address) -y --delegate-commission 50 --delegate-limit $PROVIDERSTAKE --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "nginx:80,1" 1 $(operator_address) -y --delegate-commission 50 --delegate-limit $PROVIDERSTAKE --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # we need to wait for the next epoch for the stake to take action.
 echo; echo "#### Waiting 1 epoch ####"
