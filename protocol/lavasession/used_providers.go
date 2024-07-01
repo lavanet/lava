@@ -173,7 +173,7 @@ func (up *UsedProviders) TryLockSelection(ctx context.Context) error {
 	}
 
 	// if we got here we failed locking the selection.
-	return utils.LavaFormatError("Failed locking selection after MaximumNumberOfSelectionLockAttempts", nil)
+	return utils.LavaFormatError("Failed locking selection after MaximumNumberOfSelectionLockAttempts", nil, utils.LogAttr("GUID", ctx))
 }
 
 func (up *UsedProviders) tryLockSelection() bool {
