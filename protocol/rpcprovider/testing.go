@@ -86,7 +86,7 @@ func validateCORSHeaders(resp *http.Response) error {
 	// Check for the presence of "Access-Control-Allow-Origin" header
 	corsOrigin := resp.Header.Get("Access-Control-Allow-Origin")
 	if corsOrigin != "*" {
-		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil, utils.Attribute{Key: "corsOrigin", Value: corsOrigin})
+		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil, utils.Attribute{Key: "returned code", Value: resp.StatusCode}, utils.Attribute{Key: "corsOrigin", Value: corsOrigin})
 	}
 
 	// Headers that must be present in "Access-Control-Allow-Headers"
@@ -179,7 +179,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 
 				// CORS check
 				if err := PerformCORSCheck(endpoint); err != nil {
-					return 0, versions, 0, err
+					return 0, versions, 0, utils.LavaFormatError("invalid CORS check", err, utils.Attribute{Key: "returnedGuid", Value: probeResp.GetGuid()}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{

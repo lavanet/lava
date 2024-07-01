@@ -63,7 +63,6 @@ type SessionInfo struct {
 	QoSSummeryResult  sdk.Dec // using ComputeQoS to get the total QOS
 	Epoch             uint64
 	ReportedProviders []*pairingtypes.ReportedProvider
-	RemoveExtensions  bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
 type ConsumerSessionsMap map[string]*SessionInfo
@@ -113,10 +112,9 @@ type Endpoint struct {
 type SessionWithProvider struct {
 	SessionsWithProvider *ConsumerSessionsWithProvider
 	CurrentEpoch         uint64
-	RemoveExtensions     bool // used when we can't find a provider for an addon or extension and we use a regular provider instead
 }
 
-type SessionWithProviderMap map[string]*SessionWithProvider
+type SessionWithProviderMap map[string]*SessionWithProvider // key is the provider address
 
 type RPCEndpoint struct {
 	NetworkAddress  string `yaml:"network-address,omitempty" json:"network-address,omitempty" mapstructure:"network-address"` // HOST:PORT
@@ -335,7 +333,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 	// TODO: validate that the endpoint even belongs to the ConsumerSessionsWithProvider and is enabled.
 
 	// Multiply numberOfReset +1 by MaxAllowedBlockListedSessionPerProvider as every reset needs to allow more blocked sessions allowed.
-	maximumBlockedSessionsAllowed := MaxAllowedBlockListedSessionPerProvider * (numberOfResets + 1) // +1 as we start from 0
+	maximumBlockedSessionsAllowed := utils.Min(MaxSessionsAllowedPerProvider, MaxAllowedBlockListedSessionPerProvider*(numberOfResets+1)) // +1 as we start from 0
 	cswp.Lock.Lock()
 	defer cswp.Lock.Unlock()
 
@@ -349,9 +347,6 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 			// skip sessions that don't belong to the active connection
 			continue
 		}
-		if numberOfBlockedSessions >= maximumBlockedSessionsAllowed {
-			return nil, 0, MaximumNumberOfBlockListedSessionsError
-		}
 		blocked, ok := session.TryUseSession()
 		if ok {
 			return session, cswp.PairingEpoch, nil
@@ -359,7 +354,13 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		if blocked {
 			numberOfBlockedSessions += 1 // increase the number of blocked sessions so we can block this provider is too many are blocklisted
 		}
+
+		// this must come after the TryUseSession, as we need to check if we reached the maximum number of blocked sessions allowed.
+		if numberOfBlockedSessions >= maximumBlockedSessionsAllowed {
+			return nil, 0, MaximumNumberOfBlockListedSessionsError
+		}
 	}
+
 	// No Sessions available, create a new session or return an error upon maximum sessions allowed
 	if len(cswp.Sessions) > MaxSessionsAllowedPerProvider {
 		return nil, 0, MaximumNumberOfSessionsExceededError

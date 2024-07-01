@@ -251,6 +251,16 @@ func TestFreezingProviderForUnresponsivenessContinueComplainingAfterFreeze(t *te
 
 	ts.AdvanceEpochs(2, time.Second)
 
+	// look for the first provider that is not provider1
+	pairing, err = ts.QueryPairingGetPairing(ts.spec.Name, clients[0].Addr.String())
+	require.NoError(t, err)
+	for _, provider := range pairing.Providers {
+		if provider.Address != provider1 {
+			provider0 = provider.Address
+			break
+		}
+	}
+
 	// create more relay requests for provider0 that contain complaints about provider1
 	for clientIndex := 0; clientIndex < clientsCount; clientIndex++ {
 		relaySession := ts.newRelaySession(provider0, 2, cuSum, ts.BlockHeight(), 0)
