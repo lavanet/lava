@@ -10,7 +10,7 @@ async function main() {
         allowInsecureTransport: true,
         logLevel: "debug",
     }).catch(e => {
-        throw new Error(" ERR [rest_optional_params] failed initializing lava-sdk rest test");
+        throw new Error(` ERR [rest_optional_params] failed initializing lava-sdk rest test ${e.message}`);
     });
 
     // Fetch chain id
