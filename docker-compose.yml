@@ -43,56 +43,54 @@ services:
         "tcp://host.docker.internal:26657",
       ]
 
-  # provider1:
-  #   image: lavap
-  #   environment:
-  #     - SERVICE_HOST=host.docker.internal
-  #   command:
-  #     [
-  #       "rpcprovider",
-  #       "provider_examples/lava_example1.yml",
-  #       "--chain-id",
-  #       "lava",
-  #       "--from",
-  #       "servicer1",
-  #       "--log_level",
-  #       "debug",
-  #       "--geolocation",
-  #       "2",
-  #       "--keyring-backend",
-  #       "test",
-  #       "--node",
-  #       "tcp://host.docker.internal:26657",
-  #     ]
+  provider1:
+    image: lavap
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    command:
+      [
+        "rpcprovider",
+        "provider_examples/lava_example1.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer1",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]
 
-  # provider2:
-  #   image: lavap
-  #   environment:
-  #     - SERVICE_HOST=host.docker.internal
-  #   command:
-  #     [
-  #       "rpcprovider",
-  #       "provider_examples/lava_example2.yml",
-  #       "--chain-id",
-  #       "lava",
-  #       "--from",
-  #       "servicer2",
-  #       "--log_level",
-  #       "debug",
-  #       "--geolocation",
-  #       "2",
-  #       "--keyring-backend",
-  #       "test",
-  #       "--node",
-  #       "tcp://host.docker.internal:26657",
-  #     ]
+  provider2:
+    image: lavap
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    command:
+      [
+        "rpcprovider",
+        "provider_examples/lava_example2.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer2",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]
 
   provider3:
     image: lavap
     environment:
       - SERVICE_HOST=host.docker.internal
-    ports:
-      - "2223:2223"
     command:
       [
         "rpcprovider",
