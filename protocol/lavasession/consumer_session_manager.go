@@ -27,7 +27,10 @@ const (
 	BlockedProviderSessionUnusedStatus = uint32(0)
 )
 
-var DebugProbes = false
+var (
+	retrySecondChanceAfter = time.Minute * 3
+	DebugProbes            = false
+)
 
 // created with NewConsumerSessionManager
 type ConsumerSessionManager struct {
@@ -44,6 +47,9 @@ type ConsumerSessionManager struct {
 
 	// contains all provider addresses that are currently valid
 	validAddresses []string
+	// provider addresses that were given a second chance instead of reporting them immediately
+	secondChanceGivenToAddresses map[string]struct{}
+
 	// contains a sorted list of blocked addresses, sorted by their cu used this epoch for higher chance of response
 	currentlyBlockedProviderAddresses []string
 
@@ -54,6 +60,7 @@ type ConsumerSessionManager struct {
 	pairingPurge           map[string]*ConsumerSessionsWithProvider
 	providerOptimizer      ProviderOptimizer
 	consumerMetricsManager *metrics.ConsumerMetricsManager
+	consumerPublicAddress  string
 }
 
 // this is being read in multiple locations and but never changes so no need to lock.
@@ -83,6 +90,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	// Reset States
 	// csm.validAddresses length is reset in setValidAddressesToDefaultValue
 	csm.pairingAddresses = make(map[uint64]string, pairingListLength)
+	csm.secondChanceGivenToAddresses = make(map[string]struct{})
 
 	csm.reportedProviders.Reset()
 	csm.pairingAddressesLength = uint64(pairingListLength)
@@ -200,7 +208,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 	connected, endpoints, providerAddress, err := consumerSessionsWithProvider.fetchEndpointConnectionFromConsumerSessionWithProvider(ctx, tryReconnectToDisabledEndpoints, true)
 	if err != nil || !connected {
 		if AllProviderEndpointsDisabledError.Is(err) {
-			csm.blockProvider(providerAddress, true, epoch, MaxConsecutiveConnectionAttempts, 0, csm.GenerateReconnectCallback(consumerSessionsWithProvider)) // reporting and blocking provider this epoch
+			csm.blockProvider(providerAddress, true, epoch, MaxConsecutiveConnectionAttempts, 0, false, csm.GenerateReconnectCallback(consumerSessionsWithProvider), []error{err}) // reporting and blocking provider this epoch
 		}
 		return 0, providerAddress, err
 	}
@@ -321,6 +329,9 @@ func (csm *ConsumerSessionManager) resetValidAddresses(addon string, extensions 
 			utils.LavaFormatWarning("Provider pairing list is empty, resetting state.", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
 		} else {
 			utils.LavaFormatWarning("No providers for asked addon or extension, list is empty after trying to reset", nil, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+			if addon == "" && len(extensions) == 0 {
+				utils.LavaFormatError("User subscription might have expired or not purchased properly, pairing list is empty after reset.", nil, utils.LogAttr("consumer_address", csm.consumerPublicAddress))
+			}
 		}
 		csm.numberOfResets += 1
 	}
@@ -350,6 +361,12 @@ func (csm *ConsumerSessionManager) validatePairingListNotEmpty(addon string, ext
 	return numberOfResets
 }
 
+func (csm *ConsumerSessionManager) getValidAddressesLengthForExtensionOrAddon(addon string, extensions []string) int {
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+	return len(csm.getValidAddresses(addon, extensions))
+}
+
 func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders UsedProvidersInf, tempIgnoredProviders *ignoredProviders, cuNeededForSession uint64, requestedBlock int64, addon string, extensionNames []string, stateful uint32, virtualEpoch uint64) (sessionWithProviderMap SessionWithProviderMap, err error) {
 	sessionWithProviderMap, err = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch)
 	if err != nil {
@@ -358,24 +375,7 @@ func (csm *ConsumerSessionManager) getSessionWithProviderOrError(usedProviders U
 			var errOnRetry error
 			sessionWithProviderMap, errOnRetry = csm.tryGetConsumerSessionWithProviderFromBlockedProviderList(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, extensionNames, stateful, virtualEpoch, usedProviders)
 			if errOnRetry != nil {
-				// we validate currently used providers are 0 meaning we didn't find a valid extension provider
-				// so we don't return an invalid error while waiting for a reply for a valid provider.
-				// in the case we do not have any relays sent at the moment we get a provider from the regular list
-				if usedProviders.CurrentlyUsed() == 0 && PairingListEmptyError.Is(errOnRetry) && (len(extensionNames) > 0) {
-					var errGetRegularProvider error
-					emptyExtensionNames := []string{}
-					sessionWithProviderMap, errGetRegularProvider = csm.getValidConsumerSessionsWithProvider(tempIgnoredProviders, cuNeededForSession, requestedBlock, addon, emptyExtensionNames, stateful, virtualEpoch)
-					if errGetRegularProvider != nil {
-						return nil, err // return original error (getValidConsumerSessionsWithProvider)
-					}
-					for key := range sessionWithProviderMap {
-						sessionWithProviderMap[key].RemoveExtensions = true
-					}
-					// print a warning in case we got a provider who does not support that addon or extension.
-					utils.LavaFormatWarning("No Providers For Addon Or Extension, using regular provider for relay", errOnRetry, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensionNames), utils.LogAttr("providers_chosen", sessionWithProviderMap))
-				} else {
-					return nil, err // return original error (getValidConsumerSessionsWithProvider)
-				}
+				return nil, err // return original error (getValidConsumerSessionsWithProvider)
 			}
 		} else {
 			return nil, err
@@ -422,15 +422,6 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	sessions := make(ConsumerSessionsMap, wantedSession)
 	for {
 		for providerAddress, sessionWithProvider := range sessionWithProviderMap {
-			// adding a protection when using RemoveAddonsAndExtensions to use only one session.
-			// we can get here if we wanted 3 archive and got 2 only because one couldn't connect,
-			// so we tried getting more sessions and got a regular provider due to no pairings available.
-			// in that case just return the current sessions that we do have.
-			if sessionWithProvider.RemoveExtensions && len(sessions) >= 1 {
-				utils.LavaFormatDebug("Too many sessions when using RemoveAddonAndExtensions session", utils.LogAttr("sessions", sessions), utils.LogAttr("wanted_to_add", sessionWithProvider))
-				// in that case we just return the sessions we already have.
-				return sessions, nil
-			}
 			// Extract values from session with provider
 			consumerSessionsWithProvider := sessionWithProvider.SessionsWithProvider
 			sessionEpoch := sessionWithProvider.CurrentEpoch
@@ -440,7 +431,8 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			if err != nil {
 				// verify err is AllProviderEndpointsDisabled and report.
 				if AllProviderEndpointsDisabledError.Is(err) {
-					err = csm.blockProvider(providerAddress, true, sessionEpoch, MaxConsecutiveConnectionAttempts, 0, csm.GenerateReconnectCallback(consumerSessionsWithProvider)) // reporting and blocking provider this epoch
+					tempIgnoredProviders.providers[providerAddress] = struct{}{}
+					err = csm.blockProvider(providerAddress, true, sessionEpoch, MaxConsecutiveConnectionAttempts, 0, false, csm.GenerateReconnectCallback(consumerSessionsWithProvider), []error{err}) // reporting and blocking provider this epoch
 					if err != nil {
 						if !EpochMismatchError.Is(err) {
 							// only acceptable error is EpochMismatchError so if different, throw fatal
@@ -467,13 +459,18 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			// Get session from endpoint or create new or continue. if more than 10 connections are open.
 			consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint, numberOfResets)
 			if err != nil {
-				utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint", utils.Attribute{Key: "Error", Value: err.Error()})
+				utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint",
+					utils.LogAttr("providerAddress", providerAddress),
+					utils.LogAttr("validAddresses", csm.validAddresses),
+					utils.LogAttr("Error", err.Error()),
+				)
 				if MaximumNumberOfSessionsExceededError.Is(err) {
 					// we can get a different provider, adding this provider to the list of providers to skip on.
 					tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				} else if MaximumNumberOfBlockListedSessionsError.Is(err) {
-					// provider has too many block listed sessions. we block it until the next epoch.
-					err = csm.blockProvider(providerAddress, false, sessionEpoch, 0, 0, nil)
+					// provider has too many block listed sessions. we block it until the next epoch and ignore it so it won't pop up again when resetting the provider list.
+					tempIgnoredProviders.providers[providerAddress] = struct{}{}
+					err = csm.blockProvider(providerAddress, false, sessionEpoch, 0, 0, false, nil, []error{})
 					if err != nil {
 						utils.LavaFormatError("Failed to block provider: ", err)
 					}
@@ -527,7 +524,6 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 					Session:           consumerSession,
 					Epoch:             sessionEpoch,
 					ReportedProviders: reportedProviders,
-					RemoveExtensions:  sessionWithProvider.RemoveExtensions,
 				}
 
 				// adding qos summery for error parsing.
@@ -709,7 +705,7 @@ func (csm *ConsumerSessionManager) getValidConsumerSessionsWithProvider(ignoredP
 	// Fetch provider addresses
 	providerAddresses, err := csm.getValidProviderAddresses(ignoredProviders.providers, cuNeededForSession, requestedBlock, addon, extensions, stateful)
 	if err != nil {
-		utils.LavaFormatInfo(csm.rpcEndpoint.ChainID+" could not get a provider addresses", utils.LogAttr("error", err))
+		utils.LavaFormatDebug(csm.rpcEndpoint.ChainID+" could not get a provider addresses", utils.LogAttr("error", err))
 		return nil, err
 	}
 
@@ -802,14 +798,30 @@ func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address strin
 
 // Blocks a provider making him unavailable for pick this epoch, will also report him as unavailable if reportProvider is set to true.
 // Validates that the sessionEpoch is equal to cs.currentEpoch otherwise doesn't take effect.
-func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider bool, sessionEpoch uint64, disconnections uint64, errors uint64, reconnectCallback func() error) error {
+func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider bool, sessionEpoch uint64, disconnections uint64, errors uint64, allowSecondChance bool, reconnectCallback func() error, errorsForReport []error) error {
 	// find Index of the address
 	if sessionEpoch != csm.atomicReadCurrentEpoch() { // we read here atomically so cs.currentEpoch cant change in the middle, so we can save time if epochs mismatch
 		return EpochMismatchError
 	}
 
+	var runSecondChance bool
 	csm.lock.Lock() // we lock RW here because we need to make sure nothing changes while we verify validAddresses/addedToPurgeAndReport
-	defer csm.lock.Unlock()
+	// on unlock we also want to trigger a routine that will remove blocked providers from block list if they exist and we allow them a second chance
+	defer func() {
+		csm.lock.Unlock()
+		if runSecondChance {
+			// if we decide to allow a second chance, this provider will return to our list of valid providers (if it exists)
+			go func() {
+				<-time.After(retrySecondChanceAfter)
+				// check epoch is still relevant, if not just return
+				if sessionEpoch != csm.atomicReadCurrentEpoch() {
+					return
+				}
+				csm.validateAndReturnBlockedProviderToValidAddressesList(address)
+			}()
+		}
+	}()
+
 	if sessionEpoch != csm.atomicReadCurrentEpoch() { // After we lock we need to verify again that the epoch didn't change while we waited for the lock.
 		return EpochMismatchError
 	}
@@ -825,7 +837,19 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	}
 
 	if reportProvider { // Report provider flow
-		csm.reportedProviders.ReportProvider(address, errors, disconnections, reconnectCallback)
+		if allowSecondChance { // on epoch change, we don't report providers immediately we allow them a recovery phase.
+			if _, ok := csm.secondChanceGivenToAddresses[address]; ok {
+				// already exists in second chance, need to block.
+				csm.reportedProviders.ReportProvider(address, errors, disconnections, reconnectCallback, errorsForReport)
+			} else {
+				// first time reported, allowing a second chance.
+				csm.secondChanceGivenToAddresses[address] = struct{}{}
+				// address was removed from valid addresses, we can still return it after a duration for second chance.
+				runSecondChance = true
+			}
+		} else {
+			csm.reportedProviders.ReportProvider(address, errors, disconnections, reconnectCallback, errorsForReport)
+		}
 	}
 
 	return nil
@@ -851,19 +875,27 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 
 	// check if need to block & report
 	var blockProvider, reportProvider bool
-	if ReportAndBlockProviderError.Is(errorReceived) {
+	if sdkerrors.IsOf(errorReceived, ReportAndBlockProviderError) {
 		blockProvider = true
 		reportProvider = true
-	} else if BlockProviderError.Is(errorReceived) {
+	} else if sdkerrors.IsOf(errorReceived, BlockProviderError) {
 		blockProvider = true
 	}
 
 	consumerSession.QoSInfo.TotalRelays++
 	consumerSession.ConsecutiveErrors = append(consumerSession.ConsecutiveErrors, errorReceived)
+	// copy consecutive errors for report.
+	errorsForConsumerSession := consumerSession.ConsecutiveErrors
 	consumerSession.errorsCount += 1
+	// set allow second change if we want to allow the provider to return the pool without being reported if the downtime was temporary.
+	allowSecondChance := false
 	// if this session failed more than MaximumNumberOfFailuresAllowedPerConsumerSession times or session went out of sync we block it.
 	if len(consumerSession.ConsecutiveErrors) > MaximumNumberOfFailuresAllowedPerConsumerSession || IsSessionSyncLoss(errorReceived) {
-		utils.LavaFormatDebug("Blocking consumer session", utils.LogAttr("ConsecutiveErrors", consumerSession.ConsecutiveErrors), utils.LogAttr("errorsCount", consumerSession.errorsCount), utils.Attribute{Key: "id", Value: consumerSession.SessionId})
+		utils.LavaFormatDebug("Blocking consumer session",
+			utils.LogAttr("ConsecutiveErrors", consumerSession.ConsecutiveErrors),
+			utils.LogAttr("errorsCount", consumerSession.errorsCount),
+			utils.LogAttr("id", consumerSession.SessionId),
+		)
 		consumerSession.BlockListed = true // block this session from future usages
 
 		// check if this session is a redemption session meaning we already blocked and reported the provider if it was necessary.
@@ -872,10 +904,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 			if consumerSession.Parent.atomicReadUsedComputeUnits() <= consumerSession.LatestRelayCu { // if we had 0 successful relays and we reached block session we need to report this provider
 				blockProvider = true
 				reportProvider = true
-			}
-			if reportProvider {
-				providerAddr := consumerSession.Parent.PublicLavaAddress
-				go csm.reportedProviders.AppendReport(metrics.NewReportsRequest(providerAddr, consumerSession.ConsecutiveErrors, csm.rpcEndpoint.ChainID))
+				allowSecondChance = true
 			}
 		}
 	}
@@ -896,7 +925,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 
 	if !redemptionSession && blockProvider {
 		publicProviderAddress, pairingEpoch := parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch()
-		err = csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch, 0, consecutiveErrors, nil)
+		err = csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch, 0, consecutiveErrors, allowSecondChance, nil, errorsForConsumerSession)
 		if err != nil {
 			if EpochMismatchError.Is(err) {
 				return nil // no effects this epoch has been changed
@@ -1050,10 +1079,11 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter) *ConsumerSessionManager {
+func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
-		reportedProviders:      NewReportedProviders(reporter),
+		reportedProviders:      NewReportedProviders(reporter, rpcEndpoint.ChainID),
 		consumerMetricsManager: consumerMetricsManager,
+		consumerPublicAddress:  consumerPublicAddress,
 	}
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer

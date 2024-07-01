@@ -264,6 +264,26 @@
                                 "timeout_ms": 5000
                             },
                             {
+                                "name": "send_tx",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0,
+                                "timeout_ms": 20000
+                            },
+                            {
                                 "name": "broadcast_tx_commit",
                                 "block_parsing": {
                                     "parser_arg": [
@@ -415,28 +435,37 @@
                             {
                                 "name": "pruning",
                                 "parse_directive": {
-                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"status\",\"params\":[],\"id\":1}",
-                                    "function_tag": "VERIFICATION",
-                                    "result_parsing": {
-                                        "parser_arg": [
-                                            "0",
-                                            "sync_info",
-                                            "earliest_block_height"
-                                        ],
-                                        "parser_func": "PARSE_CANONICAL"
-                                    },
-                                    "api_name": "status"
+                                    "function_tag": "GET_BLOCK_BY_NUM"
                                 },
                                 "values": [
                                     {
                                         "latest_distance": 64800
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "pruning-archive",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"block_id\":9820210},\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "header",
+                                            "height"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
                                     },
+                                    "api_name": "block"
+                                },
+                                "values": [
                                     {
                                         "extension": "archive",
                                         "expected_value": "9820210"
                                     }
                                 ]
                             }
+                            
                         ],
                         "extensions": [
                             {
@@ -491,7 +520,20 @@
                                 ]
                             },
                             {
-                                "name": "pruning",
+                                "name": "pruning-archive",
+                                "parse_directive": {
+                                    "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"block\",\"params\":{\"block_id\":42376888},\"id\":1}",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0",
+                                            "header",
+                                            "height"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "block"
+                                },
                                 "values": [
                                     {
                                         "extension": "archive",

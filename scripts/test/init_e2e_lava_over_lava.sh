@@ -1,6 +1,6 @@
 #!/bin/bash 
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-source $__dir/useful_commands.sh
+source $__dir/../useful_commands.sh
 set -e
 
 GASPRICE="0.000000001ulava"

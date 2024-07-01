@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"go/build"
@@ -96,7 +95,7 @@ func runSDKE2E(timeout time.Duration) {
 		protocolPath: gopath + "/bin/lavap",
 		lavadArgs:    "--geolocation 1 --log_level debug",
 		consumerArgs: " --allow-insecure-provider-dialing",
-		logs:         make(map[string]*bytes.Buffer),
+		logs:         make(map[string]*sdk.SafeBuffer),
 		commands:     make(map[string]*exec.Cmd),
 		providerType: make(map[string][]epochStorageTypes.Endpoint),
 		logPath:      sdkLogsFolder,
@@ -124,7 +123,7 @@ func runSDKE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("Staking Lava")
 	lt.stakeLava(ctx)
 
-	lt.checkStakeLava(2, 9, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
+	lt.checkStakeLava(2, NumberOfSpecsExpectedInE2E, 4, 5, checkedPlansE2E, checkedSpecsE2E, checkedSubscriptions, "Staking Lava OK")
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
@@ -148,7 +147,7 @@ func runSDKE2E(timeout time.Duration) {
 	lt.startLavaProviders(ctx)
 
 	// Test SDK
-	lt.logs["01_sdkTest"] = new(bytes.Buffer)
+	lt.logs["01_sdkTest"] = &sdk.SafeBuffer{}
 	sdk.RunSDKTests(ctx, grpcConn, privateKey, publicKey, lt.logs["01_sdkTest"], "7070")
 
 	// Emergency mode tests
