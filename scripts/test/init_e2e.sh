@@ -72,7 +72,7 @@ if [ "$plan_index" != "DefaultPlan" ]; then "echo subscription ${user1addr}: wro
 user3addr=$(lavad keys show user3 -a)
 # add debug addons and archive 
 wait_next_block
-lavad tx project set-policy $(lavad keys show user1 -a)-admin ./testutil/e2e/e2eProviderConfigs/consumer_policy.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx project set-policy $(lavad keys show user1 -a)-admin ./testutil/e2e/e2eConfigs/policies/consumer_policy.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 lavad tx subscription add-project "myproject1" -y --from user3 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block

@@ -44,7 +44,10 @@ import (
 
 const (
 	protocolLogsFolder         = "./testutil/e2e/protocolLogs/"
-	configFolder               = "./testutil/e2e/e2eProviderConfigs"
+	configFolder               = "./testutil/e2e/e2eConfigs"
+	providerConfigsFolder      = configFolder + "/provider"
+	consumerConfigsFolder      = configFolder + "/consumer"
+	policiesFolder             = configFolder + "/policies"
 	EmergencyModeStartLine     = "+++++++++++ EMERGENCY MODE START ++++++++++"
 	EmergencyModeEndLine       = "+++++++++++ EMERGENCY MODE END ++++++++++"
 	NumberOfSpecsExpectedInE2E = 10
