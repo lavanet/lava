@@ -3,6 +3,7 @@ package pairing_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
 	"github.com/lavanet/lava/x/pairing"
@@ -64,14 +65,14 @@ func TestGenesis(t *testing.T) {
 				Provider:                "0",
 				Project:                 "0",
 				ChainId:                 "0",
-				ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
+				ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10, QosSum: math.LegacyZeroDec(), QosAmount: 3},
 			},
 			{
 				Epoch:                   1,
 				Provider:                "1",
 				Project:                 "1",
 				ChainId:                 "1",
-				ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 20},
+				ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 20, QosSum: math.LegacyOneDec(), QosAmount: 6},
 			},
 		},
 		BadgeUsedCuList: []types.BadgeUsedCu{

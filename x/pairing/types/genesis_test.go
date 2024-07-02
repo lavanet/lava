@@ -3,6 +3,7 @@ package types_test
 import (
 	"testing"
 
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
@@ -72,14 +73,14 @@ func TestGenesisState_Validate(t *testing.T) {
 						Provider:                "0",
 						Project:                 "0",
 						ChainId:                 "0",
-						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
+						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10, QosSum: math.LegacyOneDec().MulInt64(int64(1)), QosAmount: uint64(1)},
 					},
 					{
 						Epoch:                   1,
 						Provider:                "1",
 						Project:                 "1",
 						ChainId:                 "1",
-						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 20},
+						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 20, QosSum: math.LegacyOneDec().MulInt64(int64(2)), QosAmount: uint64(2)},
 					},
 				},
 				// this line is used by starport scaffolding # types/genesis/validField
@@ -162,14 +163,14 @@ func TestGenesisState_Validate(t *testing.T) {
 						Provider:                "0",
 						Project:                 "0",
 						ChainId:                 "0",
-						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
+						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10, QosSum: math.LegacyOneDec().MulInt64(int64(1)), QosAmount: uint64(1)},
 					},
 					{
 						Epoch:                   0,
 						Provider:                "0",
 						Project:                 "0",
 						ChainId:                 "0",
-						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
+						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10, QosSum: math.LegacyOneDec().MulInt64(int64(2)), QosAmount: uint64(2)},
 					},
 				},
 			},

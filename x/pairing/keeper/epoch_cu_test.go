@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"testing"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	keepertest "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/nullify"
@@ -134,7 +135,7 @@ func createNProviderConsumerEpochCu(keeper *keeper.Keeper, ctx sdk.Context, n in
 	items := make([]types.ProviderConsumerEpochCu, n)
 	for i := range items {
 		name := strconv.Itoa(i)
-		items[i] = types.ProviderConsumerEpochCu{Cu: uint64(i)}
+		items[i] = types.ProviderConsumerEpochCu{Cu: uint64(i), QosSum: math.LegacyOneDec().MulInt64(int64(i + 1)), QosAmount: uint64(i)}
 		keeper.SetProviderConsumerEpochCu(ctx, uint64(i), name, name, name, items[i])
 	}
 	return items
@@ -148,6 +149,8 @@ func TestProviderConsumerEpochCuGet(t *testing.T) {
 		pecc, found := keeper.GetProviderConsumerEpochCu(ctx, uint64(i), name, name, name)
 		require.True(t, found)
 		require.Equal(t, item.Cu, pecc.Cu)
+		require.True(t, math.LegacyOneDec().MulInt64(int64(i+1)).Equal(pecc.QosSum))
+		require.Equal(t, uint64(i), pecc.QosAmount)
 	}
 }
 
@@ -175,7 +178,7 @@ func TestProviderConsumerEpochCuGetAll(t *testing.T) {
 			Project:  name,
 			ChainId:  name,
 			ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{
-				Cu: uint64(i),
+				Cu: uint64(i), QosSum: math.LegacyOneDec().MulInt64(int64(i + 1)), QosAmount: uint64(i),
 			},
 		})
 		pecs := keeper.GetAllProviderConsumerEpochCu(ctx, uint64(i))
@@ -192,11 +195,13 @@ func TestProviderConsumerEpochCuGetAllStore(t *testing.T) {
 	for i := range items {
 		name := strconv.Itoa(i)
 		expectedInfo = append(expectedInfo, types.ProviderConsumerEpochCuGenesis{
-			Epoch:                   uint64(i),
-			Provider:                name,
-			Project:                 name,
-			ChainId:                 name,
-			ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: uint64(i)},
+			Epoch:    uint64(i),
+			Provider: name,
+			Project:  name,
+			ChainId:  name,
+			ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{
+				Cu: uint64(i), QosSum: math.LegacyOneDec().MulInt64(int64(i + 1)), QosAmount: uint64(i),
+			},
 		})
 	}
 	info := keeper.GetAllProviderConsumerEpochCuStore(ctx)

@@ -1,5 +1,6 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/lavanet/lava/x/pairing/types";
 
@@ -21,9 +22,12 @@ message ProviderEpochComplainerCu {
 }
 
 // ProviderConsumerEpochCu is used to track the CU between a specific provider and 
-// consumer in a specific epoch
+// consumer in a specific epoch. It also tracks the QoS excellence of the provider and consumer
+// in the epoch.
 // It's kept in a epoch-prefixed store with a unique index: provider and project ID
 message ProviderConsumerEpochCu {
 	uint64 cu = 1;
+	string qos_sum = 2 [(gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec", (gogoproto.nullable) = false];
+	uint64 qos_amount = 3;
 }
 
