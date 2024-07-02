@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/sigs"
 	"github.com/lavanet/lava/x/rewards/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscription "github.com/lavanet/lava/x/subscription/keeper"
 	"github.com/stretchr/testify/require"
 )
@@ -741,4 +742,53 @@ func TestCommunityTaxOne(t *testing.T) {
 	communityCoins := ts.Keepers.Distribution.GetFeePoolCommunityCoins(ts.Ctx)
 	communityBalance := communityCoins.AmountOf(ts.TokenDenom()).TruncateInt()
 	require.Equal(t, expectedReward, communityBalance)
+}
+
+// TestZeroBonusRewardsForUserSpec tests that rewards are not given to providers who serve user specs
+func TestZeroBonusRewardsForUserSpec(t *testing.T) {
+	ts := newTester(t, true)
+
+	providerAcc, _ := ts.AddAccount(common.PROVIDER, 1, testBalance)
+
+	// add user spec
+	spec := ts.specs[0]
+	spec.Index = "USERSPEC"
+	msgSpec := spectypes.MsgAddSpecs{}
+	msgSpec.Specs = append(msgSpec.Specs, spec)
+	msgSpec.Creator = providerAcc.Addr.String()
+	ts.Servers.SpecServer.AddSpecs(ts.Ctx, &msgSpec)
+
+	err := ts.StakeProvider(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), spec, testBalance)
+	require.NoError(t, err)
+
+	ts.AdvanceEpoch()
+
+	consumerAcc, _ := ts.AddAccount(common.CONSUMER, 1, ts.plan.Price.Amount.Int64())
+	_, err = ts.TxSubscriptionBuy(consumerAcc.Addr.String(), consumerAcc.Addr.String(), ts.plan.Index, 1, false, false)
+	require.NoError(t, err)
+
+	baserewards := uint64(100)
+	// the rewards by the subscription will be limited by LIMIT_TOKEN_PER_CU
+	msg := ts.SendRelay(providerAcc.Addr.String(), consumerAcc, []string{spec.Index}, baserewards)
+	_, err = ts.TxPairingRelayPayment(msg.Creator, msg.Relays...)
+	require.NoError(t, err)
+
+	// first months there are no bonus rewards and no regular rewards
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
+
+	res, err := ts.QueryDualstakingDelegatorRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), "")
+	require.NoError(t, err)
+	/// no subscription rewards for user specs
+	require.Len(t, res.Rewards, 0)
+
+	// now the provider should get all of the provider allocation
+	ts.AdvanceMonths(1)
+	ts.AdvanceEpoch()
+
+	res, err = ts.QueryDualstakingDelegatorRewards(providerAcc.GetVaultAddr(), providerAcc.Addr.String(), "")
+	require.NoError(t, err)
+	/// no boost rewards for user specs
+	require.Len(t, res.Rewards, 0)
 }

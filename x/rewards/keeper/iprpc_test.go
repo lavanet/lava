@@ -9,6 +9,7 @@ import (
 	"github.com/lavanet/lava/testutil/common"
 	"github.com/lavanet/lava/utils/sigs"
 	rewardstypes "github.com/lavanet/lava/x/rewards/types"
+	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -630,7 +631,12 @@ func TestMultipleIprpcSpec(t *testing.T) {
 	spec3 := common.CreateMockSpec()
 	spec3.Index = mockSpec3
 	spec3.Name = mockSpec3
-	ts.specs = append(ts.specs, ts.AddSpec(mockSpec3, spec3).Spec(mockSpec3))
+	msgSpec := spectypes.MsgAddSpecs{}
+	msgSpec.Specs = append(msgSpec.Specs, spec3)
+	msgSpec.Creator = c1Acc.Addr.String()
+	ts.Servers.SpecServer.AddSpecs(ts.Ctx, &msgSpec)
+
+	ts.specs = append(ts.specs, spec3)
 	err := ts.StakeProvider(p1Acc.GetVaultAddr(), p1, ts.specs[2], testStake)
 	require.NoError(ts.T, err)
 	err = ts.StakeProvider(p2Acc.GetVaultAddr(), p2, ts.specs[2], testStake)
