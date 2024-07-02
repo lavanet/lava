@@ -15,7 +15,7 @@ import (
 	"github.com/lavanet/lava/x/spec/types"
 )
 
-var USER_SPEC_CONTRIBUTION = sdk.NewDecWithPrec(1, 10)
+const USER_SPEC_CONTRIBUTION = "0.1"
 
 // SetSpec set a specific Spec in the store from its index
 func (k Keeper) SetSpec(ctx sdk.Context, spec types.Spec) {
@@ -389,7 +389,8 @@ func (k Keeper) HandleSpecs(ctx sdk.Context, specs []types.Spec, creator string)
 			if !sdk.SliceContains(spec.Contributor, creator) {
 				spec.Contributor = append(spec.Contributor, creator)
 			}
-			spec.ContributorPercentage = &USER_SPEC_CONTRIBUTION
+			contributorPercentage := math.LegacyMustNewDecFromStr(USER_SPEC_CONTRIBUTION)
+			spec.ContributorPercentage = &contributorPercentage
 		}
 
 		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
