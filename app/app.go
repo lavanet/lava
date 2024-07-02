@@ -284,6 +284,7 @@ var (
 		string(rewardsmoduletypes.ProvidersRewardsAllocationPool):        {authtypes.Minter, authtypes.Staking},
 		dualstakingmoduletypes.ModuleName:                                {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.IprpcPoolName):                         nil,
+		string(rewardsmoduletypes.PendingIprpcPoolName):                  nil,
 		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 )
@@ -560,6 +561,7 @@ func New(
 		authtypes.FeeCollectorName,
 		app.TimerStoreKeeper,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.IBCKeeper.ChannelKeeper,
 	)
 	rewardsModule := rewardsmodule.NewAppModule(appCodec, app.RewardsKeeper, app.AccountKeeper, app.BankKeeper)
 
@@ -715,6 +717,7 @@ func New(
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 		packetforwardkeeper.DefaultRefundTransferPacketTimeoutTimestamp,  // refund timeout
 	)
+	transferStack = rewardsmodule.NewIBCMiddleware(transferStack, app.RewardsKeeper)
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
 
 	// this line is used by starport scaffolding # ibc/app/router

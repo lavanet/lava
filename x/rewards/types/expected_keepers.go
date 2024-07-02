@@ -61,5 +61,6 @@ type DistributionKeeper interface {
 	GetParams(ctx sdk.Context) (params distributiontypes.Params)
 	GetFeePool(ctx sdk.Context) (feePool distributiontypes.FeePool)
 	SetFeePool(ctx sdk.Context, feePool distributiontypes.FeePool)
+	FundCommunityPool(ctx sdk.Context, amount sdk.Coins, sender sdk.AccAddress) error
 	// Methods imported from bank should be defined here
 }

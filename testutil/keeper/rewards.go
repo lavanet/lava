@@ -94,6 +94,7 @@ func RewardsKeeper(t testing.TB) (*keeper.Keeper, sdk.Context) {
 		authtypes.FeeCollectorName,
 		timerstorekeeper.NewKeeper(cdc),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		nil,
 	)
 
 	// Initialize params
