@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib"
@@ -27,7 +28,7 @@ const (
 	BestResult                  // get the best result, even if it means waiting
 )
 
-func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage, consumerConsistency *ConsumerConsistency, dappID string, consumerIp string) *RelayProcessor {
+func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage, consumerConsistency *ConsumerConsistency, dappID string, consumerIp string, debugRelay bool) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
 	if chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
@@ -48,23 +49,49 @@ func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProvi
 		consumerConsistency:    consumerConsistency,
 		dappID:                 dappID,
 		consumerIp:             consumerIp,
+		debugRelay:             debugRelay,
 	}
 }
 
 type RelayProcessor struct {
-	usedProviders          *lavasession.UsedProviders
-	responses              chan *relayResponse
-	requiredSuccesses      int
-	nodeResponseErrors     RelayErrors
-	protocolResponseErrors RelayErrors
-	successResults         []common.RelayResult
-	lock                   sync.RWMutex
-	chainMessage           chainlib.ChainMessage
-	guid                   uint64
-	selection              Selection
-	consumerConsistency    *ConsumerConsistency
-	dappID                 string
-	consumerIp             string
+	usedProviders           *lavasession.UsedProviders
+	responses               chan *relayResponse
+	requiredSuccesses       int
+	nodeResponseErrors      RelayErrors
+	protocolResponseErrors  RelayErrors
+	successResults          []common.RelayResult
+	lock                    sync.RWMutex
+	chainMessage            chainlib.ChainMessage
+	guid                    uint64
+	selection               Selection
+	consumerConsistency     *ConsumerConsistency
+	dappID                  string
+	consumerIp              string
+	skipDataReliability     bool
+	debugRelay              bool
+	allowSessionDegradation uint32 // used in the scenario where extension was previously used.
+}
+
+// true if we never got an extension. (default value)
+func (rp *RelayProcessor) GetAllowSessionDegradation() bool {
+	return atomic.LoadUint32(&rp.allowSessionDegradation) == 0
+}
+
+// in case we had an extension and managed to get a session successfully, we prevent session degradation.
+func (rp *RelayProcessor) SetDisallowDegradation() {
+	atomic.StoreUint32(&rp.allowSessionDegradation, 1)
+}
+
+func (rp *RelayProcessor) setSkipDataReliability(val bool) {
+	rp.lock.Lock()
+	defer rp.lock.Unlock()
+	rp.skipDataReliability = val
+}
+
+func (rp *RelayProcessor) getSkipDataReliability() bool {
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	return rp.skipDataReliability
 }
 
 func (rp *RelayProcessor) ShouldRetry(numberOfRetriesLaunched int) bool {
@@ -382,6 +409,21 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 	nodeResults := rp.nodeResultsInner()
 	// there are not enough successes, let's check if there are enough node errors
+
+	if rp.debugRelay {
+		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
+		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.requiredSuccesses", rp.requiredSuccesses))
+		utils.LavaFormatDebug("[Processing Debug] number of node results", utils.LogAttr("len(rp.successResults)", len(rp.successResults)), utils.LogAttr("len(rp.nodeResponseErrors.relayErrors)", len(rp.nodeResponseErrors.relayErrors)), utils.LogAttr("len(rp.protocolResponseErrors.relayErrors)", len(rp.protocolResponseErrors.relayErrors)))
+		for idx, result := range rp.successResults {
+			utils.LavaFormatDebug("[Processing Debug] success result", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+		}
+		for idx, result := range rp.nodeResponseErrors.relayErrors {
+			utils.LavaFormatDebug("[Processing Debug] node result", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+		}
+		for idx, result := range rp.protocolResponseErrors.relayErrors {
+			utils.LavaFormatDebug("[Processing Debug] protocol error", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+		}
+	}
 
 	if len(nodeResults) >= rp.requiredSuccesses {
 		if rp.selection == Quorum {

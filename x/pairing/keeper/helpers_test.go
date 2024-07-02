@@ -72,35 +72,42 @@ func (ts *tester) addValidators(count int) {
 
 // addProvider: with default endpoints, geolocation, moniker
 func (ts *tester) addProvider(count int) error {
-	return ts.addProviderExtra(count, nil, 0, "prov") // default: endpoints, geolocation, moniker
+	d := common.MockDescription()
+	return ts.addProviderExtra(count, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details) // default: endpoints, geolocation, moniker
 }
 
 // addProviderGelocation: with geolocation, and default endpoints, moniker
 func (ts *tester) addProviderGeolocation(count int, geolocation int32) error {
-	return ts.addProviderExtra(count, nil, geolocation, "prov")
+	d := common.MockDescription()
+	return ts.addProviderExtra(count, nil, geolocation, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
 }
 
 // addProviderEndpoints: with endpoints, and default geolocation, moniker
 func (ts *tester) addProviderEndpoints(count int, endpoints []epochstoragetypes.Endpoint) error {
-	return ts.addProviderExtra(count, endpoints, 0, "prov")
+	d := common.MockDescription()
+	return ts.addProviderExtra(count, endpoints, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
 }
 
-// addProviderMoniker: with moniker, and default endpoints, geolocation
-func (ts *tester) addProviderMoniker(count int, moniker string) error {
-	return ts.addProviderExtra(count, nil, 0, moniker)
+// addProviderDescription: with description, and default endpoints, geolocation
+func (ts *tester) addProviderDescription(count int, moniker string, identity string, website string, securityContact string, descriptionDetails string) error {
+	return ts.addProviderExtra(count, nil, 0, moniker, identity, website, securityContact, descriptionDetails)
 }
 
-// addProviderExtra: with mock endpoints, and preset geolocation, moniker
+// addProviderExtra: with mock endpoints, and preset geolocation, description details
 func (ts *tester) addProviderExtra(
 	count int,
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
 	moniker string,
+	identity string,
+	website string,
+	securityContact string,
+	descriptionDetails string,
 ) error {
 	start := len(ts.Accounts(common.PROVIDER))
 	for i := 0; i < count; i++ {
-		_, addr := ts.AddAccount(common.PROVIDER, start+i, testBalance)
-		err := ts.StakeProviderExtra(addr, ts.spec, testStake, endpoints, geoloc, moniker)
+		acc, addr := ts.AddAccount(common.PROVIDER, start+i, testBalance)
+		err := ts.StakeProviderExtra(acc.GetVaultAddr(), addr, ts.spec, testStake, endpoints, geoloc, moniker, identity, website, securityContact, descriptionDetails)
 		if err != nil {
 			return err
 		}
@@ -144,7 +151,7 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 func (ts *tester) payAndVerifyBalance(
 	relayPayment pairingtypes.MsgRelayPayment,
 	clientAddr sdk.AccAddress,
-	providerAddr sdk.AccAddress,
+	providerVault sdk.AccAddress,
 	validConsumer bool,
 	validPayment bool,
 	providerRewardPerc uint64,
@@ -228,17 +235,17 @@ func (ts *tester) payAndVerifyBalance(
 		want = credit.MulRaw(int64(providerReward)).QuoRaw(int64(totalCuUsed))
 	}
 
-	balanceWant := ts.GetBalance(providerAddr) + want.Int64()
-	reward, err := ts.QueryDualstakingDelegatorRewards(providerAddr.String(), providerAddr.String(), "")
+	balanceWant := ts.GetBalance(providerVault) + want.Int64()
+	reward, err := ts.QueryDualstakingDelegatorRewards(providerVault.String(), relayPayment.Creator, "")
 	require.Nil(ts.T, err)
 	for _, reward := range reward.Rewards {
 		want = want.Sub(reward.Amount.AmountOf(ts.BondDenom()))
 	}
 	require.True(ts.T, want.IsZero())
-	_, err = ts.TxDualstakingClaimRewards(providerAddr.String(), providerAddr.String())
+	_, err = ts.TxDualstakingClaimRewards(providerVault.String(), relayPayment.Creator)
 	require.Nil(ts.T, err)
 
-	balance := ts.GetBalance(providerAddr) + want.Int64()
+	balance := ts.GetBalance(providerVault) + want.Int64()
 	require.Equal(ts.T, balanceWant, balance)
 }
 

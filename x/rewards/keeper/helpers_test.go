@@ -9,10 +9,12 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	commontypes "github.com/lavanet/lava/common/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
+	commontypes "github.com/lavanet/lava/utils/common/types"
+	"github.com/lavanet/lava/utils/sigs"
 	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/x/projects/types"
 	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -107,15 +109,15 @@ func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
 	ts.specs = append(ts.specs, ts.AddSpec(mockSpec2, spec2).Spec(mockSpec2))
 
 	// add two providers and stake them both on the two specs
-	_, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)
-	_, provider2 := ts.AddAccount(common.PROVIDER, 1, testBalance)
-	err = ts.StakeProvider(provider, ts.specs[0], testStake)
+	pAcc, provider := ts.AddAccount(common.PROVIDER, 0, testBalance)
+	p2Acc, provider2 := ts.AddAccount(common.PROVIDER, 1, testBalance)
+	err = ts.StakeProvider(pAcc.GetVaultAddr(), provider, ts.specs[0], testStake)
 	require.NoError(ts.T, err)
-	err = ts.StakeProvider(provider, ts.specs[1], testStake)
+	err = ts.StakeProvider(pAcc.GetVaultAddr(), provider, ts.specs[1], testStake)
 	require.NoError(ts.T, err)
-	err = ts.StakeProvider(provider2, ts.specs[0], testStake)
+	err = ts.StakeProvider(p2Acc.GetVaultAddr(), provider2, ts.specs[0], testStake)
 	require.NoError(ts.T, err)
-	err = ts.StakeProvider(provider2, ts.specs[1], testStake)
+	err = ts.StakeProvider(p2Acc.GetVaultAddr(), provider2, ts.specs[1], testStake)
 	require.NoError(ts.T, err)
 
 	ts.AdvanceEpoch() // apply pairing
@@ -136,6 +138,53 @@ func (ts *tester) setupForIprpcTests(fundIprpcPool bool) {
 		require.True(ts.T, ts.GetBalances(consumerAcc.Addr).IsEqual(expectedBalanceAfterFund))
 		ts.AdvanceMonths(1).AdvanceEpoch() // fund only fund for next month, so advance a month
 	}
+}
+
+// getConsumersForIprpcSubTest is a helper function specifically for the TestIprpcEligibleSubscriptions unit test
+// this function returns two consumer addresses to test depending on the input mode:
+//
+//	SUB_OWNERS                 = 0
+//	DEVELOPERS_ADMIN_PROJECT   = 1
+//	DEVELOPERS_REGULAR_PROJECT = 2
+//
+// this function assumes that ts.setupForIprpcTests ran before it
+func (ts *tester) getConsumersForIprpcSubTest(mode int) (sigs.Account, sigs.Account) {
+	switch mode {
+	case 0:
+		sub1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
+		sub2Acc, _ := ts.GetAccount(common.CONSUMER, 1)
+		return sub1Acc, sub2Acc
+	case 1:
+		sub1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
+		sub2Acc, _ := ts.GetAccount(common.CONSUMER, 1)
+		adminDev1, _ := ts.AddAccount(common.CONSUMER, 2, testBalance*10000)
+		adminDev2, _ := ts.AddAccount(common.CONSUMER, 3, testBalance*10000)
+		res1, err := ts.QueryProjectDeveloper(sub1Acc.Addr.String())
+		require.NoError(ts.T, err)
+		res2, err := ts.QueryProjectDeveloper(sub2Acc.Addr.String())
+		require.NoError(ts.T, err)
+		err = ts.TxProjectAddKeys(res1.Project.Index, sub1Acc.Addr.String(), types.ProjectDeveloperKey(adminDev1.Addr.String()))
+		require.NoError(ts.T, err)
+		err = ts.TxProjectAddKeys(res2.Project.Index, sub2Acc.Addr.String(), types.ProjectDeveloperKey(adminDev2.Addr.String()))
+		require.NoError(ts.T, err)
+		return adminDev1, adminDev2
+	case 2:
+		sub1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
+		sub2Acc, _ := ts.GetAccount(common.CONSUMER, 1)
+		dev1, _ := ts.AddAccount(common.CONSUMER, 2, testBalance*10000)
+		dev2, _ := ts.AddAccount(common.CONSUMER, 3, testBalance*10000)
+		err := ts.TxSubscriptionAddProject(sub1Acc.Addr.String(), types.ProjectData{
+			Name: "test1", Enabled: true, ProjectKeys: []types.ProjectKey{{Key: dev1.Addr.String(), Kinds: 2}},
+		})
+		require.NoError(ts.T, err)
+		err = ts.TxSubscriptionAddProject(sub2Acc.Addr.String(), types.ProjectData{
+			Name: "test2", Enabled: true, ProjectKeys: []types.ProjectKey{{Key: dev2.Addr.String(), Kinds: 2}},
+		})
+		require.NoError(ts.T, err)
+		return dev1, dev2
+	}
+
+	return sigs.Account{}, sigs.Account{}
 }
 
 // deductParticipationFees calculates the validators and community participation

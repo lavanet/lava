@@ -2,7 +2,6 @@ package chainlib
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -138,7 +139,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
-			utils.LavaFormatInfo("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
+			utils.LavaFormatDebug("getSupportedApi jsonrpc failed", utils.LogAttr("method", msg.Method), utils.LogAttr("error", err))
 			return nil, err
 		}
 
@@ -395,7 +396,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
 			relayResult, err := apil.relaySender.SendRelay(ctx, "", string(msg), "", dappID, websocketConn.RemoteAddr().String(), metricsData, nil)
 			if ok && refererMatch != "" && apil.refererData != nil && err == nil {
-				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), nil, websocketConn)
+				go apil.refererData.SendReferer(refererMatch, chainID, string(msg), websocketConn.RemoteAddr().String(), nil, websocketConn)
 			}
 			reply := relayResult.GetReply()
 			replyServer := relayResult.GetReplyServer()
@@ -476,9 +477,10 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("headers", headers),
 		)
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, headers)
+		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
+		relayResult, err := apil.relaySender.SendRelay(ctx, "", msg, "", dappID, userIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, msg, metadataValues, nil)
+			go apil.refererData.SendReferer(refererMatch, chainID, msg, userIp, metadataValues, nil)
 		}
 		reply := relayResult.GetReply()
 		go apil.logger.AddMetricForHttp(metricsData, err, fiberCtx.GetReqHeaders())
@@ -539,13 +541,11 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			utils.LogAttr("dappID", dappID),
 			utils.LogAttr("headers", headers),
 		)
+		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		refererMatch := fiberCtx.Params(refererMatchString, "")
-		if refererMatch != "" && apil.refererData != nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, path, metadataValues, nil)
-		}
-		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP()), metricsData, headers)
+		relayResult, err := apil.relaySender.SendRelay(ctx, path+query, "", "", dappID, userIp, metricsData, headers)
 		if refererMatch != "" && apil.refererData != nil && err == nil {
-			go apil.refererData.SendReferer(refererMatch, chainID, path, metadataValues, nil)
+			go apil.refererData.SendReferer(refererMatch, chainID, path, userIp, metadataValues, nil)
 		}
 		msgSeed := strconv.FormatUint(guid, 10)
 		reply := relayResult.GetReply()
@@ -676,6 +676,9 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	}
 	httpClient := cp.httpClient
 
+	// appending hashed url
+	grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.httpConnector.GetUrlHash()))
+
 	// construct the url by concatenating the node url with the path variable
 	url := cp.httpNodeUrl.Url + "/" + nodeMessage.Path
 
@@ -708,8 +711,7 @@ func (cp *tendermintRpcChainProxy) SendURI(ctx context.Context, nodeMessage *rpc
 	res, err := httpClient.Do(req)
 	if res != nil {
 		// resp can be non nil on error
-		trailer := metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))
-		grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
+		grpc.SetTrailer(ctx, metadata.Pairs(common.StatusCodeMetadataKey, strconv.Itoa(res.StatusCode))) // we ignore this error here since this code can be triggered not from grpc
 	}
 	if err != nil {
 		return nil, "", nil, err
@@ -759,6 +761,8 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		}
 		// return the rpc connection to the websocket pool after the function completes
 		defer cp.conn[internalPath].ReturnRpc(rpc)
+		// appending hashed url
+		grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.conn[internalPath].GetUrlHash()))
 	} else {
 		rpc, err = cp.httpConnector.GetRpc(ctx, true)
 		if err != nil {
@@ -766,6 +770,8 @@ func (cp *tendermintRpcChainProxy) SendRPC(ctx context.Context, nodeMessage *rpc
 		}
 		// return the rpc connection to the http pool after the function completes
 		defer cp.httpConnector.ReturnRpc(rpc)
+		// appending hashed url
+		grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeAddressHash, cp.httpConnector.GetUrlHash()))
 	}
 
 	// create variables for the rpc message and reply message

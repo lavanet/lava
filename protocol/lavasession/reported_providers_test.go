@@ -9,12 +9,12 @@ import (
 )
 
 func TestReportedProvider(t *testing.T) {
-	reportedProviders := NewReportedProviders(nil)
+	reportedProviders := NewReportedProviders(nil, "testId")
 	providers := []string{"p1", "p2", "p3"}
-	reportedProviders.ReportProvider(providers[0], 0, 0, nil)
+	reportedProviders.ReportProvider(providers[0], 0, 0, nil, []error{})
 	require.True(t, reportedProviders.IsReported(providers[0]))
 	require.False(t, reportedProviders.IsReported(providers[1]))
-	reportedProviders.ReportProvider(providers[2], 0, 0, nil)
+	reportedProviders.ReportProvider(providers[2], 0, 0, nil, []error{})
 	require.True(t, reportedProviders.IsReported(providers[0]))
 	require.True(t, reportedProviders.IsReported(providers[2]))
 	require.False(t, reportedProviders.IsReported(providers[1]))
@@ -31,13 +31,13 @@ func TestReportedProvider(t *testing.T) {
 }
 
 func TestReportedErrors(t *testing.T) {
-	reportedProviders := NewReportedProviders(nil)
+	reportedProviders := NewReportedProviders(nil, "testId")
 	providers := []string{"p1", "p2", "p3"}
-	reportedProviders.ReportProvider(providers[0], 5, 0, nil)
+	reportedProviders.ReportProvider(providers[0], 5, 0, nil, []error{})
 	require.True(t, reportedProviders.IsReported(providers[0]))
 	require.False(t, reportedProviders.IsReported(providers[1]))
-	reportedProviders.ReportProvider(providers[2], 5, 0, nil)
-	reportedProviders.ReportProvider(providers[0], 5, 0, nil)
+	reportedProviders.ReportProvider(providers[2], 5, 0, nil, []error{})
+	reportedProviders.ReportProvider(providers[0], 5, 0, nil, []error{})
 	require.True(t, reportedProviders.IsReported(providers[0]))
 	require.True(t, reportedProviders.IsReported(providers[2]))
 	require.False(t, reportedProviders.IsReported(providers[1]))
@@ -63,15 +63,15 @@ func TestReportedReconnect(t *testing.T) {
 		reconnectAttempt++
 		return fmt.Errorf("nope")
 	}
-	reportedProviders := NewReportedProviders(nil)
+	reportedProviders := NewReportedProviders(nil, "testId")
 	providers := []string{"p1", "p2", "p3", "p4"}
-	reportedProviders.ReportProvider(providers[0], 0, 5, reconnected)
+	reportedProviders.ReportProvider(providers[0], 0, 5, reconnected, []error{})
 	require.True(t, reportedProviders.IsReported(providers[0]))
 	require.False(t, reportedProviders.IsReported(providers[1]))
-	reportedProviders.ReportProvider(providers[0], 1, 0, nil)
-	reportedProviders.ReportProvider(providers[1], 0, 5, reconnected)
-	reportedProviders.ReportProvider(providers[2], 5, 0, reconnected)
-	reportedProviders.ReportProvider(providers[3], 0, 5, reconnectFail)
+	reportedProviders.ReportProvider(providers[0], 1, 0, nil, []error{})
+	reportedProviders.ReportProvider(providers[1], 0, 5, reconnected, []error{})
+	reportedProviders.ReportProvider(providers[2], 5, 0, reconnected, []error{})
+	reportedProviders.ReportProvider(providers[3], 0, 5, reconnectFail, []error{})
 	require.True(t, reportedProviders.IsReported(providers[0]))
 	require.True(t, reportedProviders.IsReported(providers[1]))
 	require.True(t, reportedProviders.IsReported(providers[2]))

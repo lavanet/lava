@@ -6,6 +6,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -18,7 +19,7 @@ const (
 	CHANGE_WINDOW   = time.Hour * 24
 )
 
-func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, moniker string, delegationLimit sdk.Coin, delegationCommission uint64) error {
+func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, delegationLimit sdk.Coin, delegationCommission uint64, provider string, description stakingtypes.Description) error {
 	logger := k.Logger(ctx)
 	specChainID := chainID
 
@@ -68,7 +69,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		return utils.LavaFormatWarning("stake provider failed", fmt.Errorf("number of endpoint for geolocation exceeded limit"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("chain_id", chainID),
-			utils.LogAttr("moniker", moniker),
+			utils.LogAttr("description", description.String()),
 			utils.LogAttr("geolocation", geolocation),
 			utils.LogAttr("max_endpoints_allowed", types.MAX_ENDPOINTS_AMOUNT_PER_GEO),
 		)
@@ -77,32 +78,63 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	// new staking takes effect from the next block
 	stakeAppliedBlock := uint64(ctx.BlockHeight()) + 1
 
-	if len(moniker) > 50 {
-		moniker = moniker[:50]
-	}
-
 	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, creator)
 	if entryExists {
-		// modify the entry
-		if existingEntry.Address != creator {
-			return utils.LavaFormatWarning("returned stake entry by address doesn't match sender address", fmt.Errorf("sender and stake entry address mismatch"),
-				utils.Attribute{Key: "spec", Value: specChainID},
-				utils.Attribute{Key: "provider", Value: senderAddr.String()},
-			)
+		// modify the entry (check who's modifying - vault/provider)
+		isProvider := false
+		isVault := false
+		if creator == existingEntry.Address {
+			isProvider = true
 		}
+		if creator == existingEntry.Vault {
+			isVault = true
+		}
+
+		if !isVault {
+			// verify that the provider only tries to change non-stake related traits of the stake entry
+			// a provider can be the same as the vault, so we verify it's not the case
+			if isProvider {
+				if delegationCommission != existingEntry.DelegateCommission ||
+					!delegationLimit.Equal(existingEntry.DelegateLimit) ||
+					!amount.Equal(existingEntry.Stake) {
+					return utils.LavaFormatWarning("only vault address can change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
+						utils.LogAttr("creator", creator),
+						utils.LogAttr("vault", existingEntry.Vault),
+						utils.LogAttr("provider", provider),
+						utils.LogAttr("description", description.String()),
+						utils.LogAttr("current_delegation_limit", existingEntry.DelegateLimit),
+						utils.LogAttr("req_delegation_limit", delegationLimit),
+						utils.LogAttr("current_delegation_commission", existingEntry.DelegateCommission),
+						utils.LogAttr("req_delegation_commission", delegationCommission),
+						utils.LogAttr("current_stake", existingEntry.Stake.String()),
+						utils.LogAttr("req_stake", amount.String()),
+					)
+				}
+			} else {
+				return utils.LavaFormatWarning("stake entry modification request was not created by provider/vault", fmt.Errorf("invalid creator address"),
+					utils.LogAttr("spec", specChainID),
+					utils.LogAttr("creator", creator),
+					utils.LogAttr("provider", existingEntry.Address),
+					utils.LogAttr("vault", existingEntry.Vault),
+					utils.LogAttr("description", description.String()),
+				)
+			}
+		}
+
 		details := []utils.Attribute{
 			{Key: "spec", Value: specChainID},
 			{Key: "provider", Value: senderAddr.String()},
 			{Key: "stakeAppliedBlock", Value: stakeAppliedBlock},
 			{Key: "stake", Value: amount},
+			utils.LogAttr("description", description.String()),
 		}
-		details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
+		details = append(details, utils.Attribute{Key: "moniker", Value: description.Moniker})
 
 		// if the provider has no delegations then we dont limit the changes
 		if !existingEntry.DelegateTotal.IsZero() {
 			// if there was a change in the last 24h than we dont allow changes
 			if ctx.BlockTime().UTC().Unix()-int64(existingEntry.LastChange) < int64(CHANGE_WINDOW.Seconds()) {
-				if delegationCommission != existingEntry.DelegateCommission || existingEntry.DelegateLimit != delegationLimit {
+				if delegationCommission != existingEntry.DelegateCommission || !existingEntry.DelegateLimit.IsEqual(delegationLimit) {
 					return utils.LavaFormatWarning(fmt.Sprintf("stake entry commmision or delegate limit can only be changes once in %s", CHANGE_WINDOW), nil,
 						utils.LogAttr("last_change_time", existingEntry.LastChange))
 				}
@@ -129,7 +161,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
 		existingEntry.Geolocation = geolocation
 		existingEntry.Endpoints = endpointsVerified
-		existingEntry.Moniker = moniker
+		existingEntry.Description = description
 		existingEntry.DelegateCommission = delegationCommission
 		existingEntry.DelegateLimit = delegationLimit
 		existingEntry.LastChange = uint64(ctx.BlockTime().UTC().Unix())
@@ -139,7 +171,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		if amount.Amount.GT(existingEntry.Stake.Amount) {
 			// delegate the difference
 			diffAmount := amount.Sub(existingEntry.Stake)
-			err = k.dualstakingKeeper.DelegateFull(ctx, senderAddr.String(), validator, senderAddr.String(), chainID, diffAmount)
+			err = k.dualstakingKeeper.DelegateFull(ctx, existingEntry.Vault, validator, existingEntry.Address, chainID, diffAmount)
 			if err != nil {
 				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
 				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
@@ -149,7 +181,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		} else if amount.Amount.LT(existingEntry.Stake.Amount) {
 			// unbond the difference
 			diffAmount := existingEntry.Stake.Sub(amount)
-			err = k.dualstakingKeeper.UnbondFull(ctx, senderAddr.String(), validator, senderAddr.String(), chainID, diffAmount, false)
+			err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, chainID, diffAmount, false)
 			if err != nil {
 				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
 				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
@@ -165,8 +197,20 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		for _, val := range details {
 			detailsMap[val.Key] = fmt.Sprint(val.Value)
 		}
-		utils.LogLavaEvent(ctx, logger, types.ProviderStakeUpdateEventName, detailsMap, "Changing Stake")
+		utils.LogLavaEvent(ctx, logger, types.ProviderStakeUpdateEventName, detailsMap, "Changing Stake Entry")
 		return nil
+	}
+
+	// check that the configured provider is not used by another vault (when the provider and creator (vault) addresses are not equal)
+	if provider != creator {
+		providerStakeEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+		if entryExists {
+			return utils.LavaFormatWarning("configured provider exists", fmt.Errorf("new provider not staked"),
+				utils.LogAttr("provider", provider),
+				utils.LogAttr("chain_id", chainID),
+				utils.LogAttr("existing_vault", providerStakeEntry.Vault),
+			)
+		}
 	}
 
 	// entry isn't staked so add him
@@ -188,17 +232,17 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
-	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, senderAddr.String(), nextEpoch)
+	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, provider, nextEpoch)
 	if err != nil {
 		utils.LavaFormatWarning("cannot get provider's delegators", err,
-			utils.LogAttr("provider", senderAddr.String()),
+			utils.LogAttr("provider", provider),
 			utils.LogAttr("block", nextEpoch),
 		)
 	}
 
 	for _, d := range delegations {
-		if d.Delegator == senderAddr.String() {
-			// ignore provider self delegation
+		if (d.Delegator == creator && d.Provider == provider) || d.ChainID != chainID {
+			// ignore provider self delegation (delegator = vault, provider = provider) or delegations from other chains
 			continue
 		}
 		delegateTotal = delegateTotal.Add(d.Amount.Amount)
@@ -206,29 +250,29 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	stakeEntry := epochstoragetypes.StakeEntry{
 		Stake:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
-		Address:            creator,
+		Address:            provider,
 		StakeAppliedBlock:  stakeAppliedBlock,
 		Endpoints:          endpointsVerified,
 		Geolocation:        geolocation,
 		Chain:              chainID,
-		Moniker:            moniker,
+		Description:        description,
 		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
 		DelegateLimit:      delegationLimit,
 		DelegateCommission: delegationCommission,
+		Vault:              creator, // the stake-provider TX creator is always regarded as the vault address
 		LastChange:         uint64(ctx.BlockTime().UTC().Unix()),
 	}
 
 	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
 
-	err = k.dualstakingKeeper.DelegateFull(ctx, senderAddr.String(), validator, senderAddr.String(), chainID, amount)
+	err = k.dualstakingKeeper.DelegateFull(ctx, stakeEntry.Vault, validator, stakeEntry.Address, chainID, amount)
 	if err != nil {
 		return utils.LavaFormatWarning("provider self delegation failed", err,
 			details...,
 		)
 	}
 
-	details = append(details, utils.Attribute{Key: "moniker", Value: moniker})
-
+	details = append(details, utils.Attribute{Key: "moniker", Value: description.Moniker})
 	detailsMap := map[string]string{}
 	for _, atr := range details {
 		detailsMap[atr.Key] = fmt.Sprint(atr.Value)

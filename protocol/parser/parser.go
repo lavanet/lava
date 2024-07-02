@@ -3,10 +3,11 @@ package parser
 import (
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/goccy/go-json"
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/utils"
@@ -278,28 +279,28 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
 	}
 
-	switch unmarshaledDataTyped := unmarshalledData.(type) {
+	switch unmarshalledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
 		inp := input[0]
 		param_index, err := strconv.ParseUint(inp, 10, 32)
 		if err != nil {
 			return nil, fmt.Errorf("invalid input format, input isn't an unsigned index: %s, error: %s", inp, err)
 		}
-		if uint64(len(unmarshaledDataTyped)) <= param_index {
+		if uint64(len(unmarshalledDataTyped)) <= param_index {
 			return nil, ValueNotSetError
 		}
-		blockContainer := unmarshaledDataTyped[param_index]
+		blockContainer := unmarshalledDataTyped[param_index]
 		for _, key := range input[1:] {
 			// type assertion for blockcontainer
 			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is not map[string]interface{}", ValueNotSetError, utils.LogAttr("method", rpcInput.GetMethod()), utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)), utils.LogAttr("key", key), utils.LogAttr("unmarshaledDataTyped", unmarshaledDataTyped))
+				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is not map[string]interface{}", ValueNotSetError, utils.LogAttr("method", rpcInput.GetMethod()), utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)), utils.LogAttr("key", key), utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped))
 			}
 
 			// assertion for key
 			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
 				blockContainer = container
 			} else {
-				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError, utils.LogAttr("method", rpcInput.GetMethod()), utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)), utils.LogAttr("key", key), utils.LogAttr("unmarshaledDataTyped", unmarshaledDataTyped))
+				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError, utils.LogAttr("method", rpcInput.GetMethod()), utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)), utils.LogAttr("key", key), utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped))
 			}
 		}
 		retArr := make([]interface{}, 0)
@@ -315,7 +316,7 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 			relevantInput = input
 		}
 		for idx, key := range relevantInput {
-			if val, ok := unmarshaledDataTyped[key]; ok {
+			if val, ok := unmarshalledDataTyped[key]; ok {
 				if idx == (len(relevantInput) - 1) {
 					retArr := make([]interface{}, 0)
 					retArr = append(retArr, blockInterfaceToString(val))
@@ -324,7 +325,7 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 				// if we didn't get to the last element continue deeper by changing unmarshaledDataTyped
 				switch v := val.(type) {
 				case map[string]interface{}:
-					unmarshaledDataTyped = v
+					unmarshalledDataTyped = v
 				default:
 					return nil, fmt.Errorf("failed to parse, %s is not of type map[string]interface{} \nmore information: %s", v, unmarshalledData)
 				}
@@ -332,9 +333,11 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 				return nil, ValueNotSetError
 			}
 		}
+	case string:
+		return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(unmarshalledDataTyped))
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
-		return nil, fmt.Errorf("not Supported ParseCanonical with other types %s", unmarshaledDataTyped)
+		return nil, fmt.Errorf("not Supported ParseCanonical with other types %s", unmarshalledDataTyped)
 	}
 	return nil, fmt.Errorf("should not get here, parsing failed %s", unmarshalledData)
 }
@@ -377,6 +380,8 @@ func parseDictionary(rpcInput RPCInput, input []string, dataSource int) ([]inter
 
 		// Else return an error
 		return nil, ValueNotSetError
+	case string:
+		return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(unmarshalledDataTyped))
 	default:
 		return nil, fmt.Errorf("not Supported ParseDictionary with other types: %T", unmarshalledData)
 	}
@@ -438,6 +443,8 @@ func parseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 
 		// Else return not set error
 		return nil, utils.LavaFormatWarning("Failed parsing parseDictionaryOrOrdered", ValueNotSetError, utils.LogAttr("propName", propName), utils.LogAttr("inp", inp), utils.LogAttr("unmarshalledDataTyped", unmarshalledDataTyped), utils.LogAttr("method", rpcInput.GetMethod()))
+	case string:
+		return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(unmarshalledDataTyped))
 	default:
 		return nil, fmt.Errorf("not Supported ParseDictionary with other types: %T", unmarshalledData)
 	}

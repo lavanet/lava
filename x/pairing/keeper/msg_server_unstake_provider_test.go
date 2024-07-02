@@ -16,9 +16,9 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	ts.AddSpec("mock", ts.spec)
 
 	balance := 5 * ts.spec.MinStakeProvider.Amount.Int64()
-	_, provider := ts.AddAccount(common.PROVIDER, 0, balance)
+	providerAcct, provider := ts.AddAccount(common.PROVIDER, 0, balance)
 
-	err := ts.StakeProvider(provider, ts.spec, balance/2)
+	err := ts.StakeProvider(providerAcct.GetVaultAddr(), provider, ts.spec, balance/2)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch()
@@ -26,7 +26,7 @@ func TestUnstakeStaticProvider(t *testing.T) {
 	unstakeHoldBlocks := ts.Keepers.Epochstorage.UnstakeHoldBlocks(ts.Ctx, ts.BlockHeight())
 	unstakeHoldBlocksStatic := ts.Keepers.Epochstorage.UnstakeHoldBlocksStatic(ts.Ctx, ts.BlockHeight())
 
-	_, err = ts.TxPairingUnstakeProvider(provider, ts.spec.Index)
+	_, err = ts.TxPairingUnstakeProvider(providerAcct.GetVaultAddr(), ts.spec.Index)
 	require.NoError(t, err)
 
 	ts.AdvanceBlocks(unstakeHoldBlocks)
@@ -38,4 +38,37 @@ func TestUnstakeStaticProvider(t *testing.T) {
 
 	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
 	require.False(t, found)
+}
+
+// TestVaultProviderUnstake tests that only the vault address can unstake.
+// Scenarios:
+// 1. unstake with vault -> should work
+// 2. try with provider -> should fail
+func TestVaultProviderUnstake(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(1, 0, 0)
+
+	acc, _ := ts.GetAccount(common.PROVIDER, 0)
+	provider := acc.Addr.String()
+	vault := acc.GetVaultAddr()
+
+	tests := []struct {
+		name    string
+		creator string
+		valid   bool
+	}{
+		{"provider unstakes", provider, false},
+		{"vault unstakes", vault, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ts.TxPairingUnstakeProvider(tt.creator, ts.spec.Index)
+			if tt.valid {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
 }

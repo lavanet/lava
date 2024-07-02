@@ -8,8 +8,11 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"math/big"
+	"net"
+	"strings"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	"golang.org/x/exp/slices"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,14 +24,16 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/encoding/gzip"
 )
 
 const (
 	MaxConsecutiveConnectionAttempts                 = 5
 	TimeoutForEstablishingAConnection                = 1500 * time.Millisecond // 1.5 seconds
 	MaxSessionsAllowedPerProvider                    = 1000                    // Max number of sessions allowed per provider
-	MaxAllowedBlockListedSessionPerProvider          = 3
-	MaximumNumberOfFailuresAllowedPerConsumerSession = 3
+	MaxAllowedBlockListedSessionPerProvider          = MaxSessionsAllowedPerProvider / 3
+	MaximumNumberOfFailuresAllowedPerConsumerSession = 15
 	RelayNumberIncrement                             = 1
 	DataReliabilitySessionId                         = 0 // data reliability session id is 0. we can change to more sessions later if needed.
 	DataReliabilityRelayNumber                       = 1
@@ -40,6 +45,7 @@ const (
 	BACKOFF_TIME_ON_FAILURE                          = 3 * time.Second
 	BLOCKING_PROBE_SLEEP_TIME                        = 1000 * time.Millisecond // maximum amount of time to sleep before triggering probe, to scatter probes uniformly across chains
 	BLOCKING_PROBE_TIMEOUT                           = time.Minute             // maximum time to wait for probe to complete before updating pairing
+	unixPrefix                                       = "unix:"
 )
 
 var AvailabilityPercentage sdk.Dec = sdk.NewDecWithPrec(1, 1) // TODO move to params pairing
@@ -55,16 +61,48 @@ const (
 
 func IsSessionSyncLoss(err error) bool {
 	code := status.Code(err)
-	return code == codes.Code(SessionOutOfSyncError.ABCICode())
+	return code == codes.Code(SessionOutOfSyncError.ABCICode()) || sdkerrors.IsOf(err, SessionOutOfSyncError)
 }
 
-func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool) (*grpc.ClientConn, error) {
-	var tlsConf tls.Config
-	if allowInsecure {
-		tlsConf.InsecureSkipVerify = true // this will allow us to use self signed certificates in development.
+func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, skipTLS bool, allowCompression bool) (*grpc.ClientConn, error) {
+	var opts []grpc.DialOption
+
+	if skipTLS {
+		// Skip TLS encryption completely
+		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	} else {
+		// Use TLS with optional server verification
+		var tlsConf tls.Config
+		if allowInsecure {
+			tlsConf.InsecureSkipVerify = true // Allows self-signed certificates
+		}
+		credentials := credentials.NewTLS(&tlsConf)
+		opts = append(opts, grpc.WithTransportCredentials(credentials))
 	}
-	credentials := credentials.NewTLS(&tlsConf)
-	conn, err := grpc.DialContext(ctx, address, grpc.WithBlock(), grpc.WithTransportCredentials(credentials), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
+
+	opts = append(opts, grpc.WithBlock(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(chainproxy.MaxCallRecvMsgSize)))
+
+	if strings.HasPrefix(address, unixPrefix) {
+		// Unix socket
+		socketPath := strings.TrimPrefix(address, unixPrefix)
+		opts = append(opts, grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return net.Dial("unix", socketPath)
+		}))
+	} else {
+		// TCP socket
+		opts = append(opts, grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return net.Dial("tcp", addr)
+		}))
+	}
+
+	// allow gzip compression for grpc.
+	if allowCompression {
+		opts = append(opts, grpc.WithDefaultCallOptions(
+			grpc.UseCompressor(gzip.Name), // Use gzip compression for provider consumer communication
+		))
+	}
+
+	conn, err := grpc.DialContext(ctx, address, opts...)
 	return conn, err
 }
 

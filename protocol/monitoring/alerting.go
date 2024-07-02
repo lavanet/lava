@@ -2,12 +2,13 @@ package monitoring
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/utils"

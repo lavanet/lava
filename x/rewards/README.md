@@ -39,7 +39,7 @@ The rewards module is responsible on distributing rewards for validators that cr
 
 To manage the rewards, the module uses two rewards pools: allocation pools and distribution pools. Note that there are two allocation pools and two distribution pools to manage the validators and providers rewards independently.
 
-The allocation pools get some of the treasury account's tokens and hold onto it. Once a month, the allocation pools transfer a fixed amount of funds to the distribution pools. This monthly transfer will last for 4 years, after which the alocation pools' funds will be depleted (the allocation pools lifetime (4 years) is a pre-defined constant in the module's code). Note that before the allocation pools transfer the funds, the distribution pools' tokens are burned according to the `LeftOverBurnRate` parameter (see [below](#leftoverburnrate)).
+The allocation pools get some of the treasury account's tokens and hold onto it. Once a month, the allocation pools transfer a fixed amount of funds to the distribution pools. This monthly transfer will last for 4 years, after which the allocation pools' funds will be depleted (the allocation pools lifetime (4 years) is a pre-defined constant in the module's code). Note that before the allocation pools transfer the funds, the distribution pools' tokens are burned according to the `LeftOverBurnRate` parameter (see [below](#leftoverburnrate)).
 
 The distribution pools use the monthly quota of funds to distribute rewards for validators and providers.
 
@@ -82,7 +82,7 @@ Where:
 * SpecStake = Total effective stake of providers in this spec.
 * SpecShares = Weight factor for the spec (determined in each spec)
 
-The total spec payout is distributed between providers proportional to the rewards they collected from subscriptions throughtout the month. Each provider will get bonus rewards according to the following formula:
+The total spec payout is distributed between providers proportional to the rewards they collected from subscriptions throughout the month. Each provider will get bonus rewards according to the following formula:
 
 ```math
 Provider Bonus Rewards = Total Spec Payout \cdot \frac{\sum_{\text{payment} \; i} (\text{{provider base rewards}}_{i,j} \times \text{{adjustment}}_{i,j})}{\sum_{\text{provider}\;j'}\sum_{\text{payment} \; i}  (\text{{provider base rewards}}_{i,j'}  )}
@@ -188,6 +188,8 @@ The rewards module supports the following queries:
 | `show-iprpc-data`   | none            | shows the IPRPC data that includes the minimum IPRPC cost and a list of IPRPC eligible subscriptions                 |
 | `iprpc-provider-reward`   | provider (string)            | shows the estimated IPRPC rewards for a specific provider (relative to its serviced CU) for the upcoming monthly emission                 |
 | `iprpc-spec-rewards`   | spec (string, optional)            | shows a specific spec's IPRPC rewards (for the entire period). If no spec is given, all IPRPC rewards are shown                 |
+
+Note, use the provider's address for the `iprpc-provider-reward` query. For more information on the provider's two addresses (regular and vault) see the epochstorage module's [README.md](../epochstorage/README.md).
 
 ## Transactions
 

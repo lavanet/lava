@@ -56,6 +56,7 @@ func (cs *EmergencyTracker) UpdateEpoch(epoch uint64) {
 	cs.lock.Lock()
 	defer cs.lock.Unlock()
 
+	// checking if we already parsed that epoch.
 	if epoch <= cs.latestEpoch {
 		return
 	}

@@ -115,6 +115,8 @@ The Dualstaking module supports the following queries:
 | `provider-delegators` | provider address           | shows  all the providers delegators              |
 | `delegator-rewards`       | delegator address           | shows all the claimable rewards of the delegator                             |
 
+Note, use the provider's address for the `provider-delegators` query, and the provider's vault address for the `delegator-rewards` query. For more information on the provider's two addresses see the epochstorage module's [README.md](../epochstorage/README.md).
+
 ## Transactions
 
 The Dualstaking module supports the following transactions:
