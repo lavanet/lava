@@ -52,7 +52,7 @@ func ValidateString(s string, restrictType charRestrictionEnum, disallowedChars 
 		return false
 	}
 
-	if restrictType == DESCRIPTION_RESTRICTIONS && (len(s) == 0 || len(s) > MAX_LEN_DESCRIPTION) {
+	if restrictType == DESCRIPTION_RESTRICTIONS && len(s) > MAX_LEN_DESCRIPTION {
 		return false
 	}
 

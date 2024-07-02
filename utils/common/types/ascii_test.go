@@ -30,9 +30,9 @@ func TestStringValidation(t *testing.T) {
 		{"valid_desc_with_underscore", "hel_lo", DESCRIPTION_RESTRICTIONS, nil, true},
 		{"valid_desc_with_digit", "hel2lo", DESCRIPTION_RESTRICTIONS, nil, true},
 		{"valid_desc_not_lowercase", "hEllo", DESCRIPTION_RESTRICTIONS, nil, true},
+		{"valid_empty_desc", "", DESCRIPTION_RESTRICTIONS, nil, true},
 		{"invalid_desc_not_ascii", "heあllo", DESCRIPTION_RESTRICTIONS, nil, false},
 		{"invalid_desc_with_disallowed_char", "heallo", DESCRIPTION_RESTRICTIONS, []rune{'a'}, false},
-		{"invalid_empty_desc", "", DESCRIPTION_RESTRICTIONS, nil, false},
 
 		// index restrictions tests
 		{"valid_index", "hello", INDEX_RESTRICTIONS, nil, true},
