@@ -237,12 +237,15 @@ yarn
 yarn build
 ```
 
-### Codegen
+### Generate the lavajs code
 
-Contract schemas live in `./contracts`, and protos in `./proto`. Look inside of `scripts/codegen.js` and configure the settings for bundling your SDK and contracts into `lava`:
+make sure to run 'go mod tidy' from the lava repo before trying to run this file
+
+from lava root directory 
 
 ```
-yarn codegen
+cd ecosystem/lavajs
+yarn build_lava_js
 ```
 
 ### Publishing

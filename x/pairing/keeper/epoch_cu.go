@@ -158,6 +158,12 @@ func (k Keeper) GetProviderEpochComplainerCu(ctx sdk.Context, epoch uint64, prov
 	return val, true
 }
 
+// RemoveProviderEpochComplainerCu deletes a ProviderEpochComplainerCu in the store
+func (k Keeper) RemoveProviderEpochComplainerCu(ctx sdk.Context, epoch uint64, provider string, chainID string) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochComplainerCuKeyPrefix())
+	store.Delete(types.ProviderEpochCuKey(epoch, provider, chainID))
+}
+
 // RemoveProviderEpochComplainerCu removes a ProviderEpochCu from the store
 func (k Keeper) RemoveAllProviderEpochComplainerCu(ctx sdk.Context, epoch uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochComplainerCuKeyPrefix())

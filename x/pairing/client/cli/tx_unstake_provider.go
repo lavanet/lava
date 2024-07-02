@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"strconv"
 	"strings"
 
@@ -8,7 +9,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	"github.com/lavanet/lava/utils"
 	dualstakingclient "github.com/lavanet/lava/x/dualstaking/client/cli"
+	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	"github.com/spf13/cobra"
 )
@@ -54,6 +58,14 @@ func CmdUnstakeProvider() *cobra.Command {
 					return err
 				}
 				msgs = append(msgs, msg)
+
+				revokeGrantFeeMsg, err := CreateRevokeFeeGrantMsg(clientCtx, chainID)
+				if err != nil {
+					return err
+				}
+				if revokeGrantFeeMsg != nil {
+					msgs = append(msgs, revokeGrantFeeMsg)
+				}
 			}
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msgs...)
@@ -63,4 +75,76 @@ func CmdUnstakeProvider() *cobra.Command {
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
+}
+
+// CreateRevokeFeeGrantMsg constructs a feegrant RevokeAllowance msg to revoke the feegrant of the provider when the vault account unstakes
+func CreateRevokeFeeGrantMsg(clientCtx client.Context, chainID string) (*feegrant.MsgRevokeAllowance, error) {
+	ctx := context.Background()
+	vault := clientCtx.GetFromAddress().String()
+
+	// find stake entry to get provider
+	pairingQuerier := types.NewQueryClient(clientCtx)
+	response, err := pairingQuerier.Providers(ctx, &types.QueryProvidersRequest{
+		ChainID:    chainID,
+		ShowFrozen: true,
+	})
+	if err != nil {
+		return nil, utils.LavaFormatError("failed revoking feegrant for gas fees. cannot get providers for chain", err,
+			utils.LogAttr("chain_id", chainID),
+		)
+	}
+	if len(response.StakeEntry) == 0 {
+		return nil, utils.LavaFormatError("failed revoking feegrant for gas fees. provider isn't staked on chainID, no providers at all", nil,
+			utils.LogAttr("chain_id", chainID),
+		)
+	}
+	var providerEntry *epochstoragetypes.StakeEntry
+	for idx, provider := range response.StakeEntry {
+		if provider.Vault == vault {
+			providerEntry = &response.StakeEntry[idx]
+			break
+		}
+	}
+	if providerEntry == nil {
+		return nil, utils.LavaFormatError("failed revoking feegrant for gas fees. provider isn't staked on chainID, no address match", nil,
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("vault", vault),
+		)
+	}
+
+	// construct revoke grant msg
+	if vault == providerEntry.Address {
+		// when vault = provider there is no grant, do nothing
+		return nil, nil //nolint
+	}
+	granterAcc, err := sdk.AccAddressFromBech32(vault)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed revoking feegrant for gas fees for granter", err,
+			utils.LogAttr("granter", vault),
+		)
+	}
+
+	granteeAcc, err := sdk.AccAddressFromBech32(providerEntry.Address)
+	if err != nil {
+		return nil, utils.LavaFormatError("failed revoking feegrant for gas fees for grantee", err,
+			utils.LogAttr("grantee", providerEntry.Address),
+		)
+	}
+
+	feegrantQuerier := feegrant.NewQueryClient(clientCtx)
+	res, err := feegrantQuerier.Allowance(ctx, &feegrant.QueryAllowanceRequest{Granter: vault, Grantee: providerEntry.Address})
+	if err != nil {
+		return nil, utils.LavaFormatError("failed querying feegrant for gas fees for granter", err,
+			utils.LogAttr("granter", vault),
+		)
+	}
+
+	if res.Allowance == nil {
+		// no allowance found, do nothing
+		return nil, nil //nolint
+	}
+
+	msg := feegrant.NewMsgRevokeAllowance(granterAcc, granteeAcc)
+
+	return &msg, nil
 }

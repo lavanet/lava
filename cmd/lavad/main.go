@@ -51,9 +51,8 @@ func main() {
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
 
 	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
-		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
-		flags.FlagKeyringBackend: "test",
-		flags.FlagGasAdjustment:  statetracker.DefaultGasAdjustment,
+		flags.FlagChainID:       strings.ReplaceAll(app.Name, "-", ""),
+		flags.FlagGasAdjustment: statetracker.DefaultGasAdjustment,
 	})
 
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
