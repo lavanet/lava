@@ -1,11 +1,11 @@
 {
     "proposal": {
-        "title": "Add Specs: EYLS",
-        "description": "Adding new specification support for relaying eyls data on Lava",
+        "title": "Add Specs: ELYS",
+        "description": "Adding new specification support for relaying elys data on Lava",
         "specs": [
             {
-                "index": "EYLS",
-                "name": "eyls testnet",
+                "index": "ELYS",
+                "name": "elys testnet",
                 "enabled": true,
                 "imports": [
                     "COSMOSSDKFULL"
@@ -1381,6 +1381,10 @@
                                 "values": [
                                     {
                                         "latest_distance": 19200
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "1"
                                     }
                                 ]
                             }
@@ -2898,6 +2902,10 @@
                                 "values": [
                                     {
                                         "latest_distance": 19200
+                                    },
+                                    {
+                                        "extension": "archive",
+                                        "expected_value": "1"
                                     }
                                 ]
                             }
