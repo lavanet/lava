@@ -121,7 +121,7 @@ func runSDKE2E(timeout time.Duration) {
 
 	utils.LavaFormatInfo("RUNNING TESTS")
 
-	userWallet := "user2"
+	userWallet := "user1"
 
 	// Start Badge server
 	lt.startBadgeServer(ctx, userWallet, "7070", badgeserverConfigFolder+"1")
