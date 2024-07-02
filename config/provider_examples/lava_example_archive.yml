@@ -17,7 +17,7 @@ endpoints:
         - url: 127.0.0.1:9090
         - url: 127.0.0.1:9090
           addons:
-            - archive
+              - archive
     - api-interface: rest
       chain-id: LAV1
       network-address:
