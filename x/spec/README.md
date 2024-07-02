@@ -12,6 +12,7 @@ This document focuses on the specs' technical aspects and does not include curre
 ## Contents
 * [Concepts](#concepts)
   * [Spec](#spec)
+  * [UserSpec](#userspec)
   * [ApiCollections](#apicollection)
   * [CollectionData](#collectiondata)
   * [Extension](#extension)
@@ -54,13 +55,26 @@ type Spec struct {
     ReliabilityThreshold          uint32                // this determines the probability of data reliability checks by the consumer
 	DataReliabilityEnabled        bool                  // enables/disables data reliability for the chain
 	BlockDistanceForFinalizedData uint32                              
-	BlocksInFinalizationProof     uint32                              
+	BlocksInFinalizationProof     uint32  
+    identity                      string                // url identity in keybase
+    user_spec                     bool                  // specifies if this spec was added with gov or by a user, set automatic by the chain
 }
 ```
 `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`).
 `Dec` type is from Cosmos-SDK math (`cosmossdk.io/math`).
 
 A `Contributor` is a member of the Lava community who can earn token commissions by maintaining specs on Lava.
+
+### UserSpec
+
+User spec is a spec that was added without a gov proposal, using the tx `AddSpecs`.
+These specs are meant for testing and providers can stake and serve consumers.
+With a gov proposal of the same spec, it can become an official spec on chain and the next limitations will be removed.
+A user spec is limited in use as follows:
+
+* user specs cannot get boost and subscription rewards
+* conflicts cannot be opened for user specs
+* user specs contribuitions for contributors are fixed and cannot be changed
 
 ### ApiCollection
 
