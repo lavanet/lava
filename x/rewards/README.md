@@ -189,7 +189,7 @@ The rewards module supports the following queries:
 | `iprpc-provider-reward`   | provider (string)            | shows the estimated IPRPC rewards for a specific provider (relative to its serviced CU) for the upcoming monthly emission                 |
 | `iprpc-spec-rewards`   | spec (string, optional)            | shows a specific spec's IPRPC rewards (for the entire period). If no spec is given, all IPRPC rewards are shown                 |
 
-Note, use the provider's operator address for the `iprpc-provider-reward` query. For more information on the operator and vault addresses see the pairing module's [README.md](../pairing/README.md).
+Note, use the provider's address for the `iprpc-provider-reward` query. For more information on the provider's two addresses (regular and vault) see the epochstorage module's [README.md](../epochstorage/README.md).
 
 ## Transactions
 
