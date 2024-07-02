@@ -481,6 +481,10 @@
                   "values": [
                     {
                       "latest_distance": 14400
+                    },
+                    {
+                      "extension": "archive",
+                      "latest_distance": 1
                     }
                   ]
                 }
@@ -1692,6 +1696,10 @@
                   "values": [
                     {
                       "latest_distance": 14900
+                    },
+                    {
+                      "extension": "archive",
+                      "latest_distance": 1
                     }
                   ]
                 }
