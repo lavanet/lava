@@ -14,7 +14,7 @@ async function main() {
         allowInsecureTransport: true,
         logLevel: "debug",
     }).catch(e => {
-        throw new Error(" ERR failed initializing lava-sdk jsonrpc badge test");
+        throw new Error(` ERR failed initializing lava-sdk jsonrpc badge test ${e.message}`);
     });
 
     await delay(45000);

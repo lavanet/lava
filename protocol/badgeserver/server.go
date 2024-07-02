@@ -196,6 +196,7 @@ func (s *Server) validateRequestAndGetProjectData(clientIPAddress string, reques
 				utils.LogAttr("BadgeAddress", request.BadgeAddress),
 				utils.LogAttr("ProjectId", request.ProjectId),
 				utils.LogAttr("geolocation", geolocation),
+				utils.LogAttr("geolocationData", geolocationData),
 			)
 		}
 	}

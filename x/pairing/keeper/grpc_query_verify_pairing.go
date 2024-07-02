@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -39,6 +40,22 @@ func (k Keeper) VerifyPairing(goCtx context.Context, req *types.QueryVerifyPairi
 	}
 
 	isValidPairing, cuPerEpoch, providersToPair, err := k.ValidatePairingForClient(ctx, req.ChainID, providerAddr, req.Block, project)
+
+	pairedProvidersAddresses := []struct {
+		moniker string
+		address string
+	}{}
+	for _, provider := range providersToPair {
+		pairedProvidersAddresses = append(pairedProvidersAddresses, struct {
+			moniker string
+			address string
+		}{
+			moniker: provider.Moniker,
+			address: provider.Address,
+		})
+	}
+
+	utils.LavaFormatInfo("VerifyPairing", utils.LogAttr("pairedProvidersAddresses", pairedProvidersAddresses))
 
 	return &types.QueryVerifyPairingResponse{Valid: isValidPairing, PairedProviders: uint64(len(providersToPair)), CuPerEpoch: cuPerEpoch, ProjectId: project.Index}, err
 }
