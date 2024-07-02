@@ -26,4 +26,4 @@ endpoints:
         - url: http://127.0.0.1:1317
         - url: http://127.0.0.1:1317
           addons:
-            - archive
+              - archive
