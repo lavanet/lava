@@ -26,6 +26,15 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 			utils.Attribute{Key: "client", Value: msg.Creator},
 		)
 	}
+
+	spec, found := k.specKeeper.GetSpec(ctx, msg.ResponseConflict.ConflictRelayData0.Request.RelaySession.SpecId)
+	if !found || spec.UserSpec {
+		return nil, utils.LavaFormatWarning("Simulation: invalid spec for conflict (not found or user spec)", err,
+			utils.Attribute{Key: "found", Value: found},
+			utils.Attribute{Key: "userSpec", Value: spec.UserSpec},
+		)
+	}
+
 	if msg.FinalizationConflict != nil && msg.ResponseConflict == nil && msg.SameProviderConflict == nil {
 		err := k.Keeper.ValidateFinalizationConflict(ctx, msg.FinalizationConflict, clientAddr)
 		if err != nil {

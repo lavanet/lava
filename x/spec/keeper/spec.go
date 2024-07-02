@@ -15,6 +15,8 @@ import (
 	"github.com/lavanet/lava/x/spec/types"
 )
 
+const USER_SPEC_CONTRIBUTION = "0.1"
+
 // SetSpec set a specific Spec in the store from its index
 func (k Keeper) SetSpec(ctx sdk.Context, spec types.Spec) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
@@ -358,4 +360,89 @@ func (k Keeper) GetMinStake(ctx sdk.Context, chainID string) sdk.Coin {
 	}
 
 	return spec.MinStakeProvider
+}
+
+func (k Keeper) HandleSpecs(ctx sdk.Context, specs []types.Spec, creator string) error {
+	logger := k.Logger(ctx)
+
+	type event struct {
+		name    string
+		event   string
+		details map[string]string
+	}
+
+	var events []event
+
+	for _, spec := range specs {
+		ogSpec, found := k.GetSpec(ctx, spec.Index)
+
+		spec.UserSpec = creator != k.authority
+		if spec.UserSpec {
+			if found {
+				if !ogSpec.UserSpec {
+					return utils.LavaFormatWarning("user cannot change existing gov specs", nil)
+				} else if !sdk.SliceContains(ogSpec.Contributor, creator) {
+					return utils.LavaFormatWarning("user cannot change spec which he is not a contributor at", nil)
+				}
+			}
+
+			if !sdk.SliceContains(spec.Contributor, creator) {
+				spec.Contributor = append(spec.Contributor, creator)
+			}
+			contributorPercentage := math.LegacyMustNewDecFromStr(USER_SPEC_CONTRIBUTION)
+			spec.ContributorPercentage = &contributorPercentage
+		}
+
+		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
+		k.SetSpec(ctx, spec)
+
+		details, err := k.ValidateSpec(ctx, spec)
+		if err != nil {
+			attrs := utils.StringMapToAttributes(details)
+			return utils.LavaFormatWarning("invalid spec", err, attrs...)
+		}
+
+		name := types.SpecAddEventName
+
+		if found {
+			name = types.SpecModifyEventName
+		}
+
+		// collect the events first, and only log them after everything succeeded
+		events = append(events, event{
+			name:    name,
+			event:   "Gov Proposal Accepted Spec",
+			details: details,
+		})
+
+		// TODO: add api types once its implemented to the event
+	}
+
+	// re-validate all the specs, in case the modified spec is imported by
+	// other specs and the new version creates a conflict; also update the
+	// BlockLastUpdated of all specs that inherit from the modified spec.
+	for _, spec := range k.GetAllSpec(ctx) {
+		inherits, err := k.RefreshSpec(ctx, spec, specs)
+		if err != nil {
+			return utils.LavaFormatWarning("invalidated spec", err)
+		}
+		if len(inherits) > 0 {
+			details := map[string]string{
+				"name":   spec.Index,
+				"import": strings.Join(inherits, ","),
+			}
+			name := types.SpecRefreshEventName
+			events = append(events, event{
+				name:    name,
+				event:   "Gov Proposal Refreshsed Spec",
+				details: details,
+			})
+		}
+	}
+
+	for _, e := range events {
+		utils.LogLavaEvent(ctx, logger, e.name, e.details, e.event)
+	}
+
+	return nil
 }

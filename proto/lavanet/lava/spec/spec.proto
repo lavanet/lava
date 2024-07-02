@@ -38,4 +38,5 @@ message Spec {
     ];
   uint64 shares = 19;
   string identity = 20;
+  bool user_spec = 21;
 }

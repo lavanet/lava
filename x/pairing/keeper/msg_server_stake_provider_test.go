@@ -204,7 +204,7 @@ func TestCmdStakeProviderGeoConfigAndEnum(t *testing.T) {
 				require.NoError(t, err)
 				// adjust endpoints to match the default API interfaces and addons generated with ts
 				for i := 0; i < len(endpoints); i++ {
-					endpoints[i].ApiInterfaces = []string{"stub"}
+					endpoints[i].ApiInterfaces = []string{spectypes.APIInterfaceJsonRPC}
 					endpoints[i].Addons = []string{}
 				}
 				_, err = ts.TxPairingStakeProvider(provider, acc.GetVaultAddr(), ts.spec.Index, ts.spec.MinStakeProvider, endpoints, geo, common.MockDescription())

@@ -4,10 +4,21 @@ package lavanet.lava.spec;
 // this line is used by starport scaffolding # proto/tx/import
 
 option go_package = "github.com/lavanet/lava/x/spec/types";
+import "gogoproto/gogo.proto";
+import "lavanet/lava/spec/spec.proto";
 
 // Msg defines the Msg service.
 service Msg {
+    rpc AddSpecs(MsgAddSpecs) returns (MsgAddSpecsResponse);
     // this line is used by starport scaffolding # proto/tx/rpc
 }
 
 // this line is used by starport scaffolding # proto/tx/message
+
+message MsgAddSpecs {
+    string creator = 1;
+    repeated Spec specs = 2 [(gogoproto.nullable) = false]; 
+}
+
+message MsgAddSpecsResponse {
+}

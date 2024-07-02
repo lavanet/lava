@@ -820,7 +820,7 @@ func TestCookbookSpecs(t *testing.T) {
 	Specs = removeSetFromSet(baseSpecs, Specs)
 	Specs = append(baseSpecs, Specs...)
 	for _, fileName := range Specs {
-		proposal := utils.SpecAddProposalJSON{}
+		proposal := utils.SpecAddProposalWithDepositJSON{}
 
 		contents, err := os.ReadFile(getToTopMostPath + fileName)
 		require.NoError(t, err)
@@ -1081,7 +1081,7 @@ func TestSpecParsing(t *testing.T) {
 			}
 		}`
 
-	var proposal utils.SpecAddProposalJSON
+	var proposal utils.SpecAddProposalWithDepositJSON
 	err := json.Unmarshal([]byte(specJSON), &proposal)
 	require.NoError(t, err)
 	ts := newTester(t)

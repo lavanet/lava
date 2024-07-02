@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/lavanet/lava/x/spec/types"
 	typesv1 "github.com/lavanet/lava/x/spec/types/migrations/v1"
 )
@@ -46,6 +47,16 @@ func (m Migrator) Migrate3to4(ctx sdk.Context) error {
 		}
 
 		m.keeper.SetSpec(ctx, spec)
+	}
+
+	return nil
+}
+
+func (m Migrator) Migrate4to5(ctx sdk.Context) error {
+	params := m.keeper.GetParams(ctx)
+	if !sdk.SliceContains(params.AllowlistedExpeditedMsgs, proto.MessageName(&types.MsgAddSpecs{})) {
+		params.AllowlistedExpeditedMsgs = append(params.AllowlistedExpeditedMsgs, proto.MessageName(&types.MsgAddSpecs{}))
+		m.keeper.SetParams(ctx, params)
 	}
 
 	return nil

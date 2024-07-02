@@ -30,8 +30,12 @@ func (k Keeper) GetTrackedCu(ctx sdk.Context, sub string, provider string, chain
 
 // AddTrackedCu adds CU to the CU counters in relevant trackedCu entry
 // Also, it counts the IPRPC CU if the subscription is IPRPC eligible
-func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cuToAdd uint64, block uint64) error {
+func (k Keeper) AddTrackedCu(ctx sdk.Context, sub string, provider string, chainID string, cuToAdd uint64, block uint64, userSpec bool) error {
 	k.rewardsKeeper.AggregateCU(ctx, sub, provider, chainID, cuToAdd)
+
+	if userSpec {
+		return nil
+	}
 
 	cu, found, key := k.GetTrackedCu(ctx, sub, provider, chainID, block)
 

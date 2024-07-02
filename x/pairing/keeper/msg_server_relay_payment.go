@@ -277,7 +277,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		utils.LogLavaEvent(ctx, logger, types.RelayPaymentEventName, successDetails, "New Proof Of Work Was Accepted")
 
 		cuAfterQos := rewardedCUDec.TruncateInt().Uint64()
-		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, project, relay, cuAfterQos)
+		err = k.chargeCuToSubscriptionAndCreditProvider(ctx, project, relay, cuAfterQos, spec.UserSpec)
 		if err != nil {
 			return nil, utils.LavaFormatError("Failed charging CU to project and subscription", err)
 		}
@@ -393,7 +393,7 @@ func (k EpochCuCache) updateProvidersComplainerCU(ctx sdk.Context, unresponsiveP
 	return nil
 }
 
-func (k Keeper) chargeCuToSubscriptionAndCreditProvider(ctx sdk.Context, project projectstypes.Project, relay *types.RelaySession, cuAfterQos uint64) error {
+func (k Keeper) chargeCuToSubscriptionAndCreditProvider(ctx sdk.Context, project projectstypes.Project, relay *types.RelaySession, cuAfterQos uint64, userSpec bool) error {
 	epoch := uint64(relay.Epoch)
 
 	err := k.projectsKeeper.ChargeComputeUnitsToProject(ctx, project, epoch, relay.CuSum)
@@ -406,7 +406,7 @@ func (k Keeper) chargeCuToSubscriptionAndCreditProvider(ctx sdk.Context, project
 		return fmt.Errorf("failed to add CU to the subscription")
 	}
 
-	err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos, sub.Block)
+	err = k.subscriptionKeeper.AddTrackedCu(ctx, sub.Consumer, relay.Provider, relay.SpecId, cuAfterQos, sub.Block, userSpec)
 	if err != nil {
 		return err
 	}
