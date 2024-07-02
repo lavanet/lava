@@ -15,6 +15,8 @@ import (
 	"github.com/lavanet/lava/x/spec/types"
 )
 
+var USER_SPEC_CONTRIBUTION = sdk.NewDecWithPrec(1, 10)
+
 // SetSpec set a specific Spec in the store from its index
 func (k Keeper) SetSpec(ctx sdk.Context, spec types.Spec) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SpecKeyPrefix))
@@ -374,21 +376,22 @@ func (k Keeper) HandleSpecs(ctx sdk.Context, specs []types.Spec, creator string)
 	for _, spec := range specs {
 		ogSpec, found := k.GetSpec(ctx, spec.Index)
 
-		if creator != k.authority {
+		spec.UserSpec = creator != k.authority
+		if spec.UserSpec {
 			if found {
 				if !ogSpec.UserSpec {
 					return utils.LavaFormatWarning("user cannot change existing gov specs", nil)
 				} else if !sdk.SliceContains(ogSpec.Contributor, creator) {
 					return utils.LavaFormatWarning("user cannot change spec which he is not a contributor at", nil)
 				}
-			} else {
-				if !sdk.SliceContains(spec.Contributor, creator) {
-					spec.Contributor = append(spec.Contributor, creator)
-				}
 			}
+
+			if !sdk.SliceContains(spec.Contributor, creator) {
+				spec.Contributor = append(spec.Contributor, creator)
+			}
+			spec.ContributorPercentage = &USER_SPEC_CONTRIBUTION
 		}
 
-		spec.UserSpec = creator != k.authority
 		spec.BlockLastUpdated = uint64(ctx.BlockHeight())
 		k.SetSpec(ctx, spec)
 
