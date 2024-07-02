@@ -24,34 +24,39 @@ import (
 )
 
 const (
-	allowedBlockTimeDefaultLag           = 30 * time.Second
-	intervalDefaultDuration              = 0 * time.Second
-	defaultCUPercentageThreshold         = 0.2
-	defaultSubscriptionLeftDays          = 10
-	defaultMaxProviderLatency            = 200 * time.Millisecond
-	defaultAlertSuppressionInterval      = 6 * time.Hour
-	DefaultSuppressionCountThreshold     = 3
-	DisableAlertLogging                  = "disable-alert-logging"
-	maxProviderLatencyFlagName           = "max-provider-latency"
-	subscriptionLeftTimeFlagName         = "subscription-days-left-alert"
-	providerAddressesFlagName            = "provider_addresses"
-	subscriptionAddressesFlagName        = "subscription_addresses"
-	intervalFlagName                     = "interval"
-	consumerEndpointPropertyName         = "consumer_endpoints"
-	referenceEndpointPropertyName        = "reference_endpoints"
-	allowedBlockTimeLagFlagName          = "allowed_time_lag"
-	queryRetriesFlagName                 = "query-retries"
-	alertingWebHookFlagName              = "alert-webhook-url"
-	identifierFlagName                   = "identifier"
-	percentageCUFlagName                 = "cu-percent-threshold"
-	alertSuppressionIntervalFlagName     = "alert-suppression-interval"
-	disableAlertSuppressionFlagName      = "disable-alert-suppression"
-	SuppressionCountThresholdFlagName    = "suppression-alert-count-threshold"
-	resultsPostAddressFlagName           = "post-results-address"
-	AllProvidersFlagName                 = "all-providers"
-	AllProvidersMarker                   = "all"
-	ConsumerGrpcTLSFlagName              = "consumer-grpc-tls"
-	allowInsecureConsumerDialingFlagName = "allow-insecure-consumer-dialing"
+	allowedBlockTimeDefaultLag                = 30 * time.Second
+	intervalDefaultDuration                   = 0 * time.Second
+	defaultCUPercentageThreshold              = 0.2
+	defaultSubscriptionLeftDays               = 10
+	defaultMaxProviderLatency                 = 200 * time.Millisecond
+	defaultAlertSuppressionInterval           = 6 * time.Hour
+	DefaultSuppressionCountThreshold          = 3
+	DisableAlertLogging                       = "disable-alert-logging"
+	maxProviderLatencyFlagName                = "max-provider-latency"
+	subscriptionLeftTimeFlagName              = "subscription-days-left-alert"
+	providerAddressesFlagName                 = "provider_addresses"
+	subscriptionAddressesFlagName             = "subscription_addresses"
+	intervalFlagName                          = "interval"
+	consumerEndpointPropertyName              = "consumer_endpoints"
+	referenceEndpointPropertyName             = "reference_endpoints"
+	allowedBlockTimeLagFlagName               = "allowed_time_lag"
+	queryRetriesFlagName                      = "query-retries"
+	alertingWebHookFlagName                   = "alert-webhook-url"
+	identifierFlagName                        = "identifier"
+	percentageCUFlagName                      = "cu-percent-threshold"
+	alertSuppressionIntervalFlagName          = "alert-suppression-interval"
+	disableAlertSuppressionFlagName           = "disable-alert-suppression"
+	SuppressionCountThresholdFlagName         = "suppression-alert-count-threshold"
+	resultsPostAddressFlagName                = "post-results-address"
+	resultsPostGUIDFlagName                   = "post-results-guid"
+	resultsPostSkipSepcFlagName               = "post-results-skip-spec"
+	AllProvidersFlagName                      = "all-providers"
+	AllProvidersMarker                        = "all"
+	ConsumerGrpcTLSFlagName                   = "consumer-grpc-tls"
+	allowInsecureConsumerDialingFlagName      = "allow-insecure-consumer-dialing"
+	singleProviderAddressFlagName             = "single-provider-address"
+	singleProviderSpecsInterfacesDataFlagName = "single-provider-specs-interfaces-data"
+	runOnceAndExitFlagName                    = "run-once-and-exit"
 )
 
 func ParseEndpoints(keyName string, viper_endpoints *viper.Viper) (endpoints []*HealthRPCEndpoint, err error) {
@@ -142,8 +147,31 @@ reference_endpoints:
 			prometheusListenAddr := viper.GetString(metrics.MetricsListenFlagName)
 			providerAddresses := viper.GetStringSlice(providerAddressesFlagName)
 			allProviders := viper.GetBool(AllProvidersFlagName)
-			if allProviders {
+			singleProvider := viper.GetString(singleProviderAddressFlagName)
+			if singleProvider != "" {
+				providerAddresses = []string{singleProvider}
+				utils.LavaFormatInfo("Health probe provider addresses set to a single provider address", utils.Attribute{Key: "provider", Value: singleProvider})
+			} else if allProviders {
 				providerAddresses = []string{AllProvidersMarker}
+				utils.LavaFormatInfo("Health probe provider addresses set to all")
+			}
+			singleProviderSpecsInterfacesRawData := viper.GetString(singleProviderSpecsInterfacesDataFlagName)
+			var singleProviderSpecsInterfacesData map[string][]string
+			if singleProviderSpecsInterfacesRawData != "" {
+				if singleProvider == "" {
+					utils.LavaFormatFatal("single provider address and single provider specs interfaces data must be set together", nil)
+				}
+				err := json.Unmarshal([]byte(singleProviderSpecsInterfacesRawData), &singleProviderSpecsInterfacesData)
+				if err != nil {
+					utils.LavaFormatFatal("Failed to parse singleProviderSpecsInterfacesDataFlagName as JSON", err)
+				}
+				if len(singleProviderSpecsInterfacesData) == 0 {
+					utils.LavaFormatFatal("singleProviderSpecsInterfacesData is empty", nil)
+				}
+			}
+			runOnceAndExit := viper.GetBool(runOnceAndExitFlagName)
+			if runOnceAndExit {
+				utils.LavaFormatInfo("Run once and exit flag set")
 			}
 			subscriptionAddresses := viper.GetStringSlice(subscriptionAddressesFlagName)
 			keyName := consumerEndpointPropertyName
@@ -167,6 +195,8 @@ reference_endpoints:
 				SuppressionCounterThreshold:   viper.GetUint64(SuppressionCountThresholdFlagName),
 			}
 			resultsPostAddress := viper.GetString(resultsPostAddressFlagName)
+			resultsPostGUID := viper.GetString(resultsPostGUIDFlagName)
+			resultsPostSkipSepc := viper.GetBool(resultsPostSkipSepcFlagName)
 
 			alerting := NewAlerting(alertingOptions)
 			RunHealthCheck := func(ctx context.Context,
@@ -178,24 +208,36 @@ reference_endpoints:
 				prometheusListenAddr string,
 			) {
 				utils.LavaFormatInfo("[+] starting health run")
-				healthResult, err := RunHealth(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr)
+				healthResult, err := RunHealth(ctx, clientCtx, subscriptionAddresses, providerAddresses, consumerEndpoints, referenceEndpoints, prometheusListenAddr, resultsPostGUID, singleProviderSpecsInterfacesData)
 				if err != nil {
 					utils.LavaFormatError("[-] invalid health run", err)
+					if runOnceAndExit {
+						os.Exit(0)
+					}
 					healthMetrics.SetFailedRun(identifier)
 				} else {
 					if resultsPostAddress != "" {
+						if resultsPostSkipSepc {
+							healthResult.Specs = nil
+						}
 						jsonData, err := json.Marshal(healthResult)
-						if err == nil {
+						if err != nil {
+							utils.LavaFormatError("[-] failed marshaling results", err)
+						} else {
 							resp, err := http.Post(resultsPostAddress, "application/json", bytes.NewBuffer(jsonData))
 							if err != nil {
 								utils.LavaFormatError("[-] failed posting health results", err, utils.LogAttr("address", resultsPostAddress))
+							} else {
+								defer resp.Body.Close()
 							}
-							defer resp.Body.Close()
-						} else {
-							utils.LavaFormatError("[-] failed marshaling results", err)
 						}
 					}
+
 					utils.LavaFormatInfo("[+] completed health run")
+					if runOnceAndExit {
+						os.Exit(0)
+					}
+
 					healthMetrics.SetLatestBlockData(identifier, healthResult.FormatForLatestBlock())
 					alerting.CheckHealthResults(healthResult)
 					activeAlerts, unhealthy, healthy := alerting.ActiveAlerts()
@@ -241,12 +283,19 @@ reference_endpoints:
 	cmdTestHealth.Flags().String(alertingWebHookFlagName, "", "a url to post an alert to")
 	cmdTestHealth.Flags().String(metrics.MetricsListenFlagName, metrics.DisabledFlagOption, "the address to expose prometheus metrics (such as localhost:7779)")
 	cmdTestHealth.Flags().String(resultsPostAddressFlagName, "", "the address to send the raw results to")
+	cmdTestHealth.Flags().String(resultsPostGUIDFlagName, "", "a guid marker to add to the results posted to the results post address")
+	cmdTestHealth.Flags().Bool(resultsPostSkipSepcFlagName, false, "enable to send the results without the specs to the results post address")
 	cmdTestHealth.Flags().Duration(intervalFlagName, intervalDefaultDuration, "the interval duration for the health check, (defaults to 0s) if 0 runs once")
 	cmdTestHealth.Flags().Duration(allowedBlockTimeLagFlagName, allowedBlockTimeDefaultLag, "the amount of time one rpc can be behind the most advanced one")
 	cmdTestHealth.Flags().Uint64Var(&QueryRetries, queryRetriesFlagName, QueryRetries, "set the amount of max queries to send every health run to consumers and references")
 	cmdTestHealth.Flags().Bool(AllProvidersFlagName, false, "a flag to overwrite the provider addresses with all the currently staked providers")
 	cmdTestHealth.Flags().Bool(ConsumerGrpcTLSFlagName, true, "use tls configuration for grpc connections to your consumer")
 	cmdTestHealth.Flags().Bool(allowInsecureConsumerDialingFlagName, false, "used to test grpc, to allow insecure (self signed cert).")
+	cmdTestHealth.Flags().String(singleProviderAddressFlagName, "", "single provider address in bach32 to override config settings")
+	cmdTestHealth.Flags().String(singleProviderSpecsInterfacesDataFlagName, "", "a json of spec:[interfaces...] to make the single provider query faster")
+
+	cmdTestHealth.Flags().Bool(runOnceAndExitFlagName, false, "exit after first run.")
+
 	viper.BindPFlag(queryRetriesFlagName, cmdTestHealth.Flags().Lookup(queryRetriesFlagName)) // bind the flag
 	flags.AddQueryFlagsToCmd(cmdTestHealth)
 	common.AddRollingLogConfig(cmdTestHealth)

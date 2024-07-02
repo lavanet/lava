@@ -18,6 +18,8 @@ type HealthResults struct {
 	UnhealthyProviders map[LavaEntity]string       `json:"unhealthyProviders,omitempty"`
 	UnhealthyConsumers map[LavaEntity]string       `json:"unhealthyConsumers,omitempty"`
 	Specs              map[string]*spectypes.Spec  `json:"specs,omitempty"`
+	ResultsPostGUID    string                      `json:"resultsGUID,omitempty"`
+	ProviderAddresses  []string                    `json:"providerAddresses,omitempty"`
 	Lock               sync.RWMutex                `json:"-"`
 }
 
