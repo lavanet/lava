@@ -67,7 +67,7 @@ As a user, I would like to take an action on the deviation/drift. (This is an ex
 ### Implementation Details/Notes/Constraints [optional]
 
 What are the caveats to the implementation? What are some important details that didn't come across
-above. Go in to as much detail as necessary here. This might be a good place to talk about core
+above. Go into as much detail as necessary here. This might be a good place to talk about core
 concepts and how they relate.
 
 You may have a work-in-progress Pull Request to demonstrate the functioning of the enhancement you are proposing.

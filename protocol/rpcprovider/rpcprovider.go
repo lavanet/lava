@@ -373,6 +373,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			},
 		)
 	} else {
+		utils.LavaFormatDebug("verifications only ChainFetcher for spec", utils.LogAttr("chainId", rpcEndpoint.ChainID))
 		chainFetcher = chainlib.NewVerificationsOnlyChainFetcher(ctx, chainRouter, chainParser, rpcProviderEndpoint)
 	}
 

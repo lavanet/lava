@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ARG GO_VERSION="1.20"
+ARG RUNNER_IMAGE="gcr.io/distroless/static-debian12"
 ARG BUILD_TAGS="netgo,ledger,muslc"
 
 FROM golang:${GO_VERSION}-alpine3.18 as builder
@@ -40,7 +41,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     -o /lava/build/lavad \
     /lava/cmd/lavad/main.go
 
-FROM gcr.io/distroless/static-debian12
+FROM ${RUNNER_IMAGE}
 
 COPY --from=builder /lava/build/lavad /bin/lavad
 

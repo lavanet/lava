@@ -2,6 +2,7 @@ package lavasession
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -10,11 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/utils/lavaslices"
-
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/provideroptimizer"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/utils/rand"
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -310,6 +310,58 @@ func TestNoPairingAvailableFlow(t *testing.T) {
 		require.False(t, lavaslices.Contains(csm.validAddresses, addr.Session.Parent.PublicLavaAddress))
 	}
 	require.Equal(t, len(csm.validAddresses), 2)
+}
+
+func TestSecondChanceRecoveryFlow(t *testing.T) {
+	retrySecondChanceAfter = time.Second * 2
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0], 1: pairingList[1]}) // create two providers
+	require.NoError(t, err)
+
+	for i := 0; i <= MaximumNumberOfFailuresAllowedPerConsumerSession; i++ {
+		usedProviders := NewUsedProviders(map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress})
+		css, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+		require.NoError(t, err)
+		_, expectedProviderAddress := css[pairingList[0].PublicLavaAddress]
+		require.True(t, expectedProviderAddress)
+		for _, sessionInfo := range css {
+			csm.OnSessionFailure(sessionInfo.Session, fmt.Errorf("testError"))
+		}
+	}
+	_, ok := csm.secondChanceGivenToAddresses[pairingList[0].PublicLavaAddress]
+	fmt.Println(csm.secondChanceGivenToAddresses)
+	// should be present in secondChanceGivenToAddresses.
+	require.True(t, ok)
+
+	// check we get provider1.
+
+	usedProviders := NewUsedProviders(nil)
+	css, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	require.NoError(t, err)
+	_, expectedProviderAddress := css[pairingList[1].PublicLavaAddress]
+	require.True(t, expectedProviderAddress)
+	// check this provider is not reported.
+	require.False(t, csm.reportedProviders.IsReported(pairingList[0].PublicLavaAddress))
+	// sleep for the duration of the retrySecondChanceAfter
+	time.Sleep(retrySecondChanceAfter + time.Second)
+
+	require.True(t, lavaslices.Contains(csm.validAddresses, pairingList[0].PublicLavaAddress))
+	require.False(t, lavaslices.Contains(csm.currentlyBlockedProviderAddresses, pairingList[0].PublicLavaAddress))
+
+	// now after we gave it a second chance, we give it another failure sequence, expecting it to this time be reported.
+	for i := 0; i <= MaximumNumberOfFailuresAllowedPerConsumerSession; i++ {
+		usedProviders := NewUsedProviders(map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress})
+		css, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+		require.NoError(t, err)
+		_, expectedProviderAddress := css[pairingList[0].PublicLavaAddress]
+		require.True(t, expectedProviderAddress)
+		for _, sessionInfo := range css {
+			csm.OnSessionFailure(sessionInfo.Session, fmt.Errorf("testError"))
+		}
+	}
+	require.True(t, csm.reportedProviders.IsReported(pairingList[0].PublicLavaAddress))
 }
 
 func runOnSessionDoneForConsumerSessionMap(t *testing.T, css ConsumerSessionsMap, csm *ConsumerSessionManager) {
@@ -978,4 +1030,24 @@ func TestPairingWithStateful(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, allProviders-1, len(css))
 	})
+}
+
+func TestMaximumBlockedSessionsErrorsInPairingListEmpty(t *testing.T) {
+	ctx := context.Background()
+	csm := CreateConsumerSessionManager()
+	pairingList := createPairingList("", true)
+	err := csm.UpdateAllProviders(firstEpochHeight, map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0]}) // update the providers.
+	require.NoError(t, err)
+	utils.LavaFormatDebug(fmt.Sprintf("%v", len(csm.validAddresses)))
+	for i := 0; i < MaxSessionsAllowedPerProvider; i++ {
+		css, err := csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+		require.NoError(t, err)
+		for _, cs := range css {
+			err = csm.OnSessionFailure(cs.Session, errors.Join(BlockProviderError, SessionOutOfSyncError))
+			require.NoError(t, err)
+		}
+	}
+
+	_, err = csm.GetSessions(ctx, cuForFirstRequest, NewUsedProviders(nil), servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
+	require.ErrorIs(t, err, PairingListEmptyError)
 }
