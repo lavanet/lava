@@ -153,7 +153,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				)
 			}
 		} else if verification.Value != "" {
-			expectedValue, err := strconv.Atoi(verification.Value)
+			expectedValue, err := strconv.ParseInt(verification.Value, 10, 64)
 			if err != nil {
 				return utils.LavaFormatError("failed converting expected value to number", err, utils.LogAttr("value", verification.Value))
 			}
