@@ -67,7 +67,7 @@ services:
       - lava_network
     depends_on:
       lava-node-init:
-          condition: service_completed_successfully
+        condition: service_completed_successfully
 
   lava-node:
     # Update with the most recent supported version of lavad
