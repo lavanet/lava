@@ -37,6 +37,14 @@ const (
 	MAXIMUM_ALLOWED_TIMEOUT_EXTEND_MULTIPLIER_BY_THE_CONSUMER = 4
 )
 
+var SPECIAL_LAVA_DIRECTIVE_HEADERS = map[string]struct{}{
+	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME: {},
+	RELAY_TIMEOUT_HEADER_NAME:             {},
+	EXTENSION_OVERRIDE_HEADER_NAME:        {},
+	FORCE_CACHE_REFRESH_HEADER_NAME:       {},
+	LAVA_DEBUG_RELAY:                      {},
+}
+
 type NodeUrl struct {
 	Url               string        `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
 	InternalPath      string        `yaml:"internal-path,omitempty" json:"internal-path,omitempty" mapstructure:"internal-path"`

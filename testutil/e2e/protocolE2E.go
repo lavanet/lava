@@ -46,7 +46,11 @@ import (
 
 const (
 	protocolLogsFolder         = "./testutil/e2e/protocolLogs/"
-	configFolder               = "./testutil/e2e/e2eProviderConfigs"
+	configFolder               = "./testutil/e2e/e2eConfigs/"
+	providerConfigsFolder      = configFolder + "provider"
+	consumerConfigsFolder      = configFolder + "consumer"
+	policiesFolder             = configFolder + "policies"
+	badgeserverConfigFolder    = configFolder + "badgeserver"
 	EmergencyModeStartLine     = "+++++++++++ EMERGENCY MODE START ++++++++++"
 	EmergencyModeEndLine       = "+++++++++++ EMERGENCY MODE END ++++++++++"
 	NumberOfSpecsExpectedInE2E = 10
@@ -336,7 +340,7 @@ func (lt *lavaTest) startJSONRPCProvider(ctx context.Context) {
 	for idx := 1; idx <= 5; idx++ {
 		command := fmt.Sprintf(
 			"%s rpcprovider %s/jsonrpcProvider%d.yml --chain-id=lava --from servicer%d %s",
-			lt.protocolPath, configFolder, idx, idx, lt.lavadArgs,
+			lt.protocolPath, providerConfigsFolder, idx, idx, lt.lavadArgs,
 		)
 		logName := "03_EthProvider_" + fmt.Sprintf("%02d", idx)
 		funcName := fmt.Sprintf("startJSONRPCProvider (provider %02d)", idx)
@@ -355,7 +359,7 @@ func (lt *lavaTest) startJSONRPCConsumer(ctx context.Context) {
 	for idx, u := range []string{"user1"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/ethConsumer%d.yml --chain-id=lava --from %s %s",
-			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
+			lt.protocolPath, consumerConfigsFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "04_jsonConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startJSONRPCConsumer (consumer %02d)", idx+1)
@@ -530,7 +534,7 @@ func (lt *lavaTest) startLavaProviders(ctx context.Context) {
 	for idx := 6; idx <= 10; idx++ {
 		command := fmt.Sprintf(
 			"%s rpcprovider %s/lavaProvider%d --chain-id=lava --from servicer%d %s",
-			lt.protocolPath, configFolder, idx, idx, lt.lavadArgs,
+			lt.protocolPath, providerConfigsFolder, idx, idx, lt.lavadArgs,
 		)
 		logName := "05_LavaProvider_" + fmt.Sprintf("%02d", idx-5)
 		funcName := fmt.Sprintf("startLavaProviders (provider %02d)", idx-5)
@@ -549,7 +553,7 @@ func (lt *lavaTest) startLavaConsumer(ctx context.Context) {
 	for idx, u := range []string{"user3"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/lavaConsumer%d.yml --chain-id=lava --from %s %s",
-			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
+			lt.protocolPath, consumerConfigsFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "06_RPCConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startRPCConsumer (consumer %02d)", idx+1)
@@ -562,7 +566,7 @@ func (lt *lavaTest) startLavaEmergencyConsumer(ctx context.Context) {
 	for idx, u := range []string{"user5"} {
 		command := fmt.Sprintf(
 			"%s rpcconsumer %s/lavaConsumerEmergency%d.yml --chain-id=lava --from %s %s",
-			lt.protocolPath, configFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
+			lt.protocolPath, consumerConfigsFolder, idx+1, u, lt.lavadArgs+lt.consumerArgs,
 		)
 		logName := "11_RPCEmergencyConsumer_" + fmt.Sprintf("%02d", idx+1)
 		funcName := fmt.Sprintf("startRPCEmergencyConsumer (consumer %02d)", idx+1)

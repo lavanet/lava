@@ -326,10 +326,10 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 		if err != nil {
 			errMasking := apil.logger.GetUniqueGuidResponseForError(err, msgSeed)
-			apil.logger.LogRequestAndResponse("http in/out", true, method, string(reqBody), "", errMasking, msgSeed, time.Since(startTime), err)
+			apil.logger.LogRequestAndResponse("grpc in/out", true, method, string(reqBody), "", errMasking, msgSeed, time.Since(startTime), err)
 			return nil, nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking))
 		}
-		apil.logger.LogRequestAndResponse("http in/out", false, method, string(reqBody), "", "", msgSeed, time.Since(startTime), nil)
+		apil.logger.LogRequestAndResponse("grpc in/out", false, method, string(reqBody), "", "", msgSeed, time.Since(startTime), nil)
 
 		// try checking for node errors.
 		nodeError := &GrpcNodeErrorResponse{}

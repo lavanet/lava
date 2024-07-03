@@ -93,7 +93,7 @@ The stake entry is a struct that contains all the information of a provider.
 type StakeEntry struct {
 	Stake              types.Coin // the providers stake amount (self delegation)
 	Vault              string     // the lava address of the provider's vault which holds most of its funds
-	Operator           string     // the lava address of the provider's operator which is used to run and operate the provider process
+	Address            string     // the lava address of the provider is used to run and operate the provider process
 	StakeAppliedBlock  uint64     // the block at which the provider is included in the pairing list
 	Endpoints          []Endpoint // the endpoints of the provider
 	Geolocation        int32      // the geolocation this provider supports
@@ -105,12 +105,16 @@ type StakeEntry struct {
 }
 ```
 
+The provider entity utilizes two different addresses: the operator address ("address" field in the StakeEntry protobuf) and the vault address. The operator address is used when running the provider process, while the vault address holds the provider's funds. This separation enhances security by allowing the user to store the vault address' private key on a different machine from the one running the visible provider process.
+
+Despite the provider being operated via the operator address, all rewards are directed to the vault address, which holds the provider's funds. Most provider-related transactions can be executed using the operator address, except for actions like staking/unstaking, changing delegation limit and commission, and claiming rewards. These actions can only be done by the vault address.
+
+It's important to note that the operator address is used for the pairing mechanism and relay payments. Also, note that specifying a vault address when staking a provider is optional. By default, the same address is used for both operating the provider and holding its funds.
+
 Geolocation are bit flags that indicate all the geolocations that the provider supports, this is the sum of all endpoints geolocations.
 for more about [geolocation](../../proto/lavanet/lava/plans/plan.proto).
 
 For more information about delegation, go to dualstaking [README.md](../dualstaking/README.md).
-
-For more information about the vault and operator addresses, see pairing module's [README.md](../pairing/README.md).
 
 ### EndPoint
 
