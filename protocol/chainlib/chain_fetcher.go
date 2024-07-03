@@ -152,6 +152,12 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 					utils.LogAttr("Latest_distance", verification.LatestDistance),
 				)
 			}
+		} else if verification.Value != "" {
+			expectedValue, err := strconv.Atoi(verification.Value)
+			if err != nil {
+				return utils.LavaFormatError("failed converting expected value to number", err, utils.LogAttr("value", verification.Value))
+			}
+			data = []byte(fmt.Sprintf(parsing.FunctionTemplate, expectedValue))
 		} else {
 			return utils.LavaFormatWarning("[-] verification misconfiguration", fmt.Errorf("FUNCTION_TAG_GET_BLOCK_BY_NUM defined without LatestDistance or LatestBlock"),
 				utils.LogAttr("latest_block", latestBlock),
@@ -222,7 +228,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		}
 	}
 	// some verifications only want the response to be valid, and don't care about the value
-	if verification.Value != "*" && verification.Value != "" {
+	if verification.Value != "*" && verification.Value != "" && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
 		if parsedResult != verification.Value {
 			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err, []utils.Attribute{
 				{Key: "chainId", Value: chainId},
