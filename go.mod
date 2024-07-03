@@ -33,6 +33,7 @@ require (
 	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7 v7.1.3
 	github.com/dgraph-io/badger/v4 v4.1.0
 	github.com/fullstorydev/grpcurl v1.8.5
+	github.com/goccy/go-json v0.10.2
 	github.com/gogo/status v1.1.0
 	github.com/golang/protobuf v1.5.3
 	github.com/jhump/protoreflect v1.15.1
@@ -78,7 +79,6 @@ require (
 	github.com/getsentry/sentry-go v0.23.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/golang/glog v1.1.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
