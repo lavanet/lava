@@ -2,33 +2,43 @@ services:
   lava-node-init:
     # Update with the most recent supported version of lavad
     image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
+    build:
+      context: ..
+      dockerfile: cmd/lavad/Dockerfile
     environment:
       - CHAIN_ID=${CHAIN_ID:-lava}
       - KEYRING_BACKEND=${KEYRING_BACKEND:-test}
       - MONIKER=${MONIKER:-DOCKER_COMPOSE_MONIKER}
+    entrypoint: ["sh", "-c"]
     command: >
-      config chain-id $$CHAIN_ID && \
-      lavad init validator --chain-id $$CHAIN_ID && \
-      lavad config keyring-backend $$KEYRING_BACKEND && \
-      lavad config broadcast-mode sync && \
-      lavad init $$MONIKER --chain-id $$CHAIN_ID
+      "
+      [ ! -f /lava/.lava/config/genesis.json ] && lavad init validator --chain-id $$CHAIN_ID &&
+      lavad config chain-id $$CHAIN_ID && 
+      lavad config keyring-backend $$KEYRING_BACKEND && 
+      lavad config broadcast-mode sync &&
+      [ ! -f /lava/.lava/keyring-test/user1.info ] && lavad keys add user1 || echo user1 already exists &&
+      [ ! -f /lava/.lava/keyring-test/service1.info ] && lavad keys add service1 || echo service1 already exists &&
+      lavad add-genesis-account user1 50000000000000ulava --keyring-backend test || echo failed adding user1 as genesis account &&
+      lavad add-genesis-account service1 50000000000000ulava --keyring-backend test || echo failed service1 as genesis account &&
+      lavad gentx user1 10000000000000ulava --chain-id $$CHAIN_ID --keyring-backend test || echo failed writing signed gen tx for user1
+      "
     volumes:
       - lava_data:/lava
     networks:
       - lava_network
-
+    
   lava-node-config:
     image: ghcr.io/tomwright/dasel:v2.7.0
     entrypoint: ["sh", "-c"]
     environment: []
     command: >
       "
-      dasel put -f /lava/.lava/config/genesis.json -t string -v ulava 'app_state.gov.params.min_deposit[0].denom' &&
-      dasel put -f /lava/.lava/config/genesis.json -t string -v '100' 'app_state.gov.params.min_deposit[0].amount' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v ulava 'app_state.gov.params.min_deposit.[0].denom' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '100' 'app_state.gov.params.min_deposit.[0].amount' &&
       dasel put -f /lava/.lava/config/genesis.json -t string -v '4s' 'app_state.gov.params.voting_period' &&
       dasel put -f /lava/.lava/config/genesis.json -t string -v '3s' 'app_state.gov.params.expedited_voting_period' &&
-      dasel put -f /lava/.lava/config/genesis.json -t string -v 'ulava' 'app_state.gov.params.expedited_min_deposit[0].denom' &&
-      dasel put -f /lava/.lava/config/genesis.json -t string -v '200' 'app_state.gov.params.expedited_min_deposit[0].amount' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v 'ulava' 'app_state.gov.params.expedited_min_deposit.[0].denom' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '200' 'app_state.gov.params.expedited_min_deposit.[0].amount' &&
       dasel put -f /lava/.lava/config/genesis.json -t string -v '0.67' 'app_state.gov.params.expedited_threshold' &&
       dasel put -f /lava/.lava/config/genesis.json -t string -v 'ulava' 'app_state.mint.params.mint_denom' &&
       dasel put -f /lava/.lava/config/genesis.json -t string -v 'ulava' 'app_state.staking.params.bond_denom' &&
@@ -39,12 +49,17 @@ services:
       dasel put -f /lava/.lava/config/genesis.json -t string -v '0' 'app_state.rewards.params.validators_subscription_participation' &&
       dasel put -f /lava/.lava/config/genesis.json -t string -v '1s' 'app_state.downtime.params.downtime_duration' &&
 
-      dasel put -f /lava/.lava/config/app.toml -t string -v 0ulava 'minimum-gas-prices' &&
-      dasel put -f /lava/.lava/config/app.toml -t string -v custom 'pruning' &&
-      dasel put -f /lava/.lava/config/app.toml -t string -v 100 'pruning-keep-recent' &&
-      dasel put -f /lava/.lava/config/app.toml -t string -v 0 'pruning-keep-every' &&
-      dasel put -f /lava/.lava/config/app.toml -t string -v 19 'pruning-interval' &&
-      dasel put -f /lava/.lava/config/app.toml -t string -v true 'api.enable'
+      dasel put -f /lava/.lava/config/config.toml -t string -v 1s 'consensus.timeout_propose' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v 500ms 'consensus.timeout_propose_delta' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v 1s 'consensus.timeout_prevote' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v 500ms 'consensus.timeout_prevote_delta' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v 500ms 'consensus.timeout_precommit' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v 1s 'consensus.timeout_precommit_delta' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v 1s 'consensus.timeout_commit' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v false 'consensus.skip_timeout_commit' &&
+
+      dasel put -f /lava/.lava/config/config.toml -t string -v true 'rosetta.enable' &&
+      dasel put -f /lava/.lava/config/config.toml -t string -v \"tcp://0.0.0.0:26657\" 'rpc.laddr'
       "
     volumes:
       - lava_data:/lava
@@ -58,7 +73,7 @@ services:
     # Update with the most recent supported version of lavad
     image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
     container_name: lava-node
-    command: ["start"]
+    command: ["start", "--pruning=nothing"]
     ports:
       - '${LAVA_NODE_PORT_API:-1317}:1317'
       - '${LAVA_NODE_PORT_GRPC:-9090}:9090'
@@ -85,11 +100,12 @@ services:
       - "3335:3335"
       - "3336:3336"
     volumes:
-      - ../config/consumer_example/lava_example.yml:/lava_example.yml
+      - ../config/consumer_examples/lava_example.yml:/lava/config/lava_example.yml:ro
+      - lava_data:/lava
     command:
       [
         "rpcconsumer",
-        "/lava_example.yml",
+        "lava_example.yml",
         "--chain-id",
         "lava",
         "--from",
@@ -106,17 +122,19 @@ services:
       ]
     depends_on:
       - lava-node
+    restart: always
 
   provider:
     image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-main}
     networks:
       - lava_network
     volumes:
-      - ../config/provider_example/lava_example.yml:/lava_example.yml
+      - ../config/provider_examples/lava_example.yml:/lava/config/lava_example.yml:ro
+      - lava_data:/lava
     command:
       [
         "rpcprovider",
-        "/lava_example.yml",
+        "lava_example.yml",
         "--chain-id",
         "lava",
         "--from",
@@ -132,6 +150,7 @@ services:
       ]
     depends_on:
       - lava-node
+    restart: always
 
 volumes:
   lava_data: 
