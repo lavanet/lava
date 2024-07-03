@@ -1,7 +1,0 @@
-endpoints:
-  - chain-id: ETH1
-    api-interface: jsonrpc
-    network-address: 127.0.0.1:3334
-metrics-listen-address: ":7780"
-# referer-be-address: "http://127.0.0.1:6500"
-# reports-be-address: "http://127.0.0.1:6501"
