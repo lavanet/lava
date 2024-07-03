@@ -26,6 +26,7 @@ var ( // Consumer Side Errors
 	FailedToConnectToEndPointForDataReliabilityError     = sdkerrors.New("FailedToConnectToEndPointForDataReliability Error", 683, "Failed to connect to a providers endpoints")
 	DataReliabilityEpochMismatchError                    = sdkerrors.New("DataReliabilityEpochMismatch Error", 684, "Data reliability epoch mismatch original session epoch.")
 	NoDataReliabilitySessionWasCreatedError              = sdkerrors.New("NoDataReliabilitySessionWasCreated Error", 685, "No Data reliability session was created")
+	ContextDoneNoNeedToLockSelectionError                = sdkerrors.New("ContextDoneNoNeedToLockSelection Error", 687, "Context deadline exceeded while trying to lock selection")
 )
 
 var ( // Provider Side Errors
