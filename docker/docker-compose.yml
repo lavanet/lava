@@ -1,101 +1,140 @@
-version: '3.9'
-
-x-vol:
-  - &vol-lava
-    ${LAVA_HOME_DIR:-.lava}:/lava/.lava
-
 services:
+  lava-node-init:
+    # Update with the most recent supported version of lavad
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
+    environment:
+      - CHAIN_ID=${CHAIN_ID:-lava}
+      - KEYRING_BACKEND=${KEYRING_BACKEND:-test}
+      - MONIKER=${MONIKER:-DOCKER_COMPOSE_MONIKER}
+    command: >
+      config chain-id $$CHAIN_ID && \
+      lavad init validator --chain-id $$CHAIN_ID && \
+      lavad config keyring-backend $$KEYRING_BACKEND && \
+      lavad config broadcast-mode sync && \
+      lavad init $$MONIKER --chain-id $$CHAIN_ID
+    volumes:
+      - lava_data:/lava
+    networks:
+      - lava_network
+
+  lava-node-config:
+    image: ghcr.io/tomwright/dasel:v2.7.0
+    entrypoint: ["sh", "-c"]
+    environment: []
+    command: >
+      "
+      dasel put -f /lava/.lava/config/genesis.json -t string -v ulava 'app_state.gov.params.min_deposit[0].denom' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '100' 'app_state.gov.params.min_deposit[0].amount' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '4s' 'app_state.gov.params.voting_period' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '3s' 'app_state.gov.params.expedited_voting_period' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v 'ulava' 'app_state.gov.params.expedited_min_deposit[0].denom' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '200' 'app_state.gov.params.expedited_min_deposit[0].amount' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '0.67' 'app_state.gov.params.expedited_threshold' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v 'ulava' 'app_state.mint.params.mint_denom' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v 'ulava' 'app_state.staking.params.bond_denom' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v 'ulava' 'app_state.crisis.constant_fee.denom' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '5' 'app_state.epochstorage.params.epochsToSave' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '4' 'app_state.epochstorage.params.epochBlocks' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '0' 'app_state.distribution.params.community_tax' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '0' 'app_state.rewards.params.validators_subscription_participation' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '1s' 'app_state.downtime.params.downtime_duration' &&
+
+      dasel put -f /lava/.lava/config/app.toml -t string -v 0ulava 'minimum-gas-prices' &&
+      dasel put -f /lava/.lava/config/app.toml -t string -v custom 'pruning' &&
+      dasel put -f /lava/.lava/config/app.toml -t string -v 100 'pruning-keep-recent' &&
+      dasel put -f /lava/.lava/config/app.toml -t string -v 0 'pruning-keep-every' &&
+      dasel put -f /lava/.lava/config/app.toml -t string -v 19 'pruning-interval' &&
+      dasel put -f /lava/.lava/config/app.toml -t string -v true 'api.enable'
+      "
+    volumes:
+      - lava_data:/lava
+    networks:
+      - lava_network
+    depends_on:
+      lava-node-init:
+          condition: service_completed_successfully
 
   lava-node:
-    build: ..
-    image: lava:latest
-    command: "node"
-    environment:
-      # common env
-      - LAVA_LISTEN_IP=${LAVA_LISTEN_IP:-0.0.0.0}
-      - LAVA_LOG_LEVEL=${LAVA_LOG_LEVEL:-info}
+    # Update with the most recent supported version of lavad
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
+    container_name: lava-node
+    command: ["start"]
     ports:
-      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_API:-1317}:1317'
-      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_GRPC:-9090}:9090'
-      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_GRPC_WEB:-9091}:9091'
-      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_P2P:-26656}:26656'
-      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_NODE_PORT_RPC:-26657}:26657'
-    deploy:
-      resources:
-        limits:
-          cpus: '4'
-          memory: '8gb'
-    restart: on-failure:5
-    profiles: ["node"]
+      - '${LAVA_NODE_PORT_API:-1317}:1317'
+      - '${LAVA_NODE_PORT_GRPC:-9090}:9090'
+      - '${LAVA_NODE_PORT_GRPC_WEB:-9091}:9091'
+      - '${LAVA_NODE_PORT_P2P:-26656}:26656'
+      - '${LAVA_NODE_PORT_RPC:-26657}:26657'
+    volumes:
+      - lava_data:/lava
+    networks:
+      - lava_network
+    restart: always
+    depends_on:
+      lava-node-init:
+        condition: service_completed_successfully
+      lava-node-config:
+        condition: service_completed_successfully
 
-# --- OUTDATED ---
-#  lava-portal:
-#    build: ..
-#    image: lava:latest
-#    command: "portal"
-#    volumes:
-#      - *vol-lava
-#    environment:
-#      # common env
-#      - LAVA_LISTEN_IP=${LAVA_LISTEN_IP:-0.0.0.0}
-#      - LAVA_LOG_LEVEL=${LAVA_LOG_LEVEL:-info}
-#      # portal env
-#      - LAVA_USER
-#      - LAVA_KEYRING
-#      - LAVA_ADDRESS
-#      - LAVA_STAKE_AMOUNT
-#      - LAVA_GAS_MODE
-#      - LAVA_GAS_ADJUST
-#      - LAVA_GAS_PRICE
-#      - LAVA_GEOLOCATION
-#      - LAVA_RPC_NODE
-#      - LAVA_CHAIN_ID
-#      - LAVA_RELAY_CHAIN_ID
-#      - LAVA_RELAY_IFACE
-#      - LAVA_PORTAL_PORT
-#    ports:
-#      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_PORTAL_PORT:-8080}:${LAVA_PORTAL_PORT:-8080}'
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '2'
-#          memory: '2gb'
-#    restart: on-failure:5
-#    profiles: ["portal"]
+  consumer:
+    image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-main}
+    networks:
+      - lava_network
+    ports:
+      - "3334:3334"
+      - "3335:3335"
+      - "3336:3336"
+    volumes:
+      - ../config/consumer_example/lava_example.yml:/lava_example.yml
+    command:
+      [
+        "rpcconsumer",
+        "/lava_example.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "user1",
+        "--geolocation",
+        "2",
+        "--log_level",
+        "trace",
+        "--allow-insecure-provider-dialing",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://lava-node:26657",
+      ]
+    depends_on:
+      - lava-node
 
-# --- OUTDATED ---
-#  lava-provider:
-#    build: ..
-#    image: lava:latest
-#    command: "provider"
-#    volumes:
-#      - *vol-lava
-#    environment:
-#      # common env
-#      - LAVA_LISTEN_IP=${LAVA_LISTEN_IP:-0.0.0.0}
-#      - LAVA_LOG_LEVEL=${LAVA_LOG_LEVEL:-info}
-#      # portal env
-#      - LAVA_USER
-#      - LAVA_KEYRING
-#      - LAVA_ADDRESS
-#      - LAVA_STAKE_AMOUNT
-#      - LAVA_GAS_MODE
-#      - LAVA_GAS_ADJUST
-#      - LAVA_GAS_PRICE
-#      - LAVA_GEOLOCATION
-#      - LAVA_RPC_NODE
-#      - LAVA_CHAIN_ID
-#      - LAVA_RELAY_ENDPOINT
-#      - LAVA_RELAY_NODE_URL
-#      - LAVA_RELAY_CHAIN_ID
-#      - LAVA_RELAY_IFACE
-#      - LAVA_PORTAL_PORT
-#    ports:
-#      - '${LAVA_LISTEN_IP:-0.0.0.0}:${LAVA_PORTAL_PORT:-8080}:${LAVA_PORTAL_PORT:-8080}'
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '2'
-#          memory: '4gb'
-#    restart: on-failure:5
-#    profiles: ["provider"]
+  provider:
+    image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-main}
+    networks:
+      - lava_network
+    volumes:
+      - ../config/provider_example/lava_example.yml:/lava_example.yml
+    command:
+      [
+        "rpcprovider",
+        "/lava_example.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer1",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://lava-node:26657",
+      ]
+    depends_on:
+      - lava-node
+
+volumes:
+  lava_data: 
+
+networks:
+  lava_network: 
