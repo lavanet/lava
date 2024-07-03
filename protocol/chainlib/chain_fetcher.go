@@ -149,7 +149,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				return utils.LavaFormatWarning("[-] verify failed getting non-earliest block for chainMessage", fmt.Errorf("latestBlock is smaller than latestDistance"),
 					utils.LogAttr("path", path),
 					utils.LogAttr("latest_block", latestBlock),
-					utils.LogAttr("Latest_distance", verification.LatestDistance),
+					utils.LogAttr("latest_distance", verification.LatestDistance),
 				)
 			}
 		} else if verification.Value != "" {
@@ -159,9 +159,10 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 			}
 			data = []byte(fmt.Sprintf(parsing.FunctionTemplate, expectedValue))
 		} else {
-			return utils.LavaFormatWarning("[-] verification misconfiguration", fmt.Errorf("FUNCTION_TAG_GET_BLOCK_BY_NUM defined without LatestDistance or LatestBlock"),
+			return utils.LavaFormatWarning("[-] verification misconfiguration", fmt.Errorf("FUNCTION_TAG_GET_BLOCK_BY_NUM defined without LatestDistance or LatestBlock or a proper expected value"),
 				utils.LogAttr("latest_block", latestBlock),
-				utils.LogAttr("Latest_distance", verification.LatestDistance),
+				utils.LogAttr("latest_distance", verification.LatestDistance),
+				utils.LogAttr("expected_value", verification.Value),
 			)
 		}
 	}
