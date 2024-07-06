@@ -1,4 +1,4 @@
-    {
+{
     "proposal": {
         "title": "Add Specs: Movement",
         "description": "Adding new specification support for relaying Movement data on Lava",
@@ -376,7 +376,7 @@
                                 "extra_compute_units": 0
                             }
                         ],
-                         "headers": [
+                        "headers": [
                             {
                                 "name": "x-aptos-ledger-version",
                                 "kind": "pass_reply"
@@ -453,14 +453,14 @@
                                     },
                                     "api_name": "/"
                                 },
-                               "values": [
+                                "values": [
                                     {
                                         "expected_value": "4"
                                     }
                                 ]
                             },
                             {
-                       "name": "pruning",
+                                "name": "pruning",
                                 "parse_directive": {
                                     "function_template": "/",
                                     "function_tag": "VERIFICATION",
@@ -476,7 +476,7 @@
                                 "values": [
                                     {
                                         "latest_distance": 21600
-                                    },   
+                                    },
                                     {
                                         "extension": "archive",
                                         "expected_value": "0"
@@ -501,7 +501,7 @@
                             "internal_path": "",
                             "type": "POST",
                             "add_on": ""
-                        },  
+                        },
                         "apis": [
                             {
                                 "name": "/transactions/simulate",
@@ -509,26 +509,7 @@
                                     "parser_arg": [
                                         "latest"
                                     ],
-                                    "parser_func": "DEFAULT"
-                                    "default_value": "latest"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": false,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 1
-                                },
-                                "extra_compute_units": 0
-                            }, 
-                            {
-                                "name": "/view",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
+                                    "parser_func": "DEFAULT",
                                     "default_value": "latest"
                                 },
                                 "compute_units": 10,
@@ -542,25 +523,6 @@
                                 "extra_compute_units": 0
                             },
                             {
-                                "name": "/transactions/batch",
-                                "block_parsing": {
-                                    "parser_arg": [
-                                        "latest"
-                                    ],
-                                    "parser_func": "DEFAULT"
-                                    "default_value": "latest"
-                                },
-                                "compute_units": 10,
-                                "enabled": true,
-                                "category": {
-                                    "deterministic": true,
-                                    "local": false,
-                                    "subscription": false,
-                                    "stateful": 0
-                                },
-                                "extra_compute_units": 0
-                            },
-                             {
                                 "name": "/tables/table_handle/raw_item",
                                 "block_parsing": {
                                     "parser_arg": [
