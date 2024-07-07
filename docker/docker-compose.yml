@@ -21,6 +21,7 @@ services:
       lavad add-genesis-account user1 50000000000000ulava --keyring-backend test || echo failed adding user1 as genesis account &&
       lavad add-genesis-account servicer1 50000000000000ulava --keyring-backend test || echo failed servicer1 as genesis account &&
       lavad gentx user1 10000000000000ulava --chain-id $$CHAIN_ID --keyring-backend test || echo failed writing signed gen tx for user1
+      lavad collect-gentxs
       "
     volumes:
       - lava_data:/lava
