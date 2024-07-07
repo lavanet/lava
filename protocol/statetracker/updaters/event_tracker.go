@@ -63,7 +63,7 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 		if err == nil {
 			break
 		}
-		time.Sleep(50 * time.Millisecond * time.Duration(i+1)) // need this so it doesn't just spam the attempts, and tendermint fails getting block results pretty often
+		time.Sleep(100 * time.Millisecond * time.Duration(i+1)) // need this so it doesn't just spam the attempts, and tendermint fails getting block results pretty often
 	}
 	if err != nil {
 		return utils.LavaFormatError("could not get block result", err, utils.LogAttr("block_requested", latestBlock))

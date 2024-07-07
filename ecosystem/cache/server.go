@@ -35,7 +35,7 @@ const (
 	DefaultExpirationTimeFinalizedMultiplier     = 1.0
 	DefaultExpirationTimeNonFinalizedMultiplier  = 1.0
 	DefaultExpirationTimeFinalized               = time.Hour
-	DefaultExpirationNodeErrors                  = 150 * time.Millisecond
+	DefaultExpirationNodeErrors                  = 250 * time.Millisecond
 	CacheNumCounters                             = 100000000 // expect 10M items
 	unixPrefix                                   = "unix:"
 )
