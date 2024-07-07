@@ -20,7 +20,7 @@ services:
       [ ! -f /lava/.lava/keyring-test/servicer1.info ] && lavad keys add servicer1 || echo servicer1 already exists &&
       lavad add-genesis-account user1 50000000000000ulava --keyring-backend test || echo failed adding user1 as genesis account &&
       lavad add-genesis-account servicer1 50000000000000ulava --keyring-backend test || echo failed servicer1 as genesis account &&
-      lavad gentx user1 10000000000000ulava --chain-id $$CHAIN_ID --keyring-backend test || echo failed writing signed gen tx for user1
+      lavad gentx user1 10000000000000ulava --chain-id $$CHAIN_ID --keyring-backend test || echo failed writing signed gen tx for user1 &&
       lavad collect-gentxs
       "
     volumes:
@@ -130,7 +130,7 @@ services:
     networks:
       - lava_network
     volumes:
-      - ../config/provider_examples/lava_example.yml:/lava/config/lava_example.yml:ro
+      - ./config/lava_example_compose.yml:/lava/config/lava_example.yml:ro
       - lava_data:/lava
     command:
       [
