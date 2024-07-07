@@ -11,7 +11,7 @@ import (
 
 	"google.golang.org/grpc/metadata"
 
-	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/lavanet/lava/protocol/badgegenerator/grpc"
 	"github.com/lavanet/lava/protocol/lavasession"
 	"github.com/lavanet/lava/utils"
@@ -271,7 +271,7 @@ func (s *Server) addPairingListToResponse(request *pairingtypes.GenerateBadgeReq
 // note this update the signature of the response
 func signTheResponse(privateKeyString string, response *pairingtypes.GenerateBadgeResponse) error {
 	privateKeyBytes, _ := hex.DecodeString(privateKeyString)
-	privateKey, _ := btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), privateKeyBytes)
+	privateKey, _ := btcSecp256k1.PrivKeyFromBytes(privateKeyBytes)
 	signature, err := sigs.Sign(privateKey, *response.Badge)
 	if err != nil {
 		return err
