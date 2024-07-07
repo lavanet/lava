@@ -833,7 +833,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	if err != nil {
 		if AddressIndexWasNotFoundError.Is(err) {
 			// in case index wasn,t found just continue with the method
-			utils.LavaFormatWarning("address was not found in valid addresses list", err, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses})
+			utils.LavaFormatDebug("address was not found in valid addresses list", utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses})
 		} else {
 			return err
 		}
