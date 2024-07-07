@@ -154,6 +154,18 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 	}
 }
 
+func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyBeforeProvider(analytics *RelayMetrics, chainId string, apiInterface string) {
+	if analytics != nil && analytics.ProcessingTimestamp.Before(time.Now()) {
+		rpccl.consumerMetricsManager.SetRelayProcessingLatencyBeforeProvider(time.Since(analytics.ProcessingTimestamp), chainId, apiInterface)
+	}
+}
+
+func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyAfterProvider(analytics *RelayMetrics, chainId string, apiInterface string) {
+	if analytics != nil && analytics.ProcessingTimestamp.Before(time.Now()) {
+		rpccl.consumerMetricsManager.SetRelayProcessingLatencyAfterProvider(time.Since(analytics.ProcessingTimestamp), chainId, apiInterface)
+	}
+}
+
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	rpccl.consumerRelayServerClient.SetRelayMetrics(data)

@@ -13,16 +13,17 @@ const (
 )
 
 type RelayMetrics struct {
-	ProjectHash  string
-	Timestamp    time.Time
-	ChainID      string
-	APIType      string
-	Latency      int64
-	Success      bool
-	ComputeUnits uint64
-	Source       RelaySource
-	Origin       string
-	ApiMethod    string
+	ProjectHash         string
+	Timestamp           time.Time
+	ChainID             string
+	APIType             string
+	Latency             int64
+	Success             bool
+	ComputeUnits        uint64
+	Source              RelaySource
+	Origin              string
+	ApiMethod           string
+	ProcessingTimestamp time.Time
 }
 
 type RelayAnalyticsDTO struct {
@@ -46,4 +47,12 @@ func NewRelayAnalytics(projectHash, chainId, apiType string) *RelayMetrics {
 		APIType:     apiType,
 		Source:      GatewaySource,
 	}
+}
+
+func (rm *RelayMetrics) SetProcessingTimestamp(timestamp time.Time) {
+	if rm == nil {
+		return
+	}
+
+	rm.ProcessingTimestamp = timestamp
 }
