@@ -21,6 +21,7 @@ func (k msgServer) FundIprpc(goCtx context.Context, msg *types.MsgFundIprpc) (*t
 	if err == nil {
 		logger := k.Keeper.Logger(ctx)
 		details := map[string]string{
+			"creator":  msg.Creator,
 			"spec":     msg.Spec,
 			"duration": strconv.FormatUint(msg.Duration, 10),
 			"amounts":  msg.Amounts.String(),

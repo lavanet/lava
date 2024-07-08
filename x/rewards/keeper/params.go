@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/x/rewards/types"
 )
@@ -14,6 +16,7 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.LeftoverBurnRate(ctx),
 		k.MaxRewardBoost(ctx),
 		k.ValidatorsSubscriptionParticipation(ctx),
+		k.IbcIprpcExpiration(ctx),
 	)
 }
 
@@ -55,5 +58,11 @@ func (k Keeper) MaxRewardBoost(ctx sdk.Context) (res uint64) {
 // ValidatorsSubscriptionParticipation returns the ValidatorsSubscriptionParticipation param
 func (k Keeper) ValidatorsSubscriptionParticipation(ctx sdk.Context) (res sdk.Dec) {
 	k.paramstore.Get(ctx, types.KeyValidatorsSubscriptionParticipation, &res)
+	return
+}
+
+// IbcIprpcExpiration returns the IbcIprpcExpiration param
+func (k Keeper) IbcIprpcExpiration(ctx sdk.Context) (res time.Duration) {
+	k.paramstore.Get(ctx, types.KeyIbcIprpcExpiration, &res)
 	return
 }

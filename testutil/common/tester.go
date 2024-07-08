@@ -14,6 +14,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/utils/lavaslices"
@@ -25,6 +26,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 	planstypes "github.com/lavanet/lava/x/plans/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
+	"github.com/lavanet/lava/x/rewards"
 	rewardstypes "github.com/lavanet/lava/x/rewards/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
 	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
@@ -34,10 +36,11 @@ import (
 type Tester struct {
 	T *testing.T
 
-	GoCtx   context.Context
-	Ctx     sdk.Context
-	Servers *testkeeper.Servers
-	Keepers *testkeeper.Keepers
+	GoCtx       context.Context
+	Ctx         sdk.Context
+	Servers     *testkeeper.Servers
+	Keepers     *testkeeper.Keepers
+	IbcTransfer porttypes.Middleware
 
 	accounts map[string]sigs.Account
 	plans    map[string]planstypes.Plan
@@ -75,11 +78,12 @@ func NewTesterRaw(t *testing.T) *Tester {
 	servers, keepers, GoCtx := testkeeper.InitAllKeepers(t)
 
 	ts := &Tester{
-		T:       t,
-		GoCtx:   GoCtx,
-		Ctx:     sdk.UnwrapSDKContext(GoCtx),
-		Servers: servers,
-		Keepers: keepers,
+		T:           t,
+		GoCtx:       GoCtx,
+		Ctx:         sdk.UnwrapSDKContext(GoCtx),
+		Servers:     servers,
+		Keepers:     keepers,
+		IbcTransfer: rewards.NewIBCMiddleware(keepers.IbcTransfer, keepers.Rewards),
 
 		accounts: make(map[string]sigs.Account),
 		plans:    make(map[string]planstypes.Plan),
@@ -699,6 +703,11 @@ func (ts *Tester) TxRewardsFundIprpc(creator string, spec string, duration uint6
 	return ts.Servers.RewardsServer.FundIprpc(ts.GoCtx, msg)
 }
 
+func (ts *Tester) TxRewardsCoverIbcIprpcFundCost(creator string, index uint64) (*rewardstypes.MsgCoverIbcIprpcFundCostResponse, error) {
+	msg := rewardstypes.NewMsgCoverIbcIprpcFundCost(creator, index)
+	return ts.Servers.RewardsServer.CoverIbcIprpcFundCost(ts.GoCtx, msg)
+}
+
 // TxCreateValidator: implement 'tx staking createvalidator' and bond its tokens
 func (ts *Tester) TxCreateValidator(validator sigs.Account, amount math.Int) {
 	consensusPowerTokens := ts.Keepers.StakingKeeper.TokensFromConsensusPower(ts.Ctx, 1)
@@ -969,6 +978,7 @@ func (ts *Tester) QueryRewardsShowIprpcData() (*rewardstypes.QueryShowIprpcDataR
 	return ts.Keepers.Rewards.ShowIprpcData(ts.GoCtx, msg)
 }
 
+// QueryRewardsShowIprpcData implements 'q rewards iprpc-provider-reward-estimation'
 func (ts *Tester) QueryRewardsIprpcProviderRewardEstimation(provider string) (*rewardstypes.QueryIprpcProviderRewardEstimationResponse, error) {
 	msg := &rewardstypes.QueryIprpcProviderRewardEstimationRequest{
 		Provider: provider,
@@ -976,11 +986,20 @@ func (ts *Tester) QueryRewardsIprpcProviderRewardEstimation(provider string) (*r
 	return ts.Keepers.Rewards.IprpcProviderRewardEstimation(ts.GoCtx, msg)
 }
 
+// QueryRewardsShowIprpcData implements 'q rewards iprpc-spec-reward'
 func (ts *Tester) QueryRewardsIprpcSpecReward(spec string) (*rewardstypes.QueryIprpcSpecRewardResponse, error) {
 	msg := &rewardstypes.QueryIprpcSpecRewardRequest{
 		Spec: spec,
 	}
 	return ts.Keepers.Rewards.IprpcSpecReward(ts.GoCtx, msg)
+}
+
+// QueryRewardsShowIprpcData implements 'q rewards pending-ibc-iprpc-funds'
+func (ts *Tester) QueryRewardsPendingIbcIprpcFunds(filter string) (*rewardstypes.QueryPendingIbcIprpcFundsResponse, error) {
+	msg := &rewardstypes.QueryPendingIbcIprpcFundsRequest{
+		Filter: filter,
+	}
+	return ts.Keepers.Rewards.PendingIbcIprpcFunds(ts.GoCtx, msg)
 }
 
 // block/epoch helpers

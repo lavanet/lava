@@ -17,13 +17,14 @@ const DefaultIndex uint64 = 1
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		// this line is used by starport scaffolding # genesis/types/default
-		Params:              DefaultParams(),
-		RefillRewardsTS:     *types.DefaultGenesis(),
-		BasePays:            []BasePayGenesis{},
-		IprpcSubscriptions:  []string{},
-		MinIprpcCost:        sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
-		IprpcRewards:        []IprpcReward{},
-		IprpcRewardsCurrent: 0,
+		Params:               DefaultParams(),
+		RefillRewardsTS:      *types.DefaultGenesis(),
+		BasePays:             []BasePayGenesis{},
+		IprpcSubscriptions:   []string{},
+		MinIprpcCost:         sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),
+		IprpcRewards:         []IprpcReward{},
+		IprpcRewardsCurrent:  0,
+		PendingIbcIprpcFunds: []PendingIbcIprpcFund{},
 	}
 }
 
@@ -65,6 +66,12 @@ func (gs GenesisState) Validate() error {
 					return fmt.Errorf("invalid iprpc reward fund. invalid coin: %s", coin.String())
 				}
 			}
+		}
+	}
+
+	for _, pendingIbcIprpcFund := range gs.PendingIbcIprpcFunds {
+		if !pendingIbcIprpcFund.IsValid() {
+			return fmt.Errorf("invalid ibc iprpc fund: %s", pendingIbcIprpcFund.String())
 		}
 	}
 
