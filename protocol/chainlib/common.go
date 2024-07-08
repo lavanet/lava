@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -182,22 +181,9 @@ func addAttributeToError(key, value, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
-// rpc default endpoint should be websocket. otherwise return an error
-func verifyRPCEndpoint(endpoints []common.NodeUrl) {
+func validateEndpoints(endpoints []common.NodeUrl, apiInterface string) {
 	for _, endpoint := range endpoints {
-		u, err := url.Parse(endpoint.Url)
-		if err != nil {
-			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint})
-		}
-
-		switch u.Scheme {
-		case "http", "https":
-			continue
-		case "ws", "wss":
-			continue
-		default:
-			utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), or http (http/https) got: "+u.Scheme, nil)
-		}
+		common.ValidateEndpoint(endpoint.Url, apiInterface)
 	}
 }
 

@@ -165,18 +165,43 @@ func (ac *AuthConfig) AddAuthPath(url string) string {
 
 func ValidateEndpoint(endpoint, apiInterface string) error {
 	switch apiInterface {
-	case spectypes.APIInterfaceJsonRPC, spectypes.APIInterfaceTendermintRPC, spectypes.APIInterfaceRest:
+	case spectypes.APIInterfaceRest:
 		parsedUrl, err := url.Parse(endpoint)
 		if err != nil {
-			return utils.LavaFormatError("could not parse node url", err, utils.Attribute{Key: "url", Value: endpoint}, utils.Attribute{Key: "apiInterface", Value: apiInterface})
+			return utils.LavaFormatError("could not parse node url", err,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
 		}
+
+		switch parsedUrl.Scheme {
+		case "http", "https":
+			return nil
+		default:
+			return utils.LavaFormatError("URL scheme should be (http/https), got: "+parsedUrl.Scheme, nil,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
+		}
+	case spectypes.APIInterfaceJsonRPC, spectypes.APIInterfaceTendermintRPC:
+		parsedUrl, err := url.Parse(endpoint)
+		if err != nil {
+			return utils.LavaFormatError("could not parse node url", err,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
+		}
+
 		switch parsedUrl.Scheme {
 		case "http", "https":
 			return nil
 		case "ws", "wss":
 			return nil
 		default:
-			return utils.LavaFormatError("URL scheme should be websocket (ws/wss) or (http/https), got: "+parsedUrl.Scheme, nil, utils.Attribute{Key: "apiInterface", Value: apiInterface})
+			return utils.LavaFormatError("URL scheme should be websocket (ws/wss) or (http/https), got: "+parsedUrl.Scheme, nil,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
 		}
 	case spectypes.APIInterfaceGrpc:
 		if endpoint == "" {

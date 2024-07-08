@@ -560,7 +560,8 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
-	verifyRPCEndpoint(rpcProviderEndpoint.NodeUrls)
+
+	validateEndpoints(rpcProviderEndpoint.NodeUrls, spectypes.APIInterfaceTendermintRPC)
 
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	cp := &tendermintRpcChainProxy{

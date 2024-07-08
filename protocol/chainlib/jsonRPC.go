@@ -492,7 +492,9 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 		},
 		conn: map[string]*chainproxy.Connector{},
 	}
-	verifyRPCEndpoint(rpcProviderEndpoint.NodeUrls)
+
+	validateEndpoints(rpcProviderEndpoint.NodeUrls, spectypes.APIInterfaceJsonRPC)
+
 	internalPaths := map[string]struct{}{}
 	jsonRPCChainParser, ok := chainParser.(*JsonRPCChainParser)
 	if ok {
