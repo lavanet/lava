@@ -848,8 +848,8 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	err := csm.removeAddressFromValidAddresses(address)
 	if err != nil {
 		if AddressIndexWasNotFoundError.Is(err) {
-			// in case index wasnt found just continue with the method
-			utils.LavaFormatError("address was not found in valid addresses", err, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses})
+			// in case index wasn,t found just continue with the method
+			utils.LavaFormatDebug("address was not found in valid addresses list", utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses})
 		} else {
 			return err
 		}

@@ -861,8 +861,8 @@ func TestGetSession(t *testing.T) {
 
 func TestContext(t *testing.T) {
 	ctx := context.Background()
-	ctxTO, cancel := context.WithTimeout(ctx, time.Millisecond)
-	time.Sleep(20 * time.Millisecond)
+	ctxTO, cancel := context.WithTimeout(ctx, 20*time.Millisecond)
+	time.Sleep(2 * time.Second)
 	require.Equal(t, ctxTO.Err(), context.DeadlineExceeded)
 	cancel()
 }

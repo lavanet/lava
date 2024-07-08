@@ -6,7 +6,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/utils"
