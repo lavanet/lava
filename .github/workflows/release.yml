@@ -26,8 +26,8 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        ref: ${{ github.event.inputs.release_tag != '' && github.event.inputs.release_tag || github.ref_name }}
-
+        ref: ${{ github.event.inputs.release_tag != '' && github.event.inputs.release_tag || github.ref_name }}    
+        
     - name: Fetch all tags
       run: |
         git fetch --force --tags
@@ -38,6 +38,7 @@ jobs:
         go-version-file: go.mod
         cache-dependency-path: go.sum
 
+
     - name: Run GoReleaser
       id: releaser
       uses: goreleaser/goreleaser-action@v5
@@ -46,96 +47,66 @@ jobs:
         args: release --clean --timeout 90m
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    # - name: Check for existing assests
-    #   id: existing_asset
-    #   run: |
-    #     if [ "${{ github.event.release.assets[0].name }}" = "lavad" ]; then
-    #       echo "URL=${{ github.event.release.assets[0].id }}" >> $GITHUB_OUTPUT
-    #       echo "URL=${{ github.event.release.assets[0].url }}" >> $GITHUB_OUTPUT
-    #       echo "CHECK=true" >> $GITHUB_OUTPUT
-    #     else
-    #       echo "CHECK=false" >> $GITHUB_OUTPUT
-    #     fi
-
-    # - name: Upload build to release
-    #   run: |
-    #     upload_binary () {
-    #       echo "Uploading binary to: $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad/g')"
-    #       curl \
-    #       -X POST \
-    #       -H "Accept: application/vnd.github+json" \
-    #       -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-    #       -H "Content-Type: $(file -b --mime-type build/lavad)" \
-    #       --data-binary @build/lavad \
-    #       $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavad-${{ github.event.release.tag_name }}-linux-amd64/g')
-
-    #       curl \
-    #       -X POST \
-    #       -H "Accept: application/vnd.github+json" \
-    #       -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-    #       -H "Content-Type: $(file -b --mime-type build/lavap)" \
-    #       --data-binary @build/lavap \
-    #       $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavap-${{ github.event.release.tag_name }}-linux-amd64/g')
-
-    #       curl \
-    #       -X POST \
-    #       -H "Accept: application/vnd.github+json" \
-    #       -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-    #       -H "Content-Type: $(file -b --mime-type build/lavavisor)" \
-    #       --data-binary @build/lavavisor \
-    #       $(echo '${{ github.event.release.upload_url }}' | sed 's/{?name,label}/?name=lavavisor-${{ github.event.release.tag_name }}-linux-amd64/g')
-    #     }
-
-    #     delete_binary(){
-    #       echo "Deleting existing binary"
-    #       curl \
-    #         -X DELETE \
-    #         -H "Accept: application/vnd.github+json" \
-    #         -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-    #         ${{ steps.existing_asset.outputs.URL }}
-    #     }
-
-    #     if ${{ steps.existing_asset.outputs.CHECK }}; then
-    #       delete_binary
-    #       upload_binary
-    #     else 
-    #       upload_binary
-    #     fi
-
-    # - name: Check for existing Checksum
-    #   id: existing_checksum
-    #   run: |
-    #     #Get Checksum of new build
-    #     export CHECKSUM=$(sha256sum build/lavad | cut -d " " -f1)
-
-    #     #Get the existing body
-    #     existing_body=$(curl \
-    #       -H "Accept: application/vnd.github+json" \
-    #       -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-    #       -H "Content-Type: $(file -b --mime-type build/lavad)" \
-    #       ${{ github.event.release.url }} | jq '.body')
-        
-    #     if [[ $existing_body == *"$CHECKSUM"* ]]; then
-    #       echo "CHECK=true" >> $GITHUB_OUTPUT
-    #       echo "Checksum hasn't changed."
-    #     else
-    #       echo "CHECK=false" >> $GITHUB_OUTPUT
-    #     cat <<EOF >> /tmp/body
-    #     $(echo $existing_body | sed '$s/.$//')\r\nChecksum $CHECKSUM"
-    #     EOF
-    #       echo -E "NEW_BODY=$(cat /tmp/body)" >> $GITHUB_OUTPUT
-    #     fi
-
-    # - name: Append Binary Checksum
-    #   uses: actions/github-script@v6
-    #   if: ${{ steps.existing_checksum.outputs.CHECK }} == 'false'
-    #   with:
-    #     github-token: ${{ secrets.GITHUB_TOKEN }}
-    #     script: |
-    #       const { data } = await github.rest.repos.updateRelease({
-    #         owner: context.repo.owner,
-    #         repo: context.repo.repo,
-    #         release_id: context.payload.release.id,
-    #         body: ${{ steps.existing_checksum.outputs.NEW_BODY }}
-    #       });
+  
+  release_docker:
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        binary: [lavap, lavad]
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: "lavanet/lava/${{ matrix.binary }}"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.release_tag != '' && github.event.inputs.release_tag || github.ref_name }}  
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3      
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}  
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          file: cmd/${{ matrix.binary }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            GIT_VERSION="${{ steps.meta.outputs.version }}"
+            GIT_COMMIT="${{ github.sha }}"
+          push: true
+      - name: Extract metadata (cosmovisor)
+        if: ${{ matrix.binary == 'lavad' }}
+        id: meta-cosmovisor
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cosmovisor
+          tags: |
+            type=raw,value=latest,enable=true
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        if: ${{ matrix.binary == 'lavad' }}
+        with:
+          tags: ${{ steps.meta-cosmovisor.outputs.tags }}
+          labels: ${{ steps.meta-cosmovisor.outputs.labels }}
+          file: cmd/${{ matrix.binary }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            GIT_VERSION="${{ steps.meta-cosmovisor.outputs.version }}"
+            GIT_COMMIT="${{ github.sha }}"
+          push: true

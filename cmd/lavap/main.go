@@ -67,6 +67,7 @@ func main() {
 	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
+	testCmd.AddCommand(statetracker.CreateRelayPaymentCSVCobraCommand())
 	testCmd.AddCommand(statetracker.CreateTxCounterCobraCommand())
 	testCmd.AddCommand(connection.CreateTestConnectionServerCobraCommand())
 	testCmd.AddCommand(connection.CreateTestConnectionProbeCobraCommand())
@@ -74,9 +75,8 @@ func main() {
 	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
 
 	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
-		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
-		flags.FlagKeyringBackend: "test",
-		flags.FlagGasAdjustment:  statetracker.DefaultGasAdjustment,
+		flags.FlagChainID:       strings.ReplaceAll(app.Name, "-", ""),
+		flags.FlagGasAdjustment: statetracker.DefaultGasAdjustment,
 	})
 
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {

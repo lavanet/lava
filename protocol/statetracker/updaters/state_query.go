@@ -127,13 +127,7 @@ func (csq *ConsumerStateQuery) GetEffectivePolicy(ctx context.Context, consumerA
 
 func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, latestBlock int64) (pairingList []epochstoragetypes.StakeEntry, epoch, nextBlockForUpdate uint64, errRet error) {
 	if chainID == "" {
-		if csq.lastChainID != "" {
-			chainID = csq.lastChainID
-		}
-		if chainID == "" {
-			chainID = "LAV1"
-			utils.LavaFormatWarning("failed to run get pairing as there is no entry for empty chainID call, using default chainID", nil, utils.Attribute{Key: "chainID", Value: chainID})
-		}
+		return nil, 0, 0, utils.LavaFormatError("chain id is empty in GetPairing while not allowed", nil, utils.Attribute{Key: "chainID", Value: chainID})
 	}
 
 	cachedInterface, found := csq.ResponsesCache.Get(PairingRespKey + chainID)
@@ -156,6 +150,13 @@ func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, l
 	}
 	csq.lastChainID = chainID
 	csq.ResponsesCache.SetWithTTL(PairingRespKey+chainID, pairingResp, 1, DefaultTimeToLiveExpiration)
+	if len(pairingResp.Providers) == 0 {
+		utils.LavaFormatWarning("Chain returned empty provider list, check node connection and consumer subscription status, or no providers provide this chain", nil,
+			utils.LogAttr("chainId", chainID),
+			utils.LogAttr("epoch", pairingResp.CurrentEpoch),
+			utils.LogAttr("consumer_address", csq.clientCtx.FromAddress.String()),
+		)
+	}
 	return pairingResp.Providers, pairingResp.CurrentEpoch, pairingResp.BlockOfNextPairing, nil
 }
 
@@ -300,7 +301,12 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 		psq.ResponsesCache.SetWithTTL(VerifyPairingRespKey+key, verifyResponse, 1, DefaultTimeToLiveExpiration)
 	}
 	if !verifyResponse.Valid {
-		return false, 0, "", utils.LavaFormatError("invalid self pairing with consumer", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "consumer address", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "from_cache", Value: extractedResultFromCache})
+		return false, 0, "", utils.LavaFormatError("invalid self pairing with consumer", nil,
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("consumer_address", consumerAddress),
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("from_cache", extractedResultFromCache),
+		)
 	}
 	return verifyResponse.Valid, int64(verifyResponse.GetPairedProviders()), verifyResponse.ProjectId, nil
 }

@@ -24,15 +24,26 @@ const (
 	RETRY_COUNT_HEADER_NAME                         = "Lava-Retries"
 	PROVIDER_LATEST_BLOCK_HEADER_NAME               = "Provider-Latest-Block"
 	GUID_HEADER_NAME                                = "Lava-Guid"
+	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
+	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
 	// these headers need to be lowercase
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
 	RELAY_TIMEOUT_HEADER_NAME             = "lava-relay-timeout"
 	EXTENSION_OVERRIDE_HEADER_NAME        = "lava-extension"
 	FORCE_CACHE_REFRESH_HEADER_NAME       = "lava-force-cache-refresh"
+	LAVA_DEBUG_RELAY                      = "lava-debug-relay"
 	// send http request to /lava/health to see if the process is up - (ret code 200)
 	DEFAULT_HEALTH_PATH                                       = "/lava/health"
 	MAXIMUM_ALLOWED_TIMEOUT_EXTEND_MULTIPLIER_BY_THE_CONSUMER = 4
 )
+
+var SPECIAL_LAVA_DIRECTIVE_HEADERS = map[string]struct{}{
+	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME: {},
+	RELAY_TIMEOUT_HEADER_NAME:             {},
+	EXTENSION_OVERRIDE_HEADER_NAME:        {},
+	FORCE_CACHE_REFRESH_HEADER_NAME:       {},
+	LAVA_DEBUG_RELAY:                      {},
+}
 
 type NodeUrl struct {
 	Url               string        `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
@@ -211,6 +222,7 @@ type RelayResult struct {
 	ConflictHandler ConflictHandlerInterface
 	StatusCode      int
 	Quorum          int
+	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
 }
 
 func (rr *RelayResult) GetReplyServer() *pairingtypes.Relayer_RelaySubscribeClient {

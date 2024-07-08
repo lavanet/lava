@@ -57,7 +57,7 @@ func (vu *VersionUpdater) updateInner(latestBlock int64) {
 		utils.LavaFormatError("could not get version when updated, did not update protocol version and needed to", err)
 		return
 	}
-	utils.LavaFormatInfo("Protocol version has been fetched successfully!",
+	utils.LavaFormatDebug("Protocol version has been fetched successfully!",
 		utils.Attribute{Key: "old_version", Value: vu.LastKnownVersion},
 		utils.Attribute{Key: "new_version", Value: version})
 	// if no error, set the last known version.
