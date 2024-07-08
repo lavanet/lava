@@ -140,7 +140,7 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 	}
 
 	// send the IBC tokens from IbcIprpcReceiver to PendingIprpcPool
-	err = im.keeper.SendIbcIprpcReceiverTokensToPendingIprpcPool(ctx, ibcTokens)
+	err = im.keeper.SendIbcIprpcReceiverTokensToPendingIprpcPool(ctx, ibcTokens.Sub(leftovers))
 	if err != nil {
 		detailedErr := utils.LavaFormatError("sending token from IbcIprpcReceiver to the PendingIprpcPool failed", err,
 			utils.LogAttr("sender", data.Sender),
