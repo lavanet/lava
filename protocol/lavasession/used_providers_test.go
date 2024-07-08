@@ -62,7 +62,7 @@ func TestUsedProvidersAsync(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
-		require.True(t, canUse)
+		require.Nil(t, canUse)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		go func() {
@@ -73,7 +73,7 @@ func TestUsedProvidersAsync(t *testing.T) {
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*100)
 		defer cancel()
 		canUseAgain := usedProviders.TryLockSelection(ctx)
-		require.True(t, canUseAgain)
+		require.Nil(t, canUseAgain)
 		unwanted := usedProviders.GetUnwantedProvidersToSend()
 		require.Len(t, unwanted, 2)
 		require.Equal(t, 2, usedProviders.CurrentlyUsed())
@@ -83,17 +83,32 @@ func TestUsedProvidersAsync(t *testing.T) {
 func TestUsedProvidersAsyncFail(t *testing.T) {
 	t.Run("concurrency", func(t *testing.T) {
 		usedProviders := NewUsedProviders(nil)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*100)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
-		require.True(t, canUse)
+		require.Nil(t, canUse)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Second*15)
 		defer cancel()
 		canUseAgain := usedProviders.TryLockSelection(ctx)
-		require.False(t, canUseAgain)
-		err := ctx.Err()
-		require.Error(t, err)
+		require.Error(t, canUseAgain)
+	})
+}
+
+func TestUsedProviderContextTimeout(t *testing.T) {
+	t.Run("concurrency", func(t *testing.T) {
+		usedProviders := NewUsedProviders(nil)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.Nil(t, canUse)
+		require.Zero(t, usedProviders.CurrentlyUsed())
+		require.Zero(t, usedProviders.SessionsLatestBatch())
+		ctx, cancel = context.WithTimeout(context.Background(), time.Second*1)
+		defer cancel()
+		canUseAgain := usedProviders.TryLockSelection(ctx)
+		require.Error(t, canUseAgain)
+		require.True(t, ContextDoneNoNeedToLockSelectionError.Is(canUseAgain))
 	})
 }

@@ -92,7 +92,7 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
 		require.NoError(t, ctx.Err())
-		require.True(t, canUse)
+		require.Nil(t, canUse)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
@@ -134,7 +134,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
 		require.NoError(t, ctx.Err())
-		require.True(t, canUse)
+		require.Nil(t, canUse)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
@@ -145,7 +145,7 @@ func TestRelayProcessorTimeout(t *testing.T) {
 			defer cancel()
 			canUse := usedProviders.TryLockSelection(ctx)
 			require.NoError(t, ctx.Err())
-			require.True(t, canUse)
+			require.Nil(t, canUse)
 			consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test3": &lavasession.SessionInfo{}, "lava@test4": &lavasession.SessionInfo{}}
 			usedProviders.AddUsed(consumerSessionsMap, nil)
 		}()
@@ -186,7 +186,7 @@ func TestRelayProcessorRetry(t *testing.T) {
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
 		require.NoError(t, ctx.Err())
-		require.True(t, canUse)
+		require.Nil(t, canUse)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
@@ -230,7 +230,7 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
 		require.NoError(t, ctx.Err())
-		require.True(t, canUse)
+		require.Nil(t, canUse)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
@@ -274,7 +274,7 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
 		require.NoError(t, ctx.Err())
-		require.True(t, canUse)
+		require.Nil(t, canUse)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava4@test": &lavasession.SessionInfo{}, "lava3@test": &lavasession.SessionInfo{}, "lava@test": &lavasession.SessionInfo{}, "lava2@test": &lavasession.SessionInfo{}}
@@ -319,7 +319,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
 		require.NoError(t, ctx.Err())
-		require.True(t, canUse)
+		require.Nil(t, canUse)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava4@test": &lavasession.SessionInfo{}, "lava3@test": &lavasession.SessionInfo{}, "lava@test": &lavasession.SessionInfo{}, "lava2@test": &lavasession.SessionInfo{}}
@@ -363,7 +363,7 @@ func TestRelayProcessorLatest(t *testing.T) {
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
 		require.NoError(t, ctx.Err())
-		require.True(t, canUse)
+		require.Nil(t, canUse)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
 

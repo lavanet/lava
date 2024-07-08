@@ -393,8 +393,11 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 	// set usedProviders if they were chosen for this relay
 	timeoutCtx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
-	canSelect := usedProviders.TryLockSelection(timeoutCtx)
-	if !canSelect {
+	cantSelectError := usedProviders.TryLockSelection(timeoutCtx)
+	if cantSelectError != nil {
+		if ContextDoneNoNeedToLockSelectionError.Is(cantSelectError) {
+			return nil, utils.LavaFormatDebug("Context deadline exceeded when trying to lock selection")
+		}
 		return nil, utils.LavaFormatError("failed getting sessions from used Providers", nil, utils.LogAttr("usedProviders", usedProviders), utils.LogAttr("endpoint", csm.rpcEndpoint))
 	}
 	defer func() { usedProviders.AddUsed(consumerSessionMap, errRet) }()
@@ -829,8 +832,8 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	err := csm.removeAddressFromValidAddresses(address)
 	if err != nil {
 		if AddressIndexWasNotFoundError.Is(err) {
-			// in case index wasnt found just continue with the method
-			utils.LavaFormatError("address was not found in valid addresses", err, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses})
+			// in case index wasn,t found just continue with the method
+			utils.LavaFormatDebug("address was not found in valid addresses list", utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses})
 		} else {
 			return err
 		}

@@ -9,7 +9,7 @@ import (
 
 	"google.golang.org/grpc/metadata"
 
-	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/lavanet/lava/protocol/chainlib"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -196,6 +196,7 @@ func (s *Server) validateRequestAndGetProjectData(clientIPAddress string, reques
 				utils.LogAttr("BadgeAddress", request.BadgeAddress),
 				utils.LogAttr("ProjectId", request.ProjectId),
 				utils.LogAttr("geolocation", geolocation),
+				utils.LogAttr("geolocationData", geolocationData),
 			)
 		}
 	}
