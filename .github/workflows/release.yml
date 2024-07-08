@@ -11,16 +11,14 @@ on:
         required: true
 
 permissions:
-  contents: read
+  contents: write
+  packages: write
 
 jobs:
   release:
     name: 'release'
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write
-      
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -49,8 +47,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
   release_docker:
-    permissions:
-      packages: write
     runs-on: ubuntu-latest
     strategy:
       matrix:
