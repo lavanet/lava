@@ -270,7 +270,8 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 	if relayCacheSet.Finalized {
 		cache := s.CacheServer.finalizedCache
 		if relayCacheSet.IsNodeError {
-			cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.CacheServer.ExpirationNodeErrors)
+			nodeErrorExpiration := lavaslices.Min([]time.Duration{time.Duration(relayCacheSet.AverageBlockTime), s.CacheServer.ExpirationNodeErrors})
+			cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), nodeErrorExpiration)
 		} else {
 			cache.SetWithTTL(cacheKey, cacheValue, cacheValue.Cost(), s.CacheServer.ExpirationFinalized)
 		}
