@@ -78,6 +78,7 @@ func CreateBadgeServerCobraCommand() *cobra.Command {
 		},
 	}
 
+	flags.AddKeyringFlags(cmd.Flags())
 	cmd.Flags().Int("epoch-interval", 30, "--epoch-interval=30")
 	cmd.Flags().String("port", "8080", "badge server listening port")
 	cmd.Flags().String("metrics-port", "8081", "badge server metrics port")

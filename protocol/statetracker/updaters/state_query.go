@@ -301,7 +301,12 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 		psq.ResponsesCache.SetWithTTL(VerifyPairingRespKey+key, verifyResponse, 1, DefaultTimeToLiveExpiration)
 	}
 	if !verifyResponse.Valid {
-		return false, 0, "", utils.LavaFormatError("invalid self pairing with consumer", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "consumer address", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "from_cache", Value: extractedResultFromCache})
+		return false, 0, "", utils.LavaFormatError("invalid self pairing with consumer", nil,
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("consumer_address", consumerAddress),
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("from_cache", extractedResultFromCache),
+		)
 	}
 	return verifyResponse.Valid, int64(verifyResponse.GetPairedProviders()), verifyResponse.ProjectId, nil
 }

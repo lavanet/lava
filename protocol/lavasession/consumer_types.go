@@ -50,7 +50,7 @@ var (
 
 type UsedProvidersInf interface {
 	RemoveUsed(providerAddress string, err error)
-	TryLockSelection(context.Context) bool
+	TryLockSelection(context.Context) error
 	AddUsed(ConsumerSessionsMap, error)
 	GetUnwantedProvidersToSend() map[string]struct{}
 	AddUnwantedAddresses(address string)
