@@ -28,14 +28,15 @@ import (
 )
 
 const (
-	initRetriesCount              = 4
-	BACKOFF_MAX_TIME              = 10 * time.Minute
-	maxFails                      = 10
-	debug                         = false
-	GoodStabilityThreshold        = 0.3
-	PollingUpdateLength           = 10
-	MostFrequentPollingMultiplier = 16
-	PollingMultiplierFlagName     = "polling-multiplier"
+	initRetriesCount               = 4
+	BACKOFF_MAX_TIME               = 10 * time.Minute
+	maxFails                       = 10
+	debug                          = false
+	GoodStabilityThreshold         = 0.3
+	PollingUpdateLength            = 10
+	MostFrequentPollingMultiplier  = 16
+	LavaPollingMultiplierFrequency = 4
+	PollingMultiplierFlagName      = "polling-multiplier"
 )
 
 var PollingMultiplier = uint64(1)
