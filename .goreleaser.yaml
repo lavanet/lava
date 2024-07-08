@@ -48,8 +48,6 @@ builds:
   - id: lavad
     binary: lavad
     dir: cmd/lavad
-    env:
-      - CGO_ENABLED=0
     goos:
       - linux
       - windows
