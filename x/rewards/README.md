@@ -220,7 +220,7 @@ The rewards module supports the following queries:
 | `generate-ibc-iprpc-tx`   | spec (string), duration (uint64, in months), amount (sdk.Coin, optional), src-port (string, optional), src-channel (string, optional), --from (string, mandatory), --node (string, mandatory), --memo-only (optional)            | generates an `ibc-transfer` transaction JSON that can be used to fund the IPRPC pool over IBC. To generate only the custom memo that triggers the IPRPC funding, use the `--memo-only` flag.                 |
 | `pending-ibc-iprpc-funds`   | filter (string, optional)            | Lists the pending IPRPC over IBC fund requests. Use the optional filter to filter by index, creator, or spec. Each entry is shown with the minimum IPRPC cost that needs to be paid to apply it.                  |
 
-Note, use the provider's operator address for the `iprpc-provider-reward` query. For more information on the operator and vault addresses see the pairing module's [README.md](../pairing/README.md).
+Note, use the provider's address for the `iprpc-provider-reward` query. For more information on the provider's two addresses (regular and vault) see the epochstorage module's [README.md](../epochstorage/README.md).
 
 ## Transactions
 

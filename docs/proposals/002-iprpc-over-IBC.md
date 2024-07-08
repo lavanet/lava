@@ -197,7 +197,7 @@ message QueryPendingIbcIprpcFundsResponse {
 // proto/lavanet/lava/rewards/iprpc.proto
 
 // Scaffolded map that holds iprpc fund requests information with increasing index (latest index will be saved as an on-chain single)
-// The iprpc fund will be applied and transfered to the IPRPC pool once a Lava account will issue a cover-iprpc-min-cost TX
+// The iprpc fund will be applied and transferred to the IPRPC pool once a Lava account will issue a cover-iprpc-min-cost TX
 
 message IbcIprpcFund {
 		uint64 index = 1;     // unique index

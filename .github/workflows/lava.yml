@@ -418,6 +418,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           file: cmd/${{ matrix.binary }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
           build-args: |
             GIT_VERSION="${{ steps.meta.outputs.version }}"
             GIT_COMMIT="${{ github.sha }}"

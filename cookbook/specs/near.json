@@ -264,6 +264,26 @@
                                 "timeout_ms": 5000
                             },
                             {
+                                "name": "send_tx",
+                                "block_parsing": {
+                                    "parser_arg": [
+                                        "latest"
+                                    ],
+                                    "parser_func": "DEFAULT"
+                                },
+                                "compute_units": 10,
+                                "enabled": true,
+                                "category": {
+                                    "deterministic": false,
+                                    "local": false,
+                                    "subscription": false,
+                                    "stateful": 1,
+                                    "hanging_api": true
+                                },
+                                "extra_compute_units": 0,
+                                "timeout_ms": 20000
+                            },
+                            {
                                 "name": "broadcast_tx_commit",
                                 "block_parsing": {
                                     "parser_arg": [
