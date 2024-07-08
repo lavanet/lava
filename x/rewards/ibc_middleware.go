@@ -197,7 +197,7 @@ func (im IBCMiddleware) SendPacket(ctx sdk.Context, chanCap *capabilitytypes.Cap
 
 // WriteAcknowledgement is called when handling async acks. Since the OnRecvPacket code returns on a nil ack (which indicates
 // that an async ack will occur), funds can stay stuck in the IbcIprpcReceiver account (which is a temp account that should
-// not hold funds). This code simply does the missing functionaliy that OnRecvPacket would do if the ack was not nil.
+// not hold funds). This code simply does the missing functionally that OnRecvPacket would do if the ack was not nil.
 func (im IBCMiddleware) WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet exported.PacketI,
 	ack exported.Acknowledgement,
 ) error {
