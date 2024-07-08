@@ -31,12 +31,14 @@ func TestFundIprpcTX(t *testing.T) {
 	}
 
 	// we fund as follows (to all we add the min IPRPC price. the description below is the funds that go to the pool):
+	// - invalid amount = exactly minIprpcCost
 	// - 10ulava,            1 month,   mockspec
 	// - 50uibc,             1 month,   mockspec
 	// - 90ulava + 30uibc,   3 months,  mockspec2
 	// - 130uibc,            3 months,  mockspec
 	// - 10ulava + 120uibc, 12 months,  mockspec2
 	fundIprpcTXsData := []fundIprpcData{
+		{spec: ts.specs[0].Index, duration: 1, fund: sdk.NewCoins(minIprpcCost)}, // invalid
 		{spec: ts.specs[0].Index, duration: 1, fund: sdk.NewCoins(
 			sdk.NewCoin(ts.BondDenom(), math.NewInt(10+minIprpcCost.Amount.Int64())),
 		)},
@@ -58,9 +60,13 @@ func TestFundIprpcTX(t *testing.T) {
 		)},
 	}
 
-	for _, txData := range fundIprpcTXsData {
+	for i, txData := range fundIprpcTXsData {
 		_, err = ts.TxRewardsFundIprpc(consumer, txData.spec, txData.duration, txData.fund)
-		require.NoError(t, err)
+		if i == 0 {
+			require.Error(t, err)
+		} else {
+			require.NoError(t, err)
+		}
 	}
 
 	// Expected total IPRPC pool balance (by TXs):

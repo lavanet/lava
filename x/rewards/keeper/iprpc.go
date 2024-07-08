@@ -17,40 +17,56 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 		return utils.LavaFormatWarning("spec not found or disabled", types.ErrFundIprpc)
 	}
 
-	// check fund consists of minimum amount of ulava (min_iprpc_cost)
-	minIprpcFundCost := k.GetMinIprpcCost(ctx)
-	if fund.AmountOf(k.stakingKeeper.BondDenom(ctx)).LT(minIprpcFundCost.Amount) {
-		return utils.LavaFormatWarning("insufficient ulava tokens in fund. should be at least min iprpc cost * duration", types.ErrFundIprpc,
-			utils.LogAttr("min_iprpc_cost", k.GetMinIprpcCost(ctx).String()),
-			utils.LogAttr("duration", strconv.FormatUint(duration, 10)),
-			utils.LogAttr("fund_ulava_amount", fund.AmountOf(k.stakingKeeper.BondDenom(ctx))),
-		)
-	}
+	// calculate total funds to transfer to the IPRPC pool (input fund is monthly fund)
+	totalFunds := fund.MulInt(math.NewIntFromUint64(duration))
 
-	// check creator has enough balance
-	addr, err := sdk.AccAddressFromBech32(creator)
-	if err != nil {
-		return utils.LavaFormatWarning("invalid creator address", types.ErrFundIprpc)
-	}
+	// if the fund TX originates from the gov module (keeper's authority field) or the pending IPRPC pool it's not paying the minimum IPRPC cost
+	if creator != k.authority && creator != string(types.PendingIprpcPoolName) {
+		// check fund consists of minimum amount of ulava (min_iprpc_cost)
+		minIprpcFundCost := k.GetMinIprpcCost(ctx)
+		if fund.AmountOf(k.stakingKeeper.BondDenom(ctx)).LT(minIprpcFundCost.Amount) {
+			return utils.LavaFormatWarning("insufficient ulava tokens in fund. should be at least min iprpc cost * duration", types.ErrFundIprpc,
+				utils.LogAttr("min_iprpc_cost", k.GetMinIprpcCost(ctx).String()),
+				utils.LogAttr("duration", strconv.FormatUint(duration, 10)),
+				utils.LogAttr("fund_ulava_amount", fund.AmountOf(k.stakingKeeper.BondDenom(ctx))),
+			)
+		} else if fund.IsEqual(sdk.NewCoins(minIprpcFundCost)) {
+			return utils.LavaFormatWarning("funds are equal to min iprpc cost, no funds left to send to iprpc pool", types.ErrFundIprpc,
+				utils.LogAttr("creator", creator),
+				utils.LogAttr("spec", spec),
+				utils.LogAttr("funds", fund.String()),
+				utils.LogAttr("min_iprpc_cost", minIprpcFundCost.String()),
+			)
+		}
 
-	// send the minimum cost to the validators allocation pool (and subtract them from the fund)
-	minIprpcFundCostCoins := sdk.NewCoins(minIprpcFundCost).MulInt(sdk.NewIntFromUint64(duration))
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.ValidatorsRewardsAllocationPoolName), minIprpcFundCostCoins)
-	if err != nil {
-		return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding validator allocation pool", err,
-			utils.LogAttr("creator", creator),
-			utils.LogAttr("min_iprpc_fund_cost", minIprpcFundCost.String()),
-		)
+		// send the minimum cost to the validators allocation pool (and subtract them from the fund)
+		minIprpcFundCostCoins := sdk.NewCoins(minIprpcFundCost).MulInt(sdk.NewIntFromUint64(duration))
+		addr, err := sdk.AccAddressFromBech32(creator)
+		if err != nil {
+			return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding validator allocation pool with min iprpc cost", err,
+				utils.LogAttr("creator", creator),
+				utils.LogAttr("min_iprpc_fund_cost", minIprpcFundCost.String()),
+			)
+		}
+		err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.ValidatorsRewardsAllocationPoolName), minIprpcFundCostCoins)
+		if err != nil {
+			return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding validator allocation pool with min iprpc cost", err,
+				utils.LogAttr("creator", creator),
+				utils.LogAttr("min_iprpc_fund_cost", minIprpcFundCost.String()),
+			)
+		}
+		fund = fund.Sub(minIprpcFundCost)
+		totalFunds = fund.MulInt(math.NewIntFromUint64(duration))
 	}
-	fund = fund.Sub(minIprpcFundCost)
-	allFunds := fund.MulInt(math.NewIntFromUint64(duration))
 
 	// send the funds to the iprpc pool
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.IprpcPoolName), allFunds)
+	err := k.sendCoinsToIprpcPool(ctx, creator, totalFunds)
 	if err != nil {
 		return utils.LavaFormatError(types.ErrFundIprpc.Error()+"for funding iprpc pool", err,
 			utils.LogAttr("creator", creator),
-			utils.LogAttr("fund", fund.String()),
+			utils.LogAttr("monthly_fund", fund.String()),
+			utils.LogAttr("duration", duration),
+			utils.LogAttr("total_fund", totalFunds.String()),
 		)
 	}
 
@@ -58,6 +74,20 @@ func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund
 	k.addSpecFunds(ctx, spec, fund, duration, true)
 
 	return nil
+}
+
+func (k Keeper) sendCoinsToIprpcPool(ctx sdk.Context, sender string, amount sdk.Coins) error {
+	// sender is gov module or pending IPRPC pool - use SendCoinsFromModuleToModule
+	if sender == k.authority || sender == string(types.PendingIprpcPoolName) {
+		return k.bankKeeper.SendCoinsFromModuleToModule(ctx, sender, string(types.IprpcPoolName), amount)
+	}
+
+	addr, err := sdk.AccAddressFromBech32(sender)
+	if err != nil {
+		return err
+	}
+
+	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, string(types.IprpcPoolName), amount)
 }
 
 // handleNoIprpcRewardToProviders handles the situation in which there are no providers to send IPRPC rewards to

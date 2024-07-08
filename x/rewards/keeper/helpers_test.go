@@ -10,6 +10,8 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/lavanet/lava/testutil/common"
 	testkeeper "github.com/lavanet/lava/testutil/keeper"
 	"github.com/lavanet/lava/testutil/sample"
@@ -36,6 +38,7 @@ var (
 		sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1100)),
 		sdk.NewCoin(ibcDenom, sdk.NewInt(500)),
 	)
+	mockSpec  string = "mockspec"
 	mockSpec2 string = "mock2"
 )
 
@@ -226,4 +229,44 @@ func (ts *tester) makeBondedRatioNonZero() {
 
 	bondedRatio = ts.Keepers.StakingKeeper.BondedRatio(ts.Ctx)
 	require.True(ts.T, bondedRatio.Equal(sdk.NewDecWithPrec(25, 2))) // according to "valInitBalance", bondedRatio should be 0.25
+}
+
+func (ts *tester) SendIprpcOverIbcTransferPacket(sender sdk.AccAddress, amount sdk.Coin, duration uint64) {
+	// get the sender's and PendingIprpcPool before sending the packet
+	senderBalanceBefore := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, sender, amount.Denom)
+	pendingIprpcPoolBalanceBefore := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.PendingIprpcPoolName)
+
+	// create packet data
+	memo, err := rewardstypes.CreateIprpcMemo(sender.String(), mockSpec, duration)
+	require.NoError(ts.T, err)
+	data := transfertypes.NewFungibleTokenPacketData(amount.Denom, amount.Amount.String(), sender.String(), "dummy", memo)
+	marshelledData, err := transfertypes.ModuleCdc.MarshalJSON(&data)
+	require.NoError(ts.T, err)
+
+	// create packet
+	packet := channeltypes.NewPacket(marshelledData, 0, testkeeper.MockSrcPort, testkeeper.MockSrcChannel, testkeeper.MockDestPort, testkeeper.MockDestChannel, clienttypes.ZeroHeight(), 1)
+
+	// call OnRecvPacket
+	ack := ts.IbcTransfer.OnRecvPacket(ts.Ctx, packet, sample.AccAddressObject())
+	if ack == nil || !ack.Success() {
+		require.FailNow(ts.T, "ibc transfer failed")
+	}
+
+	// verify the sender's balance went down and the PendingIprpcPool balance went up
+	senderBalanceAfter := ts.Keepers.BankKeeper.GetBalance(ts.Ctx, sender, amount.Denom)
+	pendingIprpcPoolBalanceAfter := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.PendingIprpcPoolName)
+
+	senderDiff := sdk.NewCoins(senderBalanceBefore.Sub(senderBalanceAfter))
+	require.True(ts.T, senderDiff.IsEqual(sdk.NewCoins(amount)))
+
+	// pending pool gets the funds after going through the IBC channel -> check balance with ibc denom (subtracting leftovers)
+	pendingIprpcPoolDiff := pendingIprpcPoolBalanceAfter.Sub(pendingIprpcPoolBalanceBefore...)
+	leftoversAmount := amount.Amount.ModRaw(int64(duration))
+	ibcTokens := transfertypes.GetTransferCoin(packet.DestinationPort, packet.DestinationChannel, amount.Denom, amount.Amount)
+	expectedIbcSenderDiff := sdk.NewCoins(sdk.NewCoin(ibcTokens.Denom, ibcTokens.Amount.Sub(leftoversAmount)))
+	require.True(ts.T, expectedIbcSenderDiff.IsEqual(pendingIprpcPoolDiff))
+}
+
+func GetIbcCoins(amount sdk.Coin) sdk.Coin {
+	return transfertypes.GetTransferCoin(testkeeper.MockDestPort, testkeeper.MockDestChannel, amount.Denom, amount.Amount)
 }

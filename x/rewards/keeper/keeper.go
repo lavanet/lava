@@ -113,6 +113,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 // redeclaring BeginBlock for testing (this is not called outside of unit tests)
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	k.DistributeBlockReward(ctx)
+	k.RemoveExpiredPendingIbcIprpcFunds(ctx)
 }
 
 func (k Keeper) GetModuleAddress() string {

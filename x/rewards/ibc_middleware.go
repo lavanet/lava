@@ -3,6 +3,7 @@ package rewards
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -109,18 +110,6 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
 
-	// send the IBC transfer to get the tokens
-	ack := im.sendIbcTransfer(ctx, packet, relayer, data.Sender, types.IbcIprpcReceiverAddress().String())
-	if ack == nil || !ack.Success() {
-		// we check for ack == nil because it means that IBC transfer module did not return an acknowledgement.
-		// This isn't necessarily an error, but it could indicate unexpected behavior or asynchronous processing
-		// on the IBC transfer module's side (which returns a non-nil ack when executed without errors). Asynchronous
-		// processing can be queued processing of packets, interacting with external APIs and more. These can cause
-		// delays in the IBC-transfer's processing which will make the module return a nil ack until the processing is done.
-		// Asyncronous acks are handled in the WriteAcknowledgement middleware method.
-		return ack
-	}
-
 	// get the IBC tokens that were transferred to the IbcIprpcReceiverAddress
 	amount, ok := sdk.NewIntFromString(data.Amount)
 	if !ok {
@@ -131,6 +120,25 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 	}
 	ibcTokens := transfertypes.GetTransferCoin(packet.DestinationPort, packet.DestinationChannel, data.Denom, amount)
 
+	// set pending IPRPC over IBC requests on-chain
+	// leftovers are the tokens that were not registered in the PendingIbcIprpcFund objects due to int division
+	piif, leftovers, err := im.keeper.NewPendingIbcIprpcFund(ctx, memo.Creator, memo.Spec, memo.Duration, ibcTokens)
+	if err != nil {
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+
+	// send the IBC transfer to get the tokens
+	ack := im.sendIbcTransfer(ctx, packet, relayer, data.Sender, types.IbcIprpcReceiverAddress().String())
+	if ack == nil || !ack.Success() {
+		// we check for ack == nil because it means that IBC transfer module did not return an acknowledgement.
+		// This isn't necessarily an error, but it could indicate unexpected behavior or asynchronous processing
+		// on the IBC transfer module's side (which returns a non-nil ack when executed without errors). Asynchronous
+		// processing can be queued processing of packets, interacting with external APIs and more. These can cause
+		// delays in the IBC-transfer's processing which will make the module return a nil ack until the processing is done.
+		im.keeper.RemovePendingIbcIprpcFund(ctx, piif.Index)
+		return ack
+	}
+
 	// send the IBC tokens from IbcIprpcReceiver to PendingIprpcPool
 	err = im.keeper.SendIbcIprpcReceiverTokensToPendingIprpcPool(ctx, ibcTokens)
 	if err != nil {
@@ -140,8 +148,25 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		return channeltypes.NewErrorAcknowledgement(detailedErr)
 	}
 
-	// TODO: define a PendingIbcIprpcFund store to keep track on pending requests. Also create an event that
-	// a new pending request has been created
+	// transfer the leftover IBC tokens to the community pool
+	err = im.keeper.FundCommunityPoolFromIbcIprpcReceiver(ctx, leftovers)
+	if err != nil {
+		detailedErr := utils.LavaFormatError("could not send leftover tokens from IbcIprpcReceiverAddress to community pool, tokens are locked in IbcIprpcReceiverAddress", err,
+			utils.LogAttr("amount", leftovers.String()),
+			utils.LogAttr("sender", data.Sender),
+		)
+		return channeltypes.NewErrorAcknowledgement(detailedErr)
+	}
+
+	// make event
+	utils.LogLavaEvent(ctx, im.keeper.Logger(ctx), types.NewPendingIbcIprpcFundEventName, map[string]string{
+		"index":        strconv.FormatUint(piif.Index, 10),
+		"creator":      piif.Creator,
+		"spec":         piif.Spec,
+		"duration":     strconv.FormatUint(piif.Duration, 10),
+		"monthly_fund": piif.Fund.String(),
+		"expiry":       strconv.FormatUint(piif.Expiry, 10),
+	}, "New pending IBC IPRPC fund was created successfully")
 
 	return channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 }
