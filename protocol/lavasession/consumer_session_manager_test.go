@@ -132,7 +132,7 @@ func TestEndpointSortingFlow(t *testing.T) {
 	require.NoError(t, err)
 	csm := CreateConsumerSessionManager()
 	pairingList := createPairingList("", true)
-	pairingList[0].Endpoints = append(pairingList[0].Endpoints, &Endpoint{NetworkAddress: delayedAddress, Enabled: true, Client: nil, ConnectionRefusals: 0})
+	pairingList[0].Endpoints = append(pairingList[0].Endpoints, &Endpoint{NetworkAddress: delayedAddress, Enabled: true, Connections: []*EndpointConnection{}, ConnectionRefusals: 0})
 	// swap locations so that the endpoint of the delayed will be first
 	pairingList[0].Endpoints[0], pairingList[0].Endpoints[1] = pairingList[0].Endpoints[1], pairingList[0].Endpoints[0]
 
@@ -225,10 +225,10 @@ func createPairingList(providerPrefixAddress string, enabled bool) map[uint64]*C
 	cswpList := make(map[uint64]*ConsumerSessionsWithProvider, 0)
 	pairingEndpoints := make([]*Endpoint, 1)
 	// we need a grpc server to connect to. so we use the public rpc endpoint for now.
-	pairingEndpoints[0] = &Endpoint{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0}
-	pairingEndpointsWithAddon := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}}}
-	pairingEndpointsWithExtension := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}, Extensions: map[string]struct{}{"ext1": {}}}}
-	pairingEndpointsWithExtensions := []*Endpoint{{NetworkAddress: grpcListener, Enabled: enabled, Client: nil, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}, Extensions: map[string]struct{}{"ext1": {}, "ext2": {}}}}
+	pairingEndpoints[0] = &Endpoint{Connections: []*EndpointConnection{}, NetworkAddress: grpcListener, Enabled: enabled, ConnectionRefusals: 0}
+	pairingEndpointsWithAddon := []*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: grpcListener, Enabled: enabled, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}}}
+	pairingEndpointsWithExtension := []*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: grpcListener, Enabled: enabled, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}, Extensions: map[string]struct{}{"ext1": {}}}}
+	pairingEndpointsWithExtensions := []*Endpoint{{Connections: []*EndpointConnection{}, NetworkAddress: grpcListener, Enabled: enabled, ConnectionRefusals: 0, Addons: map[string]struct{}{"addon": {}}, Extensions: map[string]struct{}{"ext1": {}, "ext2": {}}}}
 	for p := 0; p < numberOfProviders; p++ {
 		var endpoints []*Endpoint
 		switch p {
@@ -320,7 +320,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 	err := csm.UpdateAllProviders(firstEpochHeight, map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0], 1: pairingList[1]}) // create two providers
 	require.NoError(t, err)
 
-	for i := 0; i <= MaximumNumberOfFailuresAllowedPerConsumerSession; i++ {
+	for i := 0; i <= MaximumNumberOfFailuresAllowedPerConsumerSession+1; i++ {
 		usedProviders := NewUsedProviders(map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress})
 		css, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 		require.NoError(t, err)
