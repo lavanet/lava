@@ -349,12 +349,11 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	var err error
 	// try sending a relay 3 times. if failed return the error
 	for retryFirstRelayAttempt := 0; retryFirstRelayAttempt < SendRelayAttempts; retryFirstRelayAttempt++ {
-		if retryFirstRelayAttempt == 0 {
-			// measure before provider processing time metric only on the first relay transmission
-			err = rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor, analytics)
-		} else {
-			err = rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor, nil)
+		// record the relay analytics only on the first attempt.
+		if analytics != nil && retryFirstRelayAttempt > 0 {
+			analytics = nil
 		}
+		err = rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor, analytics)
 
 		// check if we had an error. if we did, try again.
 		if err == nil {
