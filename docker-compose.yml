@@ -1,0 +1,123 @@
+services:
+  certbot:
+    container_name: certbot
+    image: certbot/certbot:latest
+    volumes:
+      - ./etc/letsencrypt:/etc/letsencrypt
+      - ./certbot/data:/var/www/certbot
+    command: >-
+      certonly --reinstall --webroot --webroot-path=/var/www/certbot
+      --email elad@lavanet.xyz --agree-tos --no-eff-email
+      -d envoy
+  envoy:
+    image: envoyproxy/envoy:v1.30-latest
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
+      - ./etc/letsencrypt:/etc/letsencrypt:ro
+      - ./certbot/data:/var/www/certbot:ro
+    ports:
+      - "9901:9901"
+    depends_on:
+      - consumer
+      - provider1
+      - provider2
+      - provider3
+
+  consumer:
+    image: lavap
+    ports:
+      - "3334:3334"
+      - "3335:3335"
+      - "3336:3336"
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    command:
+      [
+        "rpcconsumer",
+        "consumer_examples/lava_example.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "user1",
+        "--geolocation",
+        "2",
+        "--log_level",
+        "trace",
+        "--allow-insecure-provider-dialing",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]
+
+  provider1:
+    image: lavap
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    ports:
+      - "2221:2221"
+    command:
+      [
+        "rpcprovider",
+        "provider_examples/lava_example1.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer1",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]
+
+  provider2:
+    image: lavap
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    ports:
+      - "2222:2222"
+    command:
+      [
+        "rpcprovider",
+        "provider_examples/lava_example2.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer2",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]
+
+  provider3:
+    image: lavap
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    ports:
+      - "2223:2223"
+    command:
+      [
+        "rpcprovider",
+        "provider_examples/lava_example3.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer3",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]

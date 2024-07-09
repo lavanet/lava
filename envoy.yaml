@@ -1,0 +1,85 @@
+static_resources:
+  listeners:
+    - name: listener_0
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 9901
+      filter_chains:
+        - filter_chain_match:
+            transport_protocol: tls
+          transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              common_tls_context:
+                tls_certificates:
+                  - certificate_chain:
+                      filename: "/etc/envoy/certs/server.crt"
+                    private_key:
+                      filename: "/etc/envoy/certs/server.key"
+                validation_context:
+                  trusted_ca:
+                    filename: "/etc/envoy/certs/server.crt"
+                  match_subject_alt_names:
+                    - exact: "lavanet.xyz"
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                codec_type: AUTO
+                route_config:
+                  name: local_route
+                  virtual_hosts:
+                    - name: backend
+                      domains: ["*"]
+                      routes:
+                        - match:
+                            prefix: "/"
+                          route:
+                            cluster: grpc_servers
+                http_filters:
+                  - name: envoy.filters.http.stateful_session
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSession
+                      session_state:
+                        name: envoy.http.stateful_session.header
+                        typed_config:
+                          "@type": type.googleapis.com/envoy.extensions.http.stateful_session.header.v3.HeaderBasedSessionState
+                          name: session-header
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  clusters:
+    - name: grpc_servers
+      connect_timeout: 0.25s
+      type: strict_dns
+      lb_policy: round_robin
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          common_tls_context:
+            validation_context:
+              trusted_ca:
+                filename: "/etc/envoy/certs/server.crt"
+      load_assignment:
+        cluster_name: grpc_servers
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: provider1
+                      port_value: 2221
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: provider2
+                      port_value: 2222
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: provider3
+                      port_value: 2223
