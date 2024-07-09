@@ -345,7 +345,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		}
 		// Return json response and add metric for after provider processing
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
-		go apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
 		return err
 	}
 
@@ -419,7 +419,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 
 		// Return json response
 		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
-		go apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
 		return err
 	}
 
