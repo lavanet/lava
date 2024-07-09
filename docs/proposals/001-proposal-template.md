@@ -62,7 +62,7 @@ Add a list of detailed use cases this enhancement intends to take care of.
 As a user, I would like to understand the drift. (This is an example)
 
 #### Use case 2:
-As a user, I would like to take an action on the deviation/drift. (This is an example)
+As a user, I would like to take action on the deviation/drift. (This is an example)
 
 ### Implementation Details/Notes/Constraints [optional]
 
