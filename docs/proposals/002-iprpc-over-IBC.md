@@ -131,7 +131,7 @@ func (im IBCMiddleware) GetAppVersion(ctx sdk.Context, portID, channelID string)
 
 // OnRecvPacket does the following (ref: https://github.com/cosmos/ibc-go/blob/v7.0.0/modules/apps/29-fee/ibc_middleware.go#L217-L238):
 // 1. checks the packet's memo. Not valid -> do nothing and transfer the packet to the transfer stack
-// 2. if valid, extract the memo's paramenters and change the ibc-transfer packet's receiver to be the rewards module address. Also,
+// 2. if valid, extract the memo's parameters and change the ibc-transfer packet's receiver to be the rewards module address. Also,
 //    make the memo be empty.
 // 3. call the transfer stack's OnRecvPacket with the modified packet -> the rewards module will get the IBC tokens
 // 4. set a new IbcIprpcFund with the parameters from the memo (see below in the "IBC IPRPC fund" section)
