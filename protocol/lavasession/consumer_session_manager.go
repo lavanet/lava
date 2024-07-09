@@ -157,8 +157,10 @@ func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []
 func (csm *ConsumerSessionManager) closePurgedUnusedPairingsConnections() {
 	for _, purgedPairing := range csm.pairingPurge {
 		for _, endpoint := range purgedPairing.Endpoints {
-			if endpoint.connection != nil {
-				endpoint.connection.Close()
+			for _, endpointConnection := range endpoint.Connections {
+				if endpointConnection.connection != nil {
+					endpointConnection.connection.Close()
+				}
 			}
 		}
 	}
@@ -215,7 +217,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 
 	var endpointInfos []EndpointInfo
 	lastError := fmt.Errorf("endpoints list is empty") // this error will happen if we had 0 endpoints
-	for _, endpoint := range endpoints {
+	for _, endpointAndConnection := range endpoints {
 		err := func() error {
 			connectCtx, cancel := context.WithTimeout(ctx, common.AverageWorldLatency)
 			defer cancel()
@@ -223,12 +225,12 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 			if !found {
 				return utils.LavaFormatError("probeProvider failed fetching unique identifier from context when it's set", nil)
 			}
-			if endpoint.Client == nil {
+			if endpointAndConnection.chosenEndpointConnection.Client == nil {
 				consumerSessionsWithProvider.Lock.Lock()
 				defer consumerSessionsWithProvider.Lock.Unlock()
 				return utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
 			}
-			client := *endpoint.Client
+			client := *endpointAndConnection.chosenEndpointConnection.Client
 			probeReq := &pairingtypes.ProbeRequest{
 				Guid:         guid,
 				SpecId:       csm.rpcEndpoint.ChainID,
@@ -252,7 +254,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 
 			endpointInfos = append(endpointInfos, EndpointInfo{
 				Latency:  relayLatency,
-				Endpoint: endpoint,
+				Endpoint: endpointAndConnection.endpoint,
 			})
 			// public lava address is a value that is not changing, so it's thread safe
 			if DebugProbes {
@@ -460,7 +462,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 			reportedProviders := csm.GetReportedProviders(sessionEpoch)
 
 			// Get session from endpoint or create new or continue. if more than 10 connections are open.
-			consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint, numberOfResets)
+			consumerSession, pairingEpoch, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(endpoint.chosenEndpointConnection, numberOfResets)
 			if err != nil {
 				utils.LavaFormatDebug("Error on consumerSessionWithProvider.getConsumerSessionInstanceFromEndpoint",
 					utils.LogAttr("providerAddress", providerAddress),
