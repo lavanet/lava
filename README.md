@@ -36,7 +36,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for details on how to contribute. If yo
 
 ### Installing development dependencies
 
-before running the scripts make sure you have go installed and added to $PATH, you can validate by running `which go`
+before running the scripts make sure you have got installed and added to $PATH, you can validate by running `which go`
 init_install will install all necessary dependencies to develop on lava.
 
 ```bash
