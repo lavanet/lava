@@ -3,7 +3,6 @@ package metrics
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -268,7 +267,7 @@ func (pme *ConsumerMetricsManager) SetRelayProcessingLatencyBeforeProvider(laten
 	if pme == nil {
 		return
 	}
-	key := pme.getKeyForProcessingLatency(chainId, apiInterface, true)
+	key := pme.getKeyForProcessingLatency(chainId, apiInterface, "before")
 	updatedLatency := pme.updateRelayProcessingLatency(latency, key)
 	pme.relayProcessingLatencyBeforeProvider.WithLabelValues(chainId, apiInterface).Set(updatedLatency)
 }
@@ -277,12 +276,15 @@ func (pme *ConsumerMetricsManager) SetRelayProcessingLatencyAfterProvider(latenc
 	if pme == nil {
 		return
 	}
-	key := pme.getKeyForProcessingLatency(chainId, apiInterface, false)
+	key := pme.getKeyForProcessingLatency(chainId, apiInterface, "after")
 	updatedLatency := pme.updateRelayProcessingLatency(latency, key)
 	pme.relayProcessingLatencyAfterProvider.WithLabelValues(chainId, apiInterface).Set(updatedLatency)
 }
 
 func (pme *ConsumerMetricsManager) updateRelayProcessingLatency(latency time.Duration, key string) float64 {
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
+
 	currentLatency, ok := pme.averageProcessingLatency[key]
 	if !ok {
 		currentLatency = &LatencyTracker{AverageLatency: time.Duration(0), TotalRequests: 0}
@@ -344,12 +346,8 @@ func (pme *ConsumerMetricsManager) getKeyForAverageLatency(chainId string, apiIn
 	return chainId + apiInterface
 }
 
-func (pme *ConsumerMetricsManager) getKeyForProcessingLatency(chainId string, apiInterface string, beforeProvider bool) string {
-	if beforeProvider {
-		return strings.Join([]string{"before", chainId, apiInterface}, "_")
-	} else {
-		return strings.Join([]string{"after", chainId, apiInterface}, "_")
-	}
+func (pme *ConsumerMetricsManager) getKeyForProcessingLatency(chainId string, apiInterface string, header string) string {
+	return header + "_" + chainId + "_" + apiInterface
 }
 
 func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos *pairingtypes.QualityOfServiceReport, qosExcellence *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool) {
