@@ -463,32 +463,27 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			}
 			// return
 			connectEndpoint := func(cswp *ConsumerSessionsWithProvider, ctx context.Context, endpoint *Endpoint) (endpointConnection_ *EndpointConnection, connected_ bool) {
-				for idx, endpointConnection := range endpoint.Connections {
+				for _, endpointConnection := range endpoint.Connections {
 					// If connection is active and we don't have more than maximumStreamsOverASingleConnection sessions using it already,
 					// and it didn't disconnect before. Use it.
 					if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
 						connectionState := endpointConnection.connection.GetState()
 						// Check Disconnections
-						utils.LavaFormatInfo(strconv.Itoa(idx)+") current State", utils.LogAttr("state", connectionState))
 						if connectionState == connectivity.Shutdown { // || connectionState == connectivity.Idle
-							utils.LavaFormatInfo(strconv.Itoa(idx) + ") disconnected")
 							// We got disconnected, we can't use this connection anymore.
 							endpointConnection.disconnected = true
 							continue
 						}
 						// Check if we can use the connection later.
 						if connectionState == connectivity.TransientFailure || connectionState == connectivity.Connecting {
-							utils.LavaFormatInfo(strconv.Itoa(idx) + ") still connecting")
 							continue
 						}
 						// Check we didn't reach the maximum streams per connection.
 						if endpointConnection.getNumberOfLiveSessionsUsingThisConnection() < maximumStreamsOverASingleConnection {
-							utils.LavaFormatInfo("Reusing connection", utils.LogAttr("numberOfSessions", endpointConnection.getNumberOfLiveSessionsUsingThisConnection()), utils.LogAttr("len(endpoint.Connections)", len(endpoint.Connections)+1))
 							return endpointConnection, true
 						}
 					}
 				}
-				utils.LavaFormatInfo("Creating new connection with provider", utils.LogAttr("address", endpoint.NetworkAddress), utils.LogAttr("len(endpoint.Connections)", len(endpoint.Connections)+1))
 				client, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
 				if err != nil {
 					endpoint.ConnectionRefusals++
