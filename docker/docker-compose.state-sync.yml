@@ -3,7 +3,7 @@ services:
 
   lava-node-init:
     # Update with the most recent supported version of lavad
-    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-v2.0.0}
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
     environment:
       - CHAIN_ID=${CHAIN_ID:-lava-testnet-2}
       - KEYRING_BACKEND=${KEYRING_BACKEND:-test}
@@ -13,7 +13,7 @@ services:
       lavad config keyring-backend $$KEYRING_BACKEND && \
       lavad init $$MONIKER --chain-id $$CHAIN_ID
     volumes:
-      - lava_data:/lava
+      - ./lava_data:/lava
     networks:
       - lava_network
     
@@ -49,7 +49,7 @@ services:
       dasel put -f /lava/.lava/config/config.toml -t string -v \"tcp://0.0.0.0:26657\" 'rpc.laddr'
       "
     volumes:
-      - lava_data:/lava
+      - ./lava_data:/lava
     networks:
       - lava_network
     depends_on:
@@ -58,7 +58,7 @@ services:
 
   lava-node:
     # Update with the most recent supported version of lavad
-    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-v2.0.0}
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
     container_name: lava-node
     command: ["start"]
     ports:
@@ -68,7 +68,7 @@ services:
       - '${LAVA_NODE_PORT_P2P:-26656}:26656'
       - '${LAVA_NODE_PORT_RPC:-26657}:26657'
     volumes:
-      - lava_data:/lava
+      - ./lava_data:/lava
     networks:
       - lava_network
     restart: always
