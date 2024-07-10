@@ -1,6 +1,6 @@
 services:
   busybox:
-    image: busybox
+    image: fullstorydev/grpcurl
     stdin_open: true
     tty: true
     
