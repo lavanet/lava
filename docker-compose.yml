@@ -1,8 +1,7 @@
 services:
-  busybox:
+  grpcurl:
     image: fullstorydev/grpcurl
-    stdin_open: true
-    tty: true
+    entrypoint: ["grpcurl", "envoy:9901", "list"]
     
   envoy:
     image: envoyproxy/envoy:v1.30-latest
