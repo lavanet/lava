@@ -63,25 +63,12 @@ static_resources:
                       q5sGxGrC1RECGB5Zwx2S2ZY=
                       -----END PRIVATE KEY-----
         - filters:
-            - name: envoy.filters.network.http_connection_manager
+            - name: envoy.filters.network.tcp_proxy
               typed_config:
-                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                stat_prefix: ingress_http
-                codec_type: AUTO
-                route_config:
-                  name: local_route
-                  virtual_hosts:
-                    - name: backend
-                      domains: ["*"]
-                      routes:
-                        - match:
-                            prefix: "/"
-                          route:
-                            cluster: grpc_servers
-                http_filters:
-                  - name: envoy.filters.http.router
-                    typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                cluster: grpc_servers
+                stat_prefix: https_passthrough
+
 
   clusters:
     - name: grpc_servers
