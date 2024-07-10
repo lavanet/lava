@@ -107,7 +107,7 @@ static_resources:
         name: envoy.transport_sockets.tls
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        load_assignment:
+      load_assignment:
         cluster_name: grpc_servers
         endpoints:
           - lb_endpoints:
