@@ -123,13 +123,13 @@ static_resources:
                     socket_address:
                       address: provider1
                       port_value: 2221
-              # - endpoint:
-              #     address:
-              #       socket_address:
-              #         address: provider2
-              #         port_value: 2222
-              # - endpoint:
-              #     address:
-              #       socket_address:
-              #         address: provider3
-              #         port_value: 2223
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: provider2
+                      port_value: 2222
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: provider3
+                      port_value: 2223
