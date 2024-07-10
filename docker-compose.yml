@@ -1,20 +1,8 @@
 services:
-  certbot:
-    container_name: certbot
-    image: certbot/certbot:latest
-    volumes:
-      - ./etc/letsencrypt:/etc/letsencrypt
-      - ./certbot/data:/var/www/certbot
-    command: >-
-      certonly --reinstall --webroot --webroot-path=/var/www/certbot
-      --email elad@lavanet.xyz --agree-tos --no-eff-email
-      -d envoy
   envoy:
     image: envoyproxy/envoy:v1.30-latest
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-      - ./etc/letsencrypt:/etc/letsencrypt:ro
-      - ./certbot/data:/var/www/certbot:ro
     ports:
       - "9901:9901"
     depends_on:
