@@ -1,7 +1,6 @@
 static_resources:
   listeners:
-    - name: listener_0
-      address:
+    - address:
         socket_address:
           address: 0.0.0.0
           port_value: 9901
@@ -80,26 +79,14 @@ static_resources:
                           route:
                             cluster: grpc_servers
                 http_filters:
-                  - name: envoy.filters.http.stateful_session
-                    typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.filters.http.stateful_session.v3.StatefulSession
-                      session_state:
-                        name: envoy.http.stateful_session.header
-                        typed_config:
-                          "@type": type.googleapis.com/envoy.extensions.http.stateful_session.header.v3.HeaderBasedSessionState
-                          name: session-header
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
   clusters:
     - name: grpc_servers
-      connect_timeout: 0.25s
-      type: strict_dns
-      lb_policy: round_robin
-      transport_socket:
-        name: envoy.transport_sockets.tls
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+      type: STRICT_DNS
+      lb_policy: ROUND_ROBIN
       load_assignment:
         cluster_name: grpc_servers
         endpoints:
