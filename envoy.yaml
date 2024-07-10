@@ -5,8 +5,12 @@ static_resources:
           address: 0.0.0.0
           port_value: 9901
       filter_chains:
-        - filter_chain_match:
-            transport_protocol: tls
+        - filters:
+            - name: envoy.filters.network.tcp_proxy
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+                cluster: grpc_servers
+                stat_prefix: https_passthrough
           transport_socket:
             name: envoy.transport_sockets.tls
             typed_config:
@@ -62,18 +66,16 @@ static_resources:
                       ohhtprnQQAddfjHP7rh2LGt+irFzhdXXQ1ybGaGM9D764KUNCXLuwdly0vzXU4HU
                       q5sGxGrC1RECGB5Zwx2S2ZY=
                       -----END PRIVATE KEY-----
-        - filters:
-            - name: envoy.filters.network.tcp_proxy
-              typed_config:
-                "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                cluster: grpc_servers
-                stat_prefix: https_passthrough
-
 
   clusters:
     - name: grpc_servers
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN
+      http2_protocol_options: {}
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       load_assignment:
         cluster_name: grpc_servers
         endpoints:
