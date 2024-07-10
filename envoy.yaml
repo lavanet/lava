@@ -99,7 +99,7 @@ static_resources:
 
   clusters:
     - name: grpc_servers
-      type: LOGICAL_DNS
+      type: STRICT_DNS
       lb_policy: ROUND_ROBIN
       connect_timeout: 30s
       http2_protocol_options: {}
