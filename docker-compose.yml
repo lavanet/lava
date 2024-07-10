@@ -1,4 +1,9 @@
 services:
+  busybox:
+    image: busybox
+    stdin_open: true
+    tty: true
+    
   envoy:
     image: envoyproxy/envoy:v1.30-latest
     volumes:
