@@ -101,6 +101,7 @@ static_resources:
     - name: grpc_servers
       type: STRICT_DNS
       lb_policy: ROUND_ROBIN
+      connect_timeout: 1s
       http2_protocol_options: {}
       typed_extension_protocol_options:
         envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
