@@ -10,11 +10,18 @@ static_resources:
               typed_config:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 codec_type: auto
-                stat_prefix: ingress_http
+                stat_prefix: http_proxy
                 access_log:
-                  - name: envoy.access_loggers.stdout
+                  - name: envoy.file_access_log
                     typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+                      path: /dev/stdout
+                      json_format:
+                        downstream: "%DOWNSTREAM_REMOTE_ADDRESS%"
+                        downstream_direct: "%DOWNSTREAM_DIRECT_REMOTE_ADDRESS%"
+                        authority: "%REQ(:AUTHORITY)%" 
+                        upsteam_host: "%UPSTREAM_HOST%"
+                        x_forwarded_for: "%REQ(X-FORWARDED-FOR)%"
                   - name: envoy.access_loggers.http_grpc
                     typed_config:
                       '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
@@ -26,6 +33,10 @@ static_resources:
                         transport_api_version: V3
                 route_config:
                   name: local_route
+                  request_headers_to_add:
+                    header: 
+                      key: "X-Forwarded-For"
+                      value: "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
                   virtual_hosts:
                     - name: local_service
                       domains: ["*"]
@@ -33,9 +44,7 @@ static_resources:
                         - match: { prefix: "/" }
                           route:
                             cluster: grpc_servers
-                            timeout: 0s
-                            max_stream_duration:
-                              grpc_timeout_header_max: 0s
+                            append_x_forwarded_host: true
                 http_filters:
                   - name: envoy.filters.http.router
                     typed_config:
@@ -103,10 +112,6 @@ static_resources:
       lb_policy: ROUND_ROBIN
       connect_timeout: 1s
       http2_protocol_options: {}
-      transport_socket:
-        name: envoy.transport_sockets.tls
-        typed_config:
-          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
       load_assignment:
         cluster_name: grpc_servers
         endpoints:
