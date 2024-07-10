@@ -1,14 +1,15 @@
 services:
   grpcurl:
     image: fullstorydev/grpcurl
-    entrypoint: ["grpcurl", "envoy:9901", "list"]
+    entrypoint: ["grpcurl", "envoy:8080", "list"]
+    depends_on:
+      - envoy
     
   envoy:
     image: envoyproxy/envoy:v1.30-latest
     volumes:
       - ./envoy.yaml:/etc/envoy/envoy.yaml
-    ports:
-      - "9901:9901"
+    command: ["envoy", "--log-level", "debug", "-c", "/etc/envoy/envoy.yaml"]
     depends_on:
       - consumer
       - provider1
