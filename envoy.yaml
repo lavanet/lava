@@ -25,7 +25,7 @@ static_resources:
                         log_name: envoygrpclog
                         grpc_service:
                           envoy_grpc:
-                            cluster_name: controlweb_backendservice
+                            cluster_name: grpc_servers
                         transport_api_version: V3
                 route_config:
                   name: local_route
