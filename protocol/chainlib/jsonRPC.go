@@ -252,10 +252,12 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 	apip.BaseChainParser.Construct(spec, internalPaths, taggedApis, serverApis, apiCollections, headers, verifications, apip.BaseChainParser.extensionParser)
 }
 
-func (apip *JsonRPCChainParser) GetInternalPaths() map[string]struct{} {
+func (apip *JsonRPCChainParser) GetInternalPaths(isWs bool) map[string]struct{} {
 	internalPaths := map[string]struct{}{}
 	for _, apiCollection := range apip.apiCollections {
-		internalPaths[apiCollection.CollectionData.InternalPath] = struct{}{}
+		if isWs && !apiCollection.CollectionData.WebsocketDisabled {
+			internalPaths[apiCollection.CollectionData.InternalPath] = struct{}{}
+		}
 	}
 	return internalPaths
 }
@@ -498,7 +500,12 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	internalPaths := map[string]struct{}{}
 	jsonRPCChainParser, ok := chainParser.(*JsonRPCChainParser)
 	if ok {
-		internalPaths = jsonRPCChainParser.GetInternalPaths()
+		isWs, err := IsUrlWebSocket(nodeUrl.Url)
+		if err != nil {
+			return nil, utils.LavaFormatError("failed to parse node url", err, utils.LogAttr("url", nodeUrl.Url))
+		}
+
+		internalPaths = jsonRPCChainParser.GetInternalPaths(isWs)
 	}
 	internalPathsLength := len(internalPaths)
 	if internalPathsLength > 0 && internalPathsLength == len(rpcProviderEndpoint.NodeUrls) {

@@ -50,7 +50,8 @@ message CollectionData {
   string api_interface = 1 [(gogoproto.moretags) = "mapstructure:\"api_interface\"", (gogoproto.jsontag) = "api_interface"];
   string internal_path = 2 [(gogoproto.moretags) = "mapstructure:\"internal_path\"", (gogoproto.jsontag) = "internal_path"];
   string type = 3 [(gogoproto.moretags) = "mapstructure:\"type\"", (gogoproto.jsontag) = "type"];
-	string add_on = 4 [(gogoproto.moretags) = "mapstructure:\"add_on\"", (gogoproto.jsontag) = "add_on"];
+  string add_on = 4 [(gogoproto.moretags) = "mapstructure:\"add_on\"", (gogoproto.jsontag) = "add_on"];
+  bool websocket_disabled = 5 [(gogoproto.moretags) = "mapstructure:\"websocket_disabled\"", (gogoproto.jsontag) = "websocket_disabled"];
 }
 
 message Header {

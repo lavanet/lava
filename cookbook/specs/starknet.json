@@ -607,7 +607,8 @@
                             "api_interface": "jsonrpc",
                             "internal_path": "/rpc/v0_5",
                             "type": "POST",
-                            "add_on": ""
+                            "add_on": "",
+                            "websocket_disabled": true
                         },
                         "inheritance_apis": [
                             {
@@ -797,7 +798,8 @@
                             "api_interface": "jsonrpc",
                             "internal_path": "/rpc/v0_5",
                             "type": "POST",
-                            "add_on": ""
+                            "add_on": "",
+                            "websocket_disabled": true
                         },
                         "apis": [],
                         "headers": [],
