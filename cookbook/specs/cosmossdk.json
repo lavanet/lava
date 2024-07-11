@@ -1873,7 +1873,10 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [{
+                                    "parse_type": "RETRY_ON_ARCHIVE"
+                                }]
                             },
                             {
                                 "name": "/cosmos/upgrade/v1beta1/applied_plan/{name}",
