@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -432,4 +433,13 @@ func GetTimeoutInfo(chainMessage ChainMessageForSend) common.TimeoutInfo {
 		Hanging:  IsHangingApi(chainMessage),
 		Stateful: GetStateful(chainMessage),
 	}
+}
+
+func IsUrlWebSocket(urlToParse string) (bool, error) {
+	u, err := url.Parse(urlToParse)
+	if err != nil {
+		return false, err
+	}
+
+	return u.Scheme == "ws" || u.Scheme == "wss", nil
 }
