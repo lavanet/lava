@@ -2,7 +2,6 @@ package chainlib
 
 import (
 	"context"
-	"net/url"
 	"strings"
 	"sync"
 
@@ -82,9 +81,9 @@ func batchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint
 	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
 		routerKey := lavasession.NewRouterKey(nodeUrl.Addons)
 
-		u, err := url.Parse(nodeUrl.Url)
+		isWs, err := IsUrlWebSocket(nodeUrl.Url)
 		// Some parsing may fail because of gRPC
-		if err == nil && (u.Scheme == "ws" || u.Scheme == "wss") {
+		if err == nil && isWs {
 			// if websocket, check if we have a router key for http already. if not add a websocket router key
 			// so in case we didn't get an http endpoint, we can use the ws one.
 			if _, ok := returnedBatch[routerKey]; !ok {
