@@ -509,7 +509,7 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 		internalPaths = jsonRPCChainParser.GetInternalPaths(isWs)
 	}
 	internalPathsLength := len(internalPaths)
-	if internalPathsLength > 0 && internalPathsLength == len(rpcProviderEndpoint.NodeUrls) {
+	if internalPathsLength > 0 && internalPathsLength <= len(rpcProviderEndpoint.NodeUrls) {
 		return cp, cp.startWithSpecificInternalPaths(ctx, nConns, rpcProviderEndpoint.NodeUrls, internalPaths)
 	} else if internalPathsLength > 0 && len(rpcProviderEndpoint.NodeUrls) > 1 {
 		// provider provided specific endpoints but not enough to fill all requirements
