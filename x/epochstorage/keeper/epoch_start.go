@@ -1,13 +1,19 @@
 package keeper
 
 import (
+	"fmt"
+	"strconv"
+
+	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
 // Function that calls all the functions that are supposed to run in epoch start
 func (k Keeper) EpochStart(ctx sdk.Context) {
 	block := uint64(ctx.BlockHeight())
-
+	k.SetEpochHash(ctx)
 	// save params for this epoch
 	k.FixateParams(ctx, block)
 
@@ -20,9 +26,96 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 
 	k.SetEpochDetailsStart(ctx, block)
 
-	k.StoreCurrentEpochStakeStorage(ctx, block)
+	k.StoreCurrentStakeEntries(ctx, block)
 
 	k.UpdateEarliestEpochstart(ctx)
 
 	k.RemoveOldEpochData(ctx)
+}
+
+// StoreCurrentStakeEntries store the current stake entries in the epoch-prefixed stake entries store
+func (k Keeper) StoreCurrentStakeEntries(ctx sdk.Context, epoch uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesCurrentPrefix)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
+	defer iterator.Close()
+	for ; iterator.Valid(); iterator.Next() {
+		var currentEntry types.StakeEntry
+		k.cdc.MustUnmarshal(iterator.Value(), &currentEntry)
+		k.SetStakeEntry(ctx, epoch, currentEntry)
+	}
+}
+
+func (k *Keeper) UpdateEarliestEpochstart(ctx sdk.Context) {
+	currentBlock := uint64(ctx.BlockHeight())
+	earliestEpochBlock := k.GetEarliestEpochStart(ctx)
+
+	// we take the epochs memory size at earliestEpochBlock, and not the current one
+	blocksToSaveAtEarliestEpoch, err := k.BlocksToSave(ctx, earliestEpochBlock)
+	if err != nil {
+		// panic:ok: critical, no recovery, avoid further corruption
+		utils.LavaFormatPanic("critical: failed to advance EarliestEpochstart", err,
+			utils.LogAttr("earliestEpochBlock", earliestEpochBlock),
+			utils.LogAttr("fixations", k.GetAllFixatedParams(ctx)),
+		)
+	}
+
+	if currentBlock <= blocksToSaveAtEarliestEpoch {
+		return
+	}
+
+	lastBlockInMemory := currentBlock - blocksToSaveAtEarliestEpoch
+
+	deletedEpochs := []uint64{}
+	for earliestEpochBlock < lastBlockInMemory {
+		deletedEpochs = append(deletedEpochs, earliestEpochBlock)
+		earliestEpochBlock, err = k.GetNextEpoch(ctx, earliestEpochBlock)
+		if err != nil {
+			// panic:ok: critical, no recovery, avoid further corruption
+			utils.LavaFormatPanic("critical: failed to advance EarliestEpochstart", err,
+				utils.LogAttr("earliestEpochBlock", earliestEpochBlock),
+				utils.LogAttr("fixations", k.GetAllFixatedParams(ctx)),
+			)
+		}
+	}
+
+	if len(deletedEpochs) == 0 {
+		return
+	}
+
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.EarliestEpochEventName,
+		map[string]string{"block": strconv.FormatUint(earliestEpochBlock, 10)},
+		"updated earliest epoch block")
+
+	// now update the earliest epoch start
+	k.SetEarliestEpochStart(ctx, earliestEpochBlock, deletedEpochs)
+}
+
+func (k Keeper) RemoveOldEpochData(ctx sdk.Context) {
+	for _, epoch := range k.GetDeletedEpochs(ctx) {
+		k.RemoveEpochHash(ctx, epoch)
+		k.RemoveAllStakeEntriesForEpoch(ctx, epoch)
+	}
+}
+
+func (k Keeper) SetEpochHash(ctx sdk.Context) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
+	store.Set(utils.Serialize(uint64(ctx.BlockHeight())), ctx.HeaderHash())
+}
+
+func (k Keeper) GetEpochHash(ctx sdk.Context, epoch uint64) []byte {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
+	b := store.Get(utils.Serialize(epoch))
+	if b == nil {
+		utils.LavaFormatError("GetEpochHash: epoch hash not found", fmt.Errorf("not found"),
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("current_block", ctx.BlockHeight()),
+		)
+	}
+
+	return b
+}
+
+func (k Keeper) RemoveEpochHash(ctx sdk.Context, epoch uint64) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
+	store.Delete(utils.Serialize(uint64(ctx.BlockHeight())))
 }

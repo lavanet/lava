@@ -28,7 +28,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		)
 	}
 
-	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, creator)
+	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, creator)
 	if !entryExists {
 		return utils.LavaFormatWarning("can't unstake Entry, stake entry not found for address", fmt.Errorf("stake entry not found"),
 			utils.Attribute{Key: "provider", Value: creator},
@@ -54,16 +54,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 	}
 
 	// index might have changed in the unbond
-	_, found = k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, existingEntry.Address)
-	if found {
-		err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, creator)
-		if err != nil {
-			return utils.LavaFormatWarning("can't remove stake Entry, stake entry not found", err,
-				utils.Attribute{Key: "provider", Value: creator},
-				utils.Attribute{Key: "spec", Value: chainID},
-			)
-		}
-	}
+	k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, existingEntry.Address, chainID)
 
 	details := map[string]string{
 		"address":     existingEntry.GetAddress(),
@@ -75,14 +66,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 	}
 	utils.LogLavaEvent(ctx, logger, types.ProviderUnstakeEventName, details, unstakeDescription)
 
-	unstakeHoldBlocks := k.epochStorageKeeper.GetUnstakeHoldBlocks(ctx, existingEntry.Chain)
-	k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
 	return nil
-}
-
-func (k Keeper) CheckUnstakingForCommit(ctx sdk.Context) {
-	// this pops all the entries that had their deadline pass
-	k.epochStorageKeeper.PopUnstakeEntries(ctx, uint64(ctx.BlockHeight()))
 }
 
 func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDescription string) error {
@@ -93,7 +77,7 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 		)
 	}
 
-	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
 	if !entryExists {
 		return utils.LavaFormatWarning("can't unstake Entry, stake entry not found for address", fmt.Errorf("stake entry not found"),
 			utils.Attribute{Key: "provider", Value: provider},
@@ -123,14 +107,8 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 		}
 
 		if totalAmount.IsZero() {
-			existingEntry, _ := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
-			err = k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, provider)
-			if err != nil {
-				return utils.LavaFormatWarning("can't remove stake Entry, stake entry not found", err,
-					utils.Attribute{Key: "provider", Value: provider},
-					utils.Attribute{Key: "spec", Value: chainID},
-				)
-			}
+			existingEntry, _ := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
+			k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, provider)
 
 			details := map[string]string{
 				"address":     existingEntry.GetAddress(),
@@ -142,8 +120,6 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			}
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderUnstakeEventName, details, unstakeDescription)
 
-			unstakeHoldBlocks := k.epochStorageKeeper.GetUnstakeHoldBlocks(ctx, existingEntry.Chain)
-			k.epochStorageKeeper.AppendUnstakeEntry(ctx, existingEntry, unstakeHoldBlocks)
 			return nil
 		}
 	}

@@ -109,8 +109,6 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
 		// remove old session payments
 		k.RemoveOldEpochPayments(ctx)
-		// unstake any unstaking providers
-		k.CheckUnstakingForCommit(ctx)
 		// unstake/jail unresponsive providers
 		k.PunishUnresponsiveProviders(ctx,
 			types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER,

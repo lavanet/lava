@@ -332,13 +332,13 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 }
 
 func (k msgServer) setStakeEntryBlockReport(ctx sdk.Context, providerAddr string, chainID string, latestBlock uint64) {
-	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, providerAddr)
+	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, providerAddr)
 	if found {
 		stakeEntry.BlockReport = &epochstoragetypes.BlockReport{
 			Epoch:       k.epochStorageKeeper.GetEpochStart(ctx),
 			LatestBlock: latestBlock,
 		}
-		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry)
+		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
 	}
 }
 

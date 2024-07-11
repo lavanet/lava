@@ -181,7 +181,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 			utils.Attribute{Key: "block", Value: block},
 		)
 	}
-	stakeEntry, found := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, provider, epoch)
+	stakeEntry, found := k.epochstorageKeeper.GetStakeEntry(ctx, epoch, chainID, provider)
 	if !found {
 		return zeroCoins, zeroCoins, err
 	}

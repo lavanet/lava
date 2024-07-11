@@ -89,7 +89,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 	}
 
 	for _, vote := range conflictVote.Votes {
-		entry, found := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, conflictVote.ChainID, vote.Address, epochVoteStart)
+		entry, found := k.epochstorageKeeper.GetStakeEntry(ctx, epochVoteStart, conflictVote.ChainID, vote.Address)
 		if !found {
 			utils.LavaFormatWarning("failed to get stake entry for provider in voter list", fmt.Errorf("stake entry not found"),
 				utils.Attribute{Key: "voteID", Value: conflictVote.Index},

@@ -142,16 +142,13 @@ func (k msgServer) Detection(goCtx context.Context, msg *types.MsgDetection) (*t
 
 func (k Keeper) LotteryVoters(goCtx context.Context, epoch uint64, chainID string, exemptions []string) []string {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	entries, err := k.epochstorageKeeper.GetStakeEntryForAllProvidersEpoch(ctx, chainID, epoch)
-	if err != nil {
-		return make([]string, 0)
-	}
+	entries := k.epochstorageKeeper.GetAllStakeEntriesForEpochChainId(ctx, epoch, chainID)
 
 	freezeFilter := pairingfilters.FrozenProvidersFilter{}
-	frozenProviders := freezeFilter.Filter(ctx, *entries, epoch) // bool array -> true == not frozen
+	frozenProviders := freezeFilter.Filter(ctx, entries, epoch) // bool array -> true == not frozen
 
 	voters := make([]string, 0)
-	for i, entry := range *entries {
+	for i, entry := range entries {
 		if !slices.Contains(exemptions, entry.Address) && frozenProviders[i] {
 			voters = append(voters, entry.Address)
 		}

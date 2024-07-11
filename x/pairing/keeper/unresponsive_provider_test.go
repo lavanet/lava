@@ -14,7 +14,7 @@ import (
 )
 
 func (ts *tester) checkProviderJailed(provider string, shouldFreeze bool) {
-	stakeEntry, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
+	stakeEntry, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Name, provider)
 	require.True(ts.T, stakeStorageFound)
 	require.Equal(ts.T, shouldFreeze, stakeEntry.IsJailed(ts.Ctx.BlockTime().UTC().Unix()))
 	if shouldFreeze {
@@ -34,9 +34,7 @@ func (ts *tester) checkComplainerReset(provider string, epoch uint64) {
 }
 
 func (ts *tester) checkProviderStaked(provider string) {
-	_, unstakeStoragefound := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
-	require.False(ts.T, unstakeStoragefound)
-	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
+	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Name, provider)
 	require.True(ts.T, stakeStorageFound)
 }
 

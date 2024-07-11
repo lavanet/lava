@@ -28,11 +28,7 @@ func (k Keeper) StaticProvidersList(goCtx context.Context, req *types.QueryStati
 	}
 
 	epoch := k.epochStorageKeeper.GetEpochStart(ctx)
-	stakes, found, _ := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, req.GetChainID())
-
-	if !found {
-		return &types.QueryStaticProvidersListResponse{}, nil
-	}
+	stakes := k.epochStorageKeeper.GetAllStakeEntriesForEpochChainId(ctx, epoch, req.ChainID)
 
 	finalProviders := []epochstoragetypes.StakeEntry{}
 	for _, stake := range stakes {

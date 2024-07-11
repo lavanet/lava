@@ -32,7 +32,7 @@ type EpochstorageKeeper interface {
 	IsEpochStart(ctx sdk.Context) bool
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
-	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
+	GetStakeEntryCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
 	// Methods imported from epochstorage should be defined here
 }
 

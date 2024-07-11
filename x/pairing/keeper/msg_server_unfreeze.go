@@ -15,7 +15,7 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 	unfreezeBlock := k.epochStorageKeeper.GetCurrentNextEpoch(ctx) + 1
 	unfrozen_chains := []string{}
 	for _, chainId := range msg.GetChainIds() {
-		stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainId, msg.Creator)
+		stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainId, msg.Creator)
 		if !found {
 			return nil, utils.LavaFormatWarning("Unfreeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainId}, {Key: "providerAddress", Value: msg.GetCreator()}}...)
 		}
@@ -49,7 +49,7 @@ func (k msgServer) UnfreezeProvider(goCtx context.Context, msg *types.MsgUnfreez
 		stakeEntry.UnFreeze(unfreezeBlock)
 		stakeEntry.JailEndTime = 0
 		stakeEntry.Jails = 0
-		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainId, stakeEntry)
+		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
 		unfrozen_chains = append(unfrozen_chains, chainId)
 	}
 	utils.LogLavaEvent(ctx, ctx.Logger(), "unfreeze_provider", map[string]string{"providerAddress": msg.GetCreator(), "chainIDs": strings.Join(unfrozen_chains, ",")}, "Provider Unfreeze")

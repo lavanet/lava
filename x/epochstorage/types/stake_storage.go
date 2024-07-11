@@ -2,35 +2,33 @@ package types
 
 import (
 	fmt "fmt"
+	"strings"
 
+	"cosmossdk.io/math"
 	"github.com/lavanet/lava/utils"
 )
 
-func (ss StakeStorage) GetStakeEntryByAddressFromStorage(address string) (StakeEntry, bool) {
-	if !utils.IsBech32Address(address) {
-		utils.LavaFormatWarning("address is not Bech32", fmt.Errorf("invalid address"),
-			utils.LogAttr("address", address),
-		)
-		return StakeEntry{}, false
+var (
+	StakeEntriesPrefix        = []byte("StakeEntries/")
+	StakeEntriesCurrentPrefix = []byte("StakeEntriesCurrent/")
+)
+
+func StakeEntryKey(epoch uint64, chainID string, stake math.Int, provider string) []byte {
+	key := append(utils.Serialize(epoch), []byte(" "+chainID+" ")...)
+	key = append(key, utils.Serialize(stake.Uint64())...)
+	key = append(key, []byte(" "+provider)...)
+	return key
+}
+
+func StakeEntryKeyCurrent(chainID string, provider string) []byte {
+	return []byte(strings.Join([]string{chainID, provider}, " "))
+}
+
+func ExtractEpochFromStakeEntryKey(key string) (epoch uint64, err error) {
+	if len(key) < 8 {
+		return 0, fmt.Errorf("ExtractEpochFromStakeEntryKey: invalid StakeEntryKey, bad structure. key: %s", key)
 	}
 
-	for _, entry := range ss.StakeEntries {
-		if !utils.IsBech32Address(entry.Address) || !utils.IsBech32Address(entry.Vault) {
-			// this should not happen; to avoid panic we simply skip this one (thus
-			// freeze the situation so it can be investigated and orderly resolved).
-			utils.LavaFormatError("critical: invalid account address inside StakeStorage", fmt.Errorf("invalid address"),
-				utils.LogAttr("provider", entry.Address),
-				utils.LogAttr("vault", entry.Vault),
-				utils.LogAttr("chainID", entry.Chain),
-			)
-			continue
-		}
-
-		if entry.IsAddressVaultOrProvider(address) {
-			// found the right entry
-			return entry, true
-		}
-	}
-
-	return StakeEntry{}, false
+	utils.Deserialize([]byte(key[:8]), &epoch)
+	return epoch, nil
 }

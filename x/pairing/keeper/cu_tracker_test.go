@@ -145,11 +145,11 @@ func TestTrackedCuWithDelegations(t *testing.T) {
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
 	// change the provider's delegation limit and commission
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry)
+	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
@@ -486,11 +486,11 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// change the provider's delegation limit and commission
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry)
+	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
@@ -606,11 +606,11 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	// change the provider's delegation limit and commission
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.ModifyStakeEntryCurrent(ts.Ctx, ts.spec.Index, stakeEntry)
+	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward

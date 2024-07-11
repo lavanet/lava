@@ -24,7 +24,7 @@ func (k Keeper) Provider(goCtx context.Context, req *types.QueryProviderRequest)
 
 	stakeEntries := []epochstoragetypes.StakeEntry{}
 	for _, chain := range chains {
-		stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chain, req.Address)
+		stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chain, req.Address)
 		if !found {
 			continue
 		}

@@ -166,9 +166,7 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessIfNoEpochInformation
 	require.NoError(t, err)
 
 	// test that the provider was not unstaked
-	_, unStakeStoragefound := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider2)
-	require.False(t, unStakeStoragefound)
-	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider2)
+	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Name, provider2)
 	require.True(t, stakeStorageFound)
 }
 
@@ -270,9 +268,7 @@ func TestRelayPaymentNotUnstakingProviderForUnresponsivenessBecauseOfServices(t 
 	require.NoError(t, err)
 
 	// test that the provider was not unstaked.
-	_, unStakeStoragefound := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider2)
-	require.False(t, unStakeStoragefound)
-	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider2)
+	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Name, provider2)
 	require.True(t, stakeStorageFound)
 }
 

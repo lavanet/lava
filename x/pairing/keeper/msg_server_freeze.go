@@ -34,14 +34,14 @@ func (k Keeper) FreezeProvider(ctx sdk.Context, provider string, chainIDs []stri
 	}
 
 	for _, chainId := range chainIDs {
-		stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainId, provider)
+		stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainId, provider)
 		if !found {
 			return utils.LavaFormatWarning("Freeze_cant_get_stake_entry", types.FreezeStakeEntryNotFoundError, []utils.Attribute{{Key: "chainID", Value: chainId}, {Key: "providerAddress", Value: provider}}...)
 		}
 
 		// freeze the provider by making the StakeAppliedBlock be max. This will remove the provider from the pairing list in the next epoch
 		stakeEntry.Freeze()
-		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainId, stakeEntry)
+		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
 	}
 
 	utils.LogLavaEvent(ctx, ctx.Logger(), "freeze_provider", map[string]string{"providerAddress": provider, "chainIDs": strings.Join(chainIDs, ","), "freezeRequestBlock": strconv.FormatInt(ctx.BlockHeight(), 10), "freezeReason": reason}, "Provider Freeze")

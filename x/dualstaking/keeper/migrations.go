@@ -27,53 +27,53 @@ func NewMigrator(keeper Keeper) Migrator {
 // 1. zero out each provider stake and return their money
 // 2. use that same money to make the providers self delegate
 func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
-	// get highest staked validator
-	validatorsByPower := m.keeper.stakingKeeper.GetBondedValidatorsByPower(ctx)
-	highestVal := validatorsByPower[0]
+	// // get highest staked validator
+	// validatorsByPower := m.keeper.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	// highestVal := validatorsByPower[0]
 
-	// loop over all providers
-	chains := m.keeper.specKeeper.GetAllChainIDs(ctx)
-	for _, chainID := range chains {
-		storage, found := m.keeper.epochstorageKeeper.GetStakeStorageCurrent(ctx, chainID)
-		if found {
-			for _, entry := range storage.StakeEntries {
-				// return the providers all their coins
-				addr, err := sdk.AccAddressFromBech32(entry.Address)
-				if err != nil {
-					return err
-				}
+	// // loop over all providers
+	// chains := m.keeper.specKeeper.GetAllChainIDs(ctx)
+	// for _, chainID := range chains {
+	// 	storage, found := m.keeper.epochstorageKeeper.GetStakeStorageCurrent(ctx, chainID)
+	// 	if found {
+	// 		for _, entry := range storage.StakeEntries {
+	// 			// return the providers all their coins
+	// 			addr, err := sdk.AccAddressFromBech32(entry.Address)
+	// 			if err != nil {
+	// 				return err
+	// 			}
 
-				err = m.keeper.bankKeeper.MintCoins(ctx, types.ModuleName, []sdk.Coin{entry.Stake})
-				if err != nil {
-					return err
-				}
+	// 			err = m.keeper.bankKeeper.MintCoins(ctx, types.ModuleName, []sdk.Coin{entry.Stake})
+	// 			if err != nil {
+	// 				return err
+	// 			}
 
-				err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, []sdk.Coin{entry.Stake})
-				if err != nil {
-					utils.LavaFormatError("failed to send coins from module to account", err,
-						utils.Attribute{Key: "Account", Value: addr},
-					)
-				}
+	// 			err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, addr, []sdk.Coin{entry.Stake})
+	// 			if err != nil {
+	// 				utils.LavaFormatError("failed to send coins from module to account", err,
+	// 					utils.Attribute{Key: "Account", Value: addr},
+	// 				)
+	// 			}
 
-				// create self delegation, this will increase the stake entry, we need to fix that by reseting the stake before delegating
-				stake := entry.Stake
-				entry.Stake.Amount = sdk.ZeroInt()
-				m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, entry)
-				err = m.keeper.DelegateFull(ctx, entry.Address, highestVal.OperatorAddress, entry.Address, chainID, stake)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	}
+	// 			// create self delegation, this will increase the stake entry, we need to fix that by reseting the stake before delegating
+	// 			stake := entry.Stake
+	// 			entry.Stake.Amount = sdk.ZeroInt()
+	// 			m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, entry)
+	// 			err = m.keeper.DelegateFull(ctx, entry.Address, highestVal.OperatorAddress, entry.Address, chainID, stake)
+	// 			if err != nil {
+	// 				return err
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), m.keeper.stakingKeeper.BondDenom(ctx))
-	if !moduleBalance.IsZero() {
-		err := m.keeper.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(moduleBalance))
-		if err != nil {
-			return err
-		}
-	}
+	// moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(types.ModuleName), m.keeper.stakingKeeper.BondDenom(ctx))
+	// if !moduleBalance.IsZero() {
+	// 	err := m.keeper.bankKeeper.BurnCoins(ctx, types.ModuleName, sdk.NewCoins(moduleBalance))
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	return nil
 }
@@ -83,81 +83,81 @@ func (m Migrator) ConvertProviderStakeToSelfDelegation(ctx sdk.Context) error {
 // 2. return the providers' delegators money back from the merged pool
 // 3. use the same money to delegate to both the original delegation's provider and highest staked validator
 func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
-	delegationsInds := m.keeper.delegationFS.GetAllEntryIndices(ctx)
-	nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
+	// delegationsInds := m.keeper.delegationFS.GetAllEntryIndices(ctx)
+	// nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
-	// burn all coins from the pools
-	moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.BondedPoolName), m.keeper.stakingKeeper.BondDenom(ctx))
-	if !moduleBalance.IsZero() {
-		err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.BondedPoolName, sdk.NewCoins(moduleBalance))
-		if err != nil {
-			return err
-		}
-	}
+	// // burn all coins from the pools
+	// moduleBalance := m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.BondedPoolName), m.keeper.stakingKeeper.BondDenom(ctx))
+	// if !moduleBalance.IsZero() {
+	// 	err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.BondedPoolName, sdk.NewCoins(moduleBalance))
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
-	if !moduleBalance.IsZero() {
-		moduleBalance = m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.NotBondedPoolName), m.keeper.stakingKeeper.BondDenom(ctx))
-		err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.NotBondedPoolName, sdk.NewCoins(moduleBalance))
-		if err != nil {
-			return err
-		}
-	}
+	// if !moduleBalance.IsZero() {
+	// 	moduleBalance = m.keeper.bankKeeper.GetBalance(ctx, m.keeper.accountKeeper.GetModuleAddress(dualstakingtypes.NotBondedPoolName), m.keeper.stakingKeeper.BondDenom(ctx))
+	// 	err := m.keeper.bankKeeper.BurnCoins(ctx, dualstakingtypes.NotBondedPoolName, sdk.NewCoins(moduleBalance))
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
-	// give money back to delegators from the bonded pool
-	originalDelegations := []dualstakingtypes.Delegation{}
-	for _, ind := range delegationsInds {
-		// find the delegation and keep its original form
-		var d dualstakingtypes.Delegation
-		block, _, _, found := m.keeper.delegationFS.FindEntryDetailed(ctx, ind, nextEpoch, &d)
-		if !found {
-			continue
-		}
+	// // give money back to delegators from the bonded pool
+	// originalDelegations := []dualstakingtypes.Delegation{}
+	// for _, ind := range delegationsInds {
+	// 	// find the delegation and keep its original form
+	// 	var d dualstakingtypes.Delegation
+	// 	block, _, _, found := m.keeper.delegationFS.FindEntryDetailed(ctx, ind, nextEpoch, &d)
+	// 	if !found {
+	// 		continue
+	// 	}
 
-		if d.Delegator == d.Provider || d.Provider == dualstakingtypes.EMPTY_PROVIDER {
-			continue
-		}
+	// 	if d.Delegator == d.Provider || d.Provider == dualstakingtypes.EMPTY_PROVIDER {
+	// 		continue
+	// 	}
 
-		originalAmount := d.Amount
+	// 	originalAmount := d.Amount
 
-		// zero the delegation amount in the fixation store
-		d.Amount = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
-		m.keeper.delegationFS.ModifyEntry(ctx, ind, block, &d)
+	// 	// zero the delegation amount in the fixation store
+	// 	d.Amount = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
+	// 	m.keeper.delegationFS.ModifyEntry(ctx, ind, block, &d)
 
-		// give money back from the bonded pool
-		delegatorAddr, err := sdk.AccAddressFromBech32(d.Delegator)
-		if err != nil {
-			return err
-		}
+	// 	// give money back from the bonded pool
+	// 	delegatorAddr, err := sdk.AccAddressFromBech32(d.Delegator)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		err = m.keeper.bankKeeper.MintCoins(ctx, types.ModuleName, []sdk.Coin{originalAmount})
-		if err != nil {
-			return err
-		}
+	// 	err = m.keeper.bankKeeper.MintCoins(ctx, types.ModuleName, []sdk.Coin{originalAmount})
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delegatorAddr, sdk.Coins{originalAmount})
-		if err != nil {
-			return err
-		}
+	// 	err = m.keeper.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, delegatorAddr, sdk.Coins{originalAmount})
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		entry, found := m.keeper.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, d.ChainID, d.Provider)
-		if !found {
-			continue
-		}
-		entry.DelegateTotal = entry.DelegateTotal.Sub(originalAmount)
-		m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, d.ChainID, entry)
+	// 	entry, found := m.keeper.epochstorageKeeper.GetStakeEntryCurrent(ctx, d.ChainID, d.Provider)
+	// 	if !found {
+	// 		continue
+	// 	}
+	// 	entry.DelegateTotal = entry.DelegateTotal.Sub(originalAmount)
+	// 	m.keeper.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, d.ChainID, entry)
 
-		originalDelegations = append(originalDelegations, d)
-	}
+	// 	originalDelegations = append(originalDelegations, d)
+	// }
 
-	// get highest staked validator and delegate to it
-	validatorsByPower := m.keeper.stakingKeeper.GetBondedValidatorsByPower(ctx)
-	highestVal := validatorsByPower[0]
-	for _, d := range originalDelegations {
-		err := m.keeper.DelegateFull(ctx, d.Delegator, highestVal.OperatorAddress, d.Provider, d.ChainID, d.Amount)
-		if err != nil {
-			return err
-		}
-	}
+	// // get highest staked validator and delegate to it
+	// validatorsByPower := m.keeper.stakingKeeper.GetBondedValidatorsByPower(ctx)
+	// highestVal := validatorsByPower[0]
+	// for _, d := range originalDelegations {
+	// 	err := m.keeper.DelegateFull(ctx, d.Delegator, highestVal.OperatorAddress, d.Provider, d.ChainID, d.Amount)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	return nil
 }
@@ -267,76 +267,76 @@ func (m Migrator) MigrateVersion1To2(ctx sdk.Context) error {
 
 // MigrateVersion2To3 implements store migration: Create a self delegation for all providers, Make providers-validators delegations balance
 func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
-	nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
-	chains := m.keeper.specKeeper.GetAllChainIDs(ctx)
-	OldStakeStorages := GetStakeStorages(ctx.ChainID())
-	for _, chainID := range chains {
-		storage, found := m.keeper.epochstorageKeeper.GetStakeStorageCurrent(ctx, chainID)
-		if found {
-			providers := map[string]interface{}{}
-			stakeEntries := []epochstoragetypes.StakeEntry{}
+	// nextEpoch := m.keeper.epochstorageKeeper.GetCurrentNextEpoch(ctx)
+	// chains := m.keeper.specKeeper.GetAllChainIDs(ctx)
+	// OldStakeStorages := GetStakeStorages(ctx.ChainID())
+	// for _, chainID := range chains {
+	// 	storage, found := m.keeper.epochstorageKeeper.GetStakeStorageCurrent(ctx, chainID)
+	// 	if found {
+	// 		providers := map[string]interface{}{}
+	// 		stakeEntries := []epochstoragetypes.StakeEntry{}
 
-			duplicated := 0
-			missing := 0
-			// remove duplicates
-			for _, entry := range storage.StakeEntries {
-				if _, ok := providers[entry.Address]; !ok {
-					d, found := m.keeper.GetDelegation(ctx, entry.Address, entry.Address, entry.Chain, nextEpoch)
-					if found {
-						delegations, err := m.keeper.GetProviderDelegators(ctx, entry.Address, nextEpoch)
-						if err == nil {
-							entry.DelegateTotal.Amount = sdk.ZeroInt()
-							for _, d := range delegations {
-								if d.Delegator != d.Provider && d.ChainID == chainID {
-									entry.DelegateTotal.Amount = entry.DelegateTotal.Amount.Add(d.Amount.Amount)
-								}
-							}
-						} else {
-							fmt.Println("didnt find delegations for:", entry.Address)
-						}
-						entry.Stake = d.Amount
-						stakeEntries = append(stakeEntries, entry)
-					} else {
-						fmt.Println("didnt find self delegation for:", entry.Address)
-					}
+	// 		duplicated := 0
+	// 		missing := 0
+	// 		// remove duplicates
+	// 		for _, entry := range storage.StakeEntries {
+	// 			if _, ok := providers[entry.Address]; !ok {
+	// 				d, found := m.keeper.GetDelegation(ctx, entry.Address, entry.Address, entry.Chain, nextEpoch)
+	// 				if found {
+	// 					delegations, err := m.keeper.GetProviderDelegators(ctx, entry.Address, nextEpoch)
+	// 					if err == nil {
+	// 						entry.DelegateTotal.Amount = sdk.ZeroInt()
+	// 						for _, d := range delegations {
+	// 							if d.Delegator != d.Provider && d.ChainID == chainID {
+	// 								entry.DelegateTotal.Amount = entry.DelegateTotal.Amount.Add(d.Amount.Amount)
+	// 							}
+	// 						}
+	// 					} else {
+	// 						fmt.Println("didnt find delegations for:", entry.Address)
+	// 					}
+	// 					entry.Stake = d.Amount
+	// 					stakeEntries = append(stakeEntries, entry)
+	// 				} else {
+	// 					fmt.Println("didnt find self delegation for:", entry.Address)
+	// 				}
 
-					providers[entry.Address] = struct{}{}
-				} else {
-					duplicated++
-				}
-			}
+	// 				providers[entry.Address] = struct{}{}
+	// 			} else {
+	// 				duplicated++
+	// 			}
+	// 		}
 
-			// add back the old ones if they were deleted
-			if len(OldStakeStorages) > 0 {
-				deletedEntriesToAdd := OldStakeStorages[chainID]
-				for _, entry := range deletedEntriesToAdd.StakeEntries {
-					if _, ok := providers[entry.Address]; !ok {
-						d, found := m.keeper.GetDelegation(ctx, entry.Address, entry.Address, entry.Chain, nextEpoch)
-						if found {
-							missing++
-							delegations, err := m.keeper.GetProviderDelegators(ctx, entry.Address, nextEpoch)
-							if err == nil {
-								entry.DelegateTotal.Amount = sdk.ZeroInt()
-								for _, d := range delegations {
-									if d.Delegator != d.Provider && d.ChainID == chainID {
-										entry.DelegateTotal.Amount = entry.DelegateTotal.Amount.Add(d.Amount.Amount)
-									}
-								}
-							}
-							entry.Stake = d.Amount
-							stakeEntries = append(stakeEntries, entry)
-						}
-					}
-				}
-			}
+	// 		// add back the old ones if they were deleted
+	// 		if len(OldStakeStorages) > 0 {
+	// 			deletedEntriesToAdd := OldStakeStorages[chainID]
+	// 			for _, entry := range deletedEntriesToAdd.StakeEntries {
+	// 				if _, ok := providers[entry.Address]; !ok {
+	// 					d, found := m.keeper.GetDelegation(ctx, entry.Address, entry.Address, entry.Chain, nextEpoch)
+	// 					if found {
+	// 						missing++
+	// 						delegations, err := m.keeper.GetProviderDelegators(ctx, entry.Address, nextEpoch)
+	// 						if err == nil {
+	// 							entry.DelegateTotal.Amount = sdk.ZeroInt()
+	// 							for _, d := range delegations {
+	// 								if d.Delegator != d.Provider && d.ChainID == chainID {
+	// 									entry.DelegateTotal.Amount = entry.DelegateTotal.Amount.Add(d.Amount.Amount)
+	// 								}
+	// 							}
+	// 						}
+	// 						entry.Stake = d.Amount
+	// 						stakeEntries = append(stakeEntries, entry)
+	// 					}
+	// 				}
+	// 			}
+	// 		}
 
-			utils.LavaFormatInfo("Migrator for chain id providers", utils.LogAttr("chainID", chainID),
-				utils.LogAttr("duplicated", duplicated),
-				utils.LogAttr("missing", missing))
-			storage.StakeEntries = stakeEntries
-			m.keeper.epochstorageKeeper.SetStakeStorageCurrent(ctx, storage.Index, storage)
-		}
-	}
+	// 		utils.LavaFormatInfo("Migrator for chain id providers", utils.LogAttr("chainID", chainID),
+	// 			utils.LogAttr("duplicated", duplicated),
+	// 			utils.LogAttr("missing", missing))
+	// 		storage.StakeEntries = stakeEntries
+	// 		m.keeper.epochstorageKeeper.SetStakeStorageCurrent(ctx, storage.Index, storage)
+	// 	}
+	// }
 	return nil
 }
 

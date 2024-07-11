@@ -26,11 +26,10 @@ type EpochstorageKeeper interface {
 	BlocksToSave(ctx sdk.Context, block uint64) (res uint64, err error)
 	GetEarliestEpochStart(ctx sdk.Context) uint64
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
-	GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider string, epoch uint64) (entry epochstoragetypes.StakeEntry, found bool)
-	GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID string, epoch uint64) (entrys *[]epochstoragetypes.StakeEntry, err error)
-	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry)
-	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (value epochstoragetypes.StakeEntry, found bool)
+	GetStakeEntryCurrent(ctx sdk.Context, chainID string, address string) (value epochstoragetypes.StakeEntry, found bool)
 	PushFixatedParams(ctx sdk.Context, block, limit uint64)
+	GetStakeEntry(ctx sdk.Context, epoch uint64, chainID string, provider string) (val epochstoragetypes.StakeEntry, found bool)
+	GetAllStakeEntriesForEpochChainId(ctx sdk.Context, epoch uint64, chainID string) []epochstoragetypes.StakeEntry
 }
 
 type SpecKeeper interface {

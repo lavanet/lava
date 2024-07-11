@@ -32,7 +32,7 @@ func (k Keeper) IprpcProviderRewardEstimation(goCtx context.Context, req *types.
 		providerIprpcCu := uint64(0)
 		totalIprpcCu := uint64(0)
 
-		stakeEntry, found := k.epochstorage.GetStakeEntryByAddressCurrent(ctx, specFund.Spec, req.Provider)
+		stakeEntry, found := k.epochstorage.GetStakeEntryCurrent(ctx, specFund.Spec, req.Provider)
 		if !found {
 			continue
 		}
