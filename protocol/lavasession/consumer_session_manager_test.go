@@ -336,7 +336,6 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 	require.True(t, ok)
 
 	// check we get provider1.
-
 	usedProviders := NewUsedProviders(nil)
 	css, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 	require.NoError(t, err)
@@ -345,7 +344,14 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 	// check this provider is not reported.
 	require.False(t, csm.reportedProviders.IsReported(pairingList[0].PublicLavaAddress))
 	// sleep for the duration of the retrySecondChanceAfter
-	time.Sleep(retrySecondChanceAfter + time.Second)
+	for {
+		utils.LavaFormatInfo("waiting for provider to return to valid addresses", utils.LogAttr("provider", pairingList[0].PublicLavaAddress), utils.LogAttr("csm.validAddresses", csm.validAddresses))
+		if lavaslices.Contains(csm.validAddresses, pairingList[0].PublicLavaAddress) {
+			utils.LavaFormatInfo("Wait Completed")
+			break
+		}
+		time.Sleep(time.Second)
+	}
 
 	require.True(t, lavaslices.Contains(csm.validAddresses, pairingList[0].PublicLavaAddress))
 	require.False(t, lavaslices.Contains(csm.currentlyBlockedProviderAddresses, pairingList[0].PublicLavaAddress))
@@ -361,6 +367,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 			csm.OnSessionFailure(sessionInfo.Session, fmt.Errorf("testError"))
 		}
 	}
+	utils.LavaFormatInfo("csm.reportedProviders", utils.LogAttr("csm.reportedProviders", csm.reportedProviders.addedToPurgeAndReport))
 	require.True(t, csm.reportedProviders.IsReported(pairingList[0].PublicLavaAddress))
 }
 
