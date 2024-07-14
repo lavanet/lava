@@ -215,7 +215,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 	}
 
 	if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
-		k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Vault)
+		k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Address)
 		details["min_self_delegation"] = k.GetParams(ctx).MinSelfDelegation.String()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeFromUnbond, details, "unstaking provider due to unbond that lowered its stake below min self delegation")
 		return nil

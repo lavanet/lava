@@ -51,7 +51,7 @@ type EpochstorageKeeper interface {
 	GetAllStakeEntriesForEpochChainId(ctx sdk.Context, epoch uint64, chainID string) []epochstoragetypes.StakeEntry
 	SetStakeEntryCurrent(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry)
 	GetAllStakeEntriesCurrent(ctx sdk.Context) []epochstoragetypes.StakeEntry
-	RemoveStakeEntryCurrent(ctx sdk.Context, provider string, chainID string)
+	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, provider string)
 	GetEpochHash(ctx sdk.Context, epoch uint64) []byte
 }
 

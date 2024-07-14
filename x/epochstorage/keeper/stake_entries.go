@@ -138,7 +138,7 @@ func (k Keeper) SetStakeEntryCurrent(ctx sdk.Context, stakeEntry types.StakeEntr
 }
 
 // RemoveStakeEntryCurrent deletes a current stake entry from the store
-func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, provider string, chainID string) {
+func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, provider string) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesCurrentPrefix)
 	store.Delete(types.StakeEntryKeyCurrent(chainID, provider))
 }
