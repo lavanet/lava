@@ -226,6 +226,9 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 					if !initialRelays {
 						break
 					}
+
+					// On init relays, we abuse this for loop to send to send the initial relays, so we need to recreate the relay processor on successful relay
+					relayProcessor = NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMessage, rpccs.consumerConsistency, "-init-", "", rpccs.debugRelays)
 				} else {
 					utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 				}
