@@ -212,7 +212,13 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 			} else {
 				relayResult, err := relayProcessor.ProcessingResult()
 				if err == nil {
-					utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderInfo.ProviderAddress}}...)
+					utils.LavaFormatInfo("[+] init relay succeeded",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+						utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
+						utils.LogAttr("latestBlock", relayResult.Reply.LatestBlock),
+						utils.LogAttr("provider address", relayResult.ProviderInfo.ProviderAddress),
+					)
 					rpccs.relaysMonitor.LogRelay()
 					success = true
 					// If this is the first time we send relays, we want to send all of them, instead of break on first successful relay

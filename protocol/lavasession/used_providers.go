@@ -23,7 +23,12 @@ func NewUsedProviders(directiveHeaders map[string]string) *UsedProviders {
 			}
 		}
 	}
-	return &UsedProviders{providers: map[string]struct{}{}, unwantedProviders: unwantedProviders, blockOnSyncLoss: map[string]struct{}{}, erroredProviders: map[string]struct{}{}}
+	return &UsedProviders{
+		providers:         map[string]struct{}{},
+		unwantedProviders: unwantedProviders,
+		blockOnSyncLoss:   map[string]struct{}{},
+		erroredProviders:  map[string]struct{}{},
+	}
 }
 
 type UsedProviders struct {
