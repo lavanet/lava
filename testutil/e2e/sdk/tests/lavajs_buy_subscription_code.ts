@@ -19,7 +19,7 @@ async function main() {
     defaultTypes: []
   })
 
-  console.log("buying subscription to", firstAccount)
+  console.log("[lavajs_tx] buying subscription to", firstAccount)
 
   const msg = lavanet.lava.subscription.MessageComposer.withTypeUrl.buy({
     creator: firstAccount.address,
@@ -36,16 +36,17 @@ async function main() {
 
   let res = await signingClient.signAndBroadcast(firstAccount.address, [msg], fee, "Buying subscription on Lava blockchain!")
   if (res.code != 0) {
-    console.error(res)
-    throw new Error("Failed buying subscription")
+    console.error("ERR [lavajs_tx]", res)
+    throw new Error("ERR [lavajs_tx] Failed buying subscription")
   }
+  console.log("[lavajs_tx] Successfully bought default subscription", res)
 }
 
 (async () => {
   try {
       await main();
   } catch (error) {
-      console.error(" ERR [lavajs_test] "+error.message);
+      console.error(" ERR [lavajs_tx] "+error.message);
       process.exit(1);
   }
 })();
