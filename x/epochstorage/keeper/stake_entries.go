@@ -62,8 +62,8 @@ func (k Keeper) GetAllStakeEntriesForGenesis(ctx sdk.Context) []types.StakeStora
 		}
 		if _, ok := storagesMap[epoch]; !ok {
 			storagesMap[epoch] = types.StakeStorage{
-				Index: strconv.FormatUint(epoch, 10),
-				// TODO: add epoch block hash
+				Index:          strconv.FormatUint(epoch, 10),
+				EpochBlockHash: k.GetEpochHash(ctx, epoch),
 			}
 		}
 		storage := storagesMap[epoch]

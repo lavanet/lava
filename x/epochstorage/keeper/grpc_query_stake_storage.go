@@ -27,6 +27,9 @@ func (k Keeper) StakeStorage(c context.Context, req *types.QueryGetStakeStorageR
 	ctx := sdk.UnwrapSDKContext(c)
 
 	stakeEntries := k.GetAllStakeEntriesCurrentForChainId(ctx, req.Index)
+	if len(stakeEntries) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "not found")
+	}
 	val := types.StakeStorage{
 		Index:        req.Index,
 		StakeEntries: stakeEntries,

@@ -656,6 +656,8 @@ func TestUndelegateProvider(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Println("Delegation of Provider after provider is removed", res2)
 
+	ts.AdvanceEpochUntilStale()
+
 	// stake provider again
 	err = ts.StakeProvider(providerAcct.GetVaultAddr(), providerAcct.Addr.String(), ts.spec, sdk.NewIntFromUint64(1000).Int64())
 	require.NoError(t, err)
