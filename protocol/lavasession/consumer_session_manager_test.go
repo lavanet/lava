@@ -345,8 +345,12 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 	require.False(t, csm.reportedProviders.IsReported(pairingList[0].PublicLavaAddress))
 	// sleep for the duration of the retrySecondChanceAfter
 	for {
-		utils.LavaFormatInfo("waiting for provider to return to valid addresses", utils.LogAttr("provider", pairingList[0].PublicLavaAddress), utils.LogAttr("csm.validAddresses", csm.validAddresses))
-		if lavaslices.Contains(csm.validAddresses, pairingList[0].PublicLavaAddress) {
+		if func() bool {
+			csm.lock.RLock()
+			defer csm.lock.RUnlock()
+			utils.LavaFormatInfo("waiting for provider to return to valid addresses", utils.LogAttr("provider", pairingList[0].PublicLavaAddress), utils.LogAttr("csm.validAddresses", csm.validAddresses))
+			return lavaslices.Contains(csm.validAddresses, pairingList[0].PublicLavaAddress)
+		}() {
 			utils.LavaFormatInfo("Wait Completed")
 			break
 		}
