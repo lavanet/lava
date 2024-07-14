@@ -13,17 +13,18 @@ const (
 )
 
 type RelayMetrics struct {
-	ProjectHash         string
-	Timestamp           time.Time
-	ChainID             string
-	APIType             string
-	Latency             int64
-	Success             bool
-	ComputeUnits        uint64
-	Source              RelaySource
-	Origin              string
-	ApiMethod           string
-	ProcessingTimestamp time.Time
+	ProjectHash                        string
+	Timestamp                          time.Time
+	ChainID                            string
+	APIType                            string
+	Latency                            int64
+	Success                            bool
+	ComputeUnits                       uint64
+	Source                             RelaySource
+	Origin                             string
+	ApiMethod                          string
+	ProcessingTimestamp                time.Time
+	MeasureAfterProviderProcessingTime bool // we measure processing time only on first relay success so we use this to indicate that the after provider measurement should occur (not true for all code flows)
 }
 
 type RelayAnalyticsDTO struct {
@@ -55,4 +56,12 @@ func (rm *RelayMetrics) SetProcessingTimestamp(timestamp time.Time) {
 	}
 
 	rm.ProcessingTimestamp = timestamp
+}
+
+func (rm *RelayMetrics) SetFirstRelaySuccess() {
+	if rm == nil {
+		return
+	}
+
+	rm.MeasureAfterProviderProcessingTime = true
 }

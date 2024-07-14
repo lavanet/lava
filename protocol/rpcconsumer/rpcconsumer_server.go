@@ -808,7 +808,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		defer connectCtxCancel()
 
 		// add consumer processing timestamp before provider metric and start measuring time after the provider replied
-		metricAdded := rpccs.rpcConsumerLogs.AddMetricForProcessingLatencyBeforeProvider(analytics, rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface)
+		rpccs.rpcConsumerLogs.AddMetricForProcessingLatencyBeforeProvider(analytics, rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface)
 
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&relayResult.ProviderTrailer))
 		statuses := relayResult.ProviderTrailer.Get(common.StatusCodeMetadataKey)
@@ -854,9 +854,8 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			}
 			return reply, 0, err, backoff
 		}
-		if metricAdded {
-			analytics.SetProcessingTimestamp(time.Now())
-		}
+		analytics.SetProcessingTimestamp(time.Now())
+
 		return reply, relayLatency, nil, false
 	}
 	reply, relayLatency, err, backoff := callRelay()

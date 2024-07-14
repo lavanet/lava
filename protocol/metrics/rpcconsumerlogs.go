@@ -156,18 +156,17 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 
 // AddMetricForProcessingLatencyBeforeProvider adds a time calculation metric for the consumer's processing time before sending a relay to a provider
 // it returns whether the latency was added or not
-func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyBeforeProvider(analytics *RelayMetrics, chainId string, apiInterface string) (metricAdded bool) {
+func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyBeforeProvider(analytics *RelayMetrics, chainId string, apiInterface string) {
 	if analytics != nil && analytics.ProcessingTimestamp.Before(time.Now()) {
 		go rpccl.consumerMetricsManager.SetRelayProcessingLatencyBeforeProvider(time.Since(analytics.ProcessingTimestamp), chainId, apiInterface)
-		return true
+		analytics.MeasureAfterProviderProcessingTime = true
 	}
-
-	return false
 }
 
 func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyAfterProvider(analytics *RelayMetrics, chainId string, apiInterface string) {
-	if analytics != nil && analytics.ProcessingTimestamp.Before(time.Now()) {
+	if analytics != nil && analytics.MeasureAfterProviderProcessingTime && analytics.ProcessingTimestamp.Before(time.Now()) {
 		go rpccl.consumerMetricsManager.SetRelayProcessingLatencyAfterProvider(time.Since(analytics.ProcessingTimestamp), chainId, apiInterface)
+		analytics.MeasureAfterProviderProcessingTime = false
 	}
 }
 
