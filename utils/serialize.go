@@ -9,7 +9,7 @@ func Serialize(data any) []byte {
 	switch castedData := data.(type) {
 	case uint64:
 		res := make([]byte, 8)
-		binary.LittleEndian.PutUint64(res, castedData)
+		binary.BigEndian.PutUint64(res, castedData)
 		return res
 	}
 	// panic:ok: validates that the data is of known type; would fail
@@ -20,7 +20,7 @@ func Serialize(data any) []byte {
 func Deserialize(raw []byte, data any) {
 	switch casted := data.(type) {
 	case *uint64:
-		*casted = binary.LittleEndian.Uint64(raw)
+		*casted = binary.BigEndian.Uint64(raw)
 		return
 	}
 	// panic:ok: validates that the data is of known type; would fail

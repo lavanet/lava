@@ -117,5 +117,5 @@ func (k Keeper) GetEpochHash(ctx sdk.Context, epoch uint64) []byte {
 
 func (k Keeper) RemoveEpochHash(ctx sdk.Context, epoch uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	store.Delete(utils.Serialize(uint64(ctx.BlockHeight())))
+	store.Delete(utils.Serialize(epoch))
 }
