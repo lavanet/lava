@@ -57,11 +57,3 @@ func (rm *RelayMetrics) SetProcessingTimestamp(timestamp time.Time) {
 
 	rm.ProcessingTimestamp = timestamp
 }
-
-func (rm *RelayMetrics) SetFirstRelaySuccess() {
-	if rm == nil {
-		return
-	}
-
-	rm.MeasureAfterProviderProcessingTime = true
-}
