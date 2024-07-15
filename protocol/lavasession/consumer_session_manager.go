@@ -237,7 +237,11 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 			}
 			var trailer metadata.MD
 			relaySentTime := time.Now()
+			metadataAdd := metadata.New(map[string]string{common.LAVA_LB_UNIQUE_ID_HEADER: endpointAndConnection.chosenEndpointConnection.GetLbUniqueId()})
+			connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
+
 			probeResp, err := client.Probe(connectCtx, probeReq, grpc.Trailer(&trailer))
+
 			relayLatency := time.Since(relaySentTime)
 			versions := trailer.Get(common.VersionMetadataKey)
 			if err != nil {
@@ -882,6 +886,17 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		reportProvider = true
 	} else if sdkerrors.IsOf(errorReceived, BlockProviderError) {
 		blockProvider = true
+	}
+
+	if sdkerrors.IsOf(errorReceived, BlockEndpointError) {
+		utils.LavaFormatTrace("Got BlockEndpointError, blocking endpoint and session",
+			utils.LogAttr("error", errorReceived),
+			utils.LogAttr("sessionID", consumerSession.SessionId),
+		)
+
+		// Block the endpoint and the consumer session from future usages
+		consumerSession.EndpointConnection.blockListed.Store(true)
+		consumerSession.BlockListed = true
 	}
 
 	consumerSession.QoSInfo.TotalRelays++

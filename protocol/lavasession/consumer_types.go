@@ -104,9 +104,14 @@ type EndpointConnection struct {
 	connection                          *grpc.ClientConn
 	numberOfSessionsUsingThisConnection uint64
 	blockListed                         atomic.Bool
+	lbUniqueId                          string
 	// In case we got disconnected, we cant reconnect as we might lose stickiness
 	// with the provider, if its using a load balancer
 	disconnected bool
+}
+
+func (ec *EndpointConnection) GetLbUniqueId() string {
+	return ec.lbUniqueId
 }
 
 func (ec *EndpointConnection) addSessionUsingConnection() {
@@ -500,7 +505,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					return nil, false
 				}
 				endpoint.ConnectionRefusals = 0
-				newConnection := &EndpointConnection{connection: conn, Client: client}
+				newConnection := &EndpointConnection{connection: conn, Client: client, lbUniqueId: strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)}
 				endpoint.Connections = append(endpoint.Connections, newConnection)
 				return newConnection, true
 			}
