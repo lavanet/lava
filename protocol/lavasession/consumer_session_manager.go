@@ -819,6 +819,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 			go func() {
 				<-time.After(retrySecondChanceAfter)
 				// check epoch is still relevant, if not just return
+				utils.LavaFormatDebug("Running second chance for provider", utils.LogAttr("address", address))
 				if sessionEpoch != csm.atomicReadCurrentEpoch() {
 					return
 				}
@@ -927,7 +928,6 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	if err != nil {
 		return err
 	}
-
 	if !redemptionSession && blockProvider {
 		publicProviderAddress, pairingEpoch := parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch()
 		err = csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch, 0, consecutiveErrors, allowSecondChance, nil, errorsForConsumerSession)
@@ -948,12 +948,16 @@ func (csm *ConsumerSessionManager) validateAndReturnBlockedProviderToValidAddres
 	defer csm.lock.Unlock()
 	for idx, addr := range csm.currentlyBlockedProviderAddresses {
 		if addr == providerAddress {
-			// remove it from the csm.currentlyBlockedProviderAddresses
+			// Remove it from the csm.currentlyBlockedProviderAddresses
 			csm.currentlyBlockedProviderAddresses = append(csm.currentlyBlockedProviderAddresses[:idx], csm.currentlyBlockedProviderAddresses[idx+1:]...)
-			// reapply it to the valid addresses.
+			// Reapply it to the valid addresses.
 			csm.validAddresses = append(csm.validAddresses, addr)
-			// purge the current addon addresses so it will be created again next time get session is called.
+			// Purge the current addon addresses so it will be created again next time get session is called.
 			csm.RemoveAddonAddresses("", nil)
+			// Reset redemption status
+			if provider, ok := csm.pairing[providerAddress]; ok {
+				provider.atomicWriteBlockedStatus(BlockedProviderSessionUnusedStatus)
+			}
 			return
 		}
 	}
