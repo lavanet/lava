@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/ecosystem/cache"
 	"github.com/lavanet/lava/protocol/badgegenerator"
 	"github.com/lavanet/lava/protocol/badgeserver"
+	"github.com/lavanet/lava/protocol/loadtest"
 	"github.com/lavanet/lava/protocol/monitoring"
 	"github.com/lavanet/lava/protocol/performance/connection"
 	validators "github.com/lavanet/lava/protocol/performance/validators"
@@ -72,6 +73,8 @@ func main() {
 	testCmd.AddCommand(connection.CreateTestConnectionServerCobraCommand())
 	testCmd.AddCommand(connection.CreateTestConnectionProbeCobraCommand())
 	testCmd.AddCommand(monitoring.CreateHealthCobraCommand())
+	testCmd.AddCommand(loadtest.CreateTestLoadCobraCommand())
+
 	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
 
 	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
