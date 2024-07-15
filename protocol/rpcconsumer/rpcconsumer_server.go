@@ -809,7 +809,36 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		metadataAdd := metadata.New(map[string]string{common.IP_FORWARDING_HEADER_NAME: consumerToken})
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
+
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&relayResult.ProviderTrailer))
+
+		providerUniqueId := relayResult.ProviderTrailer.Get(chainlib.RpcProviderUniqueIdHeader)
+		if len(providerUniqueId) > 0 {
+			utils.LavaFormatTrace("Received provider unique id",
+				utils.LogAttr("GUID", ctx),
+				utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+				utils.LogAttr("providerUniqueId", providerUniqueId),
+			)
+
+			if !singleConsumerSession.VerifyProviderUniqueId(providerUniqueId[0]) {
+				return reply, 0, utils.LavaFormatError("provider unique id mismatch",
+					errors.Join(lavasession.SessionOutOfSyncError, lavasession.BlockEndpointError),
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
+					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+					utils.LogAttr("providedProviderUniqueId", providerUniqueId),
+					utils.LogAttr("providerUniqueId", singleConsumerSession.GetProviderUniqueId()),
+				), false
+			} else {
+				utils.LavaFormatTrace("Provider unique id match",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
+					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+					utils.LogAttr("providerUniqueId", providerUniqueId),
+				)
+			}
+		}
+
 		statuses := relayResult.ProviderTrailer.Get(common.StatusCodeMetadataKey)
 		if len(statuses) > 0 {
 			codeNum, errStatus := strconv.Atoi(statuses[0])

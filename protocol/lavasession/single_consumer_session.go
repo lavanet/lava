@@ -26,6 +26,7 @@ type SingleConsumerSession struct {
 	ConsecutiveErrors  []error
 	errorsCount        uint64
 	relayProcessor     UsedProvidersInf
+	providerUniqueId   string
 }
 
 // returns the expected latency to a threshold.
@@ -150,4 +151,22 @@ func (consumerSession *SingleConsumerSession) VerifyLock() error {
 		return LockMisUseDetectedError
 	}
 	return nil
+}
+
+func (scs *SingleConsumerSession) VerifyProviderUniqueId(providerUniqueId string) bool {
+	if scs.providerUniqueId == "" {
+		utils.LavaFormatTrace("First time getting providerUniqueId for SingleConsumerSession",
+			utils.LogAttr("sessionId", scs.SessionId),
+			utils.LogAttr("providerUniqueId", providerUniqueId),
+		)
+
+		scs.providerUniqueId = providerUniqueId
+		return true
+	}
+
+	return providerUniqueId == scs.providerUniqueId
+}
+
+func (scs *SingleConsumerSession) GetProviderUniqueId() string {
+	return scs.providerUniqueId
 }

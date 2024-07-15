@@ -135,6 +135,7 @@ type RPCProvider struct {
 	relaysHealthCheckEnabled  bool
 	relaysHealthCheckInterval time.Duration
 	grpcHealthCheckEndpoint   string
+	providerUniqueId          string
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -145,6 +146,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		signal.Stop(signalChan)
 		cancel()
 	}()
+	rpcp.providerUniqueId = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpcp.chainTrackers = &ChainTrackers{}
 	rpcp.parallelConnections = options.parallelConnections
 	rpcp.cache = options.cache
@@ -455,7 +457,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		rpcp.providerMetricsManager.RegisterRelaysMonitor(chainID, apiInterface, relaysMonitor)
 	}
 
-	rpcProviderServer := &RPCProviderServer{}
+	rpcProviderServer := &RPCProviderServer{providerUniqueId: rpcp.providerUniqueId}
 	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor)
 	// set up grpc listener
 	var listener *ProviderListener

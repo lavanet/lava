@@ -62,6 +62,7 @@ type RPCProviderServer struct {
 	allowedMissingCUThreshold float64
 	metrics                   *metrics.ProviderMetrics
 	relaysMonitor             *metrics.RelaysMonitor
+	providerUniqueId          string
 }
 
 type ReliabilityManagerInf interface {
@@ -157,6 +158,7 @@ func (rpcps *RPCProviderServer) craftChainMessage() (chainMessage chainlib.Chain
 
 // function used to handle relay requests from a consumer, it is called by a provider_listener by calling RegisterReceiver
 func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes.RelayRequest) (*pairingtypes.RelayReply, error) {
+	grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId))
 	if request.RelayData == nil || request.RelaySession == nil {
 		return nil, utils.LavaFormatWarning("invalid relay request, internal fields are nil", nil)
 	}
@@ -1062,6 +1064,7 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 		LavaLatestBlock:       uint64(rpcps.stateTracker.LatestBlock()),
 	}
 	trailer := metadata.Pairs(common.VersionMetadataKey, upgrade.GetCurrentVersion().ProviderVersion)
+	trailer.Append(chainlib.RpcProviderUniqueIdHeader, rpcps.providerUniqueId)
 	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 	return probeReply, nil
 }

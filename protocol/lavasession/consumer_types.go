@@ -103,6 +103,7 @@ type EndpointConnection struct {
 	Client                              *pairingtypes.RelayerClient
 	connection                          *grpc.ClientConn
 	numberOfSessionsUsingThisConnection uint64
+	blockListed                         atomic.Bool
 	// In case we got disconnected, we cant reconnect as we might lose stickiness
 	// with the provider, if its using a load balancer
 	disconnected bool
@@ -467,6 +468,10 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					// If connection is active and we don't have more than maximumStreamsOverASingleConnection sessions using it already,
 					// and it didn't disconnect before. Use it.
 					if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
+						// Check if the endpoint is not blocked
+						if endpointConnection.blockListed.Load() {
+							continue
+						}
 						connectionState := endpointConnection.connection.GetState()
 						// Check Disconnections
 						if connectionState == connectivity.Shutdown { // || connectionState == connectivity.Idle
