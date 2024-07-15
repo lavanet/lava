@@ -9,7 +9,7 @@
                 "type": "rpc",
                 "price": {
                     "denom": "ulava",
-                    "amount": "100000000000000"
+                    "amount": "1000"
                 },
                 "annual_discount_percentage": 0,
                 "allow_overuse": false,

@@ -1,0 +1,117 @@
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/config/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/config/nginx/nginx.crt:/etc/nginx/ssl/nginx.crt:ro
+      - ./docker/config/nginx/nginx.key:/etc/nginx/ssl/nginx.key:ro
+    restart: always
+
+  consumer:
+    image: lavap
+    depends_on:
+      - nginx
+    ports:
+      - "3334:3334"
+      - "3335:3335"
+      - "3336:3336"
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    volumes:
+      - ./config/consumer_examples/lava_example.yml:/lava/config/consumer/lava.yml
+      - ./keyring-test:/lava/.lava/keyring-test
+    command:
+      [
+        "rpcconsumer",
+        "consumer/lava.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "user1",
+        "--geolocation",
+        "2",
+        "--log_level",
+        "trace",
+        "--allow-insecure-provider-dialing",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]
+
+  provider1:
+    image: lavap
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    volumes:
+      - ./config/provider_examples/lava_example1.yml:/lava/config/provider/lava.yml
+      - ./keyring-test:/lava/.lava/keyring-test
+    command:
+      [
+        "rpcprovider",
+        "provider/lava.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer1",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]
+
+  provider2:
+    image: lavap
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    volumes:
+      - ./config/provider_examples/lava_example2.yml:/lava/config/provider/lava.yml
+      - ./keyring-test:/lava/.lava/keyring-test
+    command:
+      [
+        "rpcprovider",
+        "provider/lava.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer1",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]
+
+  provider3:
+    image: lavap
+    environment:
+      - SERVICE_HOST=host.docker.internal
+    volumes:
+      - ./config/provider_examples/lava_example3.yml:/lava/config/provider/lava.yml
+      - ./keyring-test:/lava/.lava/keyring-test
+    command:
+      [
+        "rpcprovider",
+        "provider/lava.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer1",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--node",
+        "tcp://host.docker.internal:26657",
+      ]
