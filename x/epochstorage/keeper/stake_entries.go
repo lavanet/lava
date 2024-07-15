@@ -14,12 +14,12 @@ import (
 // GetStakeEntry gets a specific stake entry from the stake entries KV store
 // Since the stake entries KV store's key includes the provider's stake (which is not known), we iterate over all
 // the providers with the same epoch and chainID and compare the requested address to find the provider
-func (k Keeper) GetStakeEntry(ctx sdk.Context, epoch uint64, chainID string, provider string) (val types.StakeEntry, found bool) {
+func (k Keeper) GetStakeEntry(ctx sdk.Context, epoch uint64, chainID string, provider string) (types.StakeEntry, bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesPrefix)
-	iteratorPrefix := append(utils.Serialize(epoch), []byte(" "+chainID)...) // beutify
-	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
+	iterator := sdk.KVStorePrefixIterator(store, types.StakeEntryKeyPrefixEpochChainId(epoch, chainID))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
+		var val types.StakeEntry
 		k.cdc.MustUnmarshal(iterator.Value(), &val)
 		if val.Address == provider {
 			return val, true
@@ -101,8 +101,7 @@ func (k Keeper) GetAllStakeEntriesForEpoch(ctx sdk.Context, epoch uint64) []type
 // GetAllStakeEntriesForEpochChainId gets all the stake entries of a specific epoch and a specific chain
 func (k Keeper) GetAllStakeEntriesForEpochChainId(ctx sdk.Context, epoch uint64, chainID string) []types.StakeEntry {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesPrefix)
-	iteratorPrefix := append(utils.Serialize(epoch), []byte(" "+chainID)...) // betufi
-	iterator := sdk.KVStorePrefixIterator(store, iteratorPrefix)
+	iterator := sdk.KVStorePrefixIterator(store, types.StakeEntryKeyPrefixEpochChainId(epoch, chainID))
 	defer iterator.Close()
 
 	var entries []types.StakeEntry

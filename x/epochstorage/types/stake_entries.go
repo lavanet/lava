@@ -22,6 +22,10 @@ func StakeEntryKey(epoch uint64, chainID string, stake math.Int, provider string
 	return key
 }
 
+func StakeEntryKeyPrefixEpochChainId(epoch uint64, chainID string) []byte {
+	return append(utils.Serialize(epoch), []byte(" "+chainID+" ")...)
+}
+
 func StakeEntryKeyCurrent(chainID string, provider string) []byte {
 	return []byte(strings.Join([]string{chainID, provider}, " "))
 }
