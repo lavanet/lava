@@ -296,13 +296,13 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a new subscription for the first time, called SendParsedRelay once
 			ctx := utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan, err := manager.StartSubscription(ctx, chainMessage1, nil, nil, dapp1, ts.Consumer.Addr.String(), nil)
+			firstReply, repliesChan1, err := manager.StartSubscription(ctx, chainMessage1, nil, nil, dapp1, ts.Consumer.Addr.String(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
-			assert.NotNil(t, repliesChan)
+			assert.NotNil(t, repliesChan1)
 
 			go func() {
-				for subMsg := range repliesChan {
+				for subMsg := range repliesChan1 {
 					require.Equal(t, string(play.subscriptionFirstReply1), string(subMsg.Data))
 				}
 			}()
@@ -315,20 +315,20 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a subscription again, same params, same dappKey, should not call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan, err = manager.StartSubscription(ctx, chainMessage1, nil, nil, dapp1, ts.Consumer.Addr.String(), nil)
+			firstReply, repliesChan2, err := manager.StartSubscription(ctx, chainMessage1, nil, nil, dapp1, ts.Consumer.Addr.String(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
-			assert.Nil(t, repliesChan) // Same subscription, same dappKey, no need for a new channel
+			assert.Nil(t, repliesChan2) // Same subscription, same dappKey, no need for a new channel
 
 			// Start a subscription again, same params, different dappKey, should not call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan, err = manager.StartSubscription(ctx, chainMessage1, nil, nil, dapp2, ts.Consumer.Addr.String(), nil)
+			firstReply, repliesChan3, err := manager.StartSubscription(ctx, chainMessage1, nil, nil, dapp2, ts.Consumer.Addr.String(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
-			assert.NotNil(t, repliesChan) // Same subscription, but different dappKey, so will create new channel
+			assert.NotNil(t, repliesChan3) // Same subscription, but different dappKey, so will create new channel
 
 			go func() {
-				for subMsg := range repliesChan {
+				for subMsg := range repliesChan3 {
 					require.Equal(t, string(play.subscriptionFirstReply1), string(subMsg.Data))
 				}
 			}()
@@ -389,13 +389,13 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a subscription again, different params, same dappKey, should call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan, err = manager.StartSubscription(ctx, chainMessage2, nil, nil, dapp1, ts.Consumer.Addr.String(), nil)
+			firstReply, repliesChan4, err := manager.StartSubscription(ctx, chainMessage2, nil, nil, dapp1, ts.Consumer.Addr.String(), nil)
 			assert.NoError(t, err)
 			assert.Equal(t, string(play.subscriptionFirstReply2), string(firstReply.Data))
-			assert.NotNil(t, repliesChan) // New subscription, new channel
+			assert.NotNil(t, repliesChan4) // New subscription, new channel
 
 			go func() {
-				for subMsg := range repliesChan {
+				for subMsg := range repliesChan4 {
 					require.Equal(t, string(play.subscriptionFirstReply2), string(subMsg.Data))
 				}
 			}()
