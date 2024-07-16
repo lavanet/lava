@@ -40,3 +40,7 @@ func (k Keeper) DelegatorRewards(goCtx context.Context, req *types.QueryDelegato
 
 	return &types.QueryDelegatorRewardsResponse{Rewards: rewards}, nil
 }
+
+func (k Keeper) DelegatorRewardsList(goCtx context.Context, req *types.QueryDelegatorRewardsRequest) (res *types.QueryDelegatorRewardsResponse, err error) {
+	return k.DelegatorRewards(goCtx, req)
+}
