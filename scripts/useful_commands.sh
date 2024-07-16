@@ -9,10 +9,10 @@ display_ticker() {
 
 # Function to wait until next epoch
 sleep_until_next_epoch() {
-  epoch_start=$(lavad query epochstorage show-epoch-details | grep "startBlock: ")
+  epoch_start=$(lavad query epochstorage show-epoch-details | grep "start_block: ")
   echo "Waiting for the next epoch for the changes to be active"
   while true; do
-    epoch_now=$(lavad query epochstorage show-epoch-details | grep "startBlock: ")
+    epoch_now=$(lavad query epochstorage show-epoch-details | grep "start_block: ")
     display_ticker
     if [ "$epoch_start" != "$epoch_now" ]; then
       echo "finished waiting"
