@@ -17,7 +17,7 @@ func ParseCLIAddress(clientCtx client.Context, address string) (string, error) {
 		// empty address --> address = creator
 		address = clientCtx.GetFromAddress().String()
 	} else {
-		if IsBech32Address(address) {
+		if IsBech32Address(address) || address == "empty_provider" {
 			return address, nil
 		}
 
