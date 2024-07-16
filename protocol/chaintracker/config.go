@@ -22,6 +22,7 @@ type ChainTrackerConfig struct {
 	ServerBlockMemory        uint64
 	BlocksCheckpointDistance uint64 // this causes the chainTracker to trigger it's checkpoint every X blocks
 	Pmetrics                 *metrics.ProviderMetricsManager
+	PollingTimeMultiplier    int
 }
 
 func (cnf *ChainTrackerConfig) validate() error {
