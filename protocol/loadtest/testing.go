@@ -40,7 +40,6 @@ func startLoadTest(endpoint string, parallelClients int, callsPerClient int, met
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
 			req, err := http.NewRequestWithContext(ctx, method, endpoint, body)
-
 			if err != nil {
 				utils.LavaFormatError("Failed to create request", err)
 				requestCreateErrors++
