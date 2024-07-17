@@ -3,9 +3,9 @@ package rpcInterfaceMessages
 import (
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/parser"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/parser"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 type ParsableRPCInput struct {

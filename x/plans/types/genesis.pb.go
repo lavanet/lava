@@ -7,7 +7,7 @@ import (
 	fmt "fmt"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	types "github.com/lavanet/lava/x/fixationstore/types"
+	types "github.com/lavanet/lava/v2/x/fixationstore/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"

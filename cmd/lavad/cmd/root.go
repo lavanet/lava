@@ -34,17 +34,17 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
-	cmdcommon "github.com/lavanet/lava/cmd/common"
-	"github.com/lavanet/lava/utils"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	cmdcommon "github.com/lavanet/lava/v2/cmd/common"
+	"github.com/lavanet/lava/v2/utils"
+	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	// this line is used by starport scaffolding # root/moduleImport
 
-	"github.com/lavanet/lava/app"
-	appparams "github.com/lavanet/lava/app/params"
+	"github.com/lavanet/lava/v2/app"
+	appparams "github.com/lavanet/lava/v2/app/params"
 )
 
 // NewRootCmd creates a new root command for a Cosmos SDK application

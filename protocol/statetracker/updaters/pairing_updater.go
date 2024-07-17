@@ -4,10 +4,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	"golang.org/x/net/context"
 )
 

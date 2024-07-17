@@ -5,11 +5,11 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	fixationtypes "github.com/lavanet/lava/v2/x/fixationstore/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v2/x/projects/types"
+	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 )
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)

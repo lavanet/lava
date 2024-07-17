@@ -3,10 +3,10 @@ package conflict_test
 import (
 	"testing"
 
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/conflict"
-	"github.com/lavanet/lava/x/conflict/types"
+	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/testutil/nullify"
+	"github.com/lavanet/lava/v2/x/conflict"
+	"github.com/lavanet/lava/v2/x/conflict/types"
 	"github.com/stretchr/testify/require"
 )
 

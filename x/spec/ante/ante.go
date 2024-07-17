@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/authz"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/gogoproto/proto"
-	"github.com/lavanet/lava/x/spec/keeper"
+	"github.com/lavanet/lava/v2/x/spec/keeper"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 

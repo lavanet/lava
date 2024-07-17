@@ -14,9 +14,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	// "github.com/cosmos/cosmos-sdk/client/flags"
-	utilslib "github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/spec/client/utils"
-	"github.com/lavanet/lava/x/spec/types"
+	utilslib "github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/spec/client/utils"
+	"github.com/lavanet/lava/v2/x/spec/types"
 
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"

@@ -1,6 +1,6 @@
 package badgeserver
 
-import "github.com/lavanet/lava/x/pairing/types"
+import "github.com/lavanet/lava/v2/x/pairing/types"
 
 type GelocationToProjectsConfiguration map[string]map[string]*ProjectConfiguration
 

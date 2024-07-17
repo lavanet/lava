@@ -12,12 +12,12 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/gogoproto/proto"
-	"github.com/lavanet/lava/app"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	plantypes "github.com/lavanet/lava/x/plans/types"
-	"github.com/lavanet/lava/x/spec/ante"
-	spectypes "github.com/lavanet/lava/x/spec/types"
-	subsciptiontypes "github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/v2/app"
+	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
+	plantypes "github.com/lavanet/lava/v2/x/plans/types"
+	"github.com/lavanet/lava/v2/x/spec/ante"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	subsciptiontypes "github.com/lavanet/lava/v2/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 

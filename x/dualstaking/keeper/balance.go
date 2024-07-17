@@ -2,8 +2,8 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/dualstaking/types"
 )
 
 func (k Keeper) BalanceDelegator(ctx sdk.Context, delegator sdk.AccAddress) (int, error) {

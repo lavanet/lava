@@ -3,10 +3,10 @@ package projects_test
 import (
 	"testing"
 
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/projects"
-	"github.com/lavanet/lava/x/projects/types"
+	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/testutil/nullify"
+	"github.com/lavanet/lava/v2/x/projects"
+	"github.com/lavanet/lava/v2/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 

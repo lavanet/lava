@@ -8,11 +8,11 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/provideroptimizer"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
