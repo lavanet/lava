@@ -256,7 +256,9 @@ func (apip *JsonRPCChainParser) SetSpec(spec spectypes.Spec) {
 func (apip *JsonRPCChainParser) GetInternalPaths(isWs bool) map[string]struct{} {
 	internalPaths := map[string]struct{}{}
 	for _, apiCollection := range apip.apiCollections {
-		if isWs && !apiCollection.CollectionData.WebsocketDisabled {
+		// If the given node url is not WebSocket, add the internal path to the map
+		// If the given node url is WebSocket, and the apiCollection is not disabled for WebSocket, add the internal path to the map
+		if !isWs || (isWs && !apiCollection.CollectionData.WebsocketDisabled) {
 			internalPaths[apiCollection.CollectionData.InternalPath] = struct{}{}
 		}
 	}
