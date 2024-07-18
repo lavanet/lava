@@ -290,7 +290,7 @@ func TestPairingStatic(t *testing.T) {
 	require.NoError(t, err)
 
 	for i, provider := range pairing.Providers {
-		require.Equal(t, provider.Stake.Amount.Int64(), testStake+int64(i))
+		require.Equal(t, provider.Stake.Amount.Int64(), testStake+int64(len(pairing.Providers)-1-i))
 	}
 }
 

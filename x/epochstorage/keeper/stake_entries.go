@@ -135,6 +135,7 @@ func (k Keeper) GetAllStakeEntriesForEpochChainId(ctx sdk.Context, epoch uint64,
 	iter, err := k.stakeEntries.Iterate(ctx, rng)
 	if err != nil {
 		panic(err)
+
 	}
 	defer iter.Close()
 
