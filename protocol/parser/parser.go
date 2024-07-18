@@ -441,8 +441,16 @@ func parseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 			return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(val))
 		}
 
-		// Else return not set error
-		return nil, utils.LavaFormatWarning("Failed parsing parseDictionaryOrOrdered", ValueNotSetError, utils.LogAttr("propName", propName), utils.LogAttr("inp", inp), utils.LogAttr("unmarshalledDataTyped", unmarshalledDataTyped), utils.LogAttr("method", rpcInput.GetMethod()))
+		// Else return not set error)
+		utils.LavaFormatDebug("Failed parsing parseDictionaryOrOrdered",
+			utils.LogAttr("propName", propName),
+			utils.LogAttr("inp", inp),
+			utils.LogAttr("unmarshalledDataTyped", unmarshalledDataTyped),
+			utils.LogAttr("method", rpcInput.GetMethod()),
+			utils.LogAttr("err", ValueNotSetError),
+		)
+
+		return nil, ValueNotSetError
 	case string:
 		return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(unmarshalledDataTyped))
 	default:
