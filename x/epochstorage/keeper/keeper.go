@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/collections"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -11,6 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/lavanet/lava/utils"
+	collcompat "github.com/lavanet/lava/utils/collcompat"
 	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -27,6 +29,10 @@ type (
 		stakingKeeper types.StakingKeeper
 
 		fixationRegistries map[string]func(sdk.Context) any
+
+		schema              collections.Schema
+		stakeEntries        collections.Map[collections.Triple[uint64, string, collections.Pair[uint64, string]], types.StakeEntry]
+		stakeEntriesCurrent collections.Map[collections.Pair[string, string], types.StakeEntry]
 	}
 )
 
@@ -46,6 +52,8 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	sb := collections.NewSchemaBuilder(collcompat.NewKVStoreService(storeKey))
+
 	keeper := &Keeper{
 		cdc:           cdc,
 		storeKey:      storeKey,
@@ -57,10 +65,30 @@ func NewKeeper(
 		stakingKeeper: stakingKeeper,
 
 		fixationRegistries: make(map[string]func(sdk.Context) any),
+
+		stakeEntries: collections.NewMap(sb, types.StakeEntriesPrefix, "stake_entries",
+			collections.TripleKeyCodec(
+				collections.Uint64Key,
+				collections.StringKey,
+				collections.PairKeyCodec(collections.Uint64Key, collections.StringKey)),
+			collcompat.ProtoValue[types.StakeEntry](cdc)),
+
+		stakeEntriesCurrent: collections.NewMap(sb, types.StakeEntriesCurrentPrefix, "stake_entries_current",
+			collections.PairKeyCodec(
+				collections.StringKey,
+				collections.StringKey),
+			collcompat.ProtoValue[types.StakeEntry](cdc)),
 	}
 
 	keeper.AddFixationRegistry(string(types.KeyEpochBlocks), func(ctx sdk.Context) any { return keeper.EpochBlocksRaw(ctx) })
 	keeper.AddFixationRegistry(string(types.KeyEpochsToSave), func(ctx sdk.Context) any { return keeper.EpochsToSaveRaw(ctx) })
+
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+	keeper.schema = schema
+
 	return keeper
 }
 
