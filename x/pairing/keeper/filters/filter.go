@@ -83,7 +83,7 @@ func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetype
 
 	// create providerScore array with all possible providers
 	providerScores := []*pairingscores.PairingScore{}
-	for j := 0; j < len(providers); j++ {
+	for j := len(providers) - 1; j >= 0; j-- {
 		result := true
 		slotFiltering := map[int]struct{}{} // for mix filters
 		// check provider for each filter
