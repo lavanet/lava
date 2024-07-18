@@ -1,6 +1,6 @@
 syntax = "proto3";
 package lavanet.lava.conflict;
-
+import "amino/amino.proto";
 // this line is used by starport scaffolding # proto/tx/import
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
@@ -11,7 +11,7 @@ option go_package = "github.com/lavanet/lava/x/conflict/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc Detection(MsgDetection) returns (MsgDetectionResponse);
+  rpc Detection(MsgDetection) returns (MsgDetectionResponse);
   rpc ConflictVoteCommit(MsgConflictVoteCommit) returns (MsgConflictVoteCommitResponse);
   rpc ConflictVoteReveal(MsgConflictVoteReveal) returns (MsgConflictVoteRevealResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
@@ -19,6 +19,7 @@ service Msg {
 
 // TODO:: change coin type to another proto (define proto in another file int this directory)
 message MsgDetection {
+  option (amino.name) = "conflict/Detection";
   string creator = 1;
   FinalizationConflict finalizationConflict = 2; 
   ResponseConflict responseConflict = 3;
@@ -29,6 +30,7 @@ message MsgDetectionResponse {
 }
 
 message MsgConflictVoteCommit {
+  option (amino.name) = "conflict/ConflictVoteCommit";
   string creator = 1;
   string voteID = 2;
   bytes hash = 3;
@@ -38,6 +40,7 @@ message MsgConflictVoteCommitResponse {
 }
 
 message MsgConflictVoteReveal {
+  option (amino.name) = "conflict/ConflictVoteReveal";
   string creator = 1;
   string voteID = 2;
   int64 nonce = 3;
