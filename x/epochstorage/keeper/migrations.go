@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"unicode"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -248,7 +249,12 @@ func extractEpochFromStakeStorageKey(key string) (uint64, error) {
 }
 
 func (m Migrator) isCurrentStakeStorageKey(ctx sdk.Context, key string) bool {
-	_, found, _ := m.keeper.specKeeper.IsSpecFoundAndActive(ctx, key)
+	// the legacy StakeStorage key (both regular and current) had a "/" which should be cut off
+	key, found := strings.CutSuffix(key, "/")
+	if !found {
+		return false
+	}
+	_, found, _ = m.keeper.specKeeper.IsSpecFoundAndActive(ctx, key)
 	return found
 }
 
