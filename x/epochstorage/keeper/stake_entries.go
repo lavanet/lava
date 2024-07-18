@@ -101,7 +101,7 @@ func (k Keeper) GetAllStakeEntriesForEpoch(ctx sdk.Context, epoch uint64) []type
 // GetAllStakeEntriesForEpochChainId gets all the stake entries of a specific epoch and a specific chain
 func (k Keeper) GetAllStakeEntriesForEpochChainId(ctx sdk.Context, epoch uint64, chainID string) []types.StakeEntry {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesPrefix)
-	iterator := sdk.KVStorePrefixIterator(store, types.StakeEntryKeyPrefixEpochChainId(epoch, chainID))
+	iterator := sdk.KVStoreReversePrefixIterator(store, types.StakeEntryKeyPrefixEpochChainId(epoch, chainID))
 	defer iterator.Close()
 
 	var entries []types.StakeEntry
