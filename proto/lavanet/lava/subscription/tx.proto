@@ -2,6 +2,7 @@ syntax = "proto3";
 package lavanet.lava.subscription;
 
 // this line is used by starport scaffolding # proto/tx/import
+import "amino/amino.proto";
 import "lavanet/lava/projects/project.proto";
 import "gogoproto/gogo.proto";  
 option go_package = "github.com/lavanet/lava/x/subscription/types";
@@ -16,6 +17,7 @@ service Msg {
 }
 
 message MsgBuy {
+  option (amino.name) = "subscription/Buy";
   reserved 5;
   string creator = 1;
   string consumer = 2;
@@ -29,6 +31,7 @@ message MsgBuyResponse {
 }
 
 message MsgAddProject {
+  option (amino.name) = "subscription/AddProject";
   string creator = 1;
   lavanet.lava.projects.ProjectData project_data = 2 [(gogoproto.nullable) = false];
 }
@@ -37,6 +40,7 @@ message MsgAddProjectResponse {
 }
 
 message MsgDelProject {
+  option (amino.name) = "subscription/DelProject";
   string creator = 1;
   string name = 2;
 }
@@ -45,6 +49,7 @@ message MsgDelProjectResponse {
 }
 
 message MsgAutoRenewal {
+  option (amino.name) = "subscription/AutoRenewal";
   string creator = 1;
   bool enable = 2;
   string consumer = 3;
