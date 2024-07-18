@@ -1,5 +1,6 @@
 syntax = "proto3";
 package lavanet.lava.dualstaking;
+import "amino/amino.proto";
 
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
@@ -8,14 +9,15 @@ option go_package = "github.com/lavanet/lava/x/dualstaking/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc Delegate(MsgDelegate) returns (MsgDelegateResponse);
-      rpc Redelegate(MsgRedelegate) returns (MsgRedelegateResponse);
-      rpc Unbond(MsgUnbond) returns (MsgUnbondResponse);
-      rpc ClaimRewards(MsgClaimRewards) returns (MsgClaimRewardsResponse);
+  rpc Delegate(MsgDelegate) returns (MsgDelegateResponse);
+  rpc Redelegate(MsgRedelegate) returns (MsgRedelegateResponse);
+  rpc Unbond(MsgUnbond) returns (MsgUnbondResponse);
+  rpc ClaimRewards(MsgClaimRewards) returns (MsgClaimRewardsResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
 }
 
 message MsgDelegate {
+  option (amino.name) = "dualstaking/Delegate";
   string creator = 1;
   string validator = 5;
   string provider = 2;
@@ -27,6 +29,7 @@ message MsgDelegateResponse {
 }
 
 message MsgRedelegate {
+  option (amino.name) = "dualstaking/Redelegate";
   string creator = 1;
   string from_provider = 2;
   string to_provider = 3;
@@ -39,6 +42,7 @@ message MsgRedelegateResponse {
 }
 
 message MsgUnbond {
+  option (amino.name) = "dualstaking/Unbond";
   string creator = 1;
   string validator = 5;
   string provider = 2;
@@ -50,6 +54,7 @@ message MsgUnbondResponse {
 }
 
 message MsgClaimRewards {
+  option (amino.name) = "dualstaking/MsgClaimRewards";
   string creator = 1; // delegator
   string provider = 2;
 }
