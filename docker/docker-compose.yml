@@ -36,8 +36,8 @@ services:
       "
       dasel put -f /lava/.lava/config/genesis.json -t string -v ulava 'app_state.gov.params.min_deposit.[0].denom' &&
       dasel put -f /lava/.lava/config/genesis.json -t string -v '100' 'app_state.gov.params.min_deposit.[0].amount' &&
-      dasel put -f /lava/.lava/config/genesis.json -t string -v '4s' 'app_state.gov.params.voting_period' &&
-      dasel put -f /lava/.lava/config/genesis.json -t string -v '3s' 'app_state.gov.params.expedited_voting_period' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '10s' 'app_state.gov.params.voting_period' &&
+      dasel put -f /lava/.lava/config/genesis.json -t string -v '10s' 'app_state.gov.params.expedited_voting_period' &&
       dasel put -f /lava/.lava/config/genesis.json -t string -v 'ulava' 'app_state.gov.params.expedited_min_deposit.[0].denom' &&
       dasel put -f /lava/.lava/config/genesis.json -t string -v '200' 'app_state.gov.params.expedited_min_deposit.[0].amount' &&
       dasel put -f /lava/.lava/config/genesis.json -t string -v '0.67' 'app_state.gov.params.expedited_threshold' &&
@@ -92,6 +92,21 @@ services:
       lava-node-config:
         condition: service_completed_successfully
 
+  post-lava-node-init:
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
+    entrypoint: ["sh"]
+    command: ["/lava/config/post-node-init.sh"]
+    volumes:
+      - lava_data:/lava
+      - ./config/post-node-init.sh:/lava/config/post-node-init.sh
+      - ../cookbook/specs/:/lava/cookbook/specs/
+      - ../cookbook/plans/:/lava/cookbook/plans/
+    networks:
+      - lava_network
+    depends_on:
+      lava-node:
+        condition: service_started
+
   consumer:
     image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-main}
     networks:
@@ -130,12 +145,12 @@ services:
     networks:
       - lava_network
     volumes:
-      - ./config/lava_example_compose.yml:/lava/config/lava_example.yml:ro
+      - ./config/provider.yml:/lava/config/provider.yml:ro
       - lava_data:/lava
     command:
       [
         "rpcprovider",
-        "lava_example.yml",
+        "provider.yml",
         "--chain-id",
         "lava",
         "--from",
