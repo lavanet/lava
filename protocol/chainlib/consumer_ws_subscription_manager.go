@@ -849,7 +849,13 @@ func (cwsm *ConsumerWSSubscriptionManager) verifyAndDisconnectDappFromSubscripti
 		utils.LogAttr("connectedDappActiveSubs", cwsm.connectedDapps[dappKey]),
 	)
 
-	// TODO: If not more dapps are connected to the subscription, remove the dappKey from connected dapps
+	if len(cwsm.connectedDapps[dappKey]) == 0 {
+		delete(cwsm.connectedDapps, dappKey)
+		utils.LavaFormatTrace("deleted dappKey from connected dapps",
+			utils.LogAttr("GUID", webSocketCtx),
+			utils.LogAttr("dappKey", dappKey),
+		)
+	}
 
 	delete(cwsm.activeSubscriptions[hashedParams].connectedDapps, dappKey)
 	utils.LavaFormatTrace("deleted dappKey from active subscriptions",
