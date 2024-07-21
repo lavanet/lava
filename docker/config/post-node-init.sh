@@ -26,7 +26,7 @@ wait_count_blocks() {
 }
 
 GASPRICE="0.000000001ulava"
-FROM="servicer1"
+FROM="user1"
 NODE="tcp://lava-node:26657"
 
 lavad config node $NODE
