@@ -11,12 +11,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/spf13/cobra"
 )
 
 var _ = strconv.Itoa(0)
+
+const HotWalletFlagName = "hot-wallet"
 
 // NewMultiSendTxCmd returns a CLI command handler for creating a MsgMultiSend transaction.
 // For a better UX this command is limited to send funds from one account to two or more accounts.
@@ -30,12 +35,27 @@ func NewMultiSendTxCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			MAX_ADDRESSES := 3000
 
-			clientCtx, err := client.GetClientTxContext(cmd)
+			clientCtxOrigin, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
+			authquerier := authtypes.NewQueryClient(clientCtxOrigin)
 
-			authquerier := authtypes.NewQueryClient(clientCtx)
+			hotWallet, err := cmd.Flags().GetString(HotWalletFlagName)
+			clientCtxHotWallet := clientCtxOrigin
+			useHotWallet := false
+			if err != nil {
+				return err
+			}
+			if hotWallet != "" {
+				useHotWallet = true
+				cmd.Flags().Set("from", hotWallet)
+				cmd.Flags().Set("ledger", "false")
+				clientCtxHotWallet, err = client.GetClientTxContext(cmd)
+				if err != nil {
+					return err
+				}
+			}
 
 			// Open the CSV file
 			file, err := os.Open(args[0])
@@ -62,8 +82,8 @@ func NewMultiSendTxCmd() *cobra.Command {
 				return err
 			}
 
-			GetSequence := func() (uint64, error) {
-				res, err := authquerier.Account(cmd.Context(), &authtypes.QueryAccountRequest{Address: clientCtx.FromAddress.String()})
+			getSequence := func(account string) (uint64, error) {
+				res, err := authquerier.Account(cmd.Context(), &authtypes.QueryAccountRequest{Address: account})
 				if err != nil {
 					return 0, err
 				}
@@ -76,11 +96,61 @@ func NewMultiSendTxCmd() *cobra.Command {
 				return acc.GetSequence(), err
 			}
 
-			expectedSequence, err := GetSequence()
+			getResponse := func(account string, sequence uint64) bool {
+				tmEvents := []string{
+					fmt.Sprintf("%s.%s='%s/%d'", sdk.EventTypeTx, sdk.AttributeKeyAccountSequence, account, sequence),
+				}
+				txs, err := authtx.QueryTxsByEvents(clientCtxOrigin, tmEvents, query.DefaultPage, query.DefaultLimit, "")
+				if err != nil {
+					fmt.Printf("failed to query tx %s\n", err)
+					return false
+				}
+				if len(txs.Txs) == 0 {
+					fmt.Println("found no txs matching given address and sequence combination")
+					return false
+				}
+				if len(txs.Txs) > 1 {
+					// This case means there's a bug somewhere else in the code. Should not happen.
+					fmt.Printf("found %d txs matching given address and sequence combination\n", len(txs.Txs))
+					return false
+				}
+
+				return txs.Txs[0].Code == 0
+			}
+
+			waitSequenceChange := func(account string, sequence uint64) error {
+				currentSequence, err := getSequence(account)
+				if err != nil {
+					return err
+				}
+				for currentSequence < sequence {
+					fmt.Printf("waiting for sequence number %d current %d \n", sequence, currentSequence)
+					time.Sleep(5 * time.Second)
+
+					currentSequence, err = getSequence(account)
+					if err != nil {
+						return err
+					}
+				}
+				if !getResponse(account, sequence-1) {
+					return fmt.Errorf("transaction failed")
+				}
+				return nil
+			}
+
+			expectedSequenceOrigin, err := getSequence(clientCtxOrigin.FromAddress.String())
 			if err != nil {
 				return err
 			}
-			currentSequence := expectedSequence
+
+			expectedSequenceHW := expectedSequenceOrigin
+			if useHotWallet {
+				expectedSequenceHW, err = getSequence(clientCtxHotWallet.FromAddress.String())
+				if err != nil {
+					return err
+				}
+			}
+
 			output := []banktypes.Output{}
 			totalAmount := sdk.Coins{}
 			records = records[startIndex:]
@@ -107,11 +177,16 @@ func NewMultiSendTxCmd() *cobra.Command {
 				totalAmount = totalAmount.Add(coins...)
 
 				if (i+1)%MAX_ADDRESSES == 0 || (i+1) == len(records) {
-					for currentSequence < expectedSequence {
-						fmt.Printf("waiting for sequence number %d current %d \n", expectedSequence, currentSequence)
-						time.Sleep(5 * time.Second)
-
-						currentSequence, err = GetSequence()
+					if useHotWallet {
+						msg := banktypes.NewMsgSend(clientCtxOrigin.FromAddress, clientCtxHotWallet.FromAddress, totalAmount.Add(sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(5))))
+						err := tx.GenerateOrBroadcastTxCLI(clientCtxOrigin, cmd.Flags(), msg)
+						if err != nil {
+							fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
+							fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
+							return err
+						}
+						expectedSequenceOrigin++
+						err = waitSequenceChange(clientCtxOrigin.FromAddress.String(), expectedSequenceOrigin)
 						if err != nil {
 							fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
 							fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
@@ -119,14 +194,20 @@ func NewMultiSendTxCmd() *cobra.Command {
 						}
 					}
 
-					msg := banktypes.NewMsgMultiSend([]banktypes.Input{banktypes.NewInput(clientCtx.FromAddress, totalAmount)}, output)
-					err := tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+					err = waitSequenceChange(clientCtxHotWallet.FromAddress.String(), expectedSequenceHW)
 					if err != nil {
 						fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
 						fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
 						return err
 					}
-					expectedSequence++
+					msg := banktypes.NewMsgMultiSend([]banktypes.Input{banktypes.NewInput(clientCtxHotWallet.FromAddress, totalAmount)}, output)
+					err := tx.GenerateOrBroadcastTxCLI(clientCtxHotWallet, cmd.Flags(), msg)
+					if err != nil {
+						fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
+						fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
+						return err
+					}
+					expectedSequenceHW++
 					startIndex = uint64(i) + 1
 					output = []banktypes.Output{}
 					totalAmount = sdk.Coins{}
@@ -137,6 +218,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().String(HotWalletFlagName, "", "optional, hot wallet to be used as a middle point")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
