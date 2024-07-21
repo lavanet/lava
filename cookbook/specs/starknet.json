@@ -852,7 +852,8 @@
                                 },
                                 "values": [
                                     {
-                                        "expected_value": "*"
+                                        "expected_value": "*",
+                                        "severity": "Warning"
                                     }
                                 ]
                             }
