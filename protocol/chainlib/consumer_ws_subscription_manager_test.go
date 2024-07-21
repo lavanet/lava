@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
@@ -231,6 +232,31 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				unsubscribeMessageWg.Wait()
 			}()
 
+			listenForExpectedMessages := func(ctx context.Context, repliesChan <-chan *pairingtypes.RelayReply, expectedMsg string) {
+				select {
+				case <-time.After(5 * time.Second):
+					require.Fail(t, "Timeout waiting for messages", "Expected message: %s", expectedMsg)
+					return
+				case subMsg := <-repliesChan:
+					require.Equal(t, expectedMsg, string(subMsg.Data))
+				case <-ctx.Done():
+					return
+				}
+			}
+
+			expectNoMoreMessages := func(ctx context.Context, repliesChan <-chan *pairingtypes.RelayReply) {
+				msgCounter := 0
+				select {
+				case <-ctx.Done():
+					return
+				case <-repliesChan:
+					msgCounter++
+					if msgCounter > 2 {
+						require.Fail(t, "Unexpected message received")
+					}
+				}
+			}
+
 			dapp1 := "dapp1"
 			dapp2 := "dapp2"
 
@@ -365,14 +391,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
 			assert.NotNil(t, repliesChan1)
 
-			go func() {
-				select {
-				case subMsg := <-repliesChan1:
-					require.Equal(t, string(play.subscriptionFirstReply1), string(subMsg.Data))
-				case <-ctx.Done():
-					return
-				}
-			}()
+			listenForExpectedMessages(ctx, repliesChan1, string(play.subscriptionFirstReply1))
 
 			relaySender.
 				EXPECT().
@@ -387,6 +406,8 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
 			assert.Nil(t, repliesChan2) // Same subscription, same dappKey, no need for a new channel
 
+			listenForExpectedMessages(ctx, repliesChan1, string(play.subscriptionFirstReply1))
+
 			// Start a subscription again, same params, different dappKey, should not call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 			firstReply, repliesChan3, err := manager.StartSubscription(ctx, subscribeChainMessage1, nil, nil, dapp2, ts.Consumer.Addr.String(), nil)
@@ -394,14 +415,8 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
 			assert.NotNil(t, repliesChan3) // Same subscription, but different dappKey, so will create new channel
 
-			go func() {
-				select {
-				case subMsg := <-repliesChan3:
-					require.Equal(t, string(play.subscriptionFirstReply1), string(subMsg.Data))
-				case <-ctx.Done():
-					return
-				}
-			}()
+			listenForExpectedMessages(ctx, repliesChan1, string(play.subscriptionFirstReply1))
+			listenForExpectedMessages(ctx, repliesChan3, string(play.subscriptionFirstReply1))
 
 			// Prepare for the next subscription
 			expectedSubscriptionId = play.subscriptionId2
@@ -487,14 +502,9 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			assert.Equal(t, string(play.subscriptionFirstReply2), string(firstReply.Data))
 			assert.NotNil(t, repliesChan4) // New subscription, new channel
 
-			go func() {
-				select {
-				case subMsg := <-repliesChan4:
-					require.Equal(t, string(play.subscriptionFirstReply2), string(subMsg.Data))
-				case <-ctx.Done():
-					return
-				}
-			}()
+			listenForExpectedMessages(ctx, repliesChan1, string(play.subscriptionFirstReply1))
+			listenForExpectedMessages(ctx, repliesChan3, string(play.subscriptionFirstReply1))
+			listenForExpectedMessages(ctx, repliesChan4, string(play.subscriptionFirstReply2))
 
 			// Prepare for unsubscribe from the first subscription
 			relaySender.
@@ -506,6 +516,11 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 			err = manager.Unsubscribe(ctx, unsubscribeChainMessage1, nil, relayResult1.Request.RelayData, dapp2, ts.Consumer.Addr.String(), nil)
 			require.NoError(t, err)
+
+			listenForExpectedMessages(ctx, repliesChan1, string(play.subscriptionFirstReply1))
+			expectNoMoreMessages(ctx, repliesChan3)
+			listenForExpectedMessages(ctx, repliesChan4, string(play.subscriptionFirstReply2))
+
 			wg := sync.WaitGroup{}
 			wg.Add(2)
 
@@ -527,6 +542,11 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
 			err = manager.UnsubscribeAll(ctx, dapp1, ts.Consumer.Addr.String(), nil)
 			require.NoError(t, err)
+
+			expectNoMoreMessages(ctx, repliesChan1)
+			expectNoMoreMessages(ctx, repliesChan3)
+			expectNoMoreMessages(ctx, repliesChan4)
+
 			// Because the SendParsedRelay is called in a goroutine, we need to wait for it to finish
 			wg.Wait()
 		})
