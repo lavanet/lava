@@ -219,6 +219,22 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			subscriptionFirstReply2:  []byte(`{"jsonrpc":"2.0","id":6,"result":["0x2134567890"]}`),
 			unsubscribeMessage2:      []byte(`{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x2134567890"],"id":1}`),
 		},
+		{
+			name:           "StarkNet_JsonRPC",
+			specId:         "STRK",
+			apiInterface:   spectypes.APIInterfaceJsonRPC,
+			connectionType: "POST",
+
+			subscriptionRequestData1: []byte(`{"jsonrpc":"2.0","id":5,"method":"pathfinder_subscribe","params":["newHeads"]}`),
+			subscriptionId1:          "0",
+			subscriptionFirstReply1:  []byte(`{"jsonrpc":"2.0","id":5,"result":0}`),
+			unsubscribeMessage1:      []byte(`{"jsonrpc":"2.0","method":"pathfinder_unsubscribe","params":[0],"id":1}`),
+
+			subscriptionRequestData2: []byte(`{"jsonrpc":"2.0","id":6,"method":"pathfinder_subscribe","params":["logs"]}`),
+			subscriptionId2:          "1",
+			subscriptionFirstReply2:  []byte(`{"jsonrpc":"2.0","id":6,"result":1}`),
+			unsubscribeMessage2:      []byte(`{"jsonrpc":"2.0","method":"pathfinder_unsubscribe","params":[1],"id":1}`),
+		},
 	}
 
 	for _, play := range playbook {
