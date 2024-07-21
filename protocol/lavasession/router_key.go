@@ -4,18 +4,20 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/lavanet/lava/v2/utils/lavaslices"
 )
 
 const (
-	sep            = "|"
-	methodRouteSep = "method-route:"
+	RouterKeySeparator = "|"
+	methodRouteSep     = "method-route:"
+	internalPathSep    = "internal-path:"
 )
 
-type RouterKey string
-
-func (rk *RouterKey) ApplyMethodsRoute(routeNum int) RouterKey {
-	additionalPath := strconv.FormatInt(int64(routeNum), 10)
-	return RouterKey(string(*rk) + methodRouteSep + additionalPath)
+type RouterKey struct {
+	methodsRouteUniqueKey int
+	uniqueExtensions      []string
+	internalPath          string
 }
 
 func NewRouterKey(extensions []string) RouterKey {
@@ -28,10 +30,43 @@ func NewRouterKey(extensions []string) RouterKey {
 	for addon := range uniqueExtensions { // we are sorting this anyway so we don't have to keep order
 		uniqueExtensionsSlice = append(uniqueExtensionsSlice, addon)
 	}
+
 	sort.Strings(uniqueExtensionsSlice)
-	return RouterKey(sep + strings.Join(uniqueExtensionsSlice, sep) + sep)
+
+	return RouterKey{
+		uniqueExtensions: uniqueExtensionsSlice,
+	}
 }
 
 func GetEmptyRouterKey() RouterKey {
 	return NewRouterKey([]string{})
+}
+
+func (rk *RouterKey) ApplyMethodsRoute(routeNum int) {
+	rk.methodsRouteUniqueKey = routeNum
+}
+
+func (rk *RouterKey) ApplyInternalPath(internalPath string) {
+	rk.internalPath = internalPath
+}
+
+func (rk RouterKey) HasExtension(extension string) bool {
+	return lavaslices.Contains(rk.uniqueExtensions, extension)
+}
+
+func (rk RouterKey) String() string {
+	// uniqueExtensions are sorted on init
+	retStr := rk.uniqueExtensions
+
+	// if we have a route number, we add it to the key
+	if rk.methodsRouteUniqueKey != 0 {
+		retStr = append(retStr, internalPathSep+strconv.FormatInt(int64(rk.methodsRouteUniqueKey), 10))
+	}
+
+	// if we have an internal path, we add it to the key
+	if rk.internalPath != "" {
+		retStr = append(retStr, rk.internalPath)
+	}
+
+	return RouterKeySeparator + strings.Join(retStr, RouterKeySeparator) + RouterKeySeparator
 }

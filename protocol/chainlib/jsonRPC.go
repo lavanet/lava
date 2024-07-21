@@ -523,9 +523,9 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 		internalPaths = jsonRPCChainParser.GetInternalPaths()
 	}
 	internalPathsLength := len(internalPaths)
-	if internalPathsLength > 0 && internalPathsLength == len(rpcProviderEndpoint.NodeUrls) {
+	if internalPathsLength > 1 && internalPathsLength == len(rpcProviderEndpoint.NodeUrls) {
 		return cp, cp.startWithSpecificInternalPaths(ctx, nConns, rpcProviderEndpoint.NodeUrls, internalPaths)
-	} else if internalPathsLength > 0 && len(rpcProviderEndpoint.NodeUrls) > 1 {
+	} else if internalPathsLength > 1 && len(rpcProviderEndpoint.NodeUrls) > 1 {
 		// provider provided specific endpoints but not enough to fill all requirements
 		return nil, utils.LavaFormatError("Internal Paths specified but not all paths provided", nil, utils.Attribute{Key: "required", Value: internalPaths}, utils.Attribute{Key: "provided", Value: rpcProviderEndpoint.NodeUrls})
 	}
