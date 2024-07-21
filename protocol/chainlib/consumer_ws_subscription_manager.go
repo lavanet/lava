@@ -787,7 +787,9 @@ func (cwsm *ConsumerWSSubscriptionManager) findActiveSubscriptionHashedParamsFro
 		}
 	}
 
-	return "", utils.LavaFormatDebug("could not find active subscription for given params", utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()))
+	utils.LavaFormatDebug("could not find active subscription for given params", utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()))
+
+	return "", common.SubscriptionNotFoundError
 }
 
 func (cwsm *ConsumerWSSubscriptionManager) verifyAndDisconnectDappFromSubscription(
@@ -797,17 +799,6 @@ func (cwsm *ConsumerWSSubscriptionManager) verifyAndDisconnectDappFromSubscripti
 	unsubscribeRelayDataGetter func() (*unsubscribeRelayData, error),
 ) error {
 	// Must be called under lock
-
-	sendSubscriptionNotFoundErrorToWebSocket := func() error {
-		jsonError, err := gojson.Marshal(common.JsonRpcSubscriptionNotFoundError)
-		if err != nil {
-			return utils.LavaFormatError("could not marshal error response", err)
-		}
-
-		cwsm.connectedDapps[dappKey][hashedParams].Send(&pairingtypes.RelayReply{Data: jsonError})
-		return nil
-	}
-
 	if _, ok := cwsm.connectedDapps[dappKey]; !ok {
 		utils.LavaFormatDebug("webSocket has no active subscriptions",
 			utils.LogAttr("GUID", webSocketCtx),
@@ -835,11 +826,7 @@ func (cwsm *ConsumerWSSubscriptionManager) verifyAndDisconnectDappFromSubscripti
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 
-		err := sendSubscriptionNotFoundErrorToWebSocket()
-		if err != nil {
-			return err
-		}
-		return nil
+		return common.SubscriptionNotFoundError
 	}
 
 	if _, ok := cwsm.activeSubscriptions[hashedParams].connectedDapps[dappKey]; !ok {
@@ -849,11 +836,7 @@ func (cwsm *ConsumerWSSubscriptionManager) verifyAndDisconnectDappFromSubscripti
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 
-		err := sendSubscriptionNotFoundErrorToWebSocket()
-		if err != nil {
-			return err
-		}
-		return nil
+		return common.SubscriptionNotFoundError
 	}
 
 	cwsm.connectedDapps[dappKey][hashedParams].Close() // close the subscription msgs channel

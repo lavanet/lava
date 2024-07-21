@@ -162,6 +162,14 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from subscription", err, utils.LogAttr("GUID", webSocketCtx))
+					if err == common.SubscriptionNotFoundError {
+						msgData, err := gojson.Marshal(common.JsonRpcSubscriptionNotFoundError)
+						if err != nil {
+							continue
+						}
+
+						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: msgData}
+					}
 				}
 				continue
 			} else if IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
