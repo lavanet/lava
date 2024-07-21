@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"time"
 
 	cosmosmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -80,8 +81,13 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
 
-	providers, _, _, err = k.getPairingForClient(ctx, chainID, block, strictestPolicy, cluster, project.Index, false, true)
-	return providers, err
+	now := time.Now()
+	providers, _, _, err1 := k.getPairingForClient(ctx, chainID, block, strictestPolicy, cluster, project.Index, false, true)
+	err = utils.WriteTimeMeasurement("/home/oren/go/lava/main_pairing.csv", now)
+	if err != nil {
+		panic(err)
+	}
+	return providers, err1
 }
 
 // CalculatePairingChance calculates the chance of a provider to be picked in the pairing process for the first pairing slot
@@ -148,7 +154,6 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 			}
 		}
 		if useCache {
-
 			k.SetPairingCached(ctx, projectIndex, chainID, epoch, stakeEntriesFiltered)
 		}
 		return stakeEntriesFiltered, policy.EpochCuLimit, nil, nil
@@ -197,7 +202,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 		k.SetPairingCached(ctx, projectIndex, chainID, epoch, providers)
 	}
 
-	return providers, policy.EpochCuLimit, providerScores, err
+	return providers, policy.EpochCuLimit, providerScores, nil
 }
 
 func (k Keeper) GetProjectStrictestPolicy(ctx sdk.Context, project projectstypes.Project, chainID string, block uint64) (*planstypes.Policy, string, error) {
