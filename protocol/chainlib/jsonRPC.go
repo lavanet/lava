@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -720,7 +719,7 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return reply, "", nil, nil
 		}
 
-		if strings.HasPrefix(string(replyMsg.Result), "\"") {
+		if common.IsQuoted(string(replyMsg.Result)) {
 			subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
 			if err != nil {
 				return nil, "", nil, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
