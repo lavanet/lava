@@ -210,12 +210,12 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			connectionType: "POST",
 
 			subscriptionRequestData1: []byte(`{"jsonrpc":"2.0","id":5,"method":"eth_subscribe","params":["newHeads"]}`),
-			subscriptionId1:          `["0x1234567890"]`,
+			subscriptionId1:          "0x1234567890",
 			subscriptionFirstReply1:  []byte(`{"jsonrpc":"2.0","id":5,"result":["0x1234567890"]}`),
 			unsubscribeMessage1:      []byte(`{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x1234567890"],"id":1}`),
 
 			subscriptionRequestData2: []byte(`{"jsonrpc":"2.0","id":6,"method":"eth_subscribe","params":["logs"]}`),
-			subscriptionId2:          `["0x2134567890"]`,
+			subscriptionId2:          "0x2134567890",
 			subscriptionFirstReply2:  []byte(`{"jsonrpc":"2.0","id":6,"result":["0x2134567890"]}`),
 			unsubscribeMessage2:      []byte(`{"jsonrpc":"2.0","method":"eth_unsubscribe","params":["0x2134567890"],"id":1}`),
 		},
