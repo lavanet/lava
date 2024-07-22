@@ -82,7 +82,6 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 
 func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Context, msg sdk.Msg, checkProfitability bool, feeGranter sdk.AccAddress) error {
 	txfactory := ts.txFactory
-	utils.LavaFormatDebug("TESTTTTTTTTTT @@@@@@@@@@@", utils.LogAttr("price", txfactory.GasPrices()))
 	if feeGranter != nil {
 		txfactory = ts.txFactory.WithFeeGranter(feeGranter)
 	}
