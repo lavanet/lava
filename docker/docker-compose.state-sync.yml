@@ -3,7 +3,7 @@ services:
 
   lava-node-init:
     # Update with the most recent supported version of lavad
-    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-latest}
     environment:
       - CHAIN_ID=${CHAIN_ID:-lava-testnet-2}
       - KEYRING_BACKEND=${KEYRING_BACKEND:-test}
@@ -58,7 +58,7 @@ services:
 
   lava-node:
     # Update with the most recent supported version of lavad
-    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-latest}
     container_name: lava-node
     command: ["start"]
     ports:
