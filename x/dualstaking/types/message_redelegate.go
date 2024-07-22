@@ -4,6 +4,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 )
 
 const TypeMsgRedelegate = "redelegate"
@@ -48,14 +49,14 @@ func (msg *MsgRedelegate) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid delegator address (%s)", err)
 	}
 
-	if msg.FromProvider != EMPTY_PROVIDER {
+	if msg.FromProvider != commontypes.EMPTY_PROVIDER {
 		_, err = sdk.AccAddressFromBech32(msg.FromProvider)
 		if err != nil {
 			return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid (from) provider address (%s)", err)
 		}
 	}
 
-	if msg.ToProvider != EMPTY_PROVIDER {
+	if msg.ToProvider != commontypes.EMPTY_PROVIDER {
 		_, err = sdk.AccAddressFromBech32(msg.ToProvider)
 		if err != nil {
 			return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid (to) provider address (%s)", err)

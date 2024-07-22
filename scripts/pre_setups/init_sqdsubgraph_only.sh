@@ -9,7 +9,7 @@ rm $LOGS_DIR/*.log
 
 killall screen
 screen -wipe
-GASPRICE="0.000000001ulava"
+GASPRICE="0.00002ulava"
 lavad tx gov submit-legacy-proposal spec-add ./cookbook/specs/sqdsubgraph.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
 wait_next_block
 wait_next_block
