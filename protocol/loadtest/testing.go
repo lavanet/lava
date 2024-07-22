@@ -58,34 +58,26 @@ func startLoadTest(endpoint string, parallelClients int, callsPerClient int, met
 		}
 
 		for j := 0; j < callsPerClient; j++ {
-			utils.LavaFormatDebug("Sending request",
-				utils.LogAttr("endpoint", endpoint),
-				utils.LogAttr("method", method),
-				utils.LogAttr("data", data),
-			)
-
 			resp, err := sendRequest()
 			if err != nil {
 				continue
 			}
 
 			if resp.StatusCode != http.StatusOK {
-				utils.LavaFormatDebug("Received non-200 status code", utils.LogAttr("statusCode", resp.StatusCode))
+				bodyBytes, err := io.ReadAll(resp.Body)
+				if err != nil {
+					utils.LavaFormatDebug("Failed to read response body", utils.LogAttr("error", err))
+					readBodyErrors++
+				}
+
+				utils.LavaFormatDebug("Received non-200 status code",
+					utils.LogAttr("statusCode", resp.StatusCode),
+					utils.LogAttr("responseData", string(bodyBytes)),
+				)
+
 				non200StatusErrors++
 				continue
 			}
-
-			bodyBytes, err := io.ReadAll(resp.Body)
-			if err != nil {
-				utils.LavaFormatDebug("Failed to read response body", utils.LogAttr("error", err))
-				readBodyErrors++
-				continue
-			}
-
-			utils.LavaFormatDebug("Received response",
-				utils.LogAttr("statusCode", resp.StatusCode),
-				utils.LogAttr("responseData", string(bodyBytes)),
-			)
 		}
 
 		utils.LavaFormatInfo("Client finished",
