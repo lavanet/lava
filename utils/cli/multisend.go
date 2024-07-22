@@ -335,13 +335,11 @@ func loadProgress(filename string) Progress {
 	return progress
 }
 
-// NewMultiSendTxCmd returns a CLI command handler for creating a MsgMultiSend transaction.
-// For a better UX this command is limited to send funds from one account to two or more accounts.
 func NewQueryTotalGasCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "total-gas address chainid",
-		Short:   `Send funds from one account to two or more accounts as instructed in the csv file and divides to multiple messages.`,
-		Long:    `Send funds from one account to two or more accounts as instructed in the csv file and divides to multiple messages.`,
+		Short:   `calculate the total gas used by a provider in 24H`,
+		Long:    `calculate the total gas used by a provider in 24H`,
 		Example: "total-gas lava@... NEAR",
 		Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
