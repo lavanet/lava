@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -16,23 +17,42 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/spf13/cobra"
 )
 
 var _ = strconv.Itoa(0)
 
-const HotWalletFlagName = "hot-wallet"
+const (
+	HotWalletFlagName  = "hot-wallet"
+	RPCRetriesFlagName = "rpc-retries"
+)
+
+const (
+	PRG_ready = iota
+	PRG_bank_send
+	PRG_bank_send_verified
+	PRG_multisend
+)
+
+type Progress struct {
+	Index             int    `json:"Index"`
+	Progress          int    `json:"Progress"`
+	SequenceOrigin    uint64 `json:"SequenceOrigin"`
+	SequenceHotWallet uint64 `json:"SequenceHotWallet"`
+	HotWallet         string `json:"HotWallet"`
+}
 
 // NewMultiSendTxCmd returns a CLI command handler for creating a MsgMultiSend transaction.
 // For a better UX this command is limited to send funds from one account to two or more accounts.
 func NewMultiSendTxCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "multi-send [file.csv] <start index> --from [address]",
-		Short:   `Send funds from one account to two or more accounts as instructed in the csv file and divides to multiple messages.`,
-		Long:    `Send funds from one account to two or more accounts as instructed in the csv file and divides to multiple messages.`,
-		Example: "multi-send [file.csv] --from you",
-		Args:    cobra.RangeArgs(1, 2),
+		Use:   "multi-send [file.csv] <start index> --from [address]",
+		Short: `Send funds from one account to two or more accounts as instructed in the csv file and divides to multiple messages.`,
+		Long: `Send funds from one account to two or more accounts as instructed in the csv file and divides to multiple messages.
+				  expected csv is two columns, first column contains the address to send to, second colum is the amount to send in ulava`,
+		Example: `lavad test multi-send output.csv --from alice
+				  lavad test multi-send output.csv --from alice --ledger --hot-wallet bob`,
+		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			MAX_ADDRESSES := 3000
 
@@ -42,6 +62,10 @@ func NewMultiSendTxCmd() *cobra.Command {
 			}
 			authquerier := authtypes.NewQueryClient(clientCtxOrigin)
 
+			homedir, _ := cmd.Flags().GetString("home")
+			progressFile := homedir + "/multi_send_progress.csv"
+			progress := loadProgress(progressFile)
+
 			hotWallet, err := cmd.Flags().GetString(HotWalletFlagName)
 			clientCtxHotWallet := clientCtxOrigin
 			useHotWallet := false
@@ -49,6 +73,9 @@ func NewMultiSendTxCmd() *cobra.Command {
 				return err
 			}
 			if hotWallet != "" {
+				if progress.HotWallet != "" && progress.HotWallet != hotWallet {
+					return fmt.Errorf("using different hot wallet than saved in progress file")
+				}
 				useHotWallet = true
 				cmd.Flags().Set("from", hotWallet)
 				cmd.Flags().Set("ledger", "false")
@@ -57,6 +84,9 @@ func NewMultiSendTxCmd() *cobra.Command {
 					return err
 				}
 			}
+			progress.HotWallet = hotWallet
+
+			retries, _ := cmd.Flags().GetInt(RPCRetriesFlagName)
 
 			// Open the CSV file
 			file, err := os.Open(args[0])
@@ -65,13 +95,18 @@ func NewMultiSendTxCmd() *cobra.Command {
 			}
 			defer file.Close()
 
-			startIndex := uint64(0)
 			if len(args) == 2 {
-				startIndex, err = strconv.ParseUint(args[1], 10, 64)
+				index, err := strconv.ParseInt(args[1], 10, 64)
 				if err != nil {
 					return err
 				}
-				startIndex--
+				progress.Index = int(index) - 1
+			}
+
+			feesStr, _ := cmd.Flags().GetString(flags.FlagFees)
+			fees, err := sdk.ParseCoinsNormalized(feesStr)
+			if err != nil {
+				panic(err)
 			}
 
 			// Create a new CSV reader
@@ -84,7 +119,14 @@ func NewMultiSendTxCmd() *cobra.Command {
 			}
 
 			getSequence := func(account string) (uint64, error) {
-				res, err := authquerier.Account(cmd.Context(), &authtypes.QueryAccountRequest{Address: account})
+				var err error
+				var res *authtypes.QueryAccountResponse
+				for i := 0; i < retries; i++ {
+					res, err = authquerier.Account(cmd.Context(), &authtypes.QueryAccountRequest{Address: account})
+					if err == nil {
+						break
+					}
+				}
 				if err != nil {
 					return 0, err
 				}
@@ -101,7 +143,15 @@ func NewMultiSendTxCmd() *cobra.Command {
 				tmEvents := []string{
 					fmt.Sprintf("%s.%s='%s/%d'", sdk.EventTypeTx, sdk.AttributeKeyAccountSequence, account, sequence),
 				}
-				txs, err := authtx.QueryTxsByEvents(clientCtxOrigin, tmEvents, query.DefaultPage, query.DefaultLimit, "")
+
+				var err error
+				var txs *sdk.SearchTxsResult
+				for i := 0; i < retries; i++ {
+					txs, err = authtx.QueryTxsByEvents(clientCtxOrigin, tmEvents, query.DefaultPage, query.DefaultLimit, "")
+					if err == nil {
+						break
+					}
+				}
 				if err != nil {
 					fmt.Printf("failed to query tx %s\n", err)
 					return false
@@ -139,39 +189,43 @@ func NewMultiSendTxCmd() *cobra.Command {
 				return nil
 			}
 
-			expectedSequenceOrigin, err := getSequence(clientCtxOrigin.FromAddress.String())
-			if err != nil {
-				return err
-			}
-
-			expectedSequenceHW := expectedSequenceOrigin
-			if useHotWallet {
-				expectedSequenceHW, err = getSequence(clientCtxHotWallet.FromAddress.String())
+			if progress.SequenceOrigin == 0 {
+				progress.SequenceOrigin, err = getSequence(clientCtxOrigin.FromAddress.String())
 				if err != nil {
 					return err
+				}
+			}
+
+			if progress.SequenceHotWallet == 0 {
+				progress.SequenceHotWallet = progress.SequenceOrigin
+				if useHotWallet {
+					progress.SequenceHotWallet, err = getSequence(clientCtxHotWallet.FromAddress.String())
+					if err != nil {
+						return err
+					}
 				}
 			}
 
 			output := []banktypes.Output{}
 			totalAmount := sdk.Coins{}
-			records = records[startIndex:]
+			records = records[progress.Index:]
 			for i, record := range records {
 				coins, err := sdk.ParseCoinsNormalized(record[1])
 				if err != nil {
-					fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
-					fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
+					fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
+					fmt.Printf("please run again with: multi-send [file.csv] %d\n", progress.Index)
 					return err
 				}
 
 				if coins.IsZero() {
-					fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
-					fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
+					fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
+					fmt.Printf("please run again with: multi-send [file.csv] %d\n", progress.Index)
 					return fmt.Errorf("must send positive amount")
 				}
 				toAddr, err := sdk.AccAddressFromBech32(record[0])
 				if err != nil {
-					fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
-					fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
+					fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
+					fmt.Printf("please run again with: multi-send [file.csv] %d\n", progress.Index)
 					return err
 				}
 				output = append(output, banktypes.NewOutput(toAddr, coins))
@@ -179,37 +233,55 @@ func NewMultiSendTxCmd() *cobra.Command {
 
 				if (i+1)%MAX_ADDRESSES == 0 || (i+1) == len(records) {
 					if useHotWallet {
-						msg := banktypes.NewMsgSend(clientCtxOrigin.FromAddress, clientCtxHotWallet.FromAddress, totalAmount.Add(sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(5))))
-						err := tx.GenerateOrBroadcastTxCLI(clientCtxOrigin, cmd.Flags(), msg)
-						if err != nil {
-							fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
-							fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
-							return err
+						if progress.Progress == PRG_ready {
+							msg := banktypes.NewMsgSend(clientCtxOrigin.FromAddress, clientCtxHotWallet.FromAddress, totalAmount.Add(fees...))
+							err := tx.GenerateOrBroadcastTxCLI(clientCtxOrigin, cmd.Flags(), msg)
+							if err != nil {
+								fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
+								fmt.Printf("please run again with: multi-send [file.csv] %d\n", progress.Index)
+								return err
+							}
+							progress.Progress = PRG_bank_send
+							progress.SequenceOrigin++
+							saveProgress(progress, progressFile)
 						}
-						expectedSequenceOrigin++
-						err = waitSequenceChange(clientCtxOrigin.FromAddress.String(), expectedSequenceOrigin)
-						if err != nil {
-							fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
-							fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
-							return err
+						if progress.Progress == PRG_bank_send {
+							err = waitSequenceChange(clientCtxOrigin.FromAddress.String(), progress.SequenceOrigin)
+							if err != nil {
+								fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
+								fmt.Printf("please run again with: multi-send [file.csv] %d\n", progress.Index)
+								return err
+							}
+							progress.Progress = PRG_bank_send_verified
+							saveProgress(progress, progressFile)
 						}
 					}
 
-					err = waitSequenceChange(clientCtxHotWallet.FromAddress.String(), expectedSequenceHW)
-					if err != nil {
-						fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
-						fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
-						return err
+					if progress.Progress == PRG_bank_send_verified || progress.Progress == PRG_ready {
+						msg := banktypes.NewMsgMultiSend([]banktypes.Input{banktypes.NewInput(clientCtxHotWallet.FromAddress, totalAmount)}, output)
+						fmt.Printf("sending records from %d to %d, total tokens %s\n", progress.Index, i, output[0].String())
+						err := tx.GenerateOrBroadcastTxCLI(clientCtxHotWallet, cmd.Flags(), msg)
+						if err != nil {
+							fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
+							fmt.Printf("please run again with: multi-send [file.csv] %d\n", progress.Index)
+							return err
+						}
+						progress.Progress = PRG_multisend
+						progress.SequenceHotWallet++
+						saveProgress(progress, progressFile)
 					}
-					msg := banktypes.NewMsgMultiSend([]banktypes.Input{banktypes.NewInput(clientCtxHotWallet.FromAddress, totalAmount)}, output)
-					err := tx.GenerateOrBroadcastTxCLI(clientCtxHotWallet, cmd.Flags(), msg)
-					if err != nil {
-						fmt.Printf("failed sending records from %d to %d\n", startIndex, i)
-						fmt.Printf("please run again with: multi-send [file.csv] %d\n", startIndex)
-						return err
+
+					if progress.Progress == PRG_multisend {
+						err = waitSequenceChange(clientCtxHotWallet.FromAddress.String(), progress.SequenceHotWallet)
+						if err != nil {
+							fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
+							fmt.Printf("please run again with: multi-send [file.csv] %d\n", progress.Index)
+							return err
+						}
+						progress.Progress = PRG_ready
+						progress.Index = i + 1
+						saveProgress(progress, progressFile)
 					}
-					expectedSequenceHW++
-					startIndex = uint64(i) + 1
 					output = []banktypes.Output{}
 					totalAmount = sdk.Coins{}
 				}
@@ -219,10 +291,48 @@ func NewMultiSendTxCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().Int(RPCRetriesFlagName, 3, "number of retries on rpc error")
 	cmd.Flags().String(HotWalletFlagName, "", "optional, hot wallet to be used as a middle point")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
+}
+
+func saveProgress(progress Progress, filename string) {
+	data, err := json.MarshalIndent(progress, "", "  ")
+	if err != nil {
+		fmt.Println("Error marshalling progress:", err)
+		return
+	}
+
+	err = os.WriteFile(filename, data, 0644)
+	if err != nil {
+		fmt.Println("Error writing file:", err)
+		return
+	}
+}
+
+func loadProgress(filename string) Progress {
+	var progress Progress
+
+	// Check if file exists
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		fmt.Println("File does not exist, using default progress")
+		return Progress{Index: 0, Progress: PRG_ready} // Default values
+	}
+
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+		return progress
+	}
+
+	err = json.Unmarshal(data, &progress)
+	if err != nil {
+		fmt.Println("Error unmarshalling progress:", err)
+	}
+
+	return progress
 }
 
 // NewMultiSendTxCmd returns a CLI command handler for creating a MsgMultiSend transaction.
