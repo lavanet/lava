@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/utils"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
 
@@ -18,7 +19,7 @@ func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*typ
 // DelegateFull uses staking module for to delegate with hooks
 func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, chainID string, amount sdk.Coin) error {
 	_, found := k.specKeeper.GetSpec(ctx, chainID)
-	if !found && chainID != types.EMPTY_PROVIDER_CHAINID {
+	if !found && chainID != commontypes.EMPTY_PROVIDER_CHAINID {
 		return utils.LavaFormatWarning("invalid chain ID", fmt.Errorf("chain ID not found"),
 			utils.LogAttr("chain_id", chainID))
 	}
@@ -48,7 +49,7 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 
 	nextEpoch := k.epochstorageKeeper.GetCurrentNextEpoch(ctx)
 
-	delegation, found := k.GetDelegation(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, nextEpoch)
+	delegation, found := k.GetDelegation(ctx, delegator, commontypes.EMPTY_PROVIDER, commontypes.EMPTY_PROVIDER_CHAINID, nextEpoch)
 	amountBefore := sdk.ZeroInt()
 	if found {
 		amountBefore = delegation.Amount.Amount
@@ -59,16 +60,16 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
-	delegation, _ = k.GetDelegation(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, nextEpoch)
+	delegation, _ = k.GetDelegation(ctx, delegator, commontypes.EMPTY_PROVIDER, commontypes.EMPTY_PROVIDER_CHAINID, nextEpoch)
 
 	amount.Amount = delegation.Amount.Amount.Sub(amountBefore)
 
 	err = k.Redelegate(
 		ctx,
 		delegator,
-		types.EMPTY_PROVIDER,
+		commontypes.EMPTY_PROVIDER,
 		provider,
-		types.EMPTY_PROVIDER_CHAINID,
+		commontypes.EMPTY_PROVIDER_CHAINID,
 		chainID,
 		amount,
 	)
