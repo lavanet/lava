@@ -46,7 +46,12 @@ func startLoadTest(endpoint string, parallelClients int, callsPerClient int, met
 				return nil, err
 			}
 
-			client := http.Client{}
+			client := http.Client{
+				Transport: &http.Transport{
+					MaxIdleConnsPerHost: 10000,
+				},
+			}
+
 			resp, err := client.Do(req)
 			if err != nil {
 				utils.LavaFormatDebug("Failed to send request", utils.LogAttr("error", err))
