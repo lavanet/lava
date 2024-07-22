@@ -8,21 +8,21 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 )
 
-func (k Keeper) SetPairingCached(ctx sdk.Context, project string, chainID string, epoch uint64, pairedProviders []epochstoragetypes.StakeEntry) {
-	if k.pairingCache == nil {
+func (k Keeper) SetPairingQueryCache(ctx sdk.Context, project string, chainID string, epoch uint64, pairedProviders []epochstoragetypes.StakeEntry) {
+	if k.pairingQueryCache == nil {
 		// pairing cache is not initialized, will be in next epoch so simply skip
 		return
 	}
-	k.pairingCache[pairingCacheKey(project, chainID, epoch)] = pairedProviders
+	k.pairingQueryCache[pairingCacheKey(project, chainID, epoch)] = pairedProviders
 }
 
-func (k *Keeper) GetPairingCached(ctx sdk.Context, project string, chainID string, epoch uint64) ([]epochstoragetypes.StakeEntry, bool) {
-	if k.pairingCache == nil {
+func (k *Keeper) GetQueryPairingCache(ctx sdk.Context, project string, chainID string, epoch uint64) ([]epochstoragetypes.StakeEntry, bool) {
+	if k.pairingQueryCache == nil {
 		// pairing cache is not initialized, will be in next epoch so simply skip
 		return nil, false
 	}
 
-	if providers, ok := k.pairingCache[pairingCacheKey(project, chainID, epoch)]; ok {
+	if providers, ok := k.pairingQueryCache[pairingCacheKey(project, chainID, epoch)]; ok {
 		return providers, true
 	}
 

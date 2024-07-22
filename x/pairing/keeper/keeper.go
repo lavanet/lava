@@ -36,7 +36,7 @@ type (
 		dualstakingKeeper  types.DualstakingKeeper
 		stakingKeeper      types.StakingKeeper
 
-		pairingCache map[string][]epochstoragetypes.StakeEntry
+		pairingQueryCache map[string][]epochstoragetypes.StakeEntry
 	}
 )
 
@@ -89,7 +89,7 @@ func NewKeeper(
 		downtimeKeeper:     downtimeKeeper,
 		dualstakingKeeper:  dualstakingKeeper,
 		stakingKeeper:      stakingKeeper,
-		pairingCache:       map[string][]epochstoragetypes.StakeEntry{},
+		pairingQueryCache:  map[string][]epochstoragetypes.StakeEntry{},
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)
@@ -112,7 +112,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
 		// reset pairing cache
-		k.pairingCache = map[string][]epochstoragetypes.StakeEntry{}
+		k.pairingQueryCache = map[string][]epochstoragetypes.StakeEntry{}
 		// remove old session payments
 		k.RemoveOldEpochPayments(ctx)
 		// unstake/jail unresponsive providers
