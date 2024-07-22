@@ -14,7 +14,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	"github.com/lavanet/lava/x/pairing/types"
 	projectstypes "github.com/lavanet/lava/x/projects/types"
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
 )
 
 type BadgeData struct {
@@ -72,7 +71,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
 	rejected_relays_num := len(msg.Relays)
-	validatePairingCache := map[string][]epochstoragetypes.StakeEntry{}
 	for relayIdx, relay := range msg.Relays {
 		rejectedCu += relay.CuSum
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
@@ -180,11 +178,9 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		// generate validate pairing cache key with CuTrackerKey() to reuse code (doesn't relate to CU tracking at all)
-		validatePairingKey := subscriptiontypes.CuTrackerKey(clientAddr.String(), relay.Provider, relay.SpecId)
 		var providers []epochstoragetypes.StakeEntry
 		allowedCU := uint64(0)
-		val, ok := validatePairingCache[validatePairingKey]
+		val, ok := k.GetPairingRelayCache(project.Index, relay.SpecId, uint64(relay.Epoch))
 		if ok {
 			providers = val
 			strictestPolicy, _, err := k.GetProjectStrictestPolicy(ctx, project, relay.SpecId, epochStart)
@@ -217,7 +213,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 					utils.Attribute{Key: "provider", Value: providerAddr.String()},
 				)
 			}
-			validatePairingCache[validatePairingKey] = providers
+			k.SetPairingRelayCache(project.Index, relay.SpecId, uint64(relay.Epoch), providers)
 		}
 
 		rewardedCU, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, clientAddr, relay.SpecId, uint64(relay.Epoch))

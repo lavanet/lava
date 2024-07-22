@@ -126,7 +126,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 	}
 
 	if useCache {
-		providers, found := k.GetQueryPairingCache(ctx, projectIndex, chainID, epoch)
+		providers, found := k.GetPairingQueryCache(projectIndex, chainID, epoch)
 		if found {
 			return providers, policy.EpochCuLimit, nil, nil
 		}
@@ -149,7 +149,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 			}
 		}
 		if useCache {
-			k.SetPairingQueryCache(ctx, projectIndex, chainID, epoch, stakeEntriesFiltered)
+			k.SetPairingQueryCache(projectIndex, chainID, epoch, stakeEntriesFiltered)
 		}
 		return stakeEntriesFiltered, policy.EpochCuLimit, nil, nil
 	}
@@ -171,7 +171,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 			filteredEntries = append(filteredEntries, *score.Provider)
 		}
 		if useCache {
-			k.SetPairingQueryCache(ctx, projectIndex, chainID, epoch, filteredEntries)
+			k.SetPairingQueryCache(projectIndex, chainID, epoch, filteredEntries)
 		}
 		return filteredEntries, policy.EpochCuLimit, nil, nil
 	}
@@ -194,7 +194,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 	}
 
 	if useCache {
-		k.SetPairingQueryCache(ctx, projectIndex, chainID, epoch, providers)
+		k.SetPairingQueryCache(projectIndex, chainID, epoch, providers)
 	}
 
 	return providers, policy.EpochCuLimit, providerScores, nil
