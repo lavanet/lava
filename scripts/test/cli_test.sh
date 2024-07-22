@@ -10,7 +10,7 @@ trace() {
     )
 }
 
-txoptions="-y --from alice --gas-adjustment 1.5 --gas auto --gas-prices 0.000000001ulava"
+txoptions="-y --from alice --gas-adjustment 1.5 --gas auto --gas-prices 0.00002ulava"
 
 # run the chain
 echo "setting up lava chain"

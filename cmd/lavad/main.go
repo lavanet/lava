@@ -56,6 +56,7 @@ func main() {
 	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
 		flags.FlagChainID:       strings.ReplaceAll(app.Name, "-", ""),
 		flags.FlagGasAdjustment: statetracker.DefaultGasAdjustment,
+		flags.FlagGasPrices:     statetracker.DefaultGasPrice,
 	})
 
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
