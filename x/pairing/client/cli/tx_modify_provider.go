@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -109,6 +110,8 @@ func CmdModifyProvider() *cobra.Command {
 			if providerEntry == nil {
 				return utils.LavaFormatError("provider isn't staked on chainID, no address match", nil)
 			}
+
+			var validator string
 			newAmount, err := cmd.Flags().GetString(AmountFlagName)
 			if err != nil {
 				return err
@@ -117,6 +120,19 @@ func CmdModifyProvider() *cobra.Command {
 				newStake, err := sdk.ParseCoinNormalized(newAmount)
 				if err != nil {
 					return err
+				}
+
+				if !providerEntry.Stake.IsEqual(newStake) {
+					if cmd.Flags().Changed(ValidatorFlag) {
+						validator, err = cmd.Flags().GetString(types.FlagMoniker)
+						if err != nil {
+							return err
+						}
+					} else {
+						return fmt.Errorf("increasing or decreasing stake must be accompanied with validator flag")
+					}
+				} else {
+					validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
 				}
 				providerEntry.Stake = newStake
 			}
@@ -165,16 +181,6 @@ func CmdModifyProvider() *cobra.Command {
 				if err != nil {
 					return err
 				}
-			}
-
-			var validator string
-			if cmd.Flags().Changed(ValidatorFlag) {
-				validator, err = cmd.Flags().GetString(types.FlagMoniker)
-				if err != nil {
-					return err
-				}
-			} else {
-				validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
 			}
 
 			identity, err := cmd.Flags().GetString(types.FlagIdentity)
