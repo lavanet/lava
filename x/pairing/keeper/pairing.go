@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"time"
 
 	cosmosmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -81,13 +80,9 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
 
-	now := time.Now()
-	providers, _, _, err1 := k.getPairingForClient(ctx, chainID, block, strictestPolicy, cluster, project.Index, false, true)
-	err = utils.WriteTimeMeasurement("/home/oren/go/lava/main_pairing.csv", now)
-	if err != nil {
-		panic(err)
-	}
-	return providers, err1
+	providers, _, _, err = k.getPairingForClient(ctx, chainID, block, strictestPolicy, cluster, project.Index, false, true)
+
+	return providers, err
 }
 
 // CalculatePairingChance calculates the chance of a provider to be picked in the pairing process for the first pairing slot
