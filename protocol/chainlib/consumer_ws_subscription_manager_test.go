@@ -250,8 +250,8 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			relaySender.
 				EXPECT().
 				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
-					relayPrivateData := x.(*pairingtypes.RelayPrivateData)
-					if relayPrivateData == nil {
+					relayPrivateData, ok := x.(*pairingtypes.RelayPrivateData)
+					if !ok || relayPrivateData == nil {
 						return false
 					}
 
@@ -280,7 +280,8 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			relaySender.
 				EXPECT().
 				ParseRelay(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
-					reqData := x.(string)
+					reqData, ok := x.(string)
+					require.True(t, ok)
 					areEqual := reqData == string(play.unsubscribeMessage1)
 					return areEqual
 				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -292,7 +293,8 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			relaySender.
 				EXPECT().
 				ParseRelay(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
-					reqData := x.(string)
+					reqData, ok := x.(string)
+					require.True(t, ok)
 					areEqual := reqData == string(play.subscriptionRequestData1)
 					return areEqual
 				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -412,7 +414,8 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			relaySender.
 				EXPECT().
 				ParseRelay(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
-					reqData := x.(string)
+					reqData, ok := x.(string)
+					require.True(t, ok)
 					areEqual := reqData == string(play.unsubscribeMessage2)
 					return areEqual
 				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -424,7 +427,8 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			relaySender.
 				EXPECT().
 				ParseRelay(gomock.Any(), gomock.Any(), gomock.Cond(func(x any) bool {
-					reqData := x.(string)
+					reqData, ok := x.(string)
+					require.True(t, ok)
 					areEqual := reqData == string(play.subscriptionRequestData2)
 					return areEqual
 				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
