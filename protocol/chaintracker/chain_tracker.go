@@ -28,14 +28,15 @@ import (
 )
 
 const (
-	initRetriesCount              = 4
-	BACKOFF_MAX_TIME              = 10 * time.Minute
-	maxFails                      = 10
-	debug                         = false
-	GoodStabilityThreshold        = 0.3
-	PollingUpdateLength           = 10
-	MostFrequentPollingMultiplier = 16
-	PollingMultiplierFlagName     = "polling-multiplier"
+	initRetriesCount               = 4
+	BACKOFF_MAX_TIME               = 10 * time.Minute
+	maxFails                       = 10
+	debug                          = false
+	GoodStabilityThreshold         = 0.3
+	PollingUpdateLength            = 10
+	MostFrequentPollingMultiplier  = 16
+	LavaPollingMultiplierFrequency = 4
+	PollingMultiplierFlagName      = "polling-multiplier"
 )
 
 var PollingMultiplier = uint64(1)
@@ -52,7 +53,8 @@ type blockTimeUpdatable interface {
 
 type ChainTracker struct {
 	chainFetcher            ChainFetcher // used to communicate with the node
-	blocksToSave            uint64       // how many finalized blocks to keep
+	pollingTimeMultiplier   time.Duration
+	blocksToSave            uint64 // how many finalized blocks to keep
 	latestBlockNum          int64
 	blockQueueMu            sync.RWMutex
 	blocksQueue             []BlockStore                    // holds all past hashes up until latest block
@@ -361,8 +363,8 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 	// start polling every averageBlockTime/4, then averageBlockTime/8 after passing middle, then averageBlockTime/16 after passing averageBlockTime*3/4
 	// so polling at averageBlockTime/4,averageBlockTime/2,averageBlockTime*5/8,averageBlockTime*3/4,averageBlockTime*13/16,,averageBlockTime*14/16,,averageBlockTime*15/16,averageBlockTime*16/16,averageBlockTime*17/16
 	// initial polling = averageBlockTime/16
-	initialPollingTime := pollingTime / MostFrequentPollingMultiplier // on boot we need to query often to catch changes
-	cs.latestChangeTime = time.Time{}                                 // we will discard the first change time, so this is uninitialized
+	initialPollingTime := pollingTime / cs.pollingTimeMultiplier // on boot we need to query often to catch changes
+	cs.latestChangeTime = time.Time{}                            // we will discard the first change time, so this is uninitialized
 	cs.timer = time.NewTimer(initialPollingTime)
 	err := cs.fetchInitDataWithRetry(ctx)
 	if err != nil {
@@ -413,11 +415,11 @@ func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uin
 	timeSinceLastUpdate := time.Since(cs.latestChangeTime)
 	var newPollingTime time.Duration
 	if timeSinceLastUpdate <= tickerBaseTime/2 && blockGap > tickerBaseTime/4 {
-		newPollingTime = tickerBaseTime / (MostFrequentPollingMultiplier / 4)
+		newPollingTime = tickerBaseTime / (cs.pollingTimeMultiplier / 4)
 	} else if timeSinceLastUpdate <= (tickerBaseTime*3)/4 && blockGap > tickerBaseTime/4 {
-		newPollingTime = tickerBaseTime / (MostFrequentPollingMultiplier / 2)
+		newPollingTime = tickerBaseTime / (cs.pollingTimeMultiplier / 2)
 	} else {
-		newPollingTime = tickerBaseTime / MostFrequentPollingMultiplier
+		newPollingTime = tickerBaseTime / cs.pollingTimeMultiplier
 	}
 	newTickerDuration := exponentialBackoff(newPollingTime, fetchFails)
 	if PollingMultiplier > 1 {
@@ -575,6 +577,10 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 	if err != nil {
 		return nil, err
 	}
+	pollingTime := MostFrequentPollingMultiplier
+	if config.PollingTimeMultiplier != 0 {
+		pollingTime = config.PollingTimeMultiplier
+	}
 
 	chainTracker = &ChainTracker{
 		consistencyCallback:     config.ConsistencyCallback,
@@ -590,6 +596,7 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 		blockTimeUpdatables:     map[blockTimeUpdatable]struct{}{},
 		startupTime:             time.Now(),
 		pmetrics:                config.Pmetrics,
+		pollingTimeMultiplier:   time.Duration(pollingTime),
 	}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)

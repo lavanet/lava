@@ -16,12 +16,13 @@ before:
 metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
 
+env:
+  - CGO_ENABLED=1
+
 builds:
   - id: lavavisor
     binary: lavavisor
     dir: cmd/lavavisor
-    env:
-      - CGO_ENABLED=0
     goos:
       - linux
       - windows
@@ -48,8 +49,6 @@ builds:
   - id: lavad
     binary: lavad
     dir: cmd/lavad
-    env:
-      - CGO_ENABLED=0
     goos:
       - linux
       - windows
@@ -86,8 +85,6 @@ builds:
   - id: lavap
     binary: lavap
     dir: cmd/lavap
-    env:
-      - CGO_ENABLED=0
     goos:
       - linux
       - windows

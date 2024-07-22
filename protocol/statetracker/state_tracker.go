@@ -98,11 +98,12 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	}
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
-		NewLatestCallback: cst.newLavaBlock,
-		OldBlockCallback:  blockNotFoundCallback,
-		BlocksToSave:      BlocksToSaveLavaChainTracker,
-		AverageBlockTime:  time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
-		ServerBlockMemory: 25 + BlocksToSaveLavaChainTracker,
+		NewLatestCallback:     cst.newLavaBlock,
+		OldBlockCallback:      blockNotFoundCallback,
+		BlocksToSave:          BlocksToSaveLavaChainTracker,
+		AverageBlockTime:      time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
+		ServerBlockMemory:     25 + BlocksToSaveLavaChainTracker,
+		PollingTimeMultiplier: chaintracker.LavaPollingMultiplierFrequency,
 	}
 	cst.AverageBlockTime = chainTrackerConfig.AverageBlockTime
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)

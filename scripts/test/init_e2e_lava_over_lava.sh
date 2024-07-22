@@ -3,7 +3,7 @@ __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/../useful_commands.sh
 set -e
 
-GASPRICE="0.000000001ulava"
+GASPRICE="0.00002ulava"
 NODE="http://127.0.0.1:3340/1"
 STAKE="500000000000ulava"
 
