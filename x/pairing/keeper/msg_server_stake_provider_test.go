@@ -811,6 +811,10 @@ func TestCommisionChange(t *testing.T) {
 	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, 139, "", "", "", "", "")
 	require.NoError(t, err)
 
+	// same values, should pass
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, 139, "", "", "", "", "")
+	require.NoError(t, err)
+
 	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, 138, "", "", "", "", "")
 	require.Error(t, err)
 
