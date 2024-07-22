@@ -23,6 +23,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	lavaslices "github.com/lavanet/lava/utils/lavaslices"
 	"github.com/lavanet/lava/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
@@ -72,7 +73,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		}
 	}
 
-	if provider != types.EMPTY_PROVIDER {
+	if provider != commontypes.EMPTY_PROVIDER {
 		// update the stake entry
 		return k.modifyStakeEntryDelegation(ctx, delegator, provider, chainID, amount, true)
 	}
@@ -166,7 +167,7 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 		}
 	}
 
-	if provider != types.EMPTY_PROVIDER {
+	if provider != commontypes.EMPTY_PROVIDER {
 		return k.modifyStakeEntryDelegation(ctx, delegator, provider, chainID, amount, false)
 	}
 
@@ -252,7 +253,7 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 		)
 	}
 
-	if provider != types.EMPTY_PROVIDER {
+	if provider != commontypes.EMPTY_PROVIDER {
 		if _, err = sdk.AccAddressFromBech32(provider); err != nil {
 			return utils.LavaFormatWarning("invalid provider address", err,
 				utils.Attribute{Key: "provider", Value: provider},
@@ -287,8 +288,8 @@ func (k Keeper) delegate(ctx sdk.Context, delegator, provider, chainID string, a
 func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, toChainID string, amount sdk.Coin) error {
 	_, foundFrom := k.specKeeper.GetSpec(ctx, fromChainID)
 	_, foundTo := k.specKeeper.GetSpec(ctx, toChainID)
-	if (!foundFrom && fromChainID != types.EMPTY_PROVIDER_CHAINID) ||
-		(!foundTo && toChainID != types.EMPTY_PROVIDER_CHAINID) {
+	if (!foundFrom && fromChainID != commontypes.EMPTY_PROVIDER_CHAINID) ||
+		(!foundTo && toChainID != commontypes.EMPTY_PROVIDER_CHAINID) {
 		return utils.LavaFormatWarning("cannot redelegate with invalid chain IDs", fmt.Errorf("chain ID not found"),
 			utils.LogAttr("from_chain_id", fromChainID),
 			utils.LogAttr("to_chain_id", toChainID),
@@ -303,7 +304,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		)
 	}
 
-	if from != types.EMPTY_PROVIDER {
+	if from != commontypes.EMPTY_PROVIDER {
 		if _, err := sdk.AccAddressFromBech32(from); err != nil {
 			return utils.LavaFormatWarning("invalid from-provider address", err,
 				utils.Attribute{Key: "from_provider", Value: from},
@@ -311,7 +312,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 		}
 	}
 
-	if to != types.EMPTY_PROVIDER {
+	if to != commontypes.EMPTY_PROVIDER {
 		if _, err := sdk.AccAddressFromBech32(to); err != nil {
 			return utils.LavaFormatWarning("invalid to-provider address", err,
 				utils.Attribute{Key: "to_provider", Value: to},
@@ -357,7 +358,7 @@ func (k Keeper) Redelegate(ctx sdk.Context, delegator, from, to, fromChainID, to
 // (effective on next epoch)
 func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin) error {
 	_, found := k.specKeeper.GetSpec(ctx, chainID)
-	if chainID != types.EMPTY_PROVIDER_CHAINID && !found {
+	if chainID != commontypes.EMPTY_PROVIDER_CHAINID && !found {
 		return utils.LavaFormatWarning("cannot unbond with invalid chain ID", fmt.Errorf("chain ID not found"),
 			utils.LogAttr("chain_id", chainID))
 	}
@@ -370,7 +371,7 @@ func (k Keeper) unbond(ctx sdk.Context, delegator, provider, chainID string, amo
 		)
 	}
 
-	if provider != types.EMPTY_PROVIDER {
+	if provider != commontypes.EMPTY_PROVIDER {
 		if _, err := sdk.AccAddressFromBech32(provider); err != nil {
 			return utils.LavaFormatWarning("invalid provider address", err,
 				utils.Attribute{Key: "provider", Value: provider},
@@ -414,7 +415,7 @@ func (k Keeper) GetDelegatorProviders(ctx sdk.Context, delegator string, epoch u
 }
 
 func (k Keeper) GetProviderDelegators(ctx sdk.Context, provider string, epoch uint64) ([]types.Delegation, error) {
-	if provider != types.EMPTY_PROVIDER {
+	if provider != commontypes.EMPTY_PROVIDER {
 		_, err := sdk.AccAddressFromBech32(provider)
 		if err != nil {
 			return nil, utils.LavaFormatWarning("cannot get provider's delegators", err,
@@ -484,15 +485,15 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 	}
 
 	// first remove from the empty provider
-	if lavaslices.Contains[string](providers, types.EMPTY_PROVIDER) {
-		delegation, found := k.GetDelegation(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, epoch)
+	if lavaslices.Contains[string](providers, commontypes.EMPTY_PROVIDER) {
+		delegation, found := k.GetDelegation(ctx, delegator, commontypes.EMPTY_PROVIDER, commontypes.EMPTY_PROVIDER_CHAINID, epoch)
 		if found {
 			if delegation.Amount.Amount.GTE(amount.Amount) {
 				// we have enough here, remove all from empty delegator and bail
-				return k.unbond(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, amount)
+				return k.unbond(ctx, delegator, commontypes.EMPTY_PROVIDER, commontypes.EMPTY_PROVIDER_CHAINID, amount)
 			} else {
 				// we dont have enough in the empty provider, remove everything and continue with the rest
-				err = k.unbond(ctx, delegator, types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID, delegation.Amount)
+				err = k.unbond(ctx, delegator, commontypes.EMPTY_PROVIDER, commontypes.EMPTY_PROVIDER_CHAINID, delegation.Amount)
 				if err != nil {
 					return err
 				}
@@ -501,7 +502,7 @@ func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount
 		}
 	}
 
-	providers, _ = lavaslices.Remove[string](providers, types.EMPTY_PROVIDER)
+	providers, _ = lavaslices.Remove[string](providers, commontypes.EMPTY_PROVIDER)
 
 	var delegations []types.Delegation
 	for _, provider := range providers {
