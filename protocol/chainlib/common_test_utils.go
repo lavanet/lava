@@ -106,9 +106,9 @@ func genericWebSocketHandler() http.HandlerFunc {
 			if err != nil {
 				panic("got error in ReadMessage")
 			}
-			fmt.Println("got message", message, messageType)
+			fmt.Println("got ws message", string(message), messageType)
 			conn.WriteMessage(messageType, message)
-			fmt.Println("writing message", message, messageType)
+			fmt.Println("writing ws message", string(message), messageType)
 		}
 	}
 }

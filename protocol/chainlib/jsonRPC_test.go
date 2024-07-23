@@ -282,6 +282,12 @@ func TestJsonRpcBatchCall(t *testing.T) {
 	})
 
 	chainParser, chainProxy, chainFetcher, closeServer, _, err := CreateChainLibMocks(ctx, "ETH1", spectypes.APIInterfaceJsonRPC, serverHandle, nil, "../../", nil)
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainProxy)
@@ -289,18 +295,15 @@ func TestJsonRpcBatchCall(t *testing.T) {
 
 	chainMessage, err := chainParser.ParseMsg("", []byte(batchCallData), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 	require.NoError(t, err)
+
 	requestedBlock, _ := chainMessage.RequestedBlock()
 	require.Equal(t, spectypes.LATEST_BLOCK, requestedBlock)
+
 	relayReply, _, _, _, _, err := chainProxy.SendNodeMsg(ctx, nil, chainMessage, nil)
 	require.True(t, gotCalled)
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
 	require.Equal(t, response, string(relayReply.RelayReply.Data))
-	defer func() {
-		if closeServer != nil {
-			closeServer()
-		}
-	}()
 }
 
 func TestJsonRpcBatchCallSameID(t *testing.T) {
