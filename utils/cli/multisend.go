@@ -208,9 +208,8 @@ func NewMultiSendTxCmd() *cobra.Command {
 
 			output := []banktypes.Output{}
 			totalAmount := sdk.Coins{}
-			records = records[progress.Index:]
-			for i, record := range records {
-				coins, err := sdk.ParseCoinsNormalized(record[1])
+			for i := progress.Index; i < len(records); i++ {
+				coins, err := sdk.ParseCoinsNormalized(records[i][1])
 				if err != nil {
 					fmt.Printf("failed decoding coins record %d\n", i)
 					return err
@@ -220,7 +219,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 					fmt.Printf("invalid coins record %d\n", i)
 					return fmt.Errorf("must send positive amount")
 				}
-				toAddr, err := sdk.AccAddressFromBech32(record[0])
+				toAddr, err := sdk.AccAddressFromBech32(records[i][0])
 				if err != nil {
 					fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
 					fmt.Printf("please run again with: multi-send [file.csv] %d\n", progress.Index)
@@ -232,6 +231,8 @@ func NewMultiSendTxCmd() *cobra.Command {
 				if (i+1)%MAX_ADDRESSES == 0 || (i+1) == len(records) {
 					if useHotWallet {
 						if progress.Progress == PRG_ready {
+							totalAmount = totalAmount.Add(fees...)
+							fmt.Printf("*********************sending from origin to hotwallet %s*******************\n", totalAmount.String())
 							currentSequence, err := getSequence(clientCtxOrigin.FromAddress.String())
 							if err != nil {
 								return err
@@ -239,7 +240,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 							if currentSequence != progress.SequenceOrigin {
 								return fmt.Errorf("unexpected sequence for account %s, current %d, expected %d", clientCtxOrigin.FromAddress.String(), currentSequence, progress.SequenceOrigin)
 							}
-							msg := banktypes.NewMsgSend(clientCtxOrigin.FromAddress, clientCtxHotWallet.FromAddress, totalAmount.Add(fees...))
+							msg := banktypes.NewMsgSend(clientCtxOrigin.FromAddress, clientCtxHotWallet.FromAddress, totalAmount)
 							err = tx.GenerateOrBroadcastTxCLI(clientCtxOrigin, cmd.Flags(), msg)
 							if err != nil {
 								fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
@@ -251,6 +252,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 							saveProgress(progress, progressFile)
 						}
 						if progress.Progress == PRG_bank_send {
+							fmt.Printf("*********************verifing bank send *******************\n")
 							err = waitSequenceChange(clientCtxOrigin.FromAddress.String(), progress.SequenceOrigin)
 							if err != nil {
 								fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
@@ -259,12 +261,13 @@ func NewMultiSendTxCmd() *cobra.Command {
 							}
 							progress.Progress = PRG_bank_send_verified
 							saveProgress(progress, progressFile)
+							fmt.Printf("*********************verified bank send *******************\n")
 						}
 					}
 
 					if progress.Progress == PRG_bank_send_verified || progress.Progress == PRG_ready {
 						msg := banktypes.NewMsgMultiSend([]banktypes.Input{banktypes.NewInput(clientCtxHotWallet.FromAddress, totalAmount)}, output)
-						fmt.Printf("sending records from %d to %d, total tokens %s\n", progress.Index, i, output[0].String())
+						fmt.Printf("*********************sending records from %d to %d, total tokens %s*******************\n", progress.Index, i, clientCtxHotWallet.FromAddress.String())
 						currentSequence, err := getSequence(clientCtxHotWallet.FromAddress.String())
 						if err != nil {
 							return err
@@ -284,6 +287,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 					}
 
 					if progress.Progress == PRG_multisend {
+						fmt.Printf("*********************verifing multi send *******************\n")
 						err = waitSequenceChange(clientCtxHotWallet.FromAddress.String(), progress.SequenceHotWallet)
 						if err != nil {
 							fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
@@ -293,6 +297,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 						progress.Progress = PRG_ready
 						progress.Index = i + 1
 						saveProgress(progress, progressFile)
+						fmt.Printf("*********************verified multi send *******************\n")
 					}
 					output = []banktypes.Output{}
 					totalAmount = sdk.Coins{}
