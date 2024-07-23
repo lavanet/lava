@@ -854,7 +854,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 			}
 			return reply, 0, err, backoff
 		}
-		analytics.SetProcessingTimestamp(time.Now())
+		analytics.SetProcessingTimestampAfterRelay(time.Now())
 
 		return reply, relayLatency, nil, false
 	}

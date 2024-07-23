@@ -308,7 +308,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("msgSeed", msgSeed),
 			utils.LogAttr("headers", restHeaders),
 		)
-		analytics.SetProcessingTimestamp(startTime)
+		analytics.SetProcessingTimestampBeforeRelay(startTime)
 		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		requestBody := string(fiberCtx.Body())
@@ -361,7 +361,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		path := "/" + fiberCtx.Params("*")
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		analytics.SetProcessingTimestamp(startTime)
+		analytics.SetProcessingTimestampBeforeRelay(startTime)
 
 		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)

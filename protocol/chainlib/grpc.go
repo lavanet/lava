@@ -318,7 +318,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("headers", grpcHeaders),
 		)
 		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
-		metricsData.SetProcessingTimestamp(startTime)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		consumerIp := common.GetIpFromGrpcContext(ctx)
 		relayResult, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, consumerIp, metricsData, grpcHeaders)
 		relayReply := relayResult.GetReply()

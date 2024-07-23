@@ -433,7 +433,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		defer endTx()
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		metricsData.SetProcessingTimestamp(startTime)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		guid := utils.GenerateUniqueIdentifier()

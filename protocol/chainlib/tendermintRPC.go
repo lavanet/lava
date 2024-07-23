@@ -455,7 +455,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		defer endTx()
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		metricsData.SetProcessingTimestamp(startTime)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		ctx, cancel := context.WithCancel(context.Background())
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
@@ -536,7 +536,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
-		metricsData.SetProcessingTimestamp(startTime)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
 		utils.LavaFormatDebug("urirpc in <<<",

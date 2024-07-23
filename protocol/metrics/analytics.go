@@ -50,10 +50,18 @@ func NewRelayAnalytics(projectHash, chainId, apiType string) *RelayMetrics {
 	}
 }
 
-func (rm *RelayMetrics) SetProcessingTimestamp(timestamp time.Time) {
+func (rm *RelayMetrics) SetProcessingTimestampBeforeRelay(timestamp time.Time) {
 	if rm == nil {
 		return
 	}
+	rm.ProcessingTimestamp = timestamp
+}
 
+func (rm *RelayMetrics) SetProcessingTimestampAfterRelay(timestamp time.Time) {
+	if rm == nil {
+		return
+	}
+	// we use this flag to make sure the relay passed successfully. (only the first relay has the RelayMetrics)
+	rm.MeasureAfterProviderProcessingTime = true
 	rm.ProcessingTimestamp = timestamp
 }
