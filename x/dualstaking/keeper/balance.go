@@ -3,7 +3,7 @@ package keeper
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 )
 
 func (k Keeper) BalanceDelegator(ctx sdk.Context, delegator sdk.AccAddress) (int, error) {
@@ -17,7 +17,7 @@ func (k Keeper) BalanceDelegator(ctx sdk.Context, delegator sdk.AccAddress) (int
 		return providers, nil
 	} else if diff.IsPositive() {
 		// less provider delegations,a delegation operation was done, delegate to empty provider
-		err = k.delegate(ctx, delegator.String(), types.EMPTY_PROVIDER, types.EMPTY_PROVIDER_CHAINID,
+		err = k.delegate(ctx, delegator.String(), commontypes.EMPTY_PROVIDER, commontypes.EMPTY_PROVIDER_CHAINID,
 			sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), diff))
 		if err != nil {
 			return providers, err

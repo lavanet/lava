@@ -44,7 +44,7 @@ sed $SED_INLINE \
 -e 's/localhost:9091/localhost:8091/' "$path$app"
 
 
-GASPRICE="0.000000001ulava"
+GASPRICE="0.00002ulava"
 lavad tx bank send $(lavad keys show alice -a) $(lavad keys show validator2 -a --home $home) 10000000000001ulava -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE 
 sleep 3
 
