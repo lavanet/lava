@@ -267,7 +267,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 
 					if progress.Progress == PRG_bank_send_verified || progress.Progress == PRG_ready {
 						msg := banktypes.NewMsgMultiSend([]banktypes.Input{banktypes.NewInput(clientCtxHotWallet.FromAddress, totalAmount)}, output)
-						fmt.Printf("*********************sending records from %d to %d, total tokens %s*******************\n", progress.Index, i, clientCtxHotWallet.FromAddress.String())
+						fmt.Printf("*********************sending records from %d to %d, total tokens %s*******************\n", progress.Index, i, totalAmount.String())
 						currentSequence, err := getSequence(clientCtxHotWallet.FromAddress.String())
 						if err != nil {
 							return err
