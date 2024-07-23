@@ -19,12 +19,15 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: goreleaser/goreleaser-cross:v1.20
-      options: --user root
 
     permissions:
       contents: write
       
     steps:
+    - name: Mark github workspace as safe
+      run: |
+        sh -c "git config --global --add safe.directory $PWD"
+
     - name: Checkout code
       uses: actions/checkout@v4
       with:
