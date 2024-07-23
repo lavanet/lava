@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	defaultGasPrice      = "0.000000001" + commontypes.TokenDenom
-	DefaultGasAdjustment = "1000.0"
+	DefaultGasPrice      = "0.00002" + commontypes.TokenDenom
+	DefaultGasAdjustment = "3.0"
 	// same account can continue failing the more providers you have under the same account
 	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
 	// therefore currently our best solution is to continue retrying increasing sequence number until successful
@@ -81,7 +81,7 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 }
 
 func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Context, msg sdk.Msg, checkProfitability bool, feeGranter sdk.AccAddress) error {
-	txfactory := ts.txFactory.WithGasPrices(defaultGasPrice)
+	txfactory := ts.txFactory
 	if feeGranter != nil {
 		txfactory = ts.txFactory.WithFeeGranter(feeGranter)
 	}
@@ -472,7 +472,7 @@ func parseInsufficientFeesError(msg string, gasUsed uint64) error {
 	}
 	minimumGasPricesGot := (float64(gasUsed) / float64(required))
 	return utils.LavaFormatError("Bad Lava Node Configuration detected, Gas fees inconsistencies can be related to the app.toml configuration of the lava node you are using under 'minimum-gas-prices', Please remove the field or set it to the required amount or change rpc to a different lava node", nil,
-		utils.Attribute{Key: "Required Minimum Gas Prices", Value: defaultGasPrice},
+		utils.Attribute{Key: "Required Minimum Gas Prices", Value: DefaultGasPrice},
 		utils.Attribute{Key: "Current (estimated) Minimum Gas Prices", Value: strconv.FormatFloat(minimumGasPricesGot, 'f', -1, 64) + commontypes.TokenDenom},
 	)
 }

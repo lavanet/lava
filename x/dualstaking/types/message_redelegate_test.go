@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/lavanet/lava/testutil/sample"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,8 +25,8 @@ func TestMsgRedelegate_ValidateBasic(t *testing.T) {
 				FromProvider: sample.AccAddress(),
 				ToProvider:   sample.AccAddress(),
 				Amount:       oneCoin,
-				FromChainID:  EMPTY_PROVIDER_CHAINID,
-				ToChainID:    EMPTY_PROVIDER_CHAINID,
+				FromChainID:  commontypes.EMPTY_PROVIDER_CHAINID,
+				ToChainID:    commontypes.EMPTY_PROVIDER_CHAINID,
 			},
 			err: legacyerrors.ErrInvalidAddress,
 		}, {
@@ -35,8 +36,8 @@ func TestMsgRedelegate_ValidateBasic(t *testing.T) {
 				FromProvider: "invalid_address",
 				ToProvider:   sample.AccAddress(),
 				Amount:       oneCoin,
-				FromChainID:  EMPTY_PROVIDER_CHAINID,
-				ToChainID:    EMPTY_PROVIDER_CHAINID,
+				FromChainID:  commontypes.EMPTY_PROVIDER_CHAINID,
+				ToChainID:    commontypes.EMPTY_PROVIDER_CHAINID,
 			},
 			err: legacyerrors.ErrInvalidAddress,
 		}, {
@@ -46,8 +47,8 @@ func TestMsgRedelegate_ValidateBasic(t *testing.T) {
 				FromProvider: sample.AccAddress(),
 				ToProvider:   sample.AccAddress(),
 				Amount:       oneCoin,
-				FromChainID:  EMPTY_PROVIDER_CHAINID,
-				ToChainID:    EMPTY_PROVIDER_CHAINID,
+				FromChainID:  commontypes.EMPTY_PROVIDER_CHAINID,
+				ToChainID:    commontypes.EMPTY_PROVIDER_CHAINID,
 			},
 		}, {
 			name: "invalid amount",
@@ -56,8 +57,8 @@ func TestMsgRedelegate_ValidateBasic(t *testing.T) {
 				FromProvider: sample.AccAddress(),
 				ToProvider:   sample.AccAddress(),
 				Amount:       sdk.Coin{Denom: "utest", Amount: sdk.NewInt(-1)},
-				FromChainID:  EMPTY_PROVIDER_CHAINID,
-				ToChainID:    EMPTY_PROVIDER_CHAINID,
+				FromChainID:  commontypes.EMPTY_PROVIDER_CHAINID,
+				ToChainID:    commontypes.EMPTY_PROVIDER_CHAINID,
 			},
 			err: legacyerrors.ErrInvalidCoins,
 		},
