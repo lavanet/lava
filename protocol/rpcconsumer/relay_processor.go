@@ -233,9 +233,11 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		// if we decide to wait and timeout happens we will take the majority of response messages
 		err := fmt.Errorf(errorMessage)
 		rp.nodeResponseErrors.relayErrors = append(rp.nodeResponseErrors.relayErrors, RelayError{err: err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
-		// send relay error metrics
-		go rp.metricsInf.SetRelayNodeErrorMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
-		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", err), utils.LogAttr("provider", response.relayResult.ProviderInfo), utils.LogAttr("Request", rp.chainMessage.GetApi().Name), utils.LogAttr("requested_block", reqBlock))
+		// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
+		if rp.selection != BestResult {
+			go rp.metricsInf.SetRelayNodeErrorMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
+			utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", err), utils.LogAttr("provider", response.relayResult.ProviderInfo), utils.LogAttr("Request", rp.chainMessage.GetApi().Name), utils.LogAttr("requested_block", reqBlock))
+		}
 		return
 	}
 	rp.successResults = append(rp.successResults, response.relayResult)
