@@ -17,6 +17,8 @@ jobs:
   release:
     name: 'release'
     runs-on: ubuntu-latest
+    container:
+      image: goreleaser/goreleaser-cross:latest
 
     permissions:
       contents: write
