@@ -396,7 +396,6 @@ func TestJsonRpcBatchCallSameID(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, relayReply)
 	require.Equal(t, responseExpected, string(relayReply.RelayReply.Data))
-
 }
 
 func TestJsonRpcInternalPathsMultipleVersionsStarkNet(t *testing.T) {
