@@ -231,8 +231,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 				if (i+1)%MAX_ADDRESSES == 0 || (i+1) == len(records) {
 					if useHotWallet {
 						if progress.Progress == PRG_ready {
-							totalAmount = totalAmount.Add(fees...)
-							fmt.Printf("*********************sending from origin to hotwallet %s*******************\n", totalAmount.String())
+							fmt.Printf("*********************sending from origin to hotwallet %s*******************\n", totalAmount.Add(fees...).String())
 							currentSequence, err := getSequence(clientCtxOrigin.FromAddress.String())
 							if err != nil {
 								return err
