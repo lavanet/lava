@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: goreleaser/goreleaser-cross:v1.20
+      options: --user root
 
     permissions:
       contents: write
