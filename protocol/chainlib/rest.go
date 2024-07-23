@@ -308,6 +308,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("msgSeed", msgSeed),
 			utils.LogAttr("headers", restHeaders),
 		)
+		analytics.SetProcessingTimestampBeforeRelay(startTime)
 		userIp := fiberCtx.Get(common.IP_FORWARDING_HEADER_NAME, fiberCtx.IP())
 		refererMatch := fiberCtx.Params(refererMatchString, "")
 		requestBody := string(fiberCtx.Body())
@@ -342,8 +343,10 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
-		// Return json response
-		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
+		// Return json response and add metric for after provider processing
+		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
+		return err
 	}
 
 	handlerUse := func(fiberCtx *fiber.Ctx) error {
@@ -358,6 +361,7 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		path := "/" + fiberCtx.Params("*")
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		analytics := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		analytics.SetProcessingTimestampBeforeRelay(startTime)
 
 		metadataValues := fiberCtx.GetReqHeaders()
 		restHeaders := convertToMetadataMap(metadataValues)
@@ -414,7 +418,9 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 		apil.logger.LogRequestAndResponse("http in/out", false, http.MethodGet, path, "", string(reply.Data), msgSeed, time.Since(startTime), nil)
 
 		// Return json response
-		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
+		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), string(reply.Data))
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(analytics, chainID, apiInterface)
+		return err
 	}
 
 	if apil.refererData != nil && apil.refererData.Marker != "" {
