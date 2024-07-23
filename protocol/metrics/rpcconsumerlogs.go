@@ -87,6 +87,14 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumer
 	return rpcConsumerLogs, err
 }
 
+func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
+}
+
+func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelayNodeErrorMetric(chainId, apiInterface)
+}
+
 func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
 }
@@ -210,14 +218,6 @@ func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, user
 		}
 	}
 	return true
-}
-
-func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
-}
-
-func (rpccl *RPCConsumerLogs) SetRelayReturnedFromProviderMetric(chainId string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetRelayReturnedFromProviderMetric(chainId, apiInterface)
 }
 
 func (rpccl *RPCConsumerLogs) SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string) {
