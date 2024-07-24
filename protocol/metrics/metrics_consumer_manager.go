@@ -48,6 +48,9 @@ type ConsumerMetricsManager struct {
 	addMethodsApiGauge                    bool
 	averageLatencyPerChain                map[string]*LatencyTracker // key == chain Id + api interface
 	averageLatencyMetric                  *prometheus.GaugeVec
+	relayProcessingLatencyBeforeProvider  *prometheus.GaugeVec
+	relayProcessingLatencyAfterProvider   *prometheus.GaugeVec
+	averageProcessingLatency              map[string]*LatencyTracker
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -140,6 +143,14 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The total number of relays sent to providers and returned a node error",
 	}, []string{"spec", "apiInterface"})
 
+	relayProcessingLatencyBeforeProvider := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "relay_processing_latency_before_provider_ms",
+		Help: "average latency of processing a successful relay before it is sent to the provider",
+	}, []string{"spec", "apiInterface"})
+	relayProcessingLatencyAfterProvider := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "relay_processing_latency_after_provider_ms",
+		Help: "average latency of processing a successful relay after it is received from the provider",
+	}, []string{"spec", "apiInterface"})
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -158,6 +169,8 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(averageLatencyMetric)
 	prometheus.MustRegister(totalRelaysSentToProvidersMetric)
 	prometheus.MustRegister(totalNodeErroredMetric)
+	prometheus.MustRegister(relayProcessingLatencyBeforeProvider)
+	prometheus.MustRegister(relayProcessingLatencyAfterProvider)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                totalCURequestedMetric,
@@ -181,6 +194,9 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		addMethodsApiGauge:                    options.AddMethodsApiGauge,
 		totalNodeErroredMetric:                totalNodeErroredMetric,
 		totalRelaysSentToProvidersMetric:      totalRelaysSentToProvidersMetric,
+		relayProcessingLatencyBeforeProvider:  relayProcessingLatencyBeforeProvider,
+		relayProcessingLatencyAfterProvider:   relayProcessingLatencyAfterProvider,
+		averageProcessingLatency:              map[string]*LatencyTracker{},
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -246,6 +262,37 @@ func (pme *ConsumerMetricsManager) SetRelayMetrics(relayMetric *RelayMetrics, er
 	}
 }
 
+func (pme *ConsumerMetricsManager) SetRelayProcessingLatencyBeforeProvider(latency time.Duration, chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	key := pme.getKeyForProcessingLatency(chainId, apiInterface, "before")
+	updatedLatency := pme.updateRelayProcessingLatency(latency, key)
+	pme.relayProcessingLatencyBeforeProvider.WithLabelValues(chainId, apiInterface).Set(updatedLatency)
+}
+
+func (pme *ConsumerMetricsManager) SetRelayProcessingLatencyAfterProvider(latency time.Duration, chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	key := pme.getKeyForProcessingLatency(chainId, apiInterface, "after")
+	updatedLatency := pme.updateRelayProcessingLatency(latency, key)
+	pme.relayProcessingLatencyAfterProvider.WithLabelValues(chainId, apiInterface).Set(updatedLatency)
+}
+
+func (pme *ConsumerMetricsManager) updateRelayProcessingLatency(latency time.Duration, key string) float64 {
+	pme.lock.Lock()
+	defer pme.lock.Unlock()
+
+	currentLatency, ok := pme.averageProcessingLatency[key]
+	if !ok {
+		currentLatency = &LatencyTracker{AverageLatency: time.Duration(0), TotalRequests: 0}
+	}
+	currentLatency.AddLatency(latency)
+	pme.averageProcessingLatency[key] = currentLatency
+	return float64(currentLatency.AverageLatency.Milliseconds())
+}
+
 func (pme *ConsumerMetricsManager) SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string) {
 	if pme == nil {
 		return
@@ -255,6 +302,10 @@ func (pme *ConsumerMetricsManager) SetRelaySentByNewBatchTickerMetric(chainId st
 
 func (pme *ConsumerMetricsManager) getKeyForAverageLatency(chainId string, apiInterface string) string {
 	return chainId + apiInterface
+}
+
+func (pme *ConsumerMetricsManager) getKeyForProcessingLatency(chainId string, apiInterface string, header string) string {
+	return header + "_" + chainId + "_" + apiInterface
 }
 
 func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos *pairingtypes.QualityOfServiceReport, qosExcellence *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool) {

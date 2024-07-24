@@ -231,8 +231,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 				if (i+1)%MAX_ADDRESSES == 0 || (i+1) == len(records) {
 					if useHotWallet {
 						if progress.Progress == PRG_ready {
-							totalAmount = totalAmount.Add(fees...)
-							fmt.Printf("*********************sending from origin to hotwallet %s*******************\n", totalAmount.String())
+							fmt.Printf("*********************sending from origin to hotwallet %s*******************\n", totalAmount.Add(fees...).String())
 							currentSequence, err := getSequence(clientCtxOrigin.FromAddress.String())
 							if err != nil {
 								return err
@@ -240,7 +239,7 @@ func NewMultiSendTxCmd() *cobra.Command {
 							if currentSequence != progress.SequenceOrigin {
 								return fmt.Errorf("unexpected sequence for account %s, current %d, expected %d", clientCtxOrigin.FromAddress.String(), currentSequence, progress.SequenceOrigin)
 							}
-							msg := banktypes.NewMsgSend(clientCtxOrigin.FromAddress, clientCtxHotWallet.FromAddress, totalAmount)
+							msg := banktypes.NewMsgSend(clientCtxOrigin.FromAddress, clientCtxHotWallet.FromAddress, totalAmount.Add(fees...))
 							err = tx.GenerateOrBroadcastTxCLI(clientCtxOrigin, cmd.Flags(), msg)
 							if err != nil {
 								fmt.Printf("failed sending records from %d to %d\n", progress.Index, i)
