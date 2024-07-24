@@ -1,4 +1,6 @@
+version: 2
 project_name: lava
+
 before:
   hooks:
     - go mod tidy
@@ -8,7 +10,7 @@ metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
 
 env:
-  - CGO_ENABLED=0
+  - CGO_ENABLED=1
 
 builds:
   - id: lavavisor
@@ -35,21 +37,18 @@ builds:
     flags:
       - -mod=readonly
       - -trimpath
+    mod_timestamp: "{{ .CommitTimestamp }}"
     env:
       - CC_darwin_amd64=o64-clang
-      - CXX_darwin_amd64=o64-clang+
-      - CC_darwin_arm64=aarch64-apple-darwin20.2-clang
-      - CXX_darwin_arm64=aarch64-apple-darwin20.2-clang++
-      - CC_windows_amd64=x86_64-w64-mingw32-gc
+      - CXX_darwin_amd64=o64-clang++
+      - CC_darwin_arm64=oa64-clang
+      - CXX_darwin_arm64=oa64-clang++
+      - CC_linux_arm64=aarch64-linux-gnu-gcc	
+      - CXX_linux_arm64=aarch64-linux-gnu-g++
+      - CC_windows_amd64=x86_64-w64-mingw32-gcc
       - CXX_windows_amd64=x86_64-w64-mingw32-g++
       - 'CC={{ index .Env (print "CC_" .Os "_" .Arch) }}'
       - 'CXX={{ index .Env (print "CXX_" .Os "_" .Arch) }}'
-    mod_timestamp: "{{ .CommitTimestamp }}"
-    overrides:
-      - goos: darwin
-        goarch: amd64
-        env:
-          - CGO_ENABLED=1
   
   - id: lavad
     binary: lavad
@@ -82,24 +81,21 @@ builds:
     flags:
       - -mod=readonly
       - -trimpath
-    env:
-      - CC_darwin_amd64=o64-clang
-      - CXX_darwin_amd64=o64-clang+
-      - CC_darwin_arm64=aarch64-apple-darwin20.2-clang
-      - CXX_darwin_arm64=aarch64-apple-darwin20.2-clang++
-      - CC_windows_amd64=x86_64-w64-mingw32-gc
-      - CXX_windows_amd64=x86_64-w64-mingw32-g++
-      - 'CC={{ index .Env (print "CC_" .Os "_" .Arch) }}'
-      - 'CXX={{ index .Env (print "CXX_" .Os "_" .Arch) }}'
     tags:
       - netgo
       - ledger
     mod_timestamp: "{{ .CommitTimestamp }}"
-    overrides:
-      - goos: darwin
-        goarch: amd64
-        env:
-          - CGO_ENABLED=1
+    env:
+      - CC_darwin_amd64=o64-clang
+      - CXX_darwin_amd64=o64-clang++
+      - CC_darwin_arm64=oa64-clang
+      - CXX_darwin_arm64=oa64-clang++
+      - CC_linux_arm64=aarch64-linux-gnu-gcc	
+      - CXX_linux_arm64=aarch64-linux-gnu-g++
+      - CC_windows_amd64=x86_64-w64-mingw32-gcc
+      - CXX_windows_amd64=x86_64-w64-mingw32-g++
+      - 'CC={{ index .Env (print "CC_" .Os "_" .Arch) }}'
+      - 'CXX={{ index .Env (print "CXX_" .Os "_" .Arch) }}'
 
   - id: lavap
     binary: lavap
@@ -125,21 +121,18 @@ builds:
     flags:
       - -mod=readonly
       - -trimpath
+    mod_timestamp: "{{ .CommitTimestamp }}"
     env:
       - CC_darwin_amd64=o64-clang
-      - CXX_darwin_amd64=o64-clang+
-      - CC_darwin_arm64=aarch64-apple-darwin20.2-clang
-      - CXX_darwin_arm64=aarch64-apple-darwin20.2-clang++
-      - CC_windows_amd64=x86_64-w64-mingw32-gc
+      - CXX_darwin_amd64=o64-clang++
+      - CC_darwin_arm64=oa64-clang
+      - CXX_darwin_arm64=oa64-clang++
+      - CC_linux_arm64=aarch64-linux-gnu-gcc	
+      - CXX_linux_arm64=aarch64-linux-gnu-g++
+      - CC_windows_amd64=x86_64-w64-mingw32-gcc
       - CXX_windows_amd64=x86_64-w64-mingw32-g++
       - 'CC={{ index .Env (print "CC_" .Os "_" .Arch) }}'
       - 'CXX={{ index .Env (print "CXX_" .Os "_" .Arch) }}'
-    mod_timestamp: "{{ .CommitTimestamp }}"
-    overrides:
-      - goos: darwin
-        goarch: amd64
-        env:
-          - CGO_ENABLED=1
 
 archives:
   - id: lavavisor
