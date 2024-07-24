@@ -16,12 +16,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type relayProcessorMetricsMock struct {
-}
+type relayProcessorMetricsMock struct{}
 
-func (romm *relayProcessorMetricsMock) SetRelayNodeErrorMetric(chainId string, apiInterface string) {
-
-}
+func (romm *relayProcessorMetricsMock) SetRelayNodeErrorMetric(chainId string, apiInterface string) {}
 
 func (romm *relayProcessorMetricsMock) GetChainIdAndApiInterface() (string, string) {
 	return "testId", "testInterface"
