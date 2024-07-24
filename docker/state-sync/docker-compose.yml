@@ -1,4 +1,3 @@
-
 services:
 
   lava-node-init:
@@ -56,11 +55,11 @@ services:
       lava-node-init:
           condition: service_completed_successfully
 
-  lava-node-cosmovisor:
+  lava-node:
     # Update with the most recent supported version of lavad
-    image: ghcr.io/lavanet/lava/lavad-cosmovisor
-    container_name: lava-node-cosmovisor
-    command: ["run", "start"]
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-v2.0.0}
+    container_name: lava-node
+    command: ["start"]
     ports:
       - '${LAVA_NODE_PORT_API:-1317}:1317'
       - '${LAVA_NODE_PORT_GRPC:-9090}:9090'
@@ -71,6 +70,12 @@ services:
       - lava_data:/lava
     networks:
       - lava_network
+    healthcheck:
+      test: ["CMD", "lavad", "status"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
     restart: always
     depends_on:
       lava-node-init:

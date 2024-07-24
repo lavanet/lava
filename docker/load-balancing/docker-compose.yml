@@ -88,6 +88,12 @@ services:
       - lava_data:/lava
     networks:
       - lava_network
+    healthcheck:
+      test: ["CMD", "lavad", "status"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
     restart: always
     depends_on:
       lava-node-init:
@@ -101,35 +107,23 @@ services:
     command: ["/lava/config/post_node_init.sh"]
     volumes:
       - lava_data:/lava
-      - ./config/post_node_init.sh:/lava/config/post_node_init.sh
-      - ../cookbook/specs/:/lava/cookbook/specs/
-      - ../cookbook/plans/:/lava/cookbook/plans/
+      - ../common/post_node_init.sh:/lava/config/post_node_init.sh
+      - ../../cookbook/specs/:/lava/cookbook/specs/
+      - ../../cookbook/plans/:/lava/cookbook/plans/
     networks:
       - lava_network
     depends_on:
       lava-node:
         condition: service_started
 
-  lavad-int:
-    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
-    entrypoint: ["sh"]
-    tty: true
-    volumes:
-      - lava_data:/lava
-      - ./config/post-node-init.sh:/lava/config/post-node-init.sh
-      - ../cookbook/specs/:/lava/cookbook/specs/
-      - ../cookbook/plans/:/lava/cookbook/plans/
-    networks:
-      - lava_network
-
   nginx:
     image: nginx:latest
     ports:
       - "8080:80"
     volumes:
-      - ./config/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./config/nginx/nginx.crt:/etc/nginx/ssl/nginx.crt:ro
-      - ./config/nginx/nginx.key:/etc/nginx/ssl/nginx.key:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/nginx.crt:/etc/nginx/ssl/nginx.crt:ro
+      - ./nginx/nginx.key:/etc/nginx/ssl/nginx.key:ro
     restart: always
 
   consumer:
@@ -141,7 +135,7 @@ services:
       - "3335:3335"
       - "3336:3336"
     volumes:
-      - ../config/consumer_examples/lava_example.yml:/lava/config/lava_example.yml:ro
+      - ../../config/consumer_examples/lava_example.yml:/lava/config/lava_example.yml:ro
       - lava_data:/lava
     command:
       [
@@ -170,7 +164,7 @@ services:
     networks:
       - lava_network
     volumes:
-      - ./config/provider.yml:/lava/config/provider.yml:ro
+      - ../common/provider.yml:/lava/config/provider.yml:ro
       - lava_data:/lava
     command:
       [
@@ -186,67 +180,15 @@ services:
         "2",
         "--keyring-backend",
         "test",
+        "--shard-id",
+        "1",
         "--node",
         "tcp://lava-node:26657",
       ]
     depends_on:
       - lava-node
-    restart: always
-
-  provider2:
-    image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-main}
-    networks:
-      - lava_network
-    volumes:
-      - ./config/provider.yml:/lava/config/provider.yml:ro
-      - lava_data:/lava
-    command:
-      [
-        "rpcprovider",
-        "provider.yml",
-        "--chain-id",
-        "lava",
-        "--from",
-        "servicer1",
-        "--log_level",
-        "debug",
-        "--geolocation",
-        "2",
-        "--keyring-backend",
-        "test",
-        "--node",
-        "tcp://lava-node:26657",
-      ]
-    depends_on:
-      - lava-node
-    restart: always
-
-  provider3:
-    image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-main}
-    networks:
-      - lava_network
-    volumes:
-      - ./config/provider.yml:/lava/config/provider.yml:ro
-      - lava_data:/lava
-    command:
-      [
-        "rpcprovider",
-        "provider.yml",
-        "--chain-id",
-        "lava",
-        "--from",
-        "servicer1",
-        "--log_level",
-        "debug",
-        "--geolocation",
-        "2",
-        "--keyring-backend",
-        "test",
-        "--node",
-        "tcp://lava-node:26657",
-      ]
-    depends_on:
-      - lava-node
+    deploy:
+      replicas: 1
     restart: always
 
 volumes:
