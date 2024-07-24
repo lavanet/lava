@@ -656,7 +656,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				return
 			}
 			localRelayResult.Request = relayRequest
-			endpointClient := *singleConsumerSession.Endpoint.Client
+			endpointClient := *singleConsumerSession.EndpointConnection.Client
 
 			// set relay sent metric
 			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(chainId, apiInterface)
@@ -793,7 +793,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string, analytics *metrics.RelayMetrics) (relayLatency time.Duration, err error, needsBackoff bool) {
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
-	endpointClient := *singleConsumerSession.Endpoint.Client
+	endpointClient := *singleConsumerSession.EndpointConnection.Client
 	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress
 	relayRequest := relayResult.Request
 	if rpccs.debugRelays {
