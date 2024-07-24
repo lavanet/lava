@@ -319,7 +319,8 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 	pairingList := createPairingList("", true)
 	err := csm.UpdateAllProviders(firstEpochHeight, map[uint64]*ConsumerSessionsWithProvider{0: pairingList[0], 1: pairingList[1]}) // create two providers
 	require.NoError(t, err)
-
+	timeLimit := time.Second * 30
+	loopStartTime := time.Now()
 	for {
 		usedProviders := NewUsedProviders(map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress})
 		css, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
@@ -335,6 +336,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 			fmt.Println(csm.secondChanceGivenToAddresses)
 			break
 		}
+		require.True(t, time.Since(loopStartTime) < timeLimit)
 	}
 
 	// check we get provider1.
@@ -347,6 +349,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 	require.False(t, csm.reportedProviders.IsReported(pairingList[0].PublicLavaAddress))
 	require.False(t, csm.reportedProviders.IsReported(pairingList[1].PublicLavaAddress))
 	// sleep for the duration of the retrySecondChanceAfter
+	loopStartTime = time.Now()
 	for {
 		if func() bool {
 			csm.lock.RLock()
@@ -358,6 +361,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 			break
 		}
 		time.Sleep(time.Second)
+		require.True(t, time.Since(loopStartTime) < timeLimit)
 	}
 
 	require.True(t, lavaslices.Contains(csm.validAddresses, pairingList[0].PublicLavaAddress))
@@ -365,6 +369,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 	require.Equal(t, BlockedProviderSessionUnusedStatus, csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus)
 
 	// now after we gave it a second chance, we give it another failure sequence, expecting it to this time be reported.
+	loopStartTime = time.Now()
 	for {
 		utils.LavaFormatDebug("Test", utils.LogAttr("csm.validAddresses", csm.validAddresses), utils.LogAttr("csm.currentlyBlockedProviderAddresses", csm.currentlyBlockedProviderAddresses), utils.LogAttr("csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus", csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus))
 		usedProviders := NewUsedProviders(map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress})
@@ -381,6 +386,7 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 		if _, ok := csm.reportedProviders.addedToPurgeAndReport[pairingList[0].PublicLavaAddress]; ok {
 			break
 		}
+		require.True(t, time.Since(loopStartTime) < timeLimit)
 	}
 	utils.LavaFormatInfo("csm.reportedProviders", utils.LogAttr("csm.reportedProviders", csm.reportedProviders.addedToPurgeAndReport))
 	require.True(t, csm.reportedProviders.IsReported(pairingList[0].PublicLavaAddress))

@@ -225,7 +225,10 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 			if !found {
 				return utils.LavaFormatError("probeProvider failed fetching unique identifier from context when it's set", nil)
 			}
-			if endpointAndConnection.chosenEndpointConnection.Client == nil {
+			if endpointAndConnection == nil ||
+				endpointAndConnection.chosenEndpointConnection == nil ||
+				endpointAndConnection.chosenEndpointConnection.Client == nil {
+				// returned nil client in endpoint, this should never happen, but checking just in case.
 				consumerSessionsWithProvider.Lock.Lock()
 				defer consumerSessionsWithProvider.Lock.Unlock()
 				return utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
