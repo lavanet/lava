@@ -164,7 +164,7 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			UsedReward = UsedRewardTemp
 
 			// reward the provider
-			_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
+			_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false, "iprpc rewards")
 			if err != nil {
 				utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
 			}

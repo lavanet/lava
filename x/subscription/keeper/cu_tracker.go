@@ -199,7 +199,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 		// Note: if the reward function doesn't reward the provider
 		// because he was unstaked, we only print an error and not returning
-		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, provider, chainID, sdk.NewCoins(creditToSub), types.ModuleName, false, false, false)
+		providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, provider, chainID, sdk.NewCoins(creditToSub), types.ModuleName, false, false, false, "subscription rewards")
 		if errors.Is(err, epochstoragetypes.ErrProviderNotStaked) || errors.Is(err, epochstoragetypes.ErrStakeStorageNotFound) {
 			utils.LavaFormatWarning("sending provider reward with delegations failed", err,
 				utils.Attribute{Key: "provider", Value: provider},

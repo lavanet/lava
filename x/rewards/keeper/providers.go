@@ -84,7 +84,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 					return
 				}
 				// now give the reward the provider contributor and delegators
-				_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
+				_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false, "providers bonus rewards")
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
