@@ -73,7 +73,7 @@ func (k Keeper) ProviderMonthlyPayout(goCtx context.Context, req *types.QueryPro
 			providerRewardAfterFees := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalMonthlyReward.Sub(validatorsFee.AmountOf(denom)).Sub(communityFee.AmountOf(denom))))
 
 			// calculate only the provider reward
-			providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, req.Provider, chainID, providerRewardAfterFees, subsciptiontypes.ModuleName, true, true, true, "")
+			providerReward, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, req.Provider, chainID, providerRewardAfterFees, subsciptiontypes.ModuleName, true, true, true, nil)
 			if err != nil {
 				return nil, err
 			}

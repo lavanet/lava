@@ -5,6 +5,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/lavanet/lava/utils"
 	v1 "github.com/lavanet/lava/x/downtime/v1"
 	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/x/spec/types"
@@ -53,7 +54,7 @@ type StakingKeeper interface {
 }
 
 type DualStakingKeeper interface {
-	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool, reason string) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
+	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool, attributes []utils.Attribute) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
 	// Methods imported from bank should be defined here
 }
 
