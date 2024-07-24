@@ -424,6 +424,8 @@ jobs:
             GIT_VERSION="${{ steps.meta.outputs.version }}"
             GIT_COMMIT="${{ github.sha }}"
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build_and_package:
     name: ${{ matrix.binary }}-${{ matrix.targetos }}-${{ matrix.arch }}
