@@ -4,6 +4,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 )
 
 const TypeMsgUnbond = "unbond"
@@ -47,7 +48,7 @@ func (msg *MsgUnbond) ValidateBasic() error {
 		return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid delegator address (%s)", err)
 	}
 
-	if msg.Provider != EMPTY_PROVIDER {
+	if msg.Provider != commontypes.EMPTY_PROVIDER {
 		_, err = sdk.AccAddressFromBech32(msg.Provider)
 		if err != nil {
 			return sdkerrors.Wrapf(legacyerrors.ErrInvalidAddress, "invalid provider address (%s)", err)
