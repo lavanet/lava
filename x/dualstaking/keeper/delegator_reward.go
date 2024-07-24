@@ -172,7 +172,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool, attributes []utils.Attribute) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool, attributes []utils.Attribute) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
 	block := uint64(ctx.BlockHeight())
 	zeroCoins := sdk.NewCoins()
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
@@ -199,7 +199,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 		// make sure to round it down for the integers division
 		contributorReward = contributorReward.QuoInt(contributorsNum).MulInt(contributorsNum)
 		claimableRewards = totalReward.Sub(contributorReward...)
-		if !calcOnlyContributer {
+		if !calcOnlyContributor {
 			err = k.PayContributors(ctx, senderModule, contributorAddresses, contributorReward, chainID)
 			if err != nil {
 				return zeroCoins, zeroCoins, err
@@ -297,7 +297,7 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 	rewardCoins := contributorReward.QuoInt(sdk.NewInt(int64(len(contributorAddresses))))
 	details := map[string]string{
 		"total_reward_coins":           contributorReward.String(),
-		"reward_coins_per_contributer": rewardCoins.String(),
+		"reward_coins_per_contributor": rewardCoins.String(),
 		"chain_id":                     specId,
 	}
 	leftRewards := contributorReward
