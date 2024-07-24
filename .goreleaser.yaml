@@ -1,16 +1,9 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
-
-# The lines bellow are called `modelines`. See `:help modeline`
-# Feel free to remove those if you don't want/need to use them.
-# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
-# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+version: 2
 project_name: lava
+
 before:
   hooks:
-    # You may remove this if you don't use go modules.
     - go mod tidy
-    # you may remove this if you don't need go generate
     - go generate ./...
 
 metadata:
@@ -45,6 +38,17 @@ builds:
       - -mod=readonly
       - -trimpath
     mod_timestamp: "{{ .CommitTimestamp }}"
+    env:
+      - CC_darwin_amd64=o64-clang
+      - CXX_darwin_amd64=o64-clang++
+      - CC_darwin_arm64=oa64-clang
+      - CXX_darwin_arm64=oa64-clang++
+      - CC_linux_arm64=aarch64-linux-gnu-gcc	
+      - CXX_linux_arm64=aarch64-linux-gnu-g++
+      - CC_windows_amd64=x86_64-w64-mingw32-gcc
+      - CXX_windows_amd64=x86_64-w64-mingw32-g++
+      - 'CC={{ index .Env (print "CC_" .Os "_" .Arch) }}'
+      - 'CXX={{ index .Env (print "CXX_" .Os "_" .Arch) }}'
   
   - id: lavad
     binary: lavad
@@ -81,6 +85,17 @@ builds:
       - netgo
       - ledger
     mod_timestamp: "{{ .CommitTimestamp }}"
+    env:
+      - CC_darwin_amd64=o64-clang
+      - CXX_darwin_amd64=o64-clang++
+      - CC_darwin_arm64=oa64-clang
+      - CXX_darwin_arm64=oa64-clang++
+      - CC_linux_arm64=aarch64-linux-gnu-gcc	
+      - CXX_linux_arm64=aarch64-linux-gnu-g++
+      - CC_windows_amd64=x86_64-w64-mingw32-gcc
+      - CXX_windows_amd64=x86_64-w64-mingw32-g++
+      - 'CC={{ index .Env (print "CC_" .Os "_" .Arch) }}'
+      - 'CXX={{ index .Env (print "CXX_" .Os "_" .Arch) }}'
 
   - id: lavap
     binary: lavap
@@ -107,6 +122,17 @@ builds:
       - -mod=readonly
       - -trimpath
     mod_timestamp: "{{ .CommitTimestamp }}"
+    env:
+      - CC_darwin_amd64=o64-clang
+      - CXX_darwin_amd64=o64-clang++
+      - CC_darwin_arm64=oa64-clang
+      - CXX_darwin_arm64=oa64-clang++
+      - CC_linux_arm64=aarch64-linux-gnu-gcc	
+      - CXX_linux_arm64=aarch64-linux-gnu-g++
+      - CC_windows_amd64=x86_64-w64-mingw32-gcc
+      - CXX_windows_amd64=x86_64-w64-mingw32-g++
+      - 'CC={{ index .Env (print "CC_" .Os "_" .Arch) }}'
+      - 'CXX={{ index .Env (print "CXX_" .Os "_" .Arch) }}'
 
 archives:
   - id: lavavisor
