@@ -614,7 +614,13 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			if err != nil {
 				utils.LavaFormatFatal("failed to create tx factory", err)
 			}
+			gasPricesStr := viper.GetString(flags.FlagGasPrices)
+			if gasPricesStr == "" {
+				gasPricesStr = statetracker.DefaultGasPrice
+			}
+			txFactory = txFactory.WithGasPrices(statetracker.DefaultGasPrice)
 			txFactory = txFactory.WithGasAdjustment(viper.GetFloat64(flags.FlagGasAdjustment))
+			utils.LavaFormatInfo("Setting gas for tx Factory", utils.LogAttr("gas-prices", gasPricesStr), utils.LogAttr("gas-adjustment", txFactory.GasAdjustment()))
 
 			logLevel, err := cmd.Flags().GetString(flags.FlagLogLevel)
 			if err != nil {
