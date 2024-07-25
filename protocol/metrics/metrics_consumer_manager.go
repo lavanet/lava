@@ -144,12 +144,12 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	}, []string{"spec", "apiInterface"})
 
 	relayProcessingLatencyBeforeProvider := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "relay_processing_latency_before_provider_ms",
-		Help: "average latency of processing a successful relay before it is sent to the provider",
+		Name: "lava_relay_processing_latency_before_provider_in_micro_seconds",
+		Help: "average latency of processing a successful relay before it is sent to the provider in µs (10^6)",
 	}, []string{"spec", "apiInterface"})
 	relayProcessingLatencyAfterProvider := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "relay_processing_latency_after_provider_ms",
-		Help: "average latency of processing a successful relay after it is received from the provider",
+		Name: "lava_relay_processing_latency_after_provider_in_micro_seconds",
+		Help: "average latency of processing a successful relay after it is received from the provider in µs (10^6)",
 	}, []string{"spec", "apiInterface"})
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
@@ -290,7 +290,7 @@ func (pme *ConsumerMetricsManager) updateRelayProcessingLatency(latency time.Dur
 	}
 	currentLatency.AddLatency(latency)
 	pme.averageProcessingLatency[key] = currentLatency
-	return float64(currentLatency.AverageLatency.Milliseconds())
+	return float64(currentLatency.AverageLatency.Microseconds())
 }
 
 func (pme *ConsumerMetricsManager) SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string) {
