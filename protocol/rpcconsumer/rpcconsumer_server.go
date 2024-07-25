@@ -735,54 +735,53 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(chainMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, chainMessage.GetApi().Category.HangingApi) // session done successfully
 
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
-				// copy reply data so if it changes it doesn't panic mid async send
-				copyReply := &pairingtypes.RelayReply{}
-				copyReplyErr := protocopy.DeepCopyProtoObject(localRelayResult.Reply, copyReply)
-				// set cache in a non blocking call
-				statusCode := localRelayResult.StatusCode
-				requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
-				seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
-				hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
+				isNodeError, _ := chainMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
+				// in case the error is a node error we don't want to cache
+				if !isNodeError {
+					// copy reply data so if it changes it doesn't panic mid async send
+					copyReply := &pairingtypes.RelayReply{}
+					copyReplyErr := protocopy.DeepCopyProtoObject(localRelayResult.Reply, copyReply)
+					// set cache in a non blocking call
+					requestedBlock := localRelayResult.Request.RelayData.RequestBlock                             // get requested block before removing it from the data
+					seenBlock := localRelayResult.Request.RelayData.SeenBlock                                     // get seen block before removing it from the data
+					hashKey, _, hashErr := chainlib.HashCacheRequest(localRelayResult.Request.RelayData, chainId) // get the hash (this changes the data)
 
-				go func() {
-					// deal with copying error.
-					if copyReplyErr != nil || hashErr != nil {
-						utils.LavaFormatError("Failed copying relay private data sendRelayToProvider", nil,
-							utils.LogAttr("copyReplyErr", copyReplyErr),
-							utils.LogAttr("hashErr", hashErr),
-						)
-						return
-					}
-					chainMessageRequestedBlock, _ := chainMessage.RequestedBlock()
-					if chainMessageRequestedBlock == spectypes.NOT_APPLICABLE {
-						return
-					}
+					go func() {
+						// deal with copying error.
+						if copyReplyErr != nil || hashErr != nil {
+							utils.LavaFormatError("Failed copying relay private data sendRelayToProvider", nil,
+								utils.LogAttr("copyReplyErr", copyReplyErr),
+								utils.LogAttr("hashErr", hashErr),
+							)
+							return
+						}
+						chainMessageRequestedBlock, _ := chainMessage.RequestedBlock()
+						if chainMessageRequestedBlock == spectypes.NOT_APPLICABLE {
+							return
+						}
 
-					new_ctx := context.Background()
-					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
-					defer cancel()
-					_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
-					// we don't want to cache node errors for too long. what can happen is a finalized block gets an error
-					// and we cache it for a long period of time.
-					isNodeError, _ := chainMessage.CheckResponseError(copyReply.Data, statusCode)
-
-					err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
-						RequestHash:      hashKey,
-						ChainId:          chainId,
-						RequestedBlock:   requestedBlock,
-						SeenBlock:        seenBlock,
-						BlockHash:        nil, // consumer cache doesn't care about block hashes
-						Response:         copyReply,
-						Finalized:        localRelayResult.Finalized,
-						OptionalMetadata: nil,
-						SharedStateId:    sharedStateId,
-						AverageBlockTime: int64(averageBlockTime), // by using average block time we can set longer TTL
-						IsNodeError:      isNodeError,
-					})
-					if err2 != nil {
-						utils.LavaFormatWarning("error updating cache with new entry", err2)
-					}
-				}()
+						new_ctx := context.Background()
+						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
+						defer cancel()
+						_, averageBlockTime, _, _ := rpccs.chainParser.ChainBlockStats()
+						err2 := rpccs.cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
+							RequestHash:      hashKey,
+							ChainId:          chainId,
+							RequestedBlock:   requestedBlock,
+							SeenBlock:        seenBlock,
+							BlockHash:        nil, // consumer cache doesn't care about block hashes
+							Response:         copyReply,
+							Finalized:        localRelayResult.Finalized,
+							OptionalMetadata: nil,
+							SharedStateId:    sharedStateId,
+							AverageBlockTime: int64(averageBlockTime), // by using average block time we can set longer TTL
+							IsNodeError:      isNodeError,
+						})
+						if err2 != nil {
+							utils.LavaFormatWarning("error updating cache with new entry", err2)
+						}
+					}()
+				}
 			}
 			// localRelayResult is being sent on the relayProcessor by a deferred function
 		}(providerPublicAddress, sessionInfo)
