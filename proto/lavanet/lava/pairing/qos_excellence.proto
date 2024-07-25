@@ -1,0 +1,41 @@
+syntax = "proto3";
+package lavanet.lava.pairing;
+
+option go_package = "github.com/lavanet/lava/x/pairing/types";
+import "gogoproto/gogo.proto";
+
+// Frac is a fracture struct that helps calculating and updating weighted average on the go
+message Frac {
+	string num = 1 [(gogoproto.moretags) = "yaml:\"num\"", (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+        (gogoproto.nullable) = false];  // weighted average numerator (w1*s1+w2*s2+...)
+	string denom = 2 [(gogoproto.moretags) = "yaml:\"denom\"", (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+        (gogoproto.nullable) = false]; // weighted denominator (w1+w2+...)
+}
+
+// QosScore holds the QoS score from a QoS report. The score and its variance are updated over time using a weighted average.
+// Currently, the weight is the amount of relays that are associated with the QoS report.
+message QosScore {
+	Frac score = 1 [(gogoproto.nullable) = false];
+	Frac variance = 2 [(gogoproto.nullable) = false];
+}
+
+// ProviderClusterQos keeps the QosScore of a provider for a specific cluster for in the provider's geolocation. 
+// The store key is provider+chain+cluster.
+// The epoch_score is a QosScore object that is aggregated over an epoch. When an epoch ends, the score is updated 
+// with the epoch_score and then epoch_score is reset.
+// The time_last_updated is used to calculate the appropriate time decay upon update.
+// The creation_time is used to determine if the variance stabilization period has passed and score can be truncated.
+message ProviderClusterQos {
+	QosScore score = 1 [(gogoproto.nullable) = false];
+	QosScore epoch_score = 2 [(gogoproto.nullable) = false];
+	uint64 time_last_updated = 3;
+	uint64 creation_time = 4;
+}
+
+// QosPairingScore holds the QoS pairing score used by the QoS pairing requirement. The score is ranged between [0.5-2].
+// It's kept in the providerQosFs fixation store with a provider+chain+cluster key.
+message QosPairingScore {
+	string score = 1 [(gogoproto.moretags) = "yaml:\"score\"", (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+		(gogoproto.nullable) = false];
+}
+

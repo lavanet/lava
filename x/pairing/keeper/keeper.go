@@ -2,8 +2,15 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
+	"time"
+
+	"cosmossdk.io/collections"
+	"cosmossdk.io/math"
+	collcompat "github.com/lavanet/lava/utils/collcompat"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/lavanet/lava/utils"
 	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -35,6 +42,10 @@ type (
 		downtimeKeeper     types.DowntimeKeeper
 		dualstakingKeeper  types.DualstakingKeeper
 		stakingKeeper      types.StakingKeeper
+
+		schema              collections.Schema
+		providerClusterQos  *collections.IndexedMap[collections.Triple[string, string, string], types.ProviderClusterQos, types.ChainClusterQosIndexes] // save qos info per provider, chain and cluster
+		chainClusterQosKeys collections.KeySet[collections.Pair[string, string]]
 
 		pairingQueryCache *map[types.PairingCacheKey][]epochstoragetypes.StakeEntry
 		pairingRelayCache *map[types.PairingCacheKey][]epochstoragetypes.StakeEntry
@@ -78,6 +89,8 @@ func NewKeeper(
 	emptypairingRelayCache := map[types.PairingCacheKey][]epochstoragetypes.StakeEntry{}
 	emptypairingQueryCache := map[types.PairingCacheKey][]epochstoragetypes.StakeEntry{}
 
+	sb := collections.NewSchemaBuilder(collcompat.NewKVStoreService(storeKey))
+
 	keeper := &Keeper{
 		cdc:                cdc,
 		storeKey:           storeKey,
@@ -95,6 +108,16 @@ func NewKeeper(
 		stakingKeeper:      stakingKeeper,
 		pairingQueryCache:  &emptypairingQueryCache,
 		pairingRelayCache:  &emptypairingRelayCache,
+
+		providerClusterQos: collections.NewIndexedMap(sb, types.ProviderClusterQosPrefix, "provider_cluster_qos",
+			collections.TripleKeyCodec(collections.StringKey, collections.StringKey, collections.StringKey),
+			collcompat.ProtoValue[types.ProviderClusterQos](cdc),
+			types.NewChainClusterQosIndexes(sb),
+		),
+
+		chainClusterQosKeys: collections.NewKeySet(sb, types.ChainClusterQosKeysPrefix, "chain_cluster_qos_keys",
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+		),
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)
@@ -106,6 +129,12 @@ func NewKeeper(
 	keeper.badgeTimerStore = *badgeTimerStore
 
 	keeper.providerQosFS = *fixationStoreKeeper.NewFixationStore(storeKey, types.ProviderQosStorePrefix)
+
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+	keeper.schema = schema
 
 	return keeper
 }
@@ -121,6 +150,13 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
 		// reset pairing query cache every epoch
 		*k.pairingQueryCache = map[types.PairingCacheKey][]epochstoragetypes.StakeEntry{}
+
+		k.PrepareMockDataForBenchmark(ctx)
+		now := time.Now()
+		k.UpdateQosExcellenceScores(ctx)
+		after := time.Since(now).Milliseconds()
+		utils.LavaFormatInfo("oren time report", utils.LogAttr("duration", strconv.FormatInt(after, 10)))
+
 		// remove old session payments
 		k.RemoveOldEpochPayments(ctx)
 		// unstake/jail unresponsive providers
@@ -136,4 +172,79 @@ func (k Keeper) InitProviderQoS(ctx sdk.Context, gs fixationtypes.GenesisState) 
 
 func (k Keeper) ExportProviderQoS(ctx sdk.Context) fixationtypes.GenesisState {
 	return k.providerQosFS.Export(ctx)
+}
+
+func (k Keeper) UpdateQosExcellenceScores(ctx sdk.Context) {
+	iter, err := k.chainClusterQosKeys.Iterate(ctx, nil)
+	if err != nil {
+		panic(err)
+	}
+	defer iter.Close()
+
+	num := 0
+
+	for ; iter.Valid(); iter.Next() {
+		chainCluster, err := iter.Key()
+		if err != nil {
+			panic(err)
+		}
+		multiIter, err := k.providerClusterQos.Indexes.Index.MatchExact(ctx, chainCluster)
+		if err != nil {
+			panic(err)
+		}
+		defer multiIter.Close()
+
+		for ; multiIter.Valid(); multiIter.Next() {
+			chainClusterProvider, err := multiIter.PrimaryKey()
+			if err != nil {
+				panic(err)
+			}
+
+			pcq, err := k.providerClusterQos.Get(ctx, chainClusterProvider)
+			if err != nil {
+				panic(err)
+			}
+			qps := k.ConvertQosScoreToPairingQosScore(chainClusterProvider.K3(), pcq)
+			err = k.SetQosPairingScore(ctx, chainClusterProvider.K1(), chainClusterProvider.K2(), chainClusterProvider.K3(), qps)
+			if err != nil {
+				panic(err)
+			}
+			num++
+		}
+	}
+
+	utils.LavaFormatInfo("oren iteration num", utils.LogAttr("num", strconv.Itoa(num)))
+}
+
+// func (k Keeper) UpdateQosExcellenceScores(ctx sdk.Context) {
+// 	pcqsMap := k.GetAllProviderClusterQosForPairingScore(ctx)
+// 	keys := []string{}
+// 	for key := range pcqsMap {
+// 		keys = append(keys, key)
+// 	}
+// 	sort.Strings(keys)
+
+// 	for _, key := range keys {
+// 		pqpss := k.ConvertQosScoreToPairingQosScore(pcqsMap[key])
+// 		chainID, cluster, err := types.DecodeProviderClusterQosKeyForAggregation(key)
+// 		if err != nil {
+// 			panic(err)
+// 		}
+// 		for _, pqps := range pqpss {
+// 			k.SetQosPairingScore(ctx, chainID, cluster, pqps.Provider, types.QosPairingScore{Score: pqps.Score})
+// 		}
+// 	}
+// }
+
+func (k Keeper) PrepareMockDataForBenchmark(ctx sdk.Context) {
+	for chainInt := 0; chainInt < 50; chainInt++ {
+		for providerInt := 0; providerInt < 100; providerInt++ {
+			chainID := strconv.Itoa(chainInt)
+			provider := strconv.Itoa(providerInt)
+			k.SetProviderClusterQos(ctx, chainID, "dummy", provider, types.ProviderClusterQos{
+				Score:      types.QosScore{Score: types.Frac{Num: math.LegacyNewDec(int64(providerInt + 1)), Denom: math.LegacyNewDec(int64(providerInt + 2))}},
+				EpochScore: types.QosScore{},
+			})
+		}
+	}
 }
