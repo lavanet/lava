@@ -172,7 +172,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool, attributes []utils.Attribute) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
 	block := uint64(ctx.BlockHeight())
 	zeroCoins := sdk.NewCoins()
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
@@ -214,31 +214,19 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 
 	providerReward, delegatorsReward := k.CalcRewards(ctx, stakeEntry, claimableRewards, relevantDelegations)
 
-	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators, attributes)
+	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
 	fullProviderReward := providerReward.Add(leftoverRewards...)
 
 	if !calcOnlyProvider {
 		// reward provider's vault
 		k.rewardDelegator(ctx, types.Delegation{Provider: stakeEntry.Address, ChainID: chainID, Delegator: stakeEntry.Vault}, fullProviderReward, senderModule)
-		details := map[string]string{
-			"provider_vault":   stakeEntry.Vault,
-			"chain_id":         chainID,
-			"provider_address": stakeEntry.Address,
-			"provider_reward":  fullProviderReward.String(),
-		}
-		for _, atr := range attributes {
-			if _, ok := details[atr.Key]; !ok {
-				details[atr.Key] = utils.StrValue(atr.Value)
-			}
-		}
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProviderRewardEventName, details, "provider rewarded successfully")
 	}
 
 	return fullProviderReward, claimableRewards, nil
 }
 
 // updateDelegatorsReward updates the delegator rewards map
-func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.Int, delegations []types.Delegation, delegatorsReward sdk.Coins, senderModule string, calcOnly bool, attributes []utils.Attribute) (leftoverRewards sdk.Coins) {
+func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.Int, delegations []types.Delegation, delegatorsReward sdk.Coins, senderModule string, calcOnly bool) (leftoverRewards sdk.Coins) {
 	usedDelegatorRewards := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), math.ZeroInt())) // the delegator rewards are calculated using int division, so there might be leftovers
 
 	for _, delegation := range delegations {
@@ -246,18 +234,6 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 
 		if !calcOnly {
 			k.rewardDelegator(ctx, delegation, delegatorReward, senderModule)
-			details := map[string]string{
-				"delegator":        delegation.Delegator,
-				"chain_id":         delegation.ChainID,
-				"provider":         delegation.Provider,
-				"delegator_reward": delegatorReward.String(),
-			}
-			for _, atr := range attributes {
-				if _, ok := details[atr.Key]; !ok {
-					details[atr.Key] = utils.StrValue(atr.Value)
-				}
-			}
-			utils.LogLavaEvent(ctx, k.Logger(ctx), types.DelegatorRewardEventName, details, "delegator rewarded successfully")
 		}
 
 		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorReward...)

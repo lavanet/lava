@@ -135,6 +135,8 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 
 	leftovers := sdk.NewCoins()
 	for _, specFund := range iprpcReward.SpecFunds {
+		details := map[string]string{}
+
 		// verify specCuMap holds an entry for the relevant spec
 		specCu, ok := specCuMap[specFund.Spec]
 		if !ok {
@@ -164,21 +166,16 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			UsedReward = UsedRewardTemp
 
 			// reward the provider
-			attributes := []utils.Attribute{
-				utils.LogAttr("reason", "iprpc rewards"),
-				utils.LogAttr("block", ctx.BlockHeight()),
-				utils.LogAttr("spec", specFund.Spec),
-				utils.LogAttr("total_iprpc_cu_for_spec", specCu.TotalCu),
-				utils.LogAttr("total_iprpc_reward_for_spec", specFund.Fund.String()),
-				utils.LogAttr("provider", providerCU.Provider),
-				utils.LogAttr("provider_iprpc_cu", providerCU.CU),
-				utils.LogAttr("provider_total_iprpc_reward", providerIprpcReward.String()),
-			}
-			_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false, attributes)
+			_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
 			if err != nil {
 				utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
 			}
+			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward %s", providerCU.CU, providerIprpcReward.String())
 		}
+		details["total_cu"] = strconv.FormatUint(specCu.TotalCu, 10)
+		details["total_reward"] = specFund.Fund.String()
+		details["chainid"] = specFund.GetSpec()
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, details, "IPRPC monthly rewards distributed successfully")
 
 		// count used rewards
 		leftovers = leftovers.Add(specFund.Fund.Sub(UsedReward...)...)
@@ -189,6 +186,4 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 	if err != nil {
 		utils.LavaFormatError("could not send iprpc leftover to community pool", err)
 	}
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, map[string]string{"iprpc_rewards_leftovers": leftovers.String()}, "IPRPC monthly rewards distributed successfully")
 }
