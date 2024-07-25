@@ -186,7 +186,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 				extensions[extension] = struct{}{}
 			}
 
-			endp := &lavasession.Endpoint{Geolocation: planstypes.Geolocation(relevantEndpoint.Geolocation), NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0, Addons: addons, Extensions: extensions}
+			endp := &lavasession.Endpoint{Connections: []*lavasession.EndpointConnection{}, Geolocation: planstypes.Geolocation(relevantEndpoint.Geolocation), NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, ConnectionRefusals: 0, Addons: addons, Extensions: extensions}
 			pairingEndpoints[idx] = endp
 		}
 		lavasession.SortByGeolocations(pairingEndpoints, currentGeo)

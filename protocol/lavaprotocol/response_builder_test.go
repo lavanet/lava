@@ -26,15 +26,15 @@ func TestSignAndExtractResponse(t *testing.T) {
 	specId := "LAV1"
 	epoch := int64(100)
 	singleConsumerSession := &lavasession.SingleConsumerSession{
-		CuSum:         20,
-		LatestRelayCu: 10, // set by GetSessions cuNeededForSession
-		QoSInfo:       lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
-		SessionId:     123,
-		Parent:        nil,
-		RelayNum:      1,
-		LatestBlock:   epoch,
-		Endpoint:      nil,
-		BlockListed:   false, // if session lost sync we blacklist it.
+		CuSum:              20,
+		LatestRelayCu:      10, // set by GetSessions cuNeededForSession
+		QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+		SessionId:          123,
+		Parent:             nil,
+		RelayNum:           1,
+		LatestBlock:        epoch,
+		EndpointConnection: nil,
+		BlockListed:        false, // if session lost sync we blacklist it.
 	}
 	metadataValue := make([]pairingtypes.Metadata, 1)
 	metadataValue[0] = pairingtypes.Metadata{
@@ -74,15 +74,15 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	testSpecId := "BLAV1"
 	epoch := int64(100)
 	singleConsumerSession := &lavasession.SingleConsumerSession{
-		CuSum:         20,
-		LatestRelayCu: 10, // set by GetSessions cuNeededForSession
-		QoSInfo:       lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
-		SessionId:     123,
-		Parent:        nil,
-		RelayNum:      1,
-		LatestBlock:   epoch,
-		Endpoint:      nil,
-		BlockListed:   false, // if session lost sync we blacklist it.
+		CuSum:              20,
+		LatestRelayCu:      10, // set by GetSessions cuNeededForSession
+		QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+		SessionId:          123,
+		Parent:             nil,
+		RelayNum:           1,
+		LatestBlock:        epoch,
+		EndpointConnection: nil,
+		BlockListed:        false, // if session lost sync we blacklist it.
 	}
 	metadataValue := make([]pairingtypes.Metadata, 1)
 	metadataValue[0] = pairingtypes.Metadata{
