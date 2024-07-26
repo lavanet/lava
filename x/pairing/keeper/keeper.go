@@ -3,7 +3,6 @@ package keeper
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/math"
@@ -152,10 +151,11 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 		*k.pairingQueryCache = map[types.PairingCacheKey][]epochstoragetypes.StakeEntry{}
 
 		k.PrepareMockDataForBenchmark(ctx)
-		now := time.Now()
+		gm := ctx.GasMeter()
+		before := gm.GasConsumed()
 		k.UpdateQosExcellenceScores(ctx)
-		after := time.Since(now).Milliseconds()
-		utils.LavaFormatInfo("oren time report", utils.LogAttr("duration", strconv.FormatInt(after, 10)))
+		after := gm.GasConsumed() - before
+		utils.LavaFormatInfo("oren gas report", utils.LogAttr("gas", strconv.FormatUint(after, 10)))
 
 		// remove old session payments
 		k.RemoveOldEpochPayments(ctx)
@@ -180,8 +180,6 @@ func (k Keeper) UpdateQosExcellenceScores(ctx sdk.Context) {
 		panic(err)
 	}
 	defer iter.Close()
-
-	num := 0
 
 	for ; iter.Valid(); iter.Next() {
 		chainCluster, err := iter.Key()
@@ -209,32 +207,9 @@ func (k Keeper) UpdateQosExcellenceScores(ctx sdk.Context) {
 			if err != nil {
 				panic(err)
 			}
-			num++
 		}
 	}
-
-	utils.LavaFormatInfo("oren iteration num", utils.LogAttr("num", strconv.Itoa(num)))
 }
-
-// func (k Keeper) UpdateQosExcellenceScores(ctx sdk.Context) {
-// 	pcqsMap := k.GetAllProviderClusterQosForPairingScore(ctx)
-// 	keys := []string{}
-// 	for key := range pcqsMap {
-// 		keys = append(keys, key)
-// 	}
-// 	sort.Strings(keys)
-
-// 	for _, key := range keys {
-// 		pqpss := k.ConvertQosScoreToPairingQosScore(pcqsMap[key])
-// 		chainID, cluster, err := types.DecodeProviderClusterQosKeyForAggregation(key)
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 		for _, pqps := range pqpss {
-// 			k.SetQosPairingScore(ctx, chainID, cluster, pqps.Provider, types.QosPairingScore{Score: pqps.Score})
-// 		}
-// 	}
-// }
 
 func (k Keeper) PrepareMockDataForBenchmark(ctx sdk.Context) {
 	for chainInt := 0; chainInt < 50; chainInt++ {
