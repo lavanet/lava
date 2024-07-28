@@ -9,7 +9,7 @@ import (
 	pairingtypes "github.com/lavanet/lava/x/pairing/types"
 )
 
-var WontCalculateBatchHash = sdkerrors.New("Wont calculate batch hash", 892, "wont calculate batch message hash") // client could not connect to any provider.
+var WontCalculateBatchHash = sdkerrors.New("Wont calculate batch hash", 892, "wont calculate batch message hash") // on batches we just wont calculate hashes, meaning we wont retry.
 
 type ParsableRPCInput struct {
 	Result json.RawMessage
