@@ -2,9 +2,6 @@ services:
   lava-node-init:
     # Update with the most recent supported version of lavad
     image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-latest}
-    build:
-      context: ..
-      dockerfile: cmd/lavad/Dockerfile
     environment:
       - CHAIN_ID=${CHAIN_ID:-lava}
       - KEYRING_BACKEND=${KEYRING_BACKEND:-test}
