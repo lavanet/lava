@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	MaxCallsPerRelay = 50
+	MaxCallsPerRelay                   = 50
+	NumberOfRetriesAllowedOnNodeErrors = 2 // we will try maximum additional 2 relays on node errors
 )
 
 type Selection int
@@ -55,6 +56,8 @@ type RelayProcessor struct {
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
 	metricsInf                   MetricsInterface
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
+	disableRelayRetry            bool
+	relayRetriesManager          *RelayRetriesManager
 }
 
 func NewRelayProcessor(
@@ -68,6 +71,8 @@ func NewRelayProcessor(
 	debugRelay bool,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
+	disableRelayRetry bool,
+	relayRetriesManager *RelayRetriesManager,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
@@ -92,6 +97,8 @@ func NewRelayProcessor(
 		debugRelay:                   debugRelay,
 		metricsInf:                   metricsInf,
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
+		disableRelayRetry:            disableRelayRetry,
+		relayRetriesManager:          relayRetriesManager,
 	}
 }
 
@@ -287,6 +294,15 @@ func (rp *RelayProcessor) HasResults() bool {
 	return resultsCount+nodeErrors+protocolErrors > 0
 }
 
+func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
+	hash, err := rp.chainMessage.GetInputMsgInfoHash()
+	hashString := ""
+	if err != nil {
+		hashString = string(hash)
+	}
+	return hashString, err
+}
+
 func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 	if rp == nil {
 		return false
@@ -294,13 +310,44 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	resultsCount := len(rp.successResults)
+
+	hash, hashErr := rp.getInputMsgInfoHashString()
 	if resultsCount >= rp.requiredSuccesses {
+		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
+			// Use a routine to run it in parallel
+			go rp.relayRetriesManager.RemoveHashFromMap(hash)
+		}
 		return true
 	}
 	if rp.selection == Quorum {
 		// we need a quorum of all node results
 		nodeErrors := len(rp.nodeResponseErrors.relayErrors)
 		if nodeErrors+resultsCount >= rp.requiredSuccesses {
+
+			// Retry on node error flow:
+			if !rp.disableRelayRetry { // In case we want to try again if we have a node error.
+				if resultsCount == 0 { // Only if we have 0 successful relays and we have only node errors.
+					// Only continue the retry flow if we managed to parse hash.
+					if hashErr == nil {
+						// Only send a maximum of NumberOfRetriesAllowedOnNodeErrors retries.
+						if nodeErrors <= NumberOfRetriesAllowedOnNodeErrors {
+							// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
+
+							// Check hash already exist, if it does, we don't want to retry
+							if !rp.relayRetriesManager.CheckHashInMap(hash) {
+								// If we didn't find the hash in the hash map we can retry
+								utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
+								return false
+							}
+							utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))
+						} else {
+							// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
+							utils.LavaFormatTrace("adding hash to hash map after NumberOfRetriesAllowedOnNodeErrors errors", utils.LogAttr("hash", hash))
+							rp.relayRetriesManager.AddHashToMap(hash)
+						}
+					}
+				}
+			}
 			// we have enough node results for our quorum
 			return true
 		}

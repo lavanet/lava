@@ -292,7 +292,10 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			}
 			rpcConsumerServer := &RPCConsumerServer{}
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
-			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager)
+			relayRetriesManager := NewRelayRetriesManager()
+			consumerStateTracker.RegisterForPairingUpdates(ctx, relayRetriesManager, rpcEndpoint.ChainID)
+
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, relayRetriesManager)
 			if err != nil {
 				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -543,6 +546,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				RelaysHealthIntervalFlag:    viper.GetDuration(common.RelayHealthIntervalFlag),
 				DebugRelays:                 viper.GetBool(DebugRelaysFlagName),
 				DisableConflictTransactions: viper.GetBool(common.DisableConflictTransactionsFlag),
+				DisableRetryOnNodeErrors:    viper.GetBool(common.DisableRetryOnNodeErrorsFlag),
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
@@ -584,6 +588,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCConsumer.Flags().Bool(common.DisableConflictTransactionsFlag, false, "disabling conflict transactions, this flag should not be used as it harms the network's data reliability and therefore the service.")
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
+	cmdRPCConsumer.Flags().Bool(common.DisableRetryOnNodeErrorsFlag, false, "Disable relay retries on node errors, prevent the rpcconsumer trying a different provider")
 
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
