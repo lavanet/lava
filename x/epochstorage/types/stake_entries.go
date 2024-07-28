@@ -6,13 +6,39 @@ import (
 	regmath "math"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/collections/indexes"
 	"cosmossdk.io/math"
 )
 
 var (
-	StakeEntriesPrefix        = collections.NewPrefix([]byte("StakeEntries/"))
-	StakeEntriesCurrentPrefix = collections.NewPrefix([]byte("StakeEntriesCurrent/"))
+	StakeEntriesPrefix                = collections.NewPrefix([]byte("StakeEntries/"))
+	StakeEntriesCurrentPrefix         = collections.NewPrefix([]byte("StakeEntriesCurrent/"))
+	EpochChainIdProviderIndexesPrefix = collections.NewPrefix([]byte("EpochChainIdProviderIndexes/"))
 )
+
+// EpochChainIdProviderIndexes defines a secondary unique index for the keeper's stakeEntries indexed map
+// Normally, a stake entry can be accessed with the primary key: [epoch, chainID, stake, address]
+// The new set of indexes, EpochChainIdProviderIndexes, allows accessing the stake entries with [epoch, chainID, address]
+type EpochChainIdProviderIndexes struct {
+	Index *indexes.Unique[collections.Triple[uint64, string, string], collections.Triple[uint64, string, collections.Pair[uint64, string]], StakeEntry]
+}
+
+func (e EpochChainIdProviderIndexes) IndexesList() []collections.Index[collections.Triple[uint64, string, collections.Pair[uint64, string]], StakeEntry] {
+	return []collections.Index[collections.Triple[uint64, string, collections.Pair[uint64, string]], StakeEntry]{e.Index}
+}
+
+func NewEpochChainIdProviderIndexes(sb *collections.SchemaBuilder) EpochChainIdProviderIndexes {
+	return EpochChainIdProviderIndexes{
+		Index: indexes.NewUnique(sb, EpochChainIdProviderIndexesPrefix, "stake_entry_by_epoch_chain_address",
+			collections.TripleKeyCodec(collections.Uint64Key, collections.StringKey, collections.StringKey),
+			collections.TripleKeyCodec(collections.Uint64Key, collections.StringKey,
+				collections.PairKeyCodec(collections.Uint64Key, collections.StringKey)),
+			func(pk collections.Triple[uint64, string, collections.Pair[uint64, string]], _ StakeEntry) (collections.Triple[uint64, string, string], error) {
+				return collections.Join3(pk.K1(), pk.K2(), pk.K3().K2()), nil
+			},
+		),
+	}
+}
 
 func StakeEntryKeyCurrent(chainID string, provider string) []byte {
 	return []byte(strings.Join([]string{chainID, provider}, " "))

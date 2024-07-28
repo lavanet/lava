@@ -5,6 +5,7 @@ import (
 
 	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -14,26 +15,27 @@ import (
 // Since the stake entries KV store's key includes the provider's stake (which is not known), we iterate over all
 // the providers with the same epoch and chainID and compare the requested address to find the provider
 func (k Keeper) GetStakeEntry(ctx sdk.Context, epoch uint64, chainID string, provider string) (types.StakeEntry, bool) {
-	rng := collections.NewSuperPrefixedTripleRange[uint64, string, collections.Pair[uint64, string]](epoch, chainID)
-
-	iter, err := k.stakeEntries.Iterate(ctx, rng)
+	pk, err := k.stakeEntries.Indexes.Index.MatchExact(ctx, collections.Join3(epoch, chainID, provider))
 	if err != nil {
+		utils.LavaFormatWarning("GetStakeEntry: MatchExact with ref key failed", err,
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("provider", provider),
+		)
 		return types.StakeEntry{}, false
 	}
-	defer iter.Close()
 
-	for ; iter.Valid(); iter.Next() {
-		v, err := iter.Value()
-		if err != nil {
-			return types.StakeEntry{}, false
-		}
-
-		if v.Address == provider {
-			return v, true
-		}
+	entry, err := k.stakeEntries.Get(ctx, pk)
+	if err != nil {
+		utils.LavaFormatError("GetStakeEntry: Get with primary key failed", err,
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("provider", provider),
+		)
+		return types.StakeEntry{}, false
 	}
 
-	return types.StakeEntry{}, false
+	return entry, true
 }
 
 // Set stake entry
