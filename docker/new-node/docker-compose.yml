@@ -9,22 +9,11 @@ services:
       - CHAIN_ID=${CHAIN_ID:-lava}
       - KEYRING_BACKEND=${KEYRING_BACKEND:-test}
       - MONIKER=${MONIKER:-DOCKER_COMPOSE_MONIKER}
-    entrypoint: ["sh", "-c"]
-    command: >
-      "
-      [ ! -f /lava/.lava/config/genesis.json ] && lavad init validator --chain-id $$CHAIN_ID &&
-      lavad config chain-id $$CHAIN_ID && 
-      lavad config keyring-backend $$KEYRING_BACKEND && 
-      lavad config broadcast-mode sync &&
-      [ ! -f /lava/.lava/keyring-test/user1.info ] && lavad keys add user1 || echo user1 already exists &&
-      [ ! -f /lava/.lava/keyring-test/servicer1.info ] && lavad keys add servicer1 || echo servicer1 already exists &&
-      lavad add-genesis-account user1 50000000000000ulava --keyring-backend test || echo failed adding user1 as genesis account &&
-      lavad add-genesis-account servicer1 50000000000000ulava --keyring-backend test || echo failed servicer1 as genesis account &&
-      lavad gentx servicer1 10000000000000ulava --chain-id $$CHAIN_ID --keyring-backend test || echo failed writing signed gen tx for servicer1 &&
-      lavad collect-gentxs
-      "
+    entrypoint: ["sh"]
+    command: ["/lava/config/new_node_init.sh"]
     volumes:
       - lava_data:/lava
+      - ../common/new_node_init.sh:/lava/config/new_node_init.sh
     networks:
       - lava_network
     
@@ -107,7 +96,7 @@ services:
     command: ["/lava/config/post_node_init.sh"]
     volumes:
       - lava_data:/lava
-      - ./config/post_node_init.sh:/lava/config/post_node_init.sh
+      - ../common/post_node_init.sh:/lava/config/post_node_init.sh
       - ../cookbook/specs/:/lava/cookbook/specs/
       - ../cookbook/plans/:/lava/cookbook/plans/
     networks:
@@ -115,79 +104,6 @@ services:
     depends_on:
       lava-node:
         condition: service_started
-
-  lavad-int:
-    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-latest}
-    entrypoint: ["sh"]
-    tty: true
-    volumes:
-      - lava_data:/lava
-      - ./config/post-node-init.sh:/lava/config/post-node-init.sh
-      - ../cookbook/specs/:/lava/cookbook/specs/
-      - ../cookbook/plans/:/lava/cookbook/plans/
-    networks:
-      - lava_network
-
-  # consumer:
-  #   image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-main}
-  #   networks:
-  #     - lava_network
-  #   ports:
-  #     - "3334:3334"
-  #     - "3335:3335"
-  #     - "3336:3336"
-  #   volumes:
-  #     - ../config/consumer_examples/lava_example.yml:/lava/config/lava_example.yml:ro
-  #     - lava_data:/lava
-  #   command:
-  #     [
-  #       "rpcconsumer",
-  #       "lava_example.yml",
-  #       "--chain-id",
-  #       "lava",
-  #       "--from",
-  #       "user1",
-  #       "--geolocation",
-  #       "2",
-  #       "--log_level",
-  #       "trace",
-  #       "--allow-insecure-provider-dialing",
-  #       "--keyring-backend",
-  #       "test",
-  #       "--node",
-  #       "tcp://lava-node:26657",
-  #     ]
-  #   depends_on:
-  #     - lava-node
-  #   restart: always
-
-  # provider:
-  #   image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-main}
-  #   networks:
-  #     - lava_network
-  #   volumes:
-  #     - ./config/provider.yml:/lava/config/provider.yml:ro
-  #     - lava_data:/lava
-  #   command:
-  #     [
-  #       "rpcprovider",
-  #       "provider.yml",
-  #       "--chain-id",
-  #       "lava",
-  #       "--from",
-  #       "servicer1",
-  #       "--log_level",
-  #       "debug",
-  #       "--geolocation",
-  #       "2",
-  #       "--keyring-backend",
-  #       "test",
-  #       "--node",
-  #       "tcp://lava-node:26657",
-  #     ]
-  #   depends_on:
-  #     - lava-node
-  #   restart: always
 
 volumes:
   lava_data: 
