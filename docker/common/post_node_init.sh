@@ -3,11 +3,11 @@ set -e
 set -o pipefail
 
 latest_vote() {
-  lavad q gov proposals | grep -o 'id: "[0-9]*"' | cut -d'"' -f2 | tail -n 1
+  lavad q gov proposals --output json | jq -r '.proposals[-1].id'
 }
 
 operator_address() {
-    lavad q staking validators -o json | grep -o 'operator_address: ".*"'
+    lavad q staking validators -o json | jq -r '.validators[0].operator_address'
 }
 
 wait_next_block() {
@@ -29,14 +29,35 @@ wait_count_blocks() {
   done
 }
 
-vote() {
-  vote_id="$1"
-  echo "Voting yes on vote with id: $vote_id"
-  until lavad tx gov vote $vote_id yes -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE; do
-    echo "Failed to vote, exit-code: $?. Retrying..."
-    sleep 0.1
-  done
+check_votes_status() {
+  lavad q gov proposals --output json | jq -r '.proposals[] | select(.status == "PROPOSAL_STATUS_VOTING_PERIOD")' >  /dev/null 2>&1
 }
+
+vote() {
+  echo "Waiting for proposal to be active"
+  while true; do
+    s=$(check_votes_status)
+    echo "$s"
+    if [ -n s ]; then
+      echo "empty"
+    fi
+    echo "sleeping"
+    sleep 1
+  done
+  echo "Found proposals in voting period!"
+
+  lavad q gov proposals --output json | jq -r '.proposals[].status'
+
+
+  # lavad q gov proposals --output json | jq -r '.proposals[] | select(.status == "PROPOSAL_STATUS_VOTING_PERIOD") | .id' | while read -r proposal_id; do
+  #   lavad tx gov vote $proposal_id yes -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+  # done
+}
+
+echo "### Starting post node init ###"
+wget -O jq https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64
+chmod +x ./jq
+mv jq /usr/bin
 
 GASPRICE="0.000000001ulava"
 FROM="servicer1"
@@ -49,11 +70,7 @@ lavad tx gov submit-legacy-proposal spec-add \
   ./ibc.json,./tendermint.json,./cosmoswasm.json,./cosmossdk.json,./cosmossdk_45.json,./cosmossdk_full.json,./ethermint.json,./ethereum.json,./cosmoshub.json,./lava.json \
   --lava-dev-test -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 )
-specs_vote="$(latest_vote)"
-
-lavad q gov proposal "$specs_vote"
-
-vote "$specs_vote"
+vote
 
 # wait_count_blocks 4
 # lavad tx gov submit-legacy-proposal plans-add /lava/cookbook/plans/test_plans/default.json -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
@@ -72,3 +89,4 @@ vote "$specs_vote"
 # # PROVIDERSTAKE="500000000000ulava"
 # # PROVIDER_ADDRESS="provider:2220"
 # # lavad tx pairing stake-provider LAV1 $PROVIDERSTAKE "$NGINX_LISTENER,1" 1 $(operator_address) -y --delegate-commission 50 --delegate-limit $PROVIDERSTAKE --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+echo "### Post node init finished successfully ###"
