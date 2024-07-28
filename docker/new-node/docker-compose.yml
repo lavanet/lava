@@ -94,8 +94,8 @@ services:
     volumes:
       - lava_data:/lava
       - ../common/post_node_init.sh:/lava/config/post_node_init.sh
-      - ../cookbook/specs/:/lava/cookbook/specs/
-      - ../cookbook/plans/:/lava/cookbook/plans/
+      - ../../cookbook/specs/:/lava/cookbook/specs/
+      - ../../cookbook/plans/:/lava/cookbook/plans/
     networks:
       - lava_network
     depends_on:

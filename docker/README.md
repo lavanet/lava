@@ -38,7 +38,6 @@ In order to buid the Lava docker image follow these steps:
    docker buildx build -f cmd/lavad/Dockerfile .
    docker buildx build -f cmd/lavad/Dockerfile.Cosmovisor .
    docker buildx build -f cmd/lavap/Dockerfile .
-   docker buildx build -f cmd/lavavisor/Dockerfile .
    ```
 
 ## Running Lava containers with docker-compose
