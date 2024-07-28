@@ -158,7 +158,7 @@ func (k Keeper) GetStakeEntryCurrent(ctx sdk.Context, chainID string, provider s
 		return entry, true
 	}
 
-	// try to find the stake entry by the vault address. Need to loop because we set provider address in key
+	// try to find the stake entry by the vault address
 	return k.GetStakeEntryCurrentForChainIdByVault(ctx, chainID, provider)
 }
 
@@ -213,22 +213,19 @@ func (k Keeper) GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID str
 
 // GetStakeEntryCurrentForChainIdByVault gets all the current stake entry for a specific chain by vault address
 func (k Keeper) GetStakeEntryCurrentForChainIdByVault(ctx sdk.Context, chainID string, vault string) (val types.StakeEntry, found bool) {
-	rng := collections.NewPrefixedPairRange[string, string](chainID)
-	iter, err := k.stakeEntriesCurrent.Iterate(ctx, rng)
+	pk, err := k.stakeEntriesCurrent.Indexes.Index.MatchExact(ctx, collections.Join(chainID, vault))
 	if err != nil {
-		panic(err)
-	}
-	defer iter.Close()
-
-	for ; iter.Valid(); iter.Next() {
-		entry, err := iter.Value()
-		if err != nil {
-			panic(err)
-		}
-		if entry.Vault == vault {
-			return entry, true
-		}
+		return types.StakeEntry{}, false
 	}
 
-	return types.StakeEntry{}, false
+	entry, err := k.stakeEntriesCurrent.Get(ctx, pk)
+	if err != nil {
+		utils.LavaFormatError("GetStakeEntryCurrentForChainIdByVault: Get with primary key failed", err,
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("vault", vault),
+		)
+		return types.StakeEntry{}, false
+	}
+
+	return entry, true
 }

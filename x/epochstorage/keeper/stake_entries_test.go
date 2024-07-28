@@ -95,6 +95,7 @@ func createNStakeEntriesCurrent(keeper *keeper.Keeper, ctx sdk.Context, n int) [
 		items[i] = types.StakeEntry{
 			Stake:   sdk.NewCoin("token", math.NewInt(int64(i))),
 			Address: strconv.Itoa(i),
+			Vault:   strconv.Itoa(i),
 			Chain:   strconv.Itoa(i),
 		}
 		keeper.SetStakeEntryCurrent(ctx, items[i])

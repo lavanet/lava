@@ -53,9 +53,6 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		)
 	}
 
-	// index might have changed in the unbond
-	k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, existingEntry.Address)
-
 	details := map[string]string{
 		"address":     existingEntry.GetAddress(),
 		"chainID":     existingEntry.GetChain(),

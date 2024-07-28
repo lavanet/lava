@@ -1,6 +1,7 @@
 package types
 
 import (
+	"fmt"
 	"strings"
 
 	regmath "math"
@@ -8,12 +9,14 @@ import (
 	"cosmossdk.io/collections"
 	"cosmossdk.io/collections/indexes"
 	"cosmossdk.io/math"
+	"github.com/lavanet/lava/utils"
 )
 
 var (
 	StakeEntriesPrefix                = collections.NewPrefix([]byte("StakeEntries/"))
 	StakeEntriesCurrentPrefix         = collections.NewPrefix([]byte("StakeEntriesCurrent/"))
 	EpochChainIdProviderIndexesPrefix = collections.NewPrefix([]byte("EpochChainIdProviderIndexes/"))
+	ChainIdVaultIndexesPrefix         = collections.NewPrefix([]byte("ChainIdVaultIndexes/"))
 )
 
 // EpochChainIdProviderIndexes defines a secondary unique index for the keeper's stakeEntries indexed map
@@ -35,6 +38,37 @@ func NewEpochChainIdProviderIndexes(sb *collections.SchemaBuilder) EpochChainIdP
 				collections.PairKeyCodec(collections.Uint64Key, collections.StringKey)),
 			func(pk collections.Triple[uint64, string, collections.Pair[uint64, string]], _ StakeEntry) (collections.Triple[uint64, string, string], error) {
 				return collections.Join3(pk.K1(), pk.K2(), pk.K3().K2()), nil
+			},
+		),
+	}
+}
+
+// ChainIdVaultIndexes defines a secondary unique index for the keeper's stakeEntriesCurrent indexed map
+// Normally, a current stake entry can be accessed with the primary key: [chainID, address]
+// The new set of indexes, ChainIdVaultIndexes, allows accessing the stake entries with [chainID, vault]
+type ChainIdVaultIndexes struct {
+	Index *indexes.Unique[collections.Pair[string, string], collections.Pair[string, string], StakeEntry]
+}
+
+func (c ChainIdVaultIndexes) IndexesList() []collections.Index[collections.Pair[string, string], StakeEntry] {
+	return []collections.Index[collections.Pair[string, string], StakeEntry]{c.Index}
+}
+
+func NewChainIdVaultIndexes(sb *collections.SchemaBuilder) ChainIdVaultIndexes {
+	return ChainIdVaultIndexes{
+		Index: indexes.NewUnique(sb, ChainIdVaultIndexesPrefix, "stake_entry_current_by_chain_vault",
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+			func(pk collections.Pair[string, string], entry StakeEntry) (collections.Pair[string, string], error) {
+				if entry.Vault == "" {
+					return collections.Pair[string, string]{},
+						utils.LavaFormatError("NewChainIdVaultIndexes: cannot create new ChainIdVault index",
+							fmt.Errorf("empty vault address"),
+							utils.LogAttr("provider", entry.Address),
+							utils.LogAttr("chain_id", entry.Chain),
+						)
+				}
+				return collections.Join(pk.K1(), entry.Vault), nil
 			},
 		),
 	}
