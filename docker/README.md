@@ -1,22 +1,44 @@
-# How to use the lava docker images
+# Lava docker support
 
-## Building lava docker images
+Lava Network offers Docker support to simplify deployment and management of its nodes and services. Key features include:
+* **Containerized Environment**: Run Lava components in isolated containers for improved consistency and portability.
+* **Easy Setup**: Quickly deploy Lava nodes using pre-configured Docker images.
+* **Scalability**: Easily scale your Lava infrastructure by spinning up additional containers as needed.
+* **Resource Efficiency**: Optimize resource usage by running multiple Lava services on a single host.
+* **Cross-platform Compatibility**: Deploy Lava nodes consistently across different operating systems and environments.
+
+## Different Lava configuration setups
+
+The compose files are ordered in sub-folders and can be simply run with:
+```
+docker compose -f <compose-file> up -d
+```
+
+Details about the different configurations:
+
+|Name            |Description
+|----------------|-------------------------------
+|`state-sync`      | Setup Lava node via state sync from other node
+
+
+## Building Lava docker images
+
+In order to buid the Lava docker image follow these steps:
 
 1. Download the lava sources:
 
-  ```
-  git clone https://github.com/lavanet/lava.git
-  ```
+   ```
+   git clone https://github.com/lavanet/lava.git
+   ```
 
-2. Build the lava docker image locally
+2. Build the appropriate Lava docker image locally
 
-  ```
-  # to build from the current checked-out code:
-  LAVA_BINARY=all make docker-build
-
-  # to build a specific lava version
-  LAVA_BUILD_OPTIONS="release" LAVA_VERSION=0.4.3 make docker-build
-  ```
+   ```
+   docker buildx build -f cmd/lavad/Dockerfile .
+   docker buildx build -f cmd/lavad/Dockerfile.Cosmovisor .
+   docker buildx build -f cmd/lavap/Dockerfile .
+   docker buildx build -f cmd/lavavisor/Dockerfile .
+   ```
 
   The result would be a docker image names `lava` tagged with the version.
   For example the output of `docker images` after the above:

@@ -1,7 +1,7 @@
 services:
   lava-node-init:
     # Update with the most recent supported version of lavad
-    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-latest}
     build:
       context: ..
       dockerfile: cmd/lavad/Dockerfile
@@ -75,7 +75,7 @@ services:
 
   lava-node:
     # Update with the most recent supported version of lavad
-    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-latest}
     container_name: lava-node
     command: ["start", "--pruning=nothing"]
     ports:
@@ -102,7 +102,7 @@ services:
         condition: service_completed_successfully
 
   post-lava-node-init:
-    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-main}
+    image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-latest}
     entrypoint: ["sh"]
     command: ["/lava/config/post_node_init.sh"]
     volumes:
@@ -127,7 +127,7 @@ services:
     restart: always
 
   consumer:
-    image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-main}
+    image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-latest}
     networks:
       - lava_network
     ports:
@@ -160,7 +160,7 @@ services:
     restart: always
 
   provider:
-    image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-main}
+    image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-latest}
     networks:
       - lava_network
     volumes:
