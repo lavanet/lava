@@ -26,31 +26,33 @@ func (lt *LatencyTracker) AddLatency(latency time.Duration) {
 }
 
 type ConsumerMetricsManager struct {
-	totalCURequestedMetric                *prometheus.CounterVec
-	totalRelaysRequestedMetric            *prometheus.CounterVec
-	totalErroredMetric                    *prometheus.CounterVec
-	totalNodeErroredMetric                *prometheus.CounterVec
-	totalRelaysSentToProvidersMetric      *prometheus.CounterVec
-	totalRelaysSentByNewBatchTickerMetric *prometheus.CounterVec
-	blockMetric                           *prometheus.GaugeVec
-	latencyMetric                         *prometheus.GaugeVec
-	qosMetric                             *prometheus.GaugeVec
-	qosExcellenceMetric                   *prometheus.GaugeVec
-	LatestBlockMetric                     *prometheus.GaugeVec
-	LatestProviderRelay                   *prometheus.GaugeVec
-	virtualEpochMetric                    *prometheus.GaugeVec
-	apiMethodCalls                        *prometheus.GaugeVec
-	endpointsHealthChecksOkMetric         prometheus.Gauge
-	endpointsHealthChecksOk               uint64
-	lock                                  sync.Mutex
-	protocolVersionMetric                 *prometheus.GaugeVec
-	providerRelays                        map[string]uint64
-	addMethodsApiGauge                    bool
-	averageLatencyPerChain                map[string]*LatencyTracker // key == chain Id + api interface
-	averageLatencyMetric                  *prometheus.GaugeVec
-	relayProcessingLatencyBeforeProvider  *prometheus.GaugeVec
-	relayProcessingLatencyAfterProvider   *prometheus.GaugeVec
-	averageProcessingLatency              map[string]*LatencyTracker
+	totalCURequestedMetric                      *prometheus.CounterVec
+	totalRelaysRequestedMetric                  *prometheus.CounterVec
+	totalErroredMetric                          *prometheus.CounterVec
+	totalNodeErroredMetric                      *prometheus.CounterVec
+	totalNodeErroredRecoveredSuccessfullyMetric *prometheus.CounterVec
+	totalNodeErroredRecoveryAttemptsMetric      *prometheus.CounterVec
+	totalRelaysSentToProvidersMetric            *prometheus.CounterVec
+	totalRelaysSentByNewBatchTickerMetric       *prometheus.CounterVec
+	blockMetric                                 *prometheus.GaugeVec
+	latencyMetric                               *prometheus.GaugeVec
+	qosMetric                                   *prometheus.GaugeVec
+	qosExcellenceMetric                         *prometheus.GaugeVec
+	LatestBlockMetric                           *prometheus.GaugeVec
+	LatestProviderRelay                         *prometheus.GaugeVec
+	virtualEpochMetric                          *prometheus.GaugeVec
+	apiMethodCalls                              *prometheus.GaugeVec
+	endpointsHealthChecksOkMetric               prometheus.Gauge
+	endpointsHealthChecksOk                     uint64
+	lock                                        sync.Mutex
+	protocolVersionMetric                       *prometheus.GaugeVec
+	providerRelays                              map[string]uint64
+	addMethodsApiGauge                          bool
+	averageLatencyPerChain                      map[string]*LatencyTracker // key == chain Id + api interface
+	averageLatencyMetric                        *prometheus.GaugeVec
+	relayProcessingLatencyBeforeProvider        *prometheus.GaugeVec
+	relayProcessingLatencyAfterProvider         *prometheus.GaugeVec
+	averageProcessingLatency                    map[string]*LatencyTracker
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -63,6 +65,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		utils.LavaFormatWarning("prometheus endpoint inactive, option is disabled", nil)
 		return nil
 	}
+
 	totalCURequestedMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_cu_requested",
 		Help: "The total number of CUs requested by the consumer over time.",
@@ -73,10 +76,12 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name: "lava_consumer_total_relays_serviced",
 		Help: "The total number of relays serviced by the consumer over time.",
 	}, []string{"spec", "apiInterface"})
+
 	totalRelaysSentByNewBatchTickerMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_relays_sent_by_batch_ticker",
 		Help: "The total number of relays sent by the batch ticker",
 	}, []string{"spec", "apiInterface"})
+
 	// Create a new GaugeVec metric to represent the TotalErrored over time.
 	totalErroredMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_errored",
@@ -107,18 +112,22 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name: "lava_consumer_latest_provider_block",
 		Help: "The latest block reported by provider",
 	}, []string{"spec", "provider_address", "apiInterface"})
+
 	latestProviderRelay := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_latest_provider_relay_time",
 		Help: "The latest time we sent a relay to provider",
 	}, []string{"spec", "provider_address", "apiInterface"})
+
 	virtualEpochMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "virtual_epoch",
 		Help: "The current virtual epoch measured",
 	}, []string{"spec"})
+
 	endpointsHealthChecksOkMetric := prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "lava_consumer_overall_health",
 		Help: "At least one endpoint is healthy",
 	})
+
 	apiSpecificsMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_api_specifics",
 		Help: "api usage specifics",
@@ -129,6 +138,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name: "lava_consumer_protocol_version",
 		Help: "The current running lavap version for the process. major := version / 1000000, minor := (version / 1000) % 1000, patch := version % 1000",
 	}, []string{"version"})
+
 	averageLatencyMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_average_latency_in_milliseconds",
 		Help: "average latency per chain id per api interface",
@@ -138,19 +148,32 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name: "lava_consumer_total_relays_sent_to_providers",
 		Help: "The total number of relays sent to providers",
 	}, []string{"spec", "apiInterface"})
+
 	totalNodeErroredMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_node_errors_received_from_providers",
 		Help: "The total number of relays sent to providers and returned a node error",
+	}, []string{"spec", "apiInterface"})
+
+	totalNodeErroredRecoveredSuccessfullyMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_node_errors_recovered_successfully",
+		Help: "The total number of node errors that managed to recover using a retry",
+	}, []string{"spec", "apiInterface", "attempt"})
+
+	totalNodeErroredRecoveryAttemptsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_node_errors_recovery_attempts",
+		Help: "The total number of retries sent due to retry mechanism",
 	}, []string{"spec", "apiInterface"})
 
 	relayProcessingLatencyBeforeProvider := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_relay_processing_latency_before_provider_in_micro_seconds",
 		Help: "average latency of processing a successful relay before it is sent to the provider in µs (10^6)",
 	}, []string{"spec", "apiInterface"})
+
 	relayProcessingLatencyAfterProvider := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_relay_processing_latency_after_provider_in_micro_seconds",
 		Help: "average latency of processing a successful relay after it is received from the provider in µs (10^6)",
 	}, []string{"spec", "apiInterface"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -169,34 +192,38 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(averageLatencyMetric)
 	prometheus.MustRegister(totalRelaysSentToProvidersMetric)
 	prometheus.MustRegister(totalNodeErroredMetric)
+	prometheus.MustRegister(totalNodeErroredRecoveredSuccessfullyMetric)
+	prometheus.MustRegister(totalNodeErroredRecoveryAttemptsMetric)
 	prometheus.MustRegister(relayProcessingLatencyBeforeProvider)
 	prometheus.MustRegister(relayProcessingLatencyAfterProvider)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
-		totalCURequestedMetric:                totalCURequestedMetric,
-		totalRelaysRequestedMetric:            totalRelaysRequestedMetric,
-		totalErroredMetric:                    totalErroredMetric,
-		blockMetric:                           blockMetric,
-		latencyMetric:                         latencyMetric,
-		qosMetric:                             qosMetric,
-		qosExcellenceMetric:                   qosExcellenceMetric,
-		LatestBlockMetric:                     latestBlockMetric,
-		LatestProviderRelay:                   latestProviderRelay,
-		providerRelays:                        map[string]uint64{},
-		averageLatencyPerChain:                map[string]*LatencyTracker{},
-		virtualEpochMetric:                    virtualEpochMetric,
-		endpointsHealthChecksOkMetric:         endpointsHealthChecksOkMetric,
-		endpointsHealthChecksOk:               1,
-		protocolVersionMetric:                 protocolVersionMetric,
-		averageLatencyMetric:                  averageLatencyMetric,
-		totalRelaysSentByNewBatchTickerMetric: totalRelaysSentByNewBatchTickerMetric,
-		apiMethodCalls:                        apiSpecificsMetric,
-		addMethodsApiGauge:                    options.AddMethodsApiGauge,
-		totalNodeErroredMetric:                totalNodeErroredMetric,
-		totalRelaysSentToProvidersMetric:      totalRelaysSentToProvidersMetric,
-		relayProcessingLatencyBeforeProvider:  relayProcessingLatencyBeforeProvider,
-		relayProcessingLatencyAfterProvider:   relayProcessingLatencyAfterProvider,
-		averageProcessingLatency:              map[string]*LatencyTracker{},
+		totalCURequestedMetric:                      totalCURequestedMetric,
+		totalRelaysRequestedMetric:                  totalRelaysRequestedMetric,
+		totalErroredMetric:                          totalErroredMetric,
+		blockMetric:                                 blockMetric,
+		latencyMetric:                               latencyMetric,
+		qosMetric:                                   qosMetric,
+		qosExcellenceMetric:                         qosExcellenceMetric,
+		LatestBlockMetric:                           latestBlockMetric,
+		LatestProviderRelay:                         latestProviderRelay,
+		providerRelays:                              map[string]uint64{},
+		averageLatencyPerChain:                      map[string]*LatencyTracker{},
+		virtualEpochMetric:                          virtualEpochMetric,
+		endpointsHealthChecksOkMetric:               endpointsHealthChecksOkMetric,
+		endpointsHealthChecksOk:                     1,
+		protocolVersionMetric:                       protocolVersionMetric,
+		averageLatencyMetric:                        averageLatencyMetric,
+		totalRelaysSentByNewBatchTickerMetric:       totalRelaysSentByNewBatchTickerMetric,
+		apiMethodCalls:                              apiSpecificsMetric,
+		addMethodsApiGauge:                          options.AddMethodsApiGauge,
+		totalNodeErroredMetric:                      totalNodeErroredMetric,
+		totalNodeErroredRecoveredSuccessfullyMetric: totalNodeErroredRecoveredSuccessfullyMetric,
+		totalNodeErroredRecoveryAttemptsMetric:      totalNodeErroredRecoveryAttemptsMetric,
+		totalRelaysSentToProvidersMetric:            totalRelaysSentToProvidersMetric,
+		relayProcessingLatencyBeforeProvider:        relayProcessingLatencyBeforeProvider,
+		relayProcessingLatencyAfterProvider:         relayProcessingLatencyAfterProvider,
+		averageProcessingLatency:                    map[string]*LatencyTracker{},
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -237,6 +264,20 @@ func (pme *ConsumerMetricsManager) SetRelayNodeErrorMetric(chainId string, apiIn
 		return
 	}
 	pme.totalNodeErroredMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	if pme == nil {
+		return
+	}
+	pme.totalNodeErroredRecoveredSuccessfullyMetric.WithLabelValues(chainId, apiInterface, attempt).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalNodeErroredRecoveryAttemptsMetric.WithLabelValues(chainId, apiInterface).Inc()
 }
 
 func (pme *ConsumerMetricsManager) SetBlock(block int64) {

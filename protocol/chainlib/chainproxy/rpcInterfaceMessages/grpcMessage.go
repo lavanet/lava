@@ -35,7 +35,7 @@ type GrpcMessage struct {
 }
 
 // get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
-func (gm GrpcMessage) GetInputMsgInfoHash() ([]byte, error) {
+func (gm *GrpcMessage) GetInputMsgInfoHash() ([]byte, error) {
 	headers := gm.GetHeaders()
 	headersByteArray, err := json.Marshal(headers)
 	if err != nil {

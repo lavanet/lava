@@ -20,6 +20,12 @@ type relayProcessorMetricsMock struct{}
 
 func (romm *relayProcessorMetricsMock) SetRelayNodeErrorMetric(chainId string, apiInterface string) {}
 
+func (romm *relayProcessorMetricsMock) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+}
+
+func (romm *relayProcessorMetricsMock) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
+}
+
 func (romm *relayProcessorMetricsMock) GetChainIdAndApiInterface() (string, string) {
 	return "testId", "testInterface"
 }
@@ -202,7 +208,32 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
 		require.True(t, requiredNodeResults)
 
-		// 3nd relay, same inputs, this time a successful relay, should remove the hash from the map
+		// 3nd relay, different inputs
+		// check hash map flow:
+		chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/18", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		relayProcessor = NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance)
+		usedProviders = relayProcessor.GetUsedProviders()
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse = usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+		require.Zero(t, usedProviders.CurrentlyUsed())
+		require.Zero(t, usedProviders.SessionsLatestBatch())
+		consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+		usedProviders.AddUsed(consumerSessionsMap, nil)
+		// check first reply, this time we have hash in map, so we don't retry node errors.
+		go sendNodeError(relayProcessor, "lava@test", time.Millisecond*5)
+		err = relayProcessor.WaitForResults(context.Background())
+		require.NoError(t, err)
+		resultsOk = relayProcessor.HasResults()
+		require.True(t, resultsOk)
+		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+		// check our hashing mechanism works with different inputs
+		require.False(t, requiredNodeResults)
+
+		// 4th relay, same inputs, this time a successful relay, should remove the hash from the map
 		chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
 		relayProcessor = NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance)

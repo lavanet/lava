@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -31,6 +32,8 @@ const (
 
 type MetricsInterface interface {
 	SetRelayNodeErrorMetric(chainId string, apiInterface string)
+	SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
+	SetNodeErrorAttemptMetric(chainId string, apiInterface string)
 }
 
 type chainIdAndApiInterfaceGetter interface {
@@ -297,7 +300,7 @@ func (rp *RelayProcessor) HasResults() bool {
 func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	hash, err := rp.chainMessage.GetInputMsgInfoHash()
 	hashString := ""
-	if err != nil {
+	if err == nil {
 		hashString = string(hash)
 	}
 	return hashString, err
@@ -317,10 +320,19 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 			// Use a routine to run it in parallel
 			go rp.relayRetriesManager.RemoveHashFromMap(hash)
 		}
+		// Check if we need to add node errors retry metrics
+		if rp.selection == Quorum {
+			// If nodeErrors length is larger than 0, our retry mechanism was activated. we add our metrics now.
+			nodeErrors := len(rp.nodeResponseErrors.relayErrors)
+			if nodeErrors > 0 {
+				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
+				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
+			}
+		}
 		return true
 	}
 	if rp.selection == Quorum {
-		// we need a quorum of all node results
+		// We need a quorum of all node results
 		nodeErrors := len(rp.nodeResponseErrors.relayErrors)
 		if nodeErrors+resultsCount >= rp.requiredSuccesses {
 			// Retry on node error flow:
@@ -336,6 +348,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 							if !rp.relayRetriesManager.CheckHashInMap(hash) {
 								// If we didn't find the hash in the hash map we can retry
 								utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
+								go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
 								return false
 							}
 							utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))

@@ -95,6 +95,14 @@ func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(chainId string, apiInterfa
 	rpccl.consumerMetricsManager.SetRelayNodeErrorMetric(chainId, apiInterface)
 }
 
+func (rpccl *RPCConsumerLogs) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	rpccl.consumerMetricsManager.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, attempt)
+}
+
+func (rpccl *RPCConsumerLogs) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetNodeErrorAttemptMetric(chainId, apiInterface)
+}
+
 func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
 }

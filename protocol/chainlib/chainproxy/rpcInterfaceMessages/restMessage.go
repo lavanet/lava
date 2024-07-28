@@ -20,7 +20,7 @@ type RestMessage struct {
 }
 
 // get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
-func (rm RestMessage) GetInputMsgInfoHash() ([]byte, error) {
+func (rm *RestMessage) GetInputMsgInfoHash() ([]byte, error) {
 	headers := rm.GetHeaders()
 	headersByteArray, err := json.Marshal(headers)
 	if err != nil {

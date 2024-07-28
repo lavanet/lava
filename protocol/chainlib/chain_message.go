@@ -34,7 +34,7 @@ type baseChainMessageContainer struct {
 }
 
 func (pm *baseChainMessageContainer) GetInputMsgInfoHash() ([]byte, error) {
-	if pm.inputHashCache != nil {
+	if pm.inputHashCache != nil && len(pm.inputHashCache) > 0 {
 		// Get the cached value
 		return pm.inputHashCache, nil
 	}
