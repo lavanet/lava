@@ -11,11 +11,30 @@ import (
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 )
 
 type TendermintrpcMessage struct {
 	JsonrpcMessage
 	Path string
+}
+
+// get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
+func (tm *TendermintrpcMessage) GetInputMsgInfoHash() ([]byte, error) {
+	headers := tm.GetHeaders()
+	headersByteArray, err := json.Marshal(headers)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling headers on jsonRpc message", err, utils.LogAttr("headers", headers))
+		return []byte{}, err
+	}
+	methodByteArray := []byte(tm.Method + tm.Path)
+
+	paramsByteArray, err := json.Marshal(tm.Params)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling params on jsonRpc message", err, utils.LogAttr("headers", tm.Params))
+		return []byte{}, err
+	}
+	return sigs.HashMsg(append(append(methodByteArray, paramsByteArray...), headersByteArray...)), nil
 }
 
 func (cp TendermintrpcMessage) GetParams() interface{} {

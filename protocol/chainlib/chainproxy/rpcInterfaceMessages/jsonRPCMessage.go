@@ -26,7 +26,7 @@ type JsonrpcMessage struct {
 }
 
 // get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
-func (jm JsonrpcMessage) GetInputMsgInfoHash() ([]byte, error) {
+func (jm *JsonrpcMessage) GetInputMsgInfoHash() ([]byte, error) {
 	headers := jm.GetHeaders()
 	headersByteArray, err := json.Marshal(headers)
 	if err != nil {
