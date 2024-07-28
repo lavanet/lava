@@ -28,7 +28,47 @@ const (
 	BestResult                  // get the best result, even if it means waiting
 )
 
-func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage, consumerConsistency *ConsumerConsistency, dappID string, consumerIp string, debugRelay bool) *RelayProcessor {
+type MetricsInterface interface {
+	SetRelayNodeErrorMetric(chainId string, apiInterface string)
+}
+
+type chainIdAndApiInterfaceGetter interface {
+	GetChainIdAndApiInterface() (string, string)
+}
+
+type RelayProcessor struct {
+	usedProviders                *lavasession.UsedProviders
+	responses                    chan *relayResponse
+	requiredSuccesses            int
+	nodeResponseErrors           RelayErrors
+	protocolResponseErrors       RelayErrors
+	successResults               []common.RelayResult
+	lock                         sync.RWMutex
+	chainMessage                 chainlib.ChainMessage
+	guid                         uint64
+	selection                    Selection
+	consumerConsistency          *ConsumerConsistency
+	dappID                       string
+	consumerIp                   string
+	skipDataReliability          bool
+	debugRelay                   bool
+	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
+	metricsInf                   MetricsInterface
+	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
+}
+
+func NewRelayProcessor(
+	ctx context.Context,
+	usedProviders *lavasession.UsedProviders,
+	requiredSuccesses int,
+	chainMessage chainlib.ChainMessage,
+	consumerConsistency *ConsumerConsistency,
+	dappID string,
+	consumerIp string,
+	debugRelay bool,
+	metricsInf MetricsInterface,
+	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
+) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
 	if chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
@@ -38,38 +78,21 @@ func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProvi
 		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", requiredSuccesses))
 	}
 	return &RelayProcessor{
-		usedProviders:          usedProviders,
-		requiredSuccesses:      requiredSuccesses,
-		responses:              make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
-		nodeResponseErrors:     RelayErrors{relayErrors: []RelayError{}},
-		protocolResponseErrors: RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true},
-		chainMessage:           chainMessage,
-		guid:                   guid,
-		selection:              selection,
-		consumerConsistency:    consumerConsistency,
-		dappID:                 dappID,
-		consumerIp:             consumerIp,
-		debugRelay:             debugRelay,
+		usedProviders:                usedProviders,
+		requiredSuccesses:            requiredSuccesses,
+		responses:                    make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
+		nodeResponseErrors:           RelayErrors{relayErrors: []RelayError{}},
+		protocolResponseErrors:       RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true},
+		chainMessage:                 chainMessage,
+		guid:                         guid,
+		selection:                    selection,
+		consumerConsistency:          consumerConsistency,
+		dappID:                       dappID,
+		consumerIp:                   consumerIp,
+		debugRelay:                   debugRelay,
+		metricsInf:                   metricsInf,
+		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
 	}
-}
-
-type RelayProcessor struct {
-	usedProviders           *lavasession.UsedProviders
-	responses               chan *relayResponse
-	requiredSuccesses       int
-	nodeResponseErrors      RelayErrors
-	protocolResponseErrors  RelayErrors
-	successResults          []common.RelayResult
-	lock                    sync.RWMutex
-	chainMessage            chainlib.ChainMessage
-	guid                    uint64
-	selection               Selection
-	consumerConsistency     *ConsumerConsistency
-	dappID                  string
-	consumerIp              string
-	skipDataReliability     bool
-	debugRelay              bool
-	allowSessionDegradation uint32 // used in the scenario where extension was previously used.
 }
 
 // true if we never got an extension. (default value)
@@ -210,9 +233,13 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		// if we decide to wait and timeout happens we will take the majority of response messages
 		err := fmt.Errorf(errorMessage)
 		rp.nodeResponseErrors.relayErrors = append(rp.nodeResponseErrors.relayErrors, RelayError{err: err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
+		// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
+		if rp.selection != BestResult {
+			go rp.metricsInf.SetRelayNodeErrorMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
+			utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", err), utils.LogAttr("provider", response.relayResult.ProviderInfo), utils.LogAttr("Request", rp.chainMessage.GetApi().Name), utils.LogAttr("requested_block", reqBlock))
+		}
 		return
 	}
-
 	rp.successResults = append(rp.successResults, response.relayResult)
 }
 
