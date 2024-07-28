@@ -74,7 +74,7 @@ func NewChainIdVaultIndexes(sb *collections.SchemaBuilder) ChainIdVaultIndexes {
 	}
 }
 
-func StakeEntryKeyCurrent(chainID string, provider string) []byte {
+func ComplainedProvidersKey(chainID string, provider string) []byte {
 	return []byte(strings.Join([]string{chainID, provider}, " "))
 }
 

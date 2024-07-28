@@ -104,7 +104,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 			continue
 		}
 
-		key := string(epochstoragetypes.StakeEntryKeyCurrent(pec.Provider, pec.ChainId))
+		key := string(epochstoragetypes.ComplainedProvidersKey(pec.Provider, pec.ChainId))
 
 		if _, ok := complainedProviders[key]; !ok {
 			complainedProviders[key] = map[uint64]types.ProviderEpochComplainerCu{pec.Epoch: pec.ProviderEpochComplainerCu}

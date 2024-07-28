@@ -35,13 +35,9 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 
 // StoreCurrentStakeEntries store the current stake entries in the epoch-prefixed stake entries store
 func (k Keeper) StoreCurrentStakeEntries(ctx sdk.Context, epoch uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesCurrentPrefix)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		var currentEntry types.StakeEntry
-		k.cdc.MustUnmarshal(iterator.Value(), &currentEntry)
-		k.SetStakeEntry(ctx, epoch, currentEntry)
+	entries := k.GetAllStakeEntriesCurrent(ctx)
+	for _, entry := range entries {
+		k.SetStakeEntry(ctx, epoch, entry)
 	}
 }
 
