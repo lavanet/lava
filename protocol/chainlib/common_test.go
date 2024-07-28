@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http/httptest"
 	"testing"
@@ -310,6 +311,10 @@ func TestParsedMessage_GetRPCMessage(t *testing.T) {
 
 type mockRPCInput struct {
 	chainproxy.BaseMessage
+}
+
+func (m *mockRPCInput) GetInputMsgInfoHash() ([]byte, error) {
+	return nil, fmt.Errorf("test")
 }
 
 func (m *mockRPCInput) GetParams() interface{} {

@@ -15,6 +15,7 @@ type updatableRPCInput interface {
 	rpcInterfaceMessages.GenericMessage
 	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
+	GetInputMsgInfoHash() ([]byte, error)
 }
 
 type baseChainMessageContainer struct {
@@ -26,9 +27,23 @@ type baseChainMessageContainer struct {
 	extensions             []*spectypes.Extension
 	timeoutOverride        time.Duration
 	forceCacheRefresh      bool
+	inputHashCache         []byte
 	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
 	// and validate it doesn't contain a node error
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+}
+
+func (pm *baseChainMessageContainer) GetInputMsgInfoHash() ([]byte, error) {
+	if pm.inputHashCache != nil {
+		// Get the cached value
+		return pm.inputHashCache, nil
+	}
+	hash, err := pm.msg.GetInputMsgInfoHash()
+	if err == nil {
+		// Now we have the hash cached so we call it only once.
+		pm.inputHashCache = hash
+	}
+	return hash, err
 }
 
 // not necessary for base chain message.
