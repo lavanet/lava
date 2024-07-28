@@ -24,8 +24,10 @@ func (romm *relayProcessorMetricsMock) GetChainIdAndApiInterface() (string, stri
 	return "testId", "testInterface"
 }
 
-var relayRetriesManagerInstance = NewRelayRetriesManager()
-var relayProcessorMetrics = &relayProcessorMetricsMock{}
+var (
+	relayRetriesManagerInstance = NewRelayRetriesManager()
+	relayProcessorMetrics       = &relayProcessorMetricsMock{}
+)
 
 func sendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)

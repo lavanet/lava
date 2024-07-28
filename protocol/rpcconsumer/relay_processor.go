@@ -323,7 +323,6 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 		// we need a quorum of all node results
 		nodeErrors := len(rp.nodeResponseErrors.relayErrors)
 		if nodeErrors+resultsCount >= rp.requiredSuccesses {
-
 			// Retry on node error flow:
 			if !rp.disableRelayRetry { // In case we want to try again if we have a node error.
 				if resultsCount == 0 { // Only if we have 0 successful relays and we have only node errors.
