@@ -390,7 +390,8 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths 
 					re := regexp.MustCompile(`{[^}]+}`)
 					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
 					processedName = regexp.QuoteMeta(processedName)
-					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex/", `[^\/\s]+/`)
+					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]*`)
 					serverApis[ApiKey{
 						Name:           processedName,
 						ConnectionType: collectionKey.ConnectionType,
