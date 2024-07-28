@@ -199,6 +199,43 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.True(t, resultsOk)
 		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
 		require.True(t, requiredNodeResults)
+
+		// 3nd relay, same inputs, this time a successful relay, should remove the hash from the map
+		chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		relayProcessor = NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance)
+		usedProviders = relayProcessor.GetUsedProviders()
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse = usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+		require.Zero(t, usedProviders.CurrentlyUsed())
+		require.Zero(t, usedProviders.SessionsLatestBatch())
+		consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+		usedProviders.AddUsed(consumerSessionsMap, nil)
+		// check first reply, this time we have hash in map, so we don't retry node errors.
+		hash, err := relayProcessor.getInputMsgInfoHashString()
+		require.NoError(t, err)
+		require.True(t, relayProcessor.relayRetriesManager.CheckHashInMap(hash))
+		go sendSuccessResp(relayProcessor, "lava@test", time.Millisecond*5)
+		err = relayProcessor.WaitForResults(context.Background())
+		require.NoError(t, err)
+		resultsOk = relayProcessor.HasResults()
+		require.True(t, resultsOk)
+		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+		require.True(t, requiredNodeResults)
+
+		// A way for us to break early from sleep, just waiting up to 5 seconds and breaking as soon as the value we expect is there.
+		// After 5 seconds if its not there test will fail
+		for i := 0; i < 100; i++ {
+			if !relayProcessor.relayRetriesManager.CheckHashInMap(hash) {
+				break
+			}
+			time.Sleep(time.Millisecond * 50) // sleep up to 5 seconds
+		}
+		// after the sleep we should not have the hash anymore in the map as it was removed by a successful relay.
+		require.False(t, relayProcessor.relayRetriesManager.CheckHashInMap(hash))
 	})
 }
 
