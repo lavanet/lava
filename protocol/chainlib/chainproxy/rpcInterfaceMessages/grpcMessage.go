@@ -17,6 +17,7 @@ import (
 	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/utils/sigs"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
@@ -31,6 +32,18 @@ type GrpcMessage struct {
 	Registry *dyncodec.Registry
 	Codec    *dyncodec.Codec
 	chainproxy.BaseMessage
+}
+
+// get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
+func (gm GrpcMessage) GetInputMsgInfoHash() ([]byte, error) {
+	headers := gm.GetHeaders()
+	headersByteArray, err := json.Marshal(headers)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling headers on jsonRpc message", err, utils.LogAttr("headers", headers))
+		return []byte{}, err
+	}
+	pathByteArray := []byte(gm.Path)
+	return sigs.HashMsg(append(append(pathByteArray, gm.Msg...), headersByteArray...)), nil
 }
 
 func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
