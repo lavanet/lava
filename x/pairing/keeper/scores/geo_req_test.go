@@ -16,7 +16,7 @@ func TestCalcGeoCost(t *testing.T) {
 		reqGeo           planstypes.Geolocation
 		providerGeos     []planstypes.Geolocation
 		expectedGeo      planstypes.Geolocation
-		expectedCostUint uint64
+		expectedCostUint int64
 	}{
 		{
 			name:             "happy flow",
@@ -59,7 +59,7 @@ func TestGeoReqScore(t *testing.T) {
 		name            string
 		reqGeo          int32
 		providerGeo     int32
-		expectedLatency uint64
+		expectedLatency int64
 	}{
 		{
 			name:            "happy flow - provider supports geo",

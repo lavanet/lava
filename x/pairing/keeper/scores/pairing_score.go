@@ -14,8 +14,8 @@ const (
 // PairingScore holds a provider's score with respect to a set of requirements (ScoreReq), indexed by their unique name.
 type PairingScore struct {
 	Provider            *epochstoragetypes.StakeEntry
-	Score               math.Uint
-	ScoreComponents     map[string]math.Uint
+	Score               math.LegacyDec
+	ScoreComponents     map[string]math.LegacyDec
 	SkipForSelection    bool
 	SlotFiltering       map[int]struct{} // slot indexes here are skipped
 	QosExcellenceReport pairingtypes.QualityOfServiceReport
@@ -43,8 +43,8 @@ func (ps *PairingScore) InvalidIndexes(possibleIndexes []int) []int {
 func NewPairingScore(stakeEntry *epochstoragetypes.StakeEntry, qos pairingtypes.QualityOfServiceReport) *PairingScore {
 	score := PairingScore{
 		Provider:            stakeEntry,
-		Score:               math.OneUint(),
-		ScoreComponents:     map[string]math.Uint{},
+		Score:               math.LegacyOneDec(),
+		ScoreComponents:     map[string]math.LegacyDec{},
 		SkipForSelection:    false,
 		QosExcellenceReport: qos,
 	}

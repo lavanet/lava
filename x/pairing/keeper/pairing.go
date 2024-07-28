@@ -86,8 +86,8 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 
 // CalculatePairingChance calculates the chance of a provider to be picked in the pairing process for the first pairing slot
 func (k Keeper) CalculatePairingChance(ctx sdk.Context, provider string, chainID string, policy *planstypes.Policy, cluster string) (cosmosmath.LegacyDec, error) {
-	totalScore := cosmosmath.ZeroUint()
-	providerScore := cosmosmath.ZeroUint()
+	totalScore := cosmosmath.LegacyZeroDec()
+	providerScore := cosmosmath.LegacyZeroDec()
 
 	_, _, scores, err := k.getPairingForClient(ctx, chainID, uint64(ctx.BlockHeight()), policy, cluster, "dummy", true)
 	if err != nil {
