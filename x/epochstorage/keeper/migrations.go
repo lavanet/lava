@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode"
 
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -52,11 +53,11 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 		var stakeStorage types.StakeStorage
 		k.cdc.MustUnmarshal(iterator.Value(), &stakeStorage)
 
-		for _, entry := range stakeStorage.StakeEntries {
+		for i, entry := range stakeStorage.StakeEntries {
 			if isCurrentStakeStorage {
 				k.SetStakeEntryCurrent(ctx, entry)
 			} else {
-				k.SetStakeEntry(ctx, epoch, entry)
+				k.SetStakeEntryForMigrator(ctx, epoch, entry, math.NewInt(int64(i)))
 			}
 		}
 
@@ -68,6 +69,13 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 	}
 
 	return nil
+}
+
+// Set stake entry
+func (k Keeper) SetStakeEntryForMigrator(ctx sdk.Context, epoch uint64, stakeEntry types.StakeEntry, idx math.Int) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesPrefix)
+	b := k.cdc.MustMarshal(&stakeEntry)
+	store.Set(types.StakeEntryKey(epoch, stakeEntry.Chain, idx, stakeEntry.Address), b)
 }
 
 // the legacy StakeStorage store used keys that were built like this:
