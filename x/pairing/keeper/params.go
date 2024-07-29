@@ -3,6 +3,7 @@ package keeper
 import (
 	"strconv"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/pairing/types"
@@ -14,6 +15,10 @@ func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 		k.EpochBlocksOverlap(ctx),
 		k.QoSWeight(ctx),
 		k.RecommendedEpochNumToCollectPayment(ctx),
+		k.ReputationVarianceStabilizationPeriod(ctx),
+		k.ReputationLatencyOverSyncFactor(ctx),
+		k.ReputationHalfLifeFactor(ctx),
+		k.ReputationRelayFailureCost(ctx),
 	)
 }
 
@@ -53,6 +58,26 @@ func (k Keeper) RecommendedEpochNumToCollectPayment(ctx sdk.Context) (res uint64
 	return
 }
 
-func (k Keeper) SetRecommendedEpochNumToCollectPayment(ctx sdk.Context, val uint64) {
-	k.paramstore.Set(ctx, types.KeyRecommendedEpochNumToCollectPayment, val)
+// ReputationVarianceStabilizationPeriod returns the ReputationVarianceStabilizationPeriod param
+func (k Keeper) ReputationVarianceStabilizationPeriod(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeyReputationVarianceStabilizationPeriod, &res)
+	return
+}
+
+// ReputationLatencyOverSyncFactor returns the ReputationLatencyOverSyncFactor param
+func (k Keeper) ReputationLatencyOverSyncFactor(ctx sdk.Context) (res math.LegacyDec) {
+	k.paramstore.Get(ctx, types.KeyReputationLatencyOverSyncFactor, &res)
+	return
+}
+
+// ReputationHalfLifeFactor returns the ReputationHalfLifeFactor param
+func (k Keeper) ReputationHalfLifeFactor(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeyReputationHalfLifeFactor, &res)
+	return
+}
+
+// ReputationRelayFailureCost returns the ReputationRelayFailureCost param
+func (k Keeper) ReputationRelayFailureCost(ctx sdk.Context) (res uint64) {
+	k.paramstore.Get(ctx, types.KeyReputationRelayFailureCost, &res)
+	return
 }
