@@ -787,46 +787,43 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		reply.Metadata, _, ignoredMetadata = rpcps.chainParser.HandleHeaders(reply.Metadata, chainMsg.GetApiCollection(), spectypes.Header_pass_reply)
 		// TODO: use overwriteReqBlock on the reply metadata to set the correct latest block
 		if cache.CacheActive() && (requestedBlockHash != nil || finalized) {
-			// copy request and reply as they change later on and we call SetEntry in a routine.
-			requestedBlock := request.RelayData.RequestBlock                                                       // get requested block before removing it from the data
-			hashKey, _, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID) // get the hash (this changes the data)
-			copyReply := &pairingtypes.RelayReply{}
-			copyReplyErr := protocopy.DeepCopyProtoObject(reply, copyReply)
-
-			// get status code to decide if its a node error
-			statusCode := replyWrapper.StatusCode
-			go func() {
-				if hashErr != nil || copyReplyErr != nil {
-					utils.LavaFormatError("Failed copying relay private data on TryRelay", nil, utils.LogAttr("copyReplyErr", copyReplyErr), utils.LogAttr("hashErr", hashErr))
-					return
-				}
-				new_ctx := context.Background()
-				new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
-				defer cancel()
-				if err != nil {
-					utils.LavaFormatError("TryRelay failed calculating hash for cach.SetEntry", err)
-					return
-				}
-				// in case the error is a node error we don't want to cache the response for a long period of time
-				// so users wont get errors if the error was temporary
-				isNodeError, _ := chainMsg.CheckResponseError(copyReply.Data, statusCode)
-
-				err = cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
-					RequestHash:      hashKey,
-					RequestedBlock:   requestedBlock,
-					BlockHash:        requestedBlockHash,
-					ChainId:          rpcps.rpcProviderEndpoint.ChainID,
-					Response:         copyReply,
-					Finalized:        finalized,
-					OptionalMetadata: ignoredMetadata,
-					AverageBlockTime: int64(averageBlockTime),
-					SeenBlock:        latestBlock,
-					IsNodeError:      isNodeError,
-				})
-				if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
-					utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
-				}
-			}()
+			isNodeError, _ := chainMsg.CheckResponseError(reply.Data, replyWrapper.StatusCode)
+			// in case the error is a node error we don't want to cache
+			if !isNodeError {
+				// copy request and reply as they change later on and we call SetEntry in a routine.
+				requestedBlock := request.RelayData.RequestBlock                                                       // get requested block before removing it from the data
+				hashKey, _, hashErr := chainlib.HashCacheRequest(request.RelayData, rpcps.rpcProviderEndpoint.ChainID) // get the hash (this changes the data)
+				copyReply := &pairingtypes.RelayReply{}
+				copyReplyErr := protocopy.DeepCopyProtoObject(reply, copyReply)
+				go func() {
+					if hashErr != nil || copyReplyErr != nil {
+						utils.LavaFormatError("Failed copying relay private data on TryRelay", nil, utils.LogAttr("copyReplyErr", copyReplyErr), utils.LogAttr("hashErr", hashErr))
+						return
+					}
+					new_ctx := context.Background()
+					new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
+					defer cancel()
+					if err != nil {
+						utils.LavaFormatError("TryRelay failed calculating hash for cach.SetEntry", err)
+						return
+					}
+					err = cache.SetEntry(new_ctx, &pairingtypes.RelayCacheSet{
+						RequestHash:      hashKey,
+						RequestedBlock:   requestedBlock,
+						BlockHash:        requestedBlockHash,
+						ChainId:          rpcps.rpcProviderEndpoint.ChainID,
+						Response:         copyReply,
+						Finalized:        finalized,
+						OptionalMetadata: ignoredMetadata,
+						AverageBlockTime: int64(averageBlockTime),
+						SeenBlock:        latestBlock,
+						IsNodeError:      isNodeError,
+					})
+					if err != nil && request.RelaySession.Epoch != spectypes.NOT_APPLICABLE {
+						utils.LavaFormatWarning("error updating cache with new entry", err, utils.Attribute{Key: "GUID", Value: ctx})
+					}
+				}()
+			}
 		}
 	}
 

@@ -224,7 +224,10 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 			if !found {
 				return utils.LavaFormatError("probeProvider failed fetching unique identifier from context when it's set", nil)
 			}
-			if endpointAndConnection.chosenEndpointConnection.Client == nil {
+			if endpointAndConnection == nil ||
+				endpointAndConnection.chosenEndpointConnection == nil ||
+				endpointAndConnection.chosenEndpointConnection.Client == nil {
+				// returned nil client in endpoint, this should never happen, but checking just in case.
 				consumerSessionsWithProvider.Lock.Lock()
 				defer consumerSessionsWithProvider.Lock.Unlock()
 				return utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
@@ -509,12 +512,6 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				}
 			} else {
 				// consumer session is locked and valid, we need to set the relayNumber and the relay cu. before returning.
-
-				// add metric to currently open sessions metric
-				info := csm.RPCEndpoint()
-				apiInterface := info.ApiInterface
-				chainId := info.ChainID
-				go csm.consumerMetricsManager.AddOpenSessionMetric(chainId, apiInterface, providerAddress)
 				// Successfully created/got a consumerSession.
 
 				utils.LavaFormatTrace("Consumer get session",
@@ -1034,16 +1031,10 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 		qosEx := *consumerSession.QoSInfo.LastExcellenceQoSReport
 		lastQosExcellence = &qosEx
 	}
-	blockedSession := consumerSession.BlockListed
 	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
 
 	go func() {
 		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
-		// in case we blocked the session add it to our block sessions metric
-		if blockedSession {
-			csm.consumerMetricsManager.AddNumberOfBlockedSessionMetric(chainId, apiInterface, publicProviderAddress)
-		}
-		csm.consumerMetricsManager.DecrementOpenSessionMetric(chainId, apiInterface, publicProviderAddress)
 	}()
 }
 
