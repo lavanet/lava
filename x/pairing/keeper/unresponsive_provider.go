@@ -79,11 +79,13 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 
 	// check all supported providers from all geolocations prior to making decisions
 	existingProviders := map[string]uint64{}
+	currentStakeEntriesMap := map[string]epochstoragetypes.StakeEntry{}
 
 	// count providers per geolocation
 	for _, entry := range currentStakeEntries {
 		if !entry.IsFrozen() {
 			existingProviders[entry.GetChain()]++
+			currentStakeEntriesMap[string(epochstoragetypes.StakeEntryKeyCurrent(entry.Chain, entry.Address))] = entry
 		}
 	}
 
@@ -93,8 +95,9 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 	pecsDetailed := k.GetAllProviderEpochComplainerCuStore(ctx)
 	complainedProviders := map[string]map[uint64]types.ProviderEpochComplainerCu{} // map[provider chainID]map[epoch]ProviderEpochComplainerCu
 	for _, pec := range pecsDetailed {
-		entry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, pec.ChainId, pec.Provider)
-		if found {
+		key := string(epochstoragetypes.StakeEntryKeyCurrent(pec.ChainId, pec.Provider))
+		entry, ok := currentStakeEntriesMap[key]
+		if ok {
 			if minHistoryBlock < entry.StakeAppliedBlock && entry.Jails == 0 {
 				// this staked provider has too short history (either since staking
 				// or since it was last unfrozen) - do not consider for jailing
@@ -103,8 +106,6 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 		} else {
 			continue
 		}
-
-		key := string(epochstoragetypes.StakeEntryKeyCurrent(pec.Provider, pec.ChainId))
 
 		if _, ok := complainedProviders[key]; !ok {
 			complainedProviders[key] = map[uint64]types.ProviderEpochComplainerCu{pec.Epoch: pec.ProviderEpochComplainerCu}
@@ -124,8 +125,8 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 	// go over all the providers, count the complainers CU and punish providers
 	for _, key := range keys {
 		components := strings.Split(key, " ")
-		provider := components[0]
-		chainID := components[1]
+		chainID := components[0]
+		provider := components[1]
 		// update the CU count for this provider in providerCuCounterForUnreponsivenessMap
 		epochs, complaintCU, servicedCU, err := k.countCuForUnresponsiveness(ctx, provider, chainID, minPaymentBlock, epochsNumToCheckCUForUnresponsiveProvider, epochsNumToCheckCUForComplainers, complainedProviders[key])
 		if err != nil {
