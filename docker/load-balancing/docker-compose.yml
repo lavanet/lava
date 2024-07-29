@@ -2,29 +2,15 @@ services:
   lava-node-init:
     # Update with the most recent supported version of lavad
     image: ghcr.io/lavanet/lava/lavad:${LAVAD_VERSION:-latest}
-    build:
-      context: ..
-      dockerfile: cmd/lavad/Dockerfile
     environment:
       - CHAIN_ID=${CHAIN_ID:-lava}
       - KEYRING_BACKEND=${KEYRING_BACKEND:-test}
       - MONIKER=${MONIKER:-DOCKER_COMPOSE_MONIKER}
-    entrypoint: ["sh", "-c"]
-    command: >
-      "
-      [ ! -f /lava/.lava/config/genesis.json ] && lavad init validator --chain-id $$CHAIN_ID &&
-      lavad config chain-id $$CHAIN_ID && 
-      lavad config keyring-backend $$KEYRING_BACKEND && 
-      lavad config broadcast-mode sync &&
-      [ ! -f /lava/.lava/keyring-test/user1.info ] && lavad keys add user1 || echo user1 already exists &&
-      [ ! -f /lava/.lava/keyring-test/servicer1.info ] && lavad keys add servicer1 || echo servicer1 already exists &&
-      lavad add-genesis-account user1 50000000000000ulava --keyring-backend test || echo failed adding user1 as genesis account &&
-      lavad add-genesis-account servicer1 50000000000000ulava --keyring-backend test || echo failed servicer1 as genesis account &&
-      lavad gentx servicer1 10000000000000ulava --chain-id $$CHAIN_ID --keyring-backend test || echo failed writing signed gen tx for servicer1 &&
-      lavad collect-gentxs
-      "
+    entrypoint: ["sh"]
+    command: ["/lava/config/new_node_init.sh"]
     volumes:
       - lava_data:/lava
+      - ../common/new_node_init.sh:/lava/config/new_node_init.sh
     networks:
       - lava_network
     
@@ -114,16 +100,22 @@ services:
       - lava_network
     depends_on:
       lava-node:
-        condition: service_started
+        condition: service_healthy
 
   nginx:
     image: nginx:latest
+    networks:
+      - lava_network
     ports:
       - "8080:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./nginx/nginx.crt:/etc/nginx/ssl/nginx.crt:ro
       - ./nginx/nginx.key:/etc/nginx/ssl/nginx.key:ro
+    
+    depends_on:
+      - provider1
+      - provider2
     restart: always
 
   consumer:
@@ -135,12 +127,12 @@ services:
       - "3335:3335"
       - "3336:3336"
     volumes:
-      - ../../config/consumer_examples/lava_example.yml:/lava/config/lava_example.yml:ro
+      - ../common/consumer.yml:/lava/config/consumer.yml:ro
       - lava_data:/lava
     command:
       [
         "rpcconsumer",
-        "lava_example.yml",
+        "consumer.yml",
         "--chain-id",
         "lava",
         "--from",
@@ -159,10 +151,8 @@ services:
       - lava-node
     restart: always
 
-  provider:
+  provider1:
     image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-latest}
-    networks:
-      - lava_network
     volumes:
       - ../common/provider.yml:/lava/config/provider.yml:ro
       - lava_data:/lava
@@ -185,10 +175,40 @@ services:
         "--node",
         "tcp://lava-node:26657",
       ]
+    networks:
+      - lava_network
     depends_on:
       - lava-node
-    deploy:
-      replicas: 1
+    restart: always
+
+  provider2:
+    image: ghcr.io/lavanet/lava/lavap:${LAVAP_VERSION:-latest}
+    volumes:
+      - ../common/provider.yml:/lava/config/provider.yml:ro
+      - lava_data:/lava
+    command:
+      [
+        "rpcprovider",
+        "provider.yml",
+        "--chain-id",
+        "lava",
+        "--from",
+        "servicer1",
+        "--log_level",
+        "debug",
+        "--geolocation",
+        "2",
+        "--keyring-backend",
+        "test",
+        "--shard-id",
+        "2",
+        "--node",
+        "tcp://lava-node:26657",
+      ]
+    networks:
+      - lava_network
+    depends_on:
+      - lava-node
     restart: always
 
 volumes:

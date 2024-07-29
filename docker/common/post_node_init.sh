@@ -53,10 +53,18 @@ lavad tx gov submit-legacy-proposal spec-add \
   --lava-dev-test -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 )
 vote_yes_on_all_pending_proposals
+
 echo "Adding plan: DefaultPlan"
 lavad tx gov submit-legacy-proposal plans-add /lava/cookbook/plans/test_plans/default.json -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 vote_yes_on_all_pending_proposals
+
 echo "Buying plan: DefaultPlan for $FROM"
-lavad tx subscription buy DefaultPlan $(lavad keys show $FROM -a) --enable-auto-renewal -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy DefaultPlan $(lavad keys show $FROM -a) --enable-auto-renewal -y --from $FROM --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE 2> /dev/null
+
+sleep 1
+echo "Staking provider"
+PROVIDERSTAKE="500000000000ulava"
+PROVIDER_ADDRESS="nginx:80"
+lavad tx pairing stake-provider LAV1 $PROVIDERSTAKE "$PROVIDER_ADDRESS,1" 1 $(operator_address) -y --delegate-commission 50 --delegate-limit $PROVIDERSTAKE --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 echo "### Post node init finished successfully ###"
