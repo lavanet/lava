@@ -42,9 +42,6 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     /lava/cmd/lavad/main.go
 
 FROM ${RUNNER_IMAGE}
-RUN /bin/sh -c "wget -O jq https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64" && \
-    chmod +x ./jq && \
-    mv jq /usr/bin
 
 COPY --from=builder /lava/build/lavad /bin/lavad
 

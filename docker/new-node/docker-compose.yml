@@ -100,7 +100,7 @@ services:
       - lava_network
     depends_on:
       lava-node:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   lava_data: 

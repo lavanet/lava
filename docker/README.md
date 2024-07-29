@@ -16,11 +16,20 @@ The compose files are ordered in sub-folders and can be simply run with:
 docker compose -f <compose-file> up -d
 ```
 
-Details about the different configurations:
+## Running Lava containers with docker-compose
 
-|Name            |Description
-|----------------|-------------------------------
-|`state-sync`      | Setup Lava node via state sync from other node
+The best way to deploy the Lava echo-system is via docker-compose.
+
+*Requirments*:
+
+* Docker Compose v2
+
+To start using the compose files see the examples under the `docker/` directory:
+
+* `/state-sync` - running a node by [state-syncing](https://docs.tendermint.com/v0.34/tendermint-core/state-sync.html) with another.
+* `/from-snapshot` - running a node by downloading an exising snapshot and syncing.
+* `/new-node` - running a fresh node from scratch.
+* `/load-balancing` - running multiple providers load-balanced by Nginx proxy
 
 ## Building Lava docker images
 
@@ -39,18 +48,4 @@ In order to buid the Lava docker image follow these steps:
    docker buildx build -f cmd/lavad/Dockerfile.Cosmovisor .
    docker buildx build -f cmd/lavap/Dockerfile .
    ```
-
-## Running Lava containers with docker-compose
-
-The best way to deploy the Lava echo-system is via docker-compose.
-
-*Requirments*:
-
-* Docker Compose v2
-
-To start using the compose files see the examples under the `docker/` directory:
-
-* `/state-sync` - running a node by [state-syncing](https://docs.tendermint.com/v0.34/tendermint-core/state-sync.html) with another.
-* `/from-snapshot` - running a node by downloading an exising snapshot and syncing.
-* `/new-node` - running a fresh node from scratch.
-* `/load-balancing` - running multiple providers load-balanced by Nginx proxy
+   
