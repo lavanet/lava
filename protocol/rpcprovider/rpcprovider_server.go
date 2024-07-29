@@ -453,10 +453,9 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 					}
 
 					return
-				} else {
-					subscribedSuccessfully = true
 				}
 
+				subscribedSuccessfully = true
 				utils.LavaFormatTrace("Sending data to consumer",
 					utils.LogAttr("GUID", ctx),
 					utils.LogAttr("data", subscribeReply.Data),
