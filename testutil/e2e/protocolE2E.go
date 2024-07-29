@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	tmclient "github.com/cometbft/cometbft/rpc/client/http"
@@ -28,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/gorilla/websocket"
 	commonconsts "github.com/lavanet/lava/testutil/common/consts"
 	"github.com/lavanet/lava/testutil/e2e/sdk"
 	"github.com/lavanet/lava/utils"
@@ -804,9 +806,22 @@ func (lt *lavaTest) saveLogs() {
 			panic(err)
 		}
 		writer := bufio.NewWriter(file)
-		writer.Write(logBuffer.Bytes())
-		writer.Flush()
-		utils.LavaFormatDebug("writing file", []utils.Attribute{{Key: "fileName", Value: fileName}, {Key: "lines", Value: len(logBuffer.Bytes())}}...)
+		var bytesWritten int
+		bytesWritten, err = writer.Write(logBuffer.Bytes())
+		if err != nil {
+			utils.LavaFormatError("Error writing to file", err)
+		} else {
+			err = writer.Flush()
+			if err != nil {
+				utils.LavaFormatError("Error flushing writer", err)
+			} else {
+				utils.LavaFormatDebug("success writing to file",
+					utils.LogAttr("fileName", fileName),
+					utils.LogAttr("bytesWritten", bytesWritten),
+					utils.LogAttr("lines", len(logBuffer.Bytes())),
+				)
+			}
+		}
 		file.Close()
 
 		lines := strings.Split(logBuffer.String(), "\n")
@@ -1192,6 +1207,168 @@ func (lt *lavaTest) getKeyAddress(key string) string {
 	return string(output)
 }
 
+func (lt *lavaTest) runWebSocketSubscriptionTest(tendermintConsumerWebSocketURL string) {
+	utils.LavaFormatInfo("Starting WebSocket Subscription Test")
+
+	subscriptionsCount := 5
+
+	createWebSocketClient := func() *websocket.Conn {
+		websocketDialer := websocket.Dialer{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+		}
+
+		header := make(http.Header)
+
+		webSocketClient, resp, err := websocketDialer.DialContext(context.Background(), tendermintConsumerWebSocketURL, header)
+		if err != nil {
+			panic(err)
+		}
+		utils.LavaFormatDebug("Dialed WebSocket Successful",
+			utils.LogAttr("url", tendermintConsumerWebSocketURL),
+			utils.LogAttr("response", resp),
+		)
+
+		return webSocketClient
+	}
+
+	const (
+		SUBSCRIBE   = "subscribe"
+		UNSUBSCRIBE = "unsubscribe"
+	)
+
+	createSubscriptionJsonRpcMessage := func(method string) map[string]interface{} {
+		return map[string]interface{}{
+			"jsonrpc": "2.0",
+			"method":  method,
+			"id":      1,
+			"params": map[string]interface{}{
+				"query": "tm.event = 'NewBlock'",
+			},
+		}
+	}
+
+	subscribeToNewBlockEvents := func(webSocketClient *websocket.Conn) {
+		msgData := createSubscriptionJsonRpcMessage(SUBSCRIBE)
+		err := webSocketClient.WriteJSON(msgData)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	webSocketShouldListen := true
+	defer func() {
+		webSocketShouldListen = false
+	}()
+
+	type subscriptionContainer struct {
+		newBlockMessageCount int32
+		webSocketClient      *websocket.Conn
+	}
+
+	incrementNewBlockMessageCount := func(sc *subscriptionContainer) {
+		atomic.AddInt32(&sc.newBlockMessageCount, 1)
+	}
+
+	readNewBlockMessageCount := func(subscriptionContainer *subscriptionContainer) int32 {
+		return atomic.LoadInt32(&subscriptionContainer.newBlockMessageCount)
+	}
+
+	startWebSocketReader := func(webSocketName string, webSocketClient *websocket.Conn, subscriptionContainer *subscriptionContainer) {
+		for {
+			_, message, err := webSocketClient.ReadMessage()
+			if err != nil {
+				if webSocketShouldListen {
+					panic(err)
+				}
+
+				// Once the test is done, we can safely ignore the error
+				return
+			}
+
+			if strings.Contains(string(message), "NewBlock") {
+				incrementNewBlockMessageCount(subscriptionContainer)
+			}
+		}
+	}
+
+	startSubscriptions := func(count int) []*subscriptionContainer {
+		subscriptionContainers := []*subscriptionContainer{}
+		// Start a websocket clients and connect them to tendermint consumer endpoint
+		for i := 0; i < count; i++ {
+			utils.LavaFormatInfo("Setting up web socket client " + strconv.Itoa(i+1))
+			webSocketClient := createWebSocketClient()
+
+			subscriptionContainer := &subscriptionContainer{
+				webSocketClient:      webSocketClient,
+				newBlockMessageCount: 0,
+			}
+
+			// Start a reader for each client to count the number of NewBlock messages received
+			utils.LavaFormatInfo("Start listening for NewBlock messages on web socket " + strconv.Itoa(i+1))
+
+			go startWebSocketReader("webSocketClient"+strconv.Itoa(i+1), webSocketClient, subscriptionContainer)
+
+			// Subscribe to new block events
+			utils.LavaFormatInfo("Subscribing to NewBlock events on web socket " + strconv.Itoa(i+1))
+
+			subscribeToNewBlockEvents(webSocketClient)
+			subscriptionContainers = append(subscriptionContainers, subscriptionContainer)
+		}
+
+		return subscriptionContainers
+	}
+
+	subscriptions := startSubscriptions(subscriptionsCount)
+
+	// Wait for 10 blocks
+	utils.LavaFormatInfo("Sleeping for 12 seconds to receive blocks")
+	time.Sleep(12 * time.Second)
+
+	utils.LavaFormatDebug("Looping through subscription containers",
+		utils.LogAttr("subscriptionContainers", subscriptions),
+	)
+	// Check the all web socket clients received at least 10 blocks
+	for i := 0; i < subscriptionsCount; i++ {
+		utils.LavaFormatInfo("Making sure both clients received at least 10 blocks")
+		if subscriptions[i] == nil {
+			panic("subscriptionContainers[" + strconv.Itoa(i+1) + "] is nil")
+		}
+		newBlockMessageCount := readNewBlockMessageCount(subscriptions[i])
+		if newBlockMessageCount < 10 {
+			panic(fmt.Sprintf("subscription should have received at least 10 blocks, got: %d", newBlockMessageCount))
+		}
+	}
+
+	// Unsubscribe one client
+	utils.LavaFormatInfo("Unsubscribing from NewBlock events on web socket 1")
+	msgData := createSubscriptionJsonRpcMessage(UNSUBSCRIBE)
+	err := subscriptions[0].webSocketClient.WriteJSON(msgData)
+	if err != nil {
+		panic(err)
+	}
+
+	// Make sure that the unsubscribed client stops receiving blocks
+	webSocketClient1NewBlockMsgCountAfterUnsubscribe := readNewBlockMessageCount(subscriptions[0])
+
+	utils.LavaFormatInfo("Sleeping for 7 seconds to make sure unsubscribed client stops receiving blocks")
+	time.Sleep(7 * time.Second)
+
+	if readNewBlockMessageCount(subscriptions[0]) != webSocketClient1NewBlockMsgCountAfterUnsubscribe {
+		panic("unsubscribed client should not receive new blocks")
+	}
+
+	webSocketShouldListen = false
+
+	// Disconnect all websocket clients
+	for i := 0; i < subscriptionsCount; i++ {
+		utils.LavaFormatInfo("Closing web socket " + strconv.Itoa(i+1))
+		subscriptions[i].webSocketClient.Close()
+	}
+
+	utils.LavaFormatInfo("WebSocket Subscription Test OK")
+}
+
 func calculateProviderCU(pairingClient pairingTypes.QueryClient) (map[string]uint64, error) {
 	providerCU := make(map[string]uint64)
 	res, err := pairingClient.ProvidersEpochCu(context.Background(), &pairingTypes.QueryProvidersEpochCuRequest{})
@@ -1347,6 +1524,8 @@ func runProtocolE2E(timeout time.Duration) {
 	utils.LavaFormatInfo("GRPC TEST OK")
 
 	lt.checkResponse("http://127.0.0.1:3340", "http://127.0.0.1:3341", "127.0.0.1:3342")
+
+	lt.runWebSocketSubscriptionTest("ws://127.0.0.1:3340/websocket")
 
 	lt.checkQoS()
 

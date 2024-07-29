@@ -495,7 +495,9 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 		},
 		conn: map[string]*chainproxy.Connector{},
 	}
-	verifyRPCEndpoint(rpcProviderEndpoint.NodeUrls)
+
+	validateEndpoints(rpcProviderEndpoint.NodeUrls, spectypes.APIInterfaceJsonRPC)
+
 	internalPaths := map[string]struct{}{}
 	jsonRPCChainParser, ok := chainParser.(*JsonRPCChainParser)
 	if ok {
@@ -711,9 +713,13 @@ func (cp *JrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return reply, "", nil, nil
 		}
 
-		subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
-		if err != nil {
-			return nil, "", nil, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
+		if common.IsQuoted(string(replyMsg.Result)) {
+			subscriptionID, err = strconv.Unquote(string(replyMsg.Result))
+			if err != nil {
+				return nil, "", nil, utils.LavaFormatError("Subscription failed", err, utils.Attribute{Key: "GUID", Value: ctx})
+			}
+		} else {
+			subscriptionID = string(replyMsg.Result)
 		}
 	}
 
