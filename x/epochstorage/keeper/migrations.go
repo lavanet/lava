@@ -260,5 +260,5 @@ func (m Migrator) isCurrentStakeStorageKey(ctx sdk.Context, key string) bool {
 
 func (m Migrator) SetEpochHashForMigrator(ctx sdk.Context, epoch uint64, hash []byte) {
 	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	store.Set(utils.Serialize(epoch), hash)
+	store.Set(utils.SerializeBigEndian(epoch), hash)
 }

@@ -99,12 +99,12 @@ func (k Keeper) RemoveOldEpochData(ctx sdk.Context) {
 
 func (k Keeper) SetEpochHash(ctx sdk.Context) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	store.Set(utils.Serialize(uint64(ctx.BlockHeight())), ctx.HeaderHash())
+	store.Set(utils.SerializeBigEndian(uint64(ctx.BlockHeight())), ctx.HeaderHash())
 }
 
 func (k Keeper) GetEpochHash(ctx sdk.Context, epoch uint64) []byte {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	b := store.Get(utils.Serialize(epoch))
+	b := store.Get(utils.SerializeBigEndian(epoch))
 	if b == nil {
 		utils.LavaFormatError("GetEpochHash: epoch hash not found", fmt.Errorf("not found"),
 			utils.LogAttr("epoch", epoch),
@@ -117,5 +117,5 @@ func (k Keeper) GetEpochHash(ctx sdk.Context, epoch uint64) []byte {
 
 func (k Keeper) RemoveEpochHash(ctx sdk.Context, epoch uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	store.Delete(utils.Serialize(epoch))
+	store.Delete(utils.SerializeBigEndian(epoch))
 }

@@ -39,7 +39,7 @@ func (k Keeper) SetStakeEntry(ctx sdk.Context, epoch uint64, stakeEntry types.St
 // RemoveAllStakeEntriesForEpoch removes all the stake entries of a specific epoch
 func (k Keeper) RemoveAllStakeEntriesForEpoch(ctx sdk.Context, epoch uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesPrefix)
-	iterator := sdk.KVStorePrefixIterator(store, utils.Serialize(epoch))
+	iterator := sdk.KVStorePrefixIterator(store, utils.SerializeBigEndian(epoch))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		store.Delete(iterator.Key())
@@ -85,7 +85,7 @@ func (k Keeper) GetAllStakeEntriesForGenesis(ctx sdk.Context) []types.StakeStora
 // GetAllStakeEntriesForEpoch gets all the stake entries of a specific epoch
 func (k Keeper) GetAllStakeEntriesForEpoch(ctx sdk.Context, epoch uint64) []types.StakeEntry {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesPrefix)
-	iterator := sdk.KVStorePrefixIterator(store, utils.Serialize(epoch))
+	iterator := sdk.KVStorePrefixIterator(store, utils.SerializeBigEndian(epoch))
 	defer iterator.Close()
 
 	var entries []types.StakeEntry
