@@ -57,7 +57,8 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 			if isCurrentStakeStorage {
 				k.SetStakeEntryCurrent(ctx, entry)
 			} else {
-				k.SetStakeEntryForMigrator(ctx, epoch, entry, math.NewInt(int64(i)))
+				// we make sure that the stake entries order is the same as the previous version's order
+				k.SetStakeEntryForMigrator(ctx, epoch, entry, math.NewInt(int64(len(stakeStorage.StakeEntries)-i)))
 			}
 		}
 
