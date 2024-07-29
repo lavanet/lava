@@ -257,6 +257,7 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 }
 
 // TODO::PRT-1114 This needs to be fixed asap. currently commented out as it prevents pushing unrelated code
+// Also on typescript sdk
 // func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 // 	providerOptimizer := setupProviderOptimizer(1)
 // 	providersCount := 2

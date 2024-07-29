@@ -48,7 +48,7 @@ def parse_endpoints_from_grpcurl(grpc_url: str) -> dict[str, list[str]]:
     )
 
     rpc_pattern = re.compile(r"rpc (\w+) \(")
-    rest_pattern = re.compile(r'option \(.*?\) = {.*?get: "(.*?)"', re.DOTALL)
+    rest_pattern = re.compile(r'option\s*\(\s*.*?\s*\)\s*=\s*{\s*get:\s*"(.*?)"\s*}', re.DOTALL)
 
     # Finding all services that start with 'lavanet'
     for service_match in grpc_pattern.finditer(content):
