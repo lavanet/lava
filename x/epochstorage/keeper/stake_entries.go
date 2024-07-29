@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"sort"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
@@ -72,8 +73,16 @@ func (k Keeper) GetAllStakeEntriesForGenesis(ctx sdk.Context) []types.StakeStora
 	}
 
 	var storages []types.StakeStorage
-	for _, storage := range storagesMap {
-		storages = append(storages, storage)
+	var keys []uint64
+	for key := range storagesMap {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
+	for _, key := range keys {
+		storages = append(storages, storagesMap[key])
 	}
 
 	currentEntries := k.GetAllStakeEntriesCurrent(ctx)
