@@ -17,11 +17,17 @@ jobs:
   release:
     name: 'release'
     runs-on: ubuntu-latest
+    container:
+      image: goreleaser/goreleaser-cross:v1.22
 
     permissions:
       contents: write
       
     steps:
+    - name: Mark github workspace as safe
+      run: |
+        sh -c "git config --global --add safe.directory $PWD"
+
     - name: Checkout code
       uses: actions/checkout@v4
       with:
@@ -43,7 +49,7 @@ jobs:
       id: releaser
       uses: goreleaser/goreleaser-action@v5
       with:
-        version: latest
+        version: '~> v2'
         args: release --clean --timeout 90m
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -85,7 +91,28 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           file: cmd/${{ matrix.binary }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
           build-args: |
             GIT_VERSION="${{ steps.meta.outputs.version }}"
+            GIT_COMMIT="${{ github.sha }}"
+          push: true
+      - name: Extract metadata (cosmovisor)
+        if: ${{ matrix.binary == 'lavad' }}
+        id: meta-cosmovisor
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cosmovisor
+          tags: |
+            type=raw,value=latest,enable=true
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        if: ${{ matrix.binary == 'lavad' }}
+        with:
+          tags: ${{ steps.meta-cosmovisor.outputs.tags }}
+          labels: ${{ steps.meta-cosmovisor.outputs.labels }}
+          file: cmd/${{ matrix.binary }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            GIT_VERSION="${{ steps.meta-cosmovisor.outputs.version }}"
             GIT_COMMIT="${{ github.sha }}"
           push: true

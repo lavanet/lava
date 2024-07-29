@@ -1,5 +1,8 @@
 {
   "devDependencies": {
-    "@types/node": "^20.11.30"
+    "@types/node": "^20.14.9"
+  },
+  "dependencies": {
+    "@cosmjs/stargate": "^0.32.4"
   }
 }

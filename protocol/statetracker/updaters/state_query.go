@@ -161,12 +161,34 @@ func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, l
 }
 
 func (csq *ConsumerStateQuery) GetMaxCUForUser(ctx context.Context, chainID string, epoch uint64) (maxCu uint64, err error) {
-	address := csq.clientCtx.FromAddress.String()
-	UserEntryRes, err := csq.PairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: epoch})
-	if err != nil {
-		return 0, utils.LavaFormatError("failed querying StakeEntry for consumer", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "block", Value: epoch})
+	var userEntryRes *pairingtypes.QueryUserEntryResponse = nil
+
+	key := csq.entryKey(chainID, epoch)
+	cachedInterface, found := csq.ResponsesCache.Get(key)
+
+	if found && cachedInterface != nil {
+		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryUserEntryResponse); ok {
+			userEntryRes = cachedResp
+		} else {
+			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryUserEntryResponse"}, utils.Attribute{Key: "type", Value: fmt.Sprintf("%T", cachedInterface)})
+		}
 	}
-	return UserEntryRes.GetMaxCU(), nil
+
+	if userEntryRes == nil {
+		address := csq.clientCtx.FromAddress.String()
+		userEntryRes, err = csq.PairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: epoch})
+		if err != nil {
+			return 0, utils.LavaFormatError("failed querying StakeEntry for consumer", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "block", Value: epoch})
+		}
+
+		csq.ResponsesCache.SetWithTTL(key, userEntryRes, 1, DefaultTimeToLiveExpiration)
+	}
+
+	return userEntryRes.GetMaxCU(), nil
+}
+
+func (csq *ConsumerStateQuery) entryKey(chainID string, epoch uint64) string {
+	return MaxCuResponseKey + chainID + strconv.FormatUint(epoch, 10)
 }
 
 type EpochStateQuery struct {
@@ -301,7 +323,12 @@ func (psq *ProviderStateQuery) VerifyPairing(ctx context.Context, consumerAddres
 		psq.ResponsesCache.SetWithTTL(VerifyPairingRespKey+key, verifyResponse, 1, DefaultTimeToLiveExpiration)
 	}
 	if !verifyResponse.Valid {
-		return false, 0, "", utils.LavaFormatError("invalid self pairing with consumer", nil, utils.Attribute{Key: "provider", Value: providerAddress}, utils.Attribute{Key: "consumer address", Value: consumerAddress}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "from_cache", Value: extractedResultFromCache})
+		return false, 0, "", utils.LavaFormatError("invalid self pairing with consumer", nil,
+			utils.LogAttr("provider", providerAddress),
+			utils.LogAttr("consumer_address", consumerAddress),
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("from_cache", extractedResultFromCache),
+		)
 	}
 	return verifyResponse.Valid, int64(verifyResponse.GetPairedProviders()), verifyResponse.ProjectId, nil
 }

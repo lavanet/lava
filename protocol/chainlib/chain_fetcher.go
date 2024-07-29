@@ -149,13 +149,20 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				return utils.LavaFormatWarning("[-] verify failed getting non-earliest block for chainMessage", fmt.Errorf("latestBlock is smaller than latestDistance"),
 					utils.LogAttr("path", path),
 					utils.LogAttr("latest_block", latestBlock),
-					utils.LogAttr("Latest_distance", verification.LatestDistance),
+					utils.LogAttr("latest_distance", verification.LatestDistance),
 				)
 			}
+		} else if verification.Value != "" {
+			expectedValue, err := strconv.ParseInt(verification.Value, 10, 64)
+			if err != nil {
+				return utils.LavaFormatError("failed converting expected value to number", err, utils.LogAttr("value", verification.Value))
+			}
+			data = []byte(fmt.Sprintf(parsing.FunctionTemplate, expectedValue))
 		} else {
-			return utils.LavaFormatWarning("[-] verification misconfiguration", fmt.Errorf("FUNCTION_TAG_GET_BLOCK_BY_NUM defined without LatestDistance or LatestBlock"),
+			return utils.LavaFormatWarning("[-] verification misconfiguration", fmt.Errorf("FUNCTION_TAG_GET_BLOCK_BY_NUM defined without LatestDistance or LatestBlock or a proper expected value"),
 				utils.LogAttr("latest_block", latestBlock),
-				utils.LogAttr("Latest_distance", verification.LatestDistance),
+				utils.LogAttr("latest_distance", verification.LatestDistance),
+				utils.LogAttr("expected_value", verification.Value),
 			)
 		}
 	}
@@ -222,7 +229,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		}
 	}
 	// some verifications only want the response to be valid, and don't care about the value
-	if verification.Value != "*" && verification.Value != "" {
+	if verification.Value != "*" && verification.Value != "" && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
 		if parsedResult != verification.Value {
 			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err, []utils.Attribute{
 				{Key: "chainId", Value: chainId},
@@ -362,7 +369,10 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	latestBlock := atomic.LoadInt64(&cf.latestBlock) // assuming FetchLatestBlockNum is called before this one it's always true
 	if latestBlock > 0 {
 		finalized := spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceToFinalization)
-		cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply.RelayReply, []byte(res), finalized)
+		isNodeError, _ := chainMessage.CheckResponseError(reply.RelayReply.Data, reply.StatusCode)
+		if !isNodeError { // skip cache populate on node errors, this is a protection but should never get here with node error as we parse the result prior.
+			cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply.RelayReply, []byte(res), finalized)
+		}
 	}
 	return res, nil
 }

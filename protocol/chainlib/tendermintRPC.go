@@ -398,6 +398,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		defer endTx()
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		ctx, cancel := context.WithCancel(context.Background())
 		guid := utils.GenerateUniqueIdentifier()
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
@@ -458,7 +459,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		}
 		response := string(reply.Data)
 		// Return json response
-		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+		return err
 	}
 
 	handlerGet := func(fiberCtx *fiber.Ctx) error {
@@ -476,6 +479,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 		ctx = utils.WithUniqueIdentifier(ctx, guid)
 		defer cancel() // incase there's a problem make sure to cancel the connection
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		metadataValues := fiberCtx.GetReqHeaders()
 		headers := convertToMetadataMap(metadataValues)
 		utils.LavaFormatDebug("urirpc in <<<",
@@ -524,7 +528,9 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			fiberCtx.Status(relayResult.StatusCode)
 		}
 		// Return json response
-		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+		return err
 	}
 
 	if apil.refererData != nil && apil.refererData.Marker != "" {

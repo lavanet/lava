@@ -4,7 +4,7 @@
 
 This document specifies the pairing module of Lava Protocol.
 
-The pairing module is responsible for handling providers staking, providers freezing, calulating the providers pairing list for consumers, punishing unresponsive providers and handling providers relay payment requests.
+The pairing module is responsible for handling providers staking, providers freezing, calculating the providers pairing list for consumers, punishing unresponsive providers and handling providers relay payment requests.
 
 The Pairing Engine is a sophisticated algorithmic mechanism designed to match consumers with the most appropriate service providers, considering a wide array of inputs and constraints. It upholds the network's principles of fairness, security, and quality of service, while ensuring each consumer's experience is personalized and in line with their specific requirements.
 

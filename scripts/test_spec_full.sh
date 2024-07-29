@@ -66,7 +66,7 @@ if [ "$dry" = false ]; then
     sleep 5
     wait_for_lava_node_to_start
 
-    GASPRICE="0.000000001ulava"
+    GASPRICE="0.00002ulava"
     # add all existing specs so inheritance works
     lavad tx gov submit-legacy-proposal spec-add ${__dir}/../cookbook/specs/ibc.json,${__dir}/../cookbook/specs/cosmoswasm.json,${__dir}/../cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,${__dir}/../cookbook/specs/cosmossdk_45.json,${__dir}/../cookbook/specs/cosmossdk_full.json,${__dir}/../cookbook/specs/ethermint.json,./cookbook/specs/ethereum.json,${__dir}/../cookbook/specs/cosmoshub.json,${__dir}/../cookbook/specs/lava.json,${__dir}/../cookbook/specs/osmosis.json,${__dir}/../cookbook/specs/fantom.json,${__dir}/../cookbook/specs/celo.json,${__dir}/../cookbook/specs/optimism.json,${__dir}/../cookbook/specs/arbitrum.json,${__dir}/../cookbook/specs/starknet.json,${__dir}/../cookbook/specs/aptos.json,${__dir}/../cookbook/specs/juno.json,${__dir}/../cookbook/specs/polygon.json,${__dir}/../cookbook/specs/evmos.json,${__dir}/../cookbook/specs/base.json,${__dir}/../cookbook/specs/canto.json,${__dir}/../cookbook/specs/sui.json,${__dir}/../cookbook/specs/solana.json,${__dir}/../cookbook/specs/bsc.json,${__dir}/../cookbook/specs/axelar.json,${__dir}/../cookbook/specs/avalanche.json,${__dir}/../cookbook/specs/fvm.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &
     wait_next_block
@@ -122,7 +122,7 @@ fi
 
 ## Handle Provider ##
 
-input_yaml="${__dir}/../config/provider_examples/test_spec_template.yml"
+input_yaml="${__dir}/../config/provider_examples/test_spec_template.yml" #if testing archive change to test_spec_template_archive.yml
 output_yaml="${LOGS_DIR}/provider.yml"
 
 line_numbers=()
@@ -135,7 +135,7 @@ copy_content() {
     local end_line="$2"
     local index="$3"
     local url="$4"
-    awk -v s="$start_line" -v e="$end_line" -v idx="$index" -v url="$url" 'NR >= s && NR <= e {sub("RELACE_THIS_URL", url, $0);sub("INDEX_RELACE_THIS", idx, $0);print}' "$input_yaml" >> "$output_yaml"
+    awk -v s="$start_line" -v e="$end_line" -v idx="$index" -v url="$url" 'NR >= s && NR <= e {sub("REPLACE_THIS_URL", url, $0);sub("INDEX_REPLACE_THIS", idx, $0);print}' "$input_yaml" >> "$output_yaml"
 }
 
 head -n 1 "$input_yaml" >> "$output_yaml"

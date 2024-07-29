@@ -19,6 +19,12 @@ const (
 	debug                          = false
 )
 
+var (
+	lavaSpecName = ""
+	// TODO: add a governance param change that indicates what spec id belongs to lava.
+	lavaSpecOptions = []string{"LAV1", "LAVA"}
+)
+
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
 // it allows also to query specific data form the blockchain and acts as a single place to send transactions
 type StateTracker struct {
@@ -33,6 +39,35 @@ type Updater interface {
 	Update(int64)
 	Reset(int64)
 	UpdaterKey() string
+}
+
+func GetLavaSpecWithRetry(ctx context.Context, specQueryClient spectypes.QueryClient) (*spectypes.QueryGetSpecResponse, error) {
+	var specResponse *spectypes.QueryGetSpecResponse
+	var err error
+	for i := 0; i < updaters.BlockResultRetry; i++ {
+		if lavaSpecName == "" { // spec name is not initialized, try fetching specs.
+			for _, specId := range lavaSpecOptions {
+				specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+					ChainID: specId,
+				})
+				if err != nil {
+					continue
+				}
+				utils.LavaFormatInfo("Lava Spec found on chain", utils.LogAttr("SpecId", specId))
+				lavaSpecName = specId
+				break
+			}
+		} else {
+			specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
+				ChainID: lavaSpecName,
+			})
+		}
+		if err == nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	return specResponse, err
 }
 
 func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client.Context, chainFetcher chaintracker.ChainFetcher, blockNotFoundCallback func(latestBlockTime time.Time)) (ret *StateTracker, err error) {
@@ -57,26 +92,18 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 		return nil, utils.LavaFormatError("failed getting blockResults after retries", err)
 	}
 	specQueryClient := spectypes.NewQueryClient(clientCtx)
-	var specResponse *spectypes.QueryGetSpecResponse
-	for i := 0; i < updaters.BlockResultRetry; i++ {
-		specResponse, err = specQueryClient.Spec(ctx, &spectypes.QueryGetSpecRequest{
-			ChainID: "LAV1",
-		})
-		if err == nil {
-			break
-		}
-		time.Sleep(20 * time.Millisecond)
-	}
+	specResponse, err := GetLavaSpecWithRetry(ctx, specQueryClient)
 	if err != nil {
 		utils.LavaFormatFatal("failed querying lava spec for state tracker", err)
 	}
 	cst := &StateTracker{newLavaBlockUpdaters: map[string]Updater{}, EventTracker: eventTracker}
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
-		NewLatestCallback: cst.newLavaBlock,
-		OldBlockCallback:  blockNotFoundCallback,
-		BlocksToSave:      BlocksToSaveLavaChainTracker,
-		AverageBlockTime:  time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
-		ServerBlockMemory: 25 + BlocksToSaveLavaChainTracker,
+		NewLatestCallback:     cst.newLavaBlock,
+		OldBlockCallback:      blockNotFoundCallback,
+		BlocksToSave:          BlocksToSaveLavaChainTracker,
+		AverageBlockTime:      time.Duration(specResponse.Spec.AverageBlockTime) * time.Millisecond,
+		ServerBlockMemory:     25 + BlocksToSaveLavaChainTracker,
+		PollingTimeMultiplier: chaintracker.LavaPollingMultiplierFrequency,
 	}
 	cst.AverageBlockTime = chainTrackerConfig.AverageBlockTime
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)

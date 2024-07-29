@@ -9,7 +9,7 @@ rm $LOGS_DIR/*.log
 echo "current vote number $(latest_vote)"
 killall screen
 screen -wipe
-GASPRICE="0.000000001ulava"
+GASPRICE="0.00002ulava"
 
 # ,./cookbook/specs/mantle.json
 lavad tx gov submit-legacy-proposal spec-add ./cookbook/specs/ibc.json,./cookbook/specs/cosmoswasm.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/cosmossdk_45.json,./cookbook/specs/cosmossdk_full.json,./cookbook/specs/ethermint.json,./cookbook/specs/ethereum.json,./cookbook/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE &

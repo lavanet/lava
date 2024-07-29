@@ -10,7 +10,7 @@ import (
 	"github.com/lavanet/lava/utils"
 )
 
-const MaximumNumberOfSelectionLockAttempts = 10000
+const MaximumNumberOfSelectionLockAttempts = 500
 
 func NewUsedProviders(directiveHeaders map[string]string) *UsedProviders {
 	unwantedProviders := map[string]struct{}{}
@@ -155,27 +155,26 @@ func (up *UsedProviders) setUnwanted(provider string) {
 	up.unwantedProviders[provider] = struct{}{}
 }
 
-func (up *UsedProviders) TryLockSelection(ctx context.Context) bool {
+func (up *UsedProviders) TryLockSelection(ctx context.Context) error {
 	if up == nil {
-		return true
+		return nil
 	}
 	for counter := 0; counter < MaximumNumberOfSelectionLockAttempts; counter++ {
 		select {
 		case <-ctx.Done():
 			utils.LavaFormatTrace("Failed locking selection, context is done")
-			return false
+			return ContextDoneNoNeedToLockSelectionError
 		default:
 			canSelect := up.tryLockSelection()
 			if canSelect {
-				return true
+				return nil
 			}
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(5 * time.Millisecond)
 		}
 	}
 
 	// if we got here we failed locking the selection.
-	utils.LavaFormatError("Failed locking selection after MaximumNumberOfSelectionLockAttempts", nil)
-	return false
+	return utils.LavaFormatError("Failed locking selection after MaximumNumberOfSelectionLockAttempts", nil, utils.LogAttr("GUID", ctx))
 }
 
 func (up *UsedProviders) tryLockSelection() bool {
