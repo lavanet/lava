@@ -110,7 +110,7 @@ func (m Migrator) isCurrentStakeStorageKey(ctx sdk.Context, key string) bool {
 }
 
 func (m Migrator) SetEpochHashForMigrator(ctx sdk.Context, epoch uint64, hash []byte) {
-	err := m.keeper.epochHashes.Set(ctx, epoch, ctx.HeaderHash())
+	err := m.keeper.epochHashes.Set(ctx, epoch, hash)
 	if err != nil {
 		panic(err)
 	}
