@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
@@ -94,24 +93,25 @@ func (k Keeper) RemoveOldEpochData(ctx sdk.Context) {
 }
 
 func (k Keeper) SetEpochHash(ctx sdk.Context) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	store.Set(utils.SerializeBigEndian(uint64(ctx.BlockHeight())), ctx.HeaderHash())
+	err := k.epochHashes.Set(ctx, uint64(ctx.BlockHeight()), ctx.HeaderHash())
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (k Keeper) GetEpochHash(ctx sdk.Context, epoch uint64) []byte {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	b := store.Get(utils.SerializeBigEndian(epoch))
-	if b == nil {
+	hash, err := k.epochHashes.Get(ctx, epoch)
+	if err != nil {
 		utils.LavaFormatError("GetEpochHash: epoch hash not found", fmt.Errorf("not found"),
 			utils.LogAttr("epoch", epoch),
 			utils.LogAttr("current_block", ctx.BlockHeight()),
 		)
+		return []byte{}
 	}
 
-	return b
+	return hash
 }
 
 func (k Keeper) RemoveEpochHash(ctx sdk.Context, epoch uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	store.Delete(utils.SerializeBigEndian(epoch))
+	k.epochHashes.Remove(ctx, epoch)
 }

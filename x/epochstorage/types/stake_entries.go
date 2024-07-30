@@ -16,6 +16,7 @@ var (
 	StakeEntriesCurrentPrefix         = collections.NewPrefix([]byte("StakeEntriesCurrent/"))
 	EpochChainIdProviderIndexesPrefix = collections.NewPrefix([]byte("EpochChainIdProviderIndexes/"))
 	ChainIdVaultIndexesPrefix         = collections.NewPrefix([]byte("ChainIdVaultIndexes/"))
+	EpochHashesPrefix                 = collections.NewPrefix([]byte("EpochHash/"))
 )
 
 // EpochChainIdProviderIndexes defines a secondary unique index for the keeper's stakeEntries indexed map
