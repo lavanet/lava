@@ -1,10 +1,12 @@
 package keeper
 
 import (
+	"sort"
 	"strconv"
 
 	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
@@ -14,26 +16,27 @@ import (
 // Since the stake entries KV store's key includes the provider's stake (which is not known), we iterate over all
 // the providers with the same epoch and chainID and compare the requested address to find the provider
 func (k Keeper) GetStakeEntry(ctx sdk.Context, epoch uint64, chainID string, provider string) (types.StakeEntry, bool) {
-	rng := collections.NewSuperPrefixedTripleRange[uint64, string, collections.Pair[uint64, string]](epoch, chainID)
-
-	iter, err := k.stakeEntries.Iterate(ctx, rng)
+	pk, err := k.stakeEntries.Indexes.Index.MatchExact(ctx, collections.Join3(epoch, chainID, provider))
 	if err != nil {
+		utils.LavaFormatWarning("GetStakeEntry: MatchExact with ref key failed", err,
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("provider", provider),
+		)
 		return types.StakeEntry{}, false
 	}
-	defer iter.Close()
 
-	for ; iter.Valid(); iter.Next() {
-		v, err := iter.Value()
-		if err != nil {
-			return types.StakeEntry{}, false
-		}
-
-		if v.Address == provider {
-			return v, true
-		}
+	entry, err := k.stakeEntries.Get(ctx, pk)
+	if err != nil {
+		utils.LavaFormatError("GetStakeEntry: Get with primary key failed", err,
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("provider", provider),
+		)
+		return types.StakeEntry{}, false
 	}
 
-	return types.StakeEntry{}, false
+	return entry, true
 }
 
 // Set stake entry
@@ -103,8 +106,16 @@ func (k Keeper) GetAllStakeEntriesForGenesis(ctx sdk.Context) []types.StakeStora
 	}
 
 	var storages []types.StakeStorage
-	for _, storage := range storagesMap {
-		storages = append(storages, storage)
+	var keys []uint64
+	for key := range storagesMap {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
+
+	for _, key := range keys {
+		storages = append(storages, storagesMap[key])
 	}
 
 	currentEntries := k.GetAllStakeEntriesCurrent(ctx)
@@ -135,7 +146,6 @@ func (k Keeper) GetAllStakeEntriesForEpochChainId(ctx sdk.Context, epoch uint64,
 	iter, err := k.stakeEntries.Iterate(ctx, rng)
 	if err != nil {
 		panic(err)
-
 	}
 	defer iter.Close()
 
@@ -156,7 +166,7 @@ func (k Keeper) GetStakeEntryCurrent(ctx sdk.Context, chainID string, provider s
 		return entry, true
 	}
 
-	// try to find the stake entry by the vault address. Need to loop because we set provider address in key
+	// try to find the stake entry by the vault address
 	return k.GetStakeEntryCurrentForChainIdByVault(ctx, chainID, provider)
 }
 
@@ -211,22 +221,19 @@ func (k Keeper) GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID str
 
 // GetStakeEntryCurrentForChainIdByVault gets all the current stake entry for a specific chain by vault address
 func (k Keeper) GetStakeEntryCurrentForChainIdByVault(ctx sdk.Context, chainID string, vault string) (val types.StakeEntry, found bool) {
-	rng := collections.NewPrefixedPairRange[string, string](chainID)
-	iter, err := k.stakeEntriesCurrent.Iterate(ctx, rng)
+	pk, err := k.stakeEntriesCurrent.Indexes.Index.MatchExact(ctx, collections.Join(chainID, vault))
 	if err != nil {
-		panic(err)
-	}
-	defer iter.Close()
-
-	for ; iter.Valid(); iter.Next() {
-		entry, err := iter.Value()
-		if err != nil {
-			panic(err)
-		}
-		if entry.Vault == vault {
-			return entry, true
-		}
+		return types.StakeEntry{}, false
 	}
 
-	return types.StakeEntry{}, false
+	entry, err := k.stakeEntriesCurrent.Get(ctx, pk)
+	if err != nil {
+		utils.LavaFormatError("GetStakeEntryCurrentForChainIdByVault: Get with primary key failed", err,
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("vault", vault),
+		)
+		return types.StakeEntry{}, false
+	}
+
+	return entry, true
 }

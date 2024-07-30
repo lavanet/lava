@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/x/epochstorage/types"
@@ -35,13 +34,9 @@ func (k Keeper) EpochStart(ctx sdk.Context) {
 
 // StoreCurrentStakeEntries store the current stake entries in the epoch-prefixed stake entries store
 func (k Keeper) StoreCurrentStakeEntries(ctx sdk.Context, epoch uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesCurrentPrefix)
-	iterator := sdk.KVStorePrefixIterator(store, []byte{}) // Get an iterator with no prefix to iterate over all keys
-	defer iterator.Close()
-	for ; iterator.Valid(); iterator.Next() {
-		var currentEntry types.StakeEntry
-		k.cdc.MustUnmarshal(iterator.Value(), &currentEntry)
-		k.SetStakeEntry(ctx, epoch, currentEntry)
+	entries := k.GetAllStakeEntriesCurrent(ctx)
+	for _, entry := range entries {
+		k.SetStakeEntry(ctx, epoch, entry)
 	}
 }
 
@@ -98,24 +93,28 @@ func (k Keeper) RemoveOldEpochData(ctx sdk.Context) {
 }
 
 func (k Keeper) SetEpochHash(ctx sdk.Context) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	store.Set(utils.Serialize(uint64(ctx.BlockHeight())), ctx.HeaderHash())
+	err := k.epochHashes.Set(ctx, uint64(ctx.BlockHeight()), ctx.HeaderHash())
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (k Keeper) GetEpochHash(ctx sdk.Context, epoch uint64) []byte {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	b := store.Get(utils.Serialize(epoch))
-	if b == nil {
+	hash, err := k.epochHashes.Get(ctx, epoch)
+	if err != nil {
 		utils.LavaFormatError("GetEpochHash: epoch hash not found", fmt.Errorf("not found"),
 			utils.LogAttr("epoch", epoch),
 			utils.LogAttr("current_block", ctx.BlockHeight()),
 		)
+		return []byte{}
 	}
 
-	return b
+	return hash
 }
 
 func (k Keeper) RemoveEpochHash(ctx sdk.Context, epoch uint64) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	store.Delete(utils.Serialize(epoch))
+	err := k.epochHashes.Remove(ctx, epoch)
+	if err != nil {
+		panic(err)
+	}
 }

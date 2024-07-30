@@ -31,8 +31,9 @@ type (
 		fixationRegistries map[string]func(sdk.Context) any
 
 		schema              collections.Schema
-		stakeEntries        collections.Map[collections.Triple[uint64, string, collections.Pair[uint64, string]], types.StakeEntry]
-		stakeEntriesCurrent collections.Map[collections.Pair[string, string], types.StakeEntry]
+		stakeEntries        *collections.IndexedMap[collections.Triple[uint64, string, collections.Pair[uint64, string]], types.StakeEntry, types.EpochChainIdProviderIndexes]
+		stakeEntriesCurrent *collections.IndexedMap[collections.Pair[string, string], types.StakeEntry, types.ChainIdVaultIndexes]
+		epochHashes         collections.Map[uint64, []byte]
 	}
 )
 
@@ -66,18 +67,16 @@ func NewKeeper(
 
 		fixationRegistries: make(map[string]func(sdk.Context) any),
 
-		stakeEntries: collections.NewMap(sb, types.StakeEntriesPrefix, "stake_entries",
-			collections.TripleKeyCodec(
-				collections.Uint64Key,
-				collections.StringKey,
+		stakeEntries: collections.NewIndexedMap(sb, types.StakeEntriesPrefix, "stake_entries",
+			collections.TripleKeyCodec(collections.Uint64Key, collections.StringKey,
 				collections.PairKeyCodec(collections.Uint64Key, collections.StringKey)),
-			collcompat.ProtoValue[types.StakeEntry](cdc)),
+			collcompat.ProtoValue[types.StakeEntry](cdc), types.NewEpochChainIdProviderIndexes(sb)),
 
-		stakeEntriesCurrent: collections.NewMap(sb, types.StakeEntriesCurrentPrefix, "stake_entries_current",
-			collections.PairKeyCodec(
-				collections.StringKey,
-				collections.StringKey),
-			collcompat.ProtoValue[types.StakeEntry](cdc)),
+		stakeEntriesCurrent: collections.NewIndexedMap(sb, types.StakeEntriesCurrentPrefix, "stake_entries_current",
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+			collcompat.ProtoValue[types.StakeEntry](cdc), types.NewChainIdVaultIndexes(sb)),
+
+		epochHashes: collections.NewMap(sb, types.EpochHashesPrefix, "epoch_hashes", collections.Uint64Key, collections.BytesValue),
 	}
 
 	keeper.AddFixationRegistry(string(types.KeyEpochBlocks), func(ctx sdk.Context) any { return keeper.EpochBlocksRaw(ctx) })
