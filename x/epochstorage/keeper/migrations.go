@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode"
 
-	"cosmossdk.io/math"
+	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
@@ -58,7 +58,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 				k.SetStakeEntryCurrent(ctx, entry)
 			} else {
 				// we make sure that the stake entries order is the same as the previous version's order
-				k.SetStakeEntryForMigrator(ctx, epoch, entry, math.NewInt(int64(len(stakeStorage.StakeEntries)-i)))
+				k.SetStakeEntryForMigrator(ctx, epoch, entry, uint64(len(stakeStorage.StakeEntries)-i))
 			}
 		}
 
@@ -73,10 +73,12 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 }
 
 // Set stake entry
-func (k Keeper) SetStakeEntryForMigrator(ctx sdk.Context, epoch uint64, stakeEntry types.StakeEntry, idx math.Int) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.StakeEntriesPrefix)
-	b := k.cdc.MustMarshal(&stakeEntry)
-	store.Set(types.StakeEntryKey(epoch, stakeEntry.Chain, idx, stakeEntry.Address), b)
+func (k Keeper) SetStakeEntryForMigrator(ctx sdk.Context, epoch uint64, stakeEntry types.StakeEntry, idx uint64) {
+	key := collections.Join3(epoch, stakeEntry.Chain, collections.Join(idx, stakeEntry.Address))
+	err := k.stakeEntries.Set(ctx, key, stakeEntry)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // the legacy StakeStorage store used keys that were built like this:
@@ -108,6 +110,8 @@ func (m Migrator) isCurrentStakeStorageKey(ctx sdk.Context, key string) bool {
 }
 
 func (m Migrator) SetEpochHashForMigrator(ctx sdk.Context, epoch uint64, hash []byte) {
-	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(types.EpochHashPrefix))
-	store.Set(utils.SerializeBigEndian(epoch), hash)
+	err := m.keeper.epochHashes.Set(ctx, epoch, hash)
+	if err != nil {
+		panic(err)
+	}
 }

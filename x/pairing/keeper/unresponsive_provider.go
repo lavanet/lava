@@ -85,7 +85,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 	for _, entry := range currentStakeEntries {
 		if !entry.IsFrozen() {
 			existingProviders[entry.GetChain()]++
-			currentStakeEntriesMap[string(epochstoragetypes.StakeEntryKeyCurrent(entry.Chain, entry.Address))] = entry
+			currentStakeEntriesMap[stakeEntriesMapKey(entry.Chain, entry.Address)] = entry
 		}
 	}
 
@@ -95,7 +95,7 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 	pecsDetailed := k.GetAllProviderEpochComplainerCuStore(ctx)
 	complainedProviders := map[string]map[uint64]types.ProviderEpochComplainerCu{} // map[provider chainID]map[epoch]ProviderEpochComplainerCu
 	for _, pec := range pecsDetailed {
-		key := string(epochstoragetypes.StakeEntryKeyCurrent(pec.ChainId, pec.Provider))
+		key := stakeEntriesMapKey(pec.ChainId, pec.Provider)
 		entry, ok := currentStakeEntriesMap[key]
 		if ok {
 			if minHistoryBlock < entry.StakeAppliedBlock && entry.Jails == 0 {
@@ -152,6 +152,10 @@ func (k Keeper) PunishUnresponsiveProviders(ctx sdk.Context, epochsNumToCheckCUF
 			}
 		}
 	}
+}
+
+func stakeEntriesMapKey(chainID string, address string) string {
+	return chainID + " " + address
 }
 
 // getBlockEpochsAgo returns the block numEpochs back from the given blockHeight

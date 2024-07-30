@@ -23,5 +23,4 @@ func KeyPrefix(p string) []byte {
 
 const (
 	EpochDetailsKey = "EpochDetails-value-"
-	EpochHashPrefix = "EpochHash/"
 )
