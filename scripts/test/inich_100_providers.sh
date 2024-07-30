@@ -102,7 +102,7 @@ echo; echo "#### Waiting 1 block ####"
 wait_count_blocks 1
 
 echo; echo "#### Delegating provider 2 ####"
-lavad tx dualstaking delegate $(lavad keys show servicer2 -a) ETH1 $(operator_address) $PROVIDERSTAKE -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx dualstaking delegate "$(lavad keys show servicer2 -a)" ETH1 "$(operator_address)" $PROVIDERSTAKE -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 echo; echo "#### Waiting 1 block ####"
 wait_count_blocks 1
