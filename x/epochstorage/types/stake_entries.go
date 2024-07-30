@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"strings"
 
 	regmath "math"
 
@@ -72,10 +71,6 @@ func NewChainIdVaultIndexes(sb *collections.SchemaBuilder) ChainIdVaultIndexes {
 			},
 		),
 	}
-}
-
-func ComplainedProvidersKey(chainID string, provider string) []byte {
-	return []byte(strings.Join([]string{chainID, provider}, " "))
 }
 
 // StakeEntry methods
