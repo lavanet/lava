@@ -113,5 +113,8 @@ func (k Keeper) GetEpochHash(ctx sdk.Context, epoch uint64) []byte {
 }
 
 func (k Keeper) RemoveEpochHash(ctx sdk.Context, epoch uint64) {
-	k.epochHashes.Remove(ctx, epoch)
+	err := k.epochHashes.Remove(ctx, epoch)
+	if err != nil {
+		panic(err)
+	}
 }
