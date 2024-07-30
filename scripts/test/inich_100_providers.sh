@@ -1,12 +1,12 @@
 #!/bin/bash
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-source $__dir/useful_commands.sh
+source $__dir/../useful_commands.sh
 . ${__dir}/vars/variables.sh
 # Making sure old screens are not running
 echo "current vote number $(latest_vote)"
 killall screen
 screen -wipe
-GASPRICE="0.00002ulava"
+GASPRICE="0.000000001ulava"
 
 echo; echo "#### Sending proposal for specs ####"
 cd ./cookbook/specs/
@@ -82,6 +82,16 @@ lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "$PROVIDER2_LIS
 echo; echo "#### Staking provider 3 ####"
 lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "$PROVIDER3_LISTENER,1" 1 $(operator_address) -y --delegate-commission 50 --delegate-limit $PROVIDERSTAKE --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
+echo; echo "#### Staking 100 providers ####"
+users=()
+for i in $(seq 1 100); do
+  users+=("useroren$i")
+done
+
+for user in "${users[@]}"; do
+  lavad tx pairing stake-provider ETH1 600000000000ulava "127.0.0.1:2221,EU" EU $(operator_address) --from $user -y --provider-moniker $user --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava --delegate-limit 0ulava
+done
+
 echo; echo "#### Waiting 1 block ####"
 wait_count_blocks 1
 
@@ -111,9 +121,12 @@ lavad tx gov submit-legacy-proposal set-iprpc-data 1000000000ulava --min-cost 10
 wait_count_blocks 1
 lavad tx gov vote $(latest_vote) yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-if [[ "$1" != "--skip-providers" ]]; then
-. ${__dir}/setup_providers.sh
-echo "letting providers start and running health check"
-sleep 10
-lavap test health $HEALTH_FILE
-fi
+for user in "${users[@]}"; do
+  lavad tx pairing stake-provider ETH1 600000000000ulava "127.0.0.1:2221,EU" EU $(operator_address) --from $user -y --provider-moniker $user --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava --delegate-limit 0ulava
+done
+
+wait_count_blocks 1
+
+for user in "${users[@]}"; do
+  lavad q pairing get-pairing ETH1 user1
+done

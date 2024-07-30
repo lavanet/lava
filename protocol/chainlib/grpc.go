@@ -318,6 +318,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			utils.LogAttr("headers", grpcHeaders),
 		)
 		metricsData := metrics.NewRelayAnalytics(dappID, apil.endpoint.ChainID, apiInterface)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		consumerIp := common.GetIpFromGrpcContext(ctx)
 		relayResult, err := apil.relaySender.SendRelay(ctx, method, string(reqBody), "", dappID, consumerIp, metricsData, grpcHeaders)
 		relayReply := relayResult.GetReply()
@@ -329,6 +330,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 			return nil, nil, utils.LavaFormatError("Failed to SendRelay", fmt.Errorf(errMasking))
 		}
 		apil.logger.LogRequestAndResponse("grpc in/out", false, method, string(reqBody), "", "", msgSeed, time.Since(startTime), nil)
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, apil.endpoint.ChainID, apiInterface)
 
 		// try checking for node errors.
 		nodeError := &GrpcNodeErrorResponse{}

@@ -5,7 +5,7 @@ set -e
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/../useful_commands.sh
 
-GASPRICE="0.000000001ulava"
+GASPRICE="0.00002ulava"
 
 # Specs proposal
 echo ---- Specs proposal ----
