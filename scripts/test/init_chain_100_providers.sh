@@ -67,10 +67,9 @@ fi
 echo -n "$data" > "$path$genesis"
 
 echo "using genesis file"
-echo $(cat "$path$genesis")
+echo "$(cat "$path$genesis")"
 
 # Determine OS
-os_name=$(uname)
 case "$(uname)" in
   Darwin)
     SED_INLINE="-i ''" ;;

@@ -13,5 +13,5 @@ for i in $(seq 1 100); do
 done
 
 for user in "${users[@]}"; do
-  lavad tx pairing unstake-provider ETH1 $(operator_address) --from $user -y --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava
+  lavad tx pairing unstake-provider ETH1 "$(operator_address)" --from $user -y --gas-adjustment "1.5" --gas "auto" --gas-prices "$GASPRICE"
 done
