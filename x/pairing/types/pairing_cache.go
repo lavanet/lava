@@ -1,15 +1,12 @@
 package types
 
-type PairingCacheKey struct {
-	Project string
-	ChainID string
-	Epoch   uint64
+import "strconv"
+
+func NewPairingQueryCacheKey(project string, chainID string, epoch uint64) string {
+	epochStr := strconv.FormatUint(epoch, 10)
+	return project + " " + chainID + " " + epochStr
 }
 
-func NewPairingCacheKey(project string, chainID string, epoch uint64) PairingCacheKey {
-	return PairingCacheKey{
-		Project: project,
-		ChainID: chainID,
-		Epoch:   epoch,
-	}
+func NewPairingRelayCacheKey(project string, chainID string, provider string) string {
+	return project + " " + chainID + " " + provider
 }

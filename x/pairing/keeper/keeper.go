@@ -36,8 +36,8 @@ type (
 		dualstakingKeeper  types.DualstakingKeeper
 		stakingKeeper      types.StakingKeeper
 
-		pairingQueryCache *map[types.PairingCacheKey][]epochstoragetypes.StakeEntry
-		pairingRelayCache *map[types.PairingCacheKey][]epochstoragetypes.StakeEntry
+		pairingQueryCache *map[string][]epochstoragetypes.StakeEntry
+		pairingRelayCache *map[string][]epochstoragetypes.StakeEntry
 	}
 )
 
@@ -75,8 +75,8 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
-	emptypairingRelayCache := map[types.PairingCacheKey][]epochstoragetypes.StakeEntry{}
-	emptypairingQueryCache := map[types.PairingCacheKey][]epochstoragetypes.StakeEntry{}
+	emptypairingRelayCache := map[string][]epochstoragetypes.StakeEntry{}
+	emptypairingQueryCache := map[string][]epochstoragetypes.StakeEntry{}
 
 	keeper := &Keeper{
 		cdc:                cdc,
@@ -117,10 +117,10 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 
 	// reset pairing relay cache every block
-	*k.pairingRelayCache = map[types.PairingCacheKey][]epochstoragetypes.StakeEntry{}
+	*k.pairingRelayCache = map[string][]epochstoragetypes.StakeEntry{}
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
 		// reset pairing query cache every epoch
-		*k.pairingQueryCache = map[types.PairingCacheKey][]epochstoragetypes.StakeEntry{}
+		*k.pairingQueryCache = map[string][]epochstoragetypes.StakeEntry{}
 		// remove old session payments
 		k.RemoveOldEpochPayments(ctx)
 		// unstake/jail unresponsive providers
