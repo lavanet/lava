@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 
@@ -48,7 +49,7 @@ func (k Keeper) SetStakeEntry(ctx sdk.Context, epoch uint64, stakeEntry types.St
 	key := collections.Join3(epoch, stakeEntry.Chain, collections.Join(stake, stakeEntry.Address))
 	err := k.stakeEntries.Set(ctx, key, stakeEntry)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("SetStakeEntry: Failed to set entry with key %v, error: %w", key, err))
 	}
 }
 
@@ -57,19 +58,19 @@ func (k Keeper) RemoveAllStakeEntriesForEpoch(ctx sdk.Context, epoch uint64) {
 	rng := collections.NewPrefixedTripleRange[uint64, string, collections.Pair[uint64, string]](epoch)
 	iter, err := k.stakeEntries.Iterate(ctx, rng)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("RemoveAllStakeEntriesForEpoch: Failed to create iterator for epoch %d, error: %w", epoch, err))
 	}
 	defer iter.Close()
 
 	for ; iter.Valid(); iter.Next() {
 		key, err := iter.Key()
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("RemoveAllStakeEntriesForEpoch: Failed to get key from iterator for epoch %d, error: %w", epoch, err))
 		}
 
 		err = k.stakeEntries.Remove(ctx, key)
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("RemoveAllStakeEntriesForEpoch: Failed to remove entry with key %v, error: %w", key, err))
 		}
 	}
 }
@@ -78,7 +79,7 @@ func (k Keeper) RemoveAllStakeEntriesForEpoch(ctx sdk.Context, epoch uint64) {
 func (k Keeper) GetAllStakeEntriesForGenesis(ctx sdk.Context) []types.StakeStorage {
 	iter, err := k.stakeEntries.Iterate(ctx, nil)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("GetAllStakeEntriesForGenesis: Failed to create iterator, error: %w", err))
 	}
 	defer iter.Close()
 
@@ -86,13 +87,13 @@ func (k Keeper) GetAllStakeEntriesForGenesis(ctx sdk.Context) []types.StakeStora
 	for ; iter.Valid(); iter.Next() {
 		key, err := iter.Key()
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("GetAllStakeEntriesForGenesis: Failed to get key from iterator, error: %w", err))
 		}
 		epoch := key.K1()
 
 		entry, err := iter.Value()
 		if err != nil {
-			panic(err)
+			panic(fmt.Errorf("GetAllStakeEntriesForGenesis: Failed to get value from iterator for epoch %d, error: %w", epoch, err))
 		}
 		if _, ok := storagesMap[epoch]; !ok {
 			storagesMap[epoch] = types.StakeStorage{
@@ -129,13 +130,13 @@ func (k Keeper) GetAllStakeEntriesForEpoch(ctx sdk.Context, epoch uint64) []type
 	rng := collections.NewPrefixedTripleRange[uint64, string, collections.Pair[uint64, string]](epoch)
 	iter, err := k.stakeEntries.Iterate(ctx, rng)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("GetAllStakeEntriesForEpoch: Failed to create iterator for epoch %d, error: %w", epoch, err))
 	}
 	defer iter.Close()
 
 	entries, err := iter.Values()
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("GetAllStakeEntriesForEpoch: Failed to get entries for epoch %d, error: %w", epoch, err))
 	}
 	return entries
 }
@@ -145,13 +146,13 @@ func (k Keeper) GetAllStakeEntriesForEpochChainId(ctx sdk.Context, epoch uint64,
 	rng := collections.NewSuperPrefixedTripleRange[uint64, string, collections.Pair[uint64, string]](epoch, chainID)
 	iter, err := k.stakeEntries.Iterate(ctx, rng)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("GetAllStakeEntriesForEpochChainId: Failed to create iterator for epoch %d and chain ID %s, error: %w", epoch, chainID, err))
 	}
 	defer iter.Close()
 
 	entries, err := iter.Values()
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("GetAllStakeEntriesForEpochChainId: Failed to get entries for epoch %d and chain ID %s, error: %w", epoch, chainID, err))
 	}
 	return entries
 }
@@ -175,7 +176,7 @@ func (k Keeper) SetStakeEntryCurrent(ctx sdk.Context, stakeEntry types.StakeEntr
 	key := collections.Join(stakeEntry.Chain, stakeEntry.Address)
 	err := k.stakeEntriesCurrent.Set(ctx, key, stakeEntry)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("SetStakeEntryCurrent: Failed to set entry for key %v, error: %w", key, err))
 	}
 }
 
@@ -184,7 +185,7 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, provide
 	key := collections.Join(chainID, provider)
 	err := k.stakeEntriesCurrent.Remove(ctx, key)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("RemoveStakeEntryCurrent: Failed to remove entry with key %v, error: %w", key, err))
 	}
 }
 
@@ -192,13 +193,13 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, provide
 func (k Keeper) GetAllStakeEntriesCurrent(ctx sdk.Context) []types.StakeEntry {
 	iter, err := k.stakeEntriesCurrent.Iterate(ctx, nil)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("GetAllStakeEntriesCurrent: Failed to create iterator, error: %w", err))
 	}
 	defer iter.Close()
 
 	entries, err := iter.Values()
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("GetAllStakeEntriesCurrent: Failed to get entries, error: %w", err))
 	}
 	return entries
 }
@@ -208,13 +209,13 @@ func (k Keeper) GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID str
 	rng := collections.NewPrefixedPairRange[string, string](chainID)
 	iter, err := k.stakeEntriesCurrent.Iterate(ctx, rng)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("GetAllStakeEntriesCurrentForChainId: Failed to create iterator for chain ID %s, error: %w", chainID, err))
 	}
 	defer iter.Close()
 
 	entries, err := iter.Values()
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("GetAllStakeEntriesCurrentForChainId: Failed to get entries for chain ID %s, error: %w", chainID, err))
 	}
 	return entries
 }
@@ -223,6 +224,10 @@ func (k Keeper) GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID str
 func (k Keeper) GetStakeEntryCurrentForChainIdByVault(ctx sdk.Context, chainID string, vault string) (val types.StakeEntry, found bool) {
 	pk, err := k.stakeEntriesCurrent.Indexes.Index.MatchExact(ctx, collections.Join(chainID, vault))
 	if err != nil {
+		utils.LavaFormatWarning("GetStakeEntryCurrentForChainIdByVault: MatchExact with primary key failed", err,
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("vault", vault),
+		)
 		return types.StakeEntry{}, false
 	}
 
