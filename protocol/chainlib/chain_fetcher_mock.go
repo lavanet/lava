@@ -12,7 +12,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	lavasession "github.com/lavanet/lava/protocol/lavasession"
+	lavasession "github.com/lavanet/lava/v2/protocol/lavasession"
 	gomock "go.uber.org/mock/gomock"
 )
 

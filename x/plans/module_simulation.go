@@ -7,9 +7,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/lavanet/lava/testutil/sample"
-	plansimulation "github.com/lavanet/lava/x/plans/simulation"
-	"github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/testutil/sample"
+	plansimulation "github.com/lavanet/lava/v2/x/plans/simulation"
+	"github.com/lavanet/lava/v2/x/plans/types"
 )
 
 // avoid unused import issue

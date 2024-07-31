@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	testcommon "github.com/lavanet/lava/testutil/common"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	testcommon "github.com/lavanet/lava/v2/testutil/common"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

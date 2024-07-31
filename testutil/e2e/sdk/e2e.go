@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/lavanet/lava/utils"
-	pairingTypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/utils"
+	pairingTypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 )

@@ -6,8 +6,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/lavanet/lava/x/projects/keeper"
-	"github.com/lavanet/lava/x/projects/types"
+	"github.com/lavanet/lava/v2/x/projects/keeper"
+	"github.com/lavanet/lava/v2/x/projects/types"
 )
 
 func SimulateMsgSetSubscriptionPolicy(

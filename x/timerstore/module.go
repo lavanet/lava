@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/lavanet/lava/x/timerstore/client/cli"
-	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
-	"github.com/lavanet/lava/x/timerstore/types"
+	"github.com/lavanet/lava/v2/x/timerstore/client/cli"
+	timerstorekeeper "github.com/lavanet/lava/v2/x/timerstore/keeper"
+	"github.com/lavanet/lava/v2/x/timerstore/types"
 	"github.com/spf13/cobra"
 )
 

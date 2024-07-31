@@ -3,7 +3,7 @@ package types
 import (
 	tendermintcrypto "github.com/cometbft/cometbft/crypto"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/v2/utils/sigs"
 )
 
 type RelayFinalization struct {

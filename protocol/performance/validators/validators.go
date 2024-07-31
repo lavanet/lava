@@ -21,9 +21,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/app"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/v2/app"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
