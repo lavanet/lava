@@ -56,11 +56,17 @@ func (cc *ConsumerConsistency) SetSeenBlockFromKey(blockSeen int64, key string) 
 }
 
 func (cc *ConsumerConsistency) SetSeenBlock(blockSeen int64, dappId string, ip string) {
+	if cc == nil {
+		return
+	}
 	key := cc.Key(dappId, ip)
 	cc.SetSeenBlockFromKey(blockSeen, key)
 }
 
 func (cc *ConsumerConsistency) GetSeenBlock(dappId string, ip string) (int64, bool) {
+	if cc == nil {
+		return 0, false
+	}
 	return cc.getLatestBlock(cc.Key(dappId, ip))
 }
 
