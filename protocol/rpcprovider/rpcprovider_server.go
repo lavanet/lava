@@ -402,6 +402,11 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	consumerProcessGuid, found := rpcps.fetchConsumerProcessGuidFromContext(ctx)
+	if !found {
+		return false, utils.LavaFormatWarning("Could not find consumer process GUID in context, which is required for subscription relays", nil)
+	}
+
 	// The reasons that we have a wait group here, and we pass it to the go routine is because we want to start the channel read before calling AddConsumer,
 	// because it might stuck on writing to the channel if we don't do that, which will create a deadlock.
 	// But, we still want to wait the go routine to finish before we return (because the gRPC stream will close on return), so we use a wait group to wait for the go routine to finish.
@@ -421,7 +426,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 					utils.LogAttr("consumerAddr", consumerAddress),
 				)
 
-				err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, true)
+				err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, true, consumerProcessGuid)
 				if err != nil {
 					errRet = utils.LavaFormatError("Error RemoveConsumer", err, utils.LogAttr("GUID", ctx))
 				}
@@ -433,7 +438,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 						utils.LogAttr("consumerAddr", consumerAddress),
 					)
 
-					err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, false) // false because the channel is already closed
+					err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, false, consumerProcessGuid) // false because the channel is already closed
 					if err != nil {
 						errRet = utils.LavaFormatError("Error RemoveConsumer", err, utils.LogAttr("GUID", ctx))
 						return
@@ -465,7 +470,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 		}
 	}()
 
-	subscriptionId, err := rpcps.providerNodeSubscriptionManager.AddConsumer(ctx, request, chainMessage, consumerAddress, subscribeRepliesChan)
+	subscriptionId, err := rpcps.providerNodeSubscriptionManager.AddConsumer(ctx, request, chainMessage, consumerAddress, subscribeRepliesChan, consumerProcessGuid)
 	if err != nil {
 		// Subscription failed due to node error mark session as done and return
 		relayError := rpcps.providerSessionManager.OnSessionFailure(relaySession, relayNumber)
@@ -867,8 +872,13 @@ func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request
 
 	utils.LavaFormatDebug("Provider got unsubscribe request", utils.LogAttr("GUID", ctx))
 
+	consumerProcessGuid, found := rpcps.fetchConsumerProcessGuidFromContext(ctx)
+	if !found {
+		return nil, utils.LavaFormatWarning("Could not find consumer process GUID in context, which is required for unsubscribe relays", nil)
+	}
+
 	// Remove the consumer from the connected consumers list of the subscription
-	err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, true)
+	err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, true, consumerProcessGuid)
 	if err != nil {
 		return nil, err
 	}
@@ -1173,6 +1183,21 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 	trailer := metadata.Pairs(common.VersionMetadataKey, upgrade.GetCurrentVersion().ProviderVersion)
 	grpc.SetTrailer(ctx, trailer) // we ignore this error here since this code can be triggered not from grpc
 	return probeReply, nil
+}
+
+func (rpcps *RPCProviderServer) fetchConsumerProcessGuidFromContext(ctx context.Context) (string, bool) {
+	incomingMetaData, found := metadata.FromIncomingContext(ctx)
+	if !found {
+		return "", false
+	}
+	for key, value := range incomingMetaData {
+		if key == common.LAVA_CONSUMER_PROCESS_GUID {
+			for _, metaDataValue := range value {
+				return metaDataValue, true
+			}
+		}
+	}
+	return "", false
 }
 
 func (rpcps *RPCProviderServer) tryGetTimeoutFromRequest(ctx context.Context) (time.Duration, bool, error) {

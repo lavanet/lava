@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testGuid = "testGuid"
+
 type RelayFinalizationBlocksHandlerMock struct{}
 
 func (rf *RelayFinalizationBlocksHandlerMock) GetParametersForRelayDataReliability(
@@ -143,20 +145,20 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 			}()
 
 			// Subscribe to the chain
-			subscriptionId, err := pnsm.AddConsumer(ts.Ctx, relayRequest, chainMessage, ts.Consumer.Addr, consumerChannel)
+			subscriptionId, err := pnsm.AddConsumer(ts.Ctx, relayRequest, chainMessage, ts.Consumer.Addr, consumerChannel, testGuid)
 			require.NoError(t, err)
 			require.NotEmpty(t, subscriptionId)
 
 			wg.Wait() // Make sure the subscription manager sent a message to the node
 
 			// Subscribe to the same subscription again, should return the same subscription id
-			subscriptionIdNew, err := pnsm.AddConsumer(ts.Ctx, relayRequest, chainMessage, ts.Consumer.Addr, consumerChannel)
+			subscriptionIdNew, err := pnsm.AddConsumer(ts.Ctx, relayRequest, chainMessage, ts.Consumer.Addr, consumerChannel, testGuid)
 			require.NoError(t, err)
 			require.NotEmpty(t, subscriptionId)
 			require.Equal(t, subscriptionId, subscriptionIdNew)
 
 			// Cut the subscription, and re-subscribe, should send another message to node
-			err = pnsm.RemoveConsumer(ts.Ctx, chainMessage, ts.Consumer.Addr, true)
+			err = pnsm.RemoveConsumer(ts.Ctx, chainMessage, ts.Consumer.Addr, true, testGuid)
 			require.NoError(t, err)
 
 			// Make sure both the consumer channels are closed
@@ -175,7 +177,7 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 
 			wg.Add(1) // Should send another message to the node
 
-			subscriptionId, err = pnsm.AddConsumer(ts.Ctx, relayRequest, chainMessage, ts.Consumer.Addr, consumerChannel)
+			subscriptionId, err = pnsm.AddConsumer(ts.Ctx, relayRequest, chainMessage, ts.Consumer.Addr, consumerChannel, "testGuid")
 			require.NoError(t, err)
 			require.NotEmpty(t, subscriptionId)
 
