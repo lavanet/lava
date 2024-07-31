@@ -14,6 +14,7 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
@@ -33,7 +34,11 @@ type GrpcMessage struct {
 	chainproxy.BaseMessage
 }
 
-func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+func (gm *GrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return ""
+}
+
+func (gm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
 	// grpc status code different than OK or 0 is a node error.
 	if httpStatusCode != 0 && httpStatusCode != http.StatusOK {
 		return true, ""

@@ -56,7 +56,6 @@ type ConsumerWSSubscriptionManager struct {
 	refererData                        *RefererData
 	connectionType                     string
 	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage
-	subscriptionIdExtractor            func(request ChainMessage, reply *rpcclient.JsonrpcMessage) string
 	currentlyPendingSubscriptions      map[string]*pendingSubscriptionsBroadcastManager
 	lock                               sync.RWMutex
 }
@@ -68,7 +67,6 @@ func NewConsumerWSSubscriptionManager(
 	connectionType string,
 	chainParser ChainParser,
 	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage,
-	subscriptionIdExtractor func(request ChainMessage, reply *rpcclient.JsonrpcMessage) string,
 ) *ConsumerWSSubscriptionManager {
 	return &ConsumerWSSubscriptionManager{
 		connectedDapps:                     make(map[string]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
@@ -80,7 +78,6 @@ func NewConsumerWSSubscriptionManager(
 		relaySender:                        relaySender,
 		connectionType:                     connectionType,
 		activeSubscriptionProvidersStorage: activeSubscriptionProvidersStorage,
-		subscriptionIdExtractor:            subscriptionIdExtractor,
 	}
 }
 
@@ -380,7 +377,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	cwsm.lock.Lock()
 	defer cwsm.lock.Unlock()
 
-	subscriptionId := cwsm.subscriptionIdExtractor(chainMessage, &replyJsonrpcMessage)
+	subscriptionId := chainMessage.SubscriptionIdExtractor(&replyJsonrpcMessage)
 	if common.IsQuoted(subscriptionId) {
 		subscriptionId, _ = strconv.Unquote(subscriptionId)
 	}

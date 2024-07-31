@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol"
@@ -129,12 +128,8 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 
-			subscriptionIdExtractor := func(request ChainMessage, reply *rpcclient.JsonrpcMessage) string {
-				return ""
-			}
-
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), subscriptionIdExtractor)
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage())
 
 			wg := sync.WaitGroup{}
 			wg.Add(10)
@@ -375,13 +370,8 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 
-			expectedSubscriptionId := play.subscriptionId1
-			subscriptionIdExtractor := func(request ChainMessage, reply *rpcclient.JsonrpcMessage) string {
-				return expectedSubscriptionId
-			}
-
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), subscriptionIdExtractor)
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage())
 
 			// Start a new subscription for the first time, called SendParsedRelay once
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
@@ -419,7 +409,6 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			listenForExpectedMessages(ctx, repliesChan3, string(play.subscriptionFirstReply1))
 
 			// Prepare for the next subscription
-			expectedSubscriptionId = play.subscriptionId2
 			unsubscribeChainMessage2, err := chainParser.ParseMsg("", play.unsubscribeMessage2, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
 

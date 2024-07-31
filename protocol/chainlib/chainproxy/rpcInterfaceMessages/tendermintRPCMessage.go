@@ -7,6 +7,7 @@ import (
 	"github.com/goccy/go-json"
 
 	tenderminttypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
+	gojson "github.com/goccy/go-json"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/parser"
@@ -18,18 +19,27 @@ type TendermintrpcMessage struct {
 	Path string
 }
 
-func (cp TendermintrpcMessage) GetParams() interface{} {
-	return cp.Params
-}
-
-func (cp TendermintrpcMessage) GetResult() json.RawMessage {
-	if cp.Error != nil {
-		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: cp.Error})
+func (tm TendermintrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	params, err := gojson.Marshal(tm.GetParams())
+	if err != nil {
+		utils.LavaFormatWarning("failed marshaling params", err, utils.LogAttr("request", tm))
+		return ""
 	}
-	return cp.Result
+	return string(params)
 }
 
-func (cp TendermintrpcMessage) ParseBlock(inp string) (int64, error) {
+func (tm TendermintrpcMessage) GetParams() interface{} {
+	return tm.Params
+}
+
+func (tm TendermintrpcMessage) GetResult() json.RawMessage {
+	if tm.Error != nil {
+		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: tm.Error})
+	}
+	return tm.Result
+}
+
+func (tm TendermintrpcMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
 

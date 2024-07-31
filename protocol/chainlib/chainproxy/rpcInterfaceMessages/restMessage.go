@@ -7,6 +7,7 @@ import (
 	"github.com/goccy/go-json"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/parser"
 	"github.com/lavanet/lava/utils"
 )
@@ -18,7 +19,11 @@ type RestMessage struct {
 	chainproxy.BaseMessage
 }
 
-func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+func (rm *RestMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return ""
+}
+
+func (rm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
 	if httpStatusCode >= 200 && httpStatusCode <= 300 { // valid code
 		return false, ""
 	}
@@ -40,13 +45,13 @@ func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
-func (cp RestMessage) GetParams() interface{} {
-	urlObj, err := url.Parse(cp.Path)
+func (rm RestMessage) GetParams() interface{} {
+	urlObj, err := url.Parse(rm.Path)
 	if err != nil {
 		return nil
 	}
 	parsedMethod := urlObj.Path
-	objectSpec := strings.Split(cp.SpecPath, "/")
+	objectSpec := strings.Split(rm.SpecPath, "/")
 	objectPath := strings.Split(parsedMethod, "/")
 
 	parameters := map[string]interface{}{}
@@ -75,19 +80,19 @@ func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyCont
 
 // GetResult will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
-func (cp RestMessage) GetResult() json.RawMessage {
+func (rm RestMessage) GetResult() json.RawMessage {
 	return nil
 }
 
-func (cp RestMessage) GetMethod() string {
-	return cp.Path
+func (rm RestMessage) GetMethod() string {
+	return rm.Path
 }
 
-func (cp RestMessage) GetID() json.RawMessage {
+func (rm RestMessage) GetID() json.RawMessage {
 	return nil
 }
 
 // ParseBlock parses default block number from string to int
-func (cp RestMessage) ParseBlock(inp string) (int64, error) {
+func (rm RestMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }

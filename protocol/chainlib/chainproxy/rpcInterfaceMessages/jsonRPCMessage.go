@@ -24,6 +24,10 @@ type JsonrpcMessage struct {
 	chainproxy.BaseMessage `json:"-"`
 }
 
+func (jm *JsonrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return string(reply.Result)
+}
+
 // returns if error exists and
 func (jm JsonrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
 	result := &JsonrpcMessage{}
@@ -86,11 +90,11 @@ func ConvertBatchElement(batchElement rpcclient.BatchElemWithId) (JsonrpcMessage
 	return msg, nil
 }
 
-func (gm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
+func (jm *JsonrpcMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
 	return false
 }
 
-func (gm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {
+func (jm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {
 	msg := &JsonrpcMessage{}
 	err := json.Unmarshal(input, msg)
 	if err != nil {
@@ -104,26 +108,26 @@ func (gm JsonrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCI
 	return ParsableRPCInput{Result: msg.Result}, nil
 }
 
-func (cp JsonrpcMessage) GetParams() interface{} {
-	return cp.Params
+func (jm JsonrpcMessage) GetParams() interface{} {
+	return jm.Params
 }
 
-func (cp JsonrpcMessage) GetMethod() string {
-	return cp.Method
+func (jm JsonrpcMessage) GetMethod() string {
+	return jm.Method
 }
 
-func (cp JsonrpcMessage) GetResult() json.RawMessage {
-	if cp.Error != nil {
-		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: cp.Error})
+func (jm JsonrpcMessage) GetResult() json.RawMessage {
+	if jm.Error != nil {
+		utils.LavaFormatWarning("GetResult() Request got an error from the node", nil, utils.Attribute{Key: "error", Value: jm.Error})
 	}
-	return cp.Result
+	return jm.Result
 }
 
-func (cp JsonrpcMessage) GetID() json.RawMessage {
-	return cp.ID
+func (jm JsonrpcMessage) GetID() json.RawMessage {
+	return jm.ID
 }
 
-func (cp JsonrpcMessage) ParseBlock(inp string) (int64, error) {
+func (jm JsonrpcMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }
 
@@ -152,6 +156,10 @@ func ParseJsonRPCMsg(data []byte) (msgRet []JsonrpcMessage, err error) {
 type JsonrpcBatchMessage struct {
 	batch []rpcclient.BatchElemWithId
 	chainproxy.BaseMessage
+}
+
+func (jbm *JsonrpcBatchMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return ""
 }
 
 func (jbm *JsonrpcBatchMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
