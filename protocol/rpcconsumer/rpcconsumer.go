@@ -195,7 +195,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
 	policyUpdaters := syncMapPolicyUpdaters{}
-	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
@@ -287,8 +286,10 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 				return err
 			}
 
-			// Register For Updates
+			// Create active subscription provider storage for each unique chain
+			activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+			// Register For Updates
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
 			var relaysMonitor *metrics.RelaysMonitor
@@ -301,10 +302,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 			var consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
 			var specMethodType string
-			var subscriptionIdExtractorFunc func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string
-			switch rpcEndpoint.ApiInterface {
-			case spectypes.APIInterfaceTendermintRPC:
-				subscriptionIdExtractorFunc = func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
+			subscriptionIdExtractorFunc := func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
+				if request.GetApiCollection().CollectionData.ApiInterface == spectypes.APIInterfaceTendermintRPC {
 					params, err := gojson.Marshal(request.GetRPCMessage().GetParams())
 					if err != nil {
 						utils.LavaFormatWarning("failed marshaling params", err, utils.LogAttr("request", request))
@@ -312,10 +311,9 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 					}
 					return string(params)
 				}
-			case spectypes.APIInterfaceJsonRPC:
-				subscriptionIdExtractorFunc = func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
-					return string(reply.Result)
-				}
+				return string(reply.Result)
+			}
+			if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 				specMethodType = http.MethodPost
 			}
 			consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, subscriptionIdExtractorFunc)
