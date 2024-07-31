@@ -26,6 +26,7 @@ Please note that this module replaces Cosmos SDK's mint module, which is typical
 * [Queries](#queries)
 * [Transactions](#transactions)
 * [Proposals](#proposals)
+* [Events](#events)
 
 ## Concepts
 
@@ -230,3 +231,7 @@ The rewards module has the following events:
 | `set_iprpc_data`     | a successful setting of IPRPC data   |
 | `fund_iprpc`     | a successful funding of the IPRPC pool   |
 | `transfer_iprpc_reward_to_next_month`     | a successful transfer of the current month's IPRPC reward to the next month. Happens when there are no providers eligible for IPRPC rewards in the current month   |
+| `provider_reward` | a successful reward transfer to a provider |
+| `delegator_reward` | a successful reward transfer to a delegator |
+
+Note, providers and their delegators get rewards for several reasons: subscription rewards (relay payments), providers bonus rewards and IPRPC rewards. Those reasons and additional information are included in the `provider_reward` and `delegator_reward` events.
