@@ -101,12 +101,13 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 	}
 }
 
-func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf) error {
+func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, rawQoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu
 	scs.RelayNum += RelayNumberIncrement   // increase relayNum
 	if scs.RelayNum > 1 {
 		// we only set excellence for sessions with more than one successful relays, this guarantees data within the epoch exists
 		scs.QoSInfo.LastExcellenceQoSReport = qoSExcellenceReport
+		scs.QoSInfo.LastExcellenceQoSReportRaw = rawQoSExcellenceReport
 	}
 	scs.relayProcessor = usedProviders
 	return nil

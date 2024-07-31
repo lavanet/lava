@@ -57,6 +57,8 @@ type ProviderData struct {
 	Latency      score.ScoreStore // will be used to calculate the latency score
 	Sync         score.ScoreStore // will be used to calculate the sync score for spectypes.LATEST_BLOCK/spectypes.NOT_APPLICABLE requests
 	SyncBlock    uint64           // will be used to calculate the probability of block error
+	LatencyRaw   score.ScoreStore // will be used when reporting reputation to the node (Latency = LatencyRaw / baseLatency)
+	SyncRaw      score.ScoreStore // will be used when reporting reputation to the node (Sync = SyncRaw / baseSync)
 }
 
 type Strategy int
@@ -90,14 +92,14 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 			if isHangingApi {
 				baseLatency += po.averageBlockTime / 2 // hanging apis take longer
 			}
-			providerData = po.updateProbeEntryLatency(providerData, latency, baseLatency, RELAY_UPDATE_WEIGHT, halfTime, sampleTime)
+			providerData = po.updateProbeEntryLatency(providerData, latency, baseLatency, RELAY_UPDATE_WEIGHT, halfTime, sampleTime, isHangingApi)
 		}
 		if syncBlock > providerData.SyncBlock {
 			// do not allow providers to go back
 			providerData.SyncBlock = syncBlock
 		}
 		syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock, sampleTime)
-		providerData = po.updateProbeEntrySync(providerData, syncLag, po.averageBlockTime, halfTime, sampleTime)
+		providerData = po.updateProbeEntrySync(providerData, syncLag, po.averageBlockTime, halfTime, sampleTime, isHangingApi)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 	po.updateRelayTime(providerAddress, sampleTime)
@@ -113,7 +115,7 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	providerData = po.updateProbeEntryAvailability(providerData, success, PROBE_UPDATE_WEIGHT, halfTime, sampleTime)
 	if success && latency > 0 {
 		// base latency for a probe is the world latency
-		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime, sampleTime)
+		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime, sampleTime, true)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 	if debug {
@@ -353,10 +355,10 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 	return providerData, found
 }
 
-func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync, baseSync, halfTime time.Duration, sampleTime time.Time) ProviderData {
+func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync, baseSync, halfTime time.Duration, sampleTime time.Time, isHangingApi bool) ProviderData {
 	newScore := score.NewScoreStore(sync.Seconds(), baseSync.Seconds(), sampleTime)
 	oldScore := providerData.Sync
-	providerData.Sync = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT, sampleTime)
+	providerData.Sync, providerData.SyncRaw = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT, sampleTime, isHangingApi)
 	return providerData
 }
 
@@ -368,15 +370,15 @@ func (po *ProviderOptimizer) updateProbeEntryAvailability(providerData ProviderD
 	}
 	oldScore := providerData.Availability
 	newScore := score.NewScoreStore(newNumerator, 1, sampleTime) // denom is 1, entry time is now
-	providerData.Availability = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
+	providerData.Availability, _ = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime, true)
 	return providerData
 }
 
 // update latency data, base latency is the latency for the api defined in the spec
-func (po *ProviderOptimizer) updateProbeEntryLatency(providerData ProviderData, latency, baseLatency time.Duration, weight float64, halfTime time.Duration, sampleTime time.Time) ProviderData {
+func (po *ProviderOptimizer) updateProbeEntryLatency(providerData ProviderData, latency, baseLatency time.Duration, weight float64, halfTime time.Duration, sampleTime time.Time, isHangingApi bool) ProviderData {
 	newScore := score.NewScoreStore(latency.Seconds(), baseLatency.Seconds(), sampleTime)
 	oldScore := providerData.Latency
-	providerData.Latency = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
+	providerData.Latency, providerData.LatencyRaw = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime, isHangingApi)
 	return providerData
 }
 
@@ -464,10 +466,10 @@ func pertrubWithNormalGaussian(orig, percentage float64) float64 {
 	return orig + perturb
 }
 
-func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress string) *pairingtypes.QualityOfServiceReport {
+func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress string) (qosReport *pairingtypes.QualityOfServiceReport, rawQosReport *pairingtypes.QualityOfServiceReport) {
 	providerData, found := po.getProviderData(providerAddress)
 	if !found {
-		return nil
+		return nil, nil
 	}
 	precision := WANTED_PRECISION
 	latencyScore := turnFloatToDec(providerData.Latency.Num/providerData.Latency.Denom, precision)
@@ -482,10 +484,19 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 		Availability: availabilityScore,
 		Sync:         syncScore,
 	}
-	if debug {
-		utils.LavaFormatDebug("QoS Excellence for provider", utils.Attribute{Key: "address", Value: providerAddress}, utils.Attribute{Key: "Report", Value: ret})
+
+	latencyScoreRaw := turnFloatToDec(providerData.LatencyRaw.Num/providerData.LatencyRaw.Denom, precision)
+	syncScoreRaw := turnFloatToDec(providerData.SyncRaw.Num/providerData.SyncRaw.Denom, precision)
+	rawQosReport = &pairingtypes.QualityOfServiceReport{
+		Latency:      latencyScoreRaw,
+		Availability: availabilityScore,
+		Sync:         syncScoreRaw,
 	}
-	return ret
+
+	if debug {
+		utils.LavaFormatDebug("QoS Excellence for provider", utils.Attribute{Key: "address", Value: providerAddress}, utils.Attribute{Key: "Report", Value: ret}, utils.Attribute{Key: "raw_report", Value: rawQosReport})
+	}
+	return ret, rawQosReport
 }
 
 func turnFloatToDec(floatNum float64, precision int64) sdk.Dec {
