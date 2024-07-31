@@ -184,7 +184,7 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, provide
 	key := collections.Join(chainID, provider)
 	err := k.stakeEntriesCurrent.Remove(ctx, key)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("RemoveStakeEntryCurrent: Failed to remove entry with key %v, error: %w", key, err))
 	}
 }
 
