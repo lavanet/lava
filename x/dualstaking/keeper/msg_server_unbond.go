@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/utils"
+	commontypes "github.com/lavanet/lava/v2/utils/common/types"
 	"github.com/lavanet/lava/v2/x/dualstaking/types"
 )
 
@@ -43,9 +44,9 @@ func (k Keeper) UnbondFull(ctx sdk.Context, delegator string, validator string, 
 		ctx,
 		delegator,
 		provider,
-		types.EMPTY_PROVIDER,
+		commontypes.EMPTY_PROVIDER,
 		chainID,
-		types.EMPTY_PROVIDER_CHAINID,
+		commontypes.EMPTY_PROVIDER_CHAINID,
 		amount,
 	)
 	if err != nil {

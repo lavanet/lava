@@ -9,6 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/utils"
+	commontypes "github.com/lavanet/lava/v2/utils/common/types"
 	dualstakingv4 "github.com/lavanet/lava/v2/x/dualstaking/migrations/v4"
 	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
@@ -113,7 +114,7 @@ func (m Migrator) HandleProviderDelegators(ctx sdk.Context) error {
 			continue
 		}
 
-		if d.Delegator == d.Provider || d.Provider == dualstakingtypes.EMPTY_PROVIDER {
+		if d.Delegator == d.Provider || d.Provider == commontypes.EMPTY_PROVIDER {
 			continue
 		}
 

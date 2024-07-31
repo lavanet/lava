@@ -12,19 +12,20 @@ import (
 )
 
 type SingleConsumerSession struct {
-	CuSum             uint64
-	LatestRelayCu     uint64 // set by GetSessions cuNeededForSession
-	QoSInfo           QoSReport
-	SessionId         int64
-	Parent            *ConsumerSessionsWithProvider
-	lock              utils.LavaMutex
-	RelayNum          uint64
-	LatestBlock       int64
-	Endpoint          *Endpoint
-	BlockListed       bool // if session lost sync we blacklist it.
-	ConsecutiveErrors []error
-	errorsCount       uint64
-	relayProcessor    UsedProvidersInf
+	CuSum         uint64
+	LatestRelayCu uint64 // set by GetSessions cuNeededForSession
+	QoSInfo       QoSReport
+	SessionId     int64
+	Parent        *ConsumerSessionsWithProvider
+	lock          utils.LavaMutex
+	RelayNum      uint64
+	LatestBlock   int64
+	// Each session will holds a pointer to a connection, if the connection is lost, this session will be banned (wont be picked)
+	EndpointConnection *EndpointConnection
+	BlockListed        bool // if session lost sync we blacklist it.
+	ConsecutiveErrors  []error
+	errorsCount        uint64
+	relayProcessor     UsedProvidersInf
 }
 
 // returns the expected latency to a threshold.
@@ -116,6 +117,7 @@ func (scs *SingleConsumerSession) Free(err error) {
 		scs.relayProcessor.RemoveUsed(scs.Parent.PublicLavaAddress, err)
 		scs.relayProcessor = nil
 	}
+	scs.EndpointConnection.decreaseSessionUsingConnection()
 	scs.lock.Unlock()
 }
 
@@ -131,6 +133,7 @@ func (session *SingleConsumerSession) TryUseSession() (blocked bool, ok bool) {
 			session.lock.Unlock()
 			return true, false
 		}
+		session.EndpointConnection.addSessionUsingConnection()
 		return false, true
 	}
 	return false, false

@@ -146,7 +146,7 @@ func prepareSessionsWithFirstRelay(t *testing.T, cuForFirstRequest uint64) (*Con
 	cswpList := make(map[uint64]*ConsumerSessionsWithProvider, 1)
 	pairingEndpoints := make([]*Endpoint, 1)
 	// we need a grpc server to connect to. so we use the public rpc endpoint for now.
-	pairingEndpoints[0] = &Endpoint{NetworkAddress: grpcListener, Enabled: true, Client: nil, ConnectionRefusals: 0}
+	pairingEndpoints[0] = &Endpoint{NetworkAddress: grpcListener, Enabled: true, Connections: []*EndpointConnection{}, ConnectionRefusals: 0}
 	cswpList[0] = &ConsumerSessionsWithProvider{
 		PublicLavaAddress: "provider",
 		Endpoints:         pairingEndpoints,

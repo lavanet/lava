@@ -253,7 +253,11 @@ func TestHandleConsistency(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), play.timeout)
 			latestBlock, _, timeSlept, err := rpcproviderServer.handleConsistency(ctx, play.timeout, seenBlock, requestBlock, averageBlockTime, blockLagForQosSync, blocksInFinalizationData, blockDistanceToFinalization)
 			cancel()
-			require.Equal(t, play.err == nil, err == nil, strconv.Itoa(calls))
+			if play.err != nil {
+				require.Error(t, err, strconv.Itoa(calls))
+			} else {
+				require.NoError(t, err, strconv.Itoa(calls))
+			}
 			require.Less(t, timeSlept, play.timeout)
 			if play.sleep {
 				require.NotZero(t, timeSlept)

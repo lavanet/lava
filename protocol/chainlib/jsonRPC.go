@@ -433,6 +433,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		defer endTx()
 		dappID := extractDappIDFromFiberContext(fiberCtx)
 		metricsData := metrics.NewRelayAnalytics(dappID, chainID, apiInterface)
+		metricsData.SetProcessingTimestampBeforeRelay(startTime)
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		guid := utils.GenerateUniqueIdentifier()
@@ -506,8 +507,10 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 		if relayResult.GetStatusCode() != 0 {
 			fiberCtx.Status(relayResult.StatusCode)
 		}
-		// Return json response
-		return addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		// Return json response and add metric for after provider processing
+		err = addHeadersAndSendString(fiberCtx, reply.GetMetadata(), response)
+		apil.logger.AddMetricForProcessingLatencyAfterProvider(metricsData, chainID, apiInterface)
+		return err
 	}
 	if apil.refererData != nil && apil.refererData.Marker != "" {
 		app.Use("/"+apil.refererData.Marker+":"+refererMatchString+"/ws", func(c *fiber.Ctx) error {

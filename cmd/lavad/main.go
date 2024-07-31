@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/rpcconsumer"
 	"github.com/lavanet/lava/v2/protocol/rpcprovider"
 	"github.com/lavanet/lava/v2/protocol/statetracker"
+	utilscli "github.com/lavanet/lava/v2/utils/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -49,11 +50,12 @@ func main() {
 	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
+	testCmd.AddCommand(utilscli.NewMultiSendTxCmd())
+	testCmd.AddCommand(utilscli.NewQueryTotalGasCmd())
 
 	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
 		flags.FlagChainID:       strings.ReplaceAll(app.Name, "-", ""),
 		flags.FlagGasAdjustment: statetracker.DefaultGasAdjustment,
-		flags.FlagGasPrices:     statetracker.DefaultGasPrice,
 	})
 
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {

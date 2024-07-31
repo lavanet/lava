@@ -89,6 +89,7 @@ type ChainMessageForSend interface {
 	GetApi() *spectypes.Api
 	GetRPCMessage() rpcInterfaceMessages.GenericMessage
 	GetApiCollection() *spectypes.ApiCollection
+	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 }
 
 type HealthReporter interface {

@@ -87,6 +87,14 @@ func NewRPCConsumerLogs(consumerMetricsManager *ConsumerMetricsManager, consumer
 	return rpcConsumerLogs, err
 }
 
+func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
+}
+
+func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelayNodeErrorMetric(chainId, apiInterface)
+}
+
 func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
 }
@@ -154,6 +162,20 @@ func (rpccl *RPCConsumerLogs) LogStartTransaction(name string) func() {
 	}
 }
 
+// AddMetricForProcessingLatencyBeforeProvider adds a time calculation metric for the consumer's processing time before sending a relay to a provider
+// it returns whether the latency was added or not
+func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyBeforeProvider(analytics *RelayMetrics, chainId string, apiInterface string) {
+	if analytics != nil && analytics.ProcessingTimestamp.Before(time.Now()) {
+		go rpccl.consumerMetricsManager.SetRelayProcessingLatencyBeforeProvider(time.Since(analytics.ProcessingTimestamp), chainId, apiInterface)
+	}
+}
+
+func (rpccl *RPCConsumerLogs) AddMetricForProcessingLatencyAfterProvider(analytics *RelayMetrics, chainId string, apiInterface string) {
+	if analytics != nil && analytics.MeasureAfterProviderProcessingTime && analytics.ProcessingTimestamp.Before(time.Now()) {
+		go rpccl.consumerMetricsManager.SetRelayProcessingLatencyAfterProvider(time.Since(analytics.ProcessingTimestamp), chainId, apiInterface)
+	}
+}
+
 func (rpccl *RPCConsumerLogs) AddMetricForHttp(data *RelayMetrics, err error, headers map[string][]string) {
 	rpccl.consumerMetricsManager.SetRelayMetrics(data, err)
 	rpccl.consumerRelayServerClient.SetRelayMetrics(data)
@@ -210,14 +232,6 @@ func (rpccl *RPCConsumerLogs) shouldCountMetrics(refererHeaderValue string, user
 		}
 	}
 	return true
-}
-
-func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(chainId string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetRelaySentToProviderMetric(chainId, apiInterface)
-}
-
-func (rpccl *RPCConsumerLogs) SetRelayReturnedFromProviderMetric(chainId string, apiInterface string) {
-	rpccl.consumerMetricsManager.SetRelayReturnedFromProviderMetric(chainId, apiInterface)
 }
 
 func (rpccl *RPCConsumerLogs) SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string) {
