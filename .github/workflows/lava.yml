@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+      - PRT-1178-subscriptions-phase-1-without-handover
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -16,69 +17,69 @@ jobs:
   test-consensus:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version-file: go.mod
-        cache-dependency-path: go.sum
-    - name: cp lava
-      run:  cp -r ~/work/lava/lava ~/go/lava 
-    - name: export PATH
-      run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
-    - name: export GOPATH
-      run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
-    - name: export LAVA
-      run: export LAVA=/home/runner/work/lava/lava
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: cp lava
+        run: cp -r ~/work/lava/lava ~/go/lava
+      - name: export PATH
+        run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
+      - name: export GOPATH
+        run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
+      - name: export LAVA
+        run: export LAVA=/home/runner/work/lava/lava
 
-    ######################################################
-    ### Run Consensus unitests
-    ######################################################
-    - name: Lava Unit Tests
-      run: |
-        go install github.com/jstemmer/go-junit-report/v2@latest
-        go test -v ./utils/... | go-junit-report -iocopy -set-exit-code -out utils-report.xml  
-        go test -v ./common/... | go-junit-report -iocopy -set-exit-code -out common-report.xml  
-        go test -v ./x/... | go-junit-report -iocopy -set-exit-code -out x-report.xml  
-    
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: Test Results (Consensus)
-        path: "*-report.xml"
+      ######################################################
+      ### Run Consensus unitests
+      ######################################################
+      - name: Lava Unit Tests
+        run: |
+          go install github.com/jstemmer/go-junit-report/v2@latest
+          go test -v ./utils/... | go-junit-report -iocopy -set-exit-code -out utils-report.xml  
+          go test -v ./common/... | go-junit-report -iocopy -set-exit-code -out common-report.xml  
+          go test -v ./x/... | go-junit-report -iocopy -set-exit-code -out x-report.xml
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Test Results (Consensus)
+          path: "*-report.xml"
 
   test-protocol:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version-file: go.mod
-        cache-dependency-path: go.sum
-    - name: cp lava
-      run:  cp -r ~/work/lava/lava ~/go/lava 
-    - name: export GOPATH
-      run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
-    - name: export PATH
-      run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/:$GOPATH/bin
-    - name: export LAVA
-      run: export LAVA=/home/runner/work/lava/lava
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+      - name: cp lava
+        run: cp -r ~/work/lava/lava ~/go/lava
+      - name: export GOPATH
+        run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
+      - name: export PATH
+        run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/:$GOPATH/bin
+      - name: export LAVA
+        run: export LAVA=/home/runner/work/lava/lava
 
-    ######################################################
-    ### Run protocol unitests
-    ######################################################
-    - name: Run Lava Protocol Tests
-      run: |
-        go install github.com/jstemmer/go-junit-report/v2@latest
-        go test -v ./protocol/... | go-junit-report -iocopy -set-exit-code -out protocol-report.xml  
-        go test -v ./ecosystem/cache/... | go-junit-report -iocopy -set-exit-code -out cache-report.xml
-    
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: Test Results (Protocol)
-        path: "*-report.xml"
+      ######################################################
+      ### Run protocol unitests
+      ######################################################
+      - name: Run Lava Protocol Tests
+        run: |
+          go install github.com/jstemmer/go-junit-report/v2@latest
+          go test -v ./protocol/... | go-junit-report -iocopy -set-exit-code -out protocol-report.xml  
+          go test -v ./ecosystem/cache/... | go-junit-report -iocopy -set-exit-code -out cache-report.xml
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Test Results (Protocol)
+          path: "*-report.xml"
 
   test-protocol-e2e:
     runs-on: ubuntu-latest
@@ -96,7 +97,7 @@ jobs:
         run: |
           go install github.com/jstemmer/go-junit-report/v2@latest
           go test ./testutil/e2e/ -run ^TestLavaProtocol$ -v -timeout 1200s | go-junit-report -iocopy -set-exit-code -out protocol-e2e-report.xml  # 20mins
-      
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -107,7 +108,7 @@ jobs:
       - name: tail -n 1000 Lavad Logs
         if: always()
         run: tail -n 1000 testutil/e2e/protocolLogs/00_StartLava.log
-      
+
       - name: Print all warnings and errors from lavad
         continue-on-error: true
         if: always()
@@ -179,7 +180,7 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/06_RPCConsumer* --include="*errors*"
-      
+
       - name: Upload Protocol E2E Logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -187,7 +188,7 @@ jobs:
           name: Protocol E2E Logs
           path: "testutil/e2e/protocolLogs/*"
 
-  # Temporarly disabled due to a bug in the signature. 
+  # Temporarly disabled due to a bug in the signature.
   # test-sdk-e2e:
   #   runs-on: ubuntu-latest
   #   steps:
@@ -297,7 +298,7 @@ jobs:
   #       if: always()
   #       continue-on-error: true
   #       run: grep "" testutil/e2e/sdkLogs/01_sdkTest* --include="*errors*"
-      
+
   #     - name: Upload SDK E2E Logs
   #       if: always()
   #       uses: actions/upload-artifact@v4
@@ -321,7 +322,7 @@ jobs:
         run: |
           go install github.com/jstemmer/go-junit-report/v2@latest
           go test ./testutil/e2e/ -run ^TestLavaProtocolPayment$ -v -timeout 1200s | go-junit-report -iocopy -set-exit-code -out payment-e2e-report.xml # 20mins
-      
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -359,8 +360,8 @@ jobs:
         if: always()
         continue-on-error: true
         run: grep "" testutil/e2e/protocolLogs/06_RPCConsumer* --include="*errors*"
-    
-      - name: Upload Payment E2E Logs 
+
+      - name: Upload Payment E2E Logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -369,8 +370,7 @@ jobs:
 
   report-tests-results:
     runs-on: ubuntu-latest
-    needs:
-      [
+    needs: [
         test-consensus,
         test-protocol,
         test-protocol-e2e,
@@ -407,13 +407,13 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3      
+        uses: docker/setup-buildx-action@v3
       - name: Log into registry ${{ env.REGISTRY }}
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}  
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -466,7 +466,7 @@ jobs:
       - name: Build ${{ matrix.binary }}
         run: |
           GOWRK=off go build -o out/${{ matrix.binary }} cmd/${{ matrix.binary }}/main.go
-      
+
       - name: Upload Lava Artifacts
         uses: actions/upload-artifact@v4
         with:
