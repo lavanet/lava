@@ -17,11 +17,17 @@ jobs:
   release:
     name: 'release'
     runs-on: ubuntu-latest
+    container:
+      image: goreleaser/goreleaser-cross:v1.22
 
     permissions:
       contents: write
       
     steps:
+    - name: Mark github workspace as safe
+      run: |
+        sh -c "git config --global --add safe.directory $PWD"
+
     - name: Checkout code
       uses: actions/checkout@v4
       with:
@@ -43,7 +49,7 @@ jobs:
       id: releaser
       uses: goreleaser/goreleaser-action@v5
       with:
-        version: latest
+        version: '~> v2'
         args: release --clean --timeout 90m
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

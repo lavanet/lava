@@ -369,7 +369,10 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	latestBlock := atomic.LoadInt64(&cf.latestBlock) // assuming FetchLatestBlockNum is called before this one it's always true
 	if latestBlock > 0 {
 		finalized := spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceToFinalization)
-		cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply.RelayReply, []byte(res), finalized)
+		isNodeError, _ := chainMessage.CheckResponseError(reply.RelayReply.Data, reply.StatusCode)
+		if !isNodeError { // skip cache populate on node errors, this is a protection but should never get here with node error as we parse the result prior.
+			cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply.RelayReply, []byte(res), finalized)
+		}
 	}
 	return res, nil
 }

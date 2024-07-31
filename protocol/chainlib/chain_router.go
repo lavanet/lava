@@ -2,7 +2,6 @@ package chainlib
 
 import (
 	"context"
-	"strings"
 	"sync"
 
 	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
@@ -170,7 +169,7 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 	// validating we have websocket support for subscription supported specs.
 	webSocketSupported := false
 	for key := range supportedMap {
-		if strings.Contains(key.String(), WebSocketExtension) {
+		if key.IsRequirementMet(WebSocketExtension) {
 			webSocketSupported = true
 		}
 	}
@@ -195,6 +194,10 @@ type requirementSt struct {
 
 func (rs *requirementSt) String() string {
 	return string(rs.extensions) + rs.addon
+}
+
+func (rs *requirementSt) IsRequirementMet(requirement string) bool {
+	return string(rs.extensions) == requirement || rs.addon == requirement
 }
 
 func populateRequiredForAddon(addon string, extensions []string, required map[requirementSt]struct{}) {

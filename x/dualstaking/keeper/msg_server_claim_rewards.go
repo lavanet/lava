@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/utils"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 	"github.com/lavanet/lava/x/dualstaking/types"
 )
 
@@ -16,7 +17,7 @@ func (k msgServer) ClaimRewards(goCtx context.Context, msg *types.MsgClaimReward
 		return &types.MsgClaimRewardsResponse{}, utils.LavaFormatError("invalid creator address", err)
 	}
 
-	if msg.Provider != "" && msg.Provider != types.EMPTY_PROVIDER {
+	if msg.Provider != "" && msg.Provider != commontypes.EMPTY_PROVIDER {
 		_, err = sdk.AccAddressFromBech32(msg.Provider)
 		if err != nil {
 			return &types.MsgClaimRewardsResponse{}, utils.LavaFormatError("invalid provider address", err)

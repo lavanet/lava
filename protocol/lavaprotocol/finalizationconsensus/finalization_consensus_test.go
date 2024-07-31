@@ -179,12 +179,7 @@ func TestQoS(t *testing.T) {
 				UsedComputeUnits:  0,
 				PairingEpoch:      epoch,
 			}
-			singleConsumerSession, _, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(&lavasession.Endpoint{
-				NetworkAddress:     "",
-				Enabled:            true,
-				Client:             nil,
-				ConnectionRefusals: 0,
-			}, 1)
+			singleConsumerSession, _, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(&lavasession.EndpointConnection{}, 1)
 			require.NoError(t, err)
 			require.NotNil(t, singleConsumerSession)
 

@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	commontypes "github.com/lavanet/lava/utils/common/types"
 )
 
 func IsBech32Address(addr string) bool {
@@ -17,7 +18,7 @@ func ParseCLIAddress(clientCtx client.Context, address string) (string, error) {
 		// empty address --> address = creator
 		address = clientCtx.GetFromAddress().String()
 	} else {
-		if IsBech32Address(address) {
+		if IsBech32Address(address) || address == commontypes.EMPTY_PROVIDER {
 			return address, nil
 		}
 

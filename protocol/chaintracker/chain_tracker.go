@@ -371,6 +371,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 	if err != nil {
 		return err
 	}
+	utils.LavaFormatDebug("ChainTracker fetched init data successfully")
 	blockGapTicker := time.NewTicker(pollingTime) // initially every block we check for a polling time
 	// Polls blocks and keeps a queue of them
 	go func() {

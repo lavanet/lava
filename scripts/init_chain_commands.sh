@@ -6,7 +6,7 @@ source $__dir/useful_commands.sh
 echo "current vote number $(latest_vote)"
 killall screen
 screen -wipe
-GASPRICE="0.000000001ulava"
+GASPRICE="0.00002ulava"
 
 echo; echo "#### Sending proposal for specs ####"
 cd ./cookbook/specs/

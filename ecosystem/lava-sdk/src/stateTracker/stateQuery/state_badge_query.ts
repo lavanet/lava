@@ -43,7 +43,7 @@ export class StateBadgeQuery {
 
   // fetchPairing fetches pairing for all chainIDs we support
   public async fetchPairing(): Promise<number> {
-    Logger.debug("Fetching pairing started");
+    Logger.debug("Fetching pairing from badge started");
 
     let timeLeftToNextPairing;
     let virtualEpoch;
@@ -110,7 +110,7 @@ export class StateBadgeQuery {
     this.virtualEpoch = virtualEpoch;
     this.currentEpoch = currentEpoch;
 
-    Logger.debug("Fetching pairing ended");
+    Logger.debug("Fetching pairing from badge ended", timeLeftToNextPairing);
 
     return timeLeftToNextPairing;
   }

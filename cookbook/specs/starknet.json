@@ -9,9 +9,9 @@
                 "enabled": true,
                 "reliability_threshold": 268435455,
                 "data_reliability_enabled": true,
-                "block_distance_for_finalized_data": 1,
+                "block_distance_for_finalized_data": 6,
                 "blocks_in_finalization_proof": 3,
-                "average_block_time": 180000,
+                "average_block_time": 12000,
                 "allowed_block_lag_for_qos_sync": 2,
                 "shares": 1,
                 "min_stake_provider": {
