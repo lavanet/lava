@@ -120,7 +120,7 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	providerData = po.updateProbeEntryAvailability(providerData, success, PROBE_UPDATE_WEIGHT, halfTime, sampleTime)
 	if success && latency > 0 {
 		// base latency for a probe is the world latency
-		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime, sampleTime, true)
+		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime, sampleTime, false)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 
@@ -386,7 +386,7 @@ func (po *ProviderOptimizer) updateProbeEntryAvailability(providerData ProviderD
 	}
 	oldScore := providerData.Availability
 	newScore := score.NewScoreStore(newNumerator, 1, sampleTime) // denom is 1, entry time is now
-	providerData.Availability, _ = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime, true)
+	providerData.Availability, _ = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime, false)
 	return providerData
 }
 
