@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -31,6 +32,8 @@ const (
 
 type MetricsInterface interface {
 	SetRelayNodeErrorMetric(chainId string, apiInterface string)
+	SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
+	SetNodeErrorAttemptMetric(chainId string, apiInterface string)
 }
 
 type chainIdAndApiInterfaceGetter interface {
@@ -315,16 +318,17 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 			// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
 
 			// Check hash already exist, if it does, we don't want to retry
-			if !rp.relayRetriesManager.CheckHashInMap(hash) {
+			if !rp.relayRetriesManager.CheckHashInCache(hash) {
 				// If we didn't find the hash in the hash map we can retry
 				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
+				go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
 				return false
 			}
 			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))
 		} else {
 			// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
 			utils.LavaFormatTrace("adding hash to hash map after NumberOfRetriesAllowedOnNodeErrors errors", utils.LogAttr("hash", hash))
-			rp.relayRetriesManager.AddHashToMap(hash)
+			rp.relayRetriesManager.AddHashToCache(hash)
 		}
 	}
 	// Do not perform a retry
@@ -343,12 +347,21 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 	if resultsCount >= rp.requiredSuccesses {
 		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
 			// Use a routine to run it in parallel
-			go rp.relayRetriesManager.RemoveHashFromMap(hash)
+			go rp.relayRetriesManager.RemoveHashFromCache(hash)
+		}
+		// Check if we need to add node errors retry metrics
+		if rp.selection == Quorum {
+			// If nodeErrors length is larger than 0, our retry mechanism was activated. we add our metrics now.
+			nodeErrors := len(rp.nodeResponseErrors.relayErrors)
+			if nodeErrors > 0 {
+				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
+				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
+			}
 		}
 		return true
 	}
 	if rp.selection == Quorum {
-		// we need a quorum of all node results
+		// We need a quorum of all node results
 		nodeErrors := len(rp.nodeResponseErrors.relayErrors)
 		if nodeErrors+resultsCount >= rp.requiredSuccesses {
 			// Retry on node error flow:
