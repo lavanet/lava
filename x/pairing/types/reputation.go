@@ -56,3 +56,7 @@ func (r Reputation) Equal(other Reputation) bool {
 	return r.Score.Equal(other.Score) && r.EpochScore.Equal(other.EpochScore) &&
 		r.TimeLastUpdated == other.TimeLastUpdated && r.CreationTime == other.CreationTime
 }
+
+func ReputationScoreKey(chainID string, cluster string, provider string) string {
+	return chainID + " " + cluster + " " + provider
+}

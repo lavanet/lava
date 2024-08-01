@@ -12,6 +12,7 @@ import (
 /*
 
 Reputation is a provider performance metric calculated using QoS excellence reports that are retrieved from relay payments.
+Higher reputation improves the provider's chance to be picked in the pairing mechanism.
 
 The reputations are kept within an indexed map called "reputations" in the keeper. An indexed map allows accessing map
 entries using two type of keys: primary keys and reference keys. The primary keys are the regular map keys, each point
@@ -25,6 +26,9 @@ that share the same chain ID and cluster.
 
 Since the collections package doesn't support getting the full list of reference keys from an indexed map, we save a KeySet
 of the reference keys in the keeper in the "reputationRefKeys" field.
+
+The reputation's pairing score is kept in the reputations fixation store so pairing queries will be deterministic for
+past blocks.
 
 */
 
@@ -101,4 +105,62 @@ func (k Keeper) GetAllReputation(ctx sdk.Context) []types.ReputationGenesis {
 	}
 
 	return entries
+}
+
+// GetReputationScore returns the current reputation pairing score
+func (k Keeper) GetReputationScore(ctx sdk.Context, chainID string, cluster string, provider string) (val types.ReputationPairingScore, found bool) {
+	block := uint64(ctx.BlockHeight())
+	key := types.ReputationScoreKey(chainID, cluster, provider)
+
+	var score types.ReputationPairingScore
+	found = k.reputationsFS.FindEntry(ctx, key, block, &score)
+
+	return score, found
+}
+
+// GetReputationScore returns a reputation pairing score in a specific block
+func (k Keeper) GetReputationScoreForBlock(ctx sdk.Context, chainID string, cluster string, provider string, block uint64) (val types.ReputationPairingScore, entryBlock uint64, found bool) {
+	var score types.ReputationPairingScore
+	key := types.ReputationScoreKey(chainID, cluster, provider)
+
+	entryBlock, _, _, found = k.reputationsFS.FindEntryDetailed(ctx, key, block, &score)
+	return score, entryBlock, found
+}
+
+// SetReputationScore sets a reputation pairing score
+func (k Keeper) SetReputationScore(ctx sdk.Context, chainID string, cluster string, provider string, score types.ReputationPairingScore) error {
+	key := types.ReputationScoreKey(chainID, cluster, provider)
+	err := k.reputationsFS.AppendEntry(ctx, key, uint64(ctx.BlockHeight()), &score)
+	if err != nil {
+		return utils.LavaFormatError("SetReputationScore: set reputation pairing score failed", err,
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("cluster", cluster),
+			utils.LogAttr("provider", provider),
+			utils.LogAttr("score", score.String()),
+		)
+	}
+
+	return nil
+}
+
+// RemoveReputationScore removes a reputation pairing score
+func (k Keeper) RemoveReputationScore(ctx sdk.Context, chainID string, cluster string, provider string) error {
+	block := uint64(ctx.BlockHeight())
+	nextEpoch, err := k.epochStorageKeeper.GetNextEpoch(ctx, block)
+	if err != nil {
+		return utils.LavaFormatError("RemoveReputationScore: get next epoch failed", err,
+			utils.LogAttr("block", block),
+		)
+	}
+	key := types.ReputationScoreKey(chainID, cluster, provider)
+
+	err = k.reputationsFS.DelEntry(ctx, key, nextEpoch)
+	if err != nil {
+		return utils.LavaFormatError("RemoveReputationScore: delete score failed", err,
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("cluster", cluster),
+			utils.LogAttr("provider", provider),
+		)
+	}
+	return nil
 }
