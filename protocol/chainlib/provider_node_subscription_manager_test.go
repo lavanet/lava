@@ -58,7 +58,7 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 		subscriptionFirstReply  []byte
 	}{
 		{
-			name:                    "TendermintRPC",
+			name:                    "Lava_TendermintRPC",
 			specId:                  "LAV1",
 			apiInterface:            spectypes.APIInterfaceTendermintRPC,
 			connectionType:          "",
@@ -66,12 +66,21 @@ func TestSubscriptionManager_HappyFlow(t *testing.T) {
 			subscriptionFirstReply:  []byte(`{"jsonrpc":"2.0","id":3,"result":{}}`),
 		},
 		{
-			name:                    "JsonRPC",
+			name:                    "Ethereum_JsonRPC",
 			specId:                  "ETH1",
 			apiInterface:            spectypes.APIInterfaceJsonRPC,
 			connectionType:          "POST",
 			subscriptionRequestData: []byte(`{"jsonrpc":"2.0","id":5,"method":"eth_subscribe","params":["newHeads"]}`),
 			subscriptionFirstReply:  []byte(`{"jsonrpc":"2.0","id":5,"result":"0x1234567890"}`),
+		},
+		{
+			name:           "StarkNet_JsonRPC",
+			specId:         "STRK",
+			apiInterface:   spectypes.APIInterfaceJsonRPC,
+			connectionType: "POST",
+
+			subscriptionRequestData: []byte(`{"jsonrpc":"2.0","id":5,"method":"pathfinder_subscribe","params":["newHeads"]}`),
+			subscriptionFirstReply:  []byte(`{"jsonrpc":"2.0","id":5,"result":1}`),
 		},
 	}
 
