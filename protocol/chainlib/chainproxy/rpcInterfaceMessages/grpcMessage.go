@@ -2,7 +2,6 @@ package rpcInterfaceMessages
 
 import (
 	"fmt"
-	"lava/protocol/chainlib/chainproxy/rpcclient"
 	"net/http"
 	"strings"
 
@@ -15,10 +14,12 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
 	dyncodec "github.com/lavanet/lava/v2/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/v2/protocol/parser"
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/utils/sigs"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"

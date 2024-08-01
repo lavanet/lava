@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v2/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v2/utils"
 	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
