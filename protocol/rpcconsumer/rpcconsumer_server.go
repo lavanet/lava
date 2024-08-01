@@ -90,7 +90,6 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	sharedState bool,
 	refererData *chainlib.RefererData,
 	reporter metrics.Reporter,
-	relayRetriesManager *RelayRetriesManager,
 ) (err error) {
 	rpccs.consumerSessionManager = consumerSessionManager
 	rpccs.listenEndpoint = listenEndpoint
@@ -108,7 +107,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.reporter = reporter
 	rpccs.debugRelays = cmdFlags.DebugRelays
 	rpccs.disableNodeErrorRetry = cmdFlags.DisableRetryOnNodeErrors
-	rpccs.relayRetriesManager = relayRetriesManager
+	rpccs.relayRetriesManager = NewRelayRetriesManager()
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData)
 	if err != nil {
 		return err

@@ -303,6 +303,34 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	return hashString, err
 }
 
+// Deciding wether we should send a relay retry attempt based on the node error
+func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, hash string) bool {
+	// Retries will be performed based on the following scenarios:
+	// 1. rp.disableRelayRetry == false, In case we want to try again if we have a node error.
+	// 2. If we have 0 successful relays and we have only node errors.
+	// 3. Hash calculation was successful.
+	// 4. Number of retries < NumberOfRetriesAllowedOnNodeErrors.
+	if !rp.disableRelayRetry && resultsCount == 0 && hashErr == nil {
+		if nodeErrors <= NumberOfRetriesAllowedOnNodeErrors {
+			// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
+
+			// Check hash already exist, if it does, we don't want to retry
+			if !rp.relayRetriesManager.CheckHashInMap(hash) {
+				// If we didn't find the hash in the hash map we can retry
+				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
+				return false
+			}
+			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))
+		} else {
+			// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
+			utils.LavaFormatTrace("adding hash to hash map after NumberOfRetriesAllowedOnNodeErrors errors", utils.LogAttr("hash", hash))
+			rp.relayRetriesManager.AddHashToMap(hash)
+		}
+	}
+	// Do not perform a retry
+	return true
+}
+
 func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 	if rp == nil {
 		return false
@@ -324,31 +352,7 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 		nodeErrors := len(rp.nodeResponseErrors.relayErrors)
 		if nodeErrors+resultsCount >= rp.requiredSuccesses {
 			// Retry on node error flow:
-			if !rp.disableRelayRetry { // In case we want to try again if we have a node error.
-				if resultsCount == 0 { // Only if we have 0 successful relays and we have only node errors.
-					// Only continue the retry flow if we managed to parse hash.
-					if hashErr == nil {
-						// Only send a maximum of NumberOfRetriesAllowedOnNodeErrors retries.
-						if nodeErrors <= NumberOfRetriesAllowedOnNodeErrors {
-							// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
-
-							// Check hash already exist, if it does, we don't want to retry
-							if !rp.relayRetriesManager.CheckHashInMap(hash) {
-								// If we didn't find the hash in the hash map we can retry
-								utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
-								return false
-							}
-							utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))
-						} else {
-							// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
-							utils.LavaFormatTrace("adding hash to hash map after NumberOfRetriesAllowedOnNodeErrors errors", utils.LogAttr("hash", hash))
-							rp.relayRetriesManager.AddHashToMap(hash)
-						}
-					}
-				}
-			}
-			// we have enough node results for our quorum
-			return true
+			return rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, hash)
 		}
 	}
 	// on BestResult we want to retry if there is no success
