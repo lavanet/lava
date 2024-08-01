@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -32,7 +33,10 @@ const (
 	WebSocketExtension         = "websocket"
 )
 
-var InvalidResponses = []string{"null", "", "nil", "undefined"}
+var (
+	InvalidResponses                   = []string{"null", "", "nil", "undefined"}
+	FailedSendingSubscriptionToClients = sdkerrors.New("Failed Sending Subscription To Clients", 1015, "Failed Sending Subscription To Clients connection might have been closed by the user")
+)
 
 type RelayReplyWrapper struct {
 	StatusCode int
