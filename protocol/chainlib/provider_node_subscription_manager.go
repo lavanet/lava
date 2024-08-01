@@ -401,6 +401,8 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 			)
 
 			copiedRequest := &pairingtypes.RelayRequest{}
+			// TODO: Optimization, a better way is to avoid ParseMsg multiple times by creating a deep copy for chain message.
+			// this way we can parse msg only once and use the copy method to save resources.
 			copyRequestErr := protocopy.DeepCopyProtoObject(connectedConsumerContainer.firstSetupRequest, copiedRequest)
 			if copyRequestErr != nil {
 				return utils.LavaFormatError("failed to copy subscription request", copyRequestErr)

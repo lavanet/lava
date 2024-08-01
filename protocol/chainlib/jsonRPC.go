@@ -219,7 +219,7 @@ func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, reque
 		msg:                      &batchMessage,
 		earliestRequestedBlock:   earliestRequestedBlock,
 		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
-		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		parseDirective:           nil,
 	}
 	return nodeMsg, err
 }
@@ -362,6 +362,7 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 			RefererData:                   apil.refererData,
 			RelaySender:                   apil.relaySender,
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
+			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
 		})
 
 		consumerWebsocketManager.ListenToMessages()

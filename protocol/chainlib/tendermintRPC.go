@@ -382,6 +382,7 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 			RefererData:                   apil.refererData,
 			RelaySender:                   apil.relaySender,
 			ConsumerWsSubscriptionManager: apil.consumerWsSubscriptionManager,
+			WebsocketConnectionUID:        strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10),
 		})
 
 		consumerWebsocketManager.ListenToMessages()

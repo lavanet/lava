@@ -1003,9 +1003,11 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 }
 
 func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hashedParams string, endpointClient pairingtypes.RelayerClient, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult) (err error) {
-	// relaySentTime := time.Now()
+	// add consumer guid to relay request.
+	metadataAdd := metadata.New(map[string]string{common.LAVA_CONSUMER_PROCESS_GUID: rpccs.consumerProcessGuid})
+	ctx = metadata.NewOutgoingContext(ctx, metadataAdd)
+
 	replyServer, err := endpointClient.RelaySubscribe(ctx, relayResult.Request)
-	// relayLatency := time.Since(relaySentTime) // TODO: use subscription QoS
 	if err != nil {
 		errReport := rpccs.consumerSessionManager.OnSessionFailure(singleConsumerSession, err)
 		if errReport != nil {

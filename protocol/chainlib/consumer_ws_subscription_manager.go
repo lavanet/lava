@@ -191,6 +191,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	relayRequestData *pairingtypes.RelayPrivateData,
 	dappID string,
 	consumerIp string,
+	webSocketConnectionUniqueId string,
 	metricsData *metrics.RelayMetrics,
 ) (firstReply *pairingtypes.RelayReply, repliesChan <-chan *pairingtypes.RelayReply, err error) {
 	hashedParams, _, err := cwsm.getHashedParams(chainMessage)
@@ -198,7 +199,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		return nil, nil, utils.LavaFormatError("could not marshal params", err)
 	}
 
-	dappKey := cwsm.relaySender.CreateDappKey(dappID, consumerIp)
+	dappKey := cwsm.CreateWebSocketConnectionUniqueKey(dappID, consumerIp, webSocketConnectionUniqueId)
 
 	utils.LavaFormatTrace("request to start subscription",
 		utils.LogAttr("GUID", webSocketCtx),
@@ -625,7 +626,7 @@ func (cwsm *ConsumerWSSubscriptionManager) getHashedParams(chainMessage ChainMes
 	return hashedParams, params, nil
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Context, chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, dappID, consumerIp string, metricsData *metrics.RelayMetrics) error {
+func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Context, chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, dappID, consumerIp string, webSocketConnectionUniqueId string, metricsData *metrics.RelayMetrics) error {
 	utils.LavaFormatTrace("want to unsubscribe",
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("dappID", dappID),
@@ -637,7 +638,7 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 		return err
 	}
 
-	dappKey := cwsm.relaySender.CreateDappKey(dappID, consumerIp)
+	dappKey := cwsm.CreateWebSocketConnectionUniqueKey(dappID, consumerIp, webSocketConnectionUniqueId)
 
 	cwsm.lock.Lock()
 	defer cwsm.lock.Unlock()
@@ -722,14 +723,18 @@ func (cwsm *ConsumerWSSubscriptionManager) connectDappWithSubscription(dappKey s
 	cwsm.connectedDapps[dappKey][hashedParams] = webSocketChan
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) UnsubscribeAll(webSocketCtx context.Context, dappID, consumerIp string, metricsData *metrics.RelayMetrics) error {
+func (cwsm *ConsumerWSSubscriptionManager) CreateWebSocketConnectionUniqueKey(dappID, consumerIp, webSocketConnectionUniqueId string) string {
+	return cwsm.relaySender.CreateDappKey(dappID, consumerIp) + "__" + webSocketConnectionUniqueId
+}
+
+func (cwsm *ConsumerWSSubscriptionManager) UnsubscribeAll(webSocketCtx context.Context, dappID, consumerIp string, webSocketConnectionUniqueId string, metricsData *metrics.RelayMetrics) error {
 	utils.LavaFormatTrace("want to unsubscribe all",
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("dappID", dappID),
 		utils.LogAttr("consumerIp", consumerIp),
 	)
 
-	dappKey := cwsm.relaySender.CreateDappKey(dappID, consumerIp)
+	dappKey := cwsm.CreateWebSocketConnectionUniqueKey(dappID, consumerIp, webSocketConnectionUniqueId)
 
 	cwsm.lock.Lock()
 	defer cwsm.lock.Unlock()

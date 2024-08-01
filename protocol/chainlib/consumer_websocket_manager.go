@@ -3,7 +3,6 @@ package chainlib
 import (
 	"context"
 	"strconv"
-	"sync"
 	"time"
 
 	gojson "github.com/goccy/go-json"
@@ -27,7 +26,7 @@ type ConsumerWebsocketManager struct {
 	refererData                   *RefererData
 	relaySender                   RelaySender
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
-	mutex                         sync.Mutex
+	WebsocketConnectionUID        string
 }
 
 type ConsumerWebsocketManagerOptions struct {
@@ -42,6 +41,7 @@ type ConsumerWebsocketManagerOptions struct {
 	RefererData                   *RefererData
 	RelaySender                   RelaySender
 	ConsumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	WebsocketConnectionUID        string
 }
 
 func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *ConsumerWebsocketManager {
@@ -57,10 +57,13 @@ func NewConsumerWebsocketManager(options ConsumerWebsocketManagerOptions) *Consu
 		connectionType:                options.ConnectionType,
 		refererData:                   options.RefererData,
 		consumerWsSubscriptionManager: options.ConsumerWsSubscriptionManager,
-		mutex:                         sync.Mutex{},
+		WebsocketConnectionUID:        options.WebsocketConnectionUID,
 	}
-
 	return cwm
+}
+
+func (cwm *ConsumerWebsocketManager) GetWebSocketConnectionUniqueId(dappId, userIp string) string {
+	return dappId + "__" + userIp + "__" + cwm.WebsocketConnectionUID
 }
 
 func (cwm *ConsumerWebsocketManager) ListenToMessages() {
@@ -158,7 +161,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		// check whether its a normal relay / unsubscribe / unsubscribe_all otherwise its a subscription flow.
 		if !IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 			if IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
-				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, metricsData)
+				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, cwm.WebsocketConnectionUID, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from subscription", err, utils.LogAttr("GUID", webSocketCtx))
 					if err == common.SubscriptionNotFoundError {
@@ -172,7 +175,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				}
 				continue
 			} else if IsFunctionTagOfType(chainMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE_ALL) {
-				err := cwm.consumerWsSubscriptionManager.UnsubscribeAll(webSocketCtx, dappID, userIp, metricsData)
+				err := cwm.consumerWsSubscriptionManager.UnsubscribeAll(webSocketCtx, dappID, userIp, cwm.WebsocketConnectionUID, metricsData)
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from all subscription", err, utils.LogAttr("GUID", webSocketCtx))
 				}
@@ -202,7 +205,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		inputFormatter, outputFormatter := formatter.FormatterForRelayRequestAndResponse(relayRequestData.ApiInterface) // we use this to preserve the original jsonrpc id
 		inputFormatter(relayRequestData.Data)                                                                           // set the extracted jsonrpc id
 
-		reply, subscriptionMsgsChan, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, metricsData)
+		reply, subscriptionMsgsChan, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, cwm.WebsocketConnectionUID, metricsData)
 		if err != nil {
 			utils.LavaFormatWarning("StartSubscription returned an error", err,
 				utils.LogAttr("GUID", webSocketCtx),
