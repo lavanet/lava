@@ -3,8 +3,8 @@ package types
 import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	fixationstoretypes "github.com/lavanet/lava/v2/x/fixationstore/types"
 )
 
 type EpochStorageKeeper interface {

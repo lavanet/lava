@@ -9,7 +9,7 @@ import "lavanet/lava/timerstore/timer.proto";
 
 // this line is used by starport scaffolding # genesis/proto/import
 
-option go_package = "github.com/lavanet/lava/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v2/x/pairing/types";
 
 message BadgeUsedCu {
   bytes badge_used_cu_key = 1; 

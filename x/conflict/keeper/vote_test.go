@@ -3,12 +3,12 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/testutil/common"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 

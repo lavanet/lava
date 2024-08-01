@@ -7,16 +7,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/v2/testutil/common"
+	"github.com/lavanet/lava/v2/utils/rand"
+	"github.com/lavanet/lava/v2/utils/sigs"
 	"golang.org/x/net/context"
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 

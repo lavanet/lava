@@ -12,12 +12,12 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
-	"github.com/lavanet/lava/protocol/badgegenerator/grpc"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/badgegenerator/grpc"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 const dummyApiInterface = "badgeApiInterface"

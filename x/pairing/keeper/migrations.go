@@ -2,7 +2,7 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	v2 "github.com/lavanet/lava/x/pairing/migrations/v2"
+	v2 "github.com/lavanet/lava/v2/x/pairing/migrations/v2"
 )
 
 type Migrator struct {

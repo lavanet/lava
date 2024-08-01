@@ -8,12 +8,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
-	epochstorage "github.com/lavanet/lava/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/utils"
+	epochstorage "github.com/lavanet/lava/v2/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 type PolicyInf interface {
@@ -390,7 +390,8 @@ func getServiceApis(spec spectypes.Spec, rpcInterface string) (retInternalPaths 
 					re := regexp.MustCompile(`{[^}]+}`)
 					processedName := string(re.ReplaceAll([]byte(api.Name), []byte("replace-me-with-regex")))
 					processedName = regexp.QuoteMeta(processedName)
-					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]+`)
+					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex/", `[^\/\s]+/`)
+					processedName = strings.ReplaceAll(processedName, "replace-me-with-regex", `[^\/\s]*`)
 					serverApis[ApiKey{
 						Name:           processedName,
 						ConnectionType: collectionKey.ConnectionType,

@@ -11,12 +11,12 @@ import (
 	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
 	icacontrollertypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/controller/types"
 	icahosttypes "github.com/cosmos/ibc-go/v7/modules/apps/27-interchain-accounts/host/types"
-	"github.com/lavanet/lava/app/keepers"
-	v1 "github.com/lavanet/lava/x/downtime/v1"
-	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
-	rewardstypes "github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/app/keepers"
+	v1 "github.com/lavanet/lava/v2/x/downtime/v1"
+	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
+	fixationtypes "github.com/lavanet/lava/v2/x/fixationstore/types"
+	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
+	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
 )
 
 func defaultUpgradeHandler(
