@@ -84,7 +84,7 @@ func NewConsumerWSSubscriptionManager(
 // must be called while locked!
 // checking whether hashed params exist in storage, if it does return the subscription stream and indicate it was found.
 // otherwise return false
-func (cwsm *ConsumerWSSubscriptionManager) checkForActiveSubscription(webSocketCtx context.Context, hashedParams string, chainMessage ChainMessage, dappKey string, websocketRepliesSafeChannelSender *common.SafeChannelSender[*pairingtypes.RelayReply]) (*pairingtypes.RelayReply, bool) {
+func (cwsm *ConsumerWSSubscriptionManager) checkForActiveSubscriptionAndConnect(webSocketCtx context.Context, hashedParams string, chainMessage ChainMessage, dappKey string, websocketRepliesSafeChannelSender *common.SafeChannelSender[*pairingtypes.RelayReply]) (*pairingtypes.RelayReply, bool) {
 	activeSubscription, found := cwsm.activeSubscriptions[hashedParams]
 	if found {
 		utils.LavaFormatTrace("found active subscription for given params",
@@ -166,7 +166,7 @@ func (cwsm *ConsumerWSSubscriptionManager) checkForActiveSubscriptionWithLock(
 	cwsm.lock.Lock()
 	defer cwsm.lock.Unlock()
 
-	firstSubscriptionReply, alreadyActiveSubscription := cwsm.checkForActiveSubscription(
+	firstSubscriptionReply, alreadyActiveSubscription := cwsm.checkForActiveSubscriptionAndConnect(
 		webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender,
 	)
 
@@ -491,7 +491,15 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 		unsubscribeRelayCtx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
 		err = cwsm.sendUnsubscribeMessage(unsubscribeRelayCtx, dappID, userIp, chainMessage, directiveHeaders, relayRequestData, metricsData)
 		if err != nil {
-			utils.LavaFormatError("could not send unsubscribe message", err, utils.LogAttr("GUID", webSocketCtx))
+			utils.LavaFormatError("could not send unsubscribe message due to a relay error",
+				err,
+				utils.LogAttr("GUID", webSocketCtx),
+				utils.LogAttr("relayRequestData", relayRequestData),
+				utils.LogAttr("dappID", dappID),
+				utils.LogAttr("userIp", userIp),
+				utils.LogAttr("api", chainMessage.GetApi().Name),
+				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			)
 		} else {
 			utils.LavaFormatTrace("success sending unsubscribe message, deleting hashed params from activeSubscriptions",
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
