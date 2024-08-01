@@ -5,9 +5,9 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/protocol/parser"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/parser"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 const (

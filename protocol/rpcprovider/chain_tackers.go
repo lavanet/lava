@@ -3,8 +3,8 @@ package rpcprovider
 import (
 	"sync"
 
-	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/protocol/chaintracker"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 type ChainTrackers struct {

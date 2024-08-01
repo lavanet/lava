@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 	"google.golang.org/protobuf/proto"

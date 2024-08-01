@@ -7,12 +7,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 const (

@@ -3,8 +3,8 @@ package scores
 import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 )
 
 const qosReqName = "qos-req"

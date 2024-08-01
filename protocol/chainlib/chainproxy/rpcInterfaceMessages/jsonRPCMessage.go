@@ -6,10 +6,11 @@ import (
 	"github.com/goccy/go-json"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/parser"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/sigs"
 )
 
 var ErrFailedToConvertMessage = sdkerrors.New("RPC error", 1000, "failed to convert a message")
@@ -26,6 +27,25 @@ type JsonrpcMessage struct {
 
 func (jm *JsonrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
 	return string(reply.Result)
+}
+
+// get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
+func (jm *JsonrpcMessage) GetRawRequestHash() ([]byte, error) {
+	headers := jm.GetHeaders()
+	headersByteArray, err := json.Marshal(headers)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling headers on jsonRpc message", err, utils.LogAttr("headers", headers))
+		return []byte{}, err
+	}
+
+	methodByteArray := []byte(jm.Method)
+
+	paramsByteArray, err := json.Marshal(jm.Params)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling params on jsonRpc message", err, utils.LogAttr("headers", jm.Params))
+		return []byte{}, err
+	}
+	return sigs.HashMsg(append(append(methodByteArray, paramsByteArray...), headersByteArray...)), nil
 }
 
 // returns if error exists and
@@ -160,6 +180,12 @@ type JsonrpcBatchMessage struct {
 
 func (jbm *JsonrpcBatchMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
 	return ""
+}
+
+// on batches we don't want to calculate the batch hash as its impossible to get the args
+// we will just return false so retry wont trigger.
+func (jbm JsonrpcBatchMessage) GetRawRequestHash() ([]byte, error) {
+	return nil, WontCalculateBatchHash
 }
 
 func (jbm *JsonrpcBatchMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {

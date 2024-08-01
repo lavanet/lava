@@ -7,8 +7,8 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/rewards/types"
 )
 
 func (k msgServer) SetIprpcData(goCtx context.Context, msg *types.MsgSetIprpcData) (*types.MsgSetIprpcDataResponse, error) {

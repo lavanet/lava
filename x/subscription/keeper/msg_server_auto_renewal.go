@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v2/x/subscription/types"
 )
 
 func (k msgServer) AutoRenewal(goCtx context.Context, msg *types.MsgAutoRenewal) (*types.MsgAutoRenewalResponse, error) {

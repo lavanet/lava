@@ -5,11 +5,11 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/epochstorage/types"
-	v3 "github.com/lavanet/lava/x/epochstorage/types/migrations/v3"
-	v4 "github.com/lavanet/lava/x/epochstorage/types/migrations/v4"
-	v6 "github.com/lavanet/lava/x/epochstorage/types/migrations/v6"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/epochstorage/types"
+	v3 "github.com/lavanet/lava/v2/x/epochstorage/types/migrations/v3"
+	v4 "github.com/lavanet/lava/v2/x/epochstorage/types/migrations/v4"
+	v6 "github.com/lavanet/lava/v2/x/epochstorage/types/migrations/v6"
 )
 
 type Migrator struct {

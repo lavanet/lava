@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/v2/utils/rand"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/lavasession"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 

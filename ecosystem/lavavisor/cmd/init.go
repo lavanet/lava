@@ -7,11 +7,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/app"
-	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/process"
-	lvstatetracker "github.com/lavanet/lava/ecosystem/lavavisor/pkg/state"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/app"
+	processmanager "github.com/lavanet/lava/v2/ecosystem/lavavisor/pkg/process"
+	lvstatetracker "github.com/lavanet/lava/v2/ecosystem/lavavisor/pkg/state"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/utils"
 	"github.com/spf13/cobra"
 )
 

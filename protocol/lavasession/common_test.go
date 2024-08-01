@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

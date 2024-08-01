@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

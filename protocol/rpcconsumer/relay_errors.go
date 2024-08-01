@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 type RelayErrors struct {
