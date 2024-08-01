@@ -392,7 +392,6 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 	// Sending message to all connected consumers
 	for consumerAddrString, connectedConsumerAddress := range pnsm.activeSubscriptions[hashedParams].connectedConsumers {
 		for consumerProcessGuid, connectedConsumerContainer := range connectedConsumerAddress {
-
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumer",
 				utils.LogAttr("consumerAddr", consumerAddrString),
 				utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
@@ -446,7 +445,6 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 			connectedConsumerContainer.consumerChannel.Send(relayMessageFromNode)
 		}
 	}
-
 }
 
 func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context, chainMessage ChainMessageForSend, consumerAddr sdk.AccAddress, closeConsumerChannel bool, consumerProcessGuid string) error {
