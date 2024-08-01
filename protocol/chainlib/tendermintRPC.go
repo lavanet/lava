@@ -85,7 +85,7 @@ func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirectiv
 		return nil, err
 	}
 	tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msg, Path: parsing.ApiName}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, &tenderMsg, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, &tenderMsg, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -134,8 +134,9 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
+	blockHashes := []string{}
 	for idx, msg := range msgs {
-		var requestedBlockForMessage int64
+		var parsedInput *parser.ParsedInput
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {
@@ -154,28 +155,37 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 
 		if overwriteReqBlock == "" {
 			// Fetch requested block, it is used for data reliability
-			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
-			if err != nil {
-				utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
-					utils.LogAttr("chain", apip.spec.Name),
-					utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-					utils.LogAttr("apiName", apiCont.api.Name),
-					utils.LogAttr("connectionType", "tendermintRPC"),
-				)
-				requestedBlockForMessage = spectypes.NOT_APPLICABLE
+			parsedInput = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing, apiCont.api.Parsers)
+			if hashes, err := parsedInput.GetBlockHashes(); err == nil {
+				blockHashes = append(blockHashes, hashes...)
 			}
 		} else {
-			requestedBlockForMessage, err = msg.ParseBlock(overwriteReqBlock)
+			parsedBlock, err := msg.ParseBlock(overwriteReqBlock)
+			parsedInput.SetBlock(parsedBlock)
 			if err != nil {
-				utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
-				requestedBlockForMessage = spectypes.NOT_APPLICABLE
+				utils.LavaFormatError("failed parsing block from params", err,
+					utils.LogAttr("chain", apip.spec.Name),
+					utils.LogAttr("overwriteReqBlock", overwriteReqBlock),
+				)
+				parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
 			}
 		}
+
+		parsedBlock, err := parsedInput.GetBlock()
+		if err != nil {
+			utils.LavaFormatError("failed parsing block from params", err,
+				utils.LogAttr("msg", msg),
+				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
+				utils.LogAttr("genericParsers", apiCont.api.Parsers),
+			)
+			latestRequestedBlock = spectypes.NOT_APPLICABLE
+		}
+
 		if idx == 0 {
 			// on the first entry store them
 			api = apiCont.api
 			apiCollection = apiCollectionForMessage
-			latestRequestedBlock = requestedBlockForMessage
+			latestRequestedBlock = parsedBlock
 		} else {
 			// on next entries we need to compare to existing data
 			if api == nil {
@@ -210,7 +220,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 					Encoding:     "",
 				},
 			}
-			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, requestedBlockForMessage)
+			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, earliestRequestedBlock, parsedBlock)
 		}
 	}
 
@@ -220,10 +230,10 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		if !isJsonrpc {
 			tenderMsg.Path = urlPath // add path
 		}
-		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, &tenderMsg, apiCollection)
+		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &tenderMsg, apiCollection)
 	} else {
 		var err error
-		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, msgs, apiCollection)
+		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection)
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +243,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
+func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
@@ -242,6 +252,7 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
 		latestRequestedBlock:     requestedBlock,
+		requestedBlockHashes:     requestedHashes,
 		msg:                      &batchMessage,
 		earliestRequestedBlock:   earliestRequestedBlock,
 		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
@@ -249,11 +260,12 @@ func (*TendermintChainParser) newBatchChainMessage(serviceApi *spectypes.Api, re
 	return nodeMsg, err
 }
 
-func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedHashes []string, msg *rpcInterfaceMessages.TendermintrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
 		latestRequestedBlock:     requestedBlock,
+		requestedBlockHashes:     requestedHashes,
 		msg:                      msg,
 		resultErrorParsingMethod: msg.CheckResponseError,
 	}
