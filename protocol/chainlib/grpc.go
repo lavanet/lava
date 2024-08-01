@@ -175,7 +175,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	blockParser := apiCont.api.BlockParsing
 	var requestedBlock int64
 	if overwriteReqBlock == "" {
-		requestedBlock, err = parser.ParseBlockFromParams(grpcMessage, blockParser)
+		requestedBlock, err = parser.ParseBlockFromParams(grpcMessage, blockParser, apiCont.api.Parsers)
 		if err != nil {
 			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
 				utils.LogAttr("chain", apip.spec.Name),

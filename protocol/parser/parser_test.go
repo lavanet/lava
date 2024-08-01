@@ -342,7 +342,7 @@ func TestParseBlockFromParamsHappyFlow(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			block, err := ParseBlockFromParams(&testCase.message, testCase.blockParser)
+			block, err := ParseBlockFromParams(&testCase.message, testCase.blockParser, nil)
 			require.NoError(t, err, fmt.Sprintf("Test case name: %s", testCase.name))
 			require.Equal(t, testCase.expectedBlock, block)
 		})

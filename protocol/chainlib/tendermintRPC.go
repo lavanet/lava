@@ -154,7 +154,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 
 		if overwriteReqBlock == "" {
 			// Fetch requested block, it is used for data reliability
-			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
+			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing, apiCont.api.Parsers)
 			if err != nil {
 				utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
 					utils.LogAttr("chain", apip.spec.Name),

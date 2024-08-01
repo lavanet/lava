@@ -116,7 +116,7 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	var requestedBlock int64
 	if overwriteReqBlock == "" {
 		// Fetch requested block, it is used for data reliability
-		requestedBlock, err = parser.ParseBlockFromParams(restMessage, blockParser)
+		requestedBlock, err = parser.ParseBlockFromParams(restMessage, blockParser, apiCont.api.Parsers)
 		if err != nil {
 			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
 				utils.LogAttr("chain", apip.spec.Name),
