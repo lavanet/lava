@@ -62,7 +62,7 @@ type activeSubscription struct {
 	subscriptionID               string
 	firstSetupReply              *pairingtypes.RelayReply
 	apiCollection                *spectypes.ApiCollection
-	connectedConsumers           map[string]*connectedConsumerContainer // key is consumer address
+	connectedConsumers           map[string]map[string]*connectedConsumerContainer // first key is consumer address, 2nd key is consumer guid
 }
 
 type ProviderNodeSubscriptionManager struct {
@@ -84,7 +84,7 @@ func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser Cha
 	}
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessage, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply) (subscriptionId string, err error) {
+func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessage, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply, consumerProcessGuid string) (subscriptionId string, err error) {
 	utils.LavaFormatTrace("[AddConsumer] called", utils.LogAttr("consumerAddr", consumerAddr))
 
 	if pnsm == nil {
@@ -113,37 +113,59 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		utils.LavaFormatTrace("[AddConsumer] found existing subscription",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("consumerAddr", consumerAddr),
+			utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
 			utils.LogAttr("params", string(params)),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		)
 
-		if consumerContainer, foundConsumer := paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString]; foundConsumer { // Consumer is already connected to this subscription, dismiss
-			// if the consumer exists and channel is already active, and the consumer tried to resubscribe, we assume the connection was interrupted, we disconnect the previous channel and reconnect the incoming channel.
-			utils.LavaFormatWarning("consumer tried to subscribe twice to the same subscription hash, disconnecting the previous one and attaching incoming channel", nil,
-				utils.LogAttr("consumerAddr", consumerAddr),
-				utils.LogAttr("hashedParams", hashedParams),
-				utils.LogAttr("params_provided", chainMessage.GetRPCMessage().GetParams()),
-			)
-			// disconnecting the previous channel, attaching new channel, and returning subscription Id.
-			consumerContainer.consumerChannel.ReplaceChannel(consumerChannel)
-			return paramsChannelToConnectedConsumers.subscriptionID, nil
-		} else {
-			utils.LavaFormatTrace("[AddConsumer] consumer does not exist in the subscription, adding",
+		if _, foundConsumer := paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString]; foundConsumer { // Consumer is already connected to this subscription, dismiss
+			// check consumer guid.
+			if consumerGuidContainer, foundGuid := paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid]; foundGuid {
+				// if the consumer exists and channel is already active, and the consumer tried to resubscribe, we assume the connection was interrupted, we disconnect the previous channel and reconnect the incoming channel.
+				utils.LavaFormatWarning("consumer tried to subscribe twice to the same subscription hash, disconnecting the previous one and attaching incoming channel", nil,
+					utils.LogAttr("consumerAddr", consumerAddr),
+					utils.LogAttr("hashedParams", hashedParams),
+					utils.LogAttr("params_provided", chainMessage.GetRPCMessage().GetParams()),
+				)
+				// disconnecting the previous channel, attaching new channel, and returning subscription Id.
+				consumerGuidContainer.consumerChannel.ReplaceChannel(consumerChannel)
+				return paramsChannelToConnectedConsumers.subscriptionID, nil
+			}
+			// else we have this consumer but two different processes try to subscribe
+			utils.LavaFormatTrace("[AddConsumer] consumer address exists but consumer GUID does not exist in the subscription map, adding",
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("consumerAddr", consumerAddr),
 				utils.LogAttr("params", string(params)),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
 			)
+			// TODO continue here tomorrow, need to change the else case to always happen where we just add the map
+			// and it will always add the consumer if it gets there.
+			// later fix remove consumer flow.
 		}
 
+		// Create a new map for this consumer address if it doesn't exist
+		if paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString] == nil {
+			utils.LavaFormatError("missing map object from paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString], creating to avoid nil deref", nil)
+			paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString] = make(map[string]*connectedConsumerContainer)
+		}
+
+		utils.LavaFormatTrace("[AddConsumer] consumer GUID does not exist in the subscription, adding",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("consumerAddr", consumerAddr),
+			utils.LogAttr("params", string(params)),
+			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
+		)
+
 		// Add the new entry for the consumer
-		paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString] = &connectedConsumerContainer{
+		paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid] = &connectedConsumerContainer{
 			consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
 			firstSetupRequest:  &pairingtypes.RelayRequest{}, // Deep copy later	firstSetupChainMessage: chainMessage,
 			consumerSDKAddress: consumerAddr,
 		}
 
-		copyRequestErr := protocopy.DeepCopyProtoObject(request, paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString].firstSetupRequest)
+		copyRequestErr := protocopy.DeepCopyProtoObject(request, paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid].firstSetupRequest)
 		if copyRequestErr != nil {
 			return "", utils.LavaFormatError("failed to copy subscription request", copyRequestErr)
 		}
@@ -216,11 +238,10 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			subscriptionID:               subscriptionId,
 			firstSetupReply:              reply,
 			apiCollection:                chainMessage.GetApiCollection(),
-			connectedConsumers:           make(map[string]*connectedConsumerContainer),
+			connectedConsumers:           make(map[string]map[string]*connectedConsumerContainer),
 		}
 
-		channelToConnectedConsumers.connectedConsumers = make(map[string]*connectedConsumerContainer)
-		channelToConnectedConsumers.connectedConsumers[consumerAddrString] = &connectedConsumerContainer{
+		channelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid] = &connectedConsumerContainer{
 			consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
 			firstSetupRequest:  copiedRequest,
 			consumerSDKAddress: consumerAddr,
@@ -233,7 +254,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 	}
 
 	// send the first reply to the consumer, reply needs to be signed.
-	pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString].consumerChannel.Send(firstSetupReply)
+	pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString][consumerProcessGuid].consumerChannel.Send(firstSetupReply)
 
 	return subscriptionId, nil
 }
@@ -368,58 +389,66 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 		return
 	}
 	// Sending message to all connected consumers
-	for consumerAddrString, connectedConsumerContainer := range pnsm.activeSubscriptions[hashedParams].connectedConsumers {
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumer", utils.LogAttr("consumerAddr", consumerAddrString), utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
+	for consumerAddrString, connectedConsumerAddress := range pnsm.activeSubscriptions[hashedParams].connectedConsumers {
+		for consumerProcessGuid, connectedConsumerContainer := range connectedConsumerAddress {
 
-		copiedRequest := &pairingtypes.RelayRequest{}
-		copyRequestErr := protocopy.DeepCopyProtoObject(connectedConsumerContainer.firstSetupRequest, copiedRequest)
-		if copyRequestErr != nil {
-			utils.LavaFormatError("failed to copy subscription request", copyRequestErr)
-			return
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumer",
+				utils.LogAttr("consumerAddr", consumerAddrString),
+				utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
+
+			copiedRequest := &pairingtypes.RelayRequest{}
+			copyRequestErr := protocopy.DeepCopyProtoObject(connectedConsumerContainer.firstSetupRequest, copiedRequest)
+			if copyRequestErr != nil {
+				utils.LavaFormatError("failed to copy subscription request", copyRequestErr)
+				return
+			}
+
+			extensionInfo := extensionslib.ExtensionInfo{LatestBlock: 0, ExtensionOverride: copiedRequest.RelayData.Extensions}
+			if extensionInfo.ExtensionOverride == nil { // in case consumer did not set an extension, we skip the extension parsing and we are sending it to the regular url
+				extensionInfo.ExtensionOverride = []string{}
+			}
+
+			chainMessage, err := pnsm.chainParser.ParseMsg(copiedRequest.RelayData.ApiUrl, copiedRequest.RelayData.Data, copiedRequest.RelayData.ConnectionType, copiedRequest.RelayData.GetMetadata(), extensionInfo)
+			if err != nil {
+				utils.LavaFormatError("failed to parse message", err)
+				return
+			}
+
+			apiCollection := pnsm.activeSubscriptions[hashedParams].apiCollection
+
+			marshalledNodeMsg, err := pnsm.convertNodeMsgToMarshalledJsonRpcResponse(nodeMsg, apiCollection)
+			if err != nil {
+				utils.LavaFormatError("error converting node message", err)
+				return
+			}
+
+			relayMessageFromNode := &pairingtypes.RelayReply{
+				Data:     marshalledNodeMsg,
+				Metadata: []pairingtypes.Metadata{},
+			}
+
+			err = pnsm.signReply(ctx, relayMessageFromNode, connectedConsumerContainer.consumerSDKAddress, chainMessage, copiedRequest)
+			if err != nil {
+				utils.LavaFormatError("error signing reply", err)
+				return
+			}
+
+			utils.LavaFormatDebug("Sending relay to consumer",
+				utils.LogAttr("requestRelayData", copiedRequest.RelayData),
+				utils.LogAttr("reply", marshalledNodeMsg),
+				utils.LogAttr("replyLatestBlock", relayMessageFromNode.LatestBlock),
+				utils.LogAttr("consumerAddr", connectedConsumerContainer.consumerSDKAddress),
+			)
+
+			connectedConsumerContainer.consumerChannel.Send(relayMessageFromNode)
 		}
-
-		extensionInfo := extensionslib.ExtensionInfo{LatestBlock: 0, ExtensionOverride: copiedRequest.RelayData.Extensions}
-		if extensionInfo.ExtensionOverride == nil { // in case consumer did not set an extension, we skip the extension parsing and we are sending it to the regular url
-			extensionInfo.ExtensionOverride = []string{}
-		}
-
-		chainMessage, err := pnsm.chainParser.ParseMsg(copiedRequest.RelayData.ApiUrl, copiedRequest.RelayData.Data, copiedRequest.RelayData.ConnectionType, copiedRequest.RelayData.GetMetadata(), extensionInfo)
-		if err != nil {
-			utils.LavaFormatError("failed to parse message", err)
-			return
-		}
-
-		apiCollection := pnsm.activeSubscriptions[hashedParams].apiCollection
-
-		marshalledNodeMsg, err := pnsm.convertNodeMsgToMarshalledJsonRpcResponse(nodeMsg, apiCollection)
-		if err != nil {
-			utils.LavaFormatError("error converting node message", err)
-			return
-		}
-
-		relayMessageFromNode := &pairingtypes.RelayReply{
-			Data:     marshalledNodeMsg,
-			Metadata: []pairingtypes.Metadata{},
-		}
-
-		err = pnsm.signReply(ctx, relayMessageFromNode, connectedConsumerContainer.consumerSDKAddress, chainMessage, copiedRequest)
-		if err != nil {
-			utils.LavaFormatError("error signing reply", err)
-			return
-		}
-
-		utils.LavaFormatDebug("Sending relay to consumer",
-			utils.LogAttr("requestRelayData", copiedRequest.RelayData),
-			utils.LogAttr("reply", marshalledNodeMsg),
-			utils.LogAttr("replyLatestBlock", relayMessageFromNode.LatestBlock),
-			utils.LogAttr("consumerAddr", connectedConsumerContainer.consumerSDKAddress),
-		)
-
-		connectedConsumerContainer.consumerChannel.Send(relayMessageFromNode)
 	}
+
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context, chainMessage ChainMessageForSend, consumerAddr sdk.AccAddress, closeConsumerChannel bool) error {
+func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context, chainMessage ChainMessageForSend, consumerAddr sdk.AccAddress, closeConsumerChannel bool, consumerProcessGuid string) error {
 	if pnsm == nil {
 		return nil
 	}
@@ -454,47 +483,56 @@ func (pnsm *ProviderNodeSubscriptionManager) RemoveConsumer(ctx context.Context,
 
 	// Remove consumer from connected consumers
 	if _, ok := openSubscriptions.connectedConsumers[consumerAddrString]; ok {
-		utils.LavaFormatTrace("[RemoveConsumer] found consumer connected consumers",
-			utils.LogAttr("GUID", ctx),
-			utils.LogAttr("consumerAddr", consumerAddr),
-			utils.LogAttr("params", params),
-			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-			utils.LogAttr("connectedConsumers", openSubscriptions.connectedConsumers),
-		)
-
-		if closeConsumerChannel {
-			utils.LavaFormatTrace("[RemoveConsumer] closing consumer channel",
+		if _, foundGuid := openSubscriptions.connectedConsumers[consumerAddrString][consumerProcessGuid]; foundGuid {
+			utils.LavaFormatTrace("[RemoveConsumer] found consumer connected consumers",
 				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("consumerAddr", consumerAddr),
+				utils.LogAttr("consumerAddr", consumerAddrString),
 				utils.LogAttr("params", params),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
+				utils.LogAttr("connectedConsumers", openSubscriptions.connectedConsumers),
 			)
-			openSubscriptions.connectedConsumers[consumerAddrString].consumerChannel.Close()
-		}
+			if closeConsumerChannel {
+				utils.LavaFormatTrace("[RemoveConsumer] closing consumer channel",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("consumerAddr", consumerAddrString),
+					utils.LogAttr("params", params),
+					utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				)
+				openSubscriptions.connectedConsumers[consumerAddrString][consumerProcessGuid].consumerChannel.Close()
+			}
 
-		delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers, consumerAddrString)
-		if len(pnsm.activeSubscriptions[hashedParams].connectedConsumers) == 0 {
-			utils.LavaFormatTrace("[RemoveConsumer] no more connected consumers",
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("consumerAddr", consumerAddr),
-				utils.LogAttr("params", params),
-				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-			)
-			// Cancel the subscription's context and close the subscription
-			pnsm.activeSubscriptions[hashedParams].cancellableContextCancelFunc()
-			pnsm.closeNodeSubscription(hashedParams)
+			// delete guid
+			delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString], consumerProcessGuid)
+			// check if this was our only subscription for this consumer.
+			if len(pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString]) == 0 {
+				// delete consumer as well.
+				delete(pnsm.activeSubscriptions[hashedParams].connectedConsumers, consumerAddrString)
+			}
+			if len(pnsm.activeSubscriptions[hashedParams].connectedConsumers) == 0 {
+				utils.LavaFormatTrace("[RemoveConsumer] no more connected consumers",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("consumerAddr", consumerAddr),
+					utils.LogAttr("params", params),
+					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+				)
+				// Cancel the subscription's context and close the subscription
+				pnsm.activeSubscriptions[hashedParams].cancellableContextCancelFunc()
+				pnsm.closeNodeSubscription(hashedParams)
+			}
 		}
+		utils.LavaFormatTrace("[RemoveConsumer] removed consumer", utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("params", params))
 	} else {
 		utils.LavaFormatTrace("[RemoveConsumer] consumer not found in connected consumers",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("consumerAddr", consumerAddr),
 			utils.LogAttr("params", params),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
 			utils.LogAttr("connectedConsumers", openSubscriptions.connectedConsumers),
 		)
 	}
-
-	utils.LavaFormatTrace("[RemoveConsumer] removed consumer", utils.LogAttr("consumerAddr", consumerAddr), utils.LogAttr("params", params))
 	return nil
 }
 
@@ -504,17 +542,19 @@ func (pnsm *ProviderNodeSubscriptionManager) closeNodeSubscription(hashedParams 
 	}
 
 	// Disconnect all connected consumers
-	for consumerAddrString, consumerChannel := range pnsm.activeSubscriptions[hashedParams].connectedConsumers {
-		utils.LavaFormatTrace("ProviderNodeSubscriptionManager:closeNodeSubscription() closing consumer channel",
-			utils.LogAttr("consumerAddr", consumerAddrString),
-			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-		)
-		consumerChannel.consumerChannel.Close()
+	for consumerAddrString, consumerChannels := range pnsm.activeSubscriptions[hashedParams].connectedConsumers {
+		for consumerGuid, consumerChannel := range consumerChannels {
+			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:closeNodeSubscription() closing consumer channel",
+				utils.LogAttr("consumerAddr", consumerAddrString),
+				utils.LogAttr("consumerGuid", consumerGuid),
+				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			)
+			consumerChannel.consumerChannel.Close()
+		}
 	}
 
 	pnsm.activeSubscriptions[hashedParams].nodeSubscription.Unsubscribe()
 	close(pnsm.activeSubscriptions[hashedParams].messagesChannel)
 	delete(pnsm.activeSubscriptions, hashedParams)
-
 	return nil
 }

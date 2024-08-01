@@ -51,6 +51,7 @@ type CancelableContextHolder struct {
 
 // implements Relay Sender interfaced and uses an ChainListener to get it called
 type RPCConsumerServer struct {
+	consumerProcessGuid            string
 	chainParser                    chainlib.ChainParser
 	consumerSessionManager         *lavasession.ConsumerSessionManager
 	listenEndpoint                 *lavasession.RPCEndpoint
@@ -117,7 +118,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.reporter = reporter
 	rpccs.debugRelays = cmdFlags.DebugRelays
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
-
+	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
 	if err != nil {
 		return err
@@ -893,7 +894,7 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	callRelay := func() (reply *pairingtypes.RelayReply, relayLatency time.Duration, err error, backoff bool) {
 		relaySentTime := time.Now()
 		connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
-		metadataAdd := metadata.New(map[string]string{common.IP_FORWARDING_HEADER_NAME: consumerToken})
+		metadataAdd := metadata.New(map[string]string{common.IP_FORWARDING_HEADER_NAME: consumerToken, common.LAVA_CONSUMER_PROCESS_GUID: rpccs.consumerProcessGuid})
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
 

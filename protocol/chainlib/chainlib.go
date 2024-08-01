@@ -76,6 +76,7 @@ type ChainParser interface {
 }
 
 type ChainMessage interface {
+	SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string
 	RequestedBlock() (latest int64, earliest int64)
 	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
 	AppendHeader(metadata []pairingtypes.Metadata)

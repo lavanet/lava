@@ -77,7 +77,6 @@ type ProviderStateTrackerInf interface {
 	RegisterForSpecVerifications(ctx context.Context, specVerifier updaters.SpecVerifier, chainId string) error
 	RegisterReliabilityManagerForVoteUpdates(ctx context.Context, voteUpdatable updaters.VoteUpdatable, endpointP *lavasession.RPCProviderEndpoint)
 	RegisterForEpochUpdates(ctx context.Context, epochUpdatable updaters.EpochUpdatable)
-	RegisterForEpochUpdatesWithDelay(ctx context.Context, epochUpdatable updaters.EpochUpdatable, blocksUpdateDelay int64)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
 	TxRelayPayment(ctx context.Context, relayRequests []*pairingtypes.RelaySession, description string, latestBlocks []*pairingtypes.LatestBlockReport) error
 	SendVoteReveal(voteID string, vote *reliabilitymanager.VoteData, specID string) error

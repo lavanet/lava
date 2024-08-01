@@ -36,7 +36,9 @@ func (asps *ActiveSubscriptionProvidersStorage) RemoveProvider(providerAddress s
 	purgeCallBack, ok := asps.purgeWhenDone[providerAddress]
 	if ok {
 		utils.LavaFormatTrace("RemoveProvider, Purging provider on callback", utils.LogAttr("address", providerAddress))
-		purgeCallBack()
+		if purgeCallBack != nil {
+			purgeCallBack()
+		}
 		delete(asps.purgeWhenDone, providerAddress)
 	}
 }

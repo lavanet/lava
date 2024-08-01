@@ -11,8 +11,6 @@ import (
 	"sync"
 	"time"
 
-	gojson "github.com/goccy/go-json"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -20,7 +18,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/app"
 	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/protocol/common"
 	"github.com/lavanet/lava/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/protocol/lavasession"
@@ -195,7 +192,6 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
 	policyUpdaters := syncMapPolicyUpdaters{}
-	activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
@@ -287,8 +283,10 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 				return err
 			}
 
-			// Register For Updates
+			// Create active subscription provider storage for each unique chain
+			activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+			// Register For Updates
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
 
 			var relaysMonitor *metrics.RelaysMonitor
@@ -301,24 +299,10 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 			var consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
 			var specMethodType string
-			var subscriptionIdExtractorFunc func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string
-			switch rpcEndpoint.ApiInterface {
-			case spectypes.APIInterfaceTendermintRPC:
-				subscriptionIdExtractorFunc = func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
-					params, err := gojson.Marshal(request.GetRPCMessage().GetParams())
-					if err != nil {
-						utils.LavaFormatWarning("failed marshaling params", err, utils.LogAttr("request", request))
-						return ""
-					}
-					return string(params)
-				}
-			case spectypes.APIInterfaceJsonRPC:
-				subscriptionIdExtractorFunc = func(request chainlib.ChainMessage, reply *rpcclient.JsonrpcMessage) string {
-					return string(reply.Result)
-				}
+			if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
 				specMethodType = http.MethodPost
 			}
-			consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage, subscriptionIdExtractorFunc)
+			consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage)
 
 			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
 			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)

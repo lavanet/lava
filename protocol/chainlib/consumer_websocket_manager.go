@@ -144,7 +144,6 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			utils.LogAttr("dappID", dappID),
 		)
 
-		refererMatch, ok := websocketConn.Locals(cwm.refererMatchString).(string)
 		metricsData := metrics.NewRelayAnalytics(dappID, cwm.chainId, cwm.apiInterface)
 
 		chainMessage, directiveHeaders, relayRequestData, err := cwm.relaySender.ParseRelay(webSocketCtx, "", string(msg), cwm.connectionType, dappID, userIp, metricsData, nil)
@@ -185,12 +184,17 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 					formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not send parsed relay", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 					if formatterMsg != nil {
 						websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
+						continue
 					}
 				}
 
-				// No need to verify signature since this is already happening inside the SendParsedRelay flow
-				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: relayResult.GetReply().Data}
-				continue
+				relayResultReply := relayResult.GetReply()
+				if relayResultReply != nil {
+					// No need to verify signature since this is already happening inside the SendParsedRelay flow
+					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: relayResult.GetReply().Data}
+					continue
+				}
+				utils.LavaFormatError("Relay result is nil over websocket normal request flow, should not happen", err, utils.LogAttr("messageType", messageType))
 			}
 		}
 
@@ -200,9 +204,17 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 
 		reply, subscriptionMsgsChan, err := cwm.consumerWsSubscriptionManager.StartSubscription(webSocketCtx, chainMessage, directiveHeaders, relayRequestData, dappID, userIp, metricsData)
 		if err != nil {
+			utils.LavaFormatWarning("StartSubscription returned an error", err,
+				utils.LogAttr("GUID", webSocketCtx),
+				utils.LogAttr("dappID", dappID),
+				utils.LogAttr("userIp", userIp),
+				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			)
+
 			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not start subscription", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 			if formatterMsg != nil {
 				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg} // No need to use outputFormatter here since we are sending an error
+				continue
 			}
 
 			// Handle the case when the error is a method not found error
@@ -215,14 +227,6 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: outputFormatter(msgData)}
 				continue
 			}
-
-			utils.LavaFormatWarning("StartSubscription returned an error", err,
-				utils.LogAttr("GUID", webSocketCtx),
-				utils.LogAttr("dappID", dappID),
-				utils.LogAttr("userIp", userIp),
-				utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
-			)
-
 			continue
 		}
 
@@ -235,8 +239,8 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 					utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
 				)
 
-				for reply := range subscriptionMsgsChan {
-					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: outputFormatter(reply.Data)}
+				for subscriptionMsgReply := range subscriptionMsgsChan {
+					websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: outputFormatter(subscriptionMsgReply.Data)}
 				}
 
 				utils.LavaFormatTrace("subscriptionMsgsChan was closed",
@@ -248,7 +252,8 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			}()
 		}
 
-		if ok && refererMatch != "" && cwm.refererData != nil {
+		refererMatch, referrerMatchCastedSuccessfully := websocketConn.Locals(cwm.refererMatchString).(string)
+		if referrerMatchCastedSuccessfully && refererMatch != "" && cwm.refererData != nil {
 			go cwm.refererData.SendReferer(refererMatch, cwm.chainId, string(msg), websocketConn.RemoteAddr().String(), nil, websocketConn)
 		}
 
