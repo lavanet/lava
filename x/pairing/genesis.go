@@ -29,6 +29,10 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	for _, elem := range genState.BadgeUsedCuList {
 		k.SetBadgeUsedCu(ctx, elem)
 	}
+	// Set all the reputations
+	for _, elem := range genState.Reputations {
+		k.SetReputation(ctx, elem.ChainId, elem.Cluster, elem.Provider, elem.Reputation)
+	}
 
 	k.InitBadgeTimers(ctx, genState.BadgesTS)
 	k.InitProviderQoS(ctx, genState.ProviderQosFS)
@@ -45,6 +49,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.ProviderEpochComplainedCus = k.GetAllProviderEpochComplainerCuStore(ctx)
 	genesis.ProviderConsumerEpochCus = k.GetAllProviderConsumerEpochCuStore(ctx)
 	genesis.BadgeUsedCuList = k.GetAllBadgeUsedCu(ctx)
+	genesis.Reputations = k.GetAllReputation(ctx)
 	genesis.BadgesTS = k.ExportBadgesTimers(ctx)
 	genesis.ProviderQosFS = k.ExportProviderQoS(ctx)
 	// this line is used by starport scaffolding # genesis/module/export

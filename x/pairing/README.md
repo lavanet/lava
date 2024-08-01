@@ -21,6 +21,8 @@ The pairing module is one of Lava's core modules and is closely connected to the
     * [Filters](#filters)
     * [Scores](#scores)
     * [Quality Of Service](#quality-of-service)
+	  * [Reputation](#reputation)
+	  * [Passable QoS](#passable-qos)
     * [Pairing Verification](#pairing-verification)
     * [Unresponsiveness](#unresponsiveness)
     * [Static Providers](#static-providers)
@@ -187,17 +189,17 @@ Finally, we calculate the score of each provider for a specific slot and select 
 
 #### Quality Of Service
 
-##### Excellence QoS
+##### Reputation
 
-The Lava Network places a strong emphasis on delivering exceptional Quality of Service (QoS) to its consumers. To ensure this, consumers actively participate in monitoring and customizing their QoS metrics. They gauge provider performance by measuring latency in provider responses relative to a benchmark, assessing data freshness in comparison to the fastest provider, and evaluating the percentage of error or timeout responses in the availability metric. These scores are diligently recorded and sent on-chain alongside the relay proofs of service, creating a transparent and accountable system.
+The Lava Network places a strong emphasis on delivering exceptional Quality of Service (QoS) to its consumers. To ensure this, consumers actively participate in monitoring and customizing their QoS excellence metrics. They gauge provider performance by measuring latency in provider responses relative to a benchmark, assessing data freshness in comparison to the fastest provider, and evaluating the percentage of error or timeout responses in the availability metric. These scores are diligently recorded and sent on-chain alongside the relay proofs of service, creating a transparent and accountable system. The provider's performance metric is called "Reputation". Higher reputation indicates higher QoS scores.
 
 To further enhance the integrity of the QoS scores, updates are aggregated across all consumers in a manner that safeguards against false reports. Negative reports are weighted by usage, meaning that a consumer must actively use and pay a provider to diminish their QoS score. This mechanism discourages users from artificially lowering a provider's score.
 
-These QoS excellence metrics only affect pairings and are aggregated over time with a decay function that favors the latest data, meaning providers can improve, and those providers that their service fails will be impacted to affect fewer users. This approach ensures that the QoS system remains dynamic and responsive, benefiting providers striving to enhance their services while minimizing the impact of service failures on a broader scale.
+The Reputation metric only affect pairings and is aggregated over time with a decay function that favors the latest data, meaning providers can improve, and those providers that their service fails will be impacted to affect fewer users. This approach ensures that the reputation system remains dynamic and responsive, benefiting providers striving to enhance their services while minimizing the impact of service failures on a broader scale.
 
-##### QoS
+##### Passable QoS
 
-In the Lava Network, alongside the comprehensive Quality of Service of Excellence metrics, there exists an additional metric known as Passable QoS. Unlike Excellence QoS, which offers a broad range of values, Passable QoS operates on a binary scale, either assigning a value of 0 or 1, averaged over relays. This metric simplifies the evaluation of service quality to a binary determination, indicating whether a relay meets the Passable QoS threshold, meaning it provides a level of service deemed acceptable for use.
+In the Lava Network, alongside the comprehensive Reputation metric (which is calculated using QoS excellence reports), there exists an additional metric known as Passable QoS. Unlike Reputation, which offers a broad range of values, Passable QoS operates on a binary scale, either assigning a value of 0 or 1, averaged over relays. This metric simplifies the evaluation of service quality to a binary determination, indicating whether a relay meets the Passable QoS threshold, meaning it provides a level of service deemed acceptable for use.
 
 The Passable QoS score directly influences the total payout for a specific payment; however, it's important to note that only 50% of the payout is exposed to this metric (can be changed via governance). This allocation ensures a balance between incentivizing excellent service and discouraging poor performance.
 
