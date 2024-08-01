@@ -71,6 +71,7 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 	if err != nil || result == nil {
 		return spectypes.NOT_APPLICABLE, err
 	}
+
 	resString, ok := result[0].(string)
 	if !ok {
 		return spectypes.NOT_APPLICABLE, fmt.Errorf("ParseBlockFromParams - result[0].(string) - type assertion failed, type:" + fmt.Sprintf("%s", result[0]))
@@ -78,7 +79,10 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser) 
 	parsedBlock, err := rpcInput.ParseBlock(resString)
 	if err != nil {
 		if blockParser.DefaultValue != "" {
-			utils.LavaFormatDebug("Failed parsing block from string, assuming default value", utils.LogAttr("failed_parsed_value", resString), utils.LogAttr("default_value", blockParser.DefaultValue))
+			utils.LavaFormatDebug("Failed parsing block from string, assuming default value",
+				utils.LogAttr("params", rpcInput.GetParams()),
+				utils.LogAttr("failed_parsed_value", resString),
+				utils.LogAttr("default_value", blockParser.DefaultValue))
 			return rpcInput.ParseBlock(blockParser.DefaultValue)
 		}
 	}
@@ -233,17 +237,17 @@ func blockInterfaceToString(block interface{}) string {
 func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
 	// specified block is one of the direct parameters, input should be one string defining the location of the block
 	if len(input) != 1 {
-		return nil, utils.LavaFormatProduction("invalid input format, input length", nil, utils.Attribute{Key: "input_len", Value: strconv.Itoa(len(input))})
+		return nil, utils.LavaFormatProduction("invalid input format, input length", nil, utils.LogAttr("input_len", strconv.Itoa(len(input))))
 	}
 	inp := input[0]
 	param_index, err := strconv.ParseUint(inp, 10, 32)
 	if err != nil {
-		return nil, utils.LavaFormatProduction("invalid input format, input isn't an unsigned index", err, utils.Attribute{Key: "input", Value: inp})
+		return nil, utils.LavaFormatProduction("invalid input format, input isn't an unsigned index", err, utils.LogAttr("input", inp))
 	}
 
 	unmarshalledData, err := getDataToParse(rpcInput, dataSource)
 	if err != nil {
-		return nil, utils.LavaFormatProduction("invalid input format, data is not json", err, utils.Attribute{Key: "data", Value: unmarshalledData})
+		return nil, utils.LavaFormatProduction("invalid input format, data is not json", err, utils.LogAttr("data", unmarshalledData))
 	}
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
@@ -258,7 +262,10 @@ func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		return retArr, nil
 	default:
 		// Parse by arg can be only list as we dont have the name of the height property.
-		return nil, utils.LavaFormatProduction("Parse type unsupported in parse by arg, only list parameters are currently supported", nil, utils.Attribute{Key: "request", Value: unmarshaledDataTyped})
+		return nil, utils.LavaFormatProduction("Parse type unsupported in parse by arg, only list parameters are currently supported", nil,
+			utils.LogAttr("params", rpcInput.GetParams()),
+			utils.LogAttr("request", unmarshaledDataTyped),
+		)
 	}
 }
 
@@ -293,14 +300,26 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		for _, key := range input[1:] {
 			// type assertion for blockcontainer
 			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is not map[string]interface{}", ValueNotSetError, utils.LogAttr("method", rpcInput.GetMethod()), utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)), utils.LogAttr("key", key), utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped))
+				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is not map[string]interface{}", ValueNotSetError,
+					utils.LogAttr("params", rpcInput.GetParams()),
+					utils.LogAttr("method", rpcInput.GetMethod()),
+					utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
+					utils.LogAttr("key", key),
+					utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
+				)
 			}
 
 			// assertion for key
 			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
 				blockContainer = container
 			} else {
-				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError, utils.LogAttr("method", rpcInput.GetMethod()), utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)), utils.LogAttr("key", key), utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped))
+				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError,
+					utils.LogAttr("params", rpcInput.GetParams()),
+					utils.LogAttr("method", rpcInput.GetMethod()),
+					utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
+					utils.LogAttr("key", key),
+					utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
+				)
 			}
 		}
 		retArr := make([]interface{}, 0)
@@ -443,6 +462,7 @@ func parseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 
 		// Else return not set error)
 		utils.LavaFormatDebug("Failed parsing parseDictionaryOrOrdered",
+			utils.LogAttr("params", rpcInput.GetParams()),
 			utils.LogAttr("propName", propName),
 			utils.LogAttr("inp", inp),
 			utils.LogAttr("unmarshalledDataTyped", unmarshalledDataTyped),
