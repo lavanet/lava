@@ -6,10 +6,10 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/parser"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/sigs"
 )
 
 type RestMessage struct {
@@ -20,7 +20,7 @@ type RestMessage struct {
 }
 
 // get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
-func (rm *RestMessage) GetInputMsgInfoHash() ([]byte, error) {
+func (rm *RestMessage) GetRawRequestHash() ([]byte, error) {
 	headers := rm.GetHeaders()
 	headersByteArray, err := json.Marshal(headers)
 	if err != nil {

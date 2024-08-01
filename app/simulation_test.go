@@ -13,7 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 	"github.com/cosmos/ibc-go/v7/testing/simapp"
-	"github.com/lavanet/lava/app"
+	"github.com/lavanet/lava/v2/app"
 	"github.com/stretchr/testify/require"
 )
 

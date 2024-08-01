@@ -11,5 +11,5 @@ const (
 	DelProjectEventName                     = "del_project_to_subscription_event"
 	AddTrackedCuEventName                   = "add_tracked_cu_event"
 	MonthlyCuTrackerProviderRewardEventName = "monthly_cu_tracker_provider_reward"
-	RemainingCreditEventName                = "subscription_remaining_credit"
+	SubscriptionPayoutEventName             = "subscription_payout"
 )

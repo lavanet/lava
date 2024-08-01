@@ -1,45 +1,43 @@
 package rpcconsumer
 
-import "sync"
+import (
+	"time"
+
+	"github.com/dgraph-io/ristretto"
+	"github.com/lavanet/lava/v2/utils"
+)
+
+// entries ttl duration
+const RetryEntryTTL = 6 * time.Hour
 
 // On node errors we try to send a relay again.
 // If this relay failed all retries we ban it from retries to avoid spam and save resources
 type RelayRetriesManager struct {
-	hashMap map[string]struct{} // a map of relay requests that failed retries.
-	lock    sync.RWMutex
+	cache *ristretto.Cache
 }
 
 func NewRelayRetriesManager() *RelayRetriesManager {
+	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
+	if err != nil {
+		utils.LavaFormatFatal("failed setting up cache for consumer consistency", err)
+	}
 	return &RelayRetriesManager{
-		hashMap: make(map[string]struct{}),
+		cache: cache,
 	}
 }
 
 // Check if we already have this hash so we don't retry.
 func (rrm *RelayRetriesManager) CheckHashInMap(hash string) bool {
-	rrm.lock.RLock()
-	defer rrm.lock.RUnlock()
-	_, found := rrm.hashMap[hash]
+	_, found := rrm.cache.Get(hash)
 	return found
 }
 
-// Remove hash from map.
+// Add hash to the retry cache.
 func (rrm *RelayRetriesManager) AddHashToMap(hash string) {
-	rrm.lock.Lock()
-	defer rrm.lock.Unlock()
-	rrm.hashMap[hash] = struct{}{}
+	rrm.cache.SetWithTTL(hash, struct{}{}, 1, RetryEntryTTL)
 }
 
-// Add failed retries attempt.
+// Remove hash from cache if it exists
 func (rrm *RelayRetriesManager) RemoveHashFromMap(hash string) {
-	rrm.lock.Lock()
-	defer rrm.lock.Unlock()
-	delete(rrm.hashMap, hash)
-}
-
-// On epoch updates we reset the state of the hashes.
-func (rrm *RelayRetriesManager) UpdateEpoch(epoch uint64) {
-	rrm.lock.Lock()
-	defer rrm.lock.Unlock()
-	rrm.hashMap = make(map[string]struct{})
+	rrm.cache.Del(hash)
 }

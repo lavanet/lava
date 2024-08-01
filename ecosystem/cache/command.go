@@ -3,7 +3,7 @@ package cache
 import (
 	"context"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )

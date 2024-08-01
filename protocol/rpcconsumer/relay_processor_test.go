@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -269,6 +269,42 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		}
 		// after the sleep we should not have the hash anymore in the map as it was removed by a successful relay.
 		require.False(t, relayProcessor.relayRetriesManager.CheckHashInMap(hash))
+	})
+
+	t.Run("retry_flow_disabled", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Handle the incoming request and provide the desired response
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance)
+		relayProcessor.disableRelayRetry = true
+		usedProviders := relayProcessor.GetUsedProviders()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+		require.Zero(t, usedProviders.CurrentlyUsed())
+		require.Zero(t, usedProviders.SessionsLatestBatch())
+		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+		usedProviders.AddUsed(consumerSessionsMap, nil)
+		// check first reply
+		go sendNodeError(relayProcessor, "lava@test", time.Millisecond*5)
+		err = relayProcessor.WaitForResults(context.Background())
+		require.NoError(t, err)
+		resultsOk := relayProcessor.HasResults()
+		require.True(t, resultsOk)
+		requiredNodeResults := relayProcessor.HasRequiredNodeResults()
+		require.True(t, requiredNodeResults)
 	})
 }
 

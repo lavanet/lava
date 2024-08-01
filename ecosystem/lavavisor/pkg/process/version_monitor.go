@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/utils"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v2/utils"
+	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
 )
 
 type ProtocolBinaryFetcherInf interface {

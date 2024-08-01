@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	chaintracker "github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	rand "github.com/lavanet/lava/utils/rand"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	chaintracker "github.com/lavanet/lava/v2/protocol/chaintracker"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils"
+	rand "github.com/lavanet/lava/v2/utils/rand"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

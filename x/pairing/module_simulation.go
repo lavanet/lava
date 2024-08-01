@@ -10,9 +10,9 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	types2 "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/lavanet/lava/testutil/sample"
-	pairingsimulation "github.com/lavanet/lava/x/pairing/simulation"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/testutil/sample"
+	pairingsimulation "github.com/lavanet/lava/v2/x/pairing/simulation"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 // avoid unused import issue

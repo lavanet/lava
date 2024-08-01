@@ -4,7 +4,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	commontypes "github.com/lavanet/lava/utils/common/types"
+	commontypes "github.com/lavanet/lava/v2/utils/common/types"
 )
 
 const TypeMsgClaimRewards = "claim_rewards"

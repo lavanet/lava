@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/lavanet/lava/protocol/lavasession"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 type Cache struct {

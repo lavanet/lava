@@ -1,6 +1,6 @@
 package chainlib
 
-import "github.com/lavanet/lava/protocol/common"
+import "github.com/lavanet/lava/v2/protocol/common"
 
 func ShouldSendToAllProviders(chainMessage ChainMessage) bool {
 	return chainMessage.GetApi().Category.Stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS

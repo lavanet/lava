@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/lavanet/lava/x/downtime/types"
+	"github.com/lavanet/lava/v2/x/downtime/types"
 	"github.com/spf13/cobra"
 )
 
