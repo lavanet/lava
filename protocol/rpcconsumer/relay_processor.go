@@ -295,7 +295,7 @@ func (rp *RelayProcessor) HasResults() bool {
 }
 
 func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
-	hash, err := rp.chainMessage.GetInputMsgInfoHash()
+	hash, err := rp.chainMessage.GetRawRequestHash()
 	hashString := ""
 	if err == nil {
 		hashString = string(hash)

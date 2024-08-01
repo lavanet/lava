@@ -15,7 +15,7 @@ type updatableRPCInput interface {
 	rpcInterfaceMessages.GenericMessage
 	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
-	GetInputMsgInfoHash() ([]byte, error)
+	GetRawRequestHash() ([]byte, error)
 }
 
 type baseChainMessageContainer struct {
@@ -33,12 +33,12 @@ type baseChainMessageContainer struct {
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 }
 
-func (pm *baseChainMessageContainer) GetInputMsgInfoHash() ([]byte, error) {
+func (pm *baseChainMessageContainer) GetRawRequestHash() ([]byte, error) {
 	if pm.inputHashCache != nil && len(pm.inputHashCache) > 0 {
 		// Get the cached value
 		return pm.inputHashCache, nil
 	}
-	hash, err := pm.msg.GetInputMsgInfoHash()
+	hash, err := pm.msg.GetRawRequestHash()
 	if err == nil {
 		// Now we have the hash cached so we call it only once.
 		pm.inputHashCache = hash

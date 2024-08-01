@@ -26,7 +26,7 @@ type JsonrpcMessage struct {
 }
 
 // get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
-func (jm *JsonrpcMessage) GetInputMsgInfoHash() ([]byte, error) {
+func (jm *JsonrpcMessage) GetRawRequestHash() ([]byte, error) {
 	headers := jm.GetHeaders()
 	headersByteArray, err := json.Marshal(headers)
 	if err != nil {
@@ -172,7 +172,7 @@ type JsonrpcBatchMessage struct {
 
 // on batches we don't want to calculate the batch hash as its impossible to get the args
 // we will just return false so retry wont trigger.
-func (jbm JsonrpcBatchMessage) GetInputMsgInfoHash() ([]byte, error) {
+func (jbm JsonrpcBatchMessage) GetRawRequestHash() ([]byte, error) {
 	return nil, WontCalculateBatchHash
 }
 

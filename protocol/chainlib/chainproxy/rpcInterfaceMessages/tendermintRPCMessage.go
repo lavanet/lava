@@ -21,7 +21,7 @@ type TendermintrpcMessage struct {
 }
 
 // get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
-func (tm *TendermintrpcMessage) GetInputMsgInfoHash() ([]byte, error) {
+func (tm *TendermintrpcMessage) GetRawRequestHash() ([]byte, error) {
 	headers := tm.GetHeaders()
 	headersByteArray, err := json.Marshal(headers)
 	if err != nil {

@@ -80,7 +80,7 @@ type ChainMessage interface {
 	GetForceCacheRefresh() bool
 	SetForceCacheRefresh(force bool) bool
 	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
-	GetInputMsgInfoHash() ([]byte, error)
+	GetRawRequestHash() ([]byte, error)
 
 	ChainMessageForSend
 }
