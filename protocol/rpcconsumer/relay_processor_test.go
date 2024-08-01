@@ -250,7 +250,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		// check first reply, this time we have hash in map, so we don't retry node errors.
 		hash, err := relayProcessor.getInputMsgInfoHashString()
 		require.NoError(t, err)
-		require.True(t, relayProcessor.relayRetriesManager.CheckHashInMap(hash))
+		require.True(t, relayProcessor.relayRetriesManager.CheckHashInCache(hash))
 		go sendSuccessResp(relayProcessor, "lava@test", time.Millisecond*5)
 		err = relayProcessor.WaitForResults(context.Background())
 		require.NoError(t, err)
@@ -262,13 +262,13 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		// A way for us to break early from sleep, just waiting up to 5 seconds and breaking as soon as the value we expect is there.
 		// After 5 seconds if its not there test will fail
 		for i := 0; i < 100; i++ {
-			if !relayProcessor.relayRetriesManager.CheckHashInMap(hash) {
+			if !relayProcessor.relayRetriesManager.CheckHashInCache(hash) {
 				break
 			}
 			time.Sleep(time.Millisecond * 50) // sleep up to 5 seconds
 		}
 		// after the sleep we should not have the hash anymore in the map as it was removed by a successful relay.
-		require.False(t, relayProcessor.relayRetriesManager.CheckHashInMap(hash))
+		require.False(t, relayProcessor.relayRetriesManager.CheckHashInCache(hash))
 	})
 
 	t.Run("retry_flow_disabled", func(t *testing.T) {

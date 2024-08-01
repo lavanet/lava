@@ -27,17 +27,17 @@ func NewRelayRetriesManager() *RelayRetriesManager {
 }
 
 // Check if we already have this hash so we don't retry.
-func (rrm *RelayRetriesManager) CheckHashInMap(hash string) bool {
+func (rrm *RelayRetriesManager) CheckHashInCache(hash string) bool {
 	_, found := rrm.cache.Get(hash)
 	return found
 }
 
 // Add hash to the retry cache.
-func (rrm *RelayRetriesManager) AddHashToMap(hash string) {
+func (rrm *RelayRetriesManager) AddHashToCache(hash string) {
 	rrm.cache.SetWithTTL(hash, struct{}{}, 1, RetryEntryTTL)
 }
 
 // Remove hash from cache if it exists
-func (rrm *RelayRetriesManager) RemoveHashFromMap(hash string) {
+func (rrm *RelayRetriesManager) RemoveHashFromCache(hash string) {
 	rrm.cache.Del(hash)
 }
