@@ -384,6 +384,11 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	defer cwsm.lock.Unlock()
 
 	subscriptionId := chainMessage.SubscriptionIdExtractor(&replyJsonrpcMessage)
+
+	// In JsonRPC, the subscription id is a string, but it is sent in an array
+	// In Tendermint, the subscription id is the query params, and sent as an object, so skipped
+	subscriptionId = common.UnSquareBracket(subscriptionId)
+
 	if common.IsQuoted(subscriptionId) {
 		subscriptionId, _ = strconv.Unquote(subscriptionId)
 	}
