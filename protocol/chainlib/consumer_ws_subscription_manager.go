@@ -785,7 +785,7 @@ func (cwsm *ConsumerWSSubscriptionManager) findActiveSubscriptionHashedParamsFro
 	// Extract the subscription id from the chain message
 	unsubscribeRequestParams, err := gojson.Marshal(chainMessage.GetRPCMessage().GetParams())
 	if err != nil {
-		return "", utils.LavaFormatError("could not marshal params", err)
+		return "", utils.LavaFormatError("could not marshal params", err, utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()))
 	}
 
 	unsubscribeRequestParamsString := string(unsubscribeRequestParams)
