@@ -33,7 +33,7 @@ type (
 		subscriptionKeeper types.SubscriptionKeeper
 		planKeeper         types.PlanKeeper
 		badgeTimerStore    timerstoretypes.TimerStore
-		providerQosFS      fixationtypes.FixationStore
+		reputationsFS      fixationtypes.FixationStore
 		downtimeKeeper     types.DowntimeKeeper
 		dualstakingKeeper  types.DualstakingKeeper
 		stakingKeeper      types.StakingKeeper
@@ -115,7 +115,7 @@ func NewKeeper(
 		WithCallbackByBlockHeight(badgeTimerCallback)
 	keeper.badgeTimerStore = *badgeTimerStore
 
-	keeper.providerQosFS = *fixationStoreKeeper.NewFixationStore(storeKey, types.ProviderQosStorePrefix)
+	keeper.reputationsFS = *fixationStoreKeeper.NewFixationStore(storeKey, types.ProviderQosStorePrefix)
 
 	schema, err := sb.Build()
 	if err != nil {
@@ -143,10 +143,10 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 	}
 }
 
-func (k Keeper) InitProviderQoS(ctx sdk.Context, gs fixationtypes.GenesisState) {
-	k.providerQosFS.Init(ctx, gs)
+func (k Keeper) InitReputations(ctx sdk.Context, gs fixationtypes.GenesisState) {
+	k.reputationsFS.Init(ctx, gs)
 }
 
-func (k Keeper) ExportProviderQoS(ctx sdk.Context) fixationtypes.GenesisState {
-	return k.providerQosFS.Export(ctx)
+func (k Keeper) ExportReputations(ctx sdk.Context) fixationtypes.GenesisState {
+	return k.reputationsFS.Export(ctx)
 }

@@ -33,7 +33,7 @@ message Reputation {
 }
 
 // ReputationPairingScore holds the reputation pairing score used by the reputation pairing requirement. 
-// The score is ranged between [0.5-2]. It's kept in the providerQosFs fixation store with a provider+chain+cluster key.
+// The score is ranged between [0.5-2]. It's kept in the reputations fixation store with a provider+chain+cluster key.
 message ReputationPairingScore {
 	string score = 1 [(gogoproto.moretags) = "yaml:\"score\"", (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
 		(gogoproto.nullable) = false];

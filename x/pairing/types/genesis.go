@@ -20,7 +20,7 @@ func DefaultGenesis() *GenesisState {
 		BadgeUsedCuList:          []BadgeUsedCu{},
 		Reputations:              []ReputationGenesis{},
 		BadgesTS:                 *timerstoretypes.DefaultGenesis(),
-		ProviderQosFS:            *fixationtypes.DefaultGenesis(),
+		ReputationScores:         *fixationtypes.DefaultGenesis(),
 		// this line is used by starport scaffolding # genesis/types/default
 		Params: DefaultParams(),
 	}

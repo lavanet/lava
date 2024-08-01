@@ -192,7 +192,7 @@ func (m *Reputation) GetCreationTime() uint64 {
 }
 
 // ReputationPairingScore holds the reputation pairing score used by the reputation pairing requirement.
-// The score is ranged between [0.5-2]. It's kept in the providerQosFs fixation store with a provider+chain+cluster key.
+// The score is ranged between [0.5-2]. It's kept in the reputations fixation store with a provider+chain+cluster key.
 type ReputationPairingScore struct {
 	Score github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=score,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"score" yaml:"score"`
 }

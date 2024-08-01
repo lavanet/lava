@@ -35,7 +35,7 @@ func InitGenesis(ctx sdk.Context, k keeper.Keeper, genState types.GenesisState) 
 	}
 
 	k.InitBadgeTimers(ctx, genState.BadgesTS)
-	k.InitProviderQoS(ctx, genState.ProviderQosFS)
+	k.InitReputations(ctx, genState.ReputationScores)
 	// this line is used by starport scaffolding # genesis/module/init
 	k.SetParams(ctx, genState.Params)
 }
@@ -51,7 +51,7 @@ func ExportGenesis(ctx sdk.Context, k keeper.Keeper) *types.GenesisState {
 	genesis.BadgeUsedCuList = k.GetAllBadgeUsedCu(ctx)
 	genesis.Reputations = k.GetAllReputation(ctx)
 	genesis.BadgesTS = k.ExportBadgesTimers(ctx)
-	genesis.ProviderQosFS = k.ExportProviderQoS(ctx)
+	genesis.ReputationScores = k.ExportReputations(ctx)
 	// this line is used by starport scaffolding # genesis/module/export
 
 	return genesis
