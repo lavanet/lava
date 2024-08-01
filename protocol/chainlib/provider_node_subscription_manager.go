@@ -241,6 +241,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			connectedConsumers:           make(map[string]map[string]*connectedConsumerContainer),
 		}
 
+		channelToConnectedConsumers.connectedConsumers[consumerAddrString] = make(map[string]*connectedConsumerContainer)
 		channelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid] = &connectedConsumerContainer{
 			consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
 			firstSetupRequest:  copiedRequest,
