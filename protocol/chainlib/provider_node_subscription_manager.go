@@ -9,17 +9,19 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	gojson "github.com/goccy/go-json"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/protocopy"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v2/protocol/chaintracker"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/protocopy"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
+
+const SubscriptionTimeoutDuration = 15 * time.Minute
 
 type relayFinalizationBlocksHandler interface {
 	GetParametersForRelayDataReliability(
@@ -263,7 +265,7 @@ func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx c
 	utils.LavaFormatTrace("Inside ProviderNodeSubscriptionManager:startListeningForSubscription()", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 	defer utils.LavaFormatTrace("Leaving ProviderNodeSubscriptionManager:startListeningForSubscription()", utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)))
 
-	subscriptionTimeoutTicker := time.NewTicker(15 * time.Minute) // Set a time limit of 15 minutes for the subscription
+	subscriptionTimeoutTicker := time.NewTicker(SubscriptionTimeoutDuration) // Set a time limit of 15 minutes for the subscription
 	defer subscriptionTimeoutTicker.Stop()
 
 	for {

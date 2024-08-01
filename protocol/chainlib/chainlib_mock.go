@@ -14,13 +14,13 @@ import (
 	reflect "reflect"
 	time "time"
 
-	rpcInterfaceMessages "github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	rpcclient "github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	extensionslib "github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	common "github.com/lavanet/lava/protocol/common"
-	metrics "github.com/lavanet/lava/protocol/metrics"
-	types "github.com/lavanet/lava/x/pairing/types"
-	types0 "github.com/lavanet/lava/x/spec/types"
+	rpcInterfaceMessages "github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	rpcclient "github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	extensionslib "github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
+	common "github.com/lavanet/lava/v2/protocol/common"
+	metrics "github.com/lavanet/lava/v2/protocol/metrics"
+	types "github.com/lavanet/lava/v2/x/pairing/types"
+	types0 "github.com/lavanet/lava/v2/x/spec/types"
 	gomock "go.uber.org/mock/gomock"
 )
 

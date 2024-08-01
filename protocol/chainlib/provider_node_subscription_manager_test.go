@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/chaintracker"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v2/protocol/chaintracker"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

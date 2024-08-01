@@ -7,15 +7,15 @@ import (
 	"sync"
 
 	gojson "github.com/goccy/go-json"
-	rpcclient "github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/protocopy"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	rpcclient "github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/protocol/metrics"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/protocopy"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 type unsubscribeRelayData struct {

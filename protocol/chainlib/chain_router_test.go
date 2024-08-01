@@ -13,11 +13,11 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
-	"github.com/lavanet/lava/utils"
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	testcommon "github.com/lavanet/lava/v2/testutil/common"
+	"github.com/lavanet/lava/v2/utils"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )

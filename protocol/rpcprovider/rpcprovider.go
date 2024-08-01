@@ -35,6 +35,7 @@ import (
 	epochstorage "github.com/lavanet/lava/v2/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

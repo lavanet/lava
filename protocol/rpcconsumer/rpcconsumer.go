@@ -33,6 +33,7 @@ import (
 	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
 	plantypes "github.com/lavanet/lava/v2/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
