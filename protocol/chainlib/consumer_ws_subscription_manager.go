@@ -639,6 +639,7 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("dappID", dappID),
 		utils.LogAttr("consumerIp", consumerIp),
+		utils.LogAttr("webSocketConnectionUniqueId", webSocketConnectionUniqueId),
 	)
 
 	hashedParams, err := cwsm.findActiveSubscriptionHashedParamsFromChainMessage(chainMessage)
@@ -834,6 +835,7 @@ func (cwsm *ConsumerWSSubscriptionManager) verifyAndDisconnectDappFromSubscripti
 			utils.LogAttr("GUID", webSocketCtx),
 			utils.LogAttr("dappKey", dappKey),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+			utils.LogAttr("cwsm.connectedDapps", cwsm.connectedDapps),
 		)
 
 		return nil

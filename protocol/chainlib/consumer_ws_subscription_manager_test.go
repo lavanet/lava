@@ -170,7 +170,6 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 	// 6. Start a subscription again, different params, different dappKey -> should call SendParsedRelay
 	// 7. Unsubscribe from the first subscription -> should call CancelSubscriptionContext and SendParsedRelay
 	// 8. Unsubscribe from the second subscription -> should call CancelSubscriptionContext and SendParsedRelay
-
 	playbook := []struct {
 		name                     string
 		specId                   string
