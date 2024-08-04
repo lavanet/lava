@@ -314,6 +314,10 @@ type mockRPCInput struct {
 	chainproxy.BaseMessage
 }
 
+func (m *mockRPCInput) GetRawRequestHash() ([]byte, error) {
+	return nil, fmt.Errorf("test")
+}
+
 func (m *mockRPCInput) GetParams() interface{} {
 	return nil
 }

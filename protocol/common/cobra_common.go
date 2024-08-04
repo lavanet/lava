@@ -29,6 +29,9 @@ const (
 	RelayHealthIntervalFlag         = "relays-health-interval" // interval between each relay health check, default 5m
 	SharedStateFlag                 = "shared-state"
 	DisableConflictTransactionsFlag = "disable-conflict-transactions" // disable conflict transactions, this will hard the network's data reliability and therefore will harm the service.
+	// Disable relay retries when we get node errors.
+	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
+	DisableRetryOnNodeErrorsFlag = "disable-retry-on-node-error"
 )
 
 const (
@@ -51,6 +54,7 @@ type ConsumerCmdFlags struct {
 	RelaysHealthIntervalFlag    time.Duration // interval for relay health check
 	DebugRelays                 bool          // enables debug mode for relays
 	DisableConflictTransactions bool          // disable conflict transactions
+	DisableRetryOnNodeErrors    bool          // disable retries on node errors
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.
