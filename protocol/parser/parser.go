@@ -100,7 +100,7 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, 
 
 	if parsedBlockInfo == nil {
 		parsedBlockInfo = NewParsedInput()
-		utils.LavaFormatError("ParseBlockFromParams - parsedBlockInfo is nil", nil,
+		utils.LavaFormatDebug("ParseBlockFromParams - parsedBlockInfo is nil, because generic parser failed or none were found",
 			utils.LogAttr("rpcInput", rpcInput),
 			utils.LogAttr("blockParser", blockParser),
 			utils.LogAttr("genericParsers", genericParsers),
