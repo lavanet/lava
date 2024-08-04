@@ -179,7 +179,7 @@ func validateRecommendedEpochNumToCollectPayment(v interface{}) error {
 
 // validateReputationVarianceStabilizationPeriod validates the ReputationVarianceStabilizationPeriod param
 func validateReputationVarianceStabilizationPeriod(v interface{}) error {
-	reputationVarianceStabilizationPeriod, ok := v.(uint64)
+	reputationVarianceStabilizationPeriod, ok := v.(int64)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
@@ -205,7 +205,7 @@ func validateReputationLatencyOverSyncFactor(v interface{}) error {
 
 // validateReputationHalfLifeFactor validates the ReputationHalfLifeFactor param
 func validateReputationHalfLifeFactor(v interface{}) error {
-	reputationHalfLifeFactor, ok := v.(uint64)
+	reputationHalfLifeFactor, ok := v.(int64)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
