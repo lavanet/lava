@@ -153,7 +153,7 @@ func (consumerSession *SingleConsumerSession) VerifyLock() error {
 	return nil
 }
 
-func (scs *SingleConsumerSession) VerifyProviderUniqueId(providerUniqueId string) bool {
+func (scs *SingleConsumerSession) VerifyProviderUniqueIdAndStoreIfFirstTime(providerUniqueId string) bool {
 	if scs.providerUniqueId == "" {
 		utils.LavaFormatTrace("First time getting providerUniqueId for SingleConsumerSession",
 			utils.LogAttr("sessionId", scs.SessionId),
