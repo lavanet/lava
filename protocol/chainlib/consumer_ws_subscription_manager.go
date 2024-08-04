@@ -385,6 +385,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	defer cwsm.lock.Unlock()
 
 	subscriptionId := chainMessage.SubscriptionIdExtractor(&replyJsonrpcMessage)
+	subscriptionId = common.UnSquareBracket(subscriptionId)
 	if common.IsQuoted(subscriptionId) {
 		subscriptionId, _ = strconv.Unquote(subscriptionId)
 	}
@@ -642,16 +643,14 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 		utils.LogAttr("webSocketConnectionUniqueId", webSocketConnectionUniqueId),
 	)
 
-	hashedParams, err := cwsm.findActiveSubscriptionHashedParamsFromChainMessage(chainMessage)
-	if err != nil {
-		return err
-	}
-
 	dappKey := cwsm.CreateWebSocketConnectionUniqueKey(dappID, consumerIp, webSocketConnectionUniqueId)
 
 	cwsm.lock.Lock()
 	defer cwsm.lock.Unlock()
-
+	hashedParams, err := cwsm.findActiveSubscriptionHashedParamsFromChainMessage(chainMessage)
+	if err != nil {
+		return err
+	}
 	return cwsm.verifyAndDisconnectDappFromSubscription(webSocketCtx, dappKey, hashedParams, func() (*unsubscribeRelayData, error) {
 		return &unsubscribeRelayData{chainMessage, directiveHeaders, relayRequestData}, nil
 	})
