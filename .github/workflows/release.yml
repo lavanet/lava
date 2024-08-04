@@ -17,16 +17,18 @@ jobs:
   release:
     name: 'release'
     runs-on: ubuntu-latest
-    container:
-      image: goreleaser/goreleaser-cross:v1.22
 
     permissions:
       contents: write
       
     steps:
-    - name: Mark github workspace as safe
-      run: |
-        sh -c "git config --global --add safe.directory $PWD"
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+      with:
+        large-packages: false
+        docker-images: false
+        swap-storage: false
+        tool-cache: false
 
     - name: Checkout code
       uses: actions/checkout@v4
@@ -37,19 +39,11 @@ jobs:
     - name: Fetch all tags
       run: |
         git fetch --force --tags
-
-    - name: Configure Go
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: go.mod
-        cache-dependency-path: go.sum
-
-
+        
     - name: Run GoReleaser
       id: releaser
-      uses: goreleaser/goreleaser-action@v5
+      uses: docker://goreleaser/goreleaser-cross:v1.22
       with:
-        version: '~> v2'
         args: release --clean --timeout 90m
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -64,7 +58,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: "lavanet/lava/${{ matrix.binary }}"
-    steps:
+    steps:      
       - name: Checkout code
         uses: actions/checkout@v4
         with:
