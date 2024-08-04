@@ -31,7 +31,7 @@ const (
 func initTest() (context.Context, *cache.RelayerCacheServer) {
 	ctx := context.Background()
 	cs := cache.CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024}
-	cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DisabledFlagOption, cache.DefaultExpirationTimeFinalizedMultiplier, cache.DefaultExpirationTimeNonFinalizedMultiplier)
+	cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DefaultExpirationNodeErrors, cache.DisabledFlagOption, cache.DefaultExpirationTimeFinalizedMultiplier, cache.DefaultExpirationTimeNonFinalizedMultiplier)
 	cacheServer := &cache.RelayerCacheServer{CacheServer: &cs}
 	return ctx, cacheServer
 }
@@ -583,7 +583,7 @@ func TestCacheExpirationMultiplier(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cs := cache.CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024}
-			cs.InitCache(context.Background(), cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DisabledFlagOption, 1, tt.multiplier)
+			cs.InitCache(context.Background(), cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DefaultExpirationNodeErrors, cache.DisabledFlagOption, 1, tt.multiplier)
 			cacheServer := &cache.RelayerCacheServer{CacheServer: &cs}
 
 			durationActual := cacheServer.CacheServer.ExpirationForChain(cache.DefaultExpirationForNonFinalized)

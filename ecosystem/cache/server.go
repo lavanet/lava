@@ -51,9 +51,10 @@ type CacheServer struct {
 	CacheMaxCost int64
 }
 
-func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, expirationNonFinalized time.Duration, metricsAddr string, expirationFinalizedMultiplier float64, expirationNonFinalizedMultiplier float64) {
+func (cs *CacheServer) InitCache(ctx context.Context, expiration time.Duration, expirationNonFinalized time.Duration, expirationNodeErrorsOnFinalized time.Duration, metricsAddr string, expirationFinalizedMultiplier float64, expirationNonFinalizedMultiplier float64) {
 	cs.ExpirationFinalized = time.Duration(float64(expiration) * expirationFinalizedMultiplier)
 	cs.ExpirationNonFinalized = time.Duration(float64(expirationNonFinalized) * expirationNonFinalizedMultiplier)
+	cs.ExpirationNodeErrors = time.Duration(expirationNodeErrorsOnFinalized)
 
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
 	if err != nil {
@@ -183,6 +184,11 @@ func Server(
 		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationNonFinalizedFlagName})
 	}
 
+	expirationNodeErrorsOnFinalizedFlagName, err := flags.GetDuration(ExpirationNodeErrorsOnFinalizedFlagName)
+	if err != nil {
+		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationNodeErrorsOnFinalizedFlagName})
+	}
+
 	expirationFinalizedMultiplier, err := flags.GetFloat64(ExpirationTimeFinalizedMultiplierFlagName)
 	if err != nil {
 		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationTimeFinalizedMultiplierFlagName})
@@ -199,7 +205,7 @@ func Server(
 	}
 	cs := CacheServer{CacheMaxCost: cacheMaxCost}
 
-	cs.InitCache(ctx, expiration, expirationNonFinalized, metricsAddr, expirationFinalizedMultiplier, expirationNonFinalizedMultiplier)
+	cs.InitCache(ctx, expiration, expirationNonFinalized, expirationNodeErrorsOnFinalizedFlagName, metricsAddr, expirationFinalizedMultiplier, expirationNonFinalizedMultiplier)
 	// TODO: have a state tracker
 	cs.Serve(ctx, listenAddr)
 }
