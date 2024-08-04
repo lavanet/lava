@@ -113,7 +113,7 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	}
 	// add spec path to rest message so we can extract the requested block.
 	restMessage.SpecPath = apiCont.api.Name
-	var parsedInput *parser.ParsedInput
+	parsedInput := parser.NewParsedInput()
 	if overwriteReqBlock == "" {
 		// Fetch requested block, it is used for data reliability
 		parsedInput = parser.ParseBlockFromParams(restMessage, api.BlockParsing, api.Parsers)
@@ -139,9 +139,9 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 		parsedBlock = spectypes.NOT_APPLICABLE
 	}
 
-	blockHashed, _ := parsedInput.GetBlockHashes()
+	blockHashes, _ := parsedInput.GetBlockHashes()
 
-	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashed, &restMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashes, &restMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }

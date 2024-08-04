@@ -136,7 +136,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
 	blockHashes := []string{}
 	for idx, msg := range msgs {
-		var parsedInput *parser.ParsedInput
+		parsedInput := parser.NewParsedInput()
 		// Check api is supported and save it in nodeMsg
 		apiCont, err := apip.getSupportedApi(msg.Method, connectionType)
 		if err != nil {

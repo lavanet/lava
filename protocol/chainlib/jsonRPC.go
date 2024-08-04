@@ -107,7 +107,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
 	blockHashes := []string{}
 	for idx, msg := range msgs {
-		var parsedInput *parser.ParsedInput
+		parsedInput := parser.NewParsedInput()
 		internalPath := ""
 		if apip.isValidInternalPath(url) {
 			internalPath = url

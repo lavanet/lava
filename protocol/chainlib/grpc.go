@@ -173,19 +173,9 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 	// // Fetch requested block, it is used for data reliability
 	// // Extract default block parser
 	api := apiCont.api
-	var parsedInput *parser.ParsedInput
+	parsedInput := parser.NewParsedInput()
 	if overwriteReqBlock == "" {
 		parsedInput = parser.ParseBlockFromParams(grpcMessage, api.BlockParsing, api.Parsers)
-		if err != nil {
-			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
-				utils.LogAttr("chain", apip.spec.Name),
-				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-				utils.LogAttr("apiName", apiCont.api.Name),
-				utils.LogAttr("connectionType", "grpc"),
-			)
-
-			parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
-		}
 	} else {
 		parsedBlock, err := grpcMessage.ParseBlock(overwriteReqBlock)
 		parsedInput.SetBlock(parsedBlock)
@@ -208,9 +198,9 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		parsedBlock = spectypes.NOT_APPLICABLE
 	}
 
-	blockHashed, _ := parsedInput.GetBlockHashes()
+	blockHashes, _ := parsedInput.GetBlockHashes()
 
-	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashed, &grpcMessage, apiCollection)
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashes, &grpcMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
