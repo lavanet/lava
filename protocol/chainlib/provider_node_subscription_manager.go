@@ -470,7 +470,6 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 	// Sending message to all connected consumers
 	for consumerAddrString, connectedConsumerAddress := range activeSub.connectedConsumers {
 		for consumerProcessGuid, connectedConsumerContainer := range connectedConsumerAddress {
-
 			utils.LavaFormatTrace("ProviderNodeSubscriptionManager:startListeningForSubscription() sending to consumer",
 				utils.LogAttr("consumerAddr", consumerAddrString),
 				utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
