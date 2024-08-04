@@ -1050,7 +1050,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	var reply pairingtypes.RelayReply
 	gotFirstReplyChanOrErr := make(chan struct{})
 
-	// Cancel the context after 10 seconds, so we won't hang forever
+	// Cancel the context after SubscriptionFirstReplyTimeout duration, so we won't hang forever
 	go func() {
 		for {
 			select {
