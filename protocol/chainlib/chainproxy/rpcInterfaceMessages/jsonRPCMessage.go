@@ -170,6 +170,10 @@ type JsonrpcBatchMessage struct {
 	chainproxy.BaseMessage
 }
 
+func (jbm JsonrpcBatchMessage) GetParams() interface{} {
+	return nil
+}
+
 // on batches we don't want to calculate the batch hash as its impossible to get the args
 // we will just return false so retry wont trigger.
 func (jbm JsonrpcBatchMessage) GetRawRequestHash() ([]byte, error) {
