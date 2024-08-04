@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/goccy/go-json"
-
 	tenderminttypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	gojson "github.com/goccy/go-json"
+	"github.com/goccy/go-json"
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v2/protocol/parser"
@@ -22,7 +20,7 @@ type TendermintrpcMessage struct {
 }
 
 func (tm TendermintrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
-	params, err := gojson.Marshal(tm.GetParams())
+	params, err := json.Marshal(tm.GetParams())
 	if err != nil {
 		utils.LavaFormatWarning("failed marshaling params", err, utils.LogAttr("request", tm))
 		return ""
