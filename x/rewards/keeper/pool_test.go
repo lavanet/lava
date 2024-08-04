@@ -5,11 +5,11 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/testutil/common"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
+	"github.com/lavanet/lava/v2/testutil/common"
+	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 	"github.com/stretchr/testify/require"
 )
 

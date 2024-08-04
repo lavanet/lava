@@ -9,9 +9,9 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 )
 
 func (k Keeper) DistributeBlockReward(ctx sdk.Context) {

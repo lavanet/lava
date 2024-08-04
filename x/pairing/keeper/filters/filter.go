@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
-	"github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/utils"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	pairingscores "github.com/lavanet/lava/v2/x/pairing/keeper/scores"
+	"github.com/lavanet/lava/v2/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 )
 
 // The Filter interface allows creating filters that filter out providers in the pairing process.

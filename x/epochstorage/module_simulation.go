@@ -11,9 +11,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/lavanet/lava/testutil/sample"
-	epochstoragesimulation "github.com/lavanet/lava/x/epochstorage/simulation"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/testutil/sample"
+	epochstoragesimulation "github.com/lavanet/lava/v2/x/epochstorage/simulation"
+	"github.com/lavanet/lava/v2/x/epochstorage/types"
 )
 
 // avoid unused import issue

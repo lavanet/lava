@@ -2,8 +2,8 @@ package subscription
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/subscription/keeper"
-	"github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/v2/x/subscription/keeper"
+	"github.com/lavanet/lava/v2/x/subscription/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

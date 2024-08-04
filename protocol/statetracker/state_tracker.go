@@ -7,10 +7,10 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/protocol/chaintracker"
-	updaters "github.com/lavanet/lava/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/utils"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chaintracker"
+	updaters "github.com/lavanet/lava/v2/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v2/utils"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 const (

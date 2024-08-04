@@ -6,12 +6,12 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	v2 "github.com/lavanet/lava/x/subscription/migrations/v2"
-	v5 "github.com/lavanet/lava/x/subscription/migrations/v5"
-	v6 "github.com/lavanet/lava/x/subscription/migrations/v6"
-	v8 "github.com/lavanet/lava/x/subscription/migrations/v8"
-	"github.com/lavanet/lava/x/subscription/types"
+	"github.com/lavanet/lava/v2/utils"
+	v2 "github.com/lavanet/lava/v2/x/subscription/migrations/v2"
+	v5 "github.com/lavanet/lava/v2/x/subscription/migrations/v5"
+	v6 "github.com/lavanet/lava/v2/x/subscription/migrations/v6"
+	v8 "github.com/lavanet/lava/v2/x/subscription/migrations/v8"
+	"github.com/lavanet/lava/v2/x/subscription/types"
 )
 
 type Migrator struct {

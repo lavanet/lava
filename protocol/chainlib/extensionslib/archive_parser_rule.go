@@ -1,7 +1,7 @@
 package extensionslib
 
 import (
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 type ArchiveParserRule struct {

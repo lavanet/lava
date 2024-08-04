@@ -6,10 +6,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/app"
-	"github.com/lavanet/lava/x/downtime/keeper"
-	v1 "github.com/lavanet/lava/x/downtime/v1"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/app"
+	"github.com/lavanet/lava/v2/x/downtime/keeper"
+	v1 "github.com/lavanet/lava/v2/x/downtime/v1"
+	"github.com/lavanet/lava/v2/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 

@@ -1,7 +1,7 @@
 package types
 
 import (
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
+	fixationtypes "github.com/lavanet/lava/v2/x/fixationstore/types"
 )
 
 // this line is used by starport scaffolding # genesis/types/import

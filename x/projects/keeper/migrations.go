@@ -2,11 +2,11 @@ package keeper
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	v2 "github.com/lavanet/lava/x/projects/migrations/v2"
-	v3 "github.com/lavanet/lava/x/projects/migrations/v3"
-	v4 "github.com/lavanet/lava/x/projects/migrations/v4"
-	v5 "github.com/lavanet/lava/x/projects/migrations/v5"
+	"github.com/lavanet/lava/v2/utils"
+	v2 "github.com/lavanet/lava/v2/x/projects/migrations/v2"
+	v3 "github.com/lavanet/lava/v2/x/projects/migrations/v3"
+	v4 "github.com/lavanet/lava/v2/x/projects/migrations/v4"
+	v5 "github.com/lavanet/lava/v2/x/projects/migrations/v5"
 )
 
 type Migrator struct {

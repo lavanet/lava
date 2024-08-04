@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 	"github.com/spf13/pflag"
 )
 

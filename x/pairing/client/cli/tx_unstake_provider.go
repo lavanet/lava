@@ -10,10 +10,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	"github.com/lavanet/lava/utils"
-	dualstakingclient "github.com/lavanet/lava/x/dualstaking/client/cli"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/utils"
+	dualstakingclient "github.com/lavanet/lava/v2/x/dualstaking/client/cli"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/spf13/cobra"
 )
 

@@ -3,8 +3,8 @@ package types_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/utils/lavaslices"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
 

@@ -3,10 +3,10 @@ package dualstaking_test
 import (
 	"testing"
 
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/dualstaking"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/testutil/nullify"
+	"github.com/lavanet/lava/v2/x/dualstaking"
+	"github.com/lavanet/lava/v2/x/dualstaking/types"
 	"github.com/stretchr/testify/require"
 )
 
