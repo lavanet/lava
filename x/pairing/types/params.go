@@ -39,7 +39,7 @@ var (
 
 var (
 	KeyReputationHalfLifeFactor           = []byte("ReputationHalfLifeFactor")
-	DefaultReputationHalfLifeFactor int64 = 12 // months
+	DefaultReputationHalfLifeFactor int64 = 12 * 30 * 24 * 60 * 60 // year in seconds
 )
 
 var (
