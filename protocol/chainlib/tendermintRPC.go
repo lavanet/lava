@@ -166,7 +166,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 			parsedBlock, err := msg.ParseBlock(overwriteReqBlock)
 			parsedInput.SetBlock(parsedBlock)
 			if err != nil {
-				utils.LavaFormatError("failed parsing block from params", err,
+				utils.LavaFormatError("failed parsing block from an overwrite header", err,
 					utils.LogAttr("chain", apip.spec.Name),
 					utils.LogAttr("overwriteReqBlock", overwriteReqBlock),
 				)
@@ -176,7 +176,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 
 		parsedBlock, err := parsedInput.GetBlock()
 		if err != nil {
-			utils.LavaFormatError("failed parsing block from params", err,
+			utils.LavaFormatError("parsedInput.GetBlock() returned an error", err,
 				utils.LogAttr("msg", msg),
 				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
 				utils.LogAttr("genericParsers", apiCont.api.Parsers),

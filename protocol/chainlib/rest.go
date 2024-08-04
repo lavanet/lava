@@ -131,7 +131,7 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 
 	parsedBlock, err := parsedInput.GetBlock()
 	if err != nil {
-		utils.LavaFormatError("failed parsing block from params", err,
+		utils.LavaFormatError("parsedInput.GetBlock() returned an error", err,
 			utils.LogAttr("data", data),
 			utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
 			utils.LogAttr("genericParsers", apiCont.api.Parsers),
