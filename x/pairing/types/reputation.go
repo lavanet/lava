@@ -54,6 +54,7 @@ func (r Reputation) Equal(other Reputation) bool {
 		r.TimeLastUpdated == other.TimeLastUpdated && r.CreationTime == other.CreationTime
 }
 
+// ReputationScoreKey returns a key for the reputations fixation store (reputationsFS)
 func ReputationScoreKey(chainID string, cluster string, provider string) string {
 	return chainID + " " + cluster + " " + provider
 }
