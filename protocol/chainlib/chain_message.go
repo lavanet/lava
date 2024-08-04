@@ -45,6 +45,7 @@ func (bcnc *baseChainMessageContainer) SubscriptionIdExtractor(reply *rpcclient.
 func (bcnc *baseChainMessageContainer) GetParseDirective() *spectypes.ParseDirective {
 	return bcnc.parseDirective
 }
+
 func (pm *baseChainMessageContainer) GetRawRequestHash() ([]byte, error) {
 	if pm.inputHashCache != nil && len(pm.inputHashCache) > 0 {
 		// Get the cached value

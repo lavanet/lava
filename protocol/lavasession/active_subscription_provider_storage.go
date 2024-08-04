@@ -54,7 +54,6 @@ func (asps *ActiveSubscriptionProvidersStorage) RemoveProvider(providerAddress s
 			asps.providers[providerAddress] = activeSubscriptions - 1
 		}
 	}
-
 }
 
 func (asps *ActiveSubscriptionProvidersStorage) IsProviderCurrentlyUsed(providerAddress string) bool {
