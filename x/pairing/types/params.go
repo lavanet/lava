@@ -28,8 +28,8 @@ var (
 )
 
 var (
-	KeyReputationVarianceStabilizationPeriod            = []byte("ReputationVarianceStabilizationPeriod")
-	DefaultReputationVarianceStabilizationPeriod uint64 = 7 * 24 * 60 * 60 // week
+	KeyReputationVarianceStabilizationPeriod           = []byte("ReputationVarianceStabilizationPeriod")
+	DefaultReputationVarianceStabilizationPeriod int64 = 7 * 24 * 60 * 60 // week
 )
 
 var (
@@ -38,8 +38,8 @@ var (
 )
 
 var (
-	KeyReputationHalfLifeFactor            = []byte("ReputationHalfLifeFactor")
-	DefaultReputationHalfLifeFactor uint64 = 12 // months
+	KeyReputationHalfLifeFactor           = []byte("ReputationHalfLifeFactor")
+	DefaultReputationHalfLifeFactor int64 = 12 // months
 )
 
 var (
@@ -57,9 +57,9 @@ func NewParams(
 	epochBlocksOverlap uint64,
 	qoSWeight sdk.Dec,
 	recommendedEpochNumToCollectPayment uint64,
-	reputationVarianceStabilizationPeriod uint64,
+	reputationVarianceStabilizationPeriod int64,
 	reputationLatencyOverSyncFactor math.LegacyDec,
-	reputationHalfLifeFactor uint64,
+	reputationHalfLifeFactor int64,
 	reputationRelayFailureCost uint64,
 ) Params {
 	return Params{
