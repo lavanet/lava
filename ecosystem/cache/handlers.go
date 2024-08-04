@@ -85,11 +85,28 @@ func (s *RelayerCacheServer) getSeenBlockForSharedStateMode(chainId string, shar
 	return 0
 }
 
+func (s *RelayerCacheServer) getBlockHeightsFromHashes(chainId string, hashes []*pairingtypes.BlockHashToHeight) []*pairingtypes.BlockHashToHeight {
+	var formattedKey string
+	for _, hashToHeight := range hashes {
+		formattedKey = s.formatChainIdWithHashKey(chainId, hashToHeight.Hash)
+		value, found := getNonExpiredFromCache(s.CacheServer.blocksHashesToHeightsCache, formattedKey)
+		if found {
+			if cacheValue, ok := value.(int64); ok {
+				hashToHeight.Height = cacheValue
+			}
+		} else {
+			hashToHeight.Height = spectypes.NOT_APPLICABLE
+		}
+	}
+	return hashes
+}
+
 func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
 	cacheReply := &pairingtypes.CacheRelayReply{}
 	var cacheReplyTmp *pairingtypes.CacheRelayReply
 	var err error
 	var seenBlock int64
+	blockHashesToHeights := make([]*pairingtypes.BlockHashToHeight, 0) // set empty array to avoid nil pointer exception
 
 	originalRequestedBlock := relayCacheGet.RequestedBlock // save requested block prior to swap
 	if originalRequestedBlock < 0 {                        // we need to fetch stored latest block information.
@@ -105,10 +122,12 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		utils.Attribute{Key: "seen_block", Value: relayCacheGet.SeenBlock},
 	)
 	if relayCacheGet.RequestedBlock >= 0 { // we can only fetch
-		// check seen block is larger than our requested block, we don't need to fetch seen block prior as its already larger than requested block
+		// we don't need to fetch seen block prior as its already larger than requested block
 		waitGroup := sync.WaitGroup{}
-		waitGroup.Add(2) // currently we have two groups getRelayInner and getSeenBlock
-		// fetch all reads at the same time.
+		waitGroup.Add(3) // currently we have three groups: getRelayInner, getSeenBlock and getBlockHeightsFromHashes
+
+		// fetch all reads at the same time:
+		// fetch the cache entry
 		go func() {
 			defer waitGroup.Done()
 			cacheReplyTmp, err = s.getRelayInner(relayCacheGet)
@@ -116,6 +135,8 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 				cacheReply = cacheReplyTmp // set cache reply only if its not nil, as we need to store seen block in it.
 			}
 		}()
+
+		// fetch seen block
 		go func() {
 			defer waitGroup.Done()
 			// set seen block if required
@@ -124,8 +145,16 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 				relayCacheGet.SeenBlock = seenBlock // update state.
 			}
 		}()
+
+		// fetch block hashes
+		go func() {
+			defer waitGroup.Done()
+			blockHashesToHeights = s.getBlockHeightsFromHashes(relayCacheGet.ChainId, relayCacheGet.BlocksHashesToHeights)
+		}()
+
 		// wait for all reads to complete before moving forward
 		waitGroup.Wait()
+
 		if err == nil { // in case we got a hit validate seen block of the reply.
 			// validate that the response seen block is larger or equal to our expectations.
 			if cacheReply.SeenBlock < lavaslices.Min([]int64{relayCacheGet.SeenBlock, relayCacheGet.RequestedBlock}) { // TODO unitest this.
@@ -138,10 +167,14 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 				)
 			}
 		}
+
 		// set seen block.
 		if relayCacheGet.SeenBlock > cacheReply.SeenBlock {
 			cacheReply.SeenBlock = relayCacheGet.SeenBlock
 		}
+
+		// set block hashes
+		cacheReply.BlocksHashesToHeights = blockHashesToHeights
 	} else {
 		// set the error so cache miss will trigger.
 		err = utils.LavaFormatDebug("Requested block is invalid",
@@ -171,6 +204,10 @@ func (s *RelayerCacheServer) formatHashKey(hash []byte, parsedRequestedBlock int
 	// Append the latestBlock and seenBlock directly to the hash using little-endian encoding
 	hash = binary.LittleEndian.AppendUint64(hash, uint64(parsedRequestedBlock))
 	return hash
+}
+
+func (s *RelayerCacheServer) formatChainIdWithHashKey(chainId, hash string) string {
+	return fmt.Sprintf("%s_%s", chainId, hash)
 }
 
 func (s *RelayerCacheServer) getRelayInner(relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
@@ -249,6 +286,17 @@ func (s *RelayerCacheServer) setSeenBlockOnSharedStateMode(chainId, sharedStateI
 	s.performInt64WriteWithValidationAndRetry(get, set, seenBlock)
 }
 
+func (s *RelayerCacheServer) setBlocksHashesToHeights(chainId string, blocksHashesToHeights []*pairingtypes.BlockHashToHeight) {
+	cache := s.CacheServer.blocksHashesToHeightsCache
+	var formattedKey string
+	for _, hashToHeight := range blocksHashesToHeights {
+		if hashToHeight.Height >= 0 {
+			formattedKey = s.formatChainIdWithHashKey(chainId, hashToHeight.Hash)
+			cache.SetWithTTL(formattedKey, hashToHeight.Height, 1, s.CacheServer.ExpirationBlocksHashesToHeights)
+		}
+	}
+}
+
 func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairingtypes.RelayCacheSet) (*emptypb.Empty, error) {
 	if relayCacheSet.RequestedBlock < 0 {
 		return nil, utils.LavaFormatError("invalid relay cache set data, request block is negative", nil, utils.Attribute{Key: "requestBlock", Value: relayCacheSet.RequestedBlock})
@@ -282,6 +330,7 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 	// Setting the seen block for shared state.
 	s.setSeenBlockOnSharedStateMode(relayCacheSet.ChainId, relayCacheSet.SharedStateId, latestKnownBlock)
 	s.setLatestBlock(latestBlockKey(relayCacheSet.ChainId, ""), latestKnownBlock)
+	s.setBlocksHashesToHeights(relayCacheSet.ChainId, relayCacheSet.BlocksHashesToHeights)
 	return &emptypb.Empty{}, nil
 }
 

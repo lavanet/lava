@@ -44,6 +44,8 @@ longer DefaultExpirationForNonFinalized will reduce sync QoS for "latest" reques
 	cacheCmd.Flags().Duration(ExpirationNonFinalizedFlagName, DefaultExpirationForNonFinalized, "how long does a cache entry lasts in the cache for a non finalized entry")
 	cacheCmd.Flags().Float64(ExpirationTimeFinalizedMultiplierFlagName, DefaultExpirationTimeFinalizedMultiplier, "Multiplier for finalized cache entry expiration. 1 means no change (default), 1.2 means 20% longer.")
 	cacheCmd.Flags().Float64(ExpirationTimeNonFinalizedMultiplierFlagName, DefaultExpirationTimeNonFinalizedMultiplier, "Multiplier for non-finalized cache entry expiration. 1 means no change (default), 1.2 means 20% longer.")
+	cacheCmd.Flags().Duration(ExpirationBlocksHashesToHeightsFlagName, DefaultExpirationBlocksHashesToHeights, "how long does the cache entry lasts in the cache for a block hash to height entry")
+	cacheCmd.Flags().Float64(ExpirationBlocksHashesToHeightsMultiplierFlagName, DefaultExpirationBlocksHashesToHeightsMultiplier, "Multiplier for block hash to height cache entry expiration. 1 means no change (default), 1.2 means 20% longer.")
 	cacheCmd.Flags().Duration(ExpirationNodeErrorsOnFinalizedFlagName, DefaultExpirationNodeErrors, "how long does a cache entry lasts in the cache for a finalized node error entry")
 	cacheCmd.Flags().String(FlagMetricsAddress, DisabledFlagOption, "address to listen to prometheus metrics 127.0.0.1:5555, later you can curl http://127.0.0.1:5555/metrics")
 	cacheCmd.Flags().Int64(FlagCacheSizeName, 2*1024*1024*1024, "the maximal amount of entries to save")
