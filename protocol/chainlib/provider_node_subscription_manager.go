@@ -71,7 +71,8 @@ type ProviderNodeSubscriptionManager struct {
 	chainRouter                    ChainRouter
 	chainParser                    ChainParser
 	relayFinalizationBlocksHandler relayFinalizationBlocksHandler
-	activeSubscriptions            map[string]*activeSubscription // key is request params hash
+	activeSubscriptions            map[string]*activeSubscription                   // key is request params hash
+	currentlyPendingSubscriptions  map[string]*pendingSubscriptionsBroadcastManager // pending subscriptions waiting for node message to return.
 	privKey                        *btcec.PrivateKey
 	lock                           sync.RWMutex
 }
@@ -82,36 +83,58 @@ func NewProviderNodeSubscriptionManager(chainRouter ChainRouter, chainParser Cha
 		chainParser:                    chainParser,
 		relayFinalizationBlocksHandler: relayFinalizationBlocksHandler,
 		activeSubscriptions:            make(map[string]*activeSubscription),
+		currentlyPendingSubscriptions:  make(map[string]*pendingSubscriptionsBroadcastManager),
 		privKey:                        privKey,
 	}
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessage, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply, consumerProcessGuid string) (subscriptionId string, err error) {
-	utils.LavaFormatTrace("[AddConsumer] called", utils.LogAttr("consumerAddr", consumerAddr))
-
-	if pnsm == nil {
-		return "", fmt.Errorf("ProviderNodeSubscriptionManager is nil")
-	}
-
-	hashedParams, params, err := pnsm.getHashedParams(chainMessage)
-	if err != nil {
-		return "", err
-	}
-
-	utils.LavaFormatTrace("[AddConsumer] hashed params",
-		utils.LogAttr("params", string(params)),
-		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
-	)
-
-	consumerAddrString := consumerAddr.String()
-
+func (pnsm *ProviderNodeSubscriptionManager) failedPendingSubscription(hashedParams string) {
 	pnsm.lock.Lock()
 	defer pnsm.lock.Unlock()
+	pendingSubscriptionChannel, ok := pnsm.currentlyPendingSubscriptions[hashedParams]
+	if !ok {
+		utils.LavaFormatError("failed fetching hashed params in failedPendingSubscriptions", nil, utils.LogAttr("hash", hashedParams), utils.LogAttr("cwsm.currentlyPendingSubscriptions", pnsm.currentlyPendingSubscriptions))
+	} else {
+		pendingSubscriptionChannel.broadcastToChannelList(false)
+		delete(pnsm.currentlyPendingSubscriptions, hashedParams) // removed pending
+	}
+}
 
-	var firstSetupReply *pairingtypes.RelayReply
+// must be called under a lock.
+func (pnsm *ProviderNodeSubscriptionManager) successfulPendingSubscription(hashedParams string) {
+	pendingSubscriptionChannel, ok := pnsm.currentlyPendingSubscriptions[hashedParams]
+	if !ok {
+		utils.LavaFormatError("failed fetching hashed params in successfulPendingSubscription", nil, utils.LogAttr("hash", hashedParams), utils.LogAttr("cwsm.currentlyPendingSubscriptions", pnsm.currentlyPendingSubscriptions))
+	} else {
+		pendingSubscriptionChannel.broadcastToChannelList(true)
+		delete(pnsm.currentlyPendingSubscriptions, hashedParams) // removed pending
+	}
+}
 
+func (pnsm *ProviderNodeSubscriptionManager) checkForPendingSubscriptionsWithLock(hashedParams string) (chan bool, bool) {
+	pnsm.lock.Lock()
+	defer pnsm.lock.Unlock()
+	pendingSubscriptionBroadcastManager, ok := pnsm.currentlyPendingSubscriptions[hashedParams]
+	if !ok {
+		// we didn't find hashed params for pending subscriptions, we can create a new subscription
+		utils.LavaFormatTrace("No pending subscription for incoming hashed params found", utils.LogAttr("params", hashedParams))
+		// create pending subscription broadcast manager for other users to sync on the same relay.
+		pnsm.currentlyPendingSubscriptions[hashedParams] = &pendingSubscriptionsBroadcastManager{}
+		return nil, ok
+	}
+	utils.LavaFormatTrace("found subscription for incoming hashed params, registering our channel", utils.LogAttr("params", hashedParams))
+	// by creating a buffered channel we make sure that we wont miss out on the update between the time we register and listen to the channel
+	listenChan := make(chan bool, 1)
+	pendingSubscriptionBroadcastManager.broadcastChannelList = append(pendingSubscriptionBroadcastManager.broadcastChannelList, listenChan)
+	return listenChan, ok
+}
+
+func (pnsm *ProviderNodeSubscriptionManager) checkForActiveSubscriptionsWithLock(ctx context.Context, hashedParams string, consumerAddr sdk.AccAddress, consumerProcessGuid string, params []byte, chainMessage ChainMessage, consumerChannel chan<- *pairingtypes.RelayReply, request *pairingtypes.RelayRequest) (subscriptionId string, err error) {
+	pnsm.lock.Lock()
+	defer pnsm.lock.Unlock()
 	paramsChannelToConnectedConsumers, foundSubscriptionHash := pnsm.activeSubscriptions[hashedParams]
 	if foundSubscriptionHash {
+		consumerAddrString := consumerAddr.String()
 		utils.LavaFormatTrace("[AddConsumer] found existing subscription",
 			utils.LogAttr("GUID", ctx),
 			utils.LogAttr("consumerAddr", consumerAddr),
@@ -141,9 +164,6 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				utils.LogAttr("consumerProcessGuid", consumerProcessGuid),
 			)
-			// TODO continue here tomorrow, need to change the else case to always happen where we just add the map
-			// and it will always add the consumer if it gets there.
-			// later fix remove consumer flow.
 		}
 
 		// Create a new map for this consumer address if it doesn't exist
@@ -163,7 +183,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		// Add the new entry for the consumer
 		paramsChannelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid] = &connectedConsumerContainer{
 			consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
-			firstSetupRequest:  &pairingtypes.RelayRequest{}, // Deep copy later	firstSetupChainMessage: chainMessage,
+			firstSetupRequest:  &pairingtypes.RelayRequest{}, // Deep copy later firstSetupChainMessage: chainMessage,
 			consumerSDKAddress: consumerAddr,
 		}
 
@@ -172,8 +192,8 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			return "", utils.LavaFormatError("failed to copy subscription request", copyRequestErr)
 		}
 
-		firstSetupReply = paramsChannelToConnectedConsumers.firstSetupReply
-		// making sure to sign the reply before returning it to the consumer. this will replace the sig field with the correct value
+		firstSetupReply := paramsChannelToConnectedConsumers.firstSetupReply
+		// Making sure to sign the reply before returning it to the consumer. This will replace the sig field with the correct value
 		// (and not the signature for another consumer)
 		signingError := pnsm.signReply(ctx, firstSetupReply, consumerAddr, chainMessage, request)
 		if signingError != nil {
@@ -181,9 +201,55 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		}
 
 		subscriptionId = paramsChannelToConnectedConsumers.subscriptionID
-	} else {
-		utils.LavaFormatTrace("[AddConsumer] did not found existing subscription, creating new one")
+		// Send the first reply to the consumer asynchronously, allowing the lock to be released while waiting for the consumer to receive the response.
+		pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString][consumerProcessGuid].consumerChannel.LockAndSendAsynchronously(firstSetupReply)
+		return subscriptionId, nil
+	}
+	return "", NoActiveSubscriptionFound
+}
 
+func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, request *pairingtypes.RelayRequest, chainMessage ChainMessage, consumerAddr sdk.AccAddress, consumerChannel chan<- *pairingtypes.RelayReply, consumerProcessGuid string) (subscriptionId string, err error) {
+	utils.LavaFormatTrace("[AddConsumer] called", utils.LogAttr("consumerAddr", consumerAddr))
+
+	if pnsm == nil {
+		return "", fmt.Errorf("ProviderNodeSubscriptionManager is nil")
+	}
+
+	hashedParams, params, err := pnsm.getHashedParams(chainMessage)
+	if err != nil {
+		return "", err
+	}
+
+	utils.LavaFormatTrace("[AddConsumer] hashed params",
+		utils.LogAttr("params", string(params)),
+		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
+	)
+
+	subscriptionId, err = pnsm.checkForActiveSubscriptionsWithLock(ctx, hashedParams, consumerAddr, consumerProcessGuid, params, chainMessage, consumerChannel, request)
+	if NoActiveSubscriptionFound.Is(err) {
+		pendingSubscriptionChannel, foundPendingSubscription := pnsm.checkForPendingSubscriptionsWithLock(hashedParams)
+		if foundPendingSubscription {
+			utils.LavaFormatTrace("Found pending subscription, waiting for it to complete")
+			pendingResult := <-pendingSubscriptionChannel
+			utils.LavaFormatTrace("Finished pending for subscription, have results", utils.LogAttr("success", pendingResult))
+			// Check result is valid, if not fall through logs and try again with a new message.
+			if pendingResult {
+				subscriptionId, err = pnsm.checkForActiveSubscriptionsWithLock(ctx, hashedParams, consumerAddr, consumerProcessGuid, params, chainMessage, consumerChannel, request)
+				if err == nil {
+					// found new the subscription after waiting for a pending subscription
+					return subscriptionId, err
+				}
+				// In case we expected a subscription to return as res != nil we should find an active subscription.
+				// If we fail to find it, it might have suddenly stopped. we will log a warning and try with a new client.
+				utils.LavaFormatWarning("failed getting a result when channel indicated we got a successful relay", nil)
+			} else {
+				utils.LavaFormatWarning("Failed the subscription attempt, retrying with the incoming message", nil, utils.LogAttr("hash", hashedParams))
+			}
+		}
+
+		// did not find active or pending subscriptions, will try to create a new subscription.
+		consumerAddrString := consumerAddr.String()
+		utils.LavaFormatTrace("[AddConsumer] did not found existing subscription for hashed params, creating new one", utils.LogAttr("hash", hashedParams))
 		nodeChan := make(chan interface{})
 		var replyWrapper *RelayReplyWrapper
 		var clientSubscription *rpcclient.ClientSubscription
@@ -194,11 +260,14 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			utils.LogAttr("clientSubscription", clientSubscription),
 			utils.LogAttr("err", err),
 		)
+
 		if err != nil {
+			pnsm.failedPendingSubscription(hashedParams)
 			return "", utils.LavaFormatError("ProviderNodeSubscriptionManager: Subscription failed", err, utils.LogAttr("GUID", ctx), utils.LogAttr("params", params))
 		}
 
 		if replyWrapper == nil || replyWrapper.RelayReply == nil {
+			pnsm.failedPendingSubscription(hashedParams)
 			return "", utils.LavaFormatError("ProviderNodeSubscriptionManager: Subscription failed, relayWrapper or RelayReply are nil", nil, utils.LogAttr("GUID", ctx))
 		}
 
@@ -207,21 +276,22 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		copiedRequest := &pairingtypes.RelayRequest{}
 		copyRequestErr := protocopy.DeepCopyProtoObject(request, copiedRequest)
 		if copyRequestErr != nil {
+			pnsm.failedPendingSubscription(hashedParams)
 			return "", utils.LavaFormatError("failed to copy subscription request", copyRequestErr)
 		}
 
 		err = pnsm.signReply(ctx, reply, consumerAddr, chainMessage, request)
 		if err != nil {
-			return "", err
+			pnsm.failedPendingSubscription(hashedParams)
+			return "", utils.LavaFormatError("failed signing subscription Reply", err)
 		}
 
 		if clientSubscription == nil {
 			// failed subscription, but not an error. (probably a node error)
-
-			// Send the first message to the consumer, so it can handle the error
 			SafeChannelSender := common.NewSafeChannelSender(ctx, consumerChannel)
-			SafeChannelSender.Send(reply)
-
+			// Send the first message to the consumer, so it can handle the error in a routine.
+			go SafeChannelSender.Send(reply)
+			pnsm.failedPendingSubscription(hashedParams)
 			return "", utils.LavaFormatWarning("ProviderNodeSubscriptionManager: Subscription failed, node error", nil, utils.LogAttr("GUID", ctx), utils.LogAttr("reply", reply))
 		}
 
@@ -249,16 +319,23 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			consumerSDKAddress: consumerAddr,
 		}
 
-		pnsm.activeSubscriptions[hashedParams] = channelToConnectedConsumers
-		firstSetupReply = reply
+		// now we can lock after we have a successful subscription.
+		pnsm.lock.Lock()
+		defer pnsm.lock.Unlock()
 
+		pnsm.activeSubscriptions[hashedParams] = channelToConnectedConsumers
+		firstSetupReply := reply
+
+		// let other channels waiting the new subscription know we have a channel ready.
+		pnsm.successfulPendingSubscription(hashedParams)
+
+		// send the first reply to the consumer, reply needs to be signed.
+		pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString][consumerProcessGuid].consumerChannel.LockAndSendAsynchronously(firstSetupReply)
+		// now when all channels are set, start listening to incoming data.
 		go pnsm.listenForSubscriptionMessages(cancellableCtx, nodeChan, clientSubscription.Err(), hashedParams)
 	}
 
-	// send the first reply to the consumer, reply needs to be signed.
-	pnsm.activeSubscriptions[hashedParams].connectedConsumers[consumerAddrString][consumerProcessGuid].consumerChannel.Send(firstSetupReply)
-
-	return subscriptionId, nil
+	return subscriptionId, err
 }
 
 func (pnsm *ProviderNodeSubscriptionManager) listenForSubscriptionMessages(ctx context.Context, nodeChan chan interface{}, nodeErrChan <-chan error, hashedParams string) {
@@ -442,7 +519,7 @@ func (pnsm *ProviderNodeSubscriptionManager) handleNewNodeMessage(ctx context.Co
 				utils.LogAttr("consumerAddr", connectedConsumerContainer.consumerSDKAddress),
 			)
 
-			connectedConsumerContainer.consumerChannel.Send(relayMessageFromNode)
+			go connectedConsumerContainer.consumerChannel.Send(relayMessageFromNode)
 		}
 	}
 	return nil

@@ -29,10 +29,7 @@ func NewSafeChannelSender[T any](ctx context.Context, ch chan<- T) *SafeChannelS
 	}
 }
 
-func (scs *SafeChannelSender[T]) Send(msg T) {
-	scs.lock.Lock()
-	defer scs.lock.Unlock()
-
+func (scs *SafeChannelSender[T]) sendInner(msg T) {
 	if scs.closed {
 		utils.LavaFormatTrace("Attempted to send message to closed channel")
 		return
@@ -53,6 +50,23 @@ func (scs *SafeChannelSender[T]) Send(msg T) {
 		}
 		time.Sleep(time.Millisecond) // wait 1 millisecond between each attempt to write to the channel
 	}
+}
+
+// Used when there is a need to validate locked, but you don't want to wait for the channel
+// to return.
+func (scs *SafeChannelSender[T]) LockAndSendAsynchronously(msg T) {
+	scs.lock.Lock()
+	go func() {
+		defer scs.lock.Unlock()
+		scs.sendInner(msg)
+	}()
+}
+
+// Used when you need to wait for the other side to receive the message.
+func (scs *SafeChannelSender[T]) Send(msg T) {
+	scs.lock.Lock()
+	defer scs.lock.Unlock()
+	scs.sendInner(msg)
 }
 
 func (scs *SafeChannelSender[T]) ReplaceChannel(ch chan<- T) {

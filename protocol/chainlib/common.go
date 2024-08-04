@@ -35,7 +35,8 @@ const (
 
 var (
 	InvalidResponses                   = []string{"null", "", "nil", "undefined"}
-	FailedSendingSubscriptionToClients = sdkerrors.New("Failed Sending Subscription To Clients", 1015, "Failed Sending Subscription To Clients connection might have been closed by the user")
+	FailedSendingSubscriptionToClients = sdkerrors.New("failed Sending Subscription To Clients", 1015, "Failed Sending Subscription To Clients connection might have been closed by the user")
+	NoActiveSubscriptionFound          = sdkerrors.New("failed finding an active subscription on provider side", 1016, "no active subscriptions for hashed params.")
 )
 
 type RelayReplyWrapper struct {

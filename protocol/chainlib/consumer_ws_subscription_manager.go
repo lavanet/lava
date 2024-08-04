@@ -137,7 +137,7 @@ func (cwsm *ConsumerWSSubscriptionManager) successfulPendingSubscription(hashedP
 	}
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) checkForPendingSubscriptions(hashedParams string) (chan bool, bool) {
+func (cwsm *ConsumerWSSubscriptionManager) checkForPendingSubscriptionsWithLock(hashedParams string) (chan bool, bool) {
 	cwsm.lock.Lock()
 	defer cwsm.lock.Unlock()
 	pendingSubscriptionBroadcastManager, ok := cwsm.currentlyPendingSubscriptions[hashedParams]
@@ -268,7 +268,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	// Incase there are no active subscriptions, check for pending subscriptions with the same hashed params.
 	// avoiding having the same subscription twice.
-	pendingSubscriptionChannel, foundPendingSubscription := cwsm.checkForPendingSubscriptions(hashedParams)
+	pendingSubscriptionChannel, foundPendingSubscription := cwsm.checkForPendingSubscriptionsWithLock(hashedParams)
 	if foundPendingSubscription {
 		utils.LavaFormatTrace("Found pending subscription, waiting for it to complete")
 		// this is a buffered channel, it wont get stuck even if it is written to before the time we listen
