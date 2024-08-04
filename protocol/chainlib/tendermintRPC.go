@@ -127,13 +127,16 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 		msg.Params = params
 		msgs = []rpcInterfaceMessages.JsonrpcMessage{msg}
 	}
-	if len(msgs) == 0 {
+
+	msgsLength := len(msgs)
+
+	if msgsLength == 0 {
 		return nil, errors.New("empty unmarshaled json")
 	}
 
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
-	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
+	var latestRequestedBlock, earliestRequestedBlock int64 = 0, spectypes.LATEST_BLOCK
 	blockHashes := []string{}
 	for idx, msg := range msgs {
 		parsedInput := parser.NewParsedInput()
@@ -220,12 +223,15 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 					Encoding:     "",
 				},
 			}
+		}
+
+		if msgsLength > 1 {
 			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, earliestRequestedBlock, parsedBlock)
 		}
 	}
 
 	var nodeMsg *baseChainMessageContainer
-	if len(msgs) == 1 {
+	if msgsLength == 1 {
 		tenderMsg := rpcInterfaceMessages.TendermintrpcMessage{JsonrpcMessage: msgs[0], Path: ""}
 		if !isJsonrpc {
 			tenderMsg.Path = urlPath // add path
