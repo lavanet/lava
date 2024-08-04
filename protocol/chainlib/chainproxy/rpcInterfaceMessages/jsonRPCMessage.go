@@ -197,7 +197,6 @@ func (jbm *JsonrpcBatchMessage) GetBatch() []rpcclient.BatchElemWithId {
 }
 
 func (jbm JsonrpcBatchMessage) GetParams() interface{} {
-	utils.LavaFormatWarning("Someone called GetParams() on a batch message, which does not make sense", nil)
 	return [][]byte{}
 }
 
