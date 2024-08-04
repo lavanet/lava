@@ -343,7 +343,7 @@ func TestParseBlockFromParamsHappyFlow(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			block := ParseBlockFromParams(&testCase.message, testCase.blockParser, nil)
-			require.Equal(t, testCase.expectedBlock, block)
+			require.Equal(t, testCase.expectedBlock, block.parsedBlock)
 		})
 	}
 }
@@ -552,7 +552,7 @@ func TestParseBlockFromParams(t *testing.T) {
 			t.Parallel()
 
 			result := ParseBlockFromParams(test.rpcInput, test.blockParser, test.genericParsers)
-			require.Equal(t, test.expected, result)
+			require.Equal(t, test.expected, result.parsedBlock)
 		})
 	}
 }
