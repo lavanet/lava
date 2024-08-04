@@ -78,8 +78,8 @@ func parseInputFromParamsWithGenericParsers(rpcInput RPCInput, genericParsers []
 	}
 
 	parsed := NewParsedInput()
-	parsedBlock, err := genericParserResult.GetBlock()
-	if err == nil {
+	parsedBlock := genericParserResult.GetBlock()
+	if parsedBlock != spectypes.NOT_APPLICABLE {
 		parsedSuccessfully = true
 		parsed.parsedBlock = parsedBlock
 	}
@@ -231,7 +231,7 @@ type ParsedInput struct {
 
 func NewParsedInput() *ParsedInput {
 	return &ParsedInput{
-		parsedBlock:  -1,
+		parsedBlock:  spectypes.NOT_APPLICABLE,
 		parsedHashes: make([]string, 0),
 	}
 }
@@ -240,11 +240,8 @@ func (p *ParsedInput) SetBlock(block int64) {
 	p.parsedBlock = block
 }
 
-func (p *ParsedInput) GetBlock() (int64, error) {
-	if p.parsedBlock == -1 {
-		return -1, fmt.Errorf("parsed block not found")
-	}
-	return p.parsedBlock, nil
+func (p *ParsedInput) GetBlock() int64 {
+	return p.parsedBlock
 }
 
 func (p *ParsedInput) GetBlockHashes() ([]string, error) {

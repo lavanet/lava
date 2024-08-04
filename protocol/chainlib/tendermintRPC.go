@@ -174,15 +174,7 @@ func (apip *TendermintChainParser) ParseMsg(urlPath string, data []byte, connect
 			}
 		}
 
-		parsedBlock, err := parsedInput.GetBlock()
-		if err != nil {
-			utils.LavaFormatError("parsedInput.GetBlock() returned an error", err,
-				utils.LogAttr("msg", msg),
-				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-				utils.LogAttr("genericParsers", apiCont.api.Parsers),
-			)
-			latestRequestedBlock = spectypes.NOT_APPLICABLE
-		}
+		parsedBlock := parsedInput.GetBlock()
 
 		if idx == 0 {
 			// on the first entry store them

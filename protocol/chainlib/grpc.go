@@ -188,16 +188,7 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 		}
 	}
 
-	parsedBlock, err := parsedInput.GetBlock()
-	if err != nil {
-		utils.LavaFormatError("parsedInput.GetBlock() returned an error", err,
-			utils.LogAttr("data", data),
-			utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-			utils.LogAttr("genericParsers", apiCont.api.Parsers),
-		)
-		parsedBlock = spectypes.NOT_APPLICABLE
-	}
-
+	parsedBlock := parsedInput.GetBlock()
 	blockHashes, _ := parsedInput.GetBlockHashes()
 
 	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashes, &grpcMessage, apiCollection)
