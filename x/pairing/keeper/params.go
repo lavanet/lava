@@ -59,7 +59,7 @@ func (k Keeper) RecommendedEpochNumToCollectPayment(ctx sdk.Context) (res uint64
 }
 
 // ReputationVarianceStabilizationPeriod returns the ReputationVarianceStabilizationPeriod param
-func (k Keeper) ReputationVarianceStabilizationPeriod(ctx sdk.Context) (res uint64) {
+func (k Keeper) ReputationVarianceStabilizationPeriod(ctx sdk.Context) (res int64) {
 	k.paramstore.Get(ctx, types.KeyReputationVarianceStabilizationPeriod, &res)
 	return
 }
@@ -71,7 +71,7 @@ func (k Keeper) ReputationLatencyOverSyncFactor(ctx sdk.Context) (res math.Legac
 }
 
 // ReputationHalfLifeFactor returns the ReputationHalfLifeFactor param
-func (k Keeper) ReputationHalfLifeFactor(ctx sdk.Context) (res uint64) {
+func (k Keeper) ReputationHalfLifeFactor(ctx sdk.Context) (res int64) {
 	k.paramstore.Get(ctx, types.KeyReputationHalfLifeFactor, &res)
 	return
 }
