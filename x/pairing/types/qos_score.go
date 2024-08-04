@@ -4,6 +4,15 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
+	"github.com/lavanet/lava/utils"
+)
+
+var (
+	// default QoS score is: score = 1.25, var = 0
+	DefaultQosScore = QosScore{
+		Score:    Frac{Num: math.LegacyNewDec(5), Denom: math.LegacyNewDec(4)},
+		Variance: Frac{Num: math.LegacyZeroDec(), Denom: math.LegacySmallestDec()},
+	}
 )
 
 func NewFrac(num math.LegacyDec, denom math.LegacyDec) (Frac, error) {
@@ -15,6 +24,14 @@ func NewFrac(num math.LegacyDec, denom math.LegacyDec) (Frac, error) {
 
 func (f Frac) Equal(other Frac) bool {
 	return f.Num.Equal(other.Num) && f.Denom.Equal(other.Denom)
+}
+
+func (f Frac) Resolve() (math.LegacyDec, error) {
+	if f.Denom.IsZero() {
+		return math.LegacyZeroDec(), utils.LavaFormatError("Frac Resolve: resolve failed", fmt.Errorf("frac has zero denom"))
+	}
+
+	return f.Num.Quo(f.Denom), nil
 }
 
 func NewQosScore(score Frac, variance Frac) QosScore {

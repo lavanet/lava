@@ -28,8 +28,8 @@ message QosScore {
 message Reputation {
 	QosScore score = 1 [(gogoproto.nullable) = false];
 	QosScore epoch_score = 2 [(gogoproto.nullable) = false];
-	uint64 time_last_updated = 3;
-	uint64 creation_time = 4;
+	int64 time_last_updated = 3;
+	int64 creation_time = 4;
 }
 
 // ReputationPairingScore holds the reputation pairing score used by the reputation pairing requirement. 

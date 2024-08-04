@@ -26,8 +26,8 @@ func createNReputations(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.R
 				Score:    types.Frac{Num: decIndex, Denom: decIndex},
 				Variance: types.Frac{Num: decIndex, Denom: decIndex},
 			},
-			TimeLastUpdated: uint64(i),
-			CreationTime:    uint64(i),
+			TimeLastUpdated: int64(i),
+			CreationTime:    int64(i),
 		}
 		keeper.SetReputation(ctx, strIndex, strIndex, strIndex, items[i])
 	}

@@ -3,9 +3,7 @@ package types
 import (
 	"cosmossdk.io/collections"
 	"cosmossdk.io/collections/indexes"
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
 )
 
 var (
@@ -14,6 +12,8 @@ var (
 	ReputationRefKeysIteratorPrefix = collections.NewPrefix([]byte("ReputationRefKeysIterator/"))
 )
 
+// ReputationRefIndexes are defined as a "multi" index that can reference several reputations
+// The ref indices are chain+cluser. The primary indices are chain+cluster+provider.
 type ReputationRefIndexes struct {
 	Index *indexes.Multi[collections.Pair[string, string], collections.Triple[string, string, string], Reputation]
 }
@@ -34,22 +34,19 @@ func NewReputationRefIndexes(sb *collections.SchemaBuilder) ReputationRefIndexes
 	}
 }
 
+// ReputationKey returns a key to the reputations indexed map
 func ReputationKey(chainID string, cluster string, provider string) collections.Triple[string, string, string] {
 	return collections.Join3(chainID, cluster, provider)
 }
 
-func NewReputation(ctx sdk.Context) (Reputation, error) {
+func NewReputation(ctx sdk.Context) Reputation {
 	timestamp := ctx.BlockTime().UTC().Unix()
-	zeroFrac, err := NewFrac(math.LegacyZeroDec(), math.LegacyOneDec())
-	if err != nil {
-		return Reputation{}, utils.LavaFormatError("NewReputation: zero Frac creation failed", err)
-	}
 	return Reputation{
-		Score:           NewQosScore(zeroFrac, zeroFrac),
-		EpochScore:      NewQosScore(zeroFrac, zeroFrac),
-		TimeLastUpdated: uint64(timestamp),
-		CreationTime:    uint64(timestamp),
-	}, nil
+		Score:           DefaultQosScore,
+		EpochScore:      DefaultQosScore,
+		TimeLastUpdated: timestamp,
+		CreationTime:    timestamp,
+	}
 }
 
 func (r Reputation) Equal(other Reputation) bool {
