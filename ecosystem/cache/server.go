@@ -70,7 +70,7 @@ func (cs *CacheServer) InitCache(
 ) {
 	cs.ExpirationFinalized = time.Duration(float64(expiration) * expirationFinalizedMultiplier)
 	cs.ExpirationNonFinalized = time.Duration(float64(expirationNonFinalized) * expirationNonFinalizedMultiplier)
-	cs.ExpirationNodeErrors = time.Duration(expirationNodeErrorsOnFinalized)
+	cs.ExpirationNodeErrors = expirationNodeErrorsOnFinalized
 	cs.ExpirationBlocksHashesToHeights = time.Duration(float64(expirationBlocksHashesToHeights) * expirationBlocksHashesToHeightsMultiplier)
 
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
