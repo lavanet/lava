@@ -329,6 +329,7 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 			// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
 			utils.LavaFormatWarning("Failed to recover retries on node errors, might be an invalid input", nil,
 				utils.LogAttr("api", rp.chainMessage.GetApi().Name),
+				utils.LogAttr("params", rp.chainMessage.GetRPCMessage().GetParams()),
 				utils.LogAttr("hash", hash),
 			)
 			rp.relayRetriesManager.AddHashToCache(hash)
