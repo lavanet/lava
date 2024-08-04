@@ -34,6 +34,7 @@ const (
 	// maximum number of retries to send due to the ticker, if we didn't get a response after 10 different attempts then just wait.
 	MaximumNumberOfTickerRelayRetries        = 10
 	MaxRelayRetries                          = 6
+	InitRelaysCount                          = 6
 	SendRelayAttempts                        = 3
 	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
 )
@@ -138,9 +139,17 @@ func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bo
 	if initialRelays {
 		// Only start after everything is initialized - check consumer session manager
 		rpccs.waitForPairing()
+
+		for i := 0; i < InitRelaysCount; i++ {
+			success, err := rpccs.sendCraftedRelays(MaxRelayRetries)
+			// if we failed to send the initial relays we should stop the process, since sendCraftedRelays is already retrying
+			if !success {
+				return false, err
+			}
+		}
 	}
 
-	return rpccs.sendCraftedRelays(MaxRelayRetries, initialRelays)
+	return rpccs.sendCraftedRelays(MaxRelayRetries)
 }
 
 func (rpccs *RPCConsumerServer) waitForPairing() {
@@ -196,7 +205,7 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 	return
 }
 
-func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage) (bool, error) {
+func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage) (bool, error) {
 	success := false
 	var err error
 	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMessage, rpccs.consumerConsistency, "-init-", "", rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
@@ -225,14 +234,9 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 					)
 					rpccs.relaysMonitor.LogRelay()
 					success = true
-					// If this is the first time we send relays, we want to send all of them, instead of break on first successful relay
-					// That way, we populate the providers with the latest blocks with successful relays
-					if !initialRelays {
-						break
-					}
 
-					// On init relays, we abuse this for loop to send to send the initial relays, so we need to recreate the relay processor on successful relay
-					relayProcessor = NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMessage, rpccs.consumerConsistency, "-init-", "", rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+					// we have a successful relay, we can break the loop
+					break
 				} else {
 					utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 				}
@@ -245,7 +249,7 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 }
 
 // sending a few latest blocks relays to providers in order to have some data on the providers when relays start arriving
-func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays bool) (success bool, err error) {
+func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int) (success bool, err error) {
 	utils.LavaFormatDebug("Sending crafted relays",
 		utils.LogAttr("chainId", rpccs.listenEndpoint.ChainID),
 		utils.LogAttr("apiInterface", rpccs.listenEndpoint.ApiInterface),
@@ -262,7 +266,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 		return false, err
 	}
 
-	return rpccs.sendRelayWithRetries(ctx, retries, initialRelays, relay, chainMessage)
+	return rpccs.sendRelayWithRetries(ctx, retries, relay, chainMessage)
 }
 
 func (rpccs *RPCConsumerServer) getLatestBlock() uint64 {
