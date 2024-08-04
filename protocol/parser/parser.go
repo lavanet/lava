@@ -235,6 +235,7 @@ func NewParsedInput() *ParsedInput {
 		parsedHashes: make([]string, 0),
 	}
 }
+
 func (p *ParsedInput) SetBlock(block int64) {
 	p.parsedBlock = block
 }
