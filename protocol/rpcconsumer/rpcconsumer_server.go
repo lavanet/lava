@@ -830,32 +830,45 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 		// add consumer processing timestamp before provider metric and start measuring time after the provider replied
 		rpccs.rpcConsumerLogs.AddMetricForProcessingLatencyBeforeProvider(analytics, rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface)
 
+		if relayResult.ProviderTrailer == nil {
+			// if the provider trailer is nil, we need to initialize it
+			relayResult.ProviderTrailer = metadata.MD{}
+		}
+
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&relayResult.ProviderTrailer))
 
 		providerUniqueId := relayResult.ProviderTrailer.Get(chainlib.RpcProviderUniqueIdHeader)
 		if len(providerUniqueId) > 0 {
-			utils.LavaFormatTrace("Received provider unique id",
-				utils.LogAttr("GUID", ctx),
-				utils.LogAttr("provider", relayRequest.RelaySession.Provider),
-				utils.LogAttr("providerUniqueId", providerUniqueId),
-			)
-
-			if !singleConsumerSession.VerifyProviderUniqueIdAndStoreIfFirstTime(providerUniqueId[0]) {
-				return reply, 0, utils.LavaFormatError("provider unique id mismatch",
-					errors.Join(lavasession.SessionOutOfSyncError, lavasession.BlockEndpointError),
+			if len(providerUniqueId) > 1 {
+				utils.LavaFormatInfo("Received more than one provider unique id in header, skipping",
 					utils.LogAttr("GUID", ctx),
-					utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
-					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
-					utils.LogAttr("providedProviderUniqueId", providerUniqueId),
-					utils.LogAttr("providerUniqueId", singleConsumerSession.GetProviderUniqueId()),
-				), false
-			} else {
-				utils.LavaFormatTrace("Provider unique id match",
-					utils.LogAttr("GUID", ctx),
-					utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
 					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
 					utils.LogAttr("providerUniqueId", providerUniqueId),
 				)
+			} else if providerUniqueId[0] != "" { // Otherwise, the header is "" which is fine - it means the header is not set
+				utils.LavaFormatTrace("Received provider unique id",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+					utils.LogAttr("providerUniqueId", providerUniqueId),
+				)
+
+				if !singleConsumerSession.VerifyProviderUniqueIdAndStoreIfFirstTime(providerUniqueId[0]) {
+					return reply, 0, utils.LavaFormatError("provider unique id mismatch",
+						errors.Join(lavasession.SessionOutOfSyncError, lavasession.BlockEndpointError),
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
+						utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+						utils.LogAttr("providedProviderUniqueId", providerUniqueId),
+						utils.LogAttr("providerUniqueId", singleConsumerSession.GetProviderUniqueId()),
+					), false
+				} else {
+					utils.LavaFormatTrace("Provider unique id match",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
+						utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+						utils.LogAttr("providerUniqueId", providerUniqueId),
+					)
+				}
 			}
 		}
 
