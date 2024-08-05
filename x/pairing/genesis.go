@@ -2,8 +2,8 @@ package pairing
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/pairing/keeper"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/x/pairing/keeper"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

@@ -28,14 +28,14 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	commonconsts "github.com/lavanet/lava/testutil/common/consts"
-	"github.com/lavanet/lava/testutil/e2e/sdk"
-	"github.com/lavanet/lava/utils"
-	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingTypes "github.com/lavanet/lava/x/pairing/types"
-	planTypes "github.com/lavanet/lava/x/plans/types"
-	specTypes "github.com/lavanet/lava/x/spec/types"
-	subscriptionTypes "github.com/lavanet/lava/x/subscription/types"
+	commonconsts "github.com/lavanet/lava/v2/testutil/common/consts"
+	"github.com/lavanet/lava/v2/testutil/e2e/sdk"
+	"github.com/lavanet/lava/v2/utils"
+	epochStorageTypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	pairingTypes "github.com/lavanet/lava/v2/x/pairing/types"
+	planTypes "github.com/lavanet/lava/v2/x/plans/types"
+	specTypes "github.com/lavanet/lava/v2/x/spec/types"
+	subscriptionTypes "github.com/lavanet/lava/v2/x/subscription/types"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -674,10 +674,10 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 	errors := []string{}
 	mostImportantApisToTest := []string{
 		"%s/cosmos/base/tendermint/v1beta1/blocks/latest",
-		"%s/lavanet/lava/pairing/providers/LAV1",
-		"%s/lavanet/lava/pairing/clients/LAV1",
+		"%s/lavanet/lava/v2/pairing/providers/LAV1",
+		"%s/lavanet/lava/v2/pairing/clients/LAV1",
 		"%s/cosmos/gov/v1beta1/proposals",
-		"%s/lavanet/lava/spec/spec",
+		"%s/lavanet/lava/v2/spec/spec",
 		"%s/cosmos/base/tendermint/v1beta1/blocks/1",
 	}
 	for start := time.Now(); time.Since(start) < testDuration; {

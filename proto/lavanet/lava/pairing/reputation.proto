@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
 
-option go_package = "github.com/lavanet/lava/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v2/x/pairing/types";
 import "gogoproto/gogo.proto";
 
 // Frac is a fracture struct that helps calculating and updating weighted average on the go

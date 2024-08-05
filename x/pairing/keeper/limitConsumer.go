@@ -5,8 +5,8 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/lavanet/lava/utils"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/utils"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 )
 
 func (k Keeper) EnforceClientCUsUsageInEpoch(ctx sdk.Context, relayCU, epochAllowedCU, totalCUInEpochForUserProvider uint64, clientAddr sdk.AccAddress, chainID string, epoch uint64) (uint64, error) {

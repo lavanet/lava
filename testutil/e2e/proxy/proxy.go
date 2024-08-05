@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
 )
 
 // var mockFolder string = "testutil/e2e/proxy/mockMaps/"

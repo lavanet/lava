@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/ecosystem/cache"
-	"github.com/lavanet/lava/ecosystem/cache/format"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/ecosystem/cache"
+	"github.com/lavanet/lava/v2/ecosystem/cache/format"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )

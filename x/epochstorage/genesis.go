@@ -2,8 +2,8 @@ package epochstorage
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/epochstorage/keeper"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/x/epochstorage/keeper"
+	"github.com/lavanet/lava/v2/x/epochstorage/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

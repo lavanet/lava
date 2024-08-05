@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
+	downtimev1 "github.com/lavanet/lava/v2/x/downtime/v1"
 	"github.com/stretchr/testify/require"
 )
 

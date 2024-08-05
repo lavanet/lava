@@ -4,7 +4,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
+	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 )
 
 func NewKeeper(cdc codec.BinaryCodec) *Keeper {
