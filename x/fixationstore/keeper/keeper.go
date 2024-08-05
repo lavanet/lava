@@ -4,8 +4,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/fixationstore/types"
-	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
+	"github.com/lavanet/lava/v2/x/fixationstore/types"
+	timerstorekeeper "github.com/lavanet/lava/v2/x/timerstore/keeper"
 )
 
 func NewKeeper(cdc codec.BinaryCodec, tsKeeper *timerstorekeeper.Keeper, getStaleBlocks types.GetStaleBlocks) *Keeper {

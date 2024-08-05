@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
 

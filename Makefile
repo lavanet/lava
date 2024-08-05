@@ -193,10 +193,10 @@ ifeq (static,$(findstring static,$(LAVA_BUILD_OPTIONS)))
 endif
 
 ifeq (mask_consumer_logs,$(findstring mask_consumer_logs,$(LAVA_BUILD_OPTIONS)))
-  ldflags += -X github.com/lavanet/lava/protocol/common.ReturnMaskedErrors=true
+  ldflags += -X github.com/lavanet/lava/v2/protocol/common.ReturnMaskedErrors=true
 endif
 ifeq (debug_mutex,$(findstring debug_mutex,$(LAVA_BUILD_OPTIONS)))
-  ldflags += -X github.com/lavanet/lava/utils.TimeoutMutex=true
+  ldflags += -X github.com/lavanet/lava/v2/utils.TimeoutMutex=true
 endif
 
 ifeq (cleveldb,$(findstring cleveldb,$(LAVA_BUILD_OPTIONS)))
@@ -207,12 +207,12 @@ endif
 
 ifeq (release,$(findstring release,$(LAVA_BUILD_OPTIONS)))
   $(info Building With Production Flag)
-  ldflags += -X github.com/lavanet/lava/utils.ExtendedLogLevel=production
+  ldflags += -X github.com/lavanet/lava/v2/utils.ExtendedLogLevel=production
 endif
 
 ifeq (debug_payment_e2e,$(findstring debug_payment_e2e,$(LAVA_BUILD_OPTIONS)))
   $(info Building With Debug Payment E2E Flag. Making a month 2 minutes)
-  ldflags += -X github.com/lavanet/lava/utils.DebugPaymentE2E=debug_payment_e2e
+  ldflags += -X github.com/lavanet/lava/v2/utils.DebugPaymentE2E=debug_payment_e2e
 endif
 
 ifeq (,$(findstring nostrip,$(LAVA_BUILD_OPTIONS)))

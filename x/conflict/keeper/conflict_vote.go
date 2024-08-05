@@ -3,7 +3,7 @@ package keeper
 import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/conflict/types"
+	"github.com/lavanet/lava/v2/x/conflict/types"
 )
 
 // SetConflictVote set a specific conflictVote in the store from its index

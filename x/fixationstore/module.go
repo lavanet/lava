@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/lavanet/lava/x/fixationstore/client/cli"
-	"github.com/lavanet/lava/x/fixationstore/keeper"
-	"github.com/lavanet/lava/x/fixationstore/types"
+	"github.com/lavanet/lava/v2/x/fixationstore/client/cli"
+	"github.com/lavanet/lava/v2/x/fixationstore/keeper"
+	"github.com/lavanet/lava/v2/x/fixationstore/types"
 	"github.com/spf13/cobra"
 )
 
