@@ -401,8 +401,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	subscribeRepliesChan := make(chan *pairingtypes.RelayReply)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	consumerProcessGuid, found := rpcps.fetchConsumerProcessGuidFromContext(ctx)
+	consumerProcessGuid, found := rpcps.fetchConsumerProcessGuidFromContext(srv.Context())
 	if !found {
 		return false, utils.LavaFormatWarning("Could not find consumer process GUID in context, which is required for subscription relays", nil)
 	}
@@ -1185,6 +1184,7 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 func (rpcps *RPCProviderServer) fetchConsumerProcessGuidFromContext(ctx context.Context) (string, bool) {
 	incomingMetaData, found := metadata.FromIncomingContext(ctx)
 	if !found {
+		utils.LavaFormatDebug("fetchConsumerProcessGuidFromContext: no incoming meta found in context")
 		return "", false
 	}
 	for key, value := range incomingMetaData {
@@ -1194,6 +1194,7 @@ func (rpcps *RPCProviderServer) fetchConsumerProcessGuidFromContext(ctx context.
 			}
 		}
 	}
+	utils.LavaFormatDebug("incoming meta data does not contain process guid", utils.LogAttr("incoming_meta_data", incomingMetaData))
 	return "", false
 }
 
