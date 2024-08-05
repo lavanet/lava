@@ -219,7 +219,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 				utils.Attribute{Key: "block", Value: ctx.BlockHeight()},
 			)
 		} else {
-			details[provider] = fmt.Sprintf("cu: %d reward %s", trackedCu, providerReward.String())
+			details[provider] = fmt.Sprintf("cu: %d reward: %s", trackedCu, providerReward.String())
 		}
 	}
 
