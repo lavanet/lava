@@ -83,6 +83,10 @@ type StateTrackerInf interface {
 	GetVirtualEpoch(epoch uint64) uint64
 }
 
+func (rpcps *RPCProviderServer) SetProviderUniqueId(uniqueId string) {
+	rpcps.providerUniqueId = uniqueId
+}
+
 func (rpcps *RPCProviderServer) ServeRPCRequests(
 	ctx context.Context, rpcProviderEndpoint *lavasession.RPCProviderEndpoint,
 	chainParser chainlib.ChainParser,
