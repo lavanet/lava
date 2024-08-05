@@ -4,7 +4,7 @@ package lavanet.lava.subscription;
 // this line is used by starport scaffolding # proto/tx/import
 import "lavanet/lava/projects/project.proto";
 import "gogoproto/gogo.proto";  
-option go_package = "github.com/lavanet/lava/x/subscription/types";
+option go_package = "github.com/lavanet/lava/v2/x/subscription/types";
 
 // Msg defines the Msg service.
 service Msg {

@@ -5,7 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/x/timerstore/types"
+	"github.com/lavanet/lava/v2/x/timerstore/types"
 	"github.com/spf13/cobra"
 )
 

@@ -4,7 +4,7 @@ import (
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils/common/types"
+	"github.com/lavanet/lava/v2/utils/common/types"
 )
 
 // SafeIndex is a sanitized string, i.e. contains only visible ascii characters

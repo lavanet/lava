@@ -8,20 +8,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/protocol/provideroptimizer"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/protocol/metrics"
+	"github.com/lavanet/lava/v2/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	gomock "go.uber.org/mock/gomock"
 )
+
+const uniqueId = "1234"
 
 func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 	playbook := []struct {
@@ -141,7 +143,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 					ctx := utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
 					var repliesChan <-chan *pairingtypes.RelayReply
 					var firstReply *pairingtypes.RelayReply
-					firstReply, repliesChan, err = manager.StartSubscription(ctx, chainMessage1, nil, nil, dapp+strconv.Itoa(index), ts.Consumer.Addr.String(), nil)
+					firstReply, repliesChan, err = manager.StartSubscription(ctx, chainMessage1, nil, nil, dapp+strconv.Itoa(index), ts.Consumer.Addr.String(), uniqueId, nil)
 					go func() {
 						for subMsg := range repliesChan {
 							require.Equal(t, string(play.subscriptionFirstReply1), string(subMsg.Data))
@@ -168,7 +170,6 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 	// 6. Start a subscription again, different params, different dappKey -> should call SendParsedRelay
 	// 7. Unsubscribe from the first subscription -> should call CancelSubscriptionContext and SendParsedRelay
 	// 8. Unsubscribe from the second subscription -> should call CancelSubscriptionContext and SendParsedRelay
-
 	playbook := []struct {
 		name                     string
 		specId                   string
@@ -391,7 +392,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a new subscription for the first time, called SendParsedRelay once
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan1, err := manager.StartSubscription(ctx, subscribeChainMessage1, nil, nil, dapp1, ts.Consumer.Addr.String(), nil)
+			firstReply, repliesChan1, err := manager.StartSubscription(ctx, subscribeChainMessage1, nil, nil, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
 			assert.NoError(t, err)
 			unsubscribeMessageWg.Add(1)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
@@ -407,7 +408,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a subscription again, same params, same dappKey, should not call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan2, err := manager.StartSubscription(ctx, subscribeChainMessage1, nil, nil, dapp1, ts.Consumer.Addr.String(), nil)
+			firstReply, repliesChan2, err := manager.StartSubscription(ctx, subscribeChainMessage1, nil, nil, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
 			assert.Nil(t, repliesChan2) // Same subscription, same dappKey, no need for a new channel
@@ -416,7 +417,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a subscription again, same params, different dappKey, should not call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan3, err := manager.StartSubscription(ctx, subscribeChainMessage1, nil, nil, dapp2, ts.Consumer.Addr.String(), nil)
+			firstReply, repliesChan3, err := manager.StartSubscription(ctx, subscribeChainMessage1, nil, nil, dapp2, ts.Consumer.Addr.String(), uniqueId, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
 			assert.NotNil(t, repliesChan3) // Same subscription, but different dappKey, so will create new channel
@@ -501,7 +502,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a subscription again, different params, same dappKey, should call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan4, err := manager.StartSubscription(ctx, subscribeChainMessage2, nil, nil, dapp1, ts.Consumer.Addr.String(), nil)
+			firstReply, repliesChan4, err := manager.StartSubscription(ctx, subscribeChainMessage2, nil, nil, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
 			assert.NoError(t, err)
 			unsubscribeMessageWg.Add(1)
 			assert.Equal(t, string(play.subscriptionFirstReply2), string(firstReply.Data))
@@ -519,7 +520,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				Times(0) // Should call SendParsedRelay, because it unsubscribed
 
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			err = manager.Unsubscribe(ctx, unsubscribeChainMessage1, nil, relayResult1.Request.RelayData, dapp2, ts.Consumer.Addr.String(), nil)
+			err = manager.Unsubscribe(ctx, unsubscribeChainMessage1, nil, relayResult1.Request.RelayData, dapp2, ts.Consumer.Addr.String(), uniqueId, nil)
 			require.NoError(t, err)
 
 			listenForExpectedMessages(ctx, repliesChan1, string(play.subscriptionFirstReply1))
@@ -545,7 +546,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				Times(2) // Should call SendParsedRelay, because it unsubscribed
 
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			err = manager.UnsubscribeAll(ctx, dapp1, ts.Consumer.Addr.String(), nil)
+			err = manager.UnsubscribeAll(ctx, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
 			require.NoError(t, err)
 
 			expectNoMoreMessages(ctx, repliesChan1)

@@ -2,14 +2,14 @@ package chainlib
 
 import (
 	"context"
-	"strings"
 	"sync"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -175,7 +175,11 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		}
 	}
 	if hasSubscriptionInSpec && apiCollection.Enabled && !webSocketSupported {
-		err := utils.LavaFormatError("subscriptions are applicable for this chain, but websocket is not provided in 'supported' map. By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score.", nil)
+		err := utils.LavaFormatError("subscriptions are applicable for this chain, but websocket is not provided in 'supported' map. By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score.", nil,
+			utils.LogAttr("apiInterface", apiCollection.CollectionData.ApiInterface),
+			utils.LogAttr("supportedMap", supportedMap),
+			utils.LogAttr("required", WebSocketExtension),
+		)
 		if !IgnoreSubscriptionNotConfiguredError {
 			return nil, err
 		}
@@ -198,7 +202,7 @@ func (rs *requirementSt) String() string {
 }
 
 func (rs *requirementSt) IsRequirementMet(requirement string) bool {
-	return strings.Contains(string(rs.extensions), requirement) || rs.addon == requirement
+	return rs.extensions == lavasession.NewRouterKey([]string{requirement}) || rs.addon == requirement
 }
 
 func populateRequiredForAddon(addon string, extensions []string, required map[requirementSt]struct{}) {

@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/goccy/go-json"
-
 	tenderminttypes "github.com/cometbft/cometbft/rpc/jsonrpc/types"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
+	"github.com/goccy/go-json"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/parser"
+	"github.com/lavanet/lava/v2/utils"
+
+	"github.com/lavanet/lava/v2/utils/sigs"
 )
 
 type TendermintrpcMessage struct {
@@ -27,8 +28,26 @@ func (tm TendermintrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcM
 	return string(params)
 }
 
-func (tm TendermintrpcMessage) GetParams() interface{} {
-	return tm.Params
+// get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
+func (tm *TendermintrpcMessage) GetRawRequestHash() ([]byte, error) {
+	headers := tm.GetHeaders()
+	headersByteArray, err := json.Marshal(headers)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling headers on jsonRpc message", err, utils.LogAttr("headers", headers))
+		return []byte{}, err
+	}
+	methodByteArray := []byte(tm.Method + tm.Path)
+
+	paramsByteArray, err := json.Marshal(tm.Params)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling params on jsonRpc message", err, utils.LogAttr("headers", tm.Params))
+		return []byte{}, err
+	}
+	return sigs.HashMsg(append(append(methodByteArray, paramsByteArray...), headersByteArray...)), nil
+}
+
+func (cp TendermintrpcMessage) GetParams() interface{} {
+	return cp.Params
 }
 
 func (tm TendermintrpcMessage) GetResult() json.RawMessage {

@@ -13,11 +13,13 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	dyncodec "github.com/lavanet/lava/protocol/chainlib/grpcproxy/dyncodec"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	dyncodec "github.com/lavanet/lava/v2/protocol/chainlib/grpcproxy/dyncodec"
+	"github.com/lavanet/lava/v2/protocol/parser"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/sigs"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
@@ -38,7 +40,19 @@ func (gm *GrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) 
 	return ""
 }
 
-func (gm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
+// get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
+func (gm *GrpcMessage) GetRawRequestHash() ([]byte, error) {
+	headers := gm.GetHeaders()
+	headersByteArray, err := json.Marshal(headers)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling headers on jsonRpc message", err, utils.LogAttr("headers", headers))
+		return []byte{}, err
+	}
+	pathByteArray := []byte(gm.Path)
+	return sigs.HashMsg(append(append(pathByteArray, gm.Msg...), headersByteArray...)), nil
+}
+
+func (jm GrpcMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
 	// grpc status code different than OK or 0 is a node error.
 	if httpStatusCode != 0 && httpStatusCode != http.StatusOK {
 		return true, ""

@@ -15,22 +15,22 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavaprotocol"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/protocol/performance"
-	"github.com/lavanet/lava/protocol/provideroptimizer"
-	"github.com/lavanet/lava/protocol/upgrade"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/protocopy"
-	"github.com/lavanet/lava/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v2/protocol/chaintracker"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/protocol/metrics"
+	"github.com/lavanet/lava/v2/protocol/performance"
+	"github.com/lavanet/lava/v2/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v2/protocol/upgrade"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v2/utils/protocopy"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -401,8 +401,7 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 	subscribeRepliesChan := make(chan *pairingtypes.RelayReply)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	consumerProcessGuid, found := rpcps.fetchConsumerProcessGuidFromContext(ctx)
+	consumerProcessGuid, found := rpcps.fetchConsumerProcessGuidFromContext(srv.Context())
 	if !found {
 		return false, utils.LavaFormatWarning("Could not find consumer process GUID in context, which is required for subscription relays", nil)
 	}
@@ -433,17 +432,14 @@ func (rpcps *RPCProviderServer) TryRelaySubscribe(ctx context.Context, requestBl
 				return
 			case subscribeReply, ok := <-subscribeRepliesChan:
 				if !ok { // channel is closed
-					utils.LavaFormatTrace("subscribeRepliesChan closed, removing consumer",
+					errRet = utils.LavaFormatTrace("subscribeRepliesChan closed",
 						utils.LogAttr("GUID", ctx),
 						utils.LogAttr("consumerAddr", consumerAddress),
 					)
-
 					err := rpcps.providerNodeSubscriptionManager.RemoveConsumer(ctx, chainMessage, consumerAddress, false, consumerProcessGuid) // false because the channel is already closed
 					if err != nil {
 						errRet = utils.LavaFormatError("Error RemoveConsumer", err, utils.LogAttr("GUID", ctx))
-						return
 					}
-					errRet = err
 					return
 				}
 
@@ -1188,6 +1184,7 @@ func (rpcps *RPCProviderServer) Probe(ctx context.Context, probeReq *pairingtype
 func (rpcps *RPCProviderServer) fetchConsumerProcessGuidFromContext(ctx context.Context) (string, bool) {
 	incomingMetaData, found := metadata.FromIncomingContext(ctx)
 	if !found {
+		utils.LavaFormatDebug("fetchConsumerProcessGuidFromContext: no incoming meta found in context")
 		return "", false
 	}
 	for key, value := range incomingMetaData {
@@ -1197,6 +1194,7 @@ func (rpcps *RPCProviderServer) fetchConsumerProcessGuidFromContext(ctx context.
 			}
 		}
 	}
+	utils.LavaFormatDebug("incoming meta data does not contain process guid", utils.LogAttr("incoming_meta_data", incomingMetaData))
 	return "", false
 }
 

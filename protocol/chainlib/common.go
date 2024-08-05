@@ -9,16 +9,17 @@ import (
 	"strings"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
-	common "github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	common "github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/metrics"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -33,7 +34,11 @@ const (
 	WebSocketExtension         = "websocket"
 )
 
-var InvalidResponses = []string{"null", "", "nil", "undefined"}
+var (
+	InvalidResponses                   = []string{"null", "", "nil", "undefined"}
+	FailedSendingSubscriptionToClients = sdkerrors.New("failed Sending Subscription To Clients", 1015, "Failed Sending Subscription To Clients connection might have been closed by the user")
+	NoActiveSubscriptionFound          = sdkerrors.New("failed finding an active subscription on provider side", 1016, "no active subscriptions for hashed params.")
+)
 
 type RelayReplyWrapper struct {
 	StatusCode int

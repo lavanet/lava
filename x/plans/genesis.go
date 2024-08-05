@@ -2,8 +2,8 @@ package plans
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/plans/keeper"
-	"github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/x/plans/keeper"
+	"github.com/lavanet/lava/v2/x/plans/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

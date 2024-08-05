@@ -2,8 +2,8 @@ package rewards
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/rewards/keeper"
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/x/rewards/keeper"
+	"github.com/lavanet/lava/v2/x/rewards/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

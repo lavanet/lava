@@ -12,9 +12,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/v2/protocol/parser"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"google.golang.org/grpc/metadata"
 )
@@ -93,6 +93,14 @@ func (rpccl *RPCConsumerLogs) SetRelaySentToProviderMetric(chainId string, apiIn
 
 func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(chainId string, apiInterface string) {
 	rpccl.consumerMetricsManager.SetRelayNodeErrorMetric(chainId, apiInterface)
+}
+
+func (rpccl *RPCConsumerLogs) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	rpccl.consumerMetricsManager.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, attempt)
+}
+
+func (rpccl *RPCConsumerLogs) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetNodeErrorAttemptMetric(chainId, apiInterface)
 }
 
 func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
