@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http/httptest"
 	"testing"
@@ -10,8 +11,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -310,6 +311,10 @@ func TestParsedMessage_GetRPCMessage(t *testing.T) {
 
 type mockRPCInput struct {
 	chainproxy.BaseMessage
+}
+
+func (m *mockRPCInput) GetRawRequestHash() ([]byte, error) {
+	return nil, fmt.Errorf("test")
 }
 
 func (m *mockRPCInput) GetParams() interface{} {

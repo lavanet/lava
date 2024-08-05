@@ -13,12 +13,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/app"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/v2/app"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/protocol/metrics"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -68,7 +68,7 @@ func CreateHealthCobraCommand() *cobra.Command {
 		Short: `start monitoring the health of the protocol processes defined in the config`,
 		Long:  `config_file if a path to a yml file`,
 		Example: `health config/health_examples/health_config.yml
-example health config files can be found in https://github.com/lavanet/lava/blob/main/config/health_examples
+example health config files can be found in https://github.com/lavanet/lava/v2/blob/main/config/health_examples
 subscription_addresses:
 	- lava@...
 	- lava@...

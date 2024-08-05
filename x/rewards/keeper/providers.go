@@ -2,12 +2,14 @@ package keeper
 
 import (
 	"fmt"
+	"strconv"
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rewards/types"
+
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/rewards/types"
 )
 
 const DAY_SECONDS = 60 * 60 * 24
@@ -44,7 +46,6 @@ func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adju
 
 // Distribute bonus rewards to providers across all chains based on performance
 func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
-	details := map[string]string{}
 	coins := k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool)
 	total := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
 	totalRewarded := sdk.ZeroInt()
@@ -53,7 +54,6 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 
 	defer func() {
 		k.removeAllBasePay(ctx)
-		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed")
 	}()
 
 	// Get serviced CU for each provider + spec
@@ -70,6 +70,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 		if !totalbasepay.IsZero() {
 			specTotalPayout = k.specTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
 		}
+		details := map[string]string{}
 		// distribute the rewards to all providers
 		for _, basepay := range basepays {
 			if !specTotalPayout.IsZero() {
@@ -88,13 +89,18 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
-
-				details[basepay.Provider+" "+spec.ChainID] = reward.String()
+				details[basepay.Provider] = fmt.Sprintf("cu: %d reward %s", basepay.TotalAdjusted, reward.String())
 			}
 
 			// count iprpc cu
 			k.countIprpcCu(specCuMap, basepay.IprpcCu, spec.ChainID, basepay.Provider)
 		}
+
+		details["block"] = strconv.FormatInt(ctx.BlockHeight(), 10)
+		details["chainid"] = spec.ChainID
+		details["total_rewards"] = sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), totalbasepay).String()
+		details["total_cu"] = totalbasepay.String()
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.ProvidersBonusRewardsEventName, details, "provider bonus rewards distributed")
 	}
 
 	// Get current month IprpcReward and use it to distribute rewards

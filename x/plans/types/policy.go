@@ -11,9 +11,9 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/utils/decoder"
-	"github.com/lavanet/lava/utils/lavaslices"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/utils/decoder"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
 	"github.com/mitchellh/mapstructure"
 )
 

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

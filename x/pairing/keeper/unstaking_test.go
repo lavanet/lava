@@ -5,9 +5,9 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/testutil/common"
-	testutils "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/testutil/common"
+	testutils "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
