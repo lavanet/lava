@@ -232,7 +232,7 @@ func (csm *ConsumerSessionManager) probeProvider(ctx context.Context, consumerSe
 				defer consumerSessionsWithProvider.Lock.Unlock()
 				return utils.LavaFormatError("returned nil client in endpoint", nil, utils.Attribute{Key: "consumerSessionWithProvider", Value: consumerSessionsWithProvider})
 			}
-			client := *endpointAndConnection.chosenEndpointConnection.Client
+			client := endpointAndConnection.chosenEndpointConnection.Client
 			probeReq := &pairingtypes.ProbeRequest{
 				Guid:         guid,
 				SpecId:       csm.rpcEndpoint.ChainID,
