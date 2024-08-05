@@ -36,20 +36,20 @@ protoc \
     --ts_out="service=grpc-web:$OUT_DIR" \
     --proto_path="$COSMOS_PROTO_DIR" \
     --proto_path="$LAVA_PROTO_DIR" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/pairing/relay.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/pairing/badges.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/pairing/params.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/pairing/query.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/subscription/subscription.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/projects/project.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/plans/policy.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/pairing/epoch_cu.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/spec/spec.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/spec/api_collection.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/epochstorage/stake_entry.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/epochstorage/endpoint.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/conflict/conflict_data.proto" \
-    "$LAVA_PROTO_DIR/lavanet/lava/v2/downtime/v1/downtime.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/pairing/relay.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/pairing/badges.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/pairing/params.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/pairing/query.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/subscription/subscription.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/projects/project.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/plans/policy.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/pairing/epoch_cu.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/spec/spec.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/spec/api_collection.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/epochstorage/stake_entry.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/epochstorage/endpoint.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/conflict/conflict_data.proto" \
+    "$LAVA_PROTO_DIR/lavanet/lava/downtime/v1/downtime.proto" \
     "$COSMOS_PROTO_DIR/gogoproto/gogo.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/descriptor.proto" \
     "$COSMOS_PROTO_DIR/google/protobuf/wrappers.proto" \
