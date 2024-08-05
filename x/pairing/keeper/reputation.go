@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/x/pairing/types"
@@ -105,6 +106,31 @@ func (k Keeper) GetAllReputation(ctx sdk.Context) []types.ReputationGenesis {
 	}
 
 	return entries
+}
+
+// UpdateReputationEpochQosScore updates the epoch QoS score of the provider's reputation using the score from the relay
+// payment's QoS excellence report
+func (k Keeper) UpdateReputationEpochQosScore(ctx sdk.Context, chainID string, cluster string, provider string, score math.LegacyDec, weight int64) {
+	// get current reputation and get parameters for the epoch score update
+	r, found := k.GetReputation(ctx, chainID, cluster, provider)
+	truncate := false
+	if found {
+		stabilizationPeriod := k.ReputationVarianceStabilizationPeriod(ctx)
+		if r.ShouldTruncate(stabilizationPeriod, ctx.BlockTime().UTC().Unix()) {
+			truncate = true
+		}
+	} else {
+		// new reputation score is not truncated and its decay factor is equal to 1
+		r = types.NewReputation(ctx)
+	}
+
+	// calculate the updated QoS epoch score
+	updatedEpochScore := r.EpochScore.Update(score, truncate, weight)
+
+	// update the reputation and set
+	r.EpochScore = updatedEpochScore
+	r.TimeLastUpdated = ctx.BlockTime().UTC().Unix()
+	k.SetReputation(ctx, chainID, cluster, provider, r)
 }
 
 // GetReputationScore returns the current reputation pairing score

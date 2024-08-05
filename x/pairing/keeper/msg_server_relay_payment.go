@@ -172,6 +172,36 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			k.handleBadgeCu(ctx, badgeData, relay.Provider, relay.CuSum, newBadgeTimerExpiry)
 		}
 
+		// update the reputation's epoch QoS score
+		// the excellece QoS report can be nil when the provider and consumer geolocations are not equal
+		if relay.QosExcellenceReport != nil {
+			sub, found := k.subscriptionKeeper.GetSubscription(ctx, project.Subscription)
+			if !found {
+				return nil, utils.LavaFormatError("RelayPayment: could not get cluster for reputation score update", fmt.Errorf("relay consumer's subscription not found"),
+					utils.LogAttr("consumer", clientAddr),
+					utils.LogAttr("project", project.Index),
+					utils.LogAttr("subscription", project.Subscription),
+					utils.LogAttr("chain", relay.SpecId),
+					utils.LogAttr("provider", relay.Provider),
+				)
+			}
+
+			syncFactor := k.ReputationLatencyOverSyncFactor(ctx)
+			score, err := relay.QosExcellenceReport.ComputeQosExcellenceForReputation(syncFactor)
+			if err != nil {
+				return nil, utils.LavaFormatWarning("RelayPayment: could not compute qos excellence score", err,
+					utils.LogAttr("consumer", clientAddr),
+					utils.LogAttr("chain", relay.SpecId),
+					utils.LogAttr("provider", relay.Provider),
+					utils.LogAttr("qos_excellence_report", relay.QosExcellenceReport.String()),
+					utils.LogAttr("sync_factor", syncFactor.String()),
+				)
+			}
+
+			// note the current weight used is by relay num. In the future, it might change
+			k.UpdateReputationEpochQosScore(ctx, relay.SpecId, sub.Cluster, relay.Provider, score, utils.SafeUint64ToInt64Convert(relay.RelayNum))
+		}
+
 		// TODO: add support for spec changes
 		spec, found := k.specKeeper.GetSpec(ctx, relay.SpecId)
 		if !found || !spec.Enabled {
