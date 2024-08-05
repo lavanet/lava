@@ -1053,6 +1053,15 @@ func (ts *Tester) GetNextMonth(from time.Time) int64 {
 	return utils.NextMonth(from).UTC().Unix()
 }
 
+func (ts *Tester) BlockTimeDefault() time.Duration {
+	return ts.Keepers.Downtime.GetParams(ts.Ctx).DowntimeDuration
+}
+
+func (ts *Tester) EpochTimeDefault() time.Duration {
+	epochBlocks := ts.Keepers.Epochstorage.GetParams(ts.Ctx).EpochBlocks
+	return ts.BlockTimeDefault() * time.Duration(epochBlocks)
+}
+
 func (ts *Tester) AdvanceToBlock(block uint64) {
 	if block < ts.BlockHeight() {
 		panic("AdvanceToBlock: block in the past: " +
