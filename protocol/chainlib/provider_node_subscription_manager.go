@@ -301,6 +301,18 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			utils.LogAttr("firstSetupReplyData", reply.Data),
 		)
 
+		// Initialize the map for connected consumers
+		connectedConsumers := map[string]map[string]*connectedConsumerContainer{
+			consumerAddrString: {
+				consumerProcessGuid: {
+					consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
+					firstSetupRequest:  copiedRequest,
+					consumerSDKAddress: consumerAddr,
+				},
+			},
+		}
+
+		// Create the activeSubscription instance
 		cancellableCtx, cancel := context.WithCancel(context.Background())
 		channelToConnectedConsumers := &activeSubscription{
 			cancellableContext:           cancellableCtx,
@@ -310,14 +322,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 			subscriptionID:               subscriptionId,
 			firstSetupReply:              reply,
 			apiCollection:                chainMessage.GetApiCollection(),
-			connectedConsumers:           make(map[string]map[string]*connectedConsumerContainer),
-		}
-
-		channelToConnectedConsumers.connectedConsumers[consumerAddrString] = make(map[string]*connectedConsumerContainer)
-		channelToConnectedConsumers.connectedConsumers[consumerAddrString][consumerProcessGuid] = &connectedConsumerContainer{
-			consumerChannel:    common.NewSafeChannelSender(ctx, consumerChannel),
-			firstSetupRequest:  copiedRequest,
-			consumerSDKAddress: consumerAddr,
+			connectedConsumers:           connectedConsumers,
 		}
 
 		// now we can lock after we have a successful subscription.
