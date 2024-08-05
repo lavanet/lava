@@ -329,9 +329,9 @@ jobs:
           name: Test Results (Payment E2E)
           path: "*-report.xml"
 
-      - name: tail -n 300 Lavad Logs
+      - name: Lavad Logs
         if: always()
-        run: tail -n 300 testutil/e2e/protocolLogs/00_StartLava.log
+        run: grep 'err\|lava_' testutil/e2e/protocolLogs/00_StartLava.log
 
       - name: Stake Lava All Logs
         if: always()

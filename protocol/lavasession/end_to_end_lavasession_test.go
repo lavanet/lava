@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/common"
 	"github.com/stretchr/testify/require"
 )
 

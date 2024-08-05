@@ -10,8 +10,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	gogowellknown "github.com/gogo/protobuf/types"
-	"github.com/lavanet/lava/x/downtime/types"
-	v1 "github.com/lavanet/lava/x/downtime/v1"
+	"github.com/lavanet/lava/v2/x/downtime/types"
+	v1 "github.com/lavanet/lava/v2/x/downtime/v1"
 )
 
 type EpochStorageKeeper interface {

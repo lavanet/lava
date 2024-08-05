@@ -10,9 +10,9 @@ import (
 	"runtime"
 	"strings"
 
-	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
-	"github.com/lavanet/lava/utils"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
+	lvutil "github.com/lavanet/lava/v2/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/v2/utils"
+	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
 )
 
 type ProtocolBinaryFetcher struct {
@@ -196,7 +196,7 @@ func (pbf *ProtocolBinaryFetcher) downloadAndBuildFromGithub(version, versionDir
 		return utils.LavaFormatError("[Lavavisor] failed to clean up binary directory", err)
 	}
 	// URL might need to be updated based on the actual GitHub repository
-	url := fmt.Sprintf("https://github.com/lavanet/lava/archive/refs/tags/v%s.zip", version)
+	url := fmt.Sprintf("https://github.com/lavanet/lava/v2/archive/refs/tags/v%s.zip", version)
 	utils.LavaFormatInfo("[Lavavisor] Fetching the source from: ", utils.Attribute{Key: "URL", Value: url})
 
 	// Send the request

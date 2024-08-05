@@ -3,7 +3,7 @@ package types
 import (
 	fmt "fmt"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 func (ss StakeStorage) GetStakeEntryByAddressFromStorage(address string) (StakeEntry, bool) {

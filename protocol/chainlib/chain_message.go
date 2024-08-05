@@ -4,17 +4,18 @@ import (
 	"math"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 type updatableRPCInput interface {
 	rpcInterfaceMessages.GenericMessage
 	UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
+	GetRawRequestHash() ([]byte, error)
 }
 
 type baseChainMessageContainer struct {
@@ -26,9 +27,23 @@ type baseChainMessageContainer struct {
 	extensions             []*spectypes.Extension
 	timeoutOverride        time.Duration
 	forceCacheRefresh      bool
+	inputHashCache         []byte
 	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
 	// and validate it doesn't contain a node error
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+}
+
+func (pm *baseChainMessageContainer) GetRawRequestHash() ([]byte, error) {
+	if pm.inputHashCache != nil && len(pm.inputHashCache) > 0 {
+		// Get the cached value
+		return pm.inputHashCache, nil
+	}
+	hash, err := pm.msg.GetRawRequestHash()
+	if err == nil {
+		// Now we have the hash cached so we call it only once.
+		pm.inputHashCache = hash
+	}
+	return hash, err
 }
 
 // not necessary for base chain message.

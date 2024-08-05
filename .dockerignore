@@ -23,3 +23,5 @@ go.work.sum
 *.md
 
 Dockerfile
+docker/docker-compose.*
+cmd/**/Dockerfile

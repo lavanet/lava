@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/projects/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/projects/types"
 )
 
 func (k msgServer) DelKeys(goCtx context.Context, msg *types.MsgDelKeys) (*types.MsgDelKeysResponse, error) {

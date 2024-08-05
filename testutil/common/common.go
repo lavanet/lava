@@ -6,14 +6,14 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	conflictconstruct "github.com/lavanet/lava/x/conflict/types/construct"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
+	conflictconstruct "github.com/lavanet/lava/v2/x/conflict/types/construct"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/v2/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 

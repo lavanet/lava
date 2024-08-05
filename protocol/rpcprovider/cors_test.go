@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 
