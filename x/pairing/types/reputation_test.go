@@ -73,7 +73,7 @@ func TestDecayFactor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			reputation := Reputation{TimeLastUpdated: tt.timeLastUpdated}
-			decay := reputation.DecayFactor(tt.halfLifeFactor, tt.currentTime)
+			decay := reputation.calcDecayFactor(tt.halfLifeFactor, tt.currentTime)
 			if tt.valid {
 				require.False(t, decay.Equal(math.LegacyZeroDec()))
 			} else {

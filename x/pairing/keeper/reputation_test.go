@@ -72,20 +72,19 @@ func TestGetAllReputations(t *testing.T) {
 	}
 }
 
-func createNReputationsScores(keeper *keeper.Keeper, ctx sdk.Context, n int) ([]types.ReputationPairingScore, sdk.Context) {
-	items := make([]types.ReputationPairingScore, n)
+func createNReputationsScores(keeper *keeper.Keeper, ctx sdk.Context, n int) ([]math.LegacyDec, sdk.Context) {
+	items := make([]math.LegacyDec, n)
 	height := ctx.BlockHeight()
 	for i := range items {
 		decIndex := math.LegacyNewDec(int64(i + 1))
 		strIndex := strconv.Itoa(i)
-		rps := types.ReputationPairingScore{Score: decIndex}
 
-		err := keeper.SetReputationScore(ctx, strIndex, strIndex, strIndex, rps)
+		err := keeper.SetReputationScore(ctx, strIndex, strIndex, strIndex, decIndex)
 		if err != nil {
 			panic(err)
 		}
 
-		items[i] = rps
+		items[i] = decIndex
 		height++
 		ctx = ctx.WithBlockHeight(height)
 	}
@@ -99,7 +98,7 @@ func TestGetReputationScore(t *testing.T) {
 		strIndex := strconv.Itoa(i)
 		entry, found := keeper.GetReputationScore(ctx, strIndex, strIndex, strIndex)
 		require.True(t, found)
-		require.True(t, item.Score.Equal(entry.Score))
+		require.True(t, item.Equal(entry))
 	}
 
 	_, found := keeper.GetReputationScore(ctx, "dummy", "dummy", "dummy")
@@ -113,7 +112,7 @@ func TestGetReputationScoreForBlock(t *testing.T) {
 		strIndex := strconv.Itoa(i)
 		entry, entryBlock, found := keeper.GetReputationScoreForBlock(ctx, strIndex, strIndex, strIndex, uint64(ctx.BlockHeight()))
 		require.True(t, found)
-		require.True(t, item.Score.Equal(entry.Score))
+		require.True(t, item.Equal(entry))
 		require.Equal(t, uint64(i), entryBlock)
 	}
 

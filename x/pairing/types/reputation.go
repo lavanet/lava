@@ -12,7 +12,10 @@ import (
 )
 
 var (
-	ReputationPrefix = collections.NewPrefix([]byte("Reputation/"))
+	ReputationPrefix                              = collections.NewPrefix([]byte("Reputation/"))
+	ReputationPairingScoreBenchmarkStakeThreshold = sdk.NewDecWithPrec(1, 1) // 0.1 = 10%
+	MaxReputationPairingScore                     = sdk.NewDec(2)
+	MinReputationPairingScore                     = sdk.NewDecWithPrec(5, 1) // 0.5
 )
 
 // ReputationKey returns a key to the reputations indexed map
@@ -44,9 +47,9 @@ func (r Reputation) ShouldTruncate(stabilizationPeriod int64, currentTime int64)
 	return r.CreationTime+stabilizationPeriod < currentTime
 }
 
-// DecayFactor calculates the appropriate decay factor for a reputation from the time it was last updated
+// calcDecayFactor calculates the appropriate decay factor for a reputation from the time it was last updated
 // the decay factor is: exp(-timeSinceLastUpdate/halfLifeFactor)
-func (r Reputation) DecayFactor(halfLifeFactor int64, currentTime int64) math.LegacyDec {
+func (r Reputation) calcDecayFactor(halfLifeFactor int64, currentTime int64) math.LegacyDec {
 	if halfLifeFactor <= 0 {
 		utils.LavaFormatWarning("DecayFactor: calculate reputation decay factor failed, invalid half life factor",
 			fmt.Errorf("half life factor is not positive"),
@@ -78,6 +81,15 @@ func (r Reputation) DecayFactor(halfLifeFactor int64, currentTime int64) math.Le
 		return math.LegacyZeroDec()
 	}
 	return decayFactor
+}
+
+func (r Reputation) ApplyTimeDecay(halfLifeFactor int64, currentTime int64) Reputation {
+	decayFactor := r.calcDecayFactor(halfLifeFactor, currentTime)
+	r.Score.Score.Num = (r.Score.Score.Num.Mul(decayFactor)).Add(r.EpochScore.Score.Num)
+	r.Score.Score.Denom = (r.Score.Score.Denom.Mul(decayFactor)).Add(r.EpochScore.Score.Denom)
+	r.Score.Variance.Num = (r.Score.Variance.Num.Mul(decayFactor)).Add(r.EpochScore.Variance.Num)
+	r.Score.Variance.Denom = (r.Score.Variance.Denom.Mul(decayFactor)).Add(r.EpochScore.Variance.Denom)
+	return r
 }
 
 // ReputationScoreKey returns a key for the reputations fixation store (reputationsFS)

@@ -126,6 +126,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
+		k.UpdateReputationQosScore(ctx)
 		// remove old session payments
 		k.RemoveOldEpochPayments(ctx)
 		// unstake any unstaking providers
