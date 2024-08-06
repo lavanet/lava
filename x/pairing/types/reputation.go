@@ -51,7 +51,7 @@ func (r Reputation) ShouldTruncate(stabilizationPeriod int64, currentTime int64)
 // the decay factor is: exp(-timeSinceLastUpdate/halfLifeFactor)
 func (r Reputation) calcDecayFactor(halfLifeFactor int64, currentTime int64) math.LegacyDec {
 	if halfLifeFactor <= 0 {
-		utils.LavaFormatWarning("DecayFactor: calculate reputation decay factor failed, invalid half life factor",
+		utils.LavaFormatWarning("calcDecayFactor: calculate reputation decay factor failed, invalid half life factor",
 			fmt.Errorf("half life factor is not positive"),
 			utils.LogAttr("half_life_factor", halfLifeFactor),
 		)
@@ -60,7 +60,7 @@ func (r Reputation) calcDecayFactor(halfLifeFactor int64, currentTime int64) mat
 
 	timeSinceLastUpdate := currentTime - r.TimeLastUpdated
 	if timeSinceLastUpdate < 0 {
-		utils.LavaFormatError("DecayFactor: calculate reputation decay factor failed, invalid reputation",
+		utils.LavaFormatError("calcDecayFactor: calculate reputation decay factor failed, invalid reputation",
 			fmt.Errorf("reputation last update time is larger than current time"),
 			utils.LogAttr("current_time", currentTime),
 			utils.LogAttr("reputation_time_last_updated", r.TimeLastUpdated),
@@ -73,7 +73,7 @@ func (r Reputation) calcDecayFactor(halfLifeFactor int64, currentTime int64) mat
 	decayFactorString := fmt.Sprintf("%.18f", decayFactorFloat)
 	decayFactor, err := math.LegacyNewDecFromStr(decayFactorString)
 	if err != nil {
-		utils.LavaFormatError("DecayFactor: calculate reputation decay factor failed, invalid decay factor string", err,
+		utils.LavaFormatError("calcDecayFactor: calculate reputation decay factor failed, invalid decay factor string", err,
 			utils.LogAttr("decay_factor_string", decayFactorString),
 			utils.LogAttr("time_since_last_update", timeSinceLastUpdate),
 			utils.LogAttr("half_life_factor", halfLifeFactor),
