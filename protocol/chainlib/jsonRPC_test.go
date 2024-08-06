@@ -506,3 +506,40 @@ func TestJsonRpcInternalPathsMultipleVersionsAvalanche(t *testing.T) {
 		}
 	}
 }
+
+func TestJsonRPCChainParser_GetInternalPaths(t *testing.T) {
+	jsonRpcChainParser := &JsonRPCChainParser{
+		BaseChainParser: BaseChainParser{
+			apiCollections: map[CollectionKey]*spectypes.ApiCollection{
+				{ConnectionType: "connectionType1"}: {
+					CollectionData: spectypes.CollectionData{
+						InternalPath: "internal/path1",
+					},
+					WebsocketDisabled: true,
+				},
+				{ConnectionType: "connectionType2"}: {
+					CollectionData: spectypes.CollectionData{
+						InternalPath: "internal/path2",
+					},
+				},
+			},
+		},
+	}
+
+	t.Run("Is WebSocket", func(t *testing.T) {
+		internalPaths := jsonRpcChainParser.GetInternalPaths(true)
+		expectedInternalPaths := map[string]struct{}{
+			"internal/path2": {},
+		}
+		require.Equal(t, expectedInternalPaths, internalPaths)
+	})
+
+	t.Run("Is not WebSocket", func(t *testing.T) {
+		internalPaths := jsonRpcChainParser.GetInternalPaths(false)
+		expectedInternalPaths := map[string]struct{}{
+			"internal/path1": {},
+			"internal/path2": {},
+		}
+		require.Equal(t, expectedInternalPaths, internalPaths)
+	})
+}
