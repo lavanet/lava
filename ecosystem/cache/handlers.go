@@ -121,6 +121,8 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		utils.Attribute{Key: "requested_block_parsed", Value: relayCacheGet.RequestedBlock},
 		utils.Attribute{Key: "seen_block", Value: relayCacheGet.SeenBlock},
 	)
+
+	var retError error
 	if relayCacheGet.RequestedBlock >= 0 { // we can only fetch
 		// we don't need to fetch seen block prior as its already larger than requested block
 		waitGroup := sync.WaitGroup{}
@@ -177,26 +179,28 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		cacheReply.BlocksHashesToHeights = blockHashesToHeights
 	} else {
 		// set the error so cache miss will trigger.
-		err = utils.LavaFormatDebug("Requested block is invalid",
+		retError = utils.LavaFormatDebug("Requested block is invalid",
 			utils.LogAttr("requested block", relayCacheGet.RequestedBlock),
 			utils.LogAttr("request_hash", string(relayCacheGet.RequestHash)),
 		)
+		err = retError
 	}
 
 	// add prometheus metrics asynchronously
+	cacheHit := cacheReply.Reply != nil
 	go func() {
 		cacheMetricsContext, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		var hit bool
-		if err != nil {
-			s.cacheMiss(cacheMetricsContext, err)
-		} else {
-			hit = true
+
+		if cacheHit {
 			s.cacheHit(cacheMetricsContext)
+		} else {
+			s.cacheMiss(cacheMetricsContext, err)
 		}
-		s.CacheServer.CacheMetrics.AddApiSpecific(originalRequestedBlock, relayCacheGet.ChainId, hit)
+
+		s.CacheServer.CacheMetrics.AddApiSpecific(originalRequestedBlock, relayCacheGet.ChainId, cacheHit)
 	}()
-	return cacheReply, err
+	return cacheReply, retError
 }
 
 // formatHashKey formats the hash key by adding latestBlock information.
