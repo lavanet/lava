@@ -266,29 +266,36 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		return firstSubscriptionReply, nil, nil
 	}
 
-	// Incase there are no active subscriptions, check for pending subscriptions with the same hashed params.
-	// avoiding having the same subscription twice.
-	pendingSubscriptionChannel, foundPendingSubscription := cwsm.checkForPendingSubscriptionsWithLock(hashedParams)
-	if foundPendingSubscription {
-		utils.LavaFormatTrace("Found pending subscription, waiting for it to complete")
-		// this is a buffered channel, it wont get stuck even if it is written to before the time we listen
-		res := <-pendingSubscriptionChannel
-		utils.LavaFormatTrace("Finished pending for subscription, have results", utils.LogAttr("success", res))
-		// Check res is valid, if not fall through logs and try again with a new client.
-		if res {
-			firstSubscriptionReply, returnWebsocketRepliesChan := cwsm.checkForActiveSubscriptionWithLock(webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender, closeWebsocketRepliesChannel)
-			if firstSubscriptionReply != nil {
-				if returnWebsocketRepliesChan {
-					return firstSubscriptionReply, websocketRepliesChan, nil
+	// This for loop will break when there is a successful queue lock, allowing us to avoid racing new subscription creation when
+	// there is a failed subscription. the loop will break for the first routine the manages to lock and create the pendingSubscriptionsBroadcastManager
+	for {
+		// Incase there are no active subscriptions, check for pending subscriptions with the same hashed params.
+		// avoiding having the same subscription twice.
+		pendingSubscriptionChannel, foundPendingSubscription := cwsm.checkForPendingSubscriptionsWithLock(hashedParams)
+		if foundPendingSubscription {
+			utils.LavaFormatTrace("Found pending subscription, waiting for it to complete")
+			// this is a buffered channel, it wont get stuck even if it is written to before the time we listen
+			res := <-pendingSubscriptionChannel
+			utils.LavaFormatTrace("Finished pending for subscription, have results", utils.LogAttr("success", res))
+			// Check res is valid, if not fall through logs and try again with a new client.
+			if res {
+				firstSubscriptionReply, returnWebsocketRepliesChan := cwsm.checkForActiveSubscriptionWithLock(webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender, closeWebsocketRepliesChannel)
+				if firstSubscriptionReply != nil {
+					if returnWebsocketRepliesChan {
+						return firstSubscriptionReply, websocketRepliesChan, nil
+					}
+					return firstSubscriptionReply, nil, nil
 				}
-				return firstSubscriptionReply, nil, nil
+				// In case we expected a subscription to return as res != nil we should find an active subscription.
+				// If we fail to find it, it might have suddenly stopped. we will log a warning and try with a new client.
+				utils.LavaFormatWarning("failed getting a result when channel indicated we got a successful relay", nil)
 			}
-			// In case we expected a subscription to return as res != nil we should find an active subscription.
-			// If we fail to find it, it might have suddenly stopped. we will log a warning and try with a new client.
-			utils.LavaFormatWarning("failed getting a result when channel indicated we got a successful relay", nil)
+			// Failed the subscription attempt, will retry using current relay.
+			utils.LavaFormatDebug("Failed the subscription attempt, retrying with the incoming message", utils.LogAttr("hash", hashedParams))
+		} else {
+			utils.LavaFormatDebug("No Pending subscriptions, creating a new one", utils.LogAttr("hash", hashedParams))
+			break
 		}
-		// Failed the subscription attempt, will retry using current relay.
-		utils.LavaFormatDebug("Failed the subscription attempt, retrying with the incoming message", utils.LogAttr("hash", hashedParams))
 	}
 
 	utils.LavaFormatTrace("could not find active subscription for given params, creating new one",

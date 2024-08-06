@@ -227,23 +227,30 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 
 	subscriptionId, err = pnsm.checkForActiveSubscriptionsWithLock(ctx, hashedParams, consumerAddr, consumerProcessGuid, params, chainMessage, consumerChannel, request)
 	if NoActiveSubscriptionFound.Is(err) {
-		pendingSubscriptionChannel, foundPendingSubscription := pnsm.checkForPendingSubscriptionsWithLock(hashedParams)
-		if foundPendingSubscription {
-			utils.LavaFormatTrace("Found pending subscription, waiting for it to complete")
-			pendingResult := <-pendingSubscriptionChannel
-			utils.LavaFormatTrace("Finished pending for subscription, have results", utils.LogAttr("success", pendingResult))
-			// Check result is valid, if not fall through logs and try again with a new message.
-			if pendingResult {
-				subscriptionId, err = pnsm.checkForActiveSubscriptionsWithLock(ctx, hashedParams, consumerAddr, consumerProcessGuid, params, chainMessage, consumerChannel, request)
-				if err == nil {
-					// found new the subscription after waiting for a pending subscription
-					return subscriptionId, err
+		// This for loop will break when there is a successful queue lock, allowing us to avoid racing new subscription creation when
+		// there is a failed subscription. the loop will break for the first routine the manages to lock and create the pendingSubscriptionsBroadcastManager
+		for {
+			pendingSubscriptionChannel, foundPendingSubscription := pnsm.checkForPendingSubscriptionsWithLock(hashedParams)
+			if foundPendingSubscription {
+				utils.LavaFormatTrace("Found pending subscription, waiting for it to complete")
+				pendingResult := <-pendingSubscriptionChannel
+				utils.LavaFormatTrace("Finished pending for subscription, have results", utils.LogAttr("success", pendingResult))
+				// Check result is valid, if not fall through logs and try again with a new message.
+				if pendingResult {
+					subscriptionId, err = pnsm.checkForActiveSubscriptionsWithLock(ctx, hashedParams, consumerAddr, consumerProcessGuid, params, chainMessage, consumerChannel, request)
+					if err == nil {
+						// found new the subscription after waiting for a pending subscription
+						return subscriptionId, err
+					}
+					// In case we expected a subscription to return as res != nil we should find an active subscription.
+					// If we fail to find it, it might have suddenly stopped. we will log a warning and try with a new client.
+					utils.LavaFormatWarning("failed getting a result when channel indicated we got a successful relay", nil)
+				} else {
+					utils.LavaFormatWarning("Failed the subscription attempt, retrying with the incoming message", nil, utils.LogAttr("hash", hashedParams))
 				}
-				// In case we expected a subscription to return as res != nil we should find an active subscription.
-				// If we fail to find it, it might have suddenly stopped. we will log a warning and try with a new client.
-				utils.LavaFormatWarning("failed getting a result when channel indicated we got a successful relay", nil)
 			} else {
-				utils.LavaFormatWarning("Failed the subscription attempt, retrying with the incoming message", nil, utils.LogAttr("hash", hashedParams))
+				utils.LavaFormatDebug("No Pending subscriptions, creating a new one", utils.LogAttr("hash", hashedParams))
+				break
 			}
 		}
 
