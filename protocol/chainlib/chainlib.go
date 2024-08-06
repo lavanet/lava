@@ -15,6 +15,11 @@ import (
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
+var (
+	IgnoreSubscriptionNotConfiguredError     = true
+	IgnoreSubscriptionNotConfiguredErrorFlag = "ignore-subscription-not-configured-error"
+)
+
 func NewChainParser(apiInterface string) (chainParser ChainParser, err error) {
 	switch apiInterface {
 	case spectypes.APIInterfaceJsonRPC:
@@ -37,12 +42,13 @@ func NewChainListener(
 	rpcConsumerLogs *metrics.RPCConsumerLogs,
 	chainParser ChainParser,
 	refererData *RefererData,
+	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager,
 ) (ChainListener, error) {
 	switch listenEndpoint.ApiInterface {
 	case spectypes.APIInterfaceJsonRPC:
-		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData), nil
+		return NewJrpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData, consumerWsSubscriptionManager), nil
 	case spectypes.APIInterfaceTendermintRPC:
-		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData), nil
+		return NewTendermintRpcChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData, consumerWsSubscriptionManager), nil
 	case spectypes.APIInterfaceRest:
 		return NewRestChainListener(ctx, listenEndpoint, relaySender, healthReporter, rpcConsumerLogs, refererData), nil
 	case spectypes.APIInterfaceGrpc:
@@ -56,7 +62,7 @@ type ChainParser interface {
 	SetSpec(spec spectypes.Spec)
 	DataReliabilityParams() (enabled bool, dataReliabilityThreshold uint32)
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32)
-	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, collectionData *spectypes.CollectionData, existed bool)
+	GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing *spectypes.ParseDirective, apiCollection *spectypes.ApiCollection, existed bool)
 	CraftMessage(parser *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error)
 	HandleHeaders(metadata []pairingtypes.Metadata, apiCollection *spectypes.ApiCollection, headersDirection spectypes.Header_HeaderType) (filtered []pairingtypes.Metadata, overwriteReqBlock string, ignoredMetadata []pairingtypes.Metadata)
 	GetVerifications(supported []string) ([]VerificationContainer, error)
@@ -70,6 +76,7 @@ type ChainParser interface {
 }
 
 type ChainMessage interface {
+	SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string
 	RequestedBlock() (latest int64, earliest int64)
 	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
@@ -90,6 +97,7 @@ type ChainMessageForSend interface {
 	GetApi() *spectypes.Api
 	GetRPCMessage() rpcInterfaceMessages.GenericMessage
 	GetApiCollection() *spectypes.ApiCollection
+	GetParseDirective() *spectypes.ParseDirective
 	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 }
 
@@ -108,6 +116,28 @@ type RelaySender interface {
 		analytics *metrics.RelayMetrics,
 		metadataValues []pairingtypes.Metadata,
 	) (*common.RelayResult, error)
+	ParseRelay(
+		ctx context.Context,
+		url string,
+		req string,
+		connectionType string,
+		dappID string,
+		consumerIp string,
+		analytics *metrics.RelayMetrics,
+		metadata []pairingtypes.Metadata,
+	) (ChainMessage, map[string]string, *pairingtypes.RelayPrivateData, error)
+	SendParsedRelay(
+		ctx context.Context,
+		dappID string,
+		consumerIp string,
+		analytics *metrics.RelayMetrics,
+		chainMessage ChainMessage,
+		directiveHeaders map[string]string,
+		relayRequestData *pairingtypes.RelayPrivateData,
+	) (relayResult *common.RelayResult, errRet error)
+	CreateDappKey(dappID, consumerIp string) string
+	CancelSubscriptionContext(subscriptionKey string)
+	SetConsistencySeenBlock(blockSeen int64, key string)
 }
 
 type ChainListener interface {

@@ -272,7 +272,6 @@ func filterOldEpochEntries[T dataHandler](blockedEpochHeight uint64, allEpochsMa
 		if !IsEpochValidForUse(epochStored, blockedEpochHeight) {
 			// epoch is not valid so we don't keep its key in the new map
 
-			// in the case of subscribe, we need to unsubscribe before deleting the key from storage.
 			value.onDeleteEvent()
 
 			continue
@@ -281,110 +280,6 @@ func filterOldEpochEntries[T dataHandler](blockedEpochHeight uint64, allEpochsMa
 		validEpochsMap[epochStored] = value
 	}
 	return
-}
-
-func (psm *ProviderSessionManager) ProcessUnsubscribe(apiName, subscriptionID, consumerAddress string, epoch uint64) error {
-	providerSessionWithConsumer, activeError := psm.getActiveProjectFromConsumerAddress(consumerAddress, epoch)
-	if activeError != nil {
-		return utils.LavaFormatError("[ProcessUnsubscribe] Couldn't find providerSessionWithConsumer", activeError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress})
-	}
-
-	psm.lock.Lock()
-	defer psm.lock.Unlock()
-	var err error
-	if apiName == TendermintUnsubscribeAll {
-		// unsubscribe all subscriptions
-		for _, v := range providerSessionWithConsumer.ongoingSubscriptions {
-			if v.Sub == nil {
-				err = utils.LavaFormatError("[ProcessUnsubscribe] TendermintUnsubscribeAll providerSessionWithConsumer.ongoingSubscriptions Error", SubscriptionPointerIsNilError, utils.Attribute{Key: "subscripionId", Value: subscriptionID})
-			} else {
-				v.Sub.Unsubscribe()
-			}
-		}
-		providerSessionWithConsumer.ongoingSubscriptions = make(map[string]*RPCSubscription) // delete the entire map.
-		return err
-	}
-
-	subscription, foundSubscription := providerSessionWithConsumer.ongoingSubscriptions[subscriptionID]
-	if !foundSubscription {
-		return utils.LavaFormatError("Couldn't find subscription Id in psm.subscriptionSessionsWithAllConsumers", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress}, utils.Attribute{Key: "subscriptionId", Value: subscriptionID})
-	}
-
-	if subscription.Sub == nil {
-		err = utils.LavaFormatError("ProcessUnsubscribe Error", SubscriptionPointerIsNilError, utils.Attribute{Key: "subscripionId", Value: subscriptionID})
-	} else {
-		subscription.Sub.Unsubscribe()
-	}
-	delete(providerSessionWithConsumer.ongoingSubscriptions, subscriptionID) // delete subscription after finished with it
-	return err
-}
-
-// use this method when unlocked.
-func (psm *ProviderSessionManager) getActiveProjectFromConsumerAddress(consumerAddress string, epoch uint64) (*ProviderSessionsWithConsumerProject, error) {
-	projectId, found := psm.readConsumerToPairedWithProjectMap(consumerAddress, epoch)
-	if !found {
-		return nil, utils.LavaFormatError("getActiveProjectFromConsumerAddress Couldn't find consumerAddress readConsumerToPairedWithProjectMap", nil,
-			utils.Attribute{Key: "epoch", Value: epoch},
-			utils.Attribute{Key: "address", Value: consumerAddress},
-		)
-	}
-	providerSessionWithConsumer, activeError := psm.IsActiveProject(epoch, projectId)
-	if activeError != nil {
-		return nil, utils.LavaFormatError("getActiveProjectFromConsumerAddress Couldn't find projectId in psm.subscriptionSessionsWithAllConsumers", activeError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: projectId})
-	}
-	return providerSessionWithConsumer, nil
-}
-
-func (psm *ProviderSessionManager) addSubscriptionToStorage(subscription *RPCSubscription, consumerAddress string, epoch uint64) error {
-	// we already validated the epoch is valid in the GetSessions no need to verify again.
-	providerSessionWithConsumer, activeError := psm.getActiveProjectFromConsumerAddress(consumerAddress, epoch)
-	if activeError != nil {
-		return utils.LavaFormatError("[addSubscriptionToStorage] Couldn't find providerSessionWithConsumer", activeError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress})
-	}
-
-	psm.lock.Lock()
-	defer psm.lock.Unlock()
-	_, foundSubscription := providerSessionWithConsumer.ongoingSubscriptions[subscription.Id]
-	if !foundSubscription {
-		// we shouldnt find a subscription already in the storage.
-		providerSessionWithConsumer.ongoingSubscriptions[subscription.Id] = subscription
-		return nil // successfully added subscription to storage
-	}
-
-	// if we get here we found a subscription already in the storage and we need to return an error as we can't add two subscriptions with the same id
-	return utils.LavaFormatError("addSubscription", SubscriptionAlreadyExistsError, utils.Attribute{Key: "SubscriptionId", Value: subscription.Id}, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress})
-}
-
-func (psm *ProviderSessionManager) ReleaseSessionAndCreateSubscription(session *SingleProviderSession, subscription *RPCSubscription, consumerAddress string, epoch, relayNumber uint64) error {
-	err := psm.OnSessionDone(session, relayNumber)
-	if err != nil {
-		return utils.LavaFormatError("Failed ReleaseSessionAndCreateSubscription", err)
-	}
-	return psm.addSubscriptionToStorage(subscription, consumerAddress, epoch)
-}
-
-// try to disconnect the subscription incase we got an error.
-// if fails to find assumes it was unsubscribed normally
-func (psm *ProviderSessionManager) SubscriptionEnded(consumerAddress string, epoch uint64, subscriptionID string) {
-	providerSessionWithConsumer, activeError := psm.getActiveProjectFromConsumerAddress(consumerAddress, epoch)
-	if activeError != nil {
-		utils.LavaFormatError("[SubscriptionEnded] Couldn't find providerSessionWithConsumer, this must be found when getting here", activeError, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "address", Value: consumerAddress})
-		return
-	}
-
-	psm.lock.Lock()
-	defer psm.lock.Unlock()
-	subscription, foundSubscription := providerSessionWithConsumer.ongoingSubscriptions[subscriptionID]
-	if !foundSubscription {
-		return
-	}
-
-	if subscription.Sub == nil { // validate subscription not nil
-		utils.LavaFormatError("SubscriptionEnded Error", SubscriptionPointerIsNilError, utils.Attribute{Key: "subscripionId", Value: subscription.Id})
-	} else {
-		subscription.Sub.Unsubscribe()
-	}
-	delete(providerSessionWithConsumer.ongoingSubscriptions, subscriptionID) // delete subscription after finished with it
 }
 
 // Called when the reward server has information on a higher cu proof and usage and this providerSessionsManager needs to sync up on it

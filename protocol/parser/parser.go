@@ -30,6 +30,7 @@ type RPCInput interface {
 	ParseBlock(block string) (int64, error)
 	GetHeaders() []pairingtypes.Metadata
 	GetMethod() string
+	GetID() json.RawMessage
 }
 
 func ParseDefaultBlockParameter(block string) (int64, error) {

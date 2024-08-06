@@ -31,6 +31,10 @@ func (rpcInputTest *RPCInputTest) GetResult() json.RawMessage {
 	return rpcInputTest.Result
 }
 
+func (rpcInputTest *RPCInputTest) GetID() json.RawMessage {
+	return nil
+}
+
 func (rpcInputTest *RPCInputTest) ParseBlock(block string) (int64, error) {
 	if rpcInputTest.ParseBlockFunc == nil {
 		return ParseDefaultBlockParameter(block)

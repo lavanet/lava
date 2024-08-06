@@ -7,6 +7,12 @@ endpoints:
       - url: http://127.0.0.1:1111
         Addons:
           - debug
+      - url: ws://127.0.0.1:1111/ws
+        Addons:
+          - debug
       - url: http://127.0.0.1:1111
         Addons:
-          - archive      
+          - archive  
+      - url: ws://127.0.0.1:1111/ws
+        Addons:
+          - archive  
