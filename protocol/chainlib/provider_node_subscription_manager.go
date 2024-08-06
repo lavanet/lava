@@ -111,7 +111,7 @@ func (pnsm *ProviderNodeSubscriptionManager) successfulPendingSubscription(hashe
 	}
 }
 
-func (pnsm *ProviderNodeSubscriptionManager) checkForPendingSubscriptionsWithLock(hashedParams string) (chan bool, bool) {
+func (pnsm *ProviderNodeSubscriptionManager) checkAndAddPendingSubscriptionsWithLock(hashedParams string) (chan bool, bool) {
 	pnsm.lock.Lock()
 	defer pnsm.lock.Unlock()
 	pendingSubscriptionBroadcastManager, ok := pnsm.currentlyPendingSubscriptions[hashedParams]
@@ -230,7 +230,7 @@ func (pnsm *ProviderNodeSubscriptionManager) AddConsumer(ctx context.Context, re
 		// This for loop will break when there is a successful queue lock, allowing us to avoid racing new subscription creation when
 		// there is a failed subscription. the loop will break for the first routine the manages to lock and create the pendingSubscriptionsBroadcastManager
 		for {
-			pendingSubscriptionChannel, foundPendingSubscription := pnsm.checkForPendingSubscriptionsWithLock(hashedParams)
+			pendingSubscriptionChannel, foundPendingSubscription := pnsm.checkAndAddPendingSubscriptionsWithLock(hashedParams)
 			if foundPendingSubscription {
 				utils.LavaFormatTrace("Found pending subscription, waiting for it to complete")
 				pendingResult := <-pendingSubscriptionChannel
