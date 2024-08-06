@@ -23,7 +23,166 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-const uniqueId = "1234"
+const (
+	numberOfParallelSubscriptions = 10
+	uniqueId                      = "1234"
+)
+
+func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *testing.T) {
+	playbook := []struct {
+		name                     string
+		specId                   string
+		apiInterface             string
+		connectionType           string
+		subscriptionRequestData1 []byte
+		subscriptionFirstReply1  []byte
+		subscriptionRequestData2 []byte
+		subscriptionFirstReply2  []byte
+	}{
+		{
+			name:                     "TendermintRPC",
+			specId:                   "LAV1",
+			apiInterface:             spectypes.APIInterfaceTendermintRPC,
+			connectionType:           "",
+			subscriptionRequestData1: []byte(`{"jsonrpc":"2.0","id":3,"method":"subscribe","params":{"query":"tm.event='NewBlock'"}}`),
+			subscriptionFirstReply1:  []byte(`{"jsonrpc":"2.0","id":3,"result":{}}`),
+			subscriptionRequestData2: []byte(`{"jsonrpc":"2.0","id":4,"method":"subscribe","params":{"query":"tm.event= 'NewBlock'"}}`),
+			subscriptionFirstReply2:  []byte(`{"jsonrpc":"2.0","id":4,"result":{}}`),
+		},
+	}
+
+	for _, play := range playbook {
+		t.Run(play.name, func(t *testing.T) {
+			ts := SetupForTests(t, 1, play.specId, "../../")
+
+			dapp := "dapp"
+			ip := "127.0.0.1"
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			chainParser, _, _, _, _, err := CreateChainLibMocks(ts.Ctx, play.specId, play.apiInterface, nil, nil, "../../", nil)
+			require.NoError(t, err)
+
+			chainMessage1, err := chainParser.ParseMsg("", play.subscriptionRequestData1, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+			require.NoError(t, err)
+
+			relaySender := NewMockRelaySender(ctrl)
+			relaySender.
+				EXPECT().
+				CreateDappKey(gomock.Any(), gomock.Any()).
+				DoAndReturn(func(dappID, consumerIp string) string {
+					return dappID + consumerIp
+				}).
+				AnyTimes()
+			relaySender.
+				EXPECT().
+				SetConsistencySeenBlock(gomock.Any(), gomock.Any()).
+				AnyTimes()
+
+			relaySender.
+				EXPECT().
+				ParseRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(chainMessage1, nil, nil, nil).
+				AnyTimes()
+
+			mockRelayerClient1 := pairingtypes.NewMockRelayer_RelaySubscribeClient(ctrl)
+
+			relayResult1 := &common.RelayResult{
+				ReplyServer: mockRelayerClient1,
+				ProviderInfo: common.ProviderInfo{
+					ProviderAddress: ts.Providers[0].Addr.String(),
+				},
+				Reply: &pairingtypes.RelayReply{
+					Data:        play.subscriptionFirstReply1,
+					LatestBlock: 1,
+				},
+				Request: &pairingtypes.RelayRequest{
+					RelayData: &pairingtypes.RelayPrivateData{
+						Data: play.subscriptionRequestData1,
+					},
+					RelaySession: &pairingtypes.RelaySession{},
+				},
+			}
+
+			relayResult1.Reply, err = lavaprotocol.SignRelayResponse(ts.Consumer.Addr, *relayResult1.Request, ts.Providers[0].SK, relayResult1.Reply, true)
+			require.NoError(t, err)
+
+			mockRelayerClient1.
+				EXPECT().
+				Context().
+				Return(context.Background()).
+				AnyTimes()
+
+			mockRelayerClient1.
+				EXPECT().
+				RecvMsg(gomock.Any()).
+				DoAndReturn(func(msg interface{}) error {
+					relayReply, ok := msg.(*pairingtypes.RelayReply)
+					require.True(t, ok)
+
+					*relayReply = *relayResult1.Reply
+					return nil
+				}).
+				AnyTimes()
+
+			relaySender.
+				EXPECT().
+				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				Return(relayResult1, nil).
+				Times(1) // Should call SendParsedRelay, because it is the first time we subscribe
+
+			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
+
+			// Create a new ConsumerWSSubscriptionManager
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage())
+			uniqueIdentifiers := make([]string, numberOfParallelSubscriptions)
+			wg := sync.WaitGroup{}
+			wg.Add(numberOfParallelSubscriptions)
+			// Start a new subscription for the first time, called SendParsedRelay once while in parallel calling 10 times subscribe with the same message
+			// expected result is to have SendParsedRelay only once and 9 other messages waiting the broadcast.
+			for i := 0; i < numberOfParallelSubscriptions; i++ {
+				uniqueIdentifiers[i] = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
+				// sending
+				go func(index int) {
+					ctx := utils.WithUniqueIdentifier(ts.Ctx, utils.GenerateUniqueIdentifier())
+					var repliesChan <-chan *pairingtypes.RelayReply
+					var firstReply *pairingtypes.RelayReply
+					firstReply, repliesChan, err = manager.StartSubscription(ctx, chainMessage1, nil, nil, dapp, ip, uniqueIdentifiers[index], nil)
+					go func() {
+						for subMsg := range repliesChan {
+							utils.LavaFormatInfo("got reply for index", utils.LogAttr("index", index))
+							require.Equal(t, string(play.subscriptionFirstReply1), string(subMsg.Data))
+						}
+					}()
+					assert.NoError(t, err)
+					assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
+					assert.NotNil(t, repliesChan)
+					wg.Done()
+				}(i)
+			}
+			wg.Wait()
+
+			// now we have numberOfParallelSubscriptions subscriptions currently running
+			require.Len(t, manager.connectedDapps, numberOfParallelSubscriptions)
+			// remove one
+			err = manager.Unsubscribe(ts.Ctx, chainMessage1, nil, nil, dapp, ip, uniqueIdentifiers[0], nil)
+			require.NoError(t, err)
+			// now we have numberOfParallelSubscriptions - 1
+			require.Len(t, manager.connectedDapps, numberOfParallelSubscriptions-1)
+			// check we still have an active subscription.
+			require.Len(t, manager.activeSubscriptions, 1)
+
+			// same flow for unsubscribe all
+			err = manager.UnsubscribeAll(ts.Ctx, dapp, ip, uniqueIdentifiers[1], nil)
+			require.NoError(t, err)
+			// now we have numberOfParallelSubscriptions - 2
+			require.Len(t, manager.connectedDapps, numberOfParallelSubscriptions-2)
+			// check we still have an active subscription.
+			require.Len(t, manager.activeSubscriptions, 1)
+		})
+	}
+}
 
 func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 	playbook := []struct {
