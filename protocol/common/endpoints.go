@@ -26,6 +26,7 @@ const (
 	GUID_HEADER_NAME                                = "Lava-Guid"
 	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
 	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
+	LAVA_CONSUMER_PROCESS_GUID                      = "lava-consumer-process-guid"
 	// these headers need to be lowercase
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
 	RELAY_TIMEOUT_HEADER_NAME             = "lava-relay-timeout"
@@ -63,7 +64,7 @@ func (nurl NodeUrl) String() string {
 	urlStr := nurl.UrlStr()
 
 	if len(nurl.Addons) > 0 {
-		return urlStr + "(" + strings.Join(nurl.Addons, ",") + ")"
+		return urlStr + ", addons: (" + strings.Join(nurl.Addons, ",") + ")"
 	}
 	return urlStr
 }
@@ -165,18 +166,43 @@ func (ac *AuthConfig) AddAuthPath(url string) string {
 
 func ValidateEndpoint(endpoint, apiInterface string) error {
 	switch apiInterface {
-	case spectypes.APIInterfaceJsonRPC, spectypes.APIInterfaceTendermintRPC, spectypes.APIInterfaceRest:
+	case spectypes.APIInterfaceRest:
 		parsedUrl, err := url.Parse(endpoint)
 		if err != nil {
-			return utils.LavaFormatError("could not parse node url", err, utils.Attribute{Key: "url", Value: endpoint}, utils.Attribute{Key: "apiInterface", Value: apiInterface})
+			return utils.LavaFormatError("could not parse node url", err,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
 		}
+
+		switch parsedUrl.Scheme {
+		case "http", "https":
+			return nil
+		default:
+			return utils.LavaFormatError("URL scheme should be (http/https), got: "+parsedUrl.Scheme, nil,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
+		}
+	case spectypes.APIInterfaceJsonRPC, spectypes.APIInterfaceTendermintRPC:
+		parsedUrl, err := url.Parse(endpoint)
+		if err != nil {
+			return utils.LavaFormatError("could not parse node url", err,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
+		}
+
 		switch parsedUrl.Scheme {
 		case "http", "https":
 			return nil
 		case "ws", "wss":
 			return nil
 		default:
-			return utils.LavaFormatError("URL scheme should be websocket (ws/wss) or (http/https), got: "+parsedUrl.Scheme, nil, utils.Attribute{Key: "apiInterface", Value: apiInterface})
+			return utils.LavaFormatError("URL scheme should be websocket (ws/wss) or (http/https), got: "+parsedUrl.Scheme, nil,
+				utils.LogAttr("url", endpoint),
+				utils.LogAttr("apiInterface", apiInterface),
+			)
 		}
 	case spectypes.APIInterfaceGrpc:
 		if endpoint == "" {
@@ -217,7 +243,7 @@ type RelayResult struct {
 	Request         *pairingtypes.RelayRequest
 	Reply           *pairingtypes.RelayReply
 	ProviderInfo    ProviderInfo
-	ReplyServer     *pairingtypes.Relayer_RelaySubscribeClient
+	ReplyServer     pairingtypes.Relayer_RelaySubscribeClient
 	Finalized       bool
 	ConflictHandler ConflictHandlerInterface
 	StatusCode      int
@@ -225,7 +251,7 @@ type RelayResult struct {
 	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
 }
 
-func (rr *RelayResult) GetReplyServer() *pairingtypes.Relayer_RelaySubscribeClient {
+func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {
 	if rr == nil {
 		return nil
 	}

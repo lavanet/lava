@@ -58,6 +58,9 @@ const (
 	FUNCTION_TAG_SET_LATEST_IN_BODY     FUNCTION_TAG = 4
 	FUNCTION_TAG_VERIFICATION           FUNCTION_TAG = 5
 	FUNCTION_TAG_GET_EARLIEST_BLOCK     FUNCTION_TAG = 6
+	FUNCTION_TAG_SUBSCRIBE              FUNCTION_TAG = 7
+	FUNCTION_TAG_UNSUBSCRIBE            FUNCTION_TAG = 8
+	FUNCTION_TAG_UNSUBSCRIBE_ALL        FUNCTION_TAG = 9
 )
 
 var FUNCTION_TAG_name = map[int32]string{
@@ -68,6 +71,9 @@ var FUNCTION_TAG_name = map[int32]string{
 	4: "SET_LATEST_IN_BODY",
 	5: "VERIFICATION",
 	6: "GET_EARLIEST_BLOCK",
+	7: "SUBSCRIBE",
+	8: "UNSUBSCRIBE",
+	9: "UNSUBSCRIBE_ALL",
 }
 
 var FUNCTION_TAG_value = map[string]int32{
@@ -78,6 +84,9 @@ var FUNCTION_TAG_value = map[string]int32{
 	"SET_LATEST_IN_BODY":     4,
 	"VERIFICATION":           5,
 	"GET_EARLIEST_BLOCK":     6,
+	"SUBSCRIBE":              7,
+	"UNSUBSCRIBE":            8,
+	"UNSUBSCRIBE_ALL":        9,
 }
 
 func (x FUNCTION_TAG) String() string {

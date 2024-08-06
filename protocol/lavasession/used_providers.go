@@ -162,6 +162,7 @@ func (up *UsedProviders) TryLockSelection(ctx context.Context) error {
 	for counter := 0; counter < MaximumNumberOfSelectionLockAttempts; counter++ {
 		select {
 		case <-ctx.Done():
+			utils.LavaFormatTrace("Failed locking selection, context is done")
 			return ContextDoneNoNeedToLockSelectionError
 		default:
 			canSelect := up.tryLockSelection()
