@@ -88,3 +88,24 @@ func NewExtensionParserRule(extension *spectypes.Extension) ExtensionParserRule 
 		return nil
 	}
 }
+
+type EarliestOverriddenExtensionChainMessage struct {
+	earliest             int64
+	setExtensionCallback func(extension *spectypes.Extension)
+}
+
+func NewEarliestOverriddenExtensionChainMessage(earliest int64, setExtensionCallback func(extension *spectypes.Extension)) *EarliestOverriddenExtensionChainMessage {
+	return &EarliestOverriddenExtensionChainMessage{
+		earliest:             earliest,
+		setExtensionCallback: setExtensionCallback,
+	}
+}
+
+func (cm *EarliestOverriddenExtensionChainMessage) SetExtension(extension *spectypes.Extension) {
+	cm.setExtensionCallback(extension)
+}
+
+func (cm *EarliestOverriddenExtensionChainMessage) RequestedBlock() (latest int64, earliest int64) {
+	// The latest is irrelevant, we only care about the earliest
+	return spectypes.LATEST_BLOCK, cm.earliest
+}

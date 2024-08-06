@@ -73,6 +73,7 @@ type ChainMessage interface {
 	RequestedBlock() (latest int64, earliest int64)
 	UpdateLatestBlockInMessage(latestBlock int64, modifyContent bool) (modified bool)
 	AppendHeader(metadata []pairingtypes.Metadata)
+	SetExtension(extension *spectypes.Extension)
 	GetExtensions() []*spectypes.Extension
 	OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser)
 	DisableErrorHandling()
@@ -81,6 +82,7 @@ type ChainMessage interface {
 	SetForceCacheRefresh(force bool) bool
 	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 	GetRawRequestHash() ([]byte, error)
+	GetRequestedBlockHashes() []string
 
 	ChainMessageForSend
 }

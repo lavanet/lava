@@ -34,6 +34,10 @@ type baseChainMessageContainer struct {
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 }
 
+func (pm *baseChainMessageContainer) GetRequestedBlockHashes() []string {
+	return pm.requestedBlockHashes
+}
+
 func (pm *baseChainMessageContainer) GetRawRequestHash() ([]byte, error) {
 	if pm.inputHashCache != nil && len(pm.inputHashCache) > 0 {
 		// Get the cached value
