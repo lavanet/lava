@@ -38,9 +38,8 @@ type (
 		dualstakingKeeper  types.DualstakingKeeper
 		stakingKeeper      types.StakingKeeper
 
-		schema            collections.Schema
-		reputations       *collections.IndexedMap[collections.Triple[string, string, string], types.Reputation, types.ReputationRefIndexes] // save qos info per provider, chain and cluster
-		reputationRefKeys collections.KeySet[collections.Pair[string, string]]
+		schema      collections.Schema
+		reputations collections.Map[collections.Triple[string, string, string], types.Reputation] // save qos info per provider, chain and cluster
 	}
 )
 
@@ -96,14 +95,9 @@ func NewKeeper(
 		dualstakingKeeper:  dualstakingKeeper,
 		stakingKeeper:      stakingKeeper,
 
-		reputations: collections.NewIndexedMap(sb, types.ReputationPrefix, "reputations",
+		reputations: collections.NewMap(sb, types.ReputationPrefix, "reputations",
 			collections.TripleKeyCodec(collections.StringKey, collections.StringKey, collections.StringKey),
 			collcompat.ProtoValue[types.Reputation](cdc),
-			types.NewReputationRefIndexes(sb),
-		),
-
-		reputationRefKeys: collections.NewKeySet(sb, types.ReputationRefKeysPrefix, "reputations_ref_keys",
-			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
 		),
 	}
 

@@ -7,6 +7,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	commontypes "github.com/lavanet/lava/v2/utils/common/types"
 	"github.com/lavanet/lava/v2/x/pairing/keeper"
 	"github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/stretchr/testify/require"
@@ -28,6 +29,7 @@ func createNReputations(keeper *keeper.Keeper, ctx sdk.Context, n int) []types.R
 			},
 			TimeLastUpdated: int64(i),
 			CreationTime:    int64(i),
+			Stake:           sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(int64(i))),
 		}
 		keeper.SetReputation(ctx, strIndex, strIndex, strIndex, items[i])
 	}
