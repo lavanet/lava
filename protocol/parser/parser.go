@@ -99,12 +99,8 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, 
 	}
 
 	if parsedBlockInfo == nil {
+		// if we didn't find a generic parser that worked, or there were none to use, we create a new parsedBlockInfo
 		parsedBlockInfo = NewParsedInput()
-		utils.LavaFormatDebug("ParseBlockFromParams - parsedBlockInfo is nil, because generic parser failed or none were found",
-			utils.LogAttr("rpcInput", rpcInput),
-			utils.LogAttr("blockParser", blockParser),
-			utils.LogAttr("genericParsers", genericParsers),
-		)
 	}
 
 	// first we try to parse the value with the block parser
@@ -121,7 +117,7 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, 
 		return parsedBlockInfo
 	}
 
-	parsedBlock, err := rpcInput.ParseBlock(resString)
+	parsedBlockInfo.parsedBlock, err = rpcInput.ParseBlock(resString)
 	if err != nil {
 		if blockParser.DefaultValue != "" {
 			utils.LavaFormatDebug("Failed parsing block from string, assuming default value",
@@ -141,8 +137,6 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, 
 			parsedBlockInfo.parsedBlock = spectypes.NOT_APPLICABLE
 		}
 	}
-
-	parsedBlockInfo.parsedBlock = parsedBlock
 
 	return parsedBlockInfo
 }
