@@ -3,6 +3,7 @@ package lavanet.lava.pairing;
 
 option go_package = "github.com/lavanet/lava/v2/x/pairing/types";
 import "gogoproto/gogo.proto";
+import "cosmos/base/v1beta1/coin.proto"; 
 
 // Frac is a fracture struct that helps calculating and updating weighted average on the go
 message Frac {
@@ -25,11 +26,13 @@ message QosScore {
 // with the epoch_score and the epoch_score is reset.
 // The time_last_updated is used to calculate the appropriate time decay upon update.
 // The creation_time is used to determine if the variance stabilization period has passed and score can be truncated.
+// The stake is used when converting the reputation QoS scores to repuatation pairing score.
 message Reputation {
 	QosScore score = 1 [(gogoproto.nullable) = false];
 	QosScore epoch_score = 2 [(gogoproto.nullable) = false];
 	int64 time_last_updated = 3;
 	int64 creation_time = 4;
+	cosmos.base.v1beta1.Coin stake = 5 [(gogoproto.nullable) = false]; 
 }
 
 // ReputationPairingScore holds the reputation pairing score used by the reputation pairing requirement. 
