@@ -1,12 +1,12 @@
 syntax = "proto3";
 package lavanet.lava.subscription;
 
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos/base/query/v1beta1/pagination.proto";
+import "lavanet/lava/subscription/cu_tracker.proto";
 import "lavanet/lava/subscription/params.proto";
-import "cosmos/base/v1beta1/coin.proto";
-
 // this line is used by starport scaffolding # 1
 import "lavanet/lava/subscription/subscription.proto";
 
@@ -19,25 +19,31 @@ service Query {
     option (google.api.http).get = "/lavanet/lava/subscription/params";
   }
   // Queries a list of Current items.
-	rpc Current(QueryCurrentRequest) returns (QueryCurrentResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/current/{consumer}";
-	}
+  rpc Current(QueryCurrentRequest) returns (QueryCurrentResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/current/{consumer}";
+  }
 
   // Queries a list of ListProjects items.
-	rpc ListProjects(QueryListProjectsRequest) returns (QueryListProjectsResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/list_projects/{subscription}";
-	}
+  rpc ListProjects(QueryListProjectsRequest) returns (QueryListProjectsResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/list_projects/{subscription}";
+  }
 
   // Queries a list of List items.
-	rpc List(QueryListRequest) returns (QueryListResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/list";
-	}
+  rpc List(QueryListRequest) returns (QueryListResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/list";
+  }
 
   // Queries the subscription with the closest month expiry
-	rpc NextToMonthExpiry(QueryNextToMonthExpiryRequest) returns (QueryNextToMonthExpiryResponse) {
-		option (google.api.http).get = "/lavanet/lava/subscription/next_to_month_expiry";
-	}
-// this line is used by starport scaffolding # 2
+  rpc NextToMonthExpiry(QueryNextToMonthExpiryRequest) returns (QueryNextToMonthExpiryResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/next_to_month_expiry";
+  }
+
+  // Queries a list of Current items.
+  rpc TrackedUsage(QuerySubscriptionTrackedUsage) returns (QuerySubscriptionTrackedUsageResponse) {
+    option (google.api.http).get = "/lavanet/lava/subscription/tracked_usage/{subscription}";
+  }
+
+  // this line is used by starport scaffolding # 2
 }
 
 // QueryParamsRequest is request type for the Query/Params RPC method.
@@ -65,8 +71,7 @@ message QueryListProjectsResponse {
   repeated string projects = 1;
 }
 
-message QueryListRequest {
-}
+message QueryListRequest {}
 
 message QueryListResponse {
   repeated ListInfoStruct subs_info = 1 [(gogoproto.nullable) = false];
@@ -88,8 +93,7 @@ message ListInfoStruct {
   cosmos.base.v1beta1.Coin credit = 13;
 }
 
-message QueryNextToMonthExpiryRequest {
-}
+message QueryNextToMonthExpiryRequest {}
 
 message TimerExpiryInfo {
   string consumer = 1;
@@ -100,4 +104,13 @@ message QueryNextToMonthExpiryResponse {
   repeated TimerExpiryInfo subscriptions = 1 [(gogoproto.nullable) = false];
 }
 
+message QuerySubscriptionTrackedUsage {
+  string subscription = 1;
+}
+
+message QuerySubscriptionTrackedUsageResponse {
+  Subscription subscription = 1 [(gogoproto.nullable) = true];
+  repeated TrackedCuInfo usage = 2;
+  uint64 total_usage = 3;
+}
 // this line is used by starport scaffolding # 3
