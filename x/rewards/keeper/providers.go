@@ -89,7 +89,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
-				details[basepay.Provider] = fmt.Sprintf("cu: %d reward %s", basepay.TotalAdjusted, reward.String())
+				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.TotalAdjusted, reward.String())
 			}
 
 			// count iprpc cu
