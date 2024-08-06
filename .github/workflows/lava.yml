@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - main
-      - PRT-1178-subscriptions-phase-1-without-handover
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
