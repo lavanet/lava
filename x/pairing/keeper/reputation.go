@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/x/pairing/types"
@@ -92,29 +93,30 @@ func (k Keeper) GetAllReputation(ctx sdk.Context) []types.ReputationGenesis {
 }
 
 // GetReputationScore returns the current reputation pairing score
-func (k Keeper) GetReputationScore(ctx sdk.Context, chainID string, cluster string, provider string) (val types.ReputationPairingScore, found bool) {
+func (k Keeper) GetReputationScore(ctx sdk.Context, chainID string, cluster string, provider string) (val math.LegacyDec, found bool) {
 	block := uint64(ctx.BlockHeight())
 	key := types.ReputationScoreKey(chainID, cluster, provider)
 
 	var score types.ReputationPairingScore
 	found = k.reputationsFS.FindEntry(ctx, key, block, &score)
 
-	return score, found
+	return score.Score, found
 }
 
 // GetReputationScore returns a reputation pairing score in a specific block
-func (k Keeper) GetReputationScoreForBlock(ctx sdk.Context, chainID string, cluster string, provider string, block uint64) (val types.ReputationPairingScore, entryBlock uint64, found bool) {
+func (k Keeper) GetReputationScoreForBlock(ctx sdk.Context, chainID string, cluster string, provider string, block uint64) (val math.LegacyDec, entryBlock uint64, found bool) {
 	var score types.ReputationPairingScore
 	key := types.ReputationScoreKey(chainID, cluster, provider)
 
 	entryBlock, _, _, found = k.reputationsFS.FindEntryDetailed(ctx, key, block, &score)
-	return score, entryBlock, found
+	return score.Score, entryBlock, found
 }
 
 // SetReputationScore sets a reputation pairing score
-func (k Keeper) SetReputationScore(ctx sdk.Context, chainID string, cluster string, provider string, score types.ReputationPairingScore) error {
+func (k Keeper) SetReputationScore(ctx sdk.Context, chainID string, cluster string, provider string, score math.LegacyDec) error {
 	key := types.ReputationScoreKey(chainID, cluster, provider)
-	err := k.reputationsFS.AppendEntry(ctx, key, uint64(ctx.BlockHeight()), &score)
+	reputationScore := types.ReputationPairingScore{Score: score}
+	err := k.reputationsFS.AppendEntry(ctx, key, uint64(ctx.BlockHeight()), &reputationScore)
 	if err != nil {
 		return utils.LavaFormatError("SetReputationScore: set reputation pairing score failed", err,
 			utils.LogAttr("chain_id", chainID),
