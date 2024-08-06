@@ -129,22 +129,24 @@ func (rpccl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error,
 }
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
-// We dont want to alert error monitoring for that purpses.
-func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string, timeTaken time.Duration) {
+// We don't want to alert error monitoring for that purpses.
+func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndGetFormattedMessage(webSocketAddr string, err error, msgSeed string, msg []byte, rpcType string, timeTaken time.Duration) []byte {
 	if err != nil {
 		errMessage := err.Error()
 		if strings.Contains(errMessage, webSocketCloseMessage) {
 			utils.LavaFormatDebug("Websocket connection closed by the user, " + errMessage)
-			return
+			return nil
 		}
-		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, timeTaken, err)
+		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", webSocketAddr, string(msg), "", msgSeed, timeTaken, err)
 
 		jsonResponse, _ := json.Marshal(fiber.Map{
 			"Error_Received": rpccl.GetUniqueGuidResponseForError(err, msgSeed),
 		})
 
-		c.WriteMessage(mt, jsonResponse)
+		return jsonResponse
 	}
+
+	return nil
 }
 
 func (rpccl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method, path, req, resp, msgSeed string, timeTaken time.Duration, err error) {
