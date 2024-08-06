@@ -2,6 +2,7 @@ package chainlib
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
@@ -202,7 +203,7 @@ func (rs *requirementSt) String() string {
 }
 
 func (rs *requirementSt) IsRequirementMet(requirement string) bool {
-	return rs.extensions == lavasession.NewRouterKey([]string{requirement}) || rs.addon == requirement
+	return strings.Contains(string(rs.extensions), requirement) || strings.Contains(rs.addon, requirement)
 }
 
 func populateRequiredForAddon(addon string, extensions []string, required map[requirementSt]struct{}) {
