@@ -114,7 +114,7 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, 
 			utils.LogAttr("error", err),
 			utils.LogAttr("result", result),
 			utils.LogAttr("blockParser", blockParser),
-			utils.LogAttr("rpcInput.Params", rpcInput.GetParams()),
+			utils.LogAttr("rpcInput", rpcInput),
 		)
 		parsedBlockInfo.parsedBlock = spectypes.NOT_APPLICABLE
 		return parsedBlockInfo
@@ -161,7 +161,7 @@ func ParseFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (strin
 			utils.LogAttr("error", err),
 			utils.LogAttr("result", result),
 			utils.LogAttr("blockParser", blockParser),
-			utils.LogAttr("rpcInput.Result", rpcInput.GetResult()),
+			utils.LogAttr("rpcInput", rpcInput),
 		)
 		return "", err
 	}
