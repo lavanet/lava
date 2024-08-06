@@ -14,7 +14,7 @@ import (
 	reflect "reflect"
 
 	common "github.com/lavanet/lava/v2/protocol/common"
-	lavaprotocol "github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	finalizationconsensus "github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationconsensus"
 	lavasession "github.com/lavanet/lava/v2/protocol/lavasession"
 	updaters "github.com/lavanet/lava/v2/protocol/statetracker/updaters"
 	types "github.com/lavanet/lava/v2/x/conflict/types"
@@ -103,7 +103,7 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterConsumerSessionManage
 }
 
 // RegisterFinalizationConsensusForUpdates mocks base method.
-func (m *MockConsumerStateTrackerInf) RegisterFinalizationConsensusForUpdates(arg0 context.Context, arg1 *lavaprotocol.FinalizationConsensus) {
+func (m *MockConsumerStateTrackerInf) RegisterFinalizationConsensusForUpdates(arg0 context.Context, arg1 *finalizationconsensus.FinalizationConsensus) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "RegisterFinalizationConsensusForUpdates", arg0, arg1)
 }
