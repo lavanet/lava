@@ -21,7 +21,7 @@ type updatableRPCInput interface {
 type baseChainMessageContainer struct {
 	api                    *spectypes.Api
 	latestRequestedBlock   int64
-	requestedBlockHashes   []string
+	requestedBlocksHashes  []string
 	earliestRequestedBlock int64
 	msg                    updatableRPCInput
 	apiCollection          *spectypes.ApiCollection
@@ -34,8 +34,8 @@ type baseChainMessageContainer struct {
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 }
 
-func (pm *baseChainMessageContainer) GetRequestedBlockHashes() []string {
-	return pm.requestedBlockHashes
+func (pm *baseChainMessageContainer) GetRequestedBlocksHashes() []string {
+	return pm.requestedBlocksHashes
 }
 
 func (pm *baseChainMessageContainer) GetRawRequestHash() ([]byte, error) {

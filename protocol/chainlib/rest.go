@@ -143,7 +143,7 @@ func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock 
 		apiCollection:            apiCollection,
 		msg:                      restMessage,
 		latestRequestedBlock:     requestBlock,
-		requestedBlockHashes:     requestedHashes,
+		requestedBlocksHashes:    requestedHashes,
 		resultErrorParsingMethod: restMessage.CheckResponseError,
 	}
 	return nodeMsg

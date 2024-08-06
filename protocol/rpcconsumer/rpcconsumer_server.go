@@ -525,7 +525,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						Finalized:             false,
 						SharedStateId:         sharedStateId,
 						SeenBlock:             relayRequestData.SeenBlock,
-						BlocksHashesToHeights: rpccs.newBlocksHashesToHeightsSliceFromRequestedBlockHashes(chainMessage.GetRequestedBlockHashes()),
+						BlocksHashesToHeights: rpccs.newBlocksHashesToHeightsSliceFromRequestedBlockHashes(chainMessage.GetRequestedBlocksHashes()),
 					}) // caching in the portal doesn't care about hashes, and we don't have data on finalization yet
 					cancel()
 					reply := cacheReply.GetReply()
