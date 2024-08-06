@@ -1,9 +1,14 @@
 package types
 
 import (
+	"fmt"
+	stdMath "math"
+
 	"cosmossdk.io/collections"
 	"cosmossdk.io/collections/indexes"
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 var (
@@ -59,6 +64,42 @@ func (r Reputation) Equal(other Reputation) bool {
 // reputation's epoch QoS score.
 func (r Reputation) ShouldTruncate(stabilizationPeriod int64, currentTime int64) bool {
 	return r.CreationTime+stabilizationPeriod < currentTime
+}
+
+// DecayFactor calculates the appropriate decay factor for a reputation from the time it was last updated
+// the decay factor is: exp(-timeSinceLastUpdate/halfLifeFactor)
+func (r Reputation) DecayFactor(halfLifeFactor int64, currentTime int64) math.LegacyDec {
+	if halfLifeFactor <= 0 {
+		utils.LavaFormatWarning("DecayFactor: calculate reputation decay factor failed, invalid half life factor",
+			fmt.Errorf("half life factor is not positive"),
+			utils.LogAttr("half_life_factor", halfLifeFactor),
+		)
+		return math.LegacyZeroDec()
+	}
+
+	timeSinceLastUpdate := currentTime - r.TimeLastUpdated
+	if timeSinceLastUpdate < 0 {
+		utils.LavaFormatError("DecayFactor: calculate reputation decay factor failed, invalid reputation",
+			fmt.Errorf("reputation last update time is larger than current time"),
+			utils.LogAttr("current_time", currentTime),
+			utils.LogAttr("reputation_time_last_updated", r.TimeLastUpdated),
+		)
+		return math.LegacyZeroDec()
+	}
+
+	exponent := float64(timeSinceLastUpdate / halfLifeFactor)
+	decayFactorFloat := stdMath.Exp(exponent)
+	decayFactorString := fmt.Sprintf("%.18f", decayFactorFloat)
+	decayFactor, err := math.LegacyNewDecFromStr(decayFactorString)
+	if err != nil {
+		utils.LavaFormatError("DecayFactor: calculate reputation decay factor failed, invalid decay factor string", err,
+			utils.LogAttr("decay_factor_string", decayFactorString),
+			utils.LogAttr("time_since_last_update", timeSinceLastUpdate),
+			utils.LogAttr("half_life_factor", halfLifeFactor),
+		)
+		return math.LegacyZeroDec()
+	}
+	return decayFactor
 }
 
 // ReputationScoreKey returns a key for the reputations fixation store (reputationsFS)
