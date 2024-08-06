@@ -198,8 +198,18 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				)
 			}
 
+			stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, relay.SpecId, relay.Provider)
+			if !found {
+				return nil, utils.LavaFormatWarning("RelayPayment: could not get stake entry for reputation", fmt.Errorf("stake entry not found"),
+					utils.LogAttr("consumer", clientAddr),
+					utils.LogAttr("chain", relay.SpecId),
+					utils.LogAttr("provider", relay.Provider),
+				)
+			}
+			effectiveStake := sdk.NewCoin(stakeEntry.Stake.Denom, stakeEntry.EffectiveStake())
+
 			// note the current weight used is by relay num. In the future, it might change
-			k.UpdateReputationEpochQosScore(ctx, relay.SpecId, sub.Cluster, relay.Provider, score, utils.SafeUint64ToInt64Convert(relay.RelayNum))
+			k.UpdateReputationEpochQosScore(ctx, relay.SpecId, sub.Cluster, relay.Provider, score, utils.SafeUint64ToInt64Convert(relay.RelayNum), effectiveStake)
 		}
 
 		// TODO: add support for spec changes
