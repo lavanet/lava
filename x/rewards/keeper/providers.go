@@ -19,29 +19,31 @@ func (k Keeper) AggregateCU(ctx sdk.Context, subscription, provider string, chai
 		return
 	}
 
-	index := types.BasePayIndex{Provider: provider, ChainID: chainID}
-	basepay, found := k.getBasePay(ctx, index)
+	bp := types.BasePayWithIndex{Provider: provider, ChainId: chainID}
+	var found bool
+	bp.BasePay, found = k.getBasePay(ctx, bp)
 	if !found {
-		basepay = types.BasePay{IprpcCu: cu}
+		bp.BasePay = types.BasePay{IprpcCu: cu}
 	} else {
-		basepay.IprpcCu += cu
+		bp.BasePay.IprpcCu += cu
 	}
-	k.setBasePay(ctx, index, basepay)
+	k.setBasePay(ctx, bp)
 }
 
 func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int) {
-	index := types.BasePayIndex{Provider: provider, ChainID: chainid}
-	basepay, found := k.getBasePay(ctx, index)
+	bp := types.BasePayWithIndex{Provider: provider, ChainId: chainid}
+	var found bool
+	bp.BasePay, found = k.getBasePay(ctx, bp)
 	adjustedPay := adjustment.MulInt(rewards)
 	adjustedPay = sdk.MinDec(adjustedPay, sdk.NewDecFromInt(rewards))
 	if !found {
-		basepay = types.BasePay{Total: rewards, TotalAdjusted: adjustedPay}
+		bp.BasePay = types.BasePay{Total: rewards, TotalAdjusted: adjustedPay}
 	} else {
-		basepay.Total = basepay.Total.Add(rewards)
-		basepay.TotalAdjusted = basepay.TotalAdjusted.Add(adjustedPay)
+		bp.BasePay.Total = bp.BasePay.Total.Add(rewards)
+		bp.BasePay.TotalAdjusted = bp.BasePay.TotalAdjusted.Add(adjustedPay)
 	}
 
-	k.setBasePay(ctx, index, basepay)
+	k.setBasePay(ctx, bp)
 }
 
 // Distribute bonus rewards to providers across all chains based on performance
@@ -75,7 +77,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 		for _, basepay := range basepays {
 			if !specTotalPayout.IsZero() {
 				// calculate the providers bonus base on adjusted base pay
-				reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(totalbasepay).TruncateInt()
+				reward := specTotalPayout.Mul(basepay.BasePay.TotalAdjusted).QuoInt(totalbasepay).TruncateInt()
 				totalRewarded = totalRewarded.Add(reward)
 				if totalRewarded.GT(total) {
 					utils.LavaFormatError("provider rewards are larger than the distribution pool balance", nil,
@@ -85,15 +87,15 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 					return
 				}
 				// now give the reward the provider contributor and delegators
-				_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
+				_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainId, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
-				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.TotalAdjusted, reward.String())
+				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.BasePay.TotalAdjusted, reward.String())
 			}
 
 			// count iprpc cu
-			k.countIprpcCu(specCuMap, basepay.IprpcCu, spec.ChainID, basepay.Provider)
+			k.countIprpcCu(specCuMap, basepay.BasePay.IprpcCu, spec.ChainID, basepay.Provider)
 		}
 
 		details["block"] = strconv.FormatInt(ctx.BlockHeight(), 10)
@@ -179,7 +181,7 @@ func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, pop bool) 
 
 	totalBasePay := math.ZeroInt()
 	for _, basepay := range basepays {
-		totalBasePay = totalBasePay.Add(basepay.Total)
+		totalBasePay = totalBasePay.Add(basepay.BasePay.Total)
 	}
 	return basepays, totalBasePay
 }

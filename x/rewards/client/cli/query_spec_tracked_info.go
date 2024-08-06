@@ -42,12 +42,12 @@ func CmdQueryProviderReward() *cobra.Command {
 
 			queryClient := types.NewQueryClient(clientCtx)
 
-			params := &types.QueryProviderRewardRequest{
+			params := &types.QuerySpecTrackedInfoRequest{
 				ChainId:  reqChainID,
 				Provider: reqProvider,
 			}
 
-			res, err := queryClient.ProviderReward(cmd.Context(), params)
+			res, err := queryClient.SpecTrackedInfo(cmd.Context(), params)
 			if err != nil {
 				return err
 			}
