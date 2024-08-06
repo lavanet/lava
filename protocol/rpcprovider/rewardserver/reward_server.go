@@ -11,14 +11,14 @@ import (
 
 	terderminttypes "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/protocol/metrics"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v2/utils/rand"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 const (
@@ -46,6 +46,8 @@ type PaymentRequest struct {
 	Description         string
 	ChainID             string
 	ConsumerRewardsKey  string
+	ProviderAddress     string
+	RelayNumber         uint64
 }
 
 func (pr *PaymentRequest) String() string {
@@ -805,6 +807,20 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 		if err != nil {
 			return nil, err
 		}
+
+		// if these fail we don't fail the method, worst case scenario they will be empty. these fields are used for event parsing
+		providerString, ok := attributes["provider"]
+		if !ok {
+			utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field provider", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
+		}
+		relayNumberString, ok := attributes["relayNumber"]
+		if !ok {
+			utils.LavaFormatError("failed building PaymentRequest from relay_payment event missing field relayNumber", nil, utils.Attribute{Key: "attributes", Value: attributes}, utils.Attribute{Key: "idx", Value: idx})
+		}
+		relayNumber, err := strconv.ParseUint(relayNumberString, 10, 64)
+		if err != nil {
+			utils.LavaFormatError("failed building PaymentRequest from relay_payment failed parsing uint from relay number string", err, utils.Attribute{Key: "relayNumberString", Value: relayNumberString}, utils.Attribute{Key: "idx", Value: idx})
+		}
 		payment := &PaymentRequest{
 			CU:                  cu,
 			BlockHeightDeadline: block,
@@ -814,6 +830,8 @@ func BuildPaymentFromRelayPaymentEvent(event terderminttypes.Event, block int64)
 			Description:         description,
 			UniqueIdentifier:    uniqueID,
 			ChainID:             chainID,
+			ProviderAddress:     providerString,
+			RelayNumber:         relayNumber,
 		}
 		payments = append(payments, payment)
 	}

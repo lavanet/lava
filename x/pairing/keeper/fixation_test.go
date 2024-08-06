@@ -4,9 +4,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/testutil/common"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 

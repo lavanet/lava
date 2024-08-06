@@ -7,8 +7,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/x/conflict/types"
+	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/x/conflict/types"
 )
 
 // Prevent strconv unused error

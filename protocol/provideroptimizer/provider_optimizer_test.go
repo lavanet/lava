@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -257,6 +257,7 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 }
 
 // TODO::PRT-1114 This needs to be fixed asap. currently commented out as it prevents pushing unrelated code
+// Also on typescript sdk
 // func TestProviderOptimizerUpdatingLatency(t *testing.T) {
 // 	providerOptimizer := setupProviderOptimizer(1)
 // 	providersCount := 2

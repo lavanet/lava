@@ -6,7 +6,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/lavanet/lava/x/protocol/types"
+	"github.com/lavanet/lava/v2/x/protocol/types"
 )
 
 func (k msgServer) SetVersion(goCtx context.Context, msg *types.MsgSetVersion) (*types.MsgSetVersionResponse, error) {

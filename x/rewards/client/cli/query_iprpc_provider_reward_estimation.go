@@ -5,8 +5,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/rewards/types"
 	"github.com/spf13/cobra"
 )
 

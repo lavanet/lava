@@ -8,13 +8,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"github.com/lavanet/lava/app"
-	cmdcommon "github.com/lavanet/lava/cmd/common"
-	"github.com/lavanet/lava/cmd/lavad/cmd"
-	"github.com/lavanet/lava/protocol/badgegenerator"
-	"github.com/lavanet/lava/protocol/rpcconsumer"
-	"github.com/lavanet/lava/protocol/rpcprovider"
-	"github.com/lavanet/lava/protocol/statetracker"
+	"github.com/lavanet/lava/v2/app"
+	cmdcommon "github.com/lavanet/lava/v2/cmd/common"
+	"github.com/lavanet/lava/v2/cmd/lavad/cmd"
+	"github.com/lavanet/lava/v2/protocol/badgegenerator"
+	"github.com/lavanet/lava/v2/protocol/rpcconsumer"
+	"github.com/lavanet/lava/v2/protocol/rpcprovider"
+	"github.com/lavanet/lava/v2/protocol/statetracker"
+	utilscli "github.com/lavanet/lava/v2/utils/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -49,11 +50,12 @@ func main() {
 	testCmd.AddCommand(rpcconsumer.CreateTestRPCConsumerCobraCommand())
 	testCmd.AddCommand(rpcprovider.CreateTestRPCProviderCobraCommand())
 	testCmd.AddCommand(statetracker.CreateEventsCobraCommand())
+	testCmd.AddCommand(utilscli.NewMultiSendTxCmd())
+	testCmd.AddCommand(utilscli.NewQueryTotalGasCmd())
 
 	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{
-		flags.FlagChainID:        strings.ReplaceAll(app.Name, "-", ""),
-		flags.FlagKeyringBackend: "test",
-		flags.FlagGasAdjustment:  statetracker.DefaultGasAdjustment,
+		flags.FlagChainID:       strings.ReplaceAll(app.Name, "-", ""),
+		flags.FlagGasAdjustment: statetracker.DefaultGasAdjustment,
 	})
 
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {

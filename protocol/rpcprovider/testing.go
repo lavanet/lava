@@ -15,18 +15,18 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/gogo/status"
-	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingcli "github.com/lavanet/lava/x/pairing/client/cli"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	lvutil "github.com/lavanet/lava/v2/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	pairingcli "github.com/lavanet/lava/v2/x/pairing/client/cli"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
@@ -86,7 +86,7 @@ func validateCORSHeaders(resp *http.Response) error {
 	// Check for the presence of "Access-Control-Allow-Origin" header
 	corsOrigin := resp.Header.Get("Access-Control-Allow-Origin")
 	if corsOrigin != "*" {
-		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil, utils.Attribute{Key: "corsOrigin", Value: corsOrigin})
+		return utils.LavaFormatError("CORS check failed. Expected 'Access-Control-Allow-Origin: *' but not found.", nil, utils.Attribute{Key: "returned code", Value: resp.StatusCode}, utils.Attribute{Key: "corsOrigin", Value: corsOrigin})
 	}
 
 	// Headers that must be present in "Access-Control-Allow-Headers"
@@ -179,7 +179,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 
 				// CORS check
 				if err := PerformCORSCheck(endpoint); err != nil {
-					return 0, versions, 0, err
+					return 0, versions, 0, utils.LavaFormatError("invalid CORS check", err, utils.Attribute{Key: "returnedGuid", Value: probeResp.GetGuid()}, utils.Attribute{Key: "guid", Value: guid}, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 				}
 
 				relayRequest := &pairingtypes.RelayRequest{

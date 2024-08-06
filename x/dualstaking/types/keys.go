@@ -26,10 +26,6 @@ const (
 	// prefix for the unbonding timer store
 	UnbondingPrefix = "unbonding-ts"
 
-	// empty provider consts
-	EMPTY_PROVIDER         = "empty_provider"
-	EMPTY_PROVIDER_CHAINID = ""
-
 	// DisableDualstakingHooks prefix
 	DisableDualstakingHookPrefix = "disable-dualstaking-hooks"
 

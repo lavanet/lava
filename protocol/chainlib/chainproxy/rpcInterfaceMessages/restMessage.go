@@ -6,9 +6,11 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/parser"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/sigs"
 )
 
 type RestMessage struct {
@@ -16,6 +18,22 @@ type RestMessage struct {
 	Path     string
 	SpecPath string
 	chainproxy.BaseMessage
+}
+
+func (rm *RestMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return ""
+}
+
+// get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
+func (rm *RestMessage) GetRawRequestHash() ([]byte, error) {
+	headers := rm.GetHeaders()
+	headersByteArray, err := json.Marshal(headers)
+	if err != nil {
+		utils.LavaFormatError("Failed marshalling headers on jsonRpc message", err, utils.LogAttr("headers", headers))
+		return []byte{}, err
+	}
+	pathByteArray := []byte(rm.Path)
+	return sigs.HashMsg(append(append(pathByteArray, rm.Msg...), headersByteArray...)), nil
 }
 
 func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string) {
@@ -40,13 +58,13 @@ func (jm RestMessage) CheckResponseError(data []byte, httpStatusCode int) (hasEr
 
 // GetParams will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
-func (cp RestMessage) GetParams() interface{} {
-	urlObj, err := url.Parse(cp.Path)
+func (rm RestMessage) GetParams() interface{} {
+	urlObj, err := url.Parse(rm.Path)
 	if err != nil {
 		return nil
 	}
 	parsedMethod := urlObj.Path
-	objectSpec := strings.Split(cp.SpecPath, "/")
+	objectSpec := strings.Split(rm.SpecPath, "/")
 	objectPath := strings.Split(parsedMethod, "/")
 
 	parameters := map[string]interface{}{}
@@ -68,22 +86,26 @@ func (cp RestMessage) GetParams() interface{} {
 
 func (rm *RestMessage) UpdateLatestBlockInMessage(latestBlock uint64, modifyContent bool) (success bool) {
 	// return rm.SetLatestBlockWithHeader(latestBlock, modifyContent)
-	// removed until behaviour inconsistency with the cosmos sdk header is solved
+	// removed until behavior inconsistency with the cosmos sdk header is solved
 	return false
 	// if !done else we need a different setter
 }
 
 // GetResult will be deprecated after we remove old client
 // Currently needed because of parser.RPCInput interface
-func (cp RestMessage) GetResult() json.RawMessage {
+func (rm RestMessage) GetResult() json.RawMessage {
 	return nil
 }
 
-func (cp RestMessage) GetMethod() string {
-	return cp.Path
+func (rm RestMessage) GetMethod() string {
+	return rm.Path
+}
+
+func (rm RestMessage) GetID() json.RawMessage {
+	return nil
 }
 
 // ParseBlock parses default block number from string to int
-func (cp RestMessage) ParseBlock(inp string) (int64, error) {
+func (rm RestMessage) ParseBlock(inp string) (int64, error) {
 	return parser.ParseDefaultBlockParameter(inp)
 }

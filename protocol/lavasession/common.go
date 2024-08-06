@@ -12,14 +12,15 @@ import (
 	"strings"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	"golang.org/x/exp/slices"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/pairing/keeper/scores"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/pairing/keeper/scores"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -60,7 +61,7 @@ const (
 
 func IsSessionSyncLoss(err error) bool {
 	code := status.Code(err)
-	return code == codes.Code(SessionOutOfSyncError.ABCICode())
+	return code == codes.Code(SessionOutOfSyncError.ABCICode()) || sdkerrors.IsOf(err, SessionOutOfSyncError)
 }
 
 func ConnectGRPCClient(ctx context.Context, address string, allowInsecure bool, skipTLS bool, allowCompression bool) (*grpc.ClientConn, error) {

@@ -10,9 +10,9 @@ import (
 	"github.com/goccy/go-json"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 const (
@@ -28,6 +28,7 @@ type RPCInput interface {
 	ParseBlock(block string) (int64, error)
 	GetHeaders() []pairingtypes.Metadata
 	GetMethod() string
+	GetID() json.RawMessage
 }
 
 func ParseDefaultBlockParameter(block string) (int64, error) {
@@ -438,8 +439,16 @@ func parseDictionaryOrOrdered(rpcInput RPCInput, input []string, dataSource int)
 			return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(val))
 		}
 
-		// Else return not set error
-		return nil, utils.LavaFormatWarning("Failed parsing parseDictionaryOrOrdered", ValueNotSetError, utils.LogAttr("propName", propName), utils.LogAttr("inp", inp), utils.LogAttr("unmarshalledDataTyped", unmarshalledDataTyped), utils.LogAttr("method", rpcInput.GetMethod()))
+		// Else return not set error)
+		utils.LavaFormatDebug("Failed parsing parseDictionaryOrOrdered",
+			utils.LogAttr("propName", propName),
+			utils.LogAttr("inp", inp),
+			utils.LogAttr("unmarshalledDataTyped", unmarshalledDataTyped),
+			utils.LogAttr("method", rpcInput.GetMethod()),
+			utils.LogAttr("err", ValueNotSetError),
+		)
+
+		return nil, ValueNotSetError
 	case string:
 		return appendInterfaceToInterfaceArrayWithError(blockInterfaceToString(unmarshalledDataTyped))
 	default:

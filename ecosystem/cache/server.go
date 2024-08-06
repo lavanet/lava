@@ -11,13 +11,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/utils/lavaslices"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/spf13/pflag"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -35,7 +35,7 @@ const (
 	DefaultExpirationTimeFinalizedMultiplier     = 1.0
 	DefaultExpirationTimeNonFinalizedMultiplier  = 1.0
 	DefaultExpirationTimeFinalized               = time.Hour
-	DefaultExpirationNodeErrors                  = 5 * time.Second
+	DefaultExpirationNodeErrors                  = 250 * time.Millisecond
 	CacheNumCounters                             = 100000000 // expect 10M items
 	unixPrefix                                   = "unix:"
 )

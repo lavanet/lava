@@ -3,7 +3,7 @@ package chaintracker
 import (
 	"time"
 
-	"github.com/lavanet/lava/protocol/metrics"
+	"github.com/lavanet/lava/v2/protocol/metrics"
 )
 
 const (
@@ -22,6 +22,7 @@ type ChainTrackerConfig struct {
 	ServerBlockMemory        uint64
 	BlocksCheckpointDistance uint64 // this causes the chainTracker to trigger it's checkpoint every X blocks
 	Pmetrics                 *metrics.ProviderMetricsManager
+	PollingTimeMultiplier    int
 }
 
 func (cnf *ChainTrackerConfig) validate() error {

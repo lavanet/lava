@@ -4,9 +4,9 @@ import (
 	"sync"
 	"time"
 
-	metrics "github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	metrics "github.com/lavanet/lava/v2/protocol/metrics"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 const (
@@ -18,6 +18,7 @@ type ReportedProviders struct {
 	addedToPurgeAndReport map[string]*ReportedProviderEntry // list of purged providers to report for QoS unavailability. (easier to search maps.)
 	lock                  sync.RWMutex
 	reporter              metrics.Reporter
+	chainId               string
 }
 
 type ReportedProviderEntry struct {
@@ -52,22 +53,25 @@ func (rp *ReportedProviders) GetReportedProviders() []*pairingtypes.ReportedProv
 	return reportedProviders
 }
 
-func (rp *ReportedProviders) ReportProvider(address string, errors uint64, disconnections uint64, reconnectCB func() error) {
+func (rp *ReportedProviders) ReportProvider(providerAddr string, errors uint64, disconnections uint64, reconnectCB func() error, errorsForReport []error) {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
-	if _, ok := rp.addedToPurgeAndReport[address]; !ok { // add if it doesn't exist already
-		utils.LavaFormatInfo("Reporting Provider for unresponsiveness", utils.Attribute{Key: "Provider address", Value: address})
-		rp.addedToPurgeAndReport[address] = &ReportedProviderEntry{}
-		rp.addedToPurgeAndReport[address].addedTime = time.Now()
+	if _, ok := rp.addedToPurgeAndReport[providerAddr]; !ok { // add if it doesn't exist already
+		utils.LavaFormatInfo("Reporting Provider for unresponsiveness", utils.Attribute{Key: "Provider address", Value: providerAddr})
+		rp.addedToPurgeAndReport[providerAddr] = &ReportedProviderEntry{}
+		rp.addedToPurgeAndReport[providerAddr].addedTime = time.Now()
 	}
-	rp.addedToPurgeAndReport[address].Disconnections += disconnections
-	rp.addedToPurgeAndReport[address].Errors += errors
+	rp.addedToPurgeAndReport[providerAddr].Disconnections += disconnections
+	rp.addedToPurgeAndReport[providerAddr].Errors += errors
 	if reconnectCB != nil {
-		rp.addedToPurgeAndReport[address].reconnectCB = reconnectCB
+		rp.addedToPurgeAndReport[providerAddr].reconnectCB = reconnectCB
 	}
 	if debugReportedProviders {
 		utils.LavaFormatDebug("[debugReportedProviders] adding provider to reported providers", utils.LogAttr("rp.addedToPurgeAndReport", rp.addedToPurgeAndReport))
 	}
+
+	// update metrics on the report.
+	go rp.AppendReport(metrics.NewReportsRequest(providerAddr, errorsForReport, rp.chainId))
 }
 
 // will be called after a disconnected provider got a valid connection
@@ -123,7 +127,7 @@ func (rp *ReportedProviders) ReconnectProviders() {
 			if err == nil {
 				rp.RemoveReport(candidate.address)
 			} else {
-				rp.ReportProvider(candidate.address, 0, 1, nil) // add a disconnection
+				rp.ReportProvider(candidate.address, 0, 1, nil, []error{err}) // add a disconnection
 			}
 			utils.LavaFormatDebug("reconnect attempt", utils.Attribute{Key: "provider", Value: candidate.address}, utils.Attribute{Key: "success", Value: err == nil})
 		}
@@ -140,8 +144,8 @@ func (rp *ReportedProviders) AppendReport(report metrics.ReportsRequest) {
 	rp.reporter.AppendReport(report)
 }
 
-func NewReportedProviders(reporter metrics.Reporter) *ReportedProviders {
-	rp := &ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}, reporter: reporter}
+func NewReportedProviders(reporter metrics.Reporter, chainId string) *ReportedProviders {
+	rp := &ReportedProviders{addedToPurgeAndReport: map[string]*ReportedProviderEntry{}, reporter: reporter, chainId: chainId}
 	go func() {
 		ticker := time.NewTicker(ReconnectCandidateTime)
 		defer ticker.Stop()

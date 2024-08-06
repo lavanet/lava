@@ -5,20 +5,22 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 const (
-	MaxCallsPerRelay = 50
+	MaxCallsPerRelay                   = 50
+	NumberOfRetriesAllowedOnNodeErrors = 2 // we will try maximum additional 2 relays on node errors
 )
 
 type Selection int
@@ -28,7 +30,53 @@ const (
 	BestResult                  // get the best result, even if it means waiting
 )
 
-func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProviders, requiredSuccesses int, chainMessage chainlib.ChainMessage, consumerConsistency *ConsumerConsistency, dappID string, consumerIp string) *RelayProcessor {
+type MetricsInterface interface {
+	SetRelayNodeErrorMetric(chainId string, apiInterface string)
+	SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string)
+	SetNodeErrorAttemptMetric(chainId string, apiInterface string)
+}
+
+type chainIdAndApiInterfaceGetter interface {
+	GetChainIdAndApiInterface() (string, string)
+}
+
+type RelayProcessor struct {
+	usedProviders                *lavasession.UsedProviders
+	responses                    chan *relayResponse
+	requiredSuccesses            int
+	nodeResponseErrors           RelayErrors
+	protocolResponseErrors       RelayErrors
+	successResults               []common.RelayResult
+	lock                         sync.RWMutex
+	chainMessage                 chainlib.ChainMessage
+	guid                         uint64
+	selection                    Selection
+	consumerConsistency          *ConsumerConsistency
+	dappID                       string
+	consumerIp                   string
+	skipDataReliability          bool
+	debugRelay                   bool
+	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
+	metricsInf                   MetricsInterface
+	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
+	disableRelayRetry            bool
+	relayRetriesManager          *RelayRetriesManager
+}
+
+func NewRelayProcessor(
+	ctx context.Context,
+	usedProviders *lavasession.UsedProviders,
+	requiredSuccesses int,
+	chainMessage chainlib.ChainMessage,
+	consumerConsistency *ConsumerConsistency,
+	dappID string,
+	consumerIp string,
+	debugRelay bool,
+	metricsInf MetricsInterface,
+	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
+	disableRelayRetry bool,
+	relayRetriesManager *RelayRetriesManager,
+) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
 	if chainlib.GetStateful(chainMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
@@ -38,36 +86,23 @@ func NewRelayProcessor(ctx context.Context, usedProviders *lavasession.UsedProvi
 		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", requiredSuccesses))
 	}
 	return &RelayProcessor{
-		usedProviders:          usedProviders,
-		requiredSuccesses:      requiredSuccesses,
-		responses:              make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
-		nodeResponseErrors:     RelayErrors{relayErrors: []RelayError{}},
-		protocolResponseErrors: RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true},
-		chainMessage:           chainMessage,
-		guid:                   guid,
-		selection:              selection,
-		consumerConsistency:    consumerConsistency,
-		dappID:                 dappID,
-		consumerIp:             consumerIp,
+		usedProviders:                usedProviders,
+		requiredSuccesses:            requiredSuccesses,
+		responses:                    make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
+		nodeResponseErrors:           RelayErrors{relayErrors: []RelayError{}},
+		protocolResponseErrors:       RelayErrors{relayErrors: []RelayError{}, onFailureMergeAll: true},
+		chainMessage:                 chainMessage,
+		guid:                         guid,
+		selection:                    selection,
+		consumerConsistency:          consumerConsistency,
+		dappID:                       dappID,
+		consumerIp:                   consumerIp,
+		debugRelay:                   debugRelay,
+		metricsInf:                   metricsInf,
+		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
+		disableRelayRetry:            disableRelayRetry,
+		relayRetriesManager:          relayRetriesManager,
 	}
-}
-
-type RelayProcessor struct {
-	usedProviders           *lavasession.UsedProviders
-	responses               chan *relayResponse
-	requiredSuccesses       int
-	nodeResponseErrors      RelayErrors
-	protocolResponseErrors  RelayErrors
-	successResults          []common.RelayResult
-	lock                    sync.RWMutex
-	chainMessage            chainlib.ChainMessage
-	guid                    uint64
-	selection               Selection
-	consumerConsistency     *ConsumerConsistency
-	dappID                  string
-	consumerIp              string
-	skipDataReliability     bool
-	allowSessionDegradation uint32 // used in the scenario where extension was previously used.
 }
 
 // true if we never got an extension. (default value)
@@ -186,6 +221,7 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		response.relayResult.Finalized = false // shut down data reliability
 		// }
 	}
+
 	if response.relayResult.Reply == nil {
 		utils.LavaFormatError("got to setValidResponse with nil Reply",
 			response.err,
@@ -200,6 +236,12 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 	blockSeen := response.relayResult.Reply.LatestBlock
 	// nil safe
 	rp.consumerConsistency.SetSeenBlock(blockSeen, rp.dappID, rp.consumerIp)
+	// on subscribe results, we just append to successful results instead of parsing results because we already have a validation.
+	if chainlib.IsFunctionTagOfType(rp.chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
+		rp.successResults = append(rp.successResults, response.relayResult)
+		return
+	}
+
 	// check response error
 	foundError, errorMessage := rp.chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
 	if foundError {
@@ -208,9 +250,13 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		// if we decide to wait and timeout happens we will take the majority of response messages
 		err := fmt.Errorf(errorMessage)
 		rp.nodeResponseErrors.relayErrors = append(rp.nodeResponseErrors.relayErrors, RelayError{err: err, ProviderInfo: response.relayResult.ProviderInfo, response: response})
+		// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
+		if rp.selection != BestResult {
+			go rp.metricsInf.SetRelayNodeErrorMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
+			utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", err), utils.LogAttr("provider", response.relayResult.ProviderInfo), utils.LogAttr("Request", rp.chainMessage.GetApi().Name), utils.LogAttr("requested_block", reqBlock))
+		}
 		return
 	}
-
 	rp.successResults = append(rp.successResults, response.relayResult)
 }
 
@@ -258,6 +304,51 @@ func (rp *RelayProcessor) HasResults() bool {
 	return resultsCount+nodeErrors+protocolErrors > 0
 }
 
+func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
+	hash, err := rp.chainMessage.GetRawRequestHash()
+	hashString := ""
+	if err == nil {
+		hashString = string(hash)
+	}
+	return hashString, err
+}
+
+// Deciding wether we should send a relay retry attempt based on the node error
+func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, hash string) bool {
+	// Retries will be performed based on the following scenarios:
+	// 1. rp.disableRelayRetry == false, In case we want to try again if we have a node error.
+	// 2. If we have 0 successful relays and we have only node errors.
+	// 3. Hash calculation was successful.
+	// 4. Number of retries < NumberOfRetriesAllowedOnNodeErrors.
+	if !rp.disableRelayRetry && resultsCount == 0 && hashErr == nil {
+		if nodeErrors <= NumberOfRetriesAllowedOnNodeErrors {
+			// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
+
+			// Check hash already exist, if it does, we don't want to retry
+			if !rp.relayRetriesManager.CheckHashInCache(hash) {
+				// If we didn't find the hash in the hash map we can retry
+				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
+				go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
+				return false
+			}
+			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))
+		} else {
+			// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
+			chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
+			utils.LavaFormatWarning("Failed to recover retries on node errors, might be an invalid input", nil,
+				utils.LogAttr("api", rp.chainMessage.GetApi().Name),
+				utils.LogAttr("params", rp.chainMessage.GetRPCMessage().GetParams()),
+				utils.LogAttr("chainId", chainId),
+				utils.LogAttr("apiInterface", apiInterface),
+				utils.LogAttr("hash", hash),
+			)
+			rp.relayRetriesManager.AddHashToCache(hash)
+		}
+	}
+	// Do not perform a retry
+	return true
+}
+
 func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 	if rp == nil {
 		return false
@@ -265,15 +356,30 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	resultsCount := len(rp.successResults)
+
+	hash, hashErr := rp.getInputMsgInfoHashString()
 	if resultsCount >= rp.requiredSuccesses {
+		if hashErr == nil { // Incase we had a successful relay we can remove the hash from our relay retries map
+			// Use a routine to run it in parallel
+			go rp.relayRetriesManager.RemoveHashFromCache(hash)
+		}
+		// Check if we need to add node errors retry metrics
+		if rp.selection == Quorum {
+			// If nodeErrors length is larger than 0, our retry mechanism was activated. we add our metrics now.
+			nodeErrors := len(rp.nodeResponseErrors.relayErrors)
+			if nodeErrors > 0 {
+				chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
+				go rp.metricsInf.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, strconv.Itoa(nodeErrors))
+			}
+		}
 		return true
 	}
 	if rp.selection == Quorum {
-		// we need a quorum of all node results
+		// We need a quorum of all node results
 		nodeErrors := len(rp.nodeResponseErrors.relayErrors)
 		if nodeErrors+resultsCount >= rp.requiredSuccesses {
-			// we have enough node results for our quorum
-			return true
+			// Retry on node error flow:
+			return rp.shouldRetryRelay(resultsCount, hashErr, nodeErrors, hash)
 		}
 	}
 	// on BestResult we want to retry if there is no success
@@ -407,6 +513,21 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 	nodeResults := rp.nodeResultsInner()
 	// there are not enough successes, let's check if there are enough node errors
+
+	if rp.debugRelay {
+		// adding as much debug info as possible. all successful relays, all node errors and all protocol errors
+		utils.LavaFormatDebug("[Processing Result] Debug Relay", utils.LogAttr("rp.requiredSuccesses", rp.requiredSuccesses))
+		utils.LavaFormatDebug("[Processing Debug] number of node results", utils.LogAttr("len(rp.successResults)", len(rp.successResults)), utils.LogAttr("len(rp.nodeResponseErrors.relayErrors)", len(rp.nodeResponseErrors.relayErrors)), utils.LogAttr("len(rp.protocolResponseErrors.relayErrors)", len(rp.protocolResponseErrors.relayErrors)))
+		for idx, result := range rp.successResults {
+			utils.LavaFormatDebug("[Processing Debug] success result", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+		}
+		for idx, result := range rp.nodeResponseErrors.relayErrors {
+			utils.LavaFormatDebug("[Processing Debug] node result", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+		}
+		for idx, result := range rp.protocolResponseErrors.relayErrors {
+			utils.LavaFormatDebug("[Processing Debug] protocol error", utils.LogAttr("idx", idx), utils.LogAttr("result", result))
+		}
+	}
 
 	if len(nodeResults) >= rp.requiredSuccesses {
 		if rp.selection == Quorum {

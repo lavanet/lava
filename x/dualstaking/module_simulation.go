@@ -8,9 +8,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
-	"github.com/lavanet/lava/testutil/sample"
-	dualstakingsimulation "github.com/lavanet/lava/x/dualstaking/simulation"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	"github.com/lavanet/lava/v2/testutil/sample"
+	dualstakingsimulation "github.com/lavanet/lava/v2/x/dualstaking/simulation"
+	"github.com/lavanet/lava/v2/x/dualstaking/types"
 )
 
 // avoid unused import issue

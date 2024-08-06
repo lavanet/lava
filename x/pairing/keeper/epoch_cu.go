@@ -4,8 +4,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/cachekv"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 // UniqueEpochSession is used to detect double spend attacks

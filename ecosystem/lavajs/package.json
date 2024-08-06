@@ -1,6 +1,6 @@
 {
   "name": "@lavanet/lavajs",
-  "version": "1.2.2",
+  "version": "2.1.3",
   "description": "lavajs",
   "author": "Lava Network",
   "homepage": "https://github.com/lavanet/lava/tree/main/ecosystem/lavajs#readme",
@@ -48,7 +48,7 @@
     "url": "https://github.com/lavanet/lava/issues"
   },
   "devDependencies": {
-    "@cosmology/telescope": "^1.5.1",
+    "@cosmology/telescope": "^1.8.3",
     "@protobufs/amino": "^0.0.11",
     "@protobufs/cosmos": "^0.1.0",
     "@protobufs/cosmos_proto": "^0.0.10",

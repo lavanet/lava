@@ -1,7 +1,7 @@
 package format
 
 import (
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 // input formatter works on the input data

@@ -3,7 +3,7 @@ package metrics
 import (
 	"net/http"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

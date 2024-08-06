@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 type msgServer struct {

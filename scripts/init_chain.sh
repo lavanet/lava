@@ -73,16 +73,15 @@ echo $(cat "$path$genesis")
 os_name=$(uname)
 case "$(uname)" in
   Darwin)
-    SED_INLINE="-i ''" ;;
+    SED_INLINE=(-i '') ;;
   Linux)
-    SED_INLINE="-i" ;;
+    SED_INLINE=(-i) ;;
   *)
     echo "unknown system: $(uname)"
     exit 1 ;;
 esac
 
-
-sed $SED_INLINE \
+sed "${SED_INLINE[@]}" \
 -e 's/timeout_propose = .*/timeout_propose = "1s"/' \
 -e 's/timeout_propose_delta = .*/timeout_propose_delta = "500ms"/' \
 -e 's/timeout_prevote = .*/timeout_prevote = "1s"/' \
@@ -93,16 +92,16 @@ sed $SED_INLINE \
 -e 's/skip_timeout_commit = .*/skip_timeout_commit = false/' "$path$config"
 
 # Edit app.toml file
-sed $SED_INLINE -e "s/enable = .*/enable = true/" "$path$app"
-sed $SED_INLINE -e "/Enable defines if the Rosetta API server should be enabled.*/{n;s/enable = .*/enable = false/}" "$path$app"
+sed "${SED_INLINE[@]}" -e "s/enable = .*/enable = true/" "$path$app"
+sed "${SED_INLINE[@]}" -e "/Enable defines if the Rosetta API server should be enabled.*/{n;s/enable = .*/enable = false/;}" "$path$app"
 
 
 # Add users
 users=("alice" "bob" "user1" "user2" "user3" "user4" "user5" "servicer1" "servicer2" "servicer3" "servicer4" "servicer5" "servicer6" "servicer7" "servicer8" "servicer9" "servicer10")
 
 for user in "${users[@]}"; do
-    lavad keys add "$user"
-    lavad add-genesis-account "$user" 50000000000000ulava
+    lavad keys add "$user" --keyring-backend test
+    lavad add-genesis-account "$user" 50000000000000ulava --keyring-backend test
 done
 
 # add validators_allocation_pool for validators block rewards
@@ -114,6 +113,6 @@ else
     lavad add-genesis-account providers_rewards_allocation_pool 30000000000000ulava --module-account 
 fi
 lavad add-genesis-account iprpc_pool 0ulava --module-account
-lavad gentx alice 10000000000000ulava --chain-id $chainID
+lavad gentx alice 10000000000000ulava --chain-id $chainID --keyring-backend test
 lavad collect-gentxs
 lavad start --pruning=nothing

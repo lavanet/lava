@@ -10,15 +10,14 @@
 package sigs
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 
-	btcSecp256k1 "github.com/btcsuite/btcd/btcec"
+	btcSecp256k1 "github.com/btcsuite/btcd/btcec/v2"
+	btcSecp256k1Ecdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	tendermintcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto"
@@ -26,7 +25,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 type Account struct {
@@ -62,7 +61,7 @@ func Sign(pkey *btcSecp256k1.PrivateKey, data Signable) ([]byte, error) {
 		msgData = HashMsg(msgData)
 	}
 
-	sig, err := btcSecp256k1.SignCompact(btcSecp256k1.S256(), pkey, msgData, false)
+	sig, err := btcSecp256k1Ecdsa.SignCompact(pkey, msgData, false)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func RecoverPubKey(data Signable) (secp256k1.PubKey, error) {
 	}
 
 	// Recover public key from signature
-	recPub, _, err := btcSecp256k1.RecoverCompact(btcSecp256k1.S256(), sig, msgData)
+	recPub, _, err := btcSecp256k1Ecdsa.RecoverCompact(sig, msgData)
 	if err != nil {
 		return secp256k1.PubKey{}, utils.LavaFormatError("RecoverCompact", err,
 			utils.Attribute{Key: "sigLen", Value: len(sig)},
@@ -153,7 +152,7 @@ func GetPrivKey(clientCtx client.Context, keyName string) (*btcSecp256k1.Private
 		return nil, errors.New("incompatible private key algorithm")
 	}
 
-	priv, _ := btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), privKey.Bytes())
+	priv, _ := btcSecp256k1.PrivKeyFromBytes(privKey.Bytes())
 	return priv, nil
 }
 
@@ -167,7 +166,7 @@ func GenerateFloatingKey() (secretKey *btcSecp256k1.PrivateKey, addr sdk.AccAddr
 	sk := secp256k1.GenPrivKey()
 	PubKey := sk.PubKey()
 	addr = sdk.AccAddress(PubKey.Address())
-	secretKey, _ = btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), sk.Bytes())
+	secretKey, _ = btcSecp256k1.PrivKeyFromBytes(sk.Bytes())
 	return
 }
 
@@ -211,15 +210,7 @@ func GenerateDeterministicFloatingKey(rand io.Reader) (acc Account) {
 	acc.PubKey = acc.sk.PubKey()
 	acc.Addr = sdk.AccAddress(acc.PubKey.Address())
 	acc.ConsKey = ed25519.GenPrivKeyFromSecret(privkeySeed)
-	acc.SK, _ = btcSecp256k1.PrivKeyFromBytes(btcSecp256k1.S256(), acc.sk.Bytes())
+	acc.SK, _ = btcSecp256k1.PrivKeyFromBytes(acc.sk.Bytes())
 
 	return
-}
-
-func DeterministicNewPrivateKey(curve elliptic.Curve, rand io.Reader) (*btcSecp256k1.PrivateKey, error) {
-	key, err := ecdsa.GenerateKey(curve, rand)
-	if err != nil {
-		return nil, err
-	}
-	return (*btcSecp256k1.PrivateKey)(key), nil
 }

@@ -9,12 +9,12 @@ import (
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	processmanager "github.com/lavanet/lava/ecosystem/lavavisor/pkg/process"
-	lvutil "github.com/lavanet/lava/ecosystem/lavavisor/pkg/util"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
+	processmanager "github.com/lavanet/lava/v2/ecosystem/lavavisor/pkg/process"
+	lvutil "github.com/lavanet/lava/v2/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/protocol/types"
+	"github.com/lavanet/lava/v2/x/protocol/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

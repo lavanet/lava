@@ -18,10 +18,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/sigs"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -124,11 +124,12 @@ func (connector *Connector) createConnection(ctx context.Context, nodeUrl common
 		timeout := common.AverageWorldLatency * (1 + time.Duration(numberOfConnectionAttempts))
 		nctx, cancel := nodeUrl.LowerContextTimeoutWithDuration(ctx, timeout)
 		// add auth path
-		rpcClient, err = rpcclient.DialContext(nctx, nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url))
+		authPathNodeUrl := nodeUrl.AuthConfig.AddAuthPath(nodeUrl.Url)
+		rpcClient, err = rpcclient.DialContext(nctx, authPathNodeUrl)
 		if err != nil {
 			utils.LavaFormatWarning("Could not connect to the node, retrying", err, []utils.Attribute{
 				{Key: "Current Number Of Connections", Value: currentNumberOfConnections},
-				{Key: "Network Address", Value: nodeUrl.UrlStr()},
+				{Key: "Network Address", Value: authPathNodeUrl},
 				{Key: "Number Of Attempts", Value: numberOfConnectionAttempts},
 				{Key: "timeout", Value: timeout},
 			}...)
