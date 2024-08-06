@@ -110,6 +110,12 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, 
 	// first we try to parse the value with the block parser
 	result, err := parse(rpcInput, blockParser, PARSE_PARAMS)
 	if err != nil || result == nil {
+		utils.LavaFormatDebug("ParseBlockFromParams - parse failed",
+			utils.LogAttr("error", err),
+			utils.LogAttr("result", result),
+			utils.LogAttr("blockParser", blockParser),
+			utils.LogAttr("rpcInput.Params", rpcInput.GetParams()),
+		)
 		parsedBlockInfo.parsedBlock = spectypes.NOT_APPLICABLE
 		return parsedBlockInfo
 	}
@@ -151,6 +157,12 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, 
 func ParseFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (string, error) {
 	result, err := parse(rpcInput, blockParser, PARSE_RESULT)
 	if err != nil || result == nil {
+		utils.LavaFormatDebug("ParseBlockFromParams - parse failed",
+			utils.LogAttr("error", err),
+			utils.LogAttr("result", result),
+			utils.LogAttr("blockParser", blockParser),
+			utils.LogAttr("rpcInput.Result", rpcInput.GetResult()),
+		)
 		return "", err
 	}
 
