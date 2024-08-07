@@ -318,19 +318,33 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	return hashString, err
 }
 
-func (rp *RelayProcessor) forceArchiveNodeIfNeeded() {
+func (rp *RelayProcessor) ForceArchiveNodeIfNeeded() {
+	rp.lock.Lock()
+	defer rp.lock.Unlock()
+	rp.forceArchiveNodeIfNeededInner()
+}
+
+func (rp *RelayProcessor) forceArchiveNodeIfNeededInner() {
 	if rp.archiveExtensionUpdater == nil || rp.archiveExtensionUpdater.IsOriginallyArchiveExtension() {
 		// We don't have an archive extension updater or we already have an archive extension asked from user, we don't need to force it
 		return
 	}
 
 	if len(rp.chainMessage.GetRequestedBlocksHashes()) > 0 {
+		// These are the cases that will happen:
+		// 1. archiveNodeRetriesCount == 0
+		// 		-> we set currentRelayRetryIsArchive to true and set archive
+		// 2. archiveNodeRetriesCount == NumberOfRetriesAllowedOnNodeErrorsForArchive && currentRelayRetryIsArchive == false
+		// 		-> we set currentRelayRetryIsArchive to false and remove archive
+		// 3. archiveNodeRetriesCount == NumberOfRetriesAllowedOnNodeErrorsForArchive && currentRelayRetryIsArchive == true
+		// 		-> we do nothing, and that will happen on future calls
+
 		if rp.archiveNodeRetriesCount < NumberOfRetriesAllowedOnNodeErrorsForArchive {
 			// If we have a hash and we are not in archive mode, we can retry with archive node
 			rp.archiveExtensionUpdater.AddArchiveExtensionToMessage()
 			rp.archiveNodeRetriesCount++
 			rp.currentRelayRetryIsArchive = true
-		} else {
+		} else if rp.currentRelayRetryIsArchive {
 			// We already tried archive node, we can reset the flag
 			rp.archiveExtensionUpdater.RemoveArchiveExtensionFromMessage()
 			rp.currentRelayRetryIsArchive = false
@@ -358,7 +372,7 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 				// If we didn't find the hash in the hash map we can retry
 				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
 				go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
-				rp.forceArchiveNodeIfNeeded()
+				rp.forceArchiveNodeIfNeededInner()
 				return false
 			}
 			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))
