@@ -1125,6 +1125,10 @@ func TestUpdateReputationEpochQosScore(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, epochScore1.LT(epochScore2)) // score is lower because QoS is excellent
 	require.True(t, variance1.GT(variance2))     // variance is higher because the QoS is significantly differnet from DefaultQos
+
+	entry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider1)
+	require.True(t, found)
+	require.True(t, entry.Stake.IsEqual(r1.Stake))
 }
 
 // TestUpdateReputationEpochQosScoreTruncation tests the following scenarios:
