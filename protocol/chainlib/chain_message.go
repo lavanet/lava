@@ -147,6 +147,7 @@ func (pm *baseChainMessageContainer) OverrideExtensions(extensionNames []string,
 }
 
 func (pm *baseChainMessageContainer) SetExtension(extension *spectypes.Extension) {
+	// TODO: Need locks?
 	if len(pm.extensions) > 0 {
 		for _, ext := range pm.extensions {
 			if ext.Name == extension.Name {
