@@ -39,9 +39,14 @@ service Query {
   }
 
   // Queries a list of Current items.
-  rpc TrackedUsage(QuerySubscriptionTrackedUsage) returns (QuerySubscriptionTrackedUsageResponse) {
+  rpc TrackedUsage(QuerySubscriptionTrackedUsageRequest) returns (QuerySubscriptionTrackedUsageResponse) {
     option (google.api.http).get = "/lavanet/lava/subscription/tracked_usage/{subscription}";
   }
+
+// Queries a rewards estimation.
+rpc EstimatedRewards(QueryEstimatedRewardsRequest) returns (QueryEstimatedRewardsResponse) {
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount}";
+}
 
   // this line is used by starport scaffolding # 2
 }
@@ -104,7 +109,7 @@ message QueryNextToMonthExpiryResponse {
   repeated TimerExpiryInfo subscriptions = 1 [(gogoproto.nullable) = false];
 }
 
-message QuerySubscriptionTrackedUsage {
+message QuerySubscriptionTrackedUsageRequest {
   string subscription = 1;
 }
 
@@ -112,5 +117,27 @@ message QuerySubscriptionTrackedUsageResponse {
   Subscription subscription = 1 [(gogoproto.nullable) = true];
   repeated TrackedCuInfo usage = 2;
   uint64 total_usage = 3;
+}
+
+message QueryEstimatedRewardsRequest {
+  string provider = 1;
+  string chain_id = 2;
+  string amount = 3; 
+}
+
+message EstimatedRewardInfo {
+  string source =1;
+  repeated cosmos.base.v1beta1.Coin amount = 2 [
+        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+        (gogoproto.nullable)     = false
+    ];
+}
+
+message QueryEstimatedRewardsResponse {
+  repeated EstimatedRewardInfo info = 1 [(gogoproto.nullable) = true];
+  repeated cosmos.base.v1beta1.Coin total = 2 [
+        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+        (gogoproto.nullable)     = false
+    ];
 }
 // this line is used by starport scaffolding # 3

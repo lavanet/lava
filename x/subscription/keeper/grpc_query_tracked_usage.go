@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) TrackedUsage(goCtx context.Context, req *types.QuerySubscriptionTrackedUsage) (*types.QuerySubscriptionTrackedUsageResponse, error) {
+func (k Keeper) TrackedUsage(goCtx context.Context, req *types.QuerySubscriptionTrackedUsageRequest) (*types.QuerySubscriptionTrackedUsageResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}

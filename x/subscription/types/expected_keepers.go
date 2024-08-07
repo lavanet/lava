@@ -9,6 +9,7 @@ import (
 	fixationtypes "github.com/lavanet/lava/v2/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	projectstypes "github.com/lavanet/lava/v2/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
 	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 )
 
@@ -33,6 +34,7 @@ type EpochstorageKeeper interface {
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
+	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
 	// Methods imported from epochstorage should be defined here
 }
 
@@ -75,6 +77,11 @@ type RewardsKeeper interface {
 	IsIprpcSubscription(ctx sdk.Context, address string) bool
 	AggregateCU(ctx sdk.Context, subscription, provider string, chainID string, cu uint64)
 	CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Context, reward sdk.Coin) (validatorsCoins sdk.Coins, communityCoins sdk.Coins, err error)
+	TotalPoolTokens(ctx sdk.Context, pool rewardstypes.Pool) sdk.Coins
+	SpecEmissionParts(ctx sdk.Context) (emissions []rewardstypes.SpecEmissionPart)
+	SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec rewardstypes.SpecEmissionPart) math.LegacyDec
+	GetIprpcRewardsCurrentId(ctx sdk.Context) uint64
+	GetIprpcReward(ctx sdk.Context, id uint64) (val rewardstypes.IprpcReward, found bool)
 }
 
 type StakingKeeper interface {
