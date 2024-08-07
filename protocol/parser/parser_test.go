@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,6 +29,10 @@ func (rpcInputTest *RPCInputTest) GetParams() interface{} {
 
 func (rpcInputTest *RPCInputTest) GetResult() json.RawMessage {
 	return rpcInputTest.Result
+}
+
+func (rpcInputTest *RPCInputTest) GetID() json.RawMessage {
+	return nil
 }
 
 func (rpcInputTest *RPCInputTest) ParseBlock(block string) (int64, error) {

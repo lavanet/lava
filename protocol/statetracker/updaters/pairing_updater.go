@@ -4,10 +4,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	"golang.org/x/net/context"
 )
 
@@ -186,7 +186,7 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 				extensions[extension] = struct{}{}
 			}
 
-			endp := &lavasession.Endpoint{Geolocation: planstypes.Geolocation(relevantEndpoint.Geolocation), NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, Client: nil, ConnectionRefusals: 0, Addons: addons, Extensions: extensions}
+			endp := &lavasession.Endpoint{Connections: []*lavasession.EndpointConnection{}, Geolocation: planstypes.Geolocation(relevantEndpoint.Geolocation), NetworkAddress: relevantEndpoint.IPPORT, Enabled: true, ConnectionRefusals: 0, Addons: addons, Extensions: extensions}
 			pairingEndpoints[idx] = endp
 		}
 		lavasession.SortByGeolocations(pairingEndpoints, currentGeo)

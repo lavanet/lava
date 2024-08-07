@@ -73,16 +73,15 @@ echo $(cat "$path$genesis")
 os_name=$(uname)
 case "$(uname)" in
   Darwin)
-    SED_INLINE="-i ''" ;;
+    SED_INLINE=(-i '') ;;
   Linux)
-    SED_INLINE="-i" ;;
+    SED_INLINE=(-i) ;;
   *)
     echo "unknown system: $(uname)"
     exit 1 ;;
 esac
 
-
-sed $SED_INLINE \
+sed "${SED_INLINE[@]}" \
 -e 's/timeout_propose = .*/timeout_propose = "1s"/' \
 -e 's/timeout_propose_delta = .*/timeout_propose_delta = "500ms"/' \
 -e 's/timeout_prevote = .*/timeout_prevote = "1s"/' \
@@ -93,8 +92,8 @@ sed $SED_INLINE \
 -e 's/skip_timeout_commit = .*/skip_timeout_commit = false/' "$path$config"
 
 # Edit app.toml file
-sed $SED_INLINE -e "s/enable = .*/enable = true/" "$path$app"
-sed $SED_INLINE -e "/Enable defines if the Rosetta API server should be enabled.*/{n;s/enable = .*/enable = false/}" "$path$app"
+sed "${SED_INLINE[@]}" -e "s/enable = .*/enable = true/" "$path$app"
+sed "${SED_INLINE[@]}" -e "/Enable defines if the Rosetta API server should be enabled.*/{n;s/enable = .*/enable = false/;}" "$path$app"
 
 
 # Add users

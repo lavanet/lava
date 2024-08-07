@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/protocol/chaintracker"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -222,7 +222,7 @@ func TestHandleConsistency(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				fmt.Fprint(w, string(replyDataBuf))
 			})
-			chainParser, chainProxy, _, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, "../../", nil)
+			chainParser, chainProxy, _, closeServer, _, err := chainlib.CreateChainLibMocks(ts.Ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
 			if closeServer != nil {
 				defer closeServer()
 			}
@@ -253,7 +253,11 @@ func TestHandleConsistency(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), play.timeout)
 			latestBlock, _, timeSlept, err := rpcproviderServer.handleConsistency(ctx, play.timeout, seenBlock, requestBlock, averageBlockTime, blockLagForQosSync, blocksInFinalizationData, blockDistanceToFinalization)
 			cancel()
-			require.Equal(t, play.err == nil, err == nil, strconv.Itoa(calls))
+			if play.err != nil {
+				require.Error(t, err, strconv.Itoa(calls))
+			} else {
+				require.NoError(t, err, strconv.Itoa(calls))
+			}
 			require.Less(t, timeSlept, play.timeout)
 			if play.sleep {
 				require.NotZero(t, timeSlept)

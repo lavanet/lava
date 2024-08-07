@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 const MaximumNumberOfSelectionLockAttempts = 500
@@ -162,6 +162,7 @@ func (up *UsedProviders) TryLockSelection(ctx context.Context) error {
 	for counter := 0; counter < MaximumNumberOfSelectionLockAttempts; counter++ {
 		select {
 		case <-ctx.Done():
+			utils.LavaFormatTrace("Failed locking selection, context is done")
 			return ContextDoneNoNeedToLockSelectionError
 		default:
 			canSelect := up.tryLockSelection()

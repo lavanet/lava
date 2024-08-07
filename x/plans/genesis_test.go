@@ -3,10 +3,10 @@ package plans_test
 import (
 	"testing"
 
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/testutil/nullify"
-	plans "github.com/lavanet/lava/x/plans"
-	"github.com/lavanet/lava/x/plans/types"
+	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/testutil/nullify"
+	plans "github.com/lavanet/lava/v2/x/plans"
+	"github.com/lavanet/lava/v2/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
 

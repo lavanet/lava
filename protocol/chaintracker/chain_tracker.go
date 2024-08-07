@@ -3,25 +3,22 @@ package chaintracker
 import (
 	"context"
 	"errors"
-	fmt "fmt"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	rand "github.com/lavanet/lava/utils/rand"
+	rand "github.com/lavanet/lava/v2/utils/rand"
 
-	sdkerrors "cosmossdk.io/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/metrics"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/protocol/metrics"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
@@ -90,10 +87,14 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int
 	wantedBlocksData := WantedBlocksData{}
 	err = wantedBlocksData.New(fromBlock, toBlock, specificBlock, latestBlock, earliestBlockSaved)
 	if err != nil {
-		return latestBlock, nil, time.Time{}, sdkerrors.Wrap(err, fmt.Sprintf("invalid input for GetLatestBlockData %v", &map[string]string{
-			"fromBlock": strconv.FormatInt(fromBlock, 10), "toBlock": strconv.FormatInt(toBlock, 10), "specificBlock": strconv.FormatInt(specificBlock, 10),
-			"latestBlock": strconv.FormatInt(latestBlock, 10), "earliestBlockSaved": strconv.FormatInt(earliestBlockSaved, 10),
-		}))
+		return latestBlock, nil, time.Time{}, utils.LavaFormatDebug("invalid input for GetLatestBlockData",
+			utils.LogAttr("err", err),
+			utils.LogAttr("fromBlock", fromBlock),
+			utils.LogAttr("toBlock", toBlock),
+			utils.LogAttr("specificBlock", specificBlock),
+			utils.LogAttr("latestBlock", latestBlock),
+			utils.LogAttr("earliestBlockSaved", earliestBlockSaved),
+		)
 	}
 
 	for _, blocksQueueIdx := range wantedBlocksData.IterationIndexes() {
@@ -104,8 +105,8 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int
 		}
 		requestedHashes = append(requestedHashes, &blockStore)
 	}
-	changeTime = cs.latestChangeTime
-	return
+
+	return latestBlock, requestedHashes, cs.latestChangeTime, nil
 }
 
 func (cs *ChainTracker) RegisterForBlockTimeUpdates(updatable blockTimeUpdatable) {
@@ -370,6 +371,7 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 	if err != nil {
 		return err
 	}
+	utils.LavaFormatDebug("ChainTracker fetched init data successfully")
 	blockGapTicker := time.NewTicker(pollingTime) // initially every block we check for a polling time
 	// Polls blocks and keeps a queue of them
 	go func() {

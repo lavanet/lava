@@ -12,7 +12,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	types "github.com/lavanet/lava/x/pairing/types"
+	types "github.com/lavanet/lava/v2/x/pairing/types"
 	gomock "go.uber.org/mock/gomock"
 )
 

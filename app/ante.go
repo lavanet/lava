@@ -5,10 +5,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	dualstakingante "github.com/lavanet/lava/x/dualstaking/ante"
-	dualstakingkeeper "github.com/lavanet/lava/x/dualstaking/keeper"
-	specante "github.com/lavanet/lava/x/spec/ante"
-	"github.com/lavanet/lava/x/spec/keeper"
+	dualstakingante "github.com/lavanet/lava/v2/x/dualstaking/ante"
+	dualstakingkeeper "github.com/lavanet/lava/v2/x/dualstaking/keeper"
+	specante "github.com/lavanet/lava/v2/x/spec/ante"
+	"github.com/lavanet/lava/v2/x/spec/keeper"
 )
 
 func NewAnteHandler(accountKeeper ante.AccountKeeper, bankKeeper authtypes.BankKeeper, dualstakingKeeper dualstakingkeeper.Keeper, signModeHandler signing.SignModeHandler, feegrantKeeper ante.FeegrantKeeper, specKeeper keeper.Keeper, sigGasConsumer ante.SignatureVerificationGasConsumer) sdk.AnteHandler {

@@ -6,7 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/lavanet/lava/app/keepers"
+	"github.com/lavanet/lava/v2/app/keepers"
 )
 
 type BaseAppParamManager interface {

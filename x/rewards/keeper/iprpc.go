@@ -6,8 +6,8 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/rewards/types"
 )
 
 func (k Keeper) FundIprpc(ctx sdk.Context, creator string, duration uint64, fund sdk.Coins, spec string) error {
@@ -135,6 +135,8 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 
 	leftovers := sdk.NewCoins()
 	for _, specFund := range iprpcReward.SpecFunds {
+		details := map[string]string{}
+
 		// verify specCuMap holds an entry for the relevant spec
 		specCu, ok := specCuMap[specFund.Spec]
 		if !ok {
@@ -168,7 +170,12 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			if err != nil {
 				utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
 			}
+			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerIprpcReward.String())
 		}
+		details["total_cu"] = strconv.FormatUint(specCu.TotalCu, 10)
+		details["total_reward"] = specFund.Fund.String()
+		details["chainid"] = specFund.GetSpec()
+		utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, details, "IPRPC monthly rewards distributed successfully")
 
 		// count used rewards
 		leftovers = leftovers.Add(specFund.Fund.Sub(UsedReward...)...)
@@ -179,6 +186,4 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 	if err != nil {
 		utils.LavaFormatError("could not send iprpc leftover to community pool", err)
 	}
-
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.IprpcPoolEmissionEventName, map[string]string{"iprpc_rewards_leftovers": leftovers.String()}, "IPRPC monthly rewards distributed successfully")
 }

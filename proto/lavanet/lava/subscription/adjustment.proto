@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.subscription;
 
-option go_package = "github.com/lavanet/lava/x/subscription/types";
+option go_package = "github.com/lavanet/lava/v2/x/subscription/types";
 
 message Adjustment {
   string index = 1; 

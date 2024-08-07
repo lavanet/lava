@@ -1,4 +1,4 @@
-package lavaprotocol
+package finalizationconsensus
 
 import (
 	"context"
@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/v2/utils/rand"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/protocol/lavasession"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -74,7 +74,7 @@ func TestConsensusHashesInsertion(t *testing.T) {
 	chainsToTest := []string{"APT1", "LAV1", "ETH1"}
 	for _, chainID := range chainsToTest {
 		ctx := context.Background()
-		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../", nil)
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, nil, "../../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
@@ -163,7 +163,7 @@ func TestQoS(t *testing.T) {
 	for _, chainID := range chainsToTest {
 		t.Run(chainID, func(t *testing.T) {
 			ctx := context.Background()
-			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, "../../", nil)
+			chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, nil, "../../../", nil)
 			if closeServer != nil {
 				defer closeServer()
 			}
@@ -179,12 +179,7 @@ func TestQoS(t *testing.T) {
 				UsedComputeUnits:  0,
 				PairingEpoch:      epoch,
 			}
-			singleConsumerSession, _, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(&lavasession.Endpoint{
-				NetworkAddress:     "",
-				Enabled:            true,
-				Client:             nil,
-				ConnectionRefusals: 0,
-			}, 1)
+			singleConsumerSession, _, err := consumerSessionsWithProvider.GetConsumerSessionInstanceFromEndpoint(&lavasession.EndpointConnection{}, 1)
 			require.NoError(t, err)
 			require.NotNil(t, singleConsumerSession)
 

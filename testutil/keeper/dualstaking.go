@@ -12,12 +12,12 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typesparams "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/x/dualstaking/keeper"
-	"github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragekeeper "github.com/lavanet/lava/x/epochstorage/keeper"
-	fixationkeeper "github.com/lavanet/lava/x/fixationstore/keeper"
-	speckeeper "github.com/lavanet/lava/x/spec/keeper"
-	timerstorekeeper "github.com/lavanet/lava/x/timerstore/keeper"
+	"github.com/lavanet/lava/v2/x/dualstaking/keeper"
+	"github.com/lavanet/lava/v2/x/dualstaking/types"
+	epochstoragekeeper "github.com/lavanet/lava/v2/x/epochstorage/keeper"
+	fixationkeeper "github.com/lavanet/lava/v2/x/fixationstore/keeper"
+	speckeeper "github.com/lavanet/lava/v2/x/spec/keeper"
+	timerstorekeeper "github.com/lavanet/lava/v2/x/timerstore/keeper"
 	"github.com/stretchr/testify/require"
 )
 
