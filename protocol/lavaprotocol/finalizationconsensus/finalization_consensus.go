@@ -21,19 +21,21 @@ type ChainBlockStatsGetter interface {
 	ChainBlockStats() (allowedBlockLagForQosSync int64, averageBlockTime time.Duration, blockDistanceForFinalizedData, blocksInFinalizationProof uint32)
 }
 
-type BlockToHashesToAgreeingProviders map[int64]map[string]map[string]providerDataContainer // first key is block num, second key is block hash, third key is provider address
-type FinalizationConsensusInf interface {
-	UpdateFinalizedHashes(
-		blockDistanceForFinalizedData int64,
-		consumerAddress sdk.AccAddress,
-		providerAddress string,
-		finalizedBlocks map[int64]string,
-		relaySession *pairingtypes.RelaySession,
-		reply *pairingtypes.RelayReply,
-	) (finalizationConflict *conflicttypes.FinalizationConflict, err error)
-	GetExpectedBlockHeight(chainParser ChainBlockStatsGetter) (expectedBlockHeight int64, numOfProviders int)
-	NewEpoch(epoch uint64)
-}
+type (
+	BlockToHashesToAgreeingProviders map[int64]map[string]map[string]providerDataContainer // first key is block num, second key is block hash, third key is provider address
+	FinalizationConsensusInf         interface {
+		UpdateFinalizedHashes(
+			blockDistanceForFinalizedData int64,
+			consumerAddress sdk.AccAddress,
+			providerAddress string,
+			finalizedBlocks map[int64]string,
+			relaySession *pairingtypes.RelaySession,
+			reply *pairingtypes.RelayReply,
+		) (finalizationConflict *conflicttypes.FinalizationConflict, err error)
+		GetExpectedBlockHeight(chainParser ChainBlockStatsGetter) (expectedBlockHeight int64, numOfProviders int)
+		NewEpoch(epoch uint64)
+	}
+)
 
 type providerLatestBlockTimeAndFinalizedBlockContainer struct {
 	LatestBlockTime      time.Time
