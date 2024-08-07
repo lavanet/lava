@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	tmdb "github.com/cometbft/cometbft-db"
@@ -77,11 +76,18 @@ func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *k
 	} else {
 		ctx = *ctxArg
 	}
-	proposalFile := "./cookbook/specs/ibc.json,./cookbook/specs/cosmoswasm.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/cosmossdk_full.json,./cookbook/specs/ethereum.json,./cookbook/specs/cosmoshub.json,./cookbook/specs/lava.json,./cookbook/specs/osmosis.json,./cookbook/specs/fantom.json,./cookbook/specs/celo.json,./cookbook/specs/optimism.json,./cookbook/specs/arbitrum.json,./cookbook/specs/starknet.json,./cookbook/specs/aptos.json,./cookbook/specs/juno.json,./cookbook/specs/polygon.json,./cookbook/specs/evmos.json,./cookbook/specs/base.json,./cookbook/specs/canto.json,./cookbook/specs/sui.json,./cookbook/specs/solana.json,./cookbook/specs/bsc.json,./cookbook/specs/axelar.json,./cookbook/specs/avalanche.json,./cookbook/specs/fvm.json"
-	for _, fileName := range strings.Split(proposalFile, ",") {
+	proposalDirectory := "cookbook/specs/"
+	proposalFiles := []string{
+		"ibc.json", "cosmoswasm.json", "tendermint.json", "cosmossdk.json", "cosmossdk_full.json",
+		"ethereum.json", "cosmoshub.json", "lava.json", "osmosis.json", "fantom.json", "celo.json",
+		"optimism.json", "arbitrum.json", "starknet.json", "aptos.json", "juno.json", "polygon.json",
+		"evmos.json", "base.json", "canto.json", "sui.json", "solana.json", "bsc.json", "axelar.json",
+		"avalanche.json", "fvm.json", "near.json",
+	}
+	for _, fileName := range proposalFiles {
 		proposal := utils.SpecAddProposalJSON{}
 
-		contents, err := os.ReadFile(getToTopMostPath + fileName)
+		contents, err := os.ReadFile(getToTopMostPath + proposalDirectory + fileName)
 		if err != nil {
 			return spectypes.Spec{}, err
 		}
