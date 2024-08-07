@@ -12,9 +12,11 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
@@ -65,6 +67,7 @@ type RelayProcessor struct {
 	archiveNodeRetriesCount      int
 	archiveExtensionUpdater      *RelayArchiveExtensionEditor
 	currentRelayRetryIsArchive   bool
+	userHeaders                  []pairingtypes.Metadata
 }
 
 func NewRelayProcessor(
@@ -108,6 +111,7 @@ func NewRelayProcessor(
 		disableRelayRetry:            disableRelayRetry,
 		relayRetriesManager:          relayRetriesManager,
 		archiveExtensionUpdater:      archiveExtensionUpdater,
+		userHeaders:                  []pairingtypes.Metadata{},
 	}
 }
 
@@ -344,6 +348,7 @@ func (rp *RelayProcessor) forceArchiveNodeIfNeededInner() {
 			rp.archiveExtensionUpdater.AddArchiveExtensionToMessage()
 			rp.archiveNodeRetriesCount++
 			rp.currentRelayRetryIsArchive = true
+			rp.userHeaders = append(rp.userHeaders, pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
 		} else if rp.currentRelayRetryIsArchive {
 			// We already tried archive node, we can reset the flag
 			rp.archiveExtensionUpdater.RemoveArchiveExtensionFromMessage()
@@ -356,6 +361,12 @@ func (rp *RelayProcessor) IsCurrentRelayRetryIsArchive() bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	return rp.currentRelayRetryIsArchive
+}
+
+func (rp *RelayProcessor) GetUserHeaders() []pairingtypes.Metadata {
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	return rp.userHeaders
 }
 
 // Deciding wether we should send a relay retry attempt based on the node error

@@ -1248,6 +1248,8 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, extensionMD)
 	}
 
+	relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, relayProcessor.GetUserHeaders()...)
+
 	_, debugRelays := directiveHeaders[common.LAVA_DEBUG_RELAY]
 	if debugRelays {
 		erroredProviders := relayProcessor.GetUsedProviders().GetErroredProviders()
