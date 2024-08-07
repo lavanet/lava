@@ -44,22 +44,22 @@ func isArchiveExtension(extension *spectypes.Extension) bool {
 	return extension.Name == extensionslib.ExtensionTypeArchive
 }
 
-func (maee *RelayArchiveExtensionEditor) AddArchiveExtensionToMessage() {
-	if !maee.originalRelayRequestDataHadArchive {
-		maee.relayRequestData.Extensions = append(maee.relayRequestData.Extensions, extensionslib.ExtensionTypeArchive)
+func (raee *RelayArchiveExtensionEditor) AddArchiveExtensionToMessage() {
+	if !raee.originalRelayRequestDataHadArchive {
+		raee.relayRequestData.Extensions = append(raee.relayRequestData.Extensions, extensionslib.ExtensionTypeArchive)
 	}
 
-	if !maee.originalChainMessageHadArchive {
-		maee.chainMessage.SetExtension(maee.archiveExtensions)
+	if !raee.originalChainMessageHadArchive {
+		raee.chainMessage.SetExtension(raee.archiveExtensions)
 	}
 }
 
-func (maee *RelayArchiveExtensionEditor) RemoveArchiveExtensionFromMessage() {
-	if !maee.originalRelayRequestDataHadArchive {
-		maee.relayRequestData.Extensions = maee.originalRelayRequestDataExtensions
+func (raee *RelayArchiveExtensionEditor) RemoveArchiveExtensionFromMessage() {
+	if !raee.originalRelayRequestDataHadArchive {
+		raee.relayRequestData.Extensions = raee.originalRelayRequestDataExtensions
 	}
 
-	if !maee.originalChainMessageHadArchive {
-		maee.chainMessage.RemoveExtension(maee.archiveExtensions.Name)
+	if !raee.originalChainMessageHadArchive {
+		raee.chainMessage.RemoveExtension(raee.archiveExtensions.Name)
 	}
 }
