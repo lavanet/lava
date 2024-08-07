@@ -21,6 +21,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/metrics"
 	"github.com/lavanet/lava/v2/protocol/performance"
 	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/maps"
 	"github.com/lavanet/lava/v2/utils/protocopy"
 	"github.com/lavanet/lava/v2/utils/rand"
 	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
@@ -200,7 +201,7 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, relay *pairingtypes.RelayPrivateData, chainMessage chainlib.ChainMessage) (bool, error) {
 	success := false
 	var err error
-	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMessage, rpccs.consumerConsistency, "-init-", "", rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMessage, rpccs.consumerConsistency, "-init-", "", rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager, nil)
 	for i := 0; i < retries; i++ {
 		err = rpccs.sendRelayToProvider(ctx, chainMessage, relay, "-init-", "", relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
@@ -350,7 +351,34 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(directiveHeaders), rpccs.requiredResponses, chainMessage, rpccs.consumerConsistency, dappID, consumerIp, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+
+	var relayArchiveExtensionEditor *RelayArchiveExtensionEditor
+	extensions := rpccs.chainParser.ExtensionsParser().GetConfiguredExtensions()
+	findArchiveInExtensions := func(key extensionslib.ExtensionKey, _ *spectypes.Extension) bool {
+		return key.Extension == extensionslib.ExtensionTypeArchive
+	}
+
+	_, archiveExt, found := maps.FindInMap(extensions, findArchiveInExtensions)
+	if found {
+		relayArchiveExtensionEditor = NewRelayArchiveExtensionEditor(chainMessage, relayRequestData, archiveExt)
+	}
+
+	relayProcessor := NewRelayProcessor(
+		ctx,
+		lavasession.NewUsedProviders(directiveHeaders),
+		rpccs.requiredResponses,
+		chainMessage,
+		rpccs.consumerConsistency,
+		dappID,
+		consumerIp,
+		rpccs.debugRelays,
+		rpccs.rpcConsumerLogs,
+		rpccs,
+		rpccs.disableNodeErrorRetry,
+		rpccs.relayRetriesManager,
+		relayArchiveExtensionEditor,
+	)
+
 	var err error
 	// try sending a relay 3 times. if failed return the error
 	for retryFirstRelayAttempt := 0; retryFirstRelayAttempt < SendRelayAttempts; retryFirstRelayAttempt++ {
@@ -410,9 +438,11 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			}
 		}
 	}
+
 	// every relay timeout we send a new batch
 	startNewBatchTicker := time.NewTicker(relayTimeout)
 	defer startNewBatchTicker.Stop()
+
 	numberOfRetriesLaunched := 0
 	for {
 		select {
@@ -424,6 +454,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 			if !relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
 				return relayProcessor, nil
 			}
+
 			// otherwise continue sending another relay
 			err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor, nil)
 			go validateReturnCondition(err)
@@ -1039,7 +1070,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	relayResult := results[0]
 	if len(results) < 2 {
 		relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
-		relayProcessorDataReliability := NewRelayProcessor(ctx, relayProcessor.usedProviders, 1, chainMessage, rpccs.consumerConsistency, dappID, consumerIp, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+		relayProcessorDataReliability := NewRelayProcessor(ctx, relayProcessor.usedProviders, 1, chainMessage, rpccs.consumerConsistency, dappID, consumerIp, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager, nil)
 		err := rpccs.sendRelayToProvider(ctx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessorDataReliability, nil)
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))

@@ -7,6 +7,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
@@ -139,7 +140,7 @@ func (pm *baseChainMessageContainer) OverrideExtensions(extensionNames []string,
 			extension := extensionParser.GetExtension(extensionKey)
 			if extension != nil {
 				pm.extensions = append(pm.extensions, extension)
-				pm.updateCUForApi(extension)
+				pm.addExtensionCu(extension)
 			}
 		}
 	}
@@ -157,12 +158,28 @@ func (pm *baseChainMessageContainer) SetExtension(extension *spectypes.Extension
 	} else {
 		pm.extensions = []*spectypes.Extension{extension}
 	}
-	pm.updateCUForApi(extension)
+	pm.addExtensionCu(extension)
 }
 
-func (pm *baseChainMessageContainer) updateCUForApi(extension *spectypes.Extension) {
+func (pm *baseChainMessageContainer) RemoveExtension(extensionName string) {
+	for _, ext := range pm.extensions {
+		if ext.Name == extensionName {
+			lavaslices.Remove(pm.extensions, ext)
+			pm.removeExtensionCu(ext)
+			break
+		}
+	}
+}
+
+func (pm *baseChainMessageContainer) addExtensionCu(extension *spectypes.Extension) {
 	copyApi := *pm.api // we can't modify this because it points to an object inside the chainParser
 	copyApi.ComputeUnits = uint64(math.Floor(float64(extension.GetCuMultiplier()) * float64(copyApi.ComputeUnits)))
+	pm.api = &copyApi
+}
+
+func (pm *baseChainMessageContainer) removeExtensionCu(extension *spectypes.Extension) {
+	copyApi := *pm.api // we can't modify this because it points to an object inside the chainParser
+	copyApi.ComputeUnits = uint64(math.Floor(float64(copyApi.ComputeUnits) / float64(extension.GetCuMultiplier())))
 	pm.api = &copyApi
 }
 

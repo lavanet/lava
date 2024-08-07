@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	MaxCallsPerRelay                   = 50
-	NumberOfRetriesAllowedOnNodeErrors = 2 // we will try maximum additional 2 relays on node errors
+	MaxCallsPerRelay                             = 50
+	NumberOfRetriesAllowedOnNodeErrors           = 2 // we will try maximum additional 2 relays on node errors
+	NumberOfRetriesAllowedOnNodeErrorsForArchive = 1 // we will try maximum additional 1 relay on node errors for archive nodes
 )
 
 type Selection int
@@ -38,6 +39,11 @@ type MetricsInterface interface {
 
 type chainIdAndApiInterfaceGetter interface {
 	GetChainIdAndApiInterface() (string, string)
+}
+
+type ArchiveExtensionUpdater interface {
+	AddArchiveExtensionToMessage()
+	RemoveArchiveExtensionFromMessage()
 }
 
 type RelayProcessor struct {
@@ -61,6 +67,8 @@ type RelayProcessor struct {
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
 	disableRelayRetry            bool
 	relayRetriesManager          *RelayRetriesManager
+	archiveNodeRetriesCount      int
+	archiveExtensionUpdater      ArchiveExtensionUpdater
 }
 
 func NewRelayProcessor(
@@ -76,6 +84,7 @@ func NewRelayProcessor(
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
 	disableRelayRetry bool,
 	relayRetriesManager *RelayRetriesManager,
+	archiveExtensionUpdater ArchiveExtensionUpdater,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
@@ -102,6 +111,7 @@ func NewRelayProcessor(
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
 		disableRelayRetry:            disableRelayRetry,
 		relayRetriesManager:          relayRetriesManager,
+		archiveExtensionUpdater:      archiveExtensionUpdater,
 	}
 }
 
@@ -306,6 +316,23 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	return hashString, err
 }
 
+func (rp *RelayProcessor) forceArchiveNodeIfNeeded() {
+	if rp.archiveExtensionUpdater == nil {
+		return
+	}
+
+	if len(rp.chainMessage.GetRequestedBlocksHashes()) > 0 {
+		if rp.archiveNodeRetriesCount < NumberOfRetriesAllowedOnNodeErrorsForArchive {
+			// If we have a hash and we are not in archive mode, we can retry with archive node
+			rp.archiveExtensionUpdater.AddArchiveExtensionToMessage()
+			rp.archiveNodeRetriesCount++
+		} else {
+			// We already tried archive node, we can reset the flag
+			rp.archiveExtensionUpdater.RemoveArchiveExtensionFromMessage()
+		}
+	}
+}
+
 // Deciding wether we should send a relay retry attempt based on the node error
 func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, hash string) bool {
 	// Retries will be performed based on the following scenarios:
@@ -315,13 +342,12 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	// 4. Number of retries < NumberOfRetriesAllowedOnNodeErrors.
 	if !rp.disableRelayRetry && resultsCount == 0 && hashErr == nil {
 		if nodeErrors <= NumberOfRetriesAllowedOnNodeErrors {
-			// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
-
 			// Check hash already exist, if it does, we don't want to retry
 			if !rp.relayRetriesManager.CheckHashInCache(hash) {
 				// If we didn't find the hash in the hash map we can retry
 				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
 				go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
+				rp.forceArchiveNodeIfNeeded()
 				return false
 			}
 			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))
