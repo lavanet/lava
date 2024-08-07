@@ -8,12 +8,6 @@ import (
 )
 
 var (
-	// default QoS score is: score = 1.25, var = 0
-	DefaultQosScore = QosScore{
-		Score:    Frac{Num: math.LegacyNewDec(5), Denom: math.LegacyNewDec(4)},
-		Variance: Frac{Num: math.LegacyZeroDec(), Denom: math.LegacySmallestDec()},
-	}
-
 	// zero QoS score is: score = 0, var = 0
 	ZeroQosScore = QosScore{
 		Score:    Frac{Num: math.LegacyZeroDec(), Denom: math.LegacySmallestDec()},
