@@ -52,7 +52,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	total := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
 	totalRewarded := sdk.ZeroInt()
 	// specs emissions from the total reward pool base on stake
-	specs := k.specEmissionParts(ctx)
+	specs := k.SpecEmissionParts(ctx)
 
 	defer func() {
 		k.removeAllBasePay(ctx)
@@ -70,7 +70,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 		// calculate the maximum rewards for the spec
 		specTotalPayout := math.LegacyZeroDec()
 		if !totalbasepay.IsZero() {
-			specTotalPayout = k.specTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
+			specTotalPayout = k.SpecTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
 		}
 		details := map[string]string{}
 		// distribute the rewards to all providers
@@ -116,18 +116,18 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	k.distributeIprpcRewards(ctx, iprpcReward, specCuMap)
 }
 
-// specTotalPayout calculates the total bonus for a specific spec
+// SpecTotalPayout calculates the total bonus for a specific spec
 // specPayoutAllocation: maximum rewards that the spec can have
 // rewardBoost: bonus based on the total rewards providers got factored by maxboost
 // diminishingRewards: makes sure to diminish the bonuses in case there are enough consumers on the chain
-func (k Keeper) specTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec types.SpecEmissionPart) math.LegacyDec {
+func (k Keeper) SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec types.SpecEmissionPart) math.LegacyDec {
 	specPayoutAllocation := spec.Emission.MulInt(totalMonthlyPayout)
 	rewardBoost := totalProvidersBaseRewards.MulInt64(int64(k.MaxRewardBoost(ctx)))
 	diminishingRewards := sdk.MaxDec(sdk.ZeroDec(), (sdk.NewDecWithPrec(15, 1).Mul(specPayoutAllocation)).Sub(sdk.NewDecWithPrec(5, 1).Mul(totalProvidersBaseRewards)))
 	return sdk.MinDec(sdk.MinDec(specPayoutAllocation, rewardBoost), diminishingRewards)
 }
 
-func (k Keeper) specEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissionPart) {
+func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissionPart) {
 	chainIDs := k.specKeeper.GetAllChainIDs(ctx)
 	totalStake := sdk.ZeroDec()
 	chainStake := map[string]sdk.Dec{}
