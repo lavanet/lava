@@ -1,6 +1,7 @@
 package extensionslib
 
 import (
+	"github.com/lavanet/lava/v2/utils/maps"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
@@ -33,6 +34,23 @@ type ExtensionParserRule interface {
 type ExtensionParser struct {
 	AllowedExtensions    map[string]struct{}
 	configuredExtensions map[ExtensionKey]*spectypes.Extension
+}
+
+func (ep *ExtensionParser) GetExtensionByName(extensionName string) *spectypes.Extension {
+	if extensionName == "" {
+		return nil
+	}
+
+	findExtensionsPredicate := func(key ExtensionKey, _ *spectypes.Extension) bool {
+		return key.Extension == extensionName
+	}
+
+	_, archiveExt, found := maps.FindInMap(ep.configuredExtensions, findExtensionsPredicate)
+	if found {
+		return archiveExt
+	}
+
+	return nil
 }
 
 func (ep *ExtensionParser) GetExtension(extension ExtensionKey) *spectypes.Extension {

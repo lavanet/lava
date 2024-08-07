@@ -21,7 +21,6 @@ import (
 	"github.com/lavanet/lava/v2/protocol/metrics"
 	"github.com/lavanet/lava/v2/protocol/performance"
 	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/maps"
 	"github.com/lavanet/lava/v2/utils/protocopy"
 	"github.com/lavanet/lava/v2/utils/rand"
 	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
@@ -353,14 +352,9 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	defer cancel()
 
 	var relayArchiveExtensionEditor *RelayArchiveExtensionEditor
-	extensions := rpccs.chainParser.ExtensionsParser().GetConfiguredExtensions()
-	findArchiveInExtensions := func(key extensionslib.ExtensionKey, _ *spectypes.Extension) bool {
-		return key.Extension == extensionslib.ExtensionTypeArchive
-	}
-
-	_, archiveExt, found := maps.FindInMap(extensions, findArchiveInExtensions)
-	if found {
-		relayArchiveExtensionEditor = NewRelayArchiveExtensionEditor(chainMessage, relayRequestData, archiveExt)
+	archiveExtension := rpccs.chainParser.ExtensionsParser().GetExtensionByName(extensionslib.ExtensionTypeArchive)
+	if archiveExtension != nil { // archive extension is configured
+		relayArchiveExtensionEditor = NewRelayArchiveExtensionEditor(chainMessage, relayRequestData, archiveExtension)
 	}
 
 	relayProcessor := NewRelayProcessor(
