@@ -3,7 +3,6 @@ package scores
 import (
 	"cosmossdk.io/math"
 	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 const (
@@ -13,12 +12,12 @@ const (
 
 // PairingScore holds a provider's score with respect to a set of requirements (ScoreReq), indexed by their unique name.
 type PairingScore struct {
-	Provider            *epochstoragetypes.StakeEntry
-	Score               math.LegacyDec
-	ScoreComponents     map[string]math.LegacyDec
-	SkipForSelection    bool
-	SlotFiltering       map[int]struct{} // slot indexes here are skipped
-	QosExcellenceReport pairingtypes.QualityOfServiceReport
+	Provider         *epochstoragetypes.StakeEntry
+	Score            math.LegacyDec
+	ScoreComponents  map[string]math.LegacyDec
+	SkipForSelection bool
+	SlotFiltering    map[int]struct{} // slot indexes here are skipped
+	reputationScore  math.LegacyDec
 }
 
 func (ps *PairingScore) IsValidForSelection(slotIndex int) bool {
@@ -40,13 +39,13 @@ func (ps *PairingScore) InvalidIndexes(possibleIndexes []int) []int {
 	return invalidIndexes
 }
 
-func NewPairingScore(stakeEntry *epochstoragetypes.StakeEntry, qos pairingtypes.QualityOfServiceReport) *PairingScore {
+func NewPairingScore(stakeEntry *epochstoragetypes.StakeEntry, reputationScore math.LegacyDec) *PairingScore {
 	score := PairingScore{
-		Provider:            stakeEntry,
-		Score:               math.LegacyOneDec(),
-		ScoreComponents:     map[string]math.LegacyDec{},
-		SkipForSelection:    false,
-		QosExcellenceReport: qos,
+		Provider:         stakeEntry,
+		Score:            math.LegacyOneDec(),
+		ScoreComponents:  map[string]math.LegacyDec{},
+		SkipForSelection: false,
+		reputationScore:  reputationScore,
 	}
 	return &score
 }
