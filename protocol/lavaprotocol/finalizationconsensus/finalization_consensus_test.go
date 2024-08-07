@@ -209,7 +209,7 @@ func TestQoS(t *testing.T) {
 		for _, chainID := range chainsToTest {
 			t.Run(chainID, func(t *testing.T) {
 				ctx := context.Background()
-				chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, nil, "../../", nil)
+				chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, chainID, "0", func(http.ResponseWriter, *http.Request) {}, nil, "../../../", nil)
 				if closeServer != nil {
 					defer closeServer()
 				}
