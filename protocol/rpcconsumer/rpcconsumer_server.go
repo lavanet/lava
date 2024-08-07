@@ -21,6 +21,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/metrics"
 	"github.com/lavanet/lava/v2/protocol/performance"
 	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
 	"github.com/lavanet/lava/v2/utils/protocopy"
 	"github.com/lavanet/lava/v2/utils/rand"
 	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
@@ -603,7 +604,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	addon := chainlib.GetAddon(chainMessage)
-	reqBlock = rpccs.resolveRequestedBlockAndUpdateToArchiveIfNeeded(reqBlock, relayRequestData, earliestRequestedBlock, chainMessage, addon)
+	reqBlock = rpccs.resolveRequestedBlockAndUpdateToArchiveIfNeeded(reqBlock, relayRequestData, earliestRequestedBlock, addon, relayProcessor)
 	extensions := chainMessage.GetExtensions()
 	usedProviders := relayProcessor.GetUsedProviders()
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
@@ -808,6 +809,8 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							blockHashesToHeights = rpccs.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
 						}
 
+						blockHashesToHeights = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, relayProcessor, chainMessage, blockHashesToHeights, latestBlock)
+
 						new_ctx := context.Background()
 						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
 						defer cancel()
@@ -839,6 +842,33 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	return nil
 }
 
+func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, relayProcessor *RelayProcessor, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64) []*pairingtypes.BlockHashToHeight {
+	// This function will add the requested block hash with the height of the block that will force it to be archive on the following conditions:
+	// 1. The current extension is archive.
+	// 2. The current retry is archive.
+	// 3. The user requested a single block hash.
+	// 4. The archive extension rule is set.
+
+	predicate := func(ext *spectypes.Extension) bool { return ext.Name == extensionslib.ExtensionTypeArchive }
+	isCurrentlyArchiveExtension := lavaslices.ContainsPredicate(extensions, predicate)
+	isCurrentRetryIsArchive := relayProcessor.IsCurrentRelayRetryIsArchive()
+	requestedBlocksHashes := chainMessage.GetRequestedBlocksHashes()
+	isUserRequestedSingleBlocksHashes := len(requestedBlocksHashes) == 1
+	archiveExtension := rpccs.chainParser.ExtensionsParser().GetExtensionByName(extensionslib.ExtensionTypeArchive)
+
+	if isCurrentlyArchiveExtension && isCurrentRetryIsArchive && isUserRequestedSingleBlocksHashes && archiveExtension != nil && archiveExtension.Rule != nil {
+		ruleBlock := int64(archiveExtension.Rule.Block)
+		if ruleBlock > 0 {
+			blockHashesToHeights = append(blockHashesToHeights, &pairingtypes.BlockHashToHeight{
+				Hash:   requestedBlocksHashes[0],
+				Height: latestBlock - ruleBlock - 1,
+			})
+		}
+	}
+
+	return blockHashesToHeights
+}
+
 func (rpccs RPCConsumerServer) newBlocksHashesToHeightsSliceFromRequestedBlockHashes(requestedBlockHashes []string) []*pairingtypes.BlockHashToHeight {
 	var blocksHashesToHeights []*pairingtypes.BlockHashToHeight
 	for _, blockHash := range requestedBlockHashes {
@@ -855,7 +885,7 @@ func (rpccs RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationCons
 	return blocksHashesToHeights
 }
 
-func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateToArchiveIfNeeded(reqBlock int64, relayRequestData *pairingtypes.RelayPrivateData, earliestRequestedBlock int64, chainMessage chainlib.ChainMessage, addon string) int64 {
+func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateToArchiveIfNeeded(reqBlock int64, relayRequestData *pairingtypes.RelayPrivateData, earliestRequestedBlock int64, addon string, relayProcessor *RelayProcessor) int64 {
 	if reqBlock == spectypes.LATEST_BLOCK && relayRequestData.SeenBlock != 0 {
 
 		// make optimizer select a provider that is likely to have the latest seen block
@@ -867,8 +897,7 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateToArchiveIfNeeded(
 			// since we can't really change the requested block in the chain message, we create a wrapping class here that returns reqBlock here.
 			// that way, we can still set the extension in the chain message, even though it doesn't match the actual requested block inside the chain message.
 			overriddenChainMessageWithReqBlock := extensionslib.NewEarliestOverriddenExtensionChainMessage(reqBlock, func(extension *spectypes.Extension) {
-				chainMessage.SetExtension(extension)
-				relayRequestData.Extensions = append(relayRequestData.Extensions, extension.Name)
+				relayProcessor.SetArchiveExtensionAsOriginal()
 			})
 
 			rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, overriddenChainMessageWithReqBlock, rpccs.getLatestBlock())

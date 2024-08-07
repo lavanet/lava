@@ -41,11 +41,6 @@ type chainIdAndApiInterfaceGetter interface {
 	GetChainIdAndApiInterface() (string, string)
 }
 
-type ArchiveExtensionUpdater interface {
-	AddArchiveExtensionToMessage()
-	RemoveArchiveExtensionFromMessage()
-}
-
 type RelayProcessor struct {
 	usedProviders                *lavasession.UsedProviders
 	responses                    chan *relayResponse
@@ -68,7 +63,8 @@ type RelayProcessor struct {
 	disableRelayRetry            bool
 	relayRetriesManager          *RelayRetriesManager
 	archiveNodeRetriesCount      int
-	archiveExtensionUpdater      ArchiveExtensionUpdater
+	archiveExtensionUpdater      *RelayArchiveExtensionEditor
+	currentRelayRetryIsArchive   bool
 }
 
 func NewRelayProcessor(
@@ -84,7 +80,7 @@ func NewRelayProcessor(
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
 	disableRelayRetry bool,
 	relayRetriesManager *RelayRetriesManager,
-	archiveExtensionUpdater ArchiveExtensionUpdater,
+	archiveExtensionUpdater *RelayArchiveExtensionEditor,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
@@ -113,6 +109,12 @@ func NewRelayProcessor(
 		relayRetriesManager:          relayRetriesManager,
 		archiveExtensionUpdater:      archiveExtensionUpdater,
 	}
+}
+
+func (rp *RelayProcessor) SetArchiveExtensionAsOriginal() {
+	rp.lock.Lock()
+	defer rp.lock.Unlock()
+	rp.archiveExtensionUpdater.SetArchiveExtensionAsOriginal()
 }
 
 // true if we never got an extension. (default value)
@@ -317,7 +319,8 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 }
 
 func (rp *RelayProcessor) forceArchiveNodeIfNeeded() {
-	if rp.archiveExtensionUpdater == nil {
+	if rp.archiveExtensionUpdater == nil || rp.archiveExtensionUpdater.IsOriginallyArchiveExtension() {
+		// We don't have an archive extension updater or we already have an archive extension asked from user, we don't need to force it
 		return
 	}
 
@@ -326,11 +329,19 @@ func (rp *RelayProcessor) forceArchiveNodeIfNeeded() {
 			// If we have a hash and we are not in archive mode, we can retry with archive node
 			rp.archiveExtensionUpdater.AddArchiveExtensionToMessage()
 			rp.archiveNodeRetriesCount++
+			rp.currentRelayRetryIsArchive = true
 		} else {
 			// We already tried archive node, we can reset the flag
 			rp.archiveExtensionUpdater.RemoveArchiveExtensionFromMessage()
+			rp.currentRelayRetryIsArchive = false
 		}
 	}
+}
+
+func (rp *RelayProcessor) IsCurrentRelayRetryIsArchive() bool {
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	return rp.currentRelayRetryIsArchive
 }
 
 // Deciding wether we should send a relay retry attempt based on the node error

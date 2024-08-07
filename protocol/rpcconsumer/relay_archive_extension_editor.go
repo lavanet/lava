@@ -44,6 +44,21 @@ func isArchiveExtension(extension *spectypes.Extension) bool {
 	return extension.Name == extensionslib.ExtensionTypeArchive
 }
 
+func (raee *RelayArchiveExtensionEditor) SetArchiveExtensionAsOriginal() {
+	raee.AddArchiveExtensionToMessage()
+
+	if !raee.originalRelayRequestDataHadArchive {
+		raee.relayRequestData.Extensions = append(raee.relayRequestData.Extensions, extensionslib.ExtensionTypeArchive)
+	}
+
+	raee.originalChainMessageHadArchive = true
+	raee.originalRelayRequestDataHadArchive = true
+}
+
+func (raee *RelayArchiveExtensionEditor) IsOriginallyArchiveExtension() bool {
+	return raee.originalChainMessageHadArchive || raee.originalRelayRequestDataHadArchive
+}
+
 func (raee *RelayArchiveExtensionEditor) AddArchiveExtensionToMessage() {
 	if !raee.originalRelayRequestDataHadArchive {
 		raee.relayRequestData.Extensions = append(raee.relayRequestData.Extensions, extensionslib.ExtensionTypeArchive)
