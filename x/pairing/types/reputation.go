@@ -18,8 +18,8 @@ func ReputationKey(chainID string, cluster string, provider string) collections.
 func NewReputation(ctx sdk.Context) Reputation {
 	timestamp := ctx.BlockTime().UTC().Unix()
 	return Reputation{
-		Score:           DefaultQosScore,
-		EpochScore:      DefaultQosScore,
+		Score:           ZeroQosScore,
+		EpochScore:      ZeroQosScore,
 		TimeLastUpdated: timestamp,
 		CreationTime:    timestamp,
 		Stake:           sdk.NewCoin(commontypes.TokenDenom, sdk.ZeroInt()),

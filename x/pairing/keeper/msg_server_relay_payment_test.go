@@ -1190,7 +1190,7 @@ func TestUpdateReputationEpochQosScoreTruncation(t *testing.T) {
 		require.True(t, found)
 		epochScoreNoTruncation, err := r.EpochScore.Score.Resolve()
 		require.NoError(t, err)
-		defaultEpochScore, err := types.DefaultQosScore.Score.Resolve()
+		defaultEpochScore, err := types.ZeroQosScore.Score.Resolve()
 		require.NoError(t, err)
 		scoreUpdates = append(scoreUpdates, epochScoreNoTruncation.Sub(defaultEpochScore))
 	}
@@ -1253,7 +1253,7 @@ func TestUpdateReputationEpochQosScoreRelayNumWeight(t *testing.T) {
 		require.True(t, found)
 		epochScoreNoTruncation, err := r.EpochScore.Score.Resolve()
 		require.NoError(t, err)
-		defaultEpochScore, err := types.DefaultQosScore.Score.Resolve()
+		defaultEpochScore, err := types.ZeroQosScore.Score.Resolve()
 		require.NoError(t, err)
 		scoreUpdates = append(scoreUpdates, epochScoreNoTruncation.Sub(defaultEpochScore))
 	}
