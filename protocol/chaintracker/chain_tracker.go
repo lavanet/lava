@@ -3,19 +3,16 @@ package chaintracker
 import (
 	"context"
 	"errors"
-	fmt "fmt"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	rand "github.com/lavanet/lava/v2/utils/rand"
 
-	sdkerrors "cosmossdk.io/errors"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
@@ -90,10 +87,14 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int
 	wantedBlocksData := WantedBlocksData{}
 	err = wantedBlocksData.New(fromBlock, toBlock, specificBlock, latestBlock, earliestBlockSaved)
 	if err != nil {
-		return latestBlock, nil, time.Time{}, sdkerrors.Wrap(err, fmt.Sprintf("invalid input for GetLatestBlockData %v", &map[string]string{
-			"fromBlock": strconv.FormatInt(fromBlock, 10), "toBlock": strconv.FormatInt(toBlock, 10), "specificBlock": strconv.FormatInt(specificBlock, 10),
-			"latestBlock": strconv.FormatInt(latestBlock, 10), "earliestBlockSaved": strconv.FormatInt(earliestBlockSaved, 10),
-		}))
+		return latestBlock, nil, time.Time{}, utils.LavaFormatDebug("invalid input for GetLatestBlockData",
+			utils.LogAttr("err", err),
+			utils.LogAttr("fromBlock", fromBlock),
+			utils.LogAttr("toBlock", toBlock),
+			utils.LogAttr("specificBlock", specificBlock),
+			utils.LogAttr("latestBlock", latestBlock),
+			utils.LogAttr("earliestBlockSaved", earliestBlockSaved),
+		)
 	}
 
 	for _, blocksQueueIdx := range wantedBlocksData.IterationIndexes() {
@@ -104,8 +105,8 @@ func (cs *ChainTracker) GetLatestBlockData(fromBlock, toBlock, specificBlock int
 		}
 		requestedHashes = append(requestedHashes, &blockStore)
 	}
-	changeTime = cs.latestChangeTime
-	return
+
+	return latestBlock, requestedHashes, cs.latestChangeTime, nil
 }
 
 func (cs *ChainTracker) RegisterForBlockTimeUpdates(updatable blockTimeUpdatable) {
