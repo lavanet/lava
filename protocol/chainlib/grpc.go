@@ -261,12 +261,13 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 }
 
 type GrpcChainListener struct {
-	endpoint       *lavasession.RPCEndpoint
-	relaySender    RelaySender
-	logger         *metrics.RPCConsumerLogs
-	chainParser    *GrpcChainParser
-	healthReporter HealthReporter
-	refererData    *RefererData
+	endpoint         *lavasession.RPCEndpoint
+	relaySender      RelaySender
+	logger           *metrics.RPCConsumerLogs
+	chainParser      *GrpcChainParser
+	healthReporter   HealthReporter
+	refererData      *RefererData
+	listeningAddress string
 }
 
 func NewGrpcChainListener(
@@ -280,12 +281,12 @@ func NewGrpcChainListener(
 ) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
-		listenEndpoint,
-		relaySender,
-		rpcConsumerLogs,
-		chainParser.(*GrpcChainParser),
-		healthReporter,
-		refererData,
+		endpoint:       listenEndpoint,
+		relaySender:    relaySender,
+		logger:         rpcConsumerLogs,
+		chainParser:    chainParser.(*GrpcChainParser),
+		healthReporter: healthReporter,
+		refererData:    refererData,
 	}
 	return chainListener
 }
@@ -298,6 +299,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	}
 
 	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
+	apil.listeningAddress = lis.Addr().String()
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error) {
 		if method == "grpc.reflection.v1.ServerReflection/ServerReflectionInfo" {
@@ -378,6 +380,10 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	if err := serveExecutor(); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
 	}
+}
+
+func (apil *GrpcChainListener) GetListeningAddress() string {
+	return apil.listeningAddress
 }
 
 type GrpcChainProxy struct {

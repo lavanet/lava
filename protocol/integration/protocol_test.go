@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 	// This code will run once before any test cases are executed.
 	seed = time.Now().Unix()
 	rand.SetSpecificSeed(seed)
-	addressGen = uniqueAddressGenerator{}
+	addressGen = NewUniqueAddressGenerator()
 	randomizer = sigs.NewZeroReader(seed)
 	lavasession.AllowInsecureConnectionToProviders = true
 	// Run the actual tests
@@ -194,11 +194,19 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	require.NoError(t, err)
 	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, account.SK, lavaChainID, nil, rpcconsumerLogs, account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
+
+	// wait for consumer to finish initialization
+	listeningAddr := rpcConsumerServer.GetListeningAddress()
+	for listeningAddr == "" {
+		time.Sleep(10 * time.Millisecond)
+		listeningAddr = rpcConsumerServer.GetListeningAddress()
+	}
+
 	// wait for consumer server to be up
-	consumerUp := checkServerStatusWithTimeout("http://"+consumerListenAddress, time.Millisecond*61)
+	consumerUp := checkServerStatusWithTimeout("http://"+listeningAddr, time.Millisecond*61)
 	require.True(t, consumerUp)
 	if rpcEndpoint.ApiInterface == "tendermintrpc" || rpcEndpoint.ApiInterface == "jsonrpc" {
-		consumerUp = checkServerStatusWithTimeout("ws://"+consumerListenAddress+"/ws", time.Millisecond*61)
+		consumerUp = checkServerStatusWithTimeout("ws://"+listeningAddr+"/ws", time.Millisecond*61)
 		require.True(t, consumerUp)
 	}
 
@@ -316,7 +324,6 @@ func TestConsumerProviderBasic(t *testing.T) {
 	providers := []providerData{}
 
 	for i := 0; i < numProviders; i++ {
-		// providerListenAddress := "localhost:111" + strconv.Itoa(i)
 		account := sigs.GenerateDeterministicFloatingKey(randomizer)
 		providerDataI := providerData{account: account}
 		providers = append(providers, providerDataI)
@@ -393,7 +400,6 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 			providers := []providerData{}
 
 			for i := 0; i < numProviders; i++ {
-				// providerListenAddress := "localhost:111" + strconv.Itoa(i)
 				account := sigs.GenerateDeterministicFloatingKey(randomizer)
 				providerDataI := providerData{account: account}
 				providers = append(providers, providerDataI)
@@ -635,7 +641,6 @@ func TestConsumerProviderJsonRpcWithNullID(t *testing.T) {
 			providers := []providerData{}
 
 			for i := 0; i < numProviders; i++ {
-				// providerListenAddress := "localhost:111" + strconv.Itoa(i)
 				account := sigs.GenerateDeterministicFloatingKey(randomizer)
 				providerDataI := providerData{account: account}
 				providers = append(providers, providerDataI)
@@ -746,7 +751,6 @@ func TestConsumerProviderSubscriptionsHappyFlow(t *testing.T) {
 			providers := []providerData{}
 
 			for i := 0; i < numProviders; i++ {
-				// providerListenAddress := "localhost:111" + strconv.Itoa(i)
 				account := sigs.GenerateDeterministicFloatingKey(randomizer)
 				providerDataI := providerData{account: account}
 				providers = append(providers, providerDataI)

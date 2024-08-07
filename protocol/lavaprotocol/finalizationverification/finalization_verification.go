@@ -2,9 +2,12 @@ package finalizationverification
 
 import (
 	"encoding/json"
+	"errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/utils/lavaslices"
 	"github.com/lavanet/lava/v2/utils/sigs"
@@ -26,7 +29,8 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	}
 
 	if recoveredProviderAddr.String() != providerAddr {
-		return nil, utils.LavaFormatError("provider address mismatch in finalization data ", protocolerrors.ProviderFinalizationDataError,
+		return nil, utils.LavaFormatError("provider address mismatch in finalization data ",
+			errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.BlockProviderError, lavasession.SessionOutOfSyncError),
 			utils.LogAttr("parsed Address", recoveredProviderAddr.String()),
 			utils.LogAttr("expected address", providerAddr),
 		)
@@ -35,7 +39,8 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	finalizedBlocks = map[int64]string{}
 	err = json.Unmarshal(reply.FinalizedBlocksHashes, &finalizedBlocks)
 	if err != nil {
-		return nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data", protocolerrors.ProviderFinalizationDataError,
+		return nil, utils.LavaFormatError("failed in unmarshalling finalized blocks data",
+			errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.BlockProviderError, lavasession.SessionOutOfSyncError),
 			utils.LogAttr("FinalizedBlocksHashes", string(reply.FinalizedBlocksHashes)),
 			utils.LogAttr("errMsg", err.Error()),
 		)
@@ -51,7 +56,8 @@ func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairin
 	requestBlock := relayRequest.RelayData.RequestBlock
 
 	if providerLatestBlock < lavaslices.Min([]int64{seenBlock, requestBlock}) {
-		return nil, utils.LavaFormatError("provider response does not meet consistency requirements", protocolerrors.ProviderFinalizationDataError,
+		return nil, utils.LavaFormatError("provider response does not meet consistency requirements",
+			errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.SessionOutOfSyncError),
 			utils.LogAttr("ProviderAddress", relayRequest.RelaySession.Provider),
 			utils.LogAttr("providerLatestBlock", providerLatestBlock),
 			utils.LogAttr("seenBlock", seenBlock),
@@ -69,7 +75,8 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 	maxBlockNum := int64(0)
 
 	if int64(len(finalizedBlocks)) != blocksInFinalizationProof {
-		return utils.LavaFormatError("Simulation: provider returned incorrect number of finalized blocks", protocolerrors.ProviderFinalizationDataAccountabilityError,
+		return utils.LavaFormatError("Simulation: provider returned incorrect number of finalized blocks",
+			errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.BlockProviderError, lavasession.SessionOutOfSyncError),
 			utils.LogAttr("Provider", providerAddr),
 			utils.LogAttr("blocksInFinalizationProof", blocksInFinalizationProof),
 			utils.LogAttr("len(finalizedBlocks)", len(finalizedBlocks)),
@@ -80,7 +87,8 @@ func verifyFinalizationDataIntegrity(reply *pairingtypes.RelayReply, latestSessi
 	for blockNum := range finalizedBlocks {
 		// Check if finalized
 		if !spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceForFinalization) {
-			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability", protocolerrors.ProviderFinalizationDataAccountabilityError,
+			return utils.LavaFormatError("Simulation: provider returned non finalized block reply for reliability",
+				errors.Join(common.ProviderFinalizationDataAccountabilityError, lavasession.BlockProviderError, lavasession.SessionOutOfSyncError),
 				utils.LogAttr("blockNum", blockNum),
 				utils.LogAttr("latestBlock", latestBlock),
 				utils.LogAttr("Provider", providerAddr),

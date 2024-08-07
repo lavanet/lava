@@ -62,7 +62,7 @@ type RPCConsumerServer struct {
 	privKey                        *btcec.PrivateKey
 	consumerTxSender               ConsumerTxSender
 	requiredResponses              int
-	finalizationConsensus          *finalizationconsensus.FinalizationConsensus
+	finalizationConsensus          finalizationconsensus.FinalizationConsensusInf
 	lavaChainID                    string
 	ConsumerAddress                sdk.AccAddress
 	consumerConsistency            *ConsumerConsistency
@@ -71,6 +71,7 @@ type RPCConsumerServer struct {
 	reporter                       metrics.Reporter
 	debugRelays                    bool
 	connectedSubscriptionsContexts map[string]*CancelableContextHolder
+	chainListener                  chainlib.ChainListener
 	connectedSubscriptionsLock     sync.RWMutex
 	disableNodeErrorRetry          bool
 	relayRetriesManager            *RelayRetriesManager
@@ -90,7 +91,7 @@ type ConsumerTxSender interface {
 func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndpoint *lavasession.RPCEndpoint,
 	consumerStateTracker ConsumerStateTrackerInf,
 	chainParser chainlib.ChainParser,
-	finalizationConsensus *finalizationconsensus.FinalizationConsensus,
+	finalizationConsensus finalizationconsensus.FinalizationConsensusInf,
 	consumerSessionManager *lavasession.ConsumerSessionManager,
 	requiredResponses int,
 	privKey *btcec.PrivateKey,
@@ -125,12 +126,12 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpccs.disableNodeErrorRetry = cmdFlags.DisableRetryOnNodeErrors
 	rpccs.relayRetriesManager = NewRelayRetriesManager()
-	chainListener, err := chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
+	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
 	if err != nil {
 		return err
 	}
 
-	go chainListener.Serve(ctx, cmdFlags)
+	go rpccs.chainListener.Serve(ctx, cmdFlags)
 
 	initialRelays := true
 	rpccs.relaysMonitor = relaysMonitor
@@ -153,6 +154,10 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 
 func (rpccs *RPCConsumerServer) SetConsistencySeenBlock(blockSeen int64, key string) {
 	rpccs.consumerConsistency.SetSeenBlockFromKey(blockSeen, key)
+}
+
+func (rpccs *RPCConsumerServer) GetListeningAddress() string {
+	return rpccs.chainListener.GetListeningAddress()
 }
 
 func (rpccs *RPCConsumerServer) sendCraftedRelaysWrapper(initialRelays bool) (bool, error) {
@@ -814,7 +819,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "session_id", Value: singleConsumerSession.SessionId},
 					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
 					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
-					utils.Attribute{Key: "finalizationConsensus", Value: rpccs.finalizationConsensus.String()},
 				)
 			}
 			if rpccs.debugRelays && singleConsumerSession.QoSInfo.LastQoSReport != nil &&
@@ -827,7 +831,6 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 					utils.Attribute{Key: "provider_address", Value: singleConsumerSession.Parent.PublicLavaAddress},
 					utils.Attribute{Key: "providersCount", Value: pairingAddressesLen},
 					utils.Attribute{Key: "singleConsumerSession.QoSInfo", Value: singleConsumerSession.QoSInfo},
-					utils.Attribute{Key: "finalizationConsensus", Value: rpccs.finalizationConsensus.String()},
 				)
 			}
 

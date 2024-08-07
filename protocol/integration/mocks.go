@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -258,29 +257,33 @@ func NewMockChainFetcher(startBlock, blocksToSave int64, callback func()) *MockC
 	return &mockCHainFetcher
 }
 
+const (
+	minPort = 1024
+	maxPort = 49151
+)
+
 type uniqueAddressGenerator struct {
-	seed int
-	lock sync.Mutex
+	currentPort int
+	lock        sync.Mutex
 }
 
-func (ug *uniqueAddressGenerator) GetAddress() string {
-	ug.lock.Lock()
-	defer ug.lock.Unlock()
-	ug.seed++
-	if ug.seed < 100 {
-		return "localhost:111" + strconv.Itoa(ug.seed)
+func NewUniqueAddressGenerator() uniqueAddressGenerator {
+	return uniqueAddressGenerator{
+		currentPort: minPort,
 	}
-	return "localhost:11" + strconv.Itoa(ug.seed)
 }
 
-func (ug *uniqueAddressGenerator) GetUnixSocketAddress() string {
-	ug.lock.Lock()
-	defer ug.lock.Unlock()
-	ug.seed++
-	if ug.seed < 100 {
-		return filepath.Join("/tmp", "unix:"+strconv.Itoa(ug.seed)+".sock")
+func (ag *uniqueAddressGenerator) GetAddress() string {
+	ag.lock.Lock()
+	defer ag.lock.Unlock()
+
+	if ag.currentPort > maxPort {
+		panic("all ports have been exhausted")
 	}
-	return filepath.Join("/tmp", "unix:"+strconv.Itoa(ug.seed)+".sock")
+
+	address := fmt.Sprintf("localhost:%d", ag.currentPort)
+	ag.currentPort++
+	return address
 }
 
 type GetLatestBlockDataWrapper func(rpcprovider.ReliabilityManagerInf, int64, int64, int64) (int64, []*chaintracker.BlockStore, time.Time, error)

@@ -240,11 +240,12 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 }
 
 type RestChainListener struct {
-	endpoint       *lavasession.RPCEndpoint
-	relaySender    RelaySender
-	healthReporter HealthReporter
-	logger         *metrics.RPCConsumerLogs
-	refererData    *RefererData
+	endpoint         *lavasession.RPCEndpoint
+	relaySender      RelaySender
+	healthReporter   HealthReporter
+	logger           *metrics.RPCConsumerLogs
+	refererData      *RefererData
+	listeningAddress string
 }
 
 // NewRestChainListener creates a new instance of RestChainListener
@@ -255,11 +256,11 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 ) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
-		listenEndpoint,
-		relaySender,
-		healthReporter,
-		rpcConsumerLogs,
-		refererData,
+		endpoint:       listenEndpoint,
+		relaySender:    relaySender,
+		healthReporter: healthReporter,
+		logger:         rpcConsumerLogs,
+		refererData:    refererData,
 	}
 
 	return chainListener
@@ -434,7 +435,18 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	app.Use("/*", handlerUse)
 
 	// Go
-	ListenWithRetry(app, apil.endpoint.NetworkAddress)
+	addrChannel := make(chan string)
+	addrChannelSafe := common.NewSafeChannelSender(ctx, addrChannel)
+	go func() {
+		addr := <-addrChannel
+		apil.listeningAddress = addr
+	}()
+
+	ListenWithRetry(app, apil.endpoint.NetworkAddress, addrChannelSafe)
+}
+
+func (apil *RestChainListener) GetListeningAddress() string {
+	return apil.listeningAddress
 }
 
 func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {

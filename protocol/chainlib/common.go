@@ -192,11 +192,18 @@ func validateEndpoints(endpoints []common.NodeUrl, apiInterface string) {
 	}
 }
 
-func ListenWithRetry(app *fiber.App, address string) {
+func ListenWithRetry(app *fiber.App, address string, chosenAddrCh *common.SafeChannelSender[string]) {
 	for {
-		err := app.Listen(address)
+		ln, err := net.Listen("tcp", address)
 		if err != nil {
-			utils.LavaFormatError("app.Listen(listenAddr)", err)
+			utils.LavaFormatError("net.Listen(tcp, address)", err, utils.LogAttr("address", address))
+		} else {
+			chosenAddrCh.Send(ln.Addr().String())
+
+			err = app.Listener(ln)
+			if err != nil {
+				utils.LavaFormatError("app.Listen(listenAddr)", err)
+			}
 		}
 		time.Sleep(RetryListeningInterval * time.Second)
 	}
