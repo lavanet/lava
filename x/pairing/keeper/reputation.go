@@ -24,11 +24,6 @@ past blocks.
 
 */
 
-// TODO: remove and reimplement in future work
-func (k Keeper) GetQos(ctx sdk.Context, chainID string, cluster string, provider string) (qos types.QualityOfServiceReport, err error) {
-	return qos, nil
-}
-
 // GetReputation gets a Reputation from the store
 func (k Keeper) GetReputation(ctx sdk.Context, chainID string, cluster string, provider string) (types.Reputation, bool) {
 	key := types.ReputationKey(chainID, cluster, provider)
