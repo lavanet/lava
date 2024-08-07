@@ -164,7 +164,7 @@ func (pm *baseChainMessageContainer) SetExtension(extension *spectypes.Extension
 func (pm *baseChainMessageContainer) RemoveExtension(extensionName string) {
 	for _, ext := range pm.extensions {
 		if ext.Name == extensionName {
-			lavaslices.Remove(pm.extensions, ext)
+			pm.extensions, _ = lavaslices.Remove(pm.extensions, ext)
 			pm.removeExtensionCu(ext)
 			break
 		}
