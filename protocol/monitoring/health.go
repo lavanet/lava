@@ -14,7 +14,7 @@ import (
 	lvutil "github.com/lavanet/lava/v2/ecosystem/lavavisor/pkg/util"
 	"github.com/lavanet/lava/v2/protocol/chainlib"
 	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/protocol/rpcprovider"
 	"github.com/lavanet/lava/v2/utils"
@@ -627,10 +627,10 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 
 func prettifyProviderError(err error) string {
 	code := status.Code(err)
-	if code == codes.Code(lavaprotocol.UnhandledRelayReceiverError.ABCICode()) {
+	if code == codes.Code(protocolerrors.UnhandledRelayReceiverError.ABCICode()) {
 		return "provider running with unhandled support"
 	}
-	if code == codes.Code(lavaprotocol.DisabledRelayReceiverError.ABCICode()) {
+	if code == codes.Code(protocolerrors.DisabledRelayReceiverError.ABCICode()) {
 		return "provider running with disabled support due to verification"
 	}
 	if len(err.Error()) < NiceOutputLength {
