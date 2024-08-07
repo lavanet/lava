@@ -379,12 +379,12 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 
 	apiName := chainMessage.GetApi().Name
 	resetUsedOnce := true
-	if apiName == "tx" || apiName == "chunk" {
+	if apiName == "tx" || apiName == "chunk" || apiName == "EXPERIMENTAL_tx_status" {
 		relayTimeout = time.Millisecond * 500
 	}
 
 	setArchiveOnSpecialApi := func() {
-		if apiName == "tx" || apiName == "chunk" {
+		if apiName == "tx" || apiName == "chunk" || apiName == "EXPERIMENTAL_tx_status" {
 			archiveExtensionArray := []string{"archive"}
 			chainMessage.OverrideExtensions(archiveExtensionArray, rpccs.chainParser.ExtensionsParser())
 			relayRequestData.Extensions = archiveExtensionArray
