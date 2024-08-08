@@ -9,6 +9,7 @@ import "github.com/gofiber/fiber/v2"
 type JsonRPCError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
+	Data    string `json:"data"`
 }
 
 type JsonRPCErrorMessage struct {
@@ -23,6 +24,16 @@ var JsonRpcMethodNotFoundError = JsonRPCErrorMessage{
 	Error: JsonRPCError{
 		Code:    -32601,
 		Message: "Method not found",
+	},
+}
+
+var JsonRpcSubscriptionNotFoundError = JsonRPCErrorMessage{
+	JsonRPC: "2.0",
+	Id:      1,
+	Error: JsonRPCError{
+		Code:    -32603,
+		Message: "Internal error",
+		Data:    "subscription not found",
 	},
 }
 

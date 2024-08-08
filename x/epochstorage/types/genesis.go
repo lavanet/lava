@@ -25,11 +25,10 @@ func (gs GenesisState) Validate() error {
 	stakeStorageIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.StakeStorageList {
-		index := string(StakeStorageKey(elem.Index))
-		if _, ok := stakeStorageIndexMap[index]; ok {
+		if _, ok := stakeStorageIndexMap[elem.Index]; ok {
 			return fmt.Errorf("duplicated index for stakeStorage")
 		}
-		stakeStorageIndexMap[index] = struct{}{}
+		stakeStorageIndexMap[elem.Index] = struct{}{}
 	}
 	// Check for duplicated index in fixatedParams
 	fixatedParamsIndexMap := make(map[string]struct{})

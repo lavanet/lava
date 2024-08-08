@@ -170,7 +170,7 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			if err != nil {
 				utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
 			}
-			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward %s", providerCU.CU, providerIprpcReward.String())
+			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerIprpcReward.String())
 		}
 		details["total_cu"] = strconv.FormatUint(specCu.TotalCu, 10)
 		details["total_reward"] = specFund.Fund.String()
