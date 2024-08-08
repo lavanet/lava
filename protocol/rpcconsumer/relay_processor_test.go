@@ -367,6 +367,9 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }))
 		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName))
 
+		// verify that the header
+		require.Contains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
+
 		// second node error
 		go sendNodeError(relayProcessor, "lava@test", time.Millisecond*5)
 
@@ -387,6 +390,9 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		// verify that the original extensions are still there
 		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }), chainMsg.GetExtensions())
 		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName), relayPrivateData.Extensions)
+
+		// verify that the header
+		require.Contains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
 	})
 
 	t.Run("retry_flow_with_force_archive__archive_message_already", func(t *testing.T) {
@@ -447,6 +453,9 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }))
 		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName))
 
+		// verify that the header
+		require.NotContains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
+
 		// second node error
 		go sendNodeError(relayProcessor, "lava@test", time.Millisecond*5)
 
@@ -467,6 +476,9 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		// verify that the original extensions are still there
 		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }), chainMsg.GetExtensions())
 		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName), relayPrivateData.Extensions)
+
+		// verify that the header
+		require.NotContains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
 	})
 }
 
