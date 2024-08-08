@@ -91,30 +91,43 @@ func SetSpecificSeed(seed int64) {
 	protocolRand = &threadSafeRand{rand: rand.New(rand.NewSource(seed))}
 }
 
+func PanicIfProtocolRandNotInitialized() {
+	if protocolRand == nil {
+		panic("rand.InitRandomSeed() must be called before using the rand package")
+	}
+}
+
 func Intn(n int) int {
+	PanicIfProtocolRandNotInitialized()
 	return protocolRand.Intn(n)
 }
 
 func Float64() float64 {
+	PanicIfProtocolRandNotInitialized()
 	return protocolRand.Float64()
 }
 
 func Uint32() uint32 {
+	PanicIfProtocolRandNotInitialized()
 	return protocolRand.Uint32()
 }
 
 func Uint64() uint64 {
+	PanicIfProtocolRandNotInitialized()
 	return protocolRand.Uint64()
 }
 
 func Int63() int64 {
+	PanicIfProtocolRandNotInitialized()
 	return protocolRand.Int63()
 }
 
 func Int63n(n int64) int64 {
+	PanicIfProtocolRandNotInitialized()
 	return protocolRand.Int63n(n)
 }
 
 func NormFloat64() float64 {
+	PanicIfProtocolRandNotInitialized()
 	return protocolRand.NormFloat64()
 }

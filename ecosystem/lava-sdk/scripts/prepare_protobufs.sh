@@ -13,9 +13,9 @@ function prepare() {
     file_path="../../go.mod"
     expected_lines=(
         "github.com/gogo/googleapis v1.4.1 // indirect"
-        "github.com/cosmos/cosmos-sdk v0.47.10"
+        "github.com/cosmos/cosmos-sdk v0.47.13"
         "github.com/cosmos/gogoproto v1.4.10"
-        "github.com/cosmos/cosmos-proto v1.0.0-beta.4"
+        "github.com/cosmos/cosmos-proto v1.0.0-beta.5"
     )
 
     missing_lines=()
@@ -48,7 +48,7 @@ function prepare() {
         exit 1
     fi
 
-    specific_dir="$GOPATH/pkg/mod/github.com/lavanet/cosmos-sdk@v0.47.10-lava-cosmos"
+    specific_dir="$GOPATH/pkg/mod/github.com/lavanet/cosmos-sdk@v0.47.13-lava-cosmos"
 
     if [[ ! -d "$specific_dir" ]]; then
         echo "Error: The cosmos-sdk directory ('$specific_dir') does not exist under '$GOPATH/pkg/mod'." >&2
@@ -72,7 +72,7 @@ function prepare() {
         exit 1
     fi
 
-    cosmosprotosdir="$GOPATH/pkg/mod/github.com/cosmos/cosmos-proto@v1.0.0-beta.4"
+    cosmosprotosdir="$GOPATH/pkg/mod/github.com/cosmos/cosmos-proto@v1.0.0-beta.5"
 
     if [[ ! -d "$cosmosprotosdir" ]]; then
         echo "Error: The cosmosprotosdir directory ('$cosmosprotosdir') does not exist under '$GOPATH/pkg/mod'." >&2
