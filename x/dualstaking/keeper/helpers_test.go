@@ -95,7 +95,7 @@ func (ts *tester) getStakeEntry(provider string, chainID string) epochstoragetyp
 	epoch := ts.EpochStart()
 	keeper := ts.Keepers.Epochstorage
 
-	stakeEntry, found := keeper.GetStakeEntryForProviderEpoch(ts.Ctx, chainID, provider, epoch)
+	stakeEntry, found := keeper.GetStakeEntry(ts.Ctx, epoch, chainID, provider)
 	if !found {
 		panic("getStakeEntry: no stake entry: " + provider + " " + chainID)
 	}
