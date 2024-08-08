@@ -9,6 +9,7 @@ import "lavanet/lava/subscription/cu_tracker.proto";
 import "lavanet/lava/subscription/params.proto";
 // this line is used by starport scaffolding # 1
 import "lavanet/lava/subscription/subscription.proto";
+import "amino/amino.proto";
 
 option go_package = "github.com/lavanet/lava/v2/x/subscription/types";
 
@@ -127,17 +128,19 @@ message QueryEstimatedRewardsRequest {
 
 message EstimatedRewardInfo {
   string source =1;
-  repeated cosmos.base.v1beta1.Coin amount = 2 [
-        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-        (gogoproto.nullable)     = false
-    ];
+  repeated cosmos.base.v1beta1.DecCoin amount = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
 }
 
 message QueryEstimatedRewardsResponse {
   repeated EstimatedRewardInfo info = 1 [(gogoproto.nullable) = true];
-  repeated cosmos.base.v1beta1.Coin total = 2 [
-        (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-        (gogoproto.nullable)     = false
-    ];
+  repeated cosmos.base.v1beta1.DecCoin total = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
 }
 // this line is used by starport scaffolding # 3

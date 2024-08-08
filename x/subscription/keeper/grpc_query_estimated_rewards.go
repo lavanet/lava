@@ -28,7 +28,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 
 	storage, found := k.epochstorageKeeper.GetStakeStorageCurrent(ctx, req.ChainId)
 	if !found {
-		return nil, fmt.Errorf("your mama")
+		return nil, fmt.Errorf("stake storage not found for chain ID: %s", req.ChainId)
 	}
 
 	totalStake := math.ZeroInt()
@@ -42,11 +42,11 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		}
 	}
 	if !found {
-		return nil, fmt.Errorf("your mama")
+		return nil, fmt.Errorf("provider not found in stake entries for chain ID: %s", req.ChainId)
 	}
 
 	entry.DelegateTotal = entry.DelegateTotal.Add(delegationAmount)
-	delegatorPart := sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).MulInt64(100)
+	delegatorPart := sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake)
 	if entry.DelegateLimit.Amount.LT(entry.DelegateTotal.Amount) {
 		delegatorPart = delegatorPart.MulInt(entry.DelegateLimit.Amount).QuoInt(entry.DelegateTotal.Amount)
 	}
@@ -72,7 +72,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	}
 
 	if !found {
-		return nil, fmt.Errorf("your mama")
+		return nil, fmt.Errorf("spec emission part not found for chain ID: %s", req.ChainId)
 	}
 
 	subscriptionRewards := sdk.NewCoins(totalSubsRewards.MulInt(specEmission.Emission.MulInt64(100).RoundInt())...)
@@ -89,15 +89,15 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	if found {
 		for _, fund := range iprpcReward.SpecFunds {
 			if fund.Spec == req.ChainId {
-				res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "iprpc", Amount: fund.Fund.MulInt(delegatorPart.RoundInt()).QuoInt(sdk.NewInt(100))})
+				res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "iprpc", Amount: sdk.NewDecCoinsFromCoins(fund.Fund...).MulDec(delegatorPart)})
 			}
 		}
-
 	}
-	res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "subscriptions", Amount: subscriptionRewards.MulInt(delegatorPart.RoundInt()).QuoInt(sdk.NewInt(100))})
-	res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "boost", Amount: sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), bonusRewards.Mul(delegatorPart).QuoInt64(100).TruncateInt()))})
 
-	res.Total = sdk.NewCoins()
+	res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "subscriptions", Amount: sdk.NewDecCoinsFromCoins(subscriptionRewards...).MulDec(delegatorPart)})
+	res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "boost", Amount: sdk.NewDecCoins(sdk.NewDecCoinFromDec(k.stakingKeeper.BondDenom(ctx), bonusRewards.Mul(delegatorPart)))})
+
+	res.Total = sdk.NewDecCoins()
 	for _, k := range res.Info {
 		res.Total = res.Total.Add(k.Amount...)
 	}
