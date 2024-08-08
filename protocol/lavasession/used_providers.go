@@ -23,7 +23,12 @@ func NewUsedProviders(directiveHeaders map[string]string) *UsedProviders {
 			}
 		}
 	}
-	return &UsedProviders{providers: map[string]struct{}{}, unwantedProviders: unwantedProviders, blockOnSyncLoss: map[string]struct{}{}, erroredProviders: map[string]struct{}{}}
+	return &UsedProviders{
+		providers:         map[string]struct{}{},
+		unwantedProviders: unwantedProviders,
+		blockOnSyncLoss:   map[string]struct{}{},
+		erroredProviders:  map[string]struct{}{},
+	}
 }
 
 type UsedProviders struct {
@@ -162,6 +167,7 @@ func (up *UsedProviders) TryLockSelection(ctx context.Context) error {
 	for counter := 0; counter < MaximumNumberOfSelectionLockAttempts; counter++ {
 		select {
 		case <-ctx.Done():
+			utils.LavaFormatTrace("Failed locking selection, context is done")
 			return ContextDoneNoNeedToLockSelectionError
 		default:
 			canSelect := up.tryLockSelection()

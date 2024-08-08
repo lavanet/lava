@@ -89,7 +89,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
-				details[basepay.Provider] = fmt.Sprintf("cu: %d reward %s", basepay.TotalAdjusted, reward.String())
+				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.TotalAdjusted, reward.String())
 			}
 
 			// count iprpc cu
@@ -139,12 +139,9 @@ func (k Keeper) specEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 			continue
 		}
 
-		stakeStorage, found := k.epochstorage.GetStakeStorageCurrent(ctx, chainID)
-		if !found {
-			continue
-		}
+		stakeEntries := k.epochstorage.GetAllStakeEntriesCurrentForChainId(ctx, chainID)
 		chainStake[chainID] = sdk.ZeroDec()
-		for _, entry := range stakeStorage.StakeEntries {
+		for _, entry := range stakeEntries {
 			chainStake[chainID] = chainStake[chainID].Add(sdk.NewDecFromInt(entry.EffectiveStake()))
 		}
 
