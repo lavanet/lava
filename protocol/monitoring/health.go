@@ -543,13 +543,12 @@ func CheckProviders(ctx context.Context, clientCtx client.Context, healthResults
 		for _, endpoint := range providerEntry.Endpoints {
 			checkOneProvider := func(endpoint epochstoragetypes.Endpoint, apiInterface string, addon string, providerEntry epochstoragetypes.StakeEntry) (time.Duration, string, int64, error) {
 				cswp := lavasession.ConsumerSessionsWithProvider{}
-				relayerClientPt, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
+				relayerClient, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 				if err != nil {
 					utils.LavaFormatDebug("failed connecting to provider endpoint", utils.LogAttr("error", err), utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 					return 0, "", 0, err
 				}
 				defer conn.Close()
-				relayerClient := *relayerClientPt
 				guid := uint64(rand.Int63())
 				relaySentTime := time.Now()
 				probeReq := &pairingtypes.ProbeRequest{

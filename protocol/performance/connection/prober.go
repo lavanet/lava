@@ -15,14 +15,14 @@ import (
 type Prober struct {
 	address       string
 	conn          *grpc.ClientConn
-	relayerClient *pairingtypes.RelayerClient
+	relayerClient pairingtypes.RelayerClient
 }
 
 func NewProber(addrss string) *Prober {
 	return &Prober{address: addrss}
 }
 
-func createConnection(ctx context.Context, address string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
+func createConnection(ctx context.Context, address string) (pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	cswp := lavasession.ConsumerSessionsWithProvider{}
 	return cswp.ConnectRawClientWithTimeout(ctx, address)
 }
@@ -39,7 +39,7 @@ func (p *Prober) RunOnce(ctx context.Context) error {
 		p.relayerClient = relayer
 		p.conn = conn
 	}
-	relayerClient := *p.relayerClient
+
 	guid := uint64(rand.Int63())
 
 	probeReq := &pairingtypes.ProbeRequest{
@@ -49,7 +49,7 @@ func (p *Prober) RunOnce(ctx context.Context) error {
 	}
 	var trailer metadata.MD
 	utils.LavaFormatInfo("[+] sending probe", utils.LogAttr("guid", guid))
-	probeResp, err := relayerClient.Probe(ctx, probeReq, grpc.Trailer(&trailer))
+	probeResp, err := p.relayerClient.Probe(ctx, probeReq, grpc.Trailer(&trailer))
 	if err != nil {
 		return err
 	}
