@@ -155,6 +155,8 @@ type JsonError struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
+	Name    interface{} `json:"name,omitempty"`
+	Cause   interface{} `json:"cause,omitempty"`
 }
 
 func (err *JsonError) Error() string {
