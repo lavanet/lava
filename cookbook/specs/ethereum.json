@@ -384,7 +384,7 @@
                                 "category": {
                                     "deterministic": false,
                                     "local": true,
-                                    "subscription": true,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
@@ -833,7 +833,7 @@
                                     ],
                                     "parser_func": "DEFAULT"
                                 },
-                                "compute_units": 10,
+                                "compute_units": 1000,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
@@ -874,7 +874,7 @@
                                 "category": {
                                     "deterministic": false,
                                     "local": true,
-                                    "subscription": true,
+                                    "subscription": false,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
@@ -883,16 +883,16 @@
                                 "name": "eth_unsubscribe",
                                 "block_parsing": {
                                     "parser_arg": [
-                                        ""
+                                        "latest"
                                     ],
-                                    "parser_func": "EMPTY"
+                                    "parser_func": "DEFAULT"
                                 },
                                 "compute_units": 10,
                                 "enabled": true,
                                 "category": {
                                     "deterministic": false,
                                     "local": true,
-                                    "subscription": false,
+                                    "subscription": true,
                                     "stateful": 0
                                 },
                                 "extra_compute_units": 0
@@ -1045,6 +1045,15 @@
                                     "encoding": "hex"
                                 },
                                 "api_name": "eth_getBlockByNumber"
+                            },
+                            {
+                                "function_tag": "SUBSCRIBE",
+                                "api_name": "eth_subscribe"
+                            },
+                            {
+                                "function_template": "{\"jsonrpc\":\"2.0\",\"method\":\"eth_unsubscribe\",\"params\":[\"%s\"],\"id\":1}",
+                                "function_tag": "UNSUBSCRIBE",
+                                "api_name": "eth_unsubscribe"
                             }
                         ],
                         "verifications": [
