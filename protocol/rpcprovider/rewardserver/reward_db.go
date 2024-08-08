@@ -13,8 +13,10 @@ import (
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
-const keySeparator = "."
-const batchSize = 1000
+const (
+	keySeparator = "."
+	batchSize    = 1000
+)
 
 type DB interface {
 	Key() string
