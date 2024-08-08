@@ -236,7 +236,13 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 			} else {
 				relayResult, err := relayProcessor.ProcessingResult()
 				if err == nil {
-					utils.LavaFormatInfo("[+] init relay succeeded", []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "latestBlock", Value: relayResult.Reply.LatestBlock}, {Key: "provider address", Value: relayResult.ProviderInfo.ProviderAddress}}...)
+					utils.LavaFormatInfo("[+] init relay succeeded",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("chainID", rpccs.listenEndpoint.ChainID),
+						utils.LogAttr("APIInterface", rpccs.listenEndpoint.ApiInterface),
+						utils.LogAttr("latestBlock", relayResult.Reply.LatestBlock),
+						utils.LogAttr("provider address", relayResult.ProviderInfo.ProviderAddress),
+					)
 					rpccs.relaysMonitor.LogRelay()
 					success = true
 					// If this is the first time we send relays, we want to send all of them, instead of break on first successful relay
@@ -726,7 +732,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 				return
 			}
 			localRelayResult.Request = relayRequest
-			endpointClient := *singleConsumerSession.EndpointConnection.Client
+			endpointClient := singleConsumerSession.EndpointConnection.Client
 
 			// set relay sent metric
 			go rpccs.rpcConsumerLogs.SetRelaySentToProviderMetric(chainId, apiInterface)
@@ -889,7 +895,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 
 func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult, relayTimeout time.Duration, chainMessage chainlib.ChainMessage, consumerToken string, analytics *metrics.RelayMetrics) (relayLatency time.Duration, err error, needsBackoff bool) {
 	existingSessionLatestBlock := singleConsumerSession.LatestBlock // we read it now because singleConsumerSession is locked, and later it's not
-	endpointClient := *singleConsumerSession.EndpointConnection.Client
+	endpointClient := singleConsumerSession.EndpointConnection.Client
 	providerPublicAddress := relayResult.ProviderInfo.ProviderAddress
 	relayRequest := relayResult.Request
 	if rpccs.debugRelays {
@@ -898,14 +904,64 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 	callRelay := func() (reply *pairingtypes.RelayReply, relayLatency time.Duration, err error, backoff bool) {
 		relaySentTime := time.Now()
 		connectCtx, connectCtxCancel := context.WithTimeout(ctx, relayTimeout)
-		metadataAdd := metadata.New(map[string]string{common.IP_FORWARDING_HEADER_NAME: consumerToken, common.LAVA_CONSUMER_PROCESS_GUID: rpccs.consumerProcessGuid})
+		metadataAdd := metadata.New(map[string]string{
+			common.IP_FORWARDING_HEADER_NAME:  consumerToken,
+			common.LAVA_CONSUMER_PROCESS_GUID: rpccs.consumerProcessGuid,
+			common.LAVA_LB_UNIQUE_ID_HEADER:   singleConsumerSession.EndpointConnection.GetLbUniqueId(),
+		})
+
+		utils.LavaFormatTrace("Sending relay to provider",
+			utils.LogAttr("GUID", ctx),
+			utils.LogAttr("lbUniqueId", singleConsumerSession.EndpointConnection.GetLbUniqueId()),
+		)
 		connectCtx = metadata.NewOutgoingContext(connectCtx, metadataAdd)
 		defer connectCtxCancel()
 
 		// add consumer processing timestamp before provider metric and start measuring time after the provider replied
 		rpccs.rpcConsumerLogs.AddMetricForProcessingLatencyBeforeProvider(analytics, rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface)
 
+		if relayResult.ProviderTrailer == nil {
+			// if the provider trailer is nil, we need to initialize it
+			relayResult.ProviderTrailer = metadata.MD{}
+		}
+
 		reply, err = endpointClient.Relay(connectCtx, relayRequest, grpc.Trailer(&relayResult.ProviderTrailer))
+
+		providerUniqueId := relayResult.ProviderTrailer.Get(chainlib.RpcProviderUniqueIdHeader)
+		if len(providerUniqueId) > 0 {
+			if len(providerUniqueId) > 1 {
+				utils.LavaFormatInfo("Received more than one provider unique id in header, skipping",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+					utils.LogAttr("providerUniqueId", providerUniqueId),
+				)
+			} else if providerUniqueId[0] != "" { // Otherwise, the header is "" which is fine - it means the header is not set
+				utils.LavaFormatTrace("Received provider unique id",
+					utils.LogAttr("GUID", ctx),
+					utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+					utils.LogAttr("providerUniqueId", providerUniqueId),
+				)
+
+				if !singleConsumerSession.VerifyProviderUniqueIdAndStoreIfFirstTime(providerUniqueId[0]) {
+					return reply, 0, utils.LavaFormatError("provider unique id mismatch",
+						errors.Join(lavasession.SessionOutOfSyncError, lavasession.BlockEndpointError),
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
+						utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+						utils.LogAttr("providedProviderUniqueId", providerUniqueId),
+						utils.LogAttr("providerUniqueId", singleConsumerSession.GetProviderUniqueId()),
+					), false
+				} else {
+					utils.LavaFormatTrace("Provider unique id match",
+						utils.LogAttr("GUID", ctx),
+						utils.LogAttr("sessionId", relayRequest.RelaySession.SessionId),
+						utils.LogAttr("provider", relayRequest.RelaySession.Provider),
+						utils.LogAttr("providerUniqueId", providerUniqueId),
+					)
+				}
+			}
+		}
+
 		statuses := relayResult.ProviderTrailer.Get(common.StatusCodeMetadataKey)
 		if len(statuses) > 0 {
 			codeNum, errStatus := strconv.Atoi(statuses[0])
@@ -1004,8 +1060,10 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 
 func (rpccs *RPCConsumerServer) relaySubscriptionInner(ctx context.Context, hashedParams string, endpointClient pairingtypes.RelayerClient, singleConsumerSession *lavasession.SingleConsumerSession, relayResult *common.RelayResult) (err error) {
 	// add consumer guid to relay request.
-	metadataAdd := metadata.Pairs(common.LAVA_CONSUMER_PROCESS_GUID, rpccs.consumerProcessGuid)
-	ctx = metadata.NewOutgoingContext(ctx, metadataAdd)
+	ctx = metadata.AppendToOutgoingContext(ctx,
+		common.LAVA_LB_UNIQUE_ID_HEADER, singleConsumerSession.EndpointConnection.GetLbUniqueId(),
+		common.LAVA_CONSUMER_PROCESS_GUID, rpccs.consumerProcessGuid,
+	)
 
 	replyServer, err := endpointClient.RelaySubscribe(ctx, relayResult.Request)
 	if err != nil {
