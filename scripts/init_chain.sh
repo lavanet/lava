@@ -95,7 +95,6 @@ sed "${SED_INLINE[@]}" \
 sed "${SED_INLINE[@]}" -e "s/enable = .*/enable = true/" "$path$app"
 sed "${SED_INLINE[@]}" -e "/Enable defines if the Rosetta API server should be enabled.*/{n;s/enable = .*/enable = false/;}" "$path$app"
 
-
 # Add users
 users=("alice" "bob" "user1" "user2" "user3" "user4" "user5" "servicer1" "servicer2" "servicer3" "servicer4" "servicer5" "servicer6" "servicer7" "servicer8" "servicer9" "servicer10")
 

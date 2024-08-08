@@ -141,12 +141,9 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 			continue
 		}
 
-		stakeStorage, found := k.epochstorage.GetStakeStorageCurrent(ctx, chainID)
-		if !found {
-			continue
-		}
+		stakeEntries := k.epochstorage.GetAllStakeEntriesCurrentForChainId(ctx, chainID)
 		chainStake[chainID] = sdk.ZeroDec()
-		for _, entry := range stakeStorage.StakeEntries {
+		for _, entry := range stakeEntries {
 			chainStake[chainID] = chainStake[chainID].Add(sdk.NewDecFromInt(entry.EffectiveStake()))
 		}
 

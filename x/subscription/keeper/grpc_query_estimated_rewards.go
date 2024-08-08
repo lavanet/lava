@@ -26,15 +26,12 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		return nil, err
 	}
 
-	storage, found := k.epochstorageKeeper.GetStakeStorageCurrent(ctx, req.ChainId)
-	if !found {
-		return nil, fmt.Errorf("stake storage not found for chain ID: %s", req.ChainId)
-	}
+	storage := k.epochstorageKeeper.GetAllStakeEntriesCurrentForChainId(ctx, req.ChainId)
 
 	totalStake := math.ZeroInt()
 	var entry epochstoragetypes.StakeEntry
-	found = false
-	for _, e := range storage.StakeEntries {
+	found := false
+	for _, e := range storage {
 		totalStake = totalStake.Add(e.EffectiveStake())
 		if e.Address == req.Provider {
 			found = true
