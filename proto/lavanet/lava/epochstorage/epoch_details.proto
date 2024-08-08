@@ -6,6 +6,5 @@ option go_package = "github.com/lavanet/lava/v2/x/epochstorage/types";
 message EpochDetails {
   uint64 startBlock = 1; 
   uint64 earliestStart = 2; 
-  repeated uint64 deletedEpochs =3;
-  
+  repeated uint64 deletedEpochs = 3;
 }

@@ -176,7 +176,7 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider, chainID
 
 // modifyStakeEntryDelegation modifies the (epochstorage) stake-entry of the provider for a chain based on the action (increase or decrease).
 func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider, chainID string, amount sdk.Coin, increase bool) (err error) {
-	stakeEntry, exists := k.epochstorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+	stakeEntry, exists := k.epochstorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
 	if !exists || provider != stakeEntry.Address {
 		if increase {
 			return epochstoragetypes.ErrProviderNotStaked
@@ -216,17 +216,9 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 	}
 
 	if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
-		err = k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Vault)
-		if err != nil {
-			return utils.LavaFormatError("can't remove stake Entry after decreasing provider self delegation", err,
-				utils.Attribute{Key: "provider", Value: stakeEntry.Address},
-				utils.Attribute{Key: "spec", Value: chainID},
-			)
-		}
+		k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Address)
 		details["min_self_delegation"] = k.GetParams(ctx).MinSelfDelegation.String()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeFromUnbond, details, "unstaking provider due to unbond that lowered its stake below min self delegation")
-		unstakeHoldBlocks := k.epochstorageKeeper.GetUnstakeHoldBlocks(ctx, stakeEntry.Chain)
-		k.epochstorageKeeper.AppendUnstakeEntry(ctx, stakeEntry, unstakeHoldBlocks)
 		return nil
 	} else if stakeEntry.EffectiveStake().LT(k.specKeeper.GetMinStake(ctx, chainID).Amount) {
 		details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, chainID).String()
@@ -236,7 +228,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		stakeEntry.UnFreeze(k.epochstorageKeeper.GetCurrentNextEpoch(ctx) + 1)
 	}
 
-	k.epochstorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, stakeEntry)
+	k.epochstorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
 
 	return nil
 }

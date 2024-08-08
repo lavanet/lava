@@ -44,17 +44,29 @@ func (cc *ConsumerConsistency) Key(dappId string, ip string) string {
 	return dappId + "__" + ip
 }
 
+// used on subscription, where we already have the dapp key stored, but we don't keep the dappId and ip separately
+func (cc *ConsumerConsistency) SetSeenBlockFromKey(blockSeen int64, key string) {
+	if cc == nil {
+		return
+	}
+	block, _ := cc.getLatestBlock(key)
+	if block < blockSeen {
+		cc.setLatestBlock(key, blockSeen)
+	}
+}
+
 func (cc *ConsumerConsistency) SetSeenBlock(blockSeen int64, dappId string, ip string) {
 	if cc == nil {
 		return
 	}
-	block, _ := cc.getLatestBlock(cc.Key(dappId, ip))
-	if block < blockSeen {
-		cc.setLatestBlock(cc.Key(dappId, ip), blockSeen)
-	}
+	key := cc.Key(dappId, ip)
+	cc.SetSeenBlockFromKey(blockSeen, key)
 }
 
 func (cc *ConsumerConsistency) GetSeenBlock(dappId string, ip string) (int64, bool) {
+	if cc == nil {
+		return 0, false
+	}
 	return cc.getLatestBlock(cc.Key(dappId, ip))
 }
 

@@ -146,6 +146,7 @@ func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock 
 		msg:                      restMessage,
 		latestRequestedBlock:     requestBlock,
 		resultErrorParsingMethod: restMessage.CheckResponseError,
+		parseDirective:           GetParseDirective(serviceApi, apiCollection),
 	}
 	return nodeMsg
 }
@@ -453,6 +454,9 @@ func NewRestChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 	if len(rpcProviderEndpoint.NodeUrls) == 0 {
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
+
+	validateEndpoints(rpcProviderEndpoint.NodeUrls, spectypes.APIInterfaceRest)
+
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
 	nodeUrl.Url = strings.TrimSuffix(rpcProviderEndpoint.NodeUrls[0].Url, "/")

@@ -81,7 +81,7 @@ export class StateChainQuery {
   // fetchPairing fetches pairing for all chainIDs we support
   public async fetchPairing(): Promise<number> {
     try {
-      Logger.debug("Fetching pairing started");
+      Logger.debug("Fetching pairing from chain started");
       // Save time till next epoch
       let timeLeftToNextPairing;
       let currentEpoch;
@@ -154,7 +154,7 @@ export class StateChainQuery {
       this.currentEpoch = currentEpoch;
       this.downtimeParams = downtimeParams;
 
-      Logger.debug("Fetching pairing ended");
+      Logger.debug("Fetching pairing from chain ended", timeLeftToNextPairing);
 
       // Return timeLeftToNextPairing
       return timeLeftToNextPairing;

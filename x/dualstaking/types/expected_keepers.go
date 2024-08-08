@@ -32,19 +32,12 @@ type BankKeeper interface {
 }
 
 type EpochstorageKeeper interface {
-	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (value epochstoragetypes.StakeEntry, found bool)
-	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry)
-	UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64)
-	UnstakeHoldBlocksStatic(ctx sdk.Context, block uint64) (res uint64)
-	GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider string, epoch uint64) (entry epochstoragetypes.StakeEntry, found bool)
+	GetStakeEntryCurrent(ctx sdk.Context, chainID string, address string) (value epochstoragetypes.StakeEntry, found bool)
+	SetStakeEntryCurrent(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry)
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
-	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (epochstoragetypes.StakeStorage, bool)
-	SetStakeStorageCurrent(ctx sdk.Context, chainID string, stakeStorage epochstoragetypes.StakeStorage)
-	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string) error
-	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64)
-	GetUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64
-	UnstakeEntryByAddress(ctx sdk.Context, address string) (value epochstoragetypes.StakeEntry, found bool)
+	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string)
+	GetStakeEntry(ctx sdk.Context, epoch uint64, chainID string, provider string) (val epochstoragetypes.StakeEntry, found bool)
 	// Methods imported from epochstorage should be defined here
 }
 
