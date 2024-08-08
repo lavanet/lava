@@ -44,7 +44,7 @@ type chainIdAndApiInterfaceGetter interface {
 }
 
 type RelayProcessor struct {
-	usedProviders                *lavasession.UsedProviders
+	usedProviders                map[string]*lavasession.UsedProviders
 	responses                    chan *relayResponse
 	requiredSuccesses            int
 	nodeResponseErrors           RelayErrors
@@ -68,11 +68,12 @@ type RelayProcessor struct {
 	archiveExtensionUpdater      *RelayArchiveExtensionEditor
 	currentRelayRetryIsArchive   bool
 	userHeaders                  []pairingtypes.Metadata
+	directiveHeaders             map[string]string
 }
 
 func NewRelayProcessor(
 	ctx context.Context,
-	usedProviders *lavasession.UsedProviders,
+	usedProviders map[string]*lavasession.UsedProviders,
 	requiredSuccesses int,
 	chainMessage chainlib.ChainMessage,
 	consumerConsistency *ConsumerConsistency,
@@ -84,6 +85,7 @@ func NewRelayProcessor(
 	disableRelayRetry bool,
 	relayRetriesManager *RelayRetriesManager,
 	archiveExtensionUpdater *RelayArchiveExtensionEditor,
+	directiveHeaders map[string]string,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
@@ -93,6 +95,16 @@ func NewRelayProcessor(
 	if requiredSuccesses <= 0 {
 		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", requiredSuccesses))
 	}
+
+	if len(usedProviders) == 0 {
+		utils.LavaFormatFatal("usedProviders is empty", nil)
+	}
+
+	if _, ok := usedProviders[lavasession.DefaultExtensionsKey]; !ok {
+		// we need to have a default extension
+		usedProviders[lavasession.DefaultExtensionsKey] = lavasession.NewUsedProviders(directiveHeaders)
+	}
+
 	return &RelayProcessor{
 		usedProviders:                usedProviders,
 		requiredSuccesses:            requiredSuccesses,
@@ -112,6 +124,7 @@ func NewRelayProcessor(
 		relayRetriesManager:          relayRetriesManager,
 		archiveExtensionUpdater:      archiveExtensionUpdater,
 		userHeaders:                  []pairingtypes.Metadata{},
+		directiveHeaders:             directiveHeaders,
 	}
 }
 
@@ -161,20 +174,30 @@ func (rp *RelayProcessor) String() string {
 	usedProviders := rp.usedProviders
 	rp.lock.RUnlock()
 
-	currentlyUsedAddresses := usedProviders.CurrentlyUsedAddresses()
-	unwantedAddresses := usedProviders.UnwantedAddresses()
-	return fmt.Sprintf("relayProcessor {results:%d, nodeErrors:%d, protocolErrors:%d,unwantedAddresses: %s,currentlyUsedAddresses:%s}",
-		results, nodeErrors, protocolErrors, strings.Join(unwantedAddresses, ";"), strings.Join(currentlyUsedAddresses, ";"))
+	extensionNameToUsedProvidersLogs := []string{}
+	for extensionName, extensionUsedProviders := range usedProviders {
+		currentlyUsedAddresses := extensionUsedProviders.CurrentlyUsedAddresses()
+		unwantedAddresses := extensionUsedProviders.UnwantedAddresses()
+
+		extensionNameToUsedProvidersLog := fmt.Sprintf("%s: {currentlyUsedAddresses: %s, unwantedAddresses: %s}", extensionName, strings.Join(unwantedAddresses, ";"), strings.Join(currentlyUsedAddresses, ";"))
+		extensionNameToUsedProvidersLogs = append(extensionNameToUsedProvidersLogs, extensionNameToUsedProvidersLog)
+	}
+	return fmt.Sprintf("relayProcessor {results:%d, nodeErrors:%d, protocolErrors:%d, usedProviders:[%s]}", results, nodeErrors, protocolErrors, strings.Join(extensionNameToUsedProvidersLogs, ", "))
 }
 
-func (rp *RelayProcessor) GetUsedProviders() *lavasession.UsedProviders {
+func (rp *RelayProcessor) GetUsedProviders(extension string) *lavasession.UsedProviders {
 	if rp == nil {
 		utils.LavaFormatError("RelayProcessor.GetUsedProviders is nil, misuse detected", nil)
 		return nil
 	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	return rp.usedProviders
+	usedProviders, ok := rp.usedProviders[extension]
+	if !ok {
+		utils.LavaFormatWarning("extension not found in used providers, returning default", nil, utils.LogAttr("extension", extension))
+		return rp.usedProviders[lavasession.DefaultExtensionsKey]
+	}
+	return usedProviders
 }
 
 // this function returns all results that came from a node, meaning success, and node errors
@@ -292,8 +315,15 @@ func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 			return true
 		}
 	}
+
+	usedProviders, ok := rp.usedProviders[rp.chainMessage.GetConcatenatedExtensions()]
+	if !ok {
+		utils.LavaFormatError("usedProviders not found", nil, utils.LogAttr("extension", rp.chainMessage.GetConcatenatedExtensions()))
+		return false
+	}
+
 	// check if we got all of the responses
-	if responsesCount >= rp.usedProviders.SessionsLatestBatch() {
+	if responsesCount >= usedProviders.SessionsLatestBatch() {
 		// no active sessions, and we read all the responses, we can return
 		return true
 	}
@@ -349,6 +379,9 @@ func (rp *RelayProcessor) forceArchiveNodeIfNeededInner() {
 			rp.archiveNodeRetriesCount++
 			rp.currentRelayRetryIsArchive = true
 			rp.userHeaders = append(rp.userHeaders, pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
+			if _, ok := rp.usedProviders[extensionslib.ExtensionTypeArchive]; !ok {
+				rp.usedProviders[extensionslib.ExtensionTypeArchive] = lavasession.NewUsedProviders(rp.directiveHeaders)
+			}
 		} else if rp.currentRelayRetryIsArchive {
 			// We already tried archive node, we can reset the flag
 			rp.archiveExtensionUpdater.RemoveArchiveExtensionFromMessage()
@@ -557,7 +590,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 
 	// this must be here before the lock because this function locks
-	allProvidersAddresses := rp.GetUsedProviders().UnwantedAddresses()
+	allProvidersAddresses := rp.GetUsedProviders(rp.chainMessage.GetConcatenatedExtensions()).UnwantedAddresses()
 
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()

@@ -10,7 +10,14 @@ import (
 	"github.com/lavanet/lava/v2/utils"
 )
 
-const MaximumNumberOfSelectionLockAttempts = 500
+const (
+	MaximumNumberOfSelectionLockAttempts = 500
+	DefaultExtensionsKey                 = ""
+)
+
+func NewDefaultUsedProvidersMap(directiveHeaders map[string]string) map[string]*UsedProviders {
+	return map[string]*UsedProviders{DefaultExtensionsKey: NewUsedProviders(directiveHeaders)}
+}
 
 func NewUsedProviders(directiveHeaders map[string]string) *UsedProviders {
 	unwantedProviders := map[string]struct{}{}

@@ -40,7 +40,7 @@ const nodeError = `{"error":{"message": "bad"}, "message":"bad","code":123}`
 
 func sendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, nil)
+	relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey).RemoveUsed(provider, nil)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
@@ -58,7 +58,7 @@ func sendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time
 
 func sendProtocolError(relayProcessor *RelayProcessor, provider string, delay time.Duration, err error) {
 	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, err)
+	relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey).RemoveUsed(provider, err)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
@@ -76,7 +76,7 @@ func sendProtocolError(relayProcessor *RelayProcessor, provider string, delay ti
 
 func sendNodeError(relayProcessor *RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
-	relayProcessor.GetUsedProviders().RemoveUsed(provider, nil)
+	relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey).RemoveUsed(provider, nil)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
 			Request: &pairingtypes.RelayRequest{
@@ -107,9 +107,9 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		require.NoError(t, err)
 		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
 
-		usedProviders := relayProcessor.GetUsedProviders()
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -149,9 +149,9 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
 
-		usedProviders := relayProcessor.GetUsedProviders()
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -191,8 +191,8 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		// check hash map flow:
 		chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor = NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
-		usedProviders = relayProcessor.GetUsedProviders()
+		relayProcessor = NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
+		usedProviders = relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse = usedProviders.TryLockSelection(ctx)
@@ -215,8 +215,8 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		// check hash map flow:
 		chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/18", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor = NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
-		usedProviders = relayProcessor.GetUsedProviders()
+		relayProcessor = NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
+		usedProviders = relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse = usedProviders.TryLockSelection(ctx)
@@ -239,8 +239,8 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		// 4th relay, same inputs, this time a successful relay, should remove the hash from the map
 		chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor = NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
-		usedProviders = relayProcessor.GetUsedProviders()
+		relayProcessor = NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
+		usedProviders = relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse = usedProviders.TryLockSelection(ctx)
@@ -288,9 +288,9 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.NoError(t, err)
 		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
 		relayProcessor.disableRelayRetry = true
-		usedProviders := relayProcessor.GetUsedProviders()
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -324,16 +324,17 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 
 		testExtensionName := "banana"
 		require.NoError(t, err)
-		chainMsg, err := chainParser.ParseMsg("", []byte(`{"jsonrpc":"2.0","id":"1","method":"block","params":["HASH123"]}`), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		chainMsg, err := chainParser.ParseMsg("", []byte(`{"jsonrpc":"2.0","id":1,"method":"block","params":["HASH123"]}`), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
 		chainMsg.SetExtension(&spectypes.Extension{Name: testExtensionName}) // add this extension to make sure it is not removed when we remove the archive extension
 
 		relayPrivateData := &pairingtypes.RelayPrivateData{Extensions: []string{testExtensionName}} // add this extension to make sure it is not removed when we remove the archive extension
 		archiveExtension := &spectypes.Extension{Name: extensionslib.ExtensionTypeArchive}
 		relayArchiveExtensionEditor := NewRelayArchiveExtensionEditor(chainMsg, relayPrivateData, archiveExtension)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, relayArchiveExtensionEditor)
+		newUsedProvidersMap := map[string]*lavasession.UsedProviders{chainMsg.GetConcatenatedExtensions(): lavasession.NewUsedProviders(nil)}
+		relayProcessor := NewRelayProcessor(ctx, newUsedProvidersMap, 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, relayArchiveExtensionEditor, nil)
 
-		usedProviders := relayProcessor.GetUsedProviders()
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 
@@ -402,7 +403,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 
 		testExtensionName := "banana"
 		require.NoError(t, err)
-		chainMsg, err := chainParser.ParseMsg("", []byte(`{"jsonrpc":"2.0","id":"1","method":"block","params":["HASH123"]}`), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		chainMsg, err := chainParser.ParseMsg("", []byte(`{"jsonrpc":"2.0","id":1,"method":"block","params":["HASH123"]}`), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
 		chainMsg.SetExtension(&spectypes.Extension{Name: extensionslib.ExtensionTypeArchive})
 		chainMsg.SetExtension(&spectypes.Extension{Name: testExtensionName}) // add this extension to make sure it is not removed when we remove the archive extension
@@ -410,9 +411,10 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		relayPrivateData := &pairingtypes.RelayPrivateData{Extensions: []string{testExtensionName, extensionslib.ExtensionTypeArchive}} // add this extension to make sure it is not removed when we remove the archive extension
 		archiveExtension := &spectypes.Extension{Name: extensionslib.ExtensionTypeArchive}
 		relayArchiveExtensionEditor := NewRelayArchiveExtensionEditor(chainMsg, relayPrivateData, archiveExtension)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, relayArchiveExtensionEditor)
+		newUsedProvidersMap := map[string]*lavasession.UsedProviders{chainMsg.GetConcatenatedExtensions(): lavasession.NewUsedProviders(nil)}
+		relayProcessor := NewRelayProcessor(ctx, newUsedProvidersMap, 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, relayArchiveExtensionEditor, nil)
 
-		usedProviders := relayProcessor.GetUsedProviders()
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 
@@ -483,9 +485,9 @@ func TestRelayProcessorTimeout(t *testing.T) {
 		require.NoError(t, err)
 		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
 
-		usedProviders := relayProcessor.GetUsedProviders()
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -535,9 +537,9 @@ func TestRelayProcessorRetry(t *testing.T) {
 		require.NoError(t, err)
 		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
 
-		usedProviders := relayProcessor.GetUsedProviders()
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -579,9 +581,9 @@ func TestRelayProcessorRetryNodeError(t *testing.T) {
 		require.NoError(t, err)
 		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
 
-		usedProviders := relayProcessor.GetUsedProviders()
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -624,8 +626,8 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		require.NoError(t, err)
 		chainMsg, err := chainParser.ParseMsg("/cosmos/tx/v1beta1/txs", []byte("data"), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
-		usedProviders := relayProcessor.GetUsedProviders()
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -669,8 +671,8 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		require.NoError(t, err)
 		chainMsg, err := chainParser.ParseMsg("/cosmos/tx/v1beta1/txs", []byte("data"), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
-		usedProviders := relayProcessor.GetUsedProviders()
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -713,8 +715,8 @@ func TestRelayProcessorLatest(t *testing.T) {
 		require.NoError(t, err)
 		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/latest", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil)
-		usedProviders := relayProcessor.GetUsedProviders()
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
+		usedProviders := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)

@@ -2,6 +2,8 @@ package chainlib
 
 import (
 	"math"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
@@ -33,6 +35,16 @@ type baseChainMessageContainer struct {
 	// resultErrorParsingMethod passed by each api interface message to parse the result of the message
 	// and validate it doesn't contain a node error
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
+}
+
+func (pm *baseChainMessageContainer) sortExtensions() {
+	if len(pm.extensions) == 0 {
+		return
+	}
+
+	sort.SliceStable(pm.extensions, func(i, j int) bool {
+		return pm.extensions[i].Name < pm.extensions[j].Name
+	})
 }
 
 func (pm *baseChainMessageContainer) GetRequestedBlocksHashes() []string {
@@ -122,6 +134,14 @@ func (pm *baseChainMessageContainer) GetExtensions() []*spectypes.Extension {
 	return pm.extensions
 }
 
+func (pm *baseChainMessageContainer) GetConcatenatedExtensions() string {
+	extensionsNames := []string{}
+	for _, extension := range pm.extensions {
+		extensionsNames = append(extensionsNames, extension.Name)
+	}
+	return strings.Join(extensionsNames, ";")
+}
+
 // adds the following extensions
 func (pm *baseChainMessageContainer) OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser) {
 	existingExtensions := map[string]struct{}{}
@@ -144,6 +164,8 @@ func (pm *baseChainMessageContainer) OverrideExtensions(extensionNames []string,
 			}
 		}
 	}
+
+	pm.sortExtensions()
 }
 
 func (pm *baseChainMessageContainer) SetExtension(extension *spectypes.Extension) {
@@ -160,6 +182,7 @@ func (pm *baseChainMessageContainer) SetExtension(extension *spectypes.Extension
 		pm.extensions = []*spectypes.Extension{extension}
 	}
 	pm.addExtensionCu(extension)
+	pm.sortExtensions()
 }
 
 func (pm *baseChainMessageContainer) RemoveExtension(extensionName string) {
@@ -170,6 +193,7 @@ func (pm *baseChainMessageContainer) RemoveExtension(extensionName string) {
 			break
 		}
 	}
+	pm.sortExtensions()
 }
 
 func (pm *baseChainMessageContainer) addExtensionCu(extension *spectypes.Extension) {

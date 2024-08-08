@@ -75,6 +75,7 @@ type ChainMessage interface {
 	AppendHeader(metadata []pairingtypes.Metadata)
 	SetExtension(extension *spectypes.Extension)
 	GetExtensions() []*spectypes.Extension
+	GetConcatenatedExtensions() string
 	RemoveExtension(extensionName string)
 	OverrideExtensions(extensionNames []string, extensionParser *extensionslib.ExtensionParser)
 	DisableErrorHandling()
