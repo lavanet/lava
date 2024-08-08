@@ -9,9 +9,9 @@ import (
 	"cosmossdk.io/collections"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/epochstorage/types"
-	v3 "github.com/lavanet/lava/x/epochstorage/types/migrations/v3"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/epochstorage/types"
+	v3 "github.com/lavanet/lava/v2/x/epochstorage/types/migrations/v3"
 )
 
 type Migrator struct {
