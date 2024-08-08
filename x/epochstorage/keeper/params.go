@@ -11,48 +11,15 @@ import (
 // GetParams get all parameters as types.Params
 func (k Keeper) GetParams(ctx sdk.Context) types.Params {
 	return types.NewParams(
-		k.UnstakeHoldBlocksRaw(ctx),
 		k.EpochBlocksRaw(ctx),
 		k.EpochsToSaveRaw(ctx),
 		k.LatestParamChange(ctx),
-		k.UnstakeHoldBlocksStaticRaw(ctx),
 	)
 }
 
 // SetParams set the params
 func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramstore.SetParamSet(ctx, &params)
-}
-
-func (k Keeper) UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64) {
-	// Unstake Hold Blocks is always used for the latest, but we want to use the fixated
-	k.GetParamForBlock(ctx, string(types.KeyUnstakeHoldBlocks), block, &res)
-	return
-}
-
-// UnstakeHoldBlocksRaw returns the UnstakeHoldBlocks param
-func (k Keeper) UnstakeHoldBlocksRaw(ctx sdk.Context) (res uint64) {
-	// Unstake Hold Blocks is always used for the latest, but we want to use the fixated
-	k.paramstore.Get(ctx, types.KeyUnstakeHoldBlocks, &res)
-	return
-}
-
-func (k Keeper) UnstakeHoldBlocksStatic(ctx sdk.Context, block uint64) (res uint64) {
-	// Unstake Hold Blocks is always used for the latest, but we want to use the fixated
-	k.GetParamForBlock(ctx, string(types.KeyUnstakeHoldBlocksStatic), block, &res)
-	return
-}
-
-// UnstakeHoldBlocksRaw returns the UnstakeHoldBlocks param
-func (k Keeper) UnstakeHoldBlocksStaticRaw(ctx sdk.Context) (res uint64) {
-	// Unstake Hold Blocks is always used for the latest, but we want to use the fixated
-	k.paramstore.Get(ctx, types.KeyUnstakeHoldBlocksStatic, &res)
-	return
-}
-
-// UnstakeHoldBlocksRaw sets the UnstakeHoldBlocks param
-func (k Keeper) SetUnstakeHoldBlocksStaticRaw(ctx sdk.Context, unstakeHoldBlocksStatic uint64) {
-	k.paramstore.Set(ctx, types.KeyUnstakeHoldBlocksStatic, unstakeHoldBlocksStatic)
 }
 
 // EpochBlocks returns the EpochBlocks fixated param

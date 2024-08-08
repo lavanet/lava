@@ -124,7 +124,7 @@ func TestReDelegateToProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	epoch := ts.EpochStart()
-	entry, found := ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, provider, epoch)
+	entry, found := ts.Keepers.Epochstorage.GetStakeEntry(ts.Ctx, epoch, ts.spec.Index, provider)
 	require.True(t, found)
 	require.Equal(t, amount, entry.Stake.Amount)
 
@@ -155,7 +155,7 @@ func TestReDelegateToProvider(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	epoch = ts.EpochStart()
-	entry, found = ts.Keepers.Epochstorage.GetStakeEntryForProviderEpoch(ts.Ctx, ts.spec.Index, provider, epoch)
+	entry, found = ts.Keepers.Epochstorage.GetStakeEntry(ts.Ctx, epoch, ts.spec.Index, provider)
 	require.True(t, found)
 	require.Equal(t, amount, entry.DelegateTotal.Amount)
 	require.Equal(t, amount, entry.Stake.Amount)
@@ -583,7 +583,7 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 	require.Error(t, err)
 
 	// checking that provider is not found
-	_, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
+	_, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.False(t, found)
 
 	_, err = ts.QueryDualstakingProviderDelegators(provider, true)
@@ -645,26 +645,10 @@ func TestUndelegateProvider(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Println("Delegation of Provider before provider is removed", res2)
 
-	unstakeHoldBlocks := ts.Keepers.Epochstorage.UnstakeHoldBlocks(ts.Ctx, ts.BlockHeight())
-	unstakeHoldBlocksStatic := ts.Keepers.Epochstorage.UnstakeHoldBlocksStatic(ts.Ctx, ts.BlockHeight())
-
 	_, err = ts.TxPairingUnstakeProvider(providerAcct.GetVaultAddr(), ts.spec.Index)
 	require.NoError(t, err)
 
-	ts.AdvanceBlocks(unstakeHoldBlocks)
-
-	_, found := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.GetVaultAddr())
-	require.True(t, found)
-
-	ts.AdvanceBlocks(unstakeHoldBlocksStatic - unstakeHoldBlocks)
-
-	// checking that provider can't be found
-	_, found = ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, providerAcct.GetVaultAddr())
-	require.False(t, found)
-
-	ts.AdvanceEpoch()
-
-	_, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
+	_, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.False(t, found)
 
 	// delegation of the removed provider
@@ -673,11 +657,13 @@ func TestUndelegateProvider(t *testing.T) {
 	require.NoError(t, err)
 	fmt.Println("Delegation of Provider after provider is removed", res2)
 
+	ts.AdvanceEpochUntilStale()
+
 	// stake provider again
 	err = ts.StakeProvider(providerAcct.GetVaultAddr(), providerAcct.Addr.String(), ts.spec, sdk.NewIntFromUint64(1000).Int64())
 	require.NoError(t, err)
 
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	fmt.Println("Stake entry of re-staked provider", stakeEntry.String())
 
@@ -690,7 +676,7 @@ func TestUndelegateProvider(t *testing.T) {
 		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)))
 	require.NoError(t, err)
 
-	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider)
+	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	fmt.Println("Stake entry of re-staked provider after del1 9999 redelegation", stakeEntry.String())
 
