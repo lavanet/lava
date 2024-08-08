@@ -13,8 +13,8 @@ Note that the module will make sure that any changes will be applied only in the
   * [Epoch](#epoch)
     * [EpochDetails](#epochdetails)
   * [FixatedParams](#fixatedparams)
-  * [StakeStorage](#stakeStorage)
   * [StakeEntry](#stakeentry)
+	* [StakeEntry Storage](#stakeentry-storage)
 * [Parameters](#parameters)
 * [Queries](#queries)
 * [Transactions](#transactions)
@@ -63,28 +63,6 @@ type FixatedParams struct {
 
 This is done in the [BeginBlock method of the module](keeper/fixated_params.go)
 
-
-### StakeStorage
-
-StakeStorage is an object that is saved on the store per epoch. it contains the list of all the providers that are available in this epoch per chainID.
-
-```go
-type StakeStorage struct {
-	Index          string       // index of the stake storage (epoch + chainid)
-	StakeEntries   []StakeEntry // list of providers stake
-	EpochBlockHash []byte       // the block hash of the of the epoch block (used as salt for pairing)
-}
-```
-
-The index of the stakestorage is constructed from the epoch and chainID, for example: "100 ETH1"
-
-When a provider stakes itself to a chain (using the pairing module) it will be in the providers list of the next epoch. the stake storage of the next epoch (e.g. current stakestorage) is where all the changes are registered.
-
-When a new epoch starts, the module will create a copy of the current stake and save it as a specific epoch stake storage. this is done in the BeginBlock method of the module.
-
-Also, when a new epoch starts the epoch storage will delete any outdated stakestorage (determined by the param EpochsToSave).
-Note that if a stakestorage does not exist (either if it was deleted or it is in the future), verify pairing and relay payments will fail for the requested epoch (look at pairing readme).
-
 ### StakeEntry
 
 The stake entry is a struct that contains all the information of a provider.
@@ -115,6 +93,14 @@ Geolocation are bit flags that indicate all the geolocations that the provider s
 for more about [geolocation](../../proto/lavanet/lava/plans/plan.proto).
 
 For more information about delegation, go to dualstaking [README.md](../dualstaking/README.md).
+
+#### StakeEntry Storage
+
+Stake entries are kept in two dedicated KV stores. One store keeps the current stake entries and the other keeps past stake entries (by epoch).
+
+The current stake entries store is updated when a provider stakes itself to a chain (using the pairing module). This will make it be in the providers list of the next epoch.
+
+When a new epoch starts, the epochstorage module will create a copy of the current stake entries and save it in the past stake entries store with their matching epoch. Then, every outdated stake entry is deleted (determined by the param EpochsToSave).
 
 ### EndPoint
 

@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -311,6 +312,10 @@ func TestParsedMessage_GetRPCMessage(t *testing.T) {
 
 type mockRPCInput struct {
 	chainproxy.BaseMessage
+}
+
+func (m *mockRPCInput) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return ""
 }
 
 func (m *mockRPCInput) GetRawRequestHash() ([]byte, error) {

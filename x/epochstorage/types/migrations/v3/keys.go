@@ -22,5 +22,6 @@ func KeyPrefix(p string) []byte {
 }
 
 const (
-	EpochDetailsKey = "EpochDetails-value-"
+	EpochDetailsKey             = "EpochDetails-value-"
+	StakeStorageKeyUnstakeConst = "Unstake"
 )

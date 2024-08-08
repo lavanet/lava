@@ -35,31 +35,24 @@ type EpochstorageKeeper interface {
 	GetParamForBlock(ctx sdk.Context, fixationKey string, block uint64, param any) error
 	GetEpochStart(ctx sdk.Context) uint64
 	GetEarliestEpochStart(ctx sdk.Context) uint64
-	UnstakeHoldBlocks(ctx sdk.Context, block uint64) (res uint64)
-	UnstakeHoldBlocksStatic(ctx sdk.Context, block uint64) (res uint64)
 	IsEpochStart(ctx sdk.Context) (res bool)
 	BlocksToSave(ctx sdk.Context, block uint64) (res uint64, erro error)
 	BlocksToSaveRaw(ctx sdk.Context) (res uint64)
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
 	GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error)
-	PopUnstakeEntries(ctx sdk.Context, block uint64) (value []epochstoragetypes.StakeEntry)
-	AppendUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, unstakeHoldBlocks uint64)
-	ModifyUnstakeEntry(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry)
-	GetStakeStorageUnstake(ctx sdk.Context) (epochstoragetypes.StakeStorage, bool)
-	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry)
-	AppendStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry)
-	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, address string) error
-	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
-	UnstakeEntryByAddress(ctx sdk.Context, address string) (value epochstoragetypes.StakeEntry, found bool)
-	GetStakeStorageCurrent(ctx sdk.Context, chainID string) (value epochstoragetypes.StakeStorage, found bool)
-	GetEpochStakeEntries(ctx sdk.Context, block uint64, chainID string) (entries []epochstoragetypes.StakeEntry, found bool, epochHash []byte)
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
 	GetDeletedEpochs(ctx sdk.Context) []uint64
 	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
 	EpochBlocksRaw(ctx sdk.Context) (res uint64)
-	GetUnstakeHoldBlocks(ctx sdk.Context, chainID string) uint64
+	GetStakeEntryCurrent(ctx sdk.Context, chainID string, provider string) (val epochstoragetypes.StakeEntry, found bool)
+	GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID string) []epochstoragetypes.StakeEntry
+	GetAllStakeEntriesForEpochChainId(ctx sdk.Context, epoch uint64, chainID string) []epochstoragetypes.StakeEntry
+	SetStakeEntryCurrent(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry)
+	GetAllStakeEntriesCurrent(ctx sdk.Context) []epochstoragetypes.StakeEntry
+	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, provider string)
+	GetEpochHash(ctx sdk.Context, epoch uint64) []byte
 }
 
 type AccountKeeper interface {

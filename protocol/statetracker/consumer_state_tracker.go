@@ -8,7 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/lavanet/lava/v2/protocol/chaintracker"
 	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/protocol/metrics"
 	updaters "github.com/lavanet/lava/v2/protocol/statetracker/updaters"
@@ -93,7 +93,7 @@ func (cst *ConsumerStateTracker) RegisterForPairingUpdates(ctx context.Context, 
 	}
 }
 
-func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *lavaprotocol.FinalizationConsensus) {
+func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx context.Context, finalizationConsensus *finalizationconsensus.FinalizationConsensus) {
 	finalizationConsensusUpdater := updaters.NewFinalizationConsensusUpdater(cst.stateQuery, finalizationConsensus.SpecId)
 	finalizationConsensusUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, finalizationConsensusUpdater)
 	finalizationConsensusUpdater, ok := finalizationConsensusUpdaterRaw.(*updaters.FinalizationConsensusUpdater)
