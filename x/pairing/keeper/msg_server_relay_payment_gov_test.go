@@ -497,10 +497,6 @@ func TestStakePaymentUnstake(t *testing.T) {
 	paramVal = "\"" + strconv.FormatUint(10, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
 	require.NoError(t, err)
-	paramKey = string(epochstoragetypes.KeyUnstakeHoldBlocks)
-	paramVal = "\"" + strconv.FormatUint(210, 10) + "\""
-	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.NoError(t, err)
 
 	// Advance an epoch to apply EpochBlocks change
 	ts.AdvanceEpoch() // blockHeight = 20

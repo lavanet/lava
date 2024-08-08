@@ -11,7 +11,7 @@ import (
 
 	"github.com/lavanet/lava/v2/protocol/chaintracker"
 	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
 	"github.com/lavanet/lava/v2/protocol/statetracker/updaters"
@@ -34,7 +34,7 @@ func (m *mockConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, s
 	return nil
 }
 
-func (m *mockConsumerStateTracker) RegisterFinalizationConsensusForUpdates(context.Context, *lavaprotocol.FinalizationConsensus) {
+func (m *mockConsumerStateTracker) RegisterFinalizationConsensusForUpdates(context.Context, *finalizationconsensus.FinalizationConsensus) {
 }
 
 func (m *mockConsumerStateTracker) RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error {

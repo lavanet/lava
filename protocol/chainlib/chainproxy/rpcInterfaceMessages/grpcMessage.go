@@ -14,10 +14,12 @@ import (
 	"github.com/jhump/protoreflect/dynamic"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
 	dyncodec "github.com/lavanet/lava/v2/protocol/chainlib/grpcproxy/dyncodec"
 	"github.com/lavanet/lava/v2/protocol/parser"
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/utils/sigs"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
@@ -32,6 +34,10 @@ type GrpcMessage struct {
 	Registry *dyncodec.Registry
 	Codec    *dyncodec.Codec
 	chainproxy.BaseMessage
+}
+
+func (gm *GrpcMessage) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
+	return ""
 }
 
 // get msg hash byte array containing all the relevant information for a unique request. (headers / api / params)
@@ -114,6 +120,10 @@ func (gm GrpcMessage) GetResult() json.RawMessage {
 
 func (gm GrpcMessage) GetMethod() string {
 	return gm.Path
+}
+
+func (gm GrpcMessage) GetID() json.RawMessage {
+	return nil
 }
 
 func (gm GrpcMessage) NewParsableRPCInput(input json.RawMessage) (parser.RPCInput, error) {
