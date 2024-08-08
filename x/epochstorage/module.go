@@ -16,9 +16,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/x/epochstorage/client/cli"
-	"github.com/lavanet/lava/x/epochstorage/keeper"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/x/epochstorage/client/cli"
+	"github.com/lavanet/lava/v2/x/epochstorage/keeper"
+	"github.com/lavanet/lava/v2/x/epochstorage/types"
 )
 
 var (

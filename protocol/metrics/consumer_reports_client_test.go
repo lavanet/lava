@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 

@@ -10,11 +10,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/utils"
-	commontypes "github.com/lavanet/lava/utils/common/types"
-	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
-	"github.com/lavanet/lava/x/pairing/types"
-	rewardstypes "github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/utils"
+	commontypes "github.com/lavanet/lava/v2/utils/common/types"
+	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
+	"github.com/lavanet/lava/v2/x/pairing/types"
+	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
 	"github.com/spf13/cobra"
 )
 

@@ -3,7 +3,7 @@ package lavanet.lava.projects;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/lavanet/lava/x/projects/types";
+option go_package = "github.com/lavanet/lava/v2/x/projects/types";
 
 // Params defines the parameters for the module.
 message Params {

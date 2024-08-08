@@ -15,12 +15,12 @@ import (
 	"github.com/spf13/cobra"
 
 	// "github.com/cosmos/cosmos-sdk/client/flags"
-	lavautils "github.com/lavanet/lava/utils"
-	commontypes "github.com/lavanet/lava/utils/common/types"
-	dualstakingTypes "github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/client/utils"
-	"github.com/lavanet/lava/x/pairing/types"
+	lavautils "github.com/lavanet/lava/v2/utils"
+	commontypes "github.com/lavanet/lava/v2/utils/common/types"
+	dualstakingTypes "github.com/lavanet/lava/v2/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/x/pairing/client/utils"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 var DefaultRelativePacketTimeoutTimestamp = uint64((time.Duration(10) * time.Minute).Nanoseconds())

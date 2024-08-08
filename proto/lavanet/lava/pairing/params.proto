@@ -3,7 +3,7 @@ package lavanet.lava.pairing;
 
 import "gogoproto/gogo.proto";
 
-option go_package = "github.com/lavanet/lava/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v2/x/pairing/types";
 
 // Params defines the parameters for the module.
 message Params {

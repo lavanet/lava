@@ -15,8 +15,8 @@ import (
 
 	// "github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/plans/client/utils"
-	"github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/x/plans/client/utils"
+	"github.com/lavanet/lava/v2/x/plans/types"
 )
 
 var DefaultRelativePacketTimeoutTimestamp = uint64((time.Duration(10) * time.Minute).Nanoseconds())

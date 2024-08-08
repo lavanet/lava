@@ -4,11 +4,11 @@ import (
 	"math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	v2 "github.com/lavanet/lava/x/plans/migrations/v2"
-	v3 "github.com/lavanet/lava/x/plans/migrations/v3"
-	v7 "github.com/lavanet/lava/x/plans/migrations/v7"
-	v8 "github.com/lavanet/lava/x/plans/migrations/v8"
-	projectsv3 "github.com/lavanet/lava/x/projects/migrations/v3"
+	v2 "github.com/lavanet/lava/v2/x/plans/migrations/v2"
+	v3 "github.com/lavanet/lava/v2/x/plans/migrations/v3"
+	v7 "github.com/lavanet/lava/v2/x/plans/migrations/v7"
+	v8 "github.com/lavanet/lava/v2/x/plans/migrations/v8"
+	projectsv3 "github.com/lavanet/lava/v2/x/projects/migrations/v3"
 )
 
 type Migrator struct {

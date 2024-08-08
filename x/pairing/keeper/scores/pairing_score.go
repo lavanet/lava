@@ -2,8 +2,8 @@ package scores
 
 import (
 	"cosmossdk.io/math"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 const (

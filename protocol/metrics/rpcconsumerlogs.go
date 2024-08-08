@@ -12,9 +12,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/joho/godotenv"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
+	"github.com/lavanet/lava/v2/protocol/parser"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"google.golang.org/grpc/metadata"
 )
@@ -95,6 +95,14 @@ func (rpccl *RPCConsumerLogs) SetRelayNodeErrorMetric(chainId string, apiInterfa
 	rpccl.consumerMetricsManager.SetRelayNodeErrorMetric(chainId, apiInterface)
 }
 
+func (rpccl *RPCConsumerLogs) SetNodeErrorRecoveredSuccessfullyMetric(chainId string, apiInterface string, attempt string) {
+	rpccl.consumerMetricsManager.SetNodeErrorRecoveredSuccessfullyMetric(chainId, apiInterface, attempt)
+}
+
+func (rpccl *RPCConsumerLogs) SetNodeErrorAttemptMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetNodeErrorAttemptMetric(chainId, apiInterface)
+}
+
 func (rpccl *RPCConsumerLogs) GetMessageSeed() string {
 	return "GUID_" + strconv.Itoa(rand.Intn(10000000000))
 }
@@ -121,22 +129,24 @@ func (rpccl *RPCConsumerLogs) GetUniqueGuidResponseForError(responseError error,
 }
 
 // Websocket healthy disconnections throw "websocket: close 1005 (no status)" error,
-// We dont want to alert error monitoring for that purpses.
-func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndWriteMessage(c *websocket.Conn, mt int, err error, msgSeed string, msg []byte, rpcType string, timeTaken time.Duration) {
+// We don't want to alert error monitoring for that purpses.
+func (rpccl *RPCConsumerLogs) AnalyzeWebSocketErrorAndGetFormattedMessage(webSocketAddr string, err error, msgSeed string, msg []byte, rpcType string, timeTaken time.Duration) []byte {
 	if err != nil {
 		errMessage := err.Error()
 		if strings.Contains(errMessage, webSocketCloseMessage) {
 			utils.LavaFormatDebug("Websocket connection closed by the user, " + errMessage)
-			return
+			return nil
 		}
-		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", c.LocalAddr().String(), string(msg), "", msgSeed, timeTaken, err)
+		rpccl.LogRequestAndResponse(rpcType+" ws msg", true, "ws", webSocketAddr, string(msg), "", msgSeed, timeTaken, err)
 
 		jsonResponse, _ := json.Marshal(fiber.Map{
 			"Error_Received": rpccl.GetUniqueGuidResponseForError(err, msgSeed),
 		})
 
-		c.WriteMessage(mt, jsonResponse)
+		return jsonResponse
 	}
+
+	return nil
 }
 
 func (rpccl *RPCConsumerLogs) LogRequestAndResponse(module string, hasError bool, method, path, req, resp, msgSeed string, timeTaken time.Duration, err error) {
