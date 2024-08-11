@@ -15,8 +15,10 @@ var _ = strconv.Itoa(0)
 func CmdSpecTrackedInfo() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "spec-tracked-info [chainid] {provider}",
-		Short: "Query the total tracked usage for a specific spec",
-		Long: `args: 
+		Short: "Query the total tracked cu serviced by providers for a specific spec",
+		Long: `Query the total CU serviced to a spec throughout the current month for all providers.
+		can specify a provider to get only his CU serviced.
+		args: 
 		[chain-id] Chain for which we want to view the tracked info.
 		{provider} optional specific provider tracked info.
 		`,

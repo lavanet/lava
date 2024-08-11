@@ -124,6 +124,7 @@ message QueryEstimatedRewardsRequest {
   string provider = 1;
   string chain_id = 2;
   string amount = 3; 
+  string delegator = 4; 
 }
 
 message EstimatedRewardInfo {

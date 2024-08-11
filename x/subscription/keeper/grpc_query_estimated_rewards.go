@@ -58,13 +58,14 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		}
 	}
 
-	emisions := k.rewardsKeeper.SpecEmissionParts(ctx)
+	emissions := k.rewardsKeeper.SpecEmissionParts(ctx)
 	var specEmission rewardstypes.SpecEmissionPart
 	found = false
-	for _, k := range emisions {
+	for _, k := range emissions {
 		if k.ChainID == req.ChainId {
 			specEmission = k
 			found = true
+			break
 		}
 	}
 
