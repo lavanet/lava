@@ -114,4 +114,5 @@ message QualityOfServiceReport{
 
 message PairingRelayCache {
     repeated lavanet.lava.epochstorage.StakeEntry entries = 1 [(gogoproto.nullable) = false];
+    uint64 allowed_cu = 2;
 }

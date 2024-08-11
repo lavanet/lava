@@ -7,22 +7,22 @@ import (
 	"github.com/lavanet/lava/v2/x/pairing/types"
 )
 
-func (k Keeper) SetPairingRelayCache(ctx sdk.Context, project string, chainID string, provider string, pairedProviders []epochstoragetypes.StakeEntry) {
+func (k Keeper) SetPairingRelayCache(ctx sdk.Context, project string, chainID string, epoch uint64, pairedProviders []epochstoragetypes.StakeEntry, allowedCu uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PairingRelayCachePrefix)
-	cache := types.PairingRelayCache{Entries: pairedProviders}
+	cache := types.PairingRelayCache{Entries: pairedProviders, AllowedCu: allowedCu}
 	b := k.cdc.MustMarshal(&cache)
-	store.Set([]byte(types.NewPairingRelayCacheKey(project, chainID, provider)), b)
+	store.Set([]byte(types.NewPairingCacheKey(project, chainID, epoch)), b)
 }
 
-func (k Keeper) GetPairingRelayCache(ctx sdk.Context, project string, chainID string, provider string) ([]epochstoragetypes.StakeEntry, bool) {
+func (k Keeper) GetPairingRelayCache(ctx sdk.Context, project string, chainID string, epoch uint64) ([]epochstoragetypes.StakeEntry, uint64, bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PairingRelayCachePrefix)
-	b := store.Get([]byte(types.NewPairingRelayCacheKey(project, chainID, provider)))
+	b := store.Get([]byte(types.NewPairingCacheKey(project, chainID, epoch)))
 	if b == nil {
-		return []epochstoragetypes.StakeEntry{}, false
+		return []epochstoragetypes.StakeEntry{}, 0, false
 	}
 	var cache types.PairingRelayCache
 	k.cdc.MustUnmarshal(b, &cache)
-	return cache.Entries, true
+	return cache.Entries, cache.AllowedCu, true
 }
 
 // ResetPairingRelayCache is used to remove all entries from the PairingRelayCache KV store
@@ -44,7 +44,7 @@ func (k Keeper) SetPairingQueryCache(project string, chainID string, epoch uint6
 		// pairing cache is not initialized, will be in next epoch so simply skip
 		return
 	}
-	key := types.NewPairingQueryCacheKey(project, chainID, epoch)
+	key := types.NewPairingCacheKey(project, chainID, epoch)
 
 	(*k.pairingQueryCache)[key] = pairedProviders
 }
@@ -54,7 +54,7 @@ func (k Keeper) GetPairingQueryCache(project string, chainID string, epoch uint6
 		// pairing cache is not initialized, will be in next epoch so simply skip
 		return nil, false
 	}
-	key := types.NewPairingQueryCacheKey(project, chainID, epoch)
+	key := types.NewPairingCacheKey(project, chainID, epoch)
 	if providers, ok := (*k.pairingQueryCache)[key]; ok {
 		return providers, true
 	}

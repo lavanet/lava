@@ -336,19 +336,23 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, provid
 	if epoch != reqEpoch {
 		return false, allowedCU, []epochstoragetypes.StakeEntry{}, utils.LavaFormatError("requested block is not an epoch start", nil, utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "requested", Value: reqEpoch})
 	}
-	clientAddr, err := sdk.AccAddressFromBech32(project.Subscription)
-	if err != nil {
-		return false, allowedCU, []epochstoragetypes.StakeEntry{}, err
-	}
 
-	strictestPolicy, cluster, err := k.GetProjectStrictestPolicy(ctx, project, chainID, reqEpoch)
-	if err != nil {
-		return false, allowedCU, []epochstoragetypes.StakeEntry{}, fmt.Errorf("invalid user for pairing: %s", err.Error())
-	}
+	validAddresses, allowedCU, ok := k.GetPairingRelayCache(ctx, project.Index, chainID, epoch)
+	if !ok {
+		_, err := sdk.AccAddressFromBech32(project.Subscription)
+		if err != nil {
+			return false, allowedCU, []epochstoragetypes.StakeEntry{}, err
+		}
 
-	validAddresses, allowedCU, _, err := k.getPairingForClient(ctx, chainID, epoch, strictestPolicy, cluster, project.Index, false, false)
-	if err != nil {
-		return false, allowedCU, []epochstoragetypes.StakeEntry{}, err
+		strictestPolicy, cluster, err := k.GetProjectStrictestPolicy(ctx, project, chainID, reqEpoch)
+		if err != nil {
+			return false, allowedCU, []epochstoragetypes.StakeEntry{}, fmt.Errorf("invalid user for pairing: %s", err.Error())
+		}
+
+		validAddresses, allowedCU, _, err = k.getPairingForClient(ctx, chainID, epoch, strictestPolicy, cluster, project.Index, false, false)
+		if err != nil {
+			return false, allowedCU, []epochstoragetypes.StakeEntry{}, err
+		}
 	}
 
 	for _, possibleAddr := range validAddresses {
@@ -357,13 +361,17 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, provid
 			// panic:ok: provider address saved on chain must be valid
 			utils.LavaFormatPanic("critical: invalid provider address for payment", err,
 				utils.Attribute{Key: "chainID", Value: chainID},
-				utils.Attribute{Key: "client", Value: clientAddr.String()},
+				utils.Attribute{Key: "client", Value: project.Subscription},
 				utils.Attribute{Key: "provider", Value: providerAccAddr.String()},
 				utils.Attribute{Key: "epochBlock", Value: strconv.FormatUint(epoch, 10)},
 			)
 		}
 
 		if providerAccAddr.Equals(providerAddress) {
+			if !ok {
+				// if we had a cache miss, set cache
+				k.SetPairingRelayCache(ctx, project.Index, chainID, epoch, validAddresses, allowedCU)
+			}
 			return true, allowedCU, validAddresses, nil
 		}
 	}
