@@ -319,16 +319,13 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 	// Example: block_id: 100, will result in requested block 100.
 	case spectypes.PARSER_TYPE_BLOCK_LATEST:
 		parsed := NewParsedInput()
-		valueString, ok := value.(string)
-		if ok {
-			block, err := ParseDefaultBlockParameter(valueString)
-			if err != nil {
-				return nil, utils.LavaFormatWarning("Failed converting valueString to block number", err, utils.LogAttr("value", valueString))
-			}
-			parsed.parsedBlock = block
-			return parsed, nil
+		valueString := blockInterfaceToString(value)
+		block, err := ParseDefaultBlockParameter(valueString)
+		if err != nil {
+			return nil, utils.LavaFormatWarning("Failed converting valueString to block number", err, utils.LogAttr("value", valueString))
 		}
-		return nil, utils.LavaFormatWarning("Failed converting value to string", nil, utils.LogAttr("value", value), utils.LogAttr("generic_parser", genericParser))
+		parsed.parsedBlock = block
+		return parsed, nil
 	// TODO: Implement other cases for different parsers
 	default:
 		return nil, fmt.Errorf("unsupported generic parser type")
@@ -434,6 +431,8 @@ func blockInterfaceToString(block interface{}) string {
 		return strconv.FormatInt(castedBlock, 10)
 	case uint64:
 		return strconv.FormatUint(castedBlock, 10)
+	case int:
+		return strconv.Itoa(castedBlock)
 	default:
 		return fmt.Sprintf("%s", block)
 	}

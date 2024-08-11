@@ -421,7 +421,7 @@ func TestParseBlockFromParams(t *testing.T) {
 		expected       int64
 	}{
 		{
-			name: "generic_parser_happy_flow",
+			name: "generic_parser_happy_flow_value",
 			rpcInput: &RPCInputTest{
 				Params: map[string]interface{}{
 					"foo": map[string]interface{}{
@@ -435,8 +435,30 @@ func TestParseBlockFromParams(t *testing.T) {
 			},
 			genericParsers: []spectypes.GenericParser{
 				{
-					ParsePath: ".foo.bar.[0].baz",
+					ParsePath: ".params.foo.bar.[0].baz",
 					ParseType: spectypes.PARSER_TYPE_BLOCK_LATEST,
+				},
+			},
+			expected: 123,
+		},
+		{
+			name: "generic_parser_happy_flow_default_value",
+			rpcInput: &RPCInputTest{
+				Params: map[string]interface{}{
+					"foo": map[string]interface{}{
+						"bar": []interface{}{
+							map[string]interface{}{
+								"baz": 123,
+							},
+						},
+					},
+				},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".params.foo.bar.[0].baz",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
 				},
 			},
 			expected: spectypes.LATEST_BLOCK,
@@ -446,8 +468,9 @@ func TestParseBlockFromParams(t *testing.T) {
 			rpcInput: &RPCInputTest{},
 			genericParsers: []spectypes.GenericParser{
 				{
-					ParsePath: ".foo",
-					ParseType: spectypes.PARSER_TYPE_BLOCK_LATEST,
+					ParsePath: ".params.foo",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
 				},
 			},
 			expected: spectypes.NOT_APPLICABLE,
@@ -461,8 +484,9 @@ func TestParseBlockFromParams(t *testing.T) {
 			},
 			genericParsers: []spectypes.GenericParser{
 				{
-					ParsePath: ".foo",
-					ParseType: spectypes.PARSER_TYPE_BLOCK_LATEST,
+					ParsePath: ".params.foo",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
 				},
 			},
 			expected: spectypes.NOT_APPLICABLE,
@@ -476,8 +500,9 @@ func TestParseBlockFromParams(t *testing.T) {
 			},
 			genericParsers: []spectypes.GenericParser{
 				{
-					ParsePath: ".bar.foo",
-					ParseType: spectypes.PARSER_TYPE_BLOCK_LATEST,
+					ParsePath: ".params.bar.foo",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
 				},
 			},
 			expected: spectypes.NOT_APPLICABLE,
@@ -492,7 +517,8 @@ func TestParseBlockFromParams(t *testing.T) {
 			genericParsers: []spectypes.GenericParser{
 				{
 					ParsePath: "!@#$%^&*()",
-					ParseType: spectypes.PARSER_TYPE_BLOCK_LATEST,
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
 				},
 			},
 			expected: spectypes.NOT_APPLICABLE,
@@ -507,7 +533,8 @@ func TestParseBlockFromParams(t *testing.T) {
 			genericParsers: []spectypes.GenericParser{
 				{
 					ParsePath: "!@#$%^&*()",
-					ParseType: spectypes.PARSER_TYPE_BLOCK_LATEST,
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
 				},
 			},
 			blockParser: spectypes.BlockParser{
@@ -524,7 +551,8 @@ func TestParseBlockFromParams(t *testing.T) {
 			genericParsers: []spectypes.GenericParser{
 				{
 					ParsePath: "!@#$%^&*()",
-					ParseType: spectypes.PARSER_TYPE_BLOCK_LATEST,
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
 				},
 			},
 			blockParser: spectypes.BlockParser{
@@ -554,7 +582,6 @@ func TestParseBlockFromParams(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-
 			result := ParseBlockFromParams(test.rpcInput, test.blockParser, test.genericParsers)
 			require.Equal(t, test.expected, result.parsedBlock)
 		})
