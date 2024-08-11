@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -1016,11 +1017,15 @@ func TestSameProviderConflictReport(t *testing.T) {
 		rpcconsumerServer, mockConsumerStateTracker := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
 
 		conflictSent := false
+		wg := sync.WaitGroup{}
+		wg.Add(1)
 		txConflictDetectionMock := func(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
 			if finalizationConflict == nil {
+				wg.Done()
 				require.FailNow(t, "Finalization conflict should not be nil")
 				return nil
 			}
+			utils.LavaFormatDebug("@@@@@@@@@@@@@@@ Called conflict mock tx", utils.LogAttr("provider0", finalizationConflict.RelayFinalization_0.RelaySession.Provider), utils.LogAttr("provider0", finalizationConflict.RelayFinalization_1.RelaySession.Provider))
 
 			if finalizationConflict.RelayFinalization_0.RelaySession.Provider != finalizationConflict.RelayFinalization_1.RelaySession.Provider {
 				require.FailNow(t, "Finalization conflict should not have different provider addresses")
@@ -1029,7 +1034,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 			if finalizationConflict.RelayFinalization_0.RelaySession.Provider != providers[0].account.Addr.String() {
 				require.FailNow(t, "Finalization conflict provider address is not the provider address")
 			}
-
+			wg.Done()
 			conflictSent = true
 			return nil
 		}
@@ -1059,7 +1064,8 @@ func TestSameProviderConflictReport(t *testing.T) {
 		resp, err := client.Do(req)
 		require.NoError(t, err)
 		require.Equal(t, http.StatusOK, resp.StatusCode)
-
+		// conflict calls happen concurrently, therefore we need to wait the call.
+		wg.Wait()
 		require.True(t, conflictSent)
 	})
 
@@ -1084,13 +1090,18 @@ func TestSameProviderConflictReport(t *testing.T) {
 
 		twoProvidersConflictSent := false
 		sameProviderConflictSent := false
+		wg := sync.WaitGroup{}
+		wg.Add(1)
 		txConflictDetectionMock := func(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
 			if finalizationConflict == nil {
 				require.FailNow(t, "Finalization conflict should not be nil")
+				wg.Done()
 				return nil
 			}
+			utils.LavaFormatDebug("@@@@@@@@@@@@@@@ Called conflict mock tx", utils.LogAttr("provider0", finalizationConflict.RelayFinalization_0.RelaySession.Provider), utils.LogAttr("provider0", finalizationConflict.RelayFinalization_1.RelaySession.Provider))
 
 			if finalizationConflict.RelayFinalization_0.RelaySession.Provider == finalizationConflict.RelayFinalization_1.RelaySession.Provider {
+				utils.LavaFormatDebug("@@@@@@@@@@@@@@@ Called SAME conflict tx")
 				sameProviderConflictSent = true
 			}
 
@@ -1103,6 +1114,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 			}
 
 			twoProvidersConflictSent = true
+			wg.Done()
 			return nil
 		}
 		mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
@@ -1121,7 +1133,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 
 		providers[0].mockReliabilityManager.SetGetLatestBlockDataWrapper(getLatestBlockDataWrapper)
 
-		client := http.Client{Timeout: 500 * time.Millisecond}
+		client := http.Client{Timeout: 1000 * time.Millisecond}
 		req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress+"/cosmos/tx/v1beta1/txs", nil)
 		require.NoError(t, err)
 
@@ -1131,7 +1143,8 @@ func TestSameProviderConflictReport(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, http.StatusOK, resp.StatusCode)
 		}
-
+		// conflict calls happen concurrently, therefore we need to wait the call.
+		wg.Wait()
 		require.True(t, sameProviderConflictSent)
 		require.True(t, twoProvidersConflictSent)
 	})
