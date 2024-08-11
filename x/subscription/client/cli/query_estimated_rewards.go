@@ -37,9 +37,9 @@ func CmdEstimatedRewards() *cobra.Command {
 			if len(args) == 3 {
 				address, err := utils.ParseCLIAddress(clientCtx, args[2])
 				if err != nil {
-					req.Delegator = address
-				} else {
 					req.Amount = args[2]
+				} else {
+					req.Delegator = address
 				}
 			}
 

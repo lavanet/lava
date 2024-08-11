@@ -41,7 +41,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 
 	// delegation of the provider
 	delegationAmount := entry.Stake
-	delegatorPart := sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).Mul(entry.Stake.Amount.ToLegacyDec()).QuoInt64(100)
+	delegatorPart := sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).MulInt64(int64(entry.DelegateCommission)).QuoInt64(100)
 	if req.Delegator != "" || req.Amount != "" {
 		if req.Amount != "" {
 			var err error
@@ -49,6 +49,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 			if err != nil {
 				return nil, err
 			}
+			entry.DelegateTotal = entry.DelegateTotal.Add(delegationAmount)
 		} else if req.Delegator != "" {
 			d, found := k.dualstakingKeeper.GetDelegation(ctx, req.Delegator, req.Provider, req.ChainId, uint64(ctx.BlockHeight()))
 			if !found {
@@ -57,14 +58,13 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 			delegationAmount = d.Amount
 		}
 
-		delegatorPart = sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).Mul(sdk.OneDec().Sub(entry.Stake.Amount.ToLegacyDec().QuoInt64(100)))
-		entry.DelegateTotal = entry.DelegateTotal.Add(delegationAmount)
+		delegatorPart = sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).MulInt64(int64(100 - entry.DelegateCommission)).QuoInt64(100)
 		// calculate existing delegator rewards
 		if entry.DelegateLimit.Amount.LT(entry.DelegateTotal.Amount) {
 			delegatorPart = delegatorPart.MulInt(entry.DelegateLimit.Amount).QuoInt(entry.DelegateTotal.Amount)
 		}
 	}
-	delegatorPart = delegatorPart.Mul(specContribut)
+	delegatorPart = delegatorPart.Mul(sdk.OneDec().Sub(specContribut))
 
 	totalSubsRewards := sdk.Coins{}
 	subsIndices := k.GetAllSubscriptionsIndices(ctx)
