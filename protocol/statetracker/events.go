@@ -303,9 +303,8 @@ func paymentsLookup(ctx context.Context, clientCtx client.Context, blockStart, b
 						utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event}, utils.Attribute{Key: "block", Value: block})
 						continue
 					}
-					if debug {
-						utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
-					}
+
+					utils.LavaFormatTrace("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
 					payments = append(payments, paymentList...)
 				}
 			}

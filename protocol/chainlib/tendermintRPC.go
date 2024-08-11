@@ -333,6 +333,7 @@ type TendermintRpcChainListener struct {
 	logger                        *metrics.RPCConsumerLogs
 	refererData                   *RefererData
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	listeningAddress              string
 }
 
 // NewTendermintRpcChainListener creates a new instance of TendermintRpcChainListener
@@ -344,12 +345,12 @@ func NewTendermintRpcChainListener(ctx context.Context, listenEndpoint *lavasess
 ) (chainListener *TendermintRpcChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &TendermintRpcChainListener{
-		listenEndpoint,
-		relaySender,
-		healthReporter,
-		rpcConsumerLogs,
-		refererData,
-		consumerWsSubscriptionManager,
+		endpoint:                      listenEndpoint,
+		relaySender:                   relaySender,
+		healthReporter:                healthReporter,
+		logger:                        rpcConsumerLogs,
+		refererData:                   refererData,
+		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
 	}
 
 	return chainListener
@@ -563,7 +564,18 @@ func (apil *TendermintRpcChainListener) Serve(ctx context.Context, cmdFlags comm
 	app.Get("/*", handlerGet)
 	//
 	// Go
-	ListenWithRetry(app, apil.endpoint.NetworkAddress)
+	addrChannel := make(chan string)
+	addrChannelSafe := common.NewSafeChannelSender(ctx, addrChannel)
+	go func() {
+		addr := <-addrChannel
+		apil.listeningAddress = addr
+	}()
+
+	ListenWithRetry(app, apil.endpoint.NetworkAddress, addrChannelSafe)
+}
+
+func (apil *TendermintRpcChainListener) GetListeningAddress() string {
+	return apil.listeningAddress
 }
 
 type tendermintRpcChainProxy struct {

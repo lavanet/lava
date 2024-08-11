@@ -324,7 +324,7 @@ func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock
 	if !found {
 		return false
 	}
-	return types.IsFinalizedBlock(requestedBlock, latestBlock, spec.BlockDistanceForFinalizedData)
+	return types.IsFinalizedBlock(requestedBlock, latestBlock, int64(spec.BlockDistanceForFinalizedData))
 }
 
 // returns the reward per contributor

@@ -16,7 +16,6 @@ import (
 const (
 	BlocksToSaveLavaChainTracker   = 1 // we only need the latest block
 	TendermintConsensusParamsQuery = "consensus_params"
-	debug                          = false
 )
 
 var (
