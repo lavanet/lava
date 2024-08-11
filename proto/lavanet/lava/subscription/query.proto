@@ -10,7 +10,7 @@ import "cosmos/base/v1beta1/coin.proto";
 // this line is used by starport scaffolding # 1
 import "lavanet/lava/subscription/subscription.proto";
 
-option go_package = "github.com/lavanet/lava/x/subscription/types";
+option go_package = "github.com/lavanet/lava/v2/x/subscription/types";
 
 // Query defines the gRPC querier service.
 service Query {

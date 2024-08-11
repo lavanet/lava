@@ -4,7 +4,7 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 )
 
 const TypeMsgSetPolicy = "set_admin_policy"

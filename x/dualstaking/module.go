@@ -17,9 +17,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/x/dualstaking/client/cli"
-	"github.com/lavanet/lava/x/dualstaking/keeper"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	"github.com/lavanet/lava/v2/x/dualstaking/client/cli"
+	"github.com/lavanet/lava/v2/x/dualstaking/keeper"
+	"github.com/lavanet/lava/v2/x/dualstaking/types"
 )
 
 var (

@@ -9,18 +9,19 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"github.com/lavanet/lava/app"
-	"github.com/lavanet/lava/cmd/lavad/cmd"
-	"github.com/lavanet/lava/ecosystem/cache"
-	"github.com/lavanet/lava/protocol/badgegenerator"
-	"github.com/lavanet/lava/protocol/badgeserver"
-	"github.com/lavanet/lava/protocol/monitoring"
-	"github.com/lavanet/lava/protocol/performance/connection"
-	validators "github.com/lavanet/lava/protocol/performance/validators"
-	"github.com/lavanet/lava/protocol/rpcconsumer"
-	"github.com/lavanet/lava/protocol/rpcprovider"
-	"github.com/lavanet/lava/protocol/statetracker"
-	"github.com/lavanet/lava/protocol/upgrade"
+	"github.com/lavanet/lava/v2/app"
+	"github.com/lavanet/lava/v2/cmd/lavad/cmd"
+	"github.com/lavanet/lava/v2/ecosystem/cache"
+	"github.com/lavanet/lava/v2/protocol/badgegenerator"
+	"github.com/lavanet/lava/v2/protocol/badgeserver"
+	"github.com/lavanet/lava/v2/protocol/loadtest"
+	"github.com/lavanet/lava/v2/protocol/monitoring"
+	"github.com/lavanet/lava/v2/protocol/performance/connection"
+	validators "github.com/lavanet/lava/v2/protocol/performance/validators"
+	"github.com/lavanet/lava/v2/protocol/rpcconsumer"
+	"github.com/lavanet/lava/v2/protocol/rpcprovider"
+	"github.com/lavanet/lava/v2/protocol/statetracker"
+	"github.com/lavanet/lava/v2/protocol/upgrade"
 	"github.com/spf13/cobra"
 )
 
@@ -72,6 +73,8 @@ func main() {
 	testCmd.AddCommand(connection.CreateTestConnectionServerCobraCommand())
 	testCmd.AddCommand(connection.CreateTestConnectionProbeCobraCommand())
 	testCmd.AddCommand(monitoring.CreateHealthCobraCommand())
+	testCmd.AddCommand(loadtest.CreateTestLoadCobraCommand())
+
 	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
 
 	cmd.OverwriteFlagDefaults(rootCmd, map[string]string{

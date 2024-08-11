@@ -29,7 +29,7 @@ import (
 	"github.com/goccy/go-json"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 var (
@@ -514,6 +514,11 @@ func (c *Client) Subscribe(ctx context.Context, id json.RawMessage, method strin
 		return nil, nil, err
 	}
 	resp, err := op.wait(ctx, c)
+	// In the case of response containing the error message, we want to return it to the user as-is
+	if err != nil && resp != nil && resp.Error != nil {
+		return nil, resp, nil
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}

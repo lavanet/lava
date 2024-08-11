@@ -10,7 +10,7 @@ import (
 	// "github.com/cosmos/cosmos-sdk/client/flags"
 	// sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/lavanet/lava/x/protocol/types"
+	"github.com/lavanet/lava/v2/x/protocol/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module

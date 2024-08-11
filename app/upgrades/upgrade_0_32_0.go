@@ -8,9 +8,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	"github.com/lavanet/lava/app/keepers"
-	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
-	rewardstypes "github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/app/keepers"
+	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
+	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
 )
 
 func v0_32_0_UpgradeHandler(

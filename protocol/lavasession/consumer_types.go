@@ -8,11 +8,11 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/provideroptimizer"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
+	"github.com/lavanet/lava/v2/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 )
@@ -100,12 +100,18 @@ type DataReliabilitySession struct {
 }
 
 type EndpointConnection struct {
-	Client                              *pairingtypes.RelayerClient
+	Client                              pairingtypes.RelayerClient
 	connection                          *grpc.ClientConn
 	numberOfSessionsUsingThisConnection uint64
+	blockListed                         atomic.Bool
+	lbUniqueId                          string
 	// In case we got disconnected, we cant reconnect as we might lose stickiness
 	// with the provider, if its using a load balancer
 	disconnected bool
+}
+
+func (ec *EndpointConnection) GetLbUniqueId() string {
+	return ec.lbUniqueId
 }
 
 func (ec *EndpointConnection) addSessionUsingConnection() {
@@ -339,7 +345,7 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 	return nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
+func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
 	conn, err := ConnectGRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders, false, AllowGRPCCompressionForConsumerProviderCommunication)
@@ -363,7 +369,7 @@ func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx contex
 	case <-ch:
 	}
 	c := pairingtypes.NewRelayerClient(conn)
-	return &c, conn, nil
+	return c, conn, nil
 }
 
 func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpointConnection *EndpointConnection, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
@@ -467,6 +473,10 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					// If connection is active and we don't have more than maximumStreamsOverASingleConnection sessions using it already,
 					// and it didn't disconnect before. Use it.
 					if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
+						// Check if the endpoint is not blocked
+						if endpointConnection.blockListed.Load() {
+							continue
+						}
 						connectionState := endpointConnection.connection.GetState()
 						// Check Disconnections
 						if connectionState == connectivity.Shutdown { // || connectionState == connectivity.Idle
@@ -495,7 +505,7 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					return nil, false
 				}
 				endpoint.ConnectionRefusals = 0
-				newConnection := &EndpointConnection{connection: conn, Client: client}
+				newConnection := &EndpointConnection{connection: conn, Client: client, lbUniqueId: strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)}
 				endpoint.Connections = append(endpoint.Connections, newConnection)
 				return newConnection, true
 			}

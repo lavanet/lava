@@ -4,8 +4,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/utils"
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
+	"github.com/lavanet/lava/v2/utils"
+	downtimev1 "github.com/lavanet/lava/v2/x/downtime/v1"
 )
 
 const maxEpochsToStore = 3

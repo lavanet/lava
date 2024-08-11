@@ -7,8 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/testutil/sample"
-	commontypes "github.com/lavanet/lava/utils/common/types"
+	"github.com/lavanet/lava/v2/testutil/sample"
+	commontypes "github.com/lavanet/lava/v2/utils/common/types"
 	"github.com/stretchr/testify/require"
 )
 

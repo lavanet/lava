@@ -1,8 +1,8 @@
 package keeper
 
 import (
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 func (k Keeper) SetPairingRelayCache(project string, chainID string, provider string, pairedProviders []epochstoragetypes.StakeEntry) {

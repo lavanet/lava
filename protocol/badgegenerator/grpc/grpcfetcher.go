@@ -8,8 +8,8 @@ import (
 
 	_ "github.com/cosmos/cosmos-sdk/types/query"
 	retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

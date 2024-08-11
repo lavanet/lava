@@ -5,3 +5,4 @@ endpoints:
       address: 127.0.0.1:2222
     node-urls:
       - url: http://127.0.0.1:1111
+      - url: ws://127.0.0.1:1111/ws

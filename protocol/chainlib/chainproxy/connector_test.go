@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
-	pb_pkg "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/utils"
+	pb_pkg "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -68,28 +68,6 @@ func createGRPCServerWithRegisteredProto(t *testing.T) *grpc.Server {
 	pb_pkg.RegisterQueryServer(s, lavanetlavaspec)
 	go s.Serve(lis) // serve in a different thread
 	return s
-}
-
-func createRPCServer() net.Listener {
-	timeserver := new(TimeServer)
-	// Register the timeserver object upon which the GiveServerTime
-	// function will be called from the RPC server (from the client)
-	rpc.Register(timeserver)
-	// Registers an HTTP handler for RPC messages
-	rpc.HandleHTTP()
-	// Start listening for the requests on port 1234
-	listener, err := net.Listen("tcp", listenerAddress)
-	if err != nil {
-		log.Fatal("Listener error: ", err)
-	}
-	listenerAddress = listener.Addr().String()
-	listenerAddressTcp = "http://" + listenerAddress
-	// Serve accepts incoming HTTP connections on the listener l, creating
-	// a new service goroutine for each. The service goroutines read requests
-	// and then call handler to reply to them
-	go http.Serve(listener, nil)
-
-	return listener
 }
 
 func TestConnector(t *testing.T) {
@@ -179,6 +157,28 @@ func TestHashing(t *testing.T) {
 	conn, _ := NewConnector(ctx, numberOfClients, common.NodeUrl{Url: listenerAddressTcp})
 	fmt.Println(conn.hashedNodeUrl)
 	require.Equal(t, conn.hashedNodeUrl, HashURL(listenerAddressTcp))
+}
+
+func createRPCServer() net.Listener {
+	timeserver := new(TimeServer)
+	// Register the timeserver object upon which the GiveServerTime
+	// function will be called from the RPC server (from the client)
+	rpc.Register(timeserver)
+	// Registers an HTTP handler for RPC messages
+	rpc.HandleHTTP()
+	// Start listening for the requests on port 1234
+	listener, err := net.Listen("tcp", listenerAddress)
+	if err != nil {
+		log.Fatal("Listener error: ", err)
+	}
+	listenerAddress = listener.Addr().String()
+	listenerAddressTcp = "http://" + listenerAddress
+	// Serve accepts incoming HTTP connections on the listener l, creating
+	// a new service goroutine for each. The service goroutines read requests
+	// and then call handler to reply to them
+	go http.Serve(listener, nil)
+
+	return listener
 }
 
 func TestMain(m *testing.M) {

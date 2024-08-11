@@ -2,8 +2,8 @@ package dualstaking
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/dualstaking/keeper"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	"github.com/lavanet/lava/v2/x/dualstaking/keeper"
+	"github.com/lavanet/lava/v2/x/dualstaking/types"
 )
 
 // InitGenesis initializes the module's state from a provided genesis state.

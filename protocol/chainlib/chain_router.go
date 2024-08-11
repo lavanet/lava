@@ -2,12 +2,16 @@ package chainlib
 
 import (
 	"context"
+	"net/url"
+	"strings"
 	"sync"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -77,8 +81,30 @@ func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{},
 func batchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint) map[lavasession.RouterKey]lavasession.RPCProviderEndpoint {
 	returnedBatch := map[lavasession.RouterKey]lavasession.RPCProviderEndpoint{}
 	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
-		if existingEndpoint, ok := returnedBatch[lavasession.NewRouterKey(nodeUrl.Addons)]; !ok {
-			returnedBatch[lavasession.NewRouterKey(nodeUrl.Addons)] = lavasession.RPCProviderEndpoint{
+		routerKey := lavasession.NewRouterKey(nodeUrl.Addons)
+
+		u, err := url.Parse(nodeUrl.Url)
+		// Some parsing may fail because of gRPC
+		if err == nil && (u.Scheme == "ws" || u.Scheme == "wss") {
+			// if websocket, check if we have a router key for http already. if not add a websocket router key
+			// so in case we didn't get an http endpoint, we can use the ws one.
+			if _, ok := returnedBatch[routerKey]; !ok {
+				returnedBatch[routerKey] = lavasession.RPCProviderEndpoint{
+					NetworkAddress: rpcProviderEndpoint.NetworkAddress,
+					ChainID:        rpcProviderEndpoint.ChainID,
+					ApiInterface:   rpcProviderEndpoint.ApiInterface,
+					Geolocation:    rpcProviderEndpoint.Geolocation,
+					NodeUrls:       []common.NodeUrl{nodeUrl}, // add existing nodeUrl to the batch
+				}
+			}
+
+			// now change the router key to fit the websocket extension key.
+			nodeUrl.Addons = append(nodeUrl.Addons, WebSocketExtension)
+			routerKey = lavasession.NewRouterKey(nodeUrl.Addons)
+		}
+
+		if existingEndpoint, ok := returnedBatch[routerKey]; !ok {
+			returnedBatch[routerKey] = lavasession.RPCProviderEndpoint{
 				NetworkAddress: rpcProviderEndpoint.NetworkAddress,
 				ChainID:        rpcProviderEndpoint.ChainID,
 				ApiInterface:   rpcProviderEndpoint.ApiInterface,
@@ -86,10 +112,12 @@ func batchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint
 				NodeUrls:       []common.NodeUrl{nodeUrl}, // add existing nodeUrl to the batch
 			}
 		} else {
-			existingEndpoint.NodeUrls = append(existingEndpoint.NodeUrls, nodeUrl)
-			returnedBatch[lavasession.NewRouterKey(nodeUrl.Addons)] = existingEndpoint
+			// setting the incoming url first as it might be http while existing is websocket. (we prioritize http over ws when possible)
+			existingEndpoint.NodeUrls = append([]common.NodeUrl{nodeUrl}, existingEndpoint.NodeUrls...)
+			returnedBatch[routerKey] = existingEndpoint
 		}
 	}
+
 	return returnedBatch
 }
 
@@ -140,6 +168,25 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		return nil, utils.LavaFormatError("not all requirements supported in chainRouter, missing extensions or addons in definitions", nil, utils.Attribute{Key: "required", Value: requiredMap}, utils.Attribute{Key: "supported", Value: supportedMap})
 	}
 
+	_, apiCollection, hasSubscriptionInSpec := chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_SUBSCRIBE)
+	// validating we have websocket support for subscription supported specs.
+	webSocketSupported := false
+	for key := range supportedMap {
+		if key.IsRequirementMet(WebSocketExtension) {
+			webSocketSupported = true
+		}
+	}
+	if hasSubscriptionInSpec && apiCollection.Enabled && !webSocketSupported {
+		err := utils.LavaFormatError("subscriptions are applicable for this chain, but websocket is not provided in 'supported' map. By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score.", nil,
+			utils.LogAttr("apiInterface", apiCollection.CollectionData.ApiInterface),
+			utils.LogAttr("supportedMap", supportedMap),
+			utils.LogAttr("required", WebSocketExtension),
+		)
+		if !IgnoreSubscriptionNotConfiguredError {
+			return nil, err
+		}
+	}
+
 	cri := chainRouterImpl{
 		lock:             &sync.RWMutex{},
 		chainProxyRouter: chainProxyRouter,
@@ -150,6 +197,14 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 type requirementSt struct {
 	extensions lavasession.RouterKey
 	addon      string
+}
+
+func (rs *requirementSt) String() string {
+	return string(rs.extensions) + rs.addon
+}
+
+func (rs *requirementSt) IsRequirementMet(requirement string) bool {
+	return strings.Contains(string(rs.extensions), requirement) || strings.Contains(rs.addon, requirement)
 }
 
 func populateRequiredForAddon(addon string, extensions []string, required map[requirementSt]struct{}) {
