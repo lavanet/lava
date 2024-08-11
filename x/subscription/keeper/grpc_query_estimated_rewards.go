@@ -89,6 +89,11 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	}
 
 	subscriptionRewards := sdk.NewCoins(totalSubsRewards.MulInt(specEmission.Emission.MulInt64(100).RoundInt())...)
+	valRewards, comRewards, err := k.rewardsKeeper.CalculateValidatorsAndCommunityParticipationRewards(ctx, subscriptionRewards[0])
+	if err != nil {
+		return nil, fmt.Errorf("your mama")
+	}
+	subscriptionRewards = subscriptionRewards.Sub(valRewards...).Sub(comRewards...)
 
 	coins := k.rewardsKeeper.TotalPoolTokens(ctx, rewardstypes.ProviderRewardsDistributionPool)
 	TotalPoolTokens := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
