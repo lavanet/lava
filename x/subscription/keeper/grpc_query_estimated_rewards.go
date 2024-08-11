@@ -21,11 +21,6 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	res := types.QueryEstimatedRewardsResponse{}
 
-	delegationAmount, err := sdk.ParseCoinNormalized(req.Amount)
-	if err != nil {
-		return nil, err
-	}
-
 	storage := k.epochstorageKeeper.GetAllStakeEntriesCurrentForChainId(ctx, req.ChainId)
 
 	totalStake := math.ZeroInt()
@@ -42,10 +37,30 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		return nil, fmt.Errorf("provider not found in stake entries for chain ID: %s", req.ChainId)
 	}
 
-	entry.DelegateTotal = entry.DelegateTotal.Add(delegationAmount)
-	delegatorPart := sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake)
-	if entry.DelegateLimit.Amount.LT(entry.DelegateTotal.Amount) {
-		delegatorPart = delegatorPart.MulInt(entry.DelegateLimit.Amount).QuoInt(entry.DelegateTotal.Amount)
+	// delegation of the provider
+	delegationAmount := entry.Stake
+	delegatorPart := sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).Mul(entry.Stake.Amount.ToLegacyDec()).QuoInt64(100)
+	if req.Delegator != "" || req.Amount != "" {
+		if req.Amount != "" {
+			var err error
+			delegationAmount, err = sdk.ParseCoinNormalized(req.Amount)
+			if err != nil {
+				return nil, err
+			}
+		} else if req.Delegator != "" {
+			d, found := k.dualstakingKeeper.GetDelegation(ctx, req.Delegator, req.Provider, req.ChainId, uint64(ctx.BlockHeight()))
+			if !found {
+				return nil, fmt.Errorf("could not find delegator")
+			}
+			delegationAmount = d.Amount
+		}
+
+		delegatorPart = sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).Mul(sdk.OneDec().Sub(entry.Stake.Amount.ToLegacyDec().QuoInt64(100)))
+		entry.DelegateTotal = entry.DelegateTotal.Add(delegationAmount)
+		// calculate existing delegator rewards
+		if entry.DelegateLimit.Amount.LT(entry.DelegateTotal.Amount) {
+			delegatorPart = delegatorPart.MulInt(entry.DelegateLimit.Amount).QuoInt(entry.DelegateTotal.Amount)
+		}
 	}
 
 	totalSubsRewards := sdk.Coins{}
