@@ -66,13 +66,25 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 	return blockNum, nil
 }
 
+func getParserType(parserType int) string {
+	switch parserType {
+	case PARSE_PARAMS:
+		return ".params"
+	case PARSE_RESULT:
+		return ".result"
+	default:
+		utils.LavaFormatError("missing parserType", nil, utils.LogAttr("parserType", parserType))
+		return ""
+	}
+}
+
 func parseInputFromParamsWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser) (*ParsedInput, bool) {
 	parsedSuccessfully := false
 	if len(genericParsers) == 0 {
 		return nil, parsedSuccessfully
 	}
 
-	genericParserResult, genericParserErr := ParseWithGenericParsers(rpcInput, genericParsers)
+	genericParserResult, genericParserErr := ParseWithGenericParsers(rpcInput, genericParsers, getParserType(PARSE_PARAMS))
 	if genericParserErr != nil {
 		return nil, parsedSuccessfully
 	}
@@ -254,7 +266,7 @@ func getMapForParse(rpcInput RPCInput) map[string]interface{} {
 	return map[string]interface{}{"params": rpcInput.GetParams(), "result": rpcInput.GetResult()}
 }
 
-func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser) (*ParsedInput, error) {
+func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser, parserType string) (*ParsedInput, error) {
 	if len(genericParsers) == 0 {
 		return nil, fmt.Errorf("no generic parsers to use")
 	}
@@ -263,6 +275,10 @@ func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.Gener
 
 	// We try to parse the params with all the generic parsers, the first one that succeeds, its value is returned
 	for _, genericParser := range genericParsers {
+		// skip generic parsers which do not fit current parser type
+		if !strings.HasPrefix(genericParser.ParsePath, parserType) {
+			continue
+		}
 		retval, err := parseGeneric(parsingMap, genericParser)
 		if err == nil {
 			return retval, nil
@@ -289,11 +305,31 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 	)
 
 	switch genericParser.ParseType {
+	// Case Default value setting parsed block as the value set on spec after being parsed by ParseDefaultBlockParameter
+	// regardless of the value provided by the user. for example .finality: final
+	case spectypes.PARSER_TYPE_DEFAULT_VALUE:
+		parsed := NewParsedInput()
+		block, err := ParseDefaultBlockParameter(genericParser.Value)
+		if err != nil {
+			return nil, utils.LavaFormatError("Failed converting default value to requested block", err, utils.LogAttr("genericParser.Value", genericParser.Value))
+		}
+		parsed.parsedBlock = block
+		return parsed, nil
+	// Case Block Latest, setting the value set by the user given a json path hit.
+	// Example: block_id: 100, will result in requested block 100.
 	case spectypes.PARSER_TYPE_BLOCK_LATEST:
 		parsed := NewParsedInput()
-		parsed.parsedBlock = spectypes.LATEST_BLOCK
-		return parsed, nil
-		// return appendInterfaceToInterfaceArray(spectypes.LATEST_BLOCK), nil
+		valueString, ok := value.(string)
+		if ok {
+			block, err := ParseDefaultBlockParameter(valueString)
+			if err != nil {
+				return nil, utils.LavaFormatWarning("Failed converting valueString to block number", err, utils.LogAttr("value", valueString))
+			}
+			parsed.parsedBlock = block
+			return parsed, nil
+		}
+		return nil, utils.LavaFormatWarning("Failed converting value to string", nil, utils.LogAttr("value", value), utils.LogAttr("generic_parser", genericParser))
+	// TODO: Implement other cases for different parsers
 	default:
 		return nil, fmt.Errorf("unsupported generic parser type")
 	}
