@@ -1,45 +1,61 @@
 package keeper
 
 import (
+	"github.com/cosmos/cosmos-sdk/store/prefix"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
 	"github.com/lavanet/lava/v2/x/pairing/types"
 )
 
-func (k Keeper) SetPairingRelayCache(project string, chainID string, provider string, pairedProviders []epochstoragetypes.StakeEntry) {
-	key := types.NewPairingRelayCacheKey(project, chainID, provider)
-	k.setPairingCache(key, pairedProviders, k.pairingRelayCache)
+func (k Keeper) SetPairingRelayCache(ctx sdk.Context, project string, chainID string, provider string, pairedProviders []epochstoragetypes.StakeEntry) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PairingRelayCachePrefix)
+	cache := types.PairingRelayCache{Entries: pairedProviders}
+	b := k.cdc.MustMarshal(&cache)
+	store.Set([]byte(types.NewPairingRelayCacheKey(project, chainID, provider)), b)
 }
 
-func (k Keeper) GetPairingRelayCache(project string, chainID string, provider string) ([]epochstoragetypes.StakeEntry, bool) {
-	key := types.NewPairingRelayCacheKey(project, chainID, provider)
-	return k.getPairingCache(key, k.pairingRelayCache)
+func (k Keeper) GetPairingRelayCache(ctx sdk.Context, project string, chainID string, provider string) ([]epochstoragetypes.StakeEntry, bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PairingRelayCachePrefix)
+	b := store.Get([]byte(types.NewPairingRelayCacheKey(project, chainID, provider)))
+	if b == nil {
+		return []epochstoragetypes.StakeEntry{}, false
+	}
+	var cache types.PairingRelayCache
+	k.cdc.MustUnmarshal(b, &cache)
+	return cache.Entries, true
+}
+
+// ResetPairingRelayCache is used to remove all entries from the PairingRelayCache KV store
+// this function is called in the module's EndBlock so the data written in the KV store
+// will be deleted before it's written to the state
+func (k Keeper) ResetPairingRelayCache(ctx sdk.Context) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.PairingRelayCachePrefix)
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		store.Delete(iterator.Key())
+	}
 }
 
 func (k Keeper) SetPairingQueryCache(project string, chainID string, epoch uint64, pairedProviders []epochstoragetypes.StakeEntry) {
-	key := types.NewPairingQueryCacheKey(project, chainID, epoch)
-	k.setPairingCache(key, pairedProviders, k.pairingQueryCache)
-}
-
-func (k Keeper) GetPairingQueryCache(project string, chainID string, epoch uint64) ([]epochstoragetypes.StakeEntry, bool) {
-	key := types.NewPairingQueryCacheKey(project, chainID, epoch)
-	return k.getPairingCache(key, k.pairingQueryCache)
-}
-
-func (k Keeper) setPairingCache(key string, pairedProviders []epochstoragetypes.StakeEntry, cache *map[string][]epochstoragetypes.StakeEntry) {
-	if cache == nil {
+	if k.pairingQueryCache == nil {
 		// pairing cache is not initialized, will be in next epoch so simply skip
 		return
 	}
-	(*cache)[key] = pairedProviders
+	key := types.NewPairingQueryCacheKey(project, chainID, epoch)
+
+	(*k.pairingQueryCache)[key] = pairedProviders
 }
 
-func (k Keeper) getPairingCache(key string, cache *map[string][]epochstoragetypes.StakeEntry) ([]epochstoragetypes.StakeEntry, bool) {
-	if cache == nil {
+func (k Keeper) GetPairingQueryCache(project string, chainID string, epoch uint64) ([]epochstoragetypes.StakeEntry, bool) {
+	if k.pairingQueryCache == nil {
 		// pairing cache is not initialized, will be in next epoch so simply skip
 		return nil, false
 	}
-
-	if providers, ok := (*cache)[key]; ok {
+	key := types.NewPairingQueryCacheKey(project, chainID, epoch)
+	if providers, ok := (*k.pairingQueryCache)[key]; ok {
 		return providers, true
 	}
 

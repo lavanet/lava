@@ -180,7 +180,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 		var providers []epochstoragetypes.StakeEntry
 		allowedCU := uint64(0)
-		val, ok := k.GetPairingRelayCache(project.Index, relay.SpecId, relay.Provider)
+		val, ok := k.GetPairingRelayCache(ctx, project.Index, relay.SpecId, relay.Provider)
 		if ok {
 			providers = val
 			strictestPolicy, _, err := k.GetProjectStrictestPolicy(ctx, project, relay.SpecId, epochStart)
@@ -213,7 +213,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 					utils.Attribute{Key: "provider", Value: providerAddr.String()},
 				)
 			}
-			k.SetPairingRelayCache(project.Index, relay.SpecId, relay.Provider, providers)
+			k.SetPairingRelayCache(ctx, project.Index, relay.SpecId, relay.Provider, providers)
 		}
 
 		rewardedCU, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, clientAddr, relay.SpecId, uint64(relay.Epoch))
