@@ -48,9 +48,11 @@ func (cri *chainRouterImpl) getChainProxySupporting(ctx context.Context, addon s
 				}
 				return chainRouterEntry.ChainProxy, nil
 			}
-			if debug {
-				utils.LavaFormatDebug("chainProxy supporting extensions but not supporting addon", utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "wantedRouterKey", Value: wantedRouterKey})
-			}
+
+			utils.LavaFormatTrace("chainProxy supporting extensions but not supporting addon",
+				utils.LogAttr("addon", addon),
+				utils.LogAttr("wantedRouterKey", wantedRouterKey),
+			)
 		}
 		// no support for this addon
 		return nil, utils.LavaFormatError("no chain proxy supporting requested addon", nil, utils.Attribute{Key: "addon", Value: addon})

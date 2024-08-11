@@ -18,7 +18,6 @@ import (
 )
 
 const (
-	debug                      = false
 	CacheMaxCost               = 2000  // each item cost would be 1
 	CacheNumCounters           = 20000 // expect 2000 items
 	INITIAL_DATA_STALENESS     = 24
@@ -101,9 +100,15 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 	po.updateRelayTime(providerAddress, sampleTime)
-	if debug {
-		utils.LavaFormatDebug("relay update", utils.Attribute{Key: "providerData", Value: providerData}, utils.Attribute{Key: "syncBlock", Value: syncBlock}, utils.Attribute{Key: "cu", Value: cu}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
-	}
+
+	utils.LavaFormatTrace("relay update",
+		utils.LogAttr("providerData", providerData),
+		utils.LogAttr("syncBlock", syncBlock),
+		utils.LogAttr("cu", cu),
+		utils.LogAttr("providerAddress", providerAddress),
+		utils.LogAttr("latency", latency),
+		utils.LogAttr("success", success),
+	)
 }
 
 func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
@@ -116,9 +121,12 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime, sampleTime)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
-	if debug {
-		utils.LavaFormatDebug("probe update", utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
-	}
+
+	utils.LavaFormatTrace("probe update",
+		utils.LogAttr("providerAddress", providerAddress),
+		utils.LogAttr("latency", latency),
+		utils.LogAttr("success", success),
+	)
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
@@ -137,8 +145,8 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			continue
 		}
 		providerData, found := po.getProviderData(providerAddress)
-		if debug && !found {
-			utils.LavaFormatDebug("provider data was not found for address", utils.Attribute{Key: "providerAddress", Value: providerAddress})
+		if !found {
+			utils.LavaFormatTrace("provider data was not found for address", utils.LogAttr("providerAddress", providerAddress))
 		}
 		// latency score
 		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
@@ -154,9 +162,14 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			syncScoreCurrent = pertrubWithNormalGaussian(syncScoreCurrent, perturbationPercentage)
 		}
 
-		if debug {
-			utils.LavaFormatDebug("scores information", utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latencyScoreCurrent", Value: latencyScoreCurrent}, utils.Attribute{Key: "syncScoreCurrent", Value: syncScoreCurrent}, utils.Attribute{Key: "latencyScore", Value: latencyScore}, utils.Attribute{Key: "syncScore", Value: syncScore})
-		}
+		utils.LavaFormatTrace("scores information",
+			utils.LogAttr("providerAddress", providerAddress),
+			utils.LogAttr("latencyScoreCurrent", latencyScoreCurrent),
+			utils.LogAttr("syncScoreCurrent", syncScoreCurrent),
+			utils.LogAttr("latencyScore", latencyScore),
+			utils.LogAttr("syncScore", syncScore),
+		)
+
 		// we want the minimum latency and sync diff
 		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
 			if returnedProviders[0] != "" && po.shouldExplore(len(returnedProviders), numProviders) {
@@ -172,9 +185,12 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			returnedProviders = append(returnedProviders, providerAddress)
 		}
 	}
-	if debug {
-		utils.LavaFormatDebug("returned providers", utils.Attribute{Key: "providers", Value: strings.Join(returnedProviders, ",")}, utils.Attribute{Key: "cu", Value: cu})
-	}
+
+	utils.LavaFormatTrace("returned providers",
+		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
+		utils.LogAttr("cu", cu),
+	)
+
 	return returnedProviders
 }
 
@@ -290,16 +306,16 @@ func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu
 	costTimeout := timeoutDuration.Seconds() + baseLatency.Seconds()
 	// on success we are paying the time cost of this provider
 	costSuccess := historicalLatency.Seconds()
-	if debug {
-		utils.LavaFormatDebug("latency calculation breakdown",
-			utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError},
-			utils.Attribute{Key: "costBlockError", Value: costBlockError},
-			utils.Attribute{Key: "probabilityOfTimeout", Value: probabilityOfTimeout},
-			utils.Attribute{Key: "costTimeout", Value: costTimeout},
-			utils.Attribute{Key: "probabilityOfSuccess", Value: probabilityOfSuccess},
-			utils.Attribute{Key: "costSuccess", Value: costSuccess},
-		)
-	}
+
+	utils.LavaFormatTrace("latency calculation breakdown",
+		utils.LogAttr("probabilityBlockError", probabilityBlockError),
+		utils.LogAttr("costBlockError", costBlockError),
+		utils.LogAttr("probabilityOfTimeout", probabilityOfTimeout),
+		utils.LogAttr("costTimeout", costTimeout),
+		utils.LogAttr("probabilityOfSuccess", probabilityOfSuccess),
+		utils.LogAttr("costSuccess", costSuccess),
+	)
+
 	return probabilityBlockError*costBlockError + probabilityOfTimeout*costTimeout + probabilityOfSuccess*costSuccess
 }
 
@@ -482,9 +498,12 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 		Availability: availabilityScore,
 		Sync:         syncScore,
 	}
-	if debug {
-		utils.LavaFormatDebug("QoS Excellence for provider", utils.Attribute{Key: "address", Value: providerAddress}, utils.Attribute{Key: "Report", Value: ret})
-	}
+
+	utils.LavaFormatTrace("QoS Excellence for provider",
+		utils.LogAttr("address", providerAddress),
+		utils.LogAttr("Report", ret),
+	)
+
 	return ret
 }
 

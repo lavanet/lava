@@ -301,6 +301,7 @@ type JsonRPCChainListener struct {
 	logger                        *metrics.RPCConsumerLogs
 	refererData                   *RefererData
 	consumerWsSubscriptionManager *ConsumerWSSubscriptionManager
+	listeningAddress              string
 }
 
 // NewJrpcChainListener creates a new instance of JsonRPCChainListener
@@ -312,12 +313,12 @@ func NewJrpcChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 ) (chainListener *JsonRPCChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &JsonRPCChainListener{
-		listenEndpoint,
-		relaySender,
-		healthReporter,
-		rpcConsumerLogs,
-		refererData,
-		consumerWsSubscriptionManager,
+		endpoint:                      listenEndpoint,
+		relaySender:                   relaySender,
+		healthReporter:                healthReporter,
+		logger:                        rpcConsumerLogs,
+		refererData:                   refererData,
+		consumerWsSubscriptionManager: consumerWsSubscriptionManager,
 	}
 
 	return chainListener
@@ -473,7 +474,18 @@ func (apil *JsonRPCChainListener) Serve(ctx context.Context, cmdFlags common.Con
 	}
 	app.Post("/*", handlerPost)
 	// Go
-	ListenWithRetry(app, apil.endpoint.NetworkAddress)
+	addrChannel := make(chan string)
+	addrChannelSafe := common.NewSafeChannelSender(ctx, addrChannel)
+	go func() {
+		addr := <-addrChannel
+		apil.listeningAddress = addr
+	}()
+
+	ListenWithRetry(app, apil.endpoint.NetworkAddress, addrChannelSafe)
+}
+
+func (apil *JsonRPCChainListener) GetListeningAddress() string {
+	return apil.listeningAddress
 }
 
 type JrpcChainProxy struct {

@@ -18,7 +18,6 @@ import (
 const (
 	PARSE_PARAMS = 0
 	PARSE_RESULT = 1
-	debug        = false
 )
 
 var ValueNotSetError = sdkerrors.New("Value Not Set ", 6662, "when trying to parse, the value that we attempted to parse did not exist")
@@ -156,9 +155,7 @@ func parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 		}
 	}
 
-	if debug {
-		utils.LavaFormatDebug("parsed block:", utils.LogAttr("retval", retval))
-	}
+	utils.LavaFormatTrace("parsed block:", utils.LogAttr("retval", retval))
 
 	return retval, nil
 }

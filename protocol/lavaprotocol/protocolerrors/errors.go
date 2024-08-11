@@ -1,4 +1,4 @@
-package lavaprotocol
+package protocolerrors
 
 import (
 	sdkerrors "cosmossdk.io/errors"

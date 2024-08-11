@@ -240,11 +240,12 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 }
 
 type RestChainListener struct {
-	endpoint       *lavasession.RPCEndpoint
-	relaySender    RelaySender
-	healthReporter HealthReporter
-	logger         *metrics.RPCConsumerLogs
-	refererData    *RefererData
+	endpoint         *lavasession.RPCEndpoint
+	relaySender      RelaySender
+	healthReporter   HealthReporter
+	logger           *metrics.RPCConsumerLogs
+	refererData      *RefererData
+	listeningAddress string
 }
 
 // NewRestChainListener creates a new instance of RestChainListener
@@ -255,11 +256,11 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 ) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
-		listenEndpoint,
-		relaySender,
-		healthReporter,
-		rpcConsumerLogs,
-		refererData,
+		endpoint:       listenEndpoint,
+		relaySender:    relaySender,
+		healthReporter: healthReporter,
+		logger:         rpcConsumerLogs,
+		refererData:    refererData,
 	}
 
 	return chainListener
@@ -434,7 +435,18 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	app.Use("/*", handlerUse)
 
 	// Go
-	ListenWithRetry(app, apil.endpoint.NetworkAddress)
+	addrChannel := make(chan string)
+	addrChannelSafe := common.NewSafeChannelSender(ctx, addrChannel)
+	go func() {
+		addr := <-addrChannel
+		apil.listeningAddress = addr
+	}()
+
+	ListenWithRetry(app, apil.endpoint.NetworkAddress, addrChannelSafe)
+}
+
+func (apil *RestChainListener) GetListeningAddress() string {
+	return apil.listeningAddress
 }
 
 func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
@@ -516,13 +528,12 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 	rcp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 
-	if debug {
-		utils.LavaFormatDebug("provider sending node message",
-			utils.Attribute{Key: "_method", Value: nodeMessage.Path},
-			utils.Attribute{Key: "headers", Value: req.Header},
-			utils.Attribute{Key: "apiInterface", Value: "rest"},
-		)
-	}
+	utils.LavaFormatTrace("provider sending node message",
+		utils.LogAttr("_method", nodeMessage.Path),
+		utils.LogAttr("headers", req.Header),
+		utils.LogAttr("apiInterface", "rest"),
+	)
+
 	res, err := httpClient.Do(req)
 	if res != nil {
 		// resp can be non nil on error
