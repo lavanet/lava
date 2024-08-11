@@ -67,6 +67,7 @@ func (store coreKVStore) Delete(key []byte) error {
 func (store coreKVStore) Iterator(start, end []byte) (store.Iterator, error) {
 	return store.kvStore.Iterator(start, end), nil
 }
+
 func (store coreKVStore) ReverseIterator(start, end []byte) (store.Iterator, error) {
 	return store.kvStore.ReverseIterator(start, end), nil
 }

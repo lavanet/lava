@@ -40,7 +40,6 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/jhump/protoreflect v1.15.1
 	github.com/joho/godotenv v1.3.0
-	github.com/lavanet/lava v1.2.5
 	github.com/newrelic/go-agent/v3 v3.20.4
 	github.com/praserx/ipconv v1.2.1
 	github.com/spf13/pflag v1.0.5
@@ -66,7 +65,6 @@ require (
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/aws/aws-sdk-go v1.44.203 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
-	github.com/btcsuite/btcd v0.22.2 // indirect
 	github.com/bufbuild/protocompile v0.4.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect

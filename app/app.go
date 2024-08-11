@@ -1145,7 +1145,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibcexported.ModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
-	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable())
+	paramsKeeper.Subspace(packetforwardtypes.ModuleName).WithKeyTable(packetforwardtypes.ParamKeyTable()) //nolint:staticcheck
 	paramsKeeper.Subspace(specmoduletypes.ModuleName)
 	paramsKeeper.Subspace(epochstoragemoduletypes.ModuleName)
 	paramsKeeper.Subspace(dualstakingmoduletypes.ModuleName)

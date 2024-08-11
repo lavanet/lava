@@ -115,7 +115,6 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
-
 	// reset pairing relay cache every block
 	*k.pairingRelayCache = map[string][]epochstoragetypes.StakeEntry{}
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
