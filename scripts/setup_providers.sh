@@ -1,6 +1,7 @@
 #!/bin/bash
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 . ${__dir}/vars/variables.sh
+source $__dir/useful_commands.sh
 LOGS_DIR=${__dir}/../testutil/debugging/logs
 mkdir -p $LOGS_DIR
 rm $LOGS_DIR/*.log
@@ -108,3 +109,5 @@ echo "--- setting up screens done ---"
 screen -ls
 echo "ETH1 listening on 127.0.0.1:3333"
 echo "LAV1 listening on 127.0.0.1:3360 - rest 127.0.0.1:3361 - tendermintpc 127.0.0.1:3362 - grpc"
+
+validate_env
