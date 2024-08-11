@@ -2,9 +2,7 @@ package types
 
 import "strconv"
 
-var (
-	PairingRelayCachePrefix = []byte("PairingRelayCache")
-)
+var PairingRelayCachePrefix = []byte("PairingRelayCache")
 
 func NewPairingQueryCacheKey(project string, chainID string, epoch uint64) string {
 	epochStr := strconv.FormatUint(epoch, 10)
