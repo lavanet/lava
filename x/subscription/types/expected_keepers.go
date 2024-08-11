@@ -89,3 +89,7 @@ type RewardsKeeper interface {
 type StakingKeeper interface {
 	BondDenom(ctx sdk.Context) string
 }
+
+type SpecKeeper interface {
+	GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage math.LegacyDec)
+}

@@ -21,6 +21,8 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	res := types.QueryEstimatedRewardsResponse{}
 
+	_, specContribut := k.specKeeper.GetContributorReward(ctx, req.ChainId)
+
 	storage := k.epochstorageKeeper.GetAllStakeEntriesCurrentForChainId(ctx, req.ChainId)
 
 	totalStake := math.ZeroInt()
@@ -62,6 +64,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 			delegatorPart = delegatorPart.MulInt(entry.DelegateLimit.Amount).QuoInt(entry.DelegateTotal.Amount)
 		}
 	}
+	delegatorPart = delegatorPart.Mul(specContribut)
 
 	totalSubsRewards := sdk.Coins{}
 	subsIndices := k.GetAllSubscriptionsIndices(ctx)
@@ -91,8 +94,9 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	subscriptionRewards := sdk.NewCoins(totalSubsRewards.MulInt(specEmission.Emission.MulInt64(100).RoundInt())...)
 	valRewards, comRewards, err := k.rewardsKeeper.CalculateValidatorsAndCommunityParticipationRewards(ctx, subscriptionRewards[0])
 	if err != nil {
-		return nil, fmt.Errorf("your mama")
+		return nil, fmt.Errorf("failed to calculate Validators And Community Participation Rewards")
 	}
+
 	subscriptionRewards = subscriptionRewards.Sub(valRewards...).Sub(comRewards...)
 
 	coins := k.rewardsKeeper.TotalPoolTokens(ctx, rewardstypes.ProviderRewardsDistributionPool)
