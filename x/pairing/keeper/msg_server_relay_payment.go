@@ -198,7 +198,7 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 				)
 			}
 
-			stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, relay.SpecId, relay.Provider)
+			stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, relay.SpecId, relay.Provider)
 			if !found {
 				return nil, utils.LavaFormatWarning("RelayPayment: could not get stake entry for reputation", fmt.Errorf("stake entry not found"),
 					utils.LogAttr("consumer", clientAddr),

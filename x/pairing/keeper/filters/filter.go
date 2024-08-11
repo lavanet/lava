@@ -110,7 +110,7 @@ func SetupScores(ctx sdk.Context, filters []Filter, providers []epochstoragetype
 		if result {
 			reputationScore, _, found := rg.GetReputationScoreForBlock(ctx, providers[j].Chain, cluster, providers[j].Address, currentEpoch)
 			if !found {
-				reputationScore = types.MinReputationPairingScore
+				reputationScore = types.DefaultReputationPairingScore
 			}
 			providerScore := pairingscores.NewPairingScore(&providers[j], reputationScore)
 			providerScore.SlotFiltering = slotFiltering

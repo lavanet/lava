@@ -15,7 +15,8 @@ var (
 	ReputationPrefix                              = collections.NewPrefix([]byte("Reputation/"))
 	ReputationPairingScoreBenchmarkStakeThreshold = sdk.NewDecWithPrec(1, 1) // 0.1 = 10%
 	MaxReputationPairingScore                     = sdk.NewDec(2)
-	MinReputationPairingScore                     = sdk.NewDecWithPrec(5, 1) // 0.5
+	MinReputationPairingScore                     = sdk.NewDecWithPrec(5, 1)   // 0.5
+	DefaultReputationPairingScore                 = sdk.NewDecWithPrec(125, 2) // 1.25
 )
 
 // ReputationKey returns a key to the reputations indexed map
@@ -83,13 +84,30 @@ func (r Reputation) calcDecayFactor(halfLifeFactor int64, currentTime int64) mat
 	return decayFactor
 }
 
-func (r Reputation) ApplyTimeDecay(halfLifeFactor int64, currentTime int64) Reputation {
+func (r Reputation) ApplyTimeDecayAndUpdateScore(halfLifeFactor int64, currentTime int64) (Reputation, error) {
 	decayFactor := r.calcDecayFactor(halfLifeFactor, currentTime)
 	r.Score.Score.Num = (r.Score.Score.Num.Mul(decayFactor)).Add(r.EpochScore.Score.Num)
 	r.Score.Score.Denom = (r.Score.Score.Denom.Mul(decayFactor)).Add(r.EpochScore.Score.Denom)
 	r.Score.Variance.Num = (r.Score.Variance.Num.Mul(decayFactor)).Add(r.EpochScore.Variance.Num)
 	r.Score.Variance.Denom = (r.Score.Variance.Denom.Mul(decayFactor)).Add(r.EpochScore.Variance.Denom)
-	return r
+	if !r.Validate() {
+		return Reputation{}, utils.LavaFormatError("ApplyTimeDecayAndUpdateScore: cannot update reputation",
+			fmt.Errorf("reputation result is invalid"),
+			utils.LogAttr("reputation_result", r.String()),
+			utils.LogAttr("decay_factor", decayFactor.String()),
+			utils.LogAttr("half_life_factor", halfLifeFactor),
+		)
+	}
+	return r, nil
+}
+
+func (r Reputation) Validate() bool {
+	if r.CreationTime <= 0 || r.TimeLastUpdated <= 0 || r.TimeLastUpdated < r.CreationTime ||
+		r.Stake.Denom != commontypes.TokenDenom || !r.Score.Validate() || !r.EpochScore.Validate() {
+		return false
+	}
+
+	return true
 }
 
 // ReputationScoreKey returns a key for the reputations fixation store (reputationsFS)
