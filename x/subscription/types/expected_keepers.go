@@ -5,10 +5,12 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
 	fixationtypes "github.com/lavanet/lava/v2/x/fixationstore/types"
 	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	projectstypes "github.com/lavanet/lava/v2/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
 	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 )
 
@@ -33,6 +35,7 @@ type EpochstorageKeeper interface {
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
 	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	GetStakeEntryCurrent(ctx sdk.Context, chainID string, address string) (epochstoragetypes.StakeEntry, bool)
+	GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID string) []epochstoragetypes.StakeEntry
 	// Methods imported from epochstorage should be defined here
 }
 
@@ -65,6 +68,7 @@ type TimerStoreKeeper interface {
 
 type DualStakingKeeper interface {
 	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
+	GetDelegation(ctx sdk.Context, delegator, provider, chainID string, epoch uint64) (dualstakingtypes.Delegation, bool)
 }
 
 type RewardsKeeper interface {
@@ -75,8 +79,17 @@ type RewardsKeeper interface {
 	IsIprpcSubscription(ctx sdk.Context, address string) bool
 	AggregateCU(ctx sdk.Context, subscription, provider string, chainID string, cu uint64)
 	CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Context, reward sdk.Coin) (validatorsCoins sdk.Coins, communityCoins sdk.Coins, err error)
+	TotalPoolTokens(ctx sdk.Context, pool rewardstypes.Pool) sdk.Coins
+	SpecEmissionParts(ctx sdk.Context) (emissions []rewardstypes.SpecEmissionPart)
+	SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec rewardstypes.SpecEmissionPart) math.LegacyDec
+	GetIprpcRewardsCurrentId(ctx sdk.Context) uint64
+	GetIprpcReward(ctx sdk.Context, id uint64) (val rewardstypes.IprpcReward, found bool)
 }
 
 type StakingKeeper interface {
 	BondDenom(ctx sdk.Context) string
+}
+
+type SpecKeeper interface {
+	GetContributorReward(ctx sdk.Context, chainId string) (contributors []sdk.AccAddress, percentage math.LegacyDec)
 }
