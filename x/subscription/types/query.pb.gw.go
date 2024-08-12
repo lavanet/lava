@@ -249,10 +249,6 @@ func local_request_Query_TrackedUsage_0(ctx context.Context, marshaler runtime.M
 
 }
 
-var (
-	filter_Query_EstimatedRewards_0 = &utilities.DoubleArray{Encoding: map[string]int{"provider": 0, "chain_id": 1, "amount": 2}, Base: []int{1, 1, 2, 3, 0, 0, 0}, Check: []int{0, 1, 1, 1, 2, 3, 4}}
-)
-
 func request_Query_EstimatedRewards_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq QueryEstimatedRewardsRequest
 	var metadata runtime.ServerMetadata
@@ -286,22 +282,15 @@ func request_Query_EstimatedRewards_0(ctx context.Context, marshaler runtime.Mar
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
 	}
 
-	val, ok = pathParams["amount"]
+	val, ok = pathParams["amount_delegator"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "amount")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "amount_delegator")
 	}
 
-	protoReq.Amount, err = runtime.String(val)
+	protoReq.AmountDelegator, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "amount", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_EstimatedRewards_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "amount_delegator", err)
 	}
 
 	msg, err := client.EstimatedRewards(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -342,22 +331,15 @@ func local_request_Query_EstimatedRewards_0(ctx context.Context, marshaler runti
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "chain_id", err)
 	}
 
-	val, ok = pathParams["amount"]
+	val, ok = pathParams["amount_delegator"]
 	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "amount")
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "amount_delegator")
 	}
 
-	protoReq.Amount, err = runtime.String(val)
+	protoReq.AmountDelegator, err = runtime.String(val)
 
 	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "amount", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_Query_EstimatedRewards_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "amount_delegator", err)
 	}
 
 	msg, err := server.EstimatedRewards(ctx, &protoReq)
@@ -729,7 +711,7 @@ var (
 
 	pattern_Query_TrackedUsage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 2}, []string{"lavanet", "lava", "subscription", "tracked_usage"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_EstimatedRewards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 1, 0, 4, 1, 5, 6}, []string{"lavanet", "lava", "subscription", "estimated_rewards", "provider", "chain_id", "amount"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_EstimatedRewards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4, 1, 0, 4, 1, 5, 5, 1, 0, 4, 1, 5, 6}, []string{"lavanet", "lava", "subscription", "estimated_rewards", "provider", "chain_id", "amount_delegator"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

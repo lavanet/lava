@@ -46,7 +46,7 @@ service Query {
 
 // Queries a rewards estimation.
 rpc EstimatedRewards(QueryEstimatedRewardsRequest) returns (QueryEstimatedRewardsResponse) {
-  option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount}";
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}";
 }
 
   // this line is used by starport scaffolding # 2
@@ -123,8 +123,7 @@ message QuerySubscriptionTrackedUsageResponse {
 message QueryEstimatedRewardsRequest {
   string provider = 1;
   string chain_id = 2;
-  string amount = 3; 
-  string delegator = 4; 
+  string amount_delegator = 3; 
 }
 
 message EstimatedRewardInfo {
