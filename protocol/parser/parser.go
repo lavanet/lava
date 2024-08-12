@@ -304,8 +304,14 @@ func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.Gener
 	)
 }
 
-func parseRule(rule string, value string) bool {
+func parseRule(rule string, valueInterface interface{}) bool {
 	// Split the rule by "||" to handle OR conditions
+	if rule == "" {
+		return true
+	}
+
+	// convert to string
+	value := blockInterfaceToString(valueInterface)
 	conditions := strings.Split(rule, "||")
 
 	for _, condition := range conditions {
@@ -342,6 +348,9 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 		return nil, err
 	}
 
+	if !parseRule(genericParser.Rule, value) {
+		return nil, utils.LavaFormatWarning("PARSER_TYPE_DEFAULT_VALUE Did not match any rule", nil, utils.LogAttr("value", value), utils.LogAttr("rules", genericParser.Rule))
+	}
 	utils.LavaFormatTrace("parsed generic value",
 		utils.LogAttr("input", input),
 		utils.LogAttr("genericParser", genericParser),
@@ -353,16 +362,12 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 	// regardless of the value provided by the user. for example .finality: final
 	case spectypes.PARSER_TYPE_DEFAULT_VALUE:
 		parsed := NewParsedInput()
-		valueString := blockInterfaceToString(value)
-		if parseRule(genericParser.Rule, valueString) {
-			block, err := ParseDefaultBlockParameter(genericParser.Value)
-			if err != nil {
-				return nil, utils.LavaFormatError("Failed converting default value to requested block", err, utils.LogAttr("genericParser.Value", genericParser.Value))
-			}
-			parsed.parsedBlock = block
-			return parsed, nil
+		block, err := ParseDefaultBlockParameter(genericParser.Value)
+		if err != nil {
+			return nil, utils.LavaFormatError("Failed converting default value to requested block", err, utils.LogAttr("genericParser.Value", genericParser.Value))
 		}
-		return nil, utils.LavaFormatWarning("PARSER_TYPE_DEFAULT_VALUE Did not match any rule", nil, utils.LogAttr("value", value), utils.LogAttr("rules", genericParser.Rule))
+		parsed.parsedBlock = block
+		return parsed, nil
 	// Case Block Latest, setting the value set by the user given a json path hit.
 	// Example: block_id: 100, will result in requested block 100.
 	case spectypes.PARSER_TYPE_BLOCK_LATEST:
