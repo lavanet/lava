@@ -66,16 +66,32 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 	return blockNum, nil
 }
 
-func getParserType(parserType int) string {
+func getParserTypeMap(parserType int) map[spectypes.PARSER_TYPE]struct{} {
 	switch parserType {
 	case PARSE_PARAMS:
-		return ".params"
+		return map[spectypes.PARSER_TYPE]struct{}{
+			spectypes.PARSER_TYPE_BLOCK_LATEST:  {},
+			spectypes.PARSER_TYPE_DEFAULT_VALUE: {},
+			spectypes.PARSER_TYPE_BLOCK_HASH:    {},
+		}
 	case PARSE_RESULT:
-		return ".result"
+		return map[spectypes.PARSER_TYPE]struct{}{
+			spectypes.PARSER_TYPE_RESULT: {},
+		}
 	default:
 		utils.LavaFormatError("missing parserType", nil, utils.LogAttr("parserType", parserType))
-		return ""
+		return map[spectypes.PARSER_TYPE]struct{}{}
 	}
+}
+
+func filterGenericParsersByType(genericParsers []spectypes.GenericParser, filterMap map[spectypes.PARSER_TYPE]struct{}) []spectypes.GenericParser {
+	retGenericParsers := []spectypes.GenericParser{}
+	for _, parser := range genericParsers {
+		if _, ok := filterMap[parser.ParseType]; ok {
+			retGenericParsers = append(retGenericParsers, parser)
+		}
+	}
+	return retGenericParsers
 }
 
 func parseInputFromParamsWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser) (*ParsedInput, bool) {
@@ -84,7 +100,7 @@ func parseInputFromParamsWithGenericParsers(rpcInput RPCInput, genericParsers []
 		return nil, parsedSuccessfully
 	}
 
-	genericParserResult, genericParserErr := ParseWithGenericParsers(rpcInput, genericParsers, getParserType(PARSE_PARAMS))
+	genericParserResult, genericParserErr := ParseWithGenericParsers(rpcInput, filterGenericParsersByType(genericParsers, getParserTypeMap(PARSE_PARAMS)))
 	if genericParserErr != nil {
 		return nil, parsedSuccessfully
 	}
@@ -266,7 +282,7 @@ func getMapForParse(rpcInput RPCInput) map[string]interface{} {
 	return map[string]interface{}{"params": rpcInput.GetParams(), "result": rpcInput.GetResult()}
 }
 
-func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser, parserType string) (*ParsedInput, error) {
+func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.GenericParser) (*ParsedInput, error) {
 	if len(genericParsers) == 0 {
 		return nil, fmt.Errorf("no generic parsers to use")
 	}
@@ -275,10 +291,6 @@ func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.Gener
 
 	// We try to parse the params with all the generic parsers, the first one that succeeds, its value is returned
 	for _, genericParser := range genericParsers {
-		// skip generic parsers which do not fit current parser type
-		if !strings.HasPrefix(genericParser.ParsePath, parserType) {
-			continue
-		}
 		retval, err := parseGeneric(parsingMap, genericParser)
 		if err == nil {
 			return retval, nil
