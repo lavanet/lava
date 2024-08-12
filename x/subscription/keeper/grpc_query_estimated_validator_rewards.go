@@ -26,7 +26,7 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 
 	val, found := k.stakingKeeper.GetValidator(ctx, valAddress)
 	if !found {
-		return nil, fmt.Errorf("your mama")
+		return nil, fmt.Errorf("validator not found")
 	}
 
 	var delegatorPart sdk.Dec
@@ -36,17 +36,16 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 	if req.AmountDelegator == "" {
 		del, found := k.stakingKeeper.GetDelegation(ctx, delAddress, valAddress)
 		if !found {
-			return nil, fmt.Errorf("your mama")
+			return nil, fmt.Errorf("self delegation not found")
 		}
 		delegatorPart = del.Shares.Quo(val.DelegatorShares).Add(val.DelegatorShares.Sub(del.Shares).Mul(val.Commission.Rate))
-
 	} else {
 		delAddress, err := sdk.AccAddressFromBech32(req.AmountDelegator)
 		// existing delegator
 		if err == nil {
 			del, found := k.stakingKeeper.GetDelegation(ctx, delAddress, valAddress)
 			if !found {
-				return nil, fmt.Errorf("your mama")
+				return nil, fmt.Errorf("delegation not found")
 			}
 			delegatorPart = del.Shares.Quo(val.DelegatorShares).Mul(sdk.OneDec().Sub(val.Commission.Rate))
 		} else { // potential delegator
