@@ -587,3 +587,45 @@ func TestParseBlockFromParams(t *testing.T) {
 		})
 	}
 }
+
+func TestParseRule(t *testing.T) {
+	tests := []struct {
+		rule     string
+		value    string
+		expected bool
+	}{
+		{"=final || =optimistic", "final", true},
+		{"=final || =optimistic", "optimistic", true},
+		{"=final || =optimistic", "pessimistic", false},
+		{"=final", "final", true},
+		{"=final", "notfinal", false},
+		{"=final || =optimistic || =neutral", "neutral", true},
+		{"=final || =optimistic", "finale", false},
+	}
+
+	for _, test := range tests {
+		result := parseRule(test.rule, test.value)
+		if result != test.expected {
+			t.Errorf("parseRule(%q, %q) = %v; expected %v", test.rule, test.value, result, test.expected)
+		}
+	}
+}
+
+func TestParseGeneric(t *testing.T) {
+	jsonMap := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"id":      "nil",
+		"method":  "block",
+		"params": map[string]interface{}{
+			"finality": "final",
+		},
+	}
+	res, err := parseGeneric(jsonMap, spectypes.GenericParser{
+		ParsePath: ".params.finality",
+		Value:     "latest",
+		ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
+		Rule:      "=final || =optimistic",
+	})
+	require.NoError(t, err)
+	require.Equal(t, spectypes.LATEST_BLOCK, res.parsedBlock)
+}

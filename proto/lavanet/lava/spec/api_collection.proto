@@ -96,6 +96,7 @@ message GenericParser {
   string parse_path = 1;
   string value = 2;
   PARSER_TYPE parse_type = 3;
+  string rule = 4;
 }
 
 enum EXTENSION {

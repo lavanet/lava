@@ -292,6 +292,38 @@ func ParseWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.Gener
 	)
 }
 
+func parseRule(rule string, value string) bool {
+	// Split the rule by "||" to handle OR conditions
+	conditions := strings.Split(rule, "||")
+
+	for _, condition := range conditions {
+		condition = strings.TrimSpace(condition)
+		if len(condition) <= 1 {
+			continue
+		}
+
+		operator := condition[:1]
+		operand := strings.TrimSpace(condition[1:])
+
+		switch operator {
+		case "=":
+			if value == operand {
+				return true
+			}
+		// Implement other operators when needed
+		// case "<":
+		// 	// Handle "<" logic
+		// case ">":
+		// 	// Handle ">" logic
+		default:
+			utils.LavaFormatError("Unsupported operator", nil, utils.LogAttr("operator", operator), utils.LogAttr("rule", rule), utils.LogAttr("value", value))
+			continue
+		}
+	}
+
+	return false
+}
+
 func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*ParsedInput, error) {
 	value, err := findGenericParserValue(input, genericParser)
 	if err != nil {
@@ -309,12 +341,19 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 	// regardless of the value provided by the user. for example .finality: final
 	case spectypes.PARSER_TYPE_DEFAULT_VALUE:
 		parsed := NewParsedInput()
-		block, err := ParseDefaultBlockParameter(genericParser.Value)
-		if err != nil {
-			return nil, utils.LavaFormatError("Failed converting default value to requested block", err, utils.LogAttr("genericParser.Value", genericParser.Value))
+		valueString, ok := value.(string)
+		if !ok {
+			return nil, utils.LavaFormatWarning("PARSER_TYPE_DEFAULT_VALUE Failed converting valueString", nil, utils.LogAttr("value", value))
 		}
-		parsed.parsedBlock = block
-		return parsed, nil
+		if parseRule(genericParser.Rule, valueString) {
+			block, err := ParseDefaultBlockParameter(genericParser.Value)
+			if err != nil {
+				return nil, utils.LavaFormatError("Failed converting default value to requested block", err, utils.LogAttr("genericParser.Value", genericParser.Value))
+			}
+			parsed.parsedBlock = block
+			return parsed, nil
+		}
+		return nil, utils.LavaFormatWarning("PARSER_TYPE_DEFAULT_VALUE Did not match any rule", nil, utils.LogAttr("value", value), utils.LogAttr("rules", genericParser.Rule))
 	// Case Block Latest, setting the value set by the user given a json path hit.
 	// Example: block_id: 100, will result in requested block 100.
 	case spectypes.PARSER_TYPE_BLOCK_LATEST:

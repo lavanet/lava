@@ -92,6 +92,7 @@
                                     {
                                         "parse_path": ".params.finality",
                                         "value": "latest",
+                                        "rule": "=final || =optimistic",
                                         "parse_type": "DEFAULT_VALUE"
                                     }
                                 ]
