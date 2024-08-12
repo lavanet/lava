@@ -42,20 +42,21 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	// delegation of the provider
 	delegationAmount := entry.Stake
 	delegatorPart := sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).MulInt64(int64(entry.DelegateCommission)).QuoInt64(100)
-	if req.Delegator != "" || req.Amount != "" {
-		if req.Amount != "" {
-			var err error
-			delegationAmount, err = sdk.ParseCoinNormalized(req.Amount)
-			if err != nil {
-				return nil, err
-			}
-			entry.DelegateTotal = entry.DelegateTotal.Add(delegationAmount)
-		} else if req.Delegator != "" {
-			d, found := k.dualstakingKeeper.GetDelegation(ctx, req.Delegator, req.Provider, req.ChainId, uint64(ctx.BlockHeight()))
+	if req.AmountDelegator != "" {
+		_, err := sdk.AccAddressFromBech32(req.AmountDelegator)
+		if err == nil {
+			d, found := k.dualstakingKeeper.GetDelegation(ctx, req.AmountDelegator, req.Provider, req.ChainId, uint64(ctx.BlockHeight()))
 			if !found {
 				return nil, fmt.Errorf("could not find delegator")
 			}
 			delegationAmount = d.Amount
+		} else {
+			var err error
+			delegationAmount, err = sdk.ParseCoinNormalized(req.AmountDelegator)
+			if err != nil {
+				return nil, err
+			}
+			entry.DelegateTotal = entry.DelegateTotal.Add(delegationAmount)
 		}
 
 		delegatorPart = sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).MulInt64(int64(100 - entry.DelegateCommission)).QuoInt64(100)
@@ -63,6 +64,13 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		if entry.DelegateLimit.Amount.LT(entry.DelegateTotal.Amount) {
 			delegatorPart = delegatorPart.MulInt(entry.DelegateLimit.Amount).QuoInt(entry.DelegateTotal.Amount)
 		}
+	} else {
+		totalDelegations := entry.DelegateTotal.Amount
+		if entry.DelegateLimit.Amount.LT(entry.DelegateTotal.Amount) {
+			totalDelegations = entry.DelegateLimit.Amount
+		}
+		commission := sdk.NewDecFromInt(totalDelegations).QuoInt(entry.EffectiveStake()).MulInt64(int64(entry.DelegateCommission)).QuoInt64(100)
+		delegatorPart = delegatorPart.Add(commission)
 	}
 	delegatorPart = delegatorPart.Mul(sdk.OneDec().Sub(specContribut))
 
@@ -97,8 +105,6 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		return nil, fmt.Errorf("failed to calculate Validators And Community Participation Rewards")
 	}
 
-	subscriptionRewards = subscriptionRewards.Sub(valRewards...).Sub(comRewards...)
-
 	coins := k.rewardsKeeper.TotalPoolTokens(ctx, rewardstypes.ProviderRewardsDistributionPool)
 	TotalPoolTokens := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
 
@@ -106,6 +112,8 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		TotalPoolTokens,
 		sdk.NewDecFromInt(subscriptionRewards.AmountOf(k.stakingKeeper.BondDenom(ctx))),
 		specEmission)
+
+	subscriptionRewards = subscriptionRewards.Sub(valRewards...).Sub(comRewards...)
 
 	iprpcReward, found := k.rewardsKeeper.GetIprpcReward(ctx, k.rewardsKeeper.GetIprpcRewardsCurrentId(ctx))
 	if found {
