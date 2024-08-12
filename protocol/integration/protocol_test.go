@@ -786,7 +786,7 @@ func TestConsumerProviderNodeErrorOnRequestedBlockHashRetriesArchive(t *testing.
 						NetworkAddress: archiveProvider.endpoint.NetworkAddress.Address,
 						Enabled:        true,
 						Geolocation:    1,
-						Addons:         map[string]struct{}{"archive": {}},
+						Extensions:     map[string]struct{}{"archive": {}},
 					},
 				},
 				Sessions:         map[int64]*lavasession.SingleConsumerSession{},
