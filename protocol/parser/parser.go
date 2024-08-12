@@ -19,6 +19,8 @@ import (
 const (
 	PARSE_PARAMS = 0
 	PARSE_RESULT = 1
+
+	MinimumHashLength = 32 // minimum hash length is 32 bits, which is MD5. SHA-1=40, SHA256=64, SHA512=128.
 )
 
 var ValueNotSetError = sdkerrors.New("Value Not Set ", 6662, "when trying to parse, the value that we attempted to parse did not exist")
@@ -424,13 +426,14 @@ func findGenericParserValue(input interface{}, genericParser spectypes.GenericPa
 }
 
 func parseGenericParserBlockHash(value interface{}) (*ParsedInput, error) {
-	// TODO: Validate that the value is a hash
-
 	parsed := NewParsedInput()
 
 	strVal, ok := value.(string)
 	if !ok {
 		return parsed, utils.LavaFormatDebug("failed to cast generic parser value to string", utils.LogAttr("value", value))
+	}
+	if len(strVal) < MinimumHashLength {
+		return parsed, utils.LavaFormatDebug("value length is below minimum hash length", utils.LogAttr("strVal", strVal), utils.LogAttr("len(strVal)", len(strVal)), utils.LogAttr("MinimumHashLength", MinimumHashLength))
 	}
 
 	parsed.parsedHashes = append(parsed.parsedHashes, strVal)
