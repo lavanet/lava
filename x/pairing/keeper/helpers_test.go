@@ -7,7 +7,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/testutil/common"
 	testutil "github.com/lavanet/lava/v2/testutil/keeper"
+	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v2/x/plans/types"
 	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
@@ -142,6 +144,36 @@ func (ts *tester) setupForPayments(providersCount, clientsCount, providersToPair
 	ts.AdvanceEpoch()
 
 	return ts
+}
+
+const (
+	GreatQos = iota
+	GoodQos
+	BadQos
+)
+
+func (ts *tester) setupForReputation(modifyHalfLifeFactor bool) (*tester, []pairingtypes.QualityOfServiceReport) {
+	ts.setupForPayments(0, 1, 5) // 0 providers, 1 client, default providers-to-pair
+
+	greatQos := types.QualityOfServiceReport{Latency: sdk.ZeroDec(), Availability: sdk.OneDec(), Sync: sdk.ZeroDec()}
+	goodQos := types.QualityOfServiceReport{Latency: sdk.NewDec(5), Availability: sdk.OneDec(), Sync: sdk.NewDec(5)}
+	badQos := types.QualityOfServiceReport{Latency: sdk.NewDec(1000), Availability: sdk.OneDec(), Sync: sdk.NewDec(1000)}
+
+	if modifyHalfLifeFactor {
+		// set half life factor to be epoch time
+		resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &types.QueryParamsRequest{})
+		require.NoError(ts.T, err)
+		resQParams.Params.ReputationHalfLifeFactor = int64(ts.EpochTimeDefault().Seconds())
+		ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
+	}
+
+	// set min self delegation to zero
+	resQParams2, err := ts.Keepers.Dualstaking.Params(ts.GoCtx, &dualstakingtypes.QueryParamsRequest{})
+	require.NoError(ts.T, err)
+	resQParams2.Params.MinSelfDelegation = sdk.NewCoin(ts.TokenDenom(), sdk.ZeroInt())
+	ts.Keepers.Dualstaking.SetParams(ts.Ctx, resQParams2.Params)
+
+	return ts, []pairingtypes.QualityOfServiceReport{greatQos, goodQos, badQos}
 }
 
 // payAndVerifyBalance performs payment and then verifies the balances
