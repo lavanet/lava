@@ -353,10 +353,7 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 	// regardless of the value provided by the user. for example .finality: final
 	case spectypes.PARSER_TYPE_DEFAULT_VALUE:
 		parsed := NewParsedInput()
-		valueString, ok := value.(string)
-		if !ok {
-			return nil, utils.LavaFormatWarning("PARSER_TYPE_DEFAULT_VALUE Failed converting valueString", nil, utils.LogAttr("value", value))
-		}
+		valueString := blockInterfaceToString(value)
 		if parseRule(genericParser.Rule, valueString) {
 			block, err := ParseDefaultBlockParameter(genericParser.Value)
 			if err != nil {

@@ -421,6 +421,29 @@ func TestParseBlockFromParams(t *testing.T) {
 		expected       int64
 	}{
 		{
+			name: "generic_parser_happy_flow_default_value",
+			rpcInput: &RPCInputTest{
+				Params: map[string]interface{}{
+					"foo": map[string]interface{}{
+						"bar": []interface{}{
+							map[string]interface{}{
+								"baz": 123,
+							},
+						},
+					},
+				},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".params.foo.bar.[0].baz",
+					Rule:      "=123",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
+				},
+			},
+			expected: spectypes.LATEST_BLOCK,
+		},
+		{
 			name: "generic_parser_happy_flow_value",
 			rpcInput: &RPCInputTest{
 				Params: map[string]interface{}{
@@ -440,28 +463,6 @@ func TestParseBlockFromParams(t *testing.T) {
 				},
 			},
 			expected: 123,
-		},
-		{
-			name: "generic_parser_happy_flow_default_value",
-			rpcInput: &RPCInputTest{
-				Params: map[string]interface{}{
-					"foo": map[string]interface{}{
-						"bar": []interface{}{
-							map[string]interface{}{
-								"baz": 123,
-							},
-						},
-					},
-				},
-			},
-			genericParsers: []spectypes.GenericParser{
-				{
-					ParsePath: ".params.foo.bar.[0].baz",
-					Value:     "latest",
-					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
-				},
-			},
-			expected: spectypes.LATEST_BLOCK,
 		},
 		{
 			name:     "generic_parser_nil_params",
