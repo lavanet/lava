@@ -2,13 +2,17 @@ package chainlib
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/utils/rand"
 	"github.com/lavanet/lava/v2/utils/sigs"
 
@@ -84,9 +88,43 @@ func generateCombinations(arr []string) [][]string {
 	return append(combinationsWithoutFirst, combinationsWithFirst...)
 }
 
+func genericWebSocketHandler() http.HandlerFunc {
+	upGrader := websocket.Upgrader{}
+
+	// Create a simple websocket server that mocks the node
+	return func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upGrader.Upgrade(w, r, nil)
+		if err != nil {
+			fmt.Println(err)
+			panic("got error in upgrader")
+		}
+		defer conn.Close()
+
+		for {
+			// Read the request
+			messageType, message, err := conn.ReadMessage()
+			if err != nil {
+				panic("got error in ReadMessage")
+			}
+			fmt.Println("got ws message", string(message), messageType)
+			conn.WriteMessage(messageType, message)
+			fmt.Println("writing ws message", string(message), messageType)
+		}
+	}
+}
+
 // generates a chain parser, a chain fetcher messages based on it
 // apiInterface can either be an ApiInterface string as in spectypes.ApiInterfaceXXX or a number for an index in the apiCollections
-func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string, services []string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
+func CreateChainLibMocks(
+	ctx context.Context,
+	specIndex string,
+	apiInterface string,
+	httpServerCallback http.HandlerFunc,
+	wsServerCallback http.HandlerFunc,
+	getToTopMostPath string,
+	services []string,
+) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
+	utils.SetGlobalLoggingLevel("debug")
 	closeServer = nil
 	spec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
@@ -114,6 +152,14 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		return nil, nil, nil, nil, nil, err
 	}
 
+	if httpServerCallback == nil {
+		httpServerCallback = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+	}
+
+	if wsServerCallback == nil {
+		wsServerCallback = genericWebSocketHandler()
+	}
+
 	if apiInterface == spectypes.APIInterfaceGrpc {
 		// Start a new gRPC server using the buffered connection
 		grpcServer := grpc.NewServer()
@@ -127,7 +173,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: append(addons, extensionsList...)})
 		}
 		go func() {
-			service := myServiceImplementation{serverCallback: serverCallback}
+			service := myServiceImplementation{serverCallback: httpServerCallback}
 			tmservice.RegisterServiceServer(grpcServer, service)
 			gogoreflection.Register(grpcServer)
 			// Serve requests on the buffered connection
@@ -141,9 +187,17 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 			return nil, nil, nil, closeServer, nil, err
 		}
 	} else {
-		mockServer := httptest.NewServer(serverCallback)
-		closeServer = mockServer.Close
-		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL, Addons: addons})
+		var mockWebSocketServer *httptest.Server
+		var wsUrl string
+		mockWebSocketServer = httptest.NewServer(wsServerCallback)
+		wsUrl = "ws" + strings.TrimPrefix(mockWebSocketServer.URL, "http")
+		mockHttpServer := httptest.NewServer(httpServerCallback)
+		closeServer = func() {
+			mockHttpServer.Close()
+			mockWebSocketServer.Close()
+		}
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockHttpServer.URL, Addons: addons})
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: nil})
 		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
 		if err != nil {
 			return nil, nil, nil, closeServer, nil, err

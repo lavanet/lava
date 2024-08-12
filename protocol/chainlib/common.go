@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -30,9 +30,15 @@ const (
 	relayMsgLogMaxChars        = 200
 	RPCProviderNodeAddressHash = "Lava-Provider-Node-Address-Hash"
 	RPCProviderNodeExtension   = "Lava-Provider-Node-Extension"
+	RpcProviderUniqueIdHeader  = "Lava-Provider-Unique-Id"
+	WebSocketExtension         = "websocket"
 )
 
-var InvalidResponses = []string{"null", "", "nil", "undefined"}
+var (
+	InvalidResponses                   = []string{"null", "", "nil", "undefined"}
+	FailedSendingSubscriptionToClients = sdkerrors.New("failed Sending Subscription To Clients", 1015, "Failed Sending Subscription To Clients connection might have been closed by the user")
+	NoActiveSubscriptionFound          = sdkerrors.New("failed finding an active subscription on provider side", 1016, "no active subscriptions for hashed params.")
+)
 
 type RelayReplyWrapper struct {
 	StatusCode int
@@ -181,54 +187,24 @@ func addAttributeToError(key, value, errorMessage string) string {
 	return errorMessage + fmt.Sprintf(`, "%v": "%v"`, key, value)
 }
 
-// rpc default endpoint should be websocket. otherwise return an error
-func verifyRPCEndpoint(endpoint string) {
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint})
-	}
-	switch u.Scheme {
-	case "ws", "wss":
-		return
-	default:
-		utils.LavaFormatWarning("URL scheme should be websocket (ws/wss), got: "+u.Scheme+", By not setting ws/wss your provider wont be able to accept ws subscriptions, therefore might receive less rewards and lower QOS score. if subscriptions are not applicable for this chain you can ignore this warning", nil)
-	}
-}
-
-// rpc default endpoint should be websocket. otherwise return an error
-func verifyTendermintEndpoint(endpoints []common.NodeUrl) (websocketEndpoint, httpEndpoint common.NodeUrl) {
+func validateEndpoints(endpoints []common.NodeUrl, apiInterface string) {
 	for _, endpoint := range endpoints {
-		u, err := url.Parse(endpoint.Url)
-		if err != nil {
-			utils.LavaFormatFatal("unparsable url", err, utils.Attribute{Key: "url", Value: endpoint.UrlStr()})
-		}
-		switch u.Scheme {
-		case "http", "https":
-			httpEndpoint = endpoint
-		case "ws", "wss":
-			websocketEndpoint = endpoint
-		default:
-			utils.LavaFormatFatal("URL scheme should be websocket (ws/wss) or (http/https), got: "+u.Scheme, nil)
-		}
+		common.ValidateEndpoint(endpoint.Url, apiInterface)
 	}
-
-	if websocketEndpoint.String() == "" || httpEndpoint.String() == "" {
-		utils.LavaFormatError("Tendermint Provider was not provided with both http and websocket urls. please provide both", nil,
-			utils.Attribute{Key: "websocket", Value: websocketEndpoint.String()}, utils.Attribute{Key: "http", Value: httpEndpoint.String()})
-		if httpEndpoint.String() != "" {
-			return httpEndpoint, httpEndpoint
-		} else {
-			utils.LavaFormatFatal("Tendermint Provider was not provided with http url. please provide a url that starts with http/https", nil)
-		}
-	}
-	return websocketEndpoint, httpEndpoint
 }
 
-func ListenWithRetry(app *fiber.App, address string) {
+func ListenWithRetry(app *fiber.App, address string, chosenAddrCh *common.SafeChannelSender[string]) {
 	for {
-		err := app.Listen(address)
+		ln, err := net.Listen("tcp", address)
 		if err != nil {
-			utils.LavaFormatError("app.Listen(listenAddr)", err)
+			utils.LavaFormatError("net.Listen(tcp, address)", err, utils.LogAttr("address", address))
+		} else {
+			chosenAddrCh.Send(ln.Addr().String())
+
+			err = app.Listener(ln)
+			if err != nil {
+				utils.LavaFormatError("app.Listen(listenAddr)", err)
+			}
 		}
 		time.Sleep(RetryListeningInterval * time.Second)
 	}

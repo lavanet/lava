@@ -1,4 +1,4 @@
-#!/usr/bin/env /bin/sh
+#!/bin/bash
 __dir=$(dirname "$0")
 . $__dir/useful_commands.sh
 
@@ -32,5 +32,5 @@ done
 cd ..
 
 # move proto files to the right places
-cp -r github.com/lavanet/lava/* ./
+cp -r github.com/lavanet/lava/v2/* ./
 rm -rf github.com

@@ -101,7 +101,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Con
 	latestResult := common.TxResultData{}
 	var gasUsed uint64
 	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
-		utils.LavaFormatDebug("Attempting to send relay payment transaction", utils.LogAttr("index", idx+1))
+		utils.LavaFormatDebug("Attempting to send transaction", utils.LogAttr("index", idx+1))
 		txfactory, gasUsed, err = ts.simulateTxWithRetry(clientCtx, txfactory, msg)
 		if err != nil {
 			return utils.LavaFormatError("Failed Simulating transaction", err)
@@ -201,9 +201,9 @@ func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (pa
 		return common.TxResultData{}, utils.LavaFormatInfo("Failed unmarshaling transaction results", utils.Attribute{Key: "transactionResult", Value: myWriter.String()})
 	}
 	myWriter.Reset()
-	if debug {
-		utils.LavaFormatDebug("transaction results", utils.Attribute{Key: "jsonParsedResult", Value: jsonParsedResult})
-	}
+
+	utils.LavaFormatTrace("transaction results", utils.LogAttr("jsonParsedResult", jsonParsedResult))
+
 	resultData, err := common.ParseTransactionResult(jsonParsedResult)
 	utils.LavaFormatInfo("Sent Transaction", utils.LogAttr("Hash", hex.EncodeToString(resultData.Txhash)))
 	if err != nil {
@@ -240,7 +240,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 				return
 			}
 			utils.LavaFormatDebug("Keep Waiting tx results...", utils.LogAttr("reason", err))
-			if debug {
+			if utils.IsTraceLogLevelEnabled() {
 				utils.LavaFormatWarning("Tx query got error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "resultData", Value: resultData})
 			}
 		}
@@ -306,8 +306,16 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
-	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
+func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error {
+	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String())
+	if finalizationConflict != nil {
+		msg.SetFinalizationConflict(finalizationConflict)
+	} else if responseConflict != nil {
+		msg.SetResponseConflict(responseConflict)
+	} else {
+		return utils.LavaFormatError("discrepancyChecker - TxSenderConflictDetection - no conflict provided", nil)
+	}
+
 	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, nil)
 	if err != nil {
 		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err)

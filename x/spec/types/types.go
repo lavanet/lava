@@ -137,7 +137,7 @@ func (s *ParseValue_VerificationSeverity) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func IsFinalizedBlock(requestedBlock, latestBlock int64, finalizationCriteria uint32) bool {
+func IsFinalizedBlock(requestedBlock, latestBlock, finalizationCriteria int64) bool {
 	switch requestedBlock {
 	case NOT_APPLICABLE:
 		return false
@@ -146,7 +146,7 @@ func IsFinalizedBlock(requestedBlock, latestBlock int64, finalizationCriteria ui
 		if requestedBlock < 0 {
 			return false
 		}
-		if requestedBlock <= latestBlock-int64(finalizationCriteria) {
+		if requestedBlock <= latestBlock-finalizationCriteria {
 			return true
 		}
 	}

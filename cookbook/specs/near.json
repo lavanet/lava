@@ -90,8 +90,10 @@
                                 "extra_compute_units": 0,
                                 "parsers": [
                                     {
-                                        "parse_path": ".finality",
-                                        "parse_type": "BLOCK_LATEST"
+                                        "parse_path": ".params.finality",
+                                        "value": "latest",
+                                        "rule": "=final || =optimistic",
+                                        "parse_type": "DEFAULT_VALUE"
                                     },
                                     {
                                         "parse_path": ".[0]",

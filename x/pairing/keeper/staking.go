@@ -78,7 +78,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	// new staking takes effect from the next block
 	stakeAppliedBlock := uint64(ctx.BlockHeight()) + 1
 
-	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, creator)
+	existingEntry, entryExists := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, creator)
 	if entryExists {
 		// modify the entry (check who's modifying - vault/provider)
 		isProvider := false
@@ -166,7 +166,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		existingEntry.DelegateLimit = delegationLimit
 		existingEntry.LastChange = uint64(ctx.BlockTime().UTC().Unix())
 
-		k.epochStorageKeeper.ModifyStakeEntryCurrent(ctx, chainID, existingEntry)
+		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)
 
 		if amount.Amount.GT(existingEntry.Stake.Amount) {
 			// delegate the difference
@@ -203,7 +203,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	// check that the configured provider is not used by another vault (when the provider and creator (vault) addresses are not equal)
 	if provider != creator {
-		providerStakeEntry, entryExists := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+		providerStakeEntry, entryExists := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
 		if entryExists {
 			return utils.LavaFormatWarning("configured provider exists", fmt.Errorf("new provider not staked"),
 				utils.LogAttr("provider", provider),
@@ -263,7 +263,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		LastChange:         uint64(ctx.BlockTime().UTC().Unix()),
 	}
 
-	k.epochStorageKeeper.AppendStakeEntryCurrent(ctx, chainID, stakeEntry)
+	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
 
 	err = k.dualstakingKeeper.DelegateFull(ctx, stakeEntry.Vault, validator, stakeEntry.Address, chainID, amount)
 	if err != nil {
@@ -345,7 +345,7 @@ func (k Keeper) validateGeoLocationAndApiInterfaces(endpoints []epochstoragetype
 }
 
 func (k Keeper) GetStakeEntry(ctx sdk.Context, chainID string, provider string) (epochstoragetypes.StakeEntry, error) {
-	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryByAddressCurrent(ctx, chainID, provider)
+	stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
 	if !found {
 		return epochstoragetypes.StakeEntry{}, utils.LavaFormatWarning("provider not staked on chain", fmt.Errorf("cannot get stake entry"),
 			utils.Attribute{Key: "chainID", Value: chainID},

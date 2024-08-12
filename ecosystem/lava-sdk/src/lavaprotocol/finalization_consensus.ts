@@ -127,7 +127,8 @@ export class FinalizationConsensus {
         const err = this.discrepancyChecker(finalizedBlocks, consensus);
         if (err) {
           finalizationConflict = new FinalizationConflict();
-          finalizationConflict.setRelayreply0(reply);
+          // TODO: Implement conflict logic from finalization_consensus
+          // finalizationConflict.setRelayreply0(reply);
           continue;
         }
 
@@ -167,7 +168,8 @@ export class FinalizationConsensus {
         );
         if (err) {
           finalizationConflict = new FinalizationConflict();
-          finalizationConflict.setRelayreply0(reply);
+          // TODO: Implement conflict logic from finalization_consensus
+          // finalizationConflict.setRelayreply0(reply);
           Logger.info(
             "Simulation: prev epoch Conflict found in discrepancyChecker",
             "Consensus idx",

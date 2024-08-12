@@ -36,7 +36,7 @@ func (k Keeper) IsUniqueEpochSessionExists(ctx sdk.Context, epoch uint64, provid
 // RemoveAllUniqueEpochSession removes all the UniqueEpochSession objects from the store for a specific epoch
 func (k Keeper) RemoveAllUniqueEpochSession(ctx sdk.Context, epoch uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UniqueEpochSessionKeyPrefix())
-	iterator := sdk.KVStorePrefixIterator(store, types.EncodeBlock(epoch))
+	iterator := sdk.KVStorePrefixIterator(store, utils.Serialize(epoch))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		store.Delete(iterator.Key())
@@ -47,7 +47,7 @@ func (k Keeper) RemoveAllUniqueEpochSession(ctx sdk.Context, epoch uint64) {
 func (k Keeper) GetAllUniqueEpochSessionForEpoch(ctx sdk.Context, epoch uint64) []string {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.UniqueEpochSessionKeyPrefix())
 
-	iterator := sdk.KVStorePrefixIterator(store, types.EncodeBlock(epoch)) // Get an iterator with no prefix to iterate over all keys
+	iterator := sdk.KVStorePrefixIterator(store, utils.Serialize(epoch)) // Get an iterator with no prefix to iterate over all keys
 	defer iterator.Close()
 
 	var keys []string
@@ -105,7 +105,7 @@ func (k Keeper) GetProviderEpochCu(ctx sdk.Context, epoch uint64, provider strin
 // RemoveProviderEpochCu removes a ProviderEpochCu from the store
 func (k Keeper) RemoveAllProviderEpochCu(ctx sdk.Context, epoch uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochCuKeyPrefix())
-	iterator := sdk.KVStorePrefixIterator(store, types.EncodeBlock(epoch))
+	iterator := sdk.KVStorePrefixIterator(store, utils.Serialize(epoch))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		store.Delete(iterator.Key())
@@ -167,7 +167,7 @@ func (k Keeper) RemoveProviderEpochComplainerCu(ctx sdk.Context, epoch uint64, p
 // RemoveProviderEpochComplainerCu removes a ProviderEpochCu from the store
 func (k Keeper) RemoveAllProviderEpochComplainerCu(ctx sdk.Context, epoch uint64) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderEpochComplainerCuKeyPrefix())
-	iterator := sdk.KVStorePrefixIterator(store, types.EncodeBlock(epoch))
+	iterator := sdk.KVStorePrefixIterator(store, utils.Serialize(epoch))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		store.Delete(iterator.Key())
@@ -230,7 +230,7 @@ func (k Keeper) RemoveProviderConsumerEpochCu(ctx sdk.Context, epoch uint64, pro
 func (k Keeper) GetAllProviderConsumerEpochCu(ctx sdk.Context, epoch uint64) []types.ProviderConsumerEpochCuGenesis {
 	providerConsumerEpochCus := []types.ProviderConsumerEpochCuGenesis{}
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ProviderConsumerEpochCuKeyPrefix())
-	iterator := sdk.KVStorePrefixIterator(store, types.EncodeBlock(epoch))
+	iterator := sdk.KVStorePrefixIterator(store, utils.Serialize(epoch))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		epoch, provider, project, chainID, err := types.DecodeProviderConsumerEpochCuKey(string(iterator.Key()))

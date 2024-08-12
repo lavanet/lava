@@ -221,6 +221,7 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 		response.relayResult.Finalized = false // shut down data reliability
 		// }
 	}
+
 	if response.relayResult.Reply == nil {
 		utils.LavaFormatError("got to setValidResponse with nil Reply",
 			response.err,
@@ -235,6 +236,12 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 	blockSeen := response.relayResult.Reply.LatestBlock
 	// nil safe
 	rp.consumerConsistency.SetSeenBlock(blockSeen, rp.dappID, rp.consumerIp)
+	// on subscribe results, we just append to successful results instead of parsing results because we already have a validation.
+	if chainlib.IsFunctionTagOfType(rp.chainMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
+		rp.successResults = append(rp.successResults, response.relayResult)
+		return
+	}
+
 	// check response error
 	foundError, errorMessage := rp.chainMessage.CheckResponseError(response.relayResult.Reply.Data, response.relayResult.StatusCode)
 	if foundError {

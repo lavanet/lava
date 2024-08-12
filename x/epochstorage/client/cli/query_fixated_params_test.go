@@ -152,7 +152,7 @@ func TestListFixatedParams(t *testing.T) {
 		var resp types.QueryAllFixatedParamsResponse
 		require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
 		require.NoError(t, err)
-		require.Equal(t, len(objs), int(resp.Pagination.Total)-4)
+		require.Equal(t, len(objs), int(resp.Pagination.Total)-2)
 		require.ElementsMatch(t,
 			nullify.Fill(objs),
 			nullify.Fill(resp.FixatedParams),
