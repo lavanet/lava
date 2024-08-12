@@ -156,6 +156,7 @@ func TestFundIprpcTX(t *testing.T) {
 func TestIprpcProviderRewardQuery(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(true) // setup funds IPRPC for mock2 spec
+	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: sdk.OneDec().QuoInt64(2)})
 
 	// get consumers and providers (note, only c1 is IPRPC eligible)
 	c1Acc, _ := ts.GetAccount(common.CONSUMER, 0)
@@ -189,6 +190,7 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 		provider string
 		fund     sdk.Coins
 	}
+	tax := sdk.NewInt(100).SubRaw(10).SubRaw(45) // tax is 10% validators and 45% community
 	expectedProviderRewards := []providerRewards{
 		{provider: p1, fund: iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(5))},
 		{provider: p2, fund: iprpcFunds.Sub(minIprpcCost).MulInt(sdk.NewInt(4)).QuoInt(sdk.NewInt(5))},
@@ -207,7 +209,7 @@ func TestIprpcProviderRewardQuery(t *testing.T) {
 	for i, expectedProviderReward := range expectedProviderRewards {
 		res2, err := ts.QueryDualstakingDelegatorRewards(providerAccs[i].GetVaultAddr(), expectedProviderReward.provider, ts.specs[1].Index)
 		require.NoError(t, err)
-		require.True(t, res2.Rewards[0].Amount.IsEqual(expectedProviderReward.fund)) // taking 0 index because there are no delegators
+		require.True(t, res2.Rewards[0].Amount.IsEqual(expectedProviderReward.fund.MulInt(tax).QuoInt(sdk.NewInt(100)))) // taking 0 index because there are no delegators
 	}
 }
 
@@ -434,6 +436,9 @@ func TestIprpcRewardObjectsUpdate(t *testing.T) {
 func TestFundIprpcTwice(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(false)
+	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: sdk.OneDec().QuoInt64(2)})
+	tax := sdk.NewInt(100).SubRaw(10).SubRaw(45) // tax is 10% validators and 45% community
+
 	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
 	p1Acc, p1 := ts.GetAccount(common.PROVIDER, 0)
 
@@ -460,7 +465,7 @@ func TestFundIprpcTwice(t *testing.T) {
 	// check rewards - should be only from first funding (=iprpcFunds)
 	res, err := ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, iprpcFunds.Sub(minIprpcCost).IsEqual(res.Rewards[0].Amount))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(tax).QuoInt(sdk.NewInt(100)).IsEqual(res.Rewards[0].Amount))
 
 	// make a provider service an IPRPC eligible consumer and advance month again
 	relay = ts.SendRelay(p1, consumerAcc, []string{ts.specs[1].Index}, 100)
@@ -472,7 +477,7 @@ func TestFundIprpcTwice(t *testing.T) {
 	// check rewards - should be only from first + second funding (=iprpcFunds*3)
 	res, err = ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).IsEqual(res.Rewards[0].Amount))
+	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(math.NewInt(3)).MulInt(tax).QuoInt(sdk.NewInt(100)).IsEqual(res.Rewards[0].Amount))
 }
 
 // TestIprpcMinCost tests that a fund TX fails if it doesn't have enough tokens to cover for the minimum IPRPC costs
