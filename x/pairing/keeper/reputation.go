@@ -331,7 +331,7 @@ func (k Keeper) setReputationPairingScoreByBenchmark(ctx sdk.Context, chainID st
 		}
 
 		scaledScore := types.MinReputationPairingScore
-		if score.IsZero() {
+		if score.IsZero() || score.LTE(benchmark) {
 			scaledScore = types.MaxReputationPairingScore
 		} else if score.GT(benchmark) {
 			scaledScore = types.MinReputationPairingScore.Add((benchmark.Quo(score)).Mul(scale))

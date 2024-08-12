@@ -155,8 +155,8 @@ const (
 func (ts *tester) setupForReputation(modifyHalfLifeFactor bool) (*tester, []pairingtypes.QualityOfServiceReport) {
 	ts.setupForPayments(0, 1, 5) // 0 providers, 1 client, default providers-to-pair
 
-	greatQos := types.QualityOfServiceReport{Latency: sdk.ZeroDec(), Availability: sdk.OneDec(), Sync: sdk.ZeroDec()}
-	goodQos := types.QualityOfServiceReport{Latency: sdk.NewDec(5), Availability: sdk.OneDec(), Sync: sdk.NewDec(5)}
+	greatQos := types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}
+	goodQos := types.QualityOfServiceReport{Latency: sdk.NewDec(3), Availability: sdk.OneDec(), Sync: sdk.NewDec(3)}
 	badQos := types.QualityOfServiceReport{Latency: sdk.NewDec(1000), Availability: sdk.OneDec(), Sync: sdk.NewDec(1000)}
 
 	if modifyHalfLifeFactor {

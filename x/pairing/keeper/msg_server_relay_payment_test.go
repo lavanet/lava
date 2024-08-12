@@ -1513,22 +1513,23 @@ func TestReputationPairingScore(t *testing.T) {
 		// create providers
 		err = ts.StakeProvider(providers[i], providers[i], ts.spec, stakes[i])
 		require.NoError(t, err)
-		ts.AdvanceEpoch()
+	}
+	// advance epoch to apply pairing
+	ts.AdvanceEpoch()
 
-		// send relays (except for last one)
-		if i < 3 {
-			relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
-			relaySession.QosExcellenceReport = &reports[i]
-			sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
-			require.NoError(t, err)
-			relaySession.Sig = sig
+	// send relays (except for last one)
+	for i := 0; i < 3; i++ {
+		relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
+		relaySession.QosExcellenceReport = &reports[i]
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
 
-			payment := types.MsgRelayPayment{
-				Creator: providers[i],
-				Relays:  []*types.RelaySession{relaySession},
-			}
-			ts.relayPaymentWithoutPay(payment, true)
+		payment := types.MsgRelayPayment{
+			Creator: providers[i],
+			Relays:  []*types.RelaySession{relaySession},
 		}
+		ts.relayPaymentWithoutPay(payment, true)
 	}
 
 	// advance epoch to update pairing scores
@@ -1554,7 +1555,62 @@ func TestReputationPairingScore(t *testing.T) {
 // We test it by setting two providers with extreme QoS reports: one very good, and one very bad.
 // We expect that both pairing scores will be in the expected range.
 func TestReputationPairingScoreWithinRange(t *testing.T) {
+	ts := newTester(t)
+	ts, reports := ts.setupForReputation(false)
 
+	greatQos := reports[GreatQos]
+	badQos := reports[BadQos]
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := resQCurrent.Sub.Cluster
+
+	providers := []string{}
+	for i := 0; i < 2; i++ {
+		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
+		providers = append(providers, provider)
+	}
+
+	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	for i := 0; i < 2; i++ {
+		// create providers
+		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake)
+		require.NoError(t, err)
+	}
+	// advance epoch to apply pairing
+	ts.AdvanceEpoch()
+
+	// send relays
+	for i := 0; i < 2; i++ {
+		relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
+		report := greatQos
+		if i == 0 {
+			report = badQos
+		}
+		relaySession.QosExcellenceReport = &report
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
+
+		payment := types.MsgRelayPayment{
+			Creator: providers[i],
+			Relays:  []*types.RelaySession{relaySession},
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+	}
+
+	// advance epoch to update pairing scores
+	ts.AdvanceEpoch()
+
+	// check results are withing the expected range
+	for i := range providers {
+		score, found := ts.Keepers.Pairing.GetReputationScore(ts.Ctx, ts.spec.Index, cluster, providers[i])
+		require.True(t, found)
+		if score.LT(types.MinReputationPairingScore) || score.GT(types.MaxReputationPairingScore) {
+			require.FailNow(t, "score is not within expected pairing score range")
+		}
+	}
 }
 
 // TestReputationPairingScoreZeroQosScores tests that if all providers have a QoS score of zero,
@@ -1562,7 +1618,58 @@ func TestReputationPairingScoreWithinRange(t *testing.T) {
 // We test it by having two providers with zero QoS score. We expect that both will have max reputation
 // pairing score.
 func TestReputationPairingScoreZeroQosScores(t *testing.T) {
+	ts := newTester(t)
+	ts, _ = ts.setupForReputation(false)
 
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := resQCurrent.Sub.Cluster
+
+	providers := []string{}
+	for i := 0; i < 2; i++ {
+		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
+		providers = append(providers, provider)
+	}
+
+	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	for i := 0; i < 2; i++ {
+		// create providers
+		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake)
+		require.NoError(t, err)
+	}
+	// advance epoch to apply pairing
+	ts.AdvanceEpoch()
+
+	// send relays
+	for i := 0; i < 2; i++ {
+		relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
+		perfectQosReport := types.QualityOfServiceReport{
+			Latency:      sdk.ZeroDec(),
+			Availability: sdk.OneDec(),
+			Sync:         sdk.ZeroDec(),
+		}
+		relaySession.QosExcellenceReport = &perfectQosReport
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
+
+		payment := types.MsgRelayPayment{
+			Creator: providers[i],
+			Relays:  []*types.RelaySession{relaySession},
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+	}
+
+	// advance epoch to update pairing scores
+	ts.AdvanceEpoch()
+
+	// check results are max pairing score
+	for i := range providers {
+		score, found := ts.Keepers.Pairing.GetReputationScore(ts.Ctx, ts.spec.Index, cluster, providers[i])
+		require.True(t, found)
+		require.True(t, score.Equal(types.MaxReputationPairingScore))
+	}
 }
 
 // TestReputationPairingScoreFixation tests that the reputation pairing score is saved in a fixation store
@@ -1571,7 +1678,82 @@ func TestReputationPairingScoreZeroQosScores(t *testing.T) {
 // bad QoS score. We get the bad provider pairing score and send another relay with a slightly improved QoS
 // score. We expect that fetching the pairing score from the past will be lower than the current one
 func TestReputationPairingScoreFixation(t *testing.T) {
+	ts := newTester(t)
+	ts, reports := ts.setupForReputation(false)
 
+	greatQos := reports[GreatQos]
+	goodQos := reports[GoodQos]
+	badQos := reports[BadQos]
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := resQCurrent.Sub.Cluster
+
+	providers := []string{}
+	for i := 0; i < 2; i++ {
+		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
+		providers = append(providers, provider)
+	}
+
+	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+	for i := 0; i < 2; i++ {
+		// create providers
+		err = ts.StakeProvider(providers[i], providers[i], ts.spec, minStake)
+		require.NoError(t, err)
+	}
+	// advance epoch to apply pairing
+	ts.AdvanceEpoch()
+
+	// send relays
+	for i := 0; i < 2; i++ {
+		relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
+
+		if i == 0 {
+			relaySession.QosExcellenceReport = &greatQos
+		} else {
+			relaySession.QosExcellenceReport = &badQos
+		}
+
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
+
+		payment := types.MsgRelayPayment{
+			Creator: providers[i],
+			Relays:  []*types.RelaySession{relaySession},
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+	}
+
+	// advance epoch to update pairing scores
+	ts.AdvanceEpoch()
+	badQosBlock := ts.BlockHeight()
+
+	// send another relay with provider1 with a better QoS report
+	relaySession := ts.newRelaySession(providers[1], 0, 100, ts.BlockHeight(), 10)
+	relaySession.QosExcellenceReport = &goodQos
+	sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+	require.NoError(t, err)
+	relaySession.Sig = sig
+
+	payment := types.MsgRelayPayment{
+		Creator: providers[1],
+		Relays:  []*types.RelaySession{relaySession},
+	}
+	ts.relayPaymentWithoutPay(payment, true)
+
+	// advance epoch to update pairing scores
+	ts.AdvanceEpoch()
+	goodQosBlock := ts.BlockHeight()
+
+	// fetch pairing score for both badQosBlock and goodQosBlock
+	// verify that the pairing score changes for the better
+	badQosPairingScore, _, found := ts.Keepers.Pairing.GetReputationScoreForBlock(ts.Ctx, ts.spec.Index, cluster, providers[1], badQosBlock)
+	require.True(t, found)
+	goodQosPairingScore, _, found := ts.Keepers.Pairing.GetReputationScoreForBlock(ts.Ctx, ts.spec.Index, cluster, providers[1], goodQosBlock)
+	require.True(t, found)
+	require.True(t, goodQosPairingScore.GT(badQosPairingScore))
 }
 
 // TestReputationPairingScoreStakeAggregation tests that the benchmark is determined by stake. We test the following
@@ -1580,5 +1762,76 @@ func TestReputationPairingScoreFixation(t *testing.T) {
 //  2. Have 2 providers one with high score and low stake, the other with low score and high stake -> both should get max
 //     pairing score
 func TestReputationPairingScoreStakeAggregation(t *testing.T) {
+	ts := newTester(t)
+	ts, reports := ts.setupForReputation(false)
 
+	greatQos := reports[GreatQos]
+	goodQos := reports[GoodQos]
+	badQos := reports[BadQos]
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := resQCurrent.Sub.Cluster
+
+	providers := []string{}
+	for i := 0; i < 2; i++ {
+		_, provider := ts.AddAccount(common.PROVIDER, i, testBalance)
+		providers = append(providers, provider)
+	}
+	minStake := ts.spec.MinStakeProvider.Amount.Int64()
+
+	tests := []struct {
+		name            string
+		stakes          []int64
+		reports         []types.QualityOfServiceReport
+		differentScores bool
+	}{
+		{"equal stake, different QoS", []int64{minStake, minStake}, []types.QualityOfServiceReport{goodQos, badQos}, true},
+		{"high score + low stake, low score + high stake", []int64{minStake, minStake * 20}, []types.QualityOfServiceReport{greatQos, badQos}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for i := 0; i < 2; i++ {
+				// create providers
+				err = ts.StakeProvider(providers[i], providers[i], ts.spec, tt.stakes[i])
+				require.NoError(t, err)
+			}
+			// advance epoch to apply pairing
+			ts.AdvanceEpoch()
+
+			// send relays
+			for i := 0; i < 2; i++ {
+				relaySession := ts.newRelaySession(providers[i], 0, 100, ts.BlockHeight(), 10)
+				relaySession.QosExcellenceReport = &tt.reports[i]
+				sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+				require.NoError(t, err)
+				relaySession.Sig = sig
+
+				payment := types.MsgRelayPayment{
+					Creator: providers[i],
+					Relays:  []*types.RelaySession{relaySession},
+				}
+				ts.relayPaymentWithoutPay(payment, true)
+			}
+
+			// advance epoch to update pairing scores
+			ts.AdvanceEpoch()
+
+			// get pairing scores and check results
+			pairingScores := []math.LegacyDec{}
+			for i := range providers {
+				score, found := ts.Keepers.Pairing.GetReputationScore(ts.Ctx, ts.spec.Index, cluster, providers[i])
+				require.True(t, found)
+				pairingScores = append(pairingScores, score)
+			}
+
+			if tt.differentScores {
+				require.True(t, pairingScores[0].GT(pairingScores[1]))
+			} else {
+				require.True(t, pairingScores[0].Equal(pairingScores[1]))
+				require.True(t, pairingScores[0].Equal(types.MaxReputationPairingScore))
+			}
+		})
+	}
 }
