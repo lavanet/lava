@@ -69,8 +69,8 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		if entry.DelegateLimit.Amount.LT(entry.DelegateTotal.Amount) {
 			totalDelegations = entry.DelegateLimit.Amount
 		}
-		commision := sdk.NewDecFromInt(totalDelegations).QuoInt(entry.EffectiveStake()).MulInt64(int64(entry.DelegateCommission)).QuoInt64(100)
-		delegatorPart = delegatorPart.Add(commision)
+		commission := sdk.NewDecFromInt(totalDelegations).QuoInt(entry.EffectiveStake()).MulInt64(int64(entry.DelegateCommission)).QuoInt64(100)
+		delegatorPart = delegatorPart.Add(commission)
 	}
 	delegatorPart = delegatorPart.Mul(sdk.OneDec().Sub(specContribut))
 
