@@ -5,6 +5,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
 	fixationtypes "github.com/lavanet/lava/v2/x/fixationstore/types"
@@ -84,10 +85,14 @@ type RewardsKeeper interface {
 	SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec rewardstypes.SpecEmissionPart) math.LegacyDec
 	GetIprpcRewardsCurrentId(ctx sdk.Context) uint64
 	GetIprpcReward(ctx sdk.Context, id uint64) (val rewardstypes.IprpcReward, found bool)
+	AllocationPoolMonthsLeft(ctx sdk.Context) int64
 }
 
 type StakingKeeper interface {
 	BondDenom(ctx sdk.Context) string
+	GetValidator(ctx sdk.Context, addr sdk.ValAddress) (validator stakingtypes.Validator, found bool)
+	GetDelegation(ctx sdk.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (delegation stakingtypes.Delegation, found bool)
+	GetBondedValidatorsByPower(ctx sdk.Context) []stakingtypes.Validator
 }
 
 type SpecKeeper interface {
