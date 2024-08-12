@@ -662,6 +662,8 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		return nil, errV
 	}
 
+	utils.LavaFormatDebug("TEST: TryRelay Extensions", utils.Attribute{Key: "Extensions", Value: request.RelayData.Extensions})
+
 	errV = rpcps.ValidateAddonsExtensions(request.RelayData.Addon, request.RelayData.Extensions, chainMsg)
 	if errV != nil {
 		return nil, errV

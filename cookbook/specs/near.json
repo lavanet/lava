@@ -487,7 +487,7 @@
                                 "name": "archive",
                                 "cu_multiplier": 5,
                                 "rule": {
-                                    "block": 63900
+                                    "block": 5
                                 }
                             }
                         ]

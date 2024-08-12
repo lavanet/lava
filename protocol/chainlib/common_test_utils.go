@@ -143,7 +143,10 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 	} else {
 		mockServer := httptest.NewServer(serverCallback)
 		closeServer = mockServer.Close
-		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL, Addons: addons})
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL, Addons: services})
+		if len(services) > 0 {
+			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL})
+		}
 		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
 		if err != nil {
 			return nil, nil, nil, closeServer, nil, err

@@ -22,7 +22,9 @@ import (
 	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
 )
 
-type mockConsumerStateTracker struct{}
+type mockConsumerStateTracker struct {
+	policy *plantypes.Policy
+}
 
 func (m *mockConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
 }
@@ -45,7 +47,14 @@ func (m *mockConsumerStateTracker) TxConflictDetection(ctx context.Context, fina
 	return nil
 }
 
+func (m *mockConsumerStateTracker) SetConsumerPolicy(policy *plantypes.Policy) {
+	m.policy = policy
+}
 func (m *mockConsumerStateTracker) GetConsumerPolicy(ctx context.Context, consumerAddress, chainID string) (*plantypes.Policy, error) {
+	if m.policy != nil {
+		return m.policy, nil
+	}
+
 	return &plantypes.Policy{
 		ChainPolicies:         []plantypes.ChainPolicy{},
 		GeolocationProfile:    1,

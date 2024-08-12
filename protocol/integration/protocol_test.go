@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/connectivity"
 
+	plantypes "github.com/lavanet/lava/v2/x/plans/types"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
@@ -132,7 +133,7 @@ func createInMemoryRewardDb(specs []string) (*rewardserver.RewardDB, error) {
 	return rewardDB, nil
 }
 
-func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInterface string, account sigs.Account, consumerListenAddress string, epoch uint64, pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider, requiredResponses int, lavaChainID string) *rpcconsumer.RPCConsumerServer {
+func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInterface string, account sigs.Account, consumerListenAddress string, epoch uint64, pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider, requiredResponses int, lavaChainID string, consumerPolicy *plantypes.Policy) *rpcconsumer.RPCConsumerServer {
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
@@ -141,6 +142,10 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainFetcher)
+
+	if consumerPolicy != nil {
+		chainParser.SetPolicy(consumerPolicy, specId, apiInterface)
+	}
 
 	rpcConsumerServer := &rpcconsumer.RPCConsumerServer{}
 	rpcEndpoint := &lavasession.RPCEndpoint{
@@ -151,9 +156,10 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 		HealthCheckPath: "",
 		Geolocation:     1,
 	}
-	consumerStateTracker := &mockConsumerStateTracker{}
+
 	finalizationConsensus := lavaprotocol.NewFinalizationConsensus(rpcEndpoint.ChainID)
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+
 	baseLatency := common.AverageWorldLatency / 2
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2)
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test")
@@ -163,7 +169,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	consumerCmdFlags := common.ConsumerCmdFlags{}
 	rpcsonumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil)
 	require.NoError(t, err)
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, account.SK, lavaChainID, nil, rpcsonumerLogs, account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, &mockConsumerStateTracker{}, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, account.SK, lavaChainID, nil, rpcsonumerLogs, account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil)
 	require.NoError(t, err)
 	// wait for consumer server to be up
 	consumerUp := checkServerStatusWithTimeout("http://"+consumerListenAddress, time.Millisecond*61)
@@ -222,6 +228,19 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 			},
 		},
 	}
+
+	if len(addons) > 0 && addons[0] == "archive" {
+		rpcProviderEndpoint.NodeUrls = append(rpcProviderEndpoint.NodeUrls, common.NodeUrl{
+			Url:               endpoint.NodeUrls[1].Url,
+			InternalPath:      "",
+			AuthConfig:        common.AuthConfig{},
+			IpForwarding:      false,
+			Timeout:           0,
+			Addons:            []string{},
+			SkipVerifications: []string{},
+		})
+	}
+
 	rewardDB, err := createInMemoryRewardDb([]string{specId})
 	require.NoError(t, err)
 	_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
@@ -310,7 +329,7 @@ func TestConsumerProviderBasic(t *testing.T) {
 			PairingEpoch:     epoch,
 		}
 	}
-	rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+	rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID, nil)
 	require.NotNil(t, rpcconsumerServer)
 	client := http.Client{}
 	resp, err := client.Get("http://" + consumerListenAddress + "/status")
@@ -388,7 +407,7 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 					PairingEpoch:     epoch,
 				}
 			}
-			rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+			rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID, nil)
 			require.NotNil(t, rpcconsumerServer)
 			if play.scenario != 1 {
 				counter := map[int]int{}
@@ -523,7 +542,7 @@ func TestConsumerProviderTx(t *testing.T) {
 					PairingEpoch:     epoch,
 				}
 			}
-			rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+			rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID, nil)
 			require.NotNil(t, rpcconsumerServer)
 
 			for i := 0; i < numProviders; i++ {
@@ -630,7 +649,7 @@ func TestConsumerProviderJsonRpcWithNullID(t *testing.T) {
 					PairingEpoch:     epoch,
 				}
 			}
-			rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+			rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID, nil)
 			require.NotNil(t, rpcconsumerServer)
 
 			for i := 0; i < numProviders; i++ {
@@ -664,4 +683,216 @@ func TestConsumerProviderJsonRpcWithNullID(t *testing.T) {
 			require.Equal(t, play.expected, string(bodyBytes))
 		})
 	}
+}
+
+func TestConsumerProviderNodeErrorOnRequestedBlockHashRetriesArchive(t *testing.T) {
+	// 1 provider vs 2 providers
+	// check header
+	// cache
+	t.Run("RequestedBlockHashNodeErrorRetriesOnArchive", func(t *testing.T) {
+		ctx := context.Background()
+		// can be any spec and api interface
+		specId := "NEAR"
+		apiInterface := spectypes.APIInterfaceJsonRPC
+		epoch := uint64(100)
+		requiredResponses := 1
+		lavaChainID := "lava"
+
+		consumerListenAddress := addressGen.GetAddress()
+		consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+
+		type providerData struct {
+			account          sigs.Account
+			endpoint         *lavasession.RPCProviderEndpoint
+			server           *rpcprovider.RPCProviderServer
+			replySetter      *ReplySetter
+			mockChainFetcher *MockChainFetcher
+		}
+
+		hitChannelRegular := make(chan time.Time, 1)
+		hitChannelArchive := make(chan time.Time, 1)
+		// Setup regular provider
+		regularProvider := providerData{account: sigs.GenerateDeterministicFloatingKey(randomizer)}
+		regularProvider.server, regularProvider.endpoint, regularProvider.replySetter, regularProvider.mockChainFetcher =
+			createRpcProvider(t, context.Background(), consumerAccount.Addr.String(), specId, apiInterface, addressGen.GetAddress(), regularProvider.account, lavaChainID, []string(nil))
+		regularProvider.replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
+			var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+			err := json.Unmarshal(req, &jsonRpcMessage)
+			require.NoError(t, err)
+
+			paramsAsArray, ok := jsonRpcMessage.Params.([]interface{})
+			if ok && len(paramsAsArray) > 0 && paramsAsArray[0] == "ABCDEFG12345" {
+				select {
+				case hitChannelRegular <- time.Now():
+				default:
+				}
+
+				utils.LavaFormatDebug("TEST: regularProvider got hash relay")
+
+				response := fmt.Sprintf(`{"jsonrpc":"2.0", "error": {"message": "thisiserror"}, "id": %v}`, string(jsonRpcMessage.ID))
+				return []byte(response), http.StatusOK
+			}
+
+			utils.LavaFormatDebug("TEST: regularProvider got init relay")
+
+			response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %v}`, string(jsonRpcMessage.ID))
+			return []byte(response), http.StatusOK
+		}
+
+		// Setup archive provider
+		archiveProvider := providerData{account: sigs.GenerateDeterministicFloatingKey(randomizer)}
+		archiveProvider.server, archiveProvider.endpoint, archiveProvider.replySetter, archiveProvider.mockChainFetcher =
+			createRpcProvider(t, context.Background(), consumerAccount.Addr.String(), specId, apiInterface, addressGen.GetAddress(), archiveProvider.account, lavaChainID, []string{"archive"})
+		archiveProvider.replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
+			var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+			err := json.Unmarshal(req, &jsonRpcMessage)
+			require.NoError(t, err)
+
+			paramsAsArray, ok := jsonRpcMessage.Params.([]interface{})
+			if ok && len(paramsAsArray) > 0 && paramsAsArray[0] == "ABCDEFG12345" {
+				select {
+				case hitChannelArchive <- time.Now():
+				default:
+				}
+
+				utils.LavaFormatDebug("TEST: archiveProvider got hash relay")
+			} else {
+				utils.LavaFormatDebug("TEST: archiveProvider got init relay")
+			}
+
+			response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %v}`, string(jsonRpcMessage.ID))
+			return []byte(response), http.StatusOK
+		}
+
+		pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{
+			0: {
+				PublicLavaAddress: regularProvider.account.Addr.String(),
+				Endpoints: []*lavasession.Endpoint{
+					{
+						NetworkAddress: regularProvider.endpoint.NetworkAddress.Address,
+						Enabled:        true,
+						Geolocation:    1,
+					},
+				},
+				Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+				MaxComputeUnits:  10000,
+				UsedComputeUnits: 0,
+				PairingEpoch:     epoch,
+			},
+			1: {
+				PublicLavaAddress: archiveProvider.account.Addr.String(),
+				Endpoints: []*lavasession.Endpoint{
+					{
+						NetworkAddress: archiveProvider.endpoint.NetworkAddress.Address,
+						Enabled:        true,
+						Geolocation:    1,
+						Addons:         map[string]struct{}{"archive": {}},
+					},
+				},
+				Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+				MaxComputeUnits:  10000,
+				UsedComputeUnits: 0,
+				PairingEpoch:     epoch,
+			},
+		}
+
+		consumerPolicy := &plantypes.Policy{
+			ChainPolicies: []plantypes.ChainPolicy{{
+				ChainId: "NEAR",
+				Apis:    []string{},
+				Requirements: []plantypes.ChainRequirement{
+					{
+						Collection: spectypes.CollectionData{
+							ApiInterface: "jsonrpc",
+							Type:         "POST",
+							AddOn:        "",
+							InternalPath: "",
+						},
+						Extensions: []string{"archive"},
+						Mixed:      true,
+					},
+				},
+			}},
+		}
+
+		rpcconsumerServer := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID, consumerPolicy)
+		require.NotNil(t, rpcconsumerServer)
+
+		var resp *http.Response
+		for {
+			client := http.Client{Timeout: 500 * time.Hour}
+			jsonMsg := `{"jsonrpc":"2.0","method": "block","params": ["ABCDEFG12345"], "id":1}`
+			msgBuffer := bytes.NewBuffer([]byte(jsonMsg))
+			req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress, msgBuffer)
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err = client.Do(req)
+			require.NoError(t, err)
+
+			bodyBytes, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, resp.StatusCode, string(bodyBytes))
+
+			resp.Body.Close()
+
+			var hitProviderRegular time.Time
+			var hitProviderArchive time.Time
+			gotRegularBeforeArchive := false
+
+			for {
+				select {
+				case hitProviderRegular = <-hitChannelRegular:
+					utils.LavaFormatDebug("TEST: hitProviderRegular", utils.Attribute{Key: "hitProviderRegular", Value: hitProviderRegular})
+				case hitProviderArchive = <-hitChannelArchive:
+					utils.LavaFormatDebug("TEST: hitProviderARchive", utils.Attribute{Key: "hitProviderArchive", Value: hitProviderArchive})
+				}
+
+				hitRegular := !hitProviderRegular.IsZero()
+				hitArchive := !hitProviderArchive.IsZero()
+
+				if !hitRegular && hitArchive {
+					utils.LavaFormatDebug("TEST: hitRegular is false and hitArchive is true")
+					break
+				}
+
+				if hitRegular && !hitArchive {
+					utils.LavaFormatDebug("TEST: hitRegular is true and hitArchive is false")
+					continue
+				}
+
+				if hitRegular && hitArchive {
+					utils.LavaFormatDebug("TEST: hitRegular and hitArchive are true")
+					gotRegularBeforeArchive = hitProviderRegular.Before(hitProviderArchive)
+					break
+				}
+			}
+
+			if gotRegularBeforeArchive {
+				utils.LavaFormatDebug("TEST: gotRegularBeforeArchive is true")
+				break
+			} else {
+				utils.LavaFormatDebug("TEST: gotRegularBeforeArchive is false")
+			}
+
+			// if hitProviderArchive.After(hitProviderRegular) {
+			// 	break
+			// } else {
+			// 	utils.LavaFormatDebug("TEST: hitProviderArchive should be after hitProviderRegular")
+			// }
+
+			// require.Equal(t, "regular", hitProvider)
+
+			// require.True(t, hitProviderArchive.After(hitProviderRegular), "hitProviderArchive should be after hitProviderRegular")
+			// require.Equal(t, "archive", hitProvider)
+		}
+
+		forceExtensionHeader := resp.Header.Get(common.LAVA_EXTENSION_FORCED)
+		require.Equal(t, "archive", forceExtensionHeader)
+
+		providerNodeExtension := resp.Header.Get(chainlib.RPCProviderNodeExtension)
+		require.Equal(t, "|archive|", providerNodeExtension)
+
+		// Make sure the relays reached the regular provider and only then to the archive provider
+	})
 }

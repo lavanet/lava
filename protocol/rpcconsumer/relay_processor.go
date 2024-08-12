@@ -375,6 +375,7 @@ func (rp *RelayProcessor) forceArchiveNodeIfNeededInner() {
 
 		if rp.archiveNodeRetriesCount < NumberOfRetriesAllowedOnNodeErrorsForArchive {
 			// If we have a hash and we are not in archive mode, we can retry with archive node
+			utils.LavaFormatDebug("TEST: Forcing archive node")
 			rp.archiveExtensionUpdater.AddArchiveExtensionToMessage()
 			rp.archiveNodeRetriesCount++
 			rp.currentRelayRetryIsArchive = true

@@ -145,9 +145,13 @@ func (csm *ConsumerSessionManager) CalculateAddonValidAddresses(addon string, ex
 // assuming csm is Rlocked
 func (csm *ConsumerSessionManager) getValidAddresses(addon string, extensions []string) (addresses []string) {
 	routerKey := NewRouterKey(append(extensions, addon))
+	utils.LavaFormatDebug("TEST: Insde getValidAddresses", utils.Attribute{Key: "routerKey", Value: routerKey}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
 	if csm.addonAddresses == nil || csm.addonAddresses[routerKey] == nil {
-		return csm.CalculateAddonValidAddresses(addon, extensions)
+		calculated := csm.CalculateAddonValidAddresses(addon, extensions)
+		utils.LavaFormatDebug("TEST: getValidAddresses inside if statement block", utils.Attribute{Key: "calculated", Value: calculated}, utils.Attribute{Key: "csm.addonAddresses", Value: csm.addonAddresses}, utils.Attribute{Key: "routerKey", Value: routerKey}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
+		return calculated
 	}
+	utils.LavaFormatDebug("TEST: getValidAddresses inside else statement block", utils.Attribute{Key: "csm.addonAddresses", Value: csm.addonAddresses}, utils.Attribute{Key: "routerKey", Value: routerKey}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "extensions", Value: extensions})
 	return csm.addonAddresses[routerKey]
 }
 

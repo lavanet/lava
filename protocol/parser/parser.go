@@ -72,6 +72,14 @@ func parseInputFromParamsWithGenericParsers(rpcInput RPCInput, genericParsers []
 		return nil, parsedSuccessfully
 	}
 
+	params := rpcInput.GetParams()
+	if arrayParams, ok := params.([]interface{}); ok {
+		if len(arrayParams) == 1 {
+			if block, ok := arrayParams[0].(string); ok {
+				utils.LavaFormatDebug("parseInputFromParamsWithGenericParsers - block", utils.LogAttr("block", block))
+			}
+		}
+	}
 	genericParserResult, genericParserErr := ParseWithGenericParsers(rpcInput, genericParsers)
 	if genericParserErr != nil {
 		return nil, parsedSuccessfully

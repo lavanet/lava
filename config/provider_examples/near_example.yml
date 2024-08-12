@@ -1,0 +1,12 @@
+endpoints:
+  - api-interface: jsonrpc
+    chain-id: NEAR
+    network-address:
+      address: "127.0.0.1:2221"
+    node-urls:
+      # - url: https://rpc.mainnet.near.org
+      # - url: https://near.lava.build
+      - url: https://near.lava.build
+      - url: https://near.lava.build
+        addons:
+          - archive

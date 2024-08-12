@@ -4,10 +4,14 @@ import (
 	"context"
 	"sync"
 
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -36,6 +40,12 @@ func (cri *chainRouterImpl) getChainProxySupporting(ctx context.Context, addon s
 	cri.lock.RLock()
 	defer cri.lock.RUnlock()
 	wantedRouterKey := lavasession.NewRouterKey(extensions)
+	utils.LavaFormatDebug("TEST: getChainProxySupporting",
+		utils.Attribute{Key: "wantedRouterKey", Value: wantedRouterKey},
+		utils.Attribute{Key: "addon", Value: addon},
+		utils.Attribute{Key: "extensions", Value: extensions},
+		utils.Attribute{Key: "chainProxyRouter", Value: cri.chainProxyRouter},
+	)
 	if chainProxyEntries, ok := cri.chainProxyRouter[wantedRouterKey]; ok {
 		for _, chainRouterEntry := range chainProxyEntries {
 			if chainRouterEntry.isSupporting(addon) {
@@ -68,8 +78,19 @@ func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{},
 	if err != nil {
 		return nil, "", nil, common.NodeUrl{}, "", err
 	}
+	if lavaslices.Contains(extensions, extensionslib.ExtensionTypeArchive) {
+		rpcInputMessage := chainMessage.GetRPCMessage()
+		nodeMessage, ok := rpcInputMessage.(*rpcInterfaceMessages.JsonrpcMessage)
+		if ok {
+			nodeMessage.Headers = append(nodeMessage.Headers, pairingtypes.Metadata{
+				Name:  "lava-extension",
+				Value: "archive",
+			})
+		}
+	}
 	relayReply, subscriptionID, relayReplyServer, err = selectedChainProxy.SendNodeMsg(ctx, ch, chainMessage)
 	proxyUrl, chainId = selectedChainProxy.GetChainProxyInformation()
+
 	return relayReply, subscriptionID, relayReplyServer, proxyUrl, chainId, err
 }
 
