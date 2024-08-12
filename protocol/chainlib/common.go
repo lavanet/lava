@@ -261,35 +261,48 @@ func convertRelayMetaDataToMDMetaData(md []pairingtypes.Metadata) metadata.MD {
 // FINALIZED
 // numeric value (descending)
 // EARLIEST
-func CompareRequestedBlockInBatch(firstRequestedBlock int64, second int64) (latestCombinedBlock int64, earliestCombinedBlock int64) {
-	if firstRequestedBlock == spectypes.EARLIEST_BLOCK {
-		return second, firstRequestedBlock
-	}
-	if second == spectypes.EARLIEST_BLOCK {
-		return firstRequestedBlock, second
+func CompareRequestedBlockInBatch(currentLatestRequestedBlock, currentEarliestRequestedBlock, parsedBlock int64) (latestCombinedBlock int64, earliestCombinedBlock int64) {
+	latestCallback := func(currentLatest int64, parsedBlock int64) int64 {
+		if currentLatest < 0 && parsedBlock < 0 {
+			return utils.Max(currentLatest, parsedBlock)
+		}
+
+		if currentLatest > 0 && parsedBlock < 0 && parsedBlock != spectypes.EARLIEST_BLOCK {
+			return parsedBlock
+		}
+
+		if currentLatest < 0 && parsedBlock > 0 && currentLatest != spectypes.EARLIEST_BLOCK {
+			return currentLatest
+		}
+
+		return utils.Max(currentLatest, parsedBlock)
 	}
 
-	returnBigger := func(in_first int64, in_second int64) (int64, int64) {
-		if in_first > in_second {
-			return in_first, in_second
+	earliestCallback := func(currentEarliest int64, parsedBlock int64) int64 {
+		if currentEarliest == spectypes.EARLIEST_BLOCK || parsedBlock == spectypes.EARLIEST_BLOCK {
+			return spectypes.EARLIEST_BLOCK
 		}
-		return in_second, in_first
+
+		if currentEarliest == spectypes.NOT_APPLICABLE || parsedBlock == spectypes.NOT_APPLICABLE {
+			return spectypes.NOT_APPLICABLE
+		}
+
+		if currentEarliest < 0 && parsedBlock < 0 {
+			return utils.Min(currentEarliest, parsedBlock)
+		}
+
+		if currentEarliest > 0 && parsedBlock < 0 {
+			return currentEarliest
+		}
+
+		if currentEarliest < 0 && parsedBlock > 0 {
+			return parsedBlock
+		}
+
+		return utils.Min(currentEarliest, parsedBlock)
 	}
 
-	if firstRequestedBlock < 0 {
-		if second < 0 {
-			// both are negative
-			return returnBigger(firstRequestedBlock, second)
-		}
-		// first is negative non earliest second is positive
-		return firstRequestedBlock, second
-	}
-	if second < 0 {
-		// second is negative non earliest first is positive
-		return second, firstRequestedBlock
-	}
-	// both are positive
-	return returnBigger(firstRequestedBlock, second)
+	return latestCallback(currentLatestRequestedBlock, parsedBlock), earliestCallback(currentEarliestRequestedBlock, parsedBlock)
 }
 
 func GetRelayTimeout(chainMessage ChainMessageForSend, averageBlockTime time.Duration) time.Duration {

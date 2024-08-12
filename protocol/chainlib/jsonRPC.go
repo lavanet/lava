@@ -83,7 +83,7 @@ func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, 
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, msg, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, msg, apiCollection), nil
 }
 
 // this func parses message data into chain message object
@@ -105,8 +105,9 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	var api *spectypes.Api
 	var apiCollection *spectypes.ApiCollection
 	var latestRequestedBlock, earliestRequestedBlock int64 = 0, 0
+	blockHashes := []string{}
 	for idx, msg := range msgs {
-		var requestedBlockForMessage int64
+		parsedInput := parser.NewParsedInput()
 		internalPath := ""
 		if apip.isValidInternalPath(url) {
 			internalPath = url
@@ -135,28 +136,29 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 
 		if overwriteReqBlock == "" {
 			// Fetch requested block, it is used for data reliability
-			requestedBlockForMessage, err = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing)
-			if err != nil {
-				utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
-					utils.LogAttr("chain", apip.spec.Name),
-					utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-					utils.LogAttr("apiName", apiCont.api.Name),
-					utils.LogAttr("connectionType", "jsonrpc"),
-				)
-				requestedBlockForMessage = spectypes.NOT_APPLICABLE
+			parsedInput = parser.ParseBlockFromParams(msg, apiCont.api.BlockParsing, apiCont.api.Parsers)
+			if hashes, err := parsedInput.GetBlockHashes(); err == nil {
+				blockHashes = append(blockHashes, hashes...)
 			}
 		} else {
-			requestedBlockForMessage, err = msg.ParseBlock(overwriteReqBlock)
+			parsedBlock, err := msg.ParseBlock(overwriteReqBlock)
+			parsedInput.SetBlock(parsedBlock)
 			if err != nil {
-				utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
-				requestedBlockForMessage = spectypes.NOT_APPLICABLE
+				utils.LavaFormatError("failed parsing block from an overwrite header", err,
+					utils.LogAttr("chain", apip.spec.Name),
+					utils.LogAttr("overwriteReqBlock", overwriteReqBlock),
+				)
+				parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
 			}
 		}
+
+		parsedBlock := parsedInput.GetBlock()
+
 		if idx == 0 {
 			// on the first entry store them
 			api = apiCont.api
 			apiCollection = apiCollectionForMessage
-			latestRequestedBlock = requestedBlockForMessage
+			latestRequestedBlock = parsedBlock
 		} else {
 			// on next entries we need to compare to existing data
 			if api == nil {
@@ -191,14 +193,16 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 					Encoding:     "",
 				},
 			}
-			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, requestedBlockForMessage)
+
+			latestRequestedBlock, earliestRequestedBlock = CompareRequestedBlockInBatch(latestRequestedBlock, earliestRequestedBlock, parsedBlock)
 		}
 	}
+
 	var nodeMsg *baseChainMessageContainer
 	if len(msgs) == 1 {
-		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, &msgs[0], apiCollection)
+		nodeMsg = apip.newChainMessage(api, latestRequestedBlock, blockHashes, &msgs[0], apiCollection)
 	} else {
-		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, msgs, apiCollection)
+		nodeMsg, err = apip.newBatchChainMessage(api, latestRequestedBlock, earliestRequestedBlock, blockHashes, msgs, apiCollection)
 		if err != nil {
 			return nil, err
 		}
@@ -207,7 +211,7 @@ func (apip *JsonRPCChainParser) ParseMsg(url string, data []byte, connectionType
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
+func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, requestedBlock int64, earliestRequestedBlock int64, requestedBlockHashes []string, msgs []rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) (*baseChainMessageContainer, error) {
 	batchMessage, err := rpcInterfaceMessages.NewBatchMessage(msgs)
 	if err != nil {
 		return nil, err
@@ -216,6 +220,7 @@ func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, reque
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
 		latestRequestedBlock:     requestedBlock,
+		requestedBlockHashes:     requestedBlockHashes,
 		msg:                      &batchMessage,
 		earliestRequestedBlock:   earliestRequestedBlock,
 		resultErrorParsingMethod: rpcInterfaceMessages.CheckResponseErrorForJsonRpcBatch,
@@ -224,11 +229,12 @@ func (*JsonRPCChainParser) newBatchChainMessage(serviceApi *spectypes.Api, reque
 	return nodeMsg, err
 }
 
-func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedBlock int64, requestedBlockHashes []string, msg *rpcInterfaceMessages.JsonrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
 		latestRequestedBlock:     requestedBlock,
+		requestedBlockHashes:     requestedBlockHashes,
 		msg:                      msg,
 		resultErrorParsingMethod: msg.CheckResponseError,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),

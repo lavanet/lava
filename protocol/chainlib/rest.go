@@ -74,7 +74,7 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(api, spectypes.NOT_APPLICABLE, restMessage, apiCollection), nil
+	return apip.newChainMessage(api, spectypes.NOT_APPLICABLE, nil, restMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -96,7 +96,7 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	}
 
 	// Extract default block parser
-	blockParser := apiCont.api.BlockParsing
+	api := apiCont.api
 
 	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
@@ -113,38 +113,37 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	}
 	// add spec path to rest message so we can extract the requested block.
 	restMessage.SpecPath = apiCont.api.Name
-	var requestedBlock int64
+	parsedInput := parser.NewParsedInput()
 	if overwriteReqBlock == "" {
 		// Fetch requested block, it is used for data reliability
-		requestedBlock, err = parser.ParseBlockFromParams(restMessage, blockParser)
-		if err != nil {
-			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
-				utils.LogAttr("chain", apip.spec.Name),
-				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-				utils.LogAttr("apiName", apiCont.api.Name),
-				utils.LogAttr("connectionType", "rest"),
-			)
-			requestedBlock = spectypes.NOT_APPLICABLE
-		}
+		parsedInput = parser.ParseBlockFromParams(restMessage, api.BlockParsing, api.Parsers)
 	} else {
-		requestedBlock, err = restMessage.ParseBlock(overwriteReqBlock)
+		parsedBlock, err := restMessage.ParseBlock(overwriteReqBlock)
+		parsedInput.SetBlock(parsedBlock)
 		if err != nil {
-			utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
-			requestedBlock = spectypes.NOT_APPLICABLE
+			utils.LavaFormatError("failed parsing block from an overwrite header", err,
+				utils.LogAttr("chain", apip.spec.Name),
+				utils.LogAttr("overwriteRequestedBlock", overwriteReqBlock),
+			)
+			parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
 		}
 	}
 
-	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &restMessage, apiCollection)
+	parsedBlock := parsedInput.GetBlock()
+	blockHashes, _ := parsedInput.GetBlockHashes()
+
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashes, &restMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, requestedHashes []string, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
 		msg:                      restMessage,
 		latestRequestedBlock:     requestBlock,
+		requestedBlockHashes:     requestedHashes,
 		resultErrorParsingMethod: restMessage.CheckResponseError,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),
 	}
