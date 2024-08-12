@@ -139,3 +139,33 @@ wait_for_lava_node_to_start() {
 operator_address() {
     lavad q staking validators -o json | jq -r '.validators[0].operator_address'
 }
+
+
+validate_env() {
+# Array of variables to check
+required_vars=(
+  ETH_RPC_WS SEP_RPC_WS HOL_RPC_WS FTM_RPC_HTTP CELO_HTTP
+  CELO_ALFAJORES_HTTP ARB1_HTTP APTOS_REST STARKNET_RPC POLYGON_MAINNET_RPC
+  OPTIMISM_RPC BASE_RPC BSC_RPC SOLANA_RPC SUI_RPC OSMO_REST OSMO_RPC OSMO_GRPC
+  LAVA_REST LAVA_RPC LAVA_RPC_WS LAVA_GRPC GAIA_REST GAIA_RPC GAIA_GRPC JUNO_REST
+  JUNO_RPC JUNO_GRPC EVMOS_RPC EVMOS_TENDERMINTRPC EVMOS_REST EVMOS_GRPC CANTO_RPC
+  CANTO_TENDERMINT CANTO_REST CANTO_GRPC AXELAR_RPC_HTTP AXELAR_REST AXELAR_GRPC
+  AVALANCH_PJRPC AVALANCHT_PJRPC FVM_JRPC NEAR_JRPC AGORIC_REST AGORIC_GRPC
+  KOIITRPC AGORIC_RPC AGORIC_TEST_REST AGORIC_TEST_GRPC AGORIC_TEST_RPC
+  STARGAZE_RPC_HTTP STARGAZE_REST STARGAZE_GRPC
+)
+
+echo ""
+echo "---------------------------------------------"
+echo "-              ENV Validation               -"
+echo "---------------------------------------------"
+# Check each variable and print a warning if not set
+for var in "${required_vars[@]}"; do
+  if [ -z "${!var}" ]; then
+    echo "Warning: Variable '$var' is not set or is empty."
+  fi
+done
+echo "---------------------------------------------"
+echo "-            ENV Validation Done            -"
+echo "---------------------------------------------"
+}

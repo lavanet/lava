@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationverification"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/utils/sigs"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
@@ -61,7 +62,7 @@ func TestSignAndExtractResponse(t *testing.T) {
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
-	_, _, err = VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0)
+	_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 	require.NoError(t, err)
 }
 
@@ -111,6 +112,6 @@ func TestSignAndExtractResponseLatest(t *testing.T) {
 	require.NoError(t, err)
 	err = VerifyRelayReply(ctx, reply, relay, provider_address.String())
 	require.NoError(t, err)
-	_, _, err = VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0)
+	_, err = finalizationverification.VerifyFinalizationData(reply, relay, provider_address.String(), consumer_address, int64(0), 0, 1)
 	require.NoError(t, err)
 }

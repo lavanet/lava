@@ -131,7 +131,7 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 				}
 				var conn *grpc.ClientConn
 				var err error
-				var relayerClientPt *pairingtypes.RelayerClient
+				var relayerClient pairingtypes.RelayerClient
 
 				if plainTextConnection {
 					utils.LavaFormatWarning("You are using plain text connection (disabled tls), no consumer can connect to it as all consumers use tls. this should be used for testing purposes only", nil)
@@ -139,10 +139,9 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 					if err != nil {
 						return 0, "", 0, utils.LavaFormatError("failed connecting to provider endpoint", err, utils.Attribute{Key: "apiInterface", Value: apiInterface}, utils.Attribute{Key: "addon", Value: addon}, utils.Attribute{Key: "chainID", Value: providerEntry.Chain}, utils.Attribute{Key: "network address", Value: endpoint.IPPORT})
 					}
-					relayerClient := pairingtypes.NewRelayerClient(conn)
-					relayerClientPt = &relayerClient
+					relayerClient = pairingtypes.NewRelayerClient(conn)
 				} else {
-					relayerClientPt, conn, err = cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
+					relayerClient, conn, err = cswp.ConnectRawClientWithTimeout(ctx, endpoint.IPPORT)
 					if err != nil {
 						if !lavasession.AllowInsecureConnectionToProviders {
 							// lets try insecure see if this is the reason
@@ -158,7 +157,6 @@ func startTesting(ctx context.Context, clientCtx client.Context, providerEntries
 				}
 
 				defer conn.Close()
-				relayerClient := *relayerClientPt
 				guid := uint64(rand.Int63())
 				relaySentTime := time.Now()
 				probeReq := &pairingtypes.ProbeRequest{

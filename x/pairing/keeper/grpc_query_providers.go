@@ -17,22 +17,16 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	stakeStorage, found := k.epochStorageKeeper.GetStakeStorageCurrent(ctx, req.ChainID)
-	if !found {
-		stakeStorage = epochstoragetypes.StakeStorage{}
-	}
-
-	stakeEntries := stakeStorage.GetStakeEntries()
-	for i := range stakeEntries {
-		stakeEntries[i].Moniker = stakeEntries[i].Description.Moniker
-	}
+	stakeEntries := k.epochStorageKeeper.GetAllStakeEntriesCurrentForChainId(ctx, req.ChainID)
 
 	if !req.ShowFrozen {
 		stakeEntriesNoFrozen := []epochstoragetypes.StakeEntry{}
-		for _, stakeEntry := range stakeEntries {
+		for i := range stakeEntries {
+			stakeEntries[i].Moniker = stakeEntries[i].Description.Moniker
+
 			// show providers with valid stakeAppliedBlock (frozen providers have stakeAppliedBlock = MaxUint64)
-			if stakeEntry.GetStakeAppliedBlock() <= uint64(ctx.BlockHeight()) {
-				stakeEntriesNoFrozen = append(stakeEntriesNoFrozen, stakeEntry)
+			if stakeEntries[i].GetStakeAppliedBlock() <= uint64(ctx.BlockHeight()) {
+				stakeEntriesNoFrozen = append(stakeEntriesNoFrozen, stakeEntries[i])
 			}
 		}
 		stakeEntries = stakeEntriesNoFrozen

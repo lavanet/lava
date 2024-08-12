@@ -100,12 +100,18 @@ type DataReliabilitySession struct {
 }
 
 type EndpointConnection struct {
-	Client                              *pairingtypes.RelayerClient
+	Client                              pairingtypes.RelayerClient
 	connection                          *grpc.ClientConn
 	numberOfSessionsUsingThisConnection uint64
+	blockListed                         atomic.Bool
+	lbUniqueId                          string
 	// In case we got disconnected, we cant reconnect as we might lose stickiness
 	// with the provider, if its using a load balancer
 	disconnected bool
+}
+
+func (ec *EndpointConnection) GetLbUniqueId() string {
+	return ec.lbUniqueId
 }
 
 func (ec *EndpointConnection) addSessionUsingConnection() {
@@ -256,7 +262,7 @@ endpointLoop:
 	for _, endpoint := range cswp.Endpoints {
 		for _, extension := range extensions {
 			if _, ok := endpoint.Extensions[extension]; !ok {
-				// doesn;t support the extension required, continue to next endpoint
+				// doesn't support the extension required, continue to next endpoint
 				continue endpointLoop
 			}
 		}
@@ -287,9 +293,9 @@ func (cswp *ConsumerSessionsWithProvider) validateComputeUnits(cu uint64, virtua
 	// add additional CU for virtual epochs
 	if (cswp.UsedComputeUnits + cu) > cswp.MaxComputeUnits*(virtualEpoch+1) {
 		return utils.LavaFormatWarning("validateComputeUnits", MaxComputeUnitsExceededError,
-			utils.Attribute{Key: "cu", Value: cswp.UsedComputeUnits + cu},
-			utils.Attribute{Key: "maxCu", Value: cswp.MaxComputeUnits * (virtualEpoch + 1)},
-			utils.Attribute{Key: "virtualEpoch", Value: virtualEpoch},
+			utils.LogAttr("cu", cswp.UsedComputeUnits+cu),
+			utils.LogAttr("maxCu", cswp.MaxComputeUnits*(virtualEpoch+1)),
+			utils.LogAttr("virtualEpoch", virtualEpoch),
 		)
 	}
 	return nil
@@ -339,7 +345,7 @@ func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) er
 	return nil
 }
 
-func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (*pairingtypes.RelayerClient, *grpc.ClientConn, error) {
+func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx context.Context, addr string) (pairingtypes.RelayerClient, *grpc.ClientConn, error) {
 	connectCtx, cancel := context.WithTimeout(ctx, TimeoutForEstablishingAConnection)
 	defer cancel()
 	conn, err := ConnectGRPCClient(connectCtx, addr, AllowInsecureConnectionToProviders, false, AllowGRPCCompressionForConsumerProviderCommunication)
@@ -363,7 +369,7 @@ func (cswp *ConsumerSessionsWithProvider) ConnectRawClientWithTimeout(ctx contex
 	case <-ch:
 	}
 	c := pairingtypes.NewRelayerClient(conn)
-	return &c, conn, nil
+	return c, conn, nil
 }
 
 func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint(endpointConnection *EndpointConnection, numberOfResets uint64) (singleConsumerSession *SingleConsumerSession, pairingEpoch uint64, err error) {
@@ -467,6 +473,10 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 					// If connection is active and we don't have more than maximumStreamsOverASingleConnection sessions using it already,
 					// and it didn't disconnect before. Use it.
 					if endpointConnection.Client != nil && endpointConnection.connection != nil && !endpointConnection.disconnected {
+						// Check if the endpoint is not blocked
+						if endpointConnection.blockListed.Load() {
+							continue
+						}
 						connectionState := endpointConnection.connection.GetState()
 						// Check Disconnections
 						if connectionState == connectivity.Shutdown { // || connectionState == connectivity.Idle
@@ -487,15 +497,25 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 				client, conn, err := cswp.ConnectRawClientWithTimeout(ctx, endpoint.NetworkAddress)
 				if err != nil {
 					endpoint.ConnectionRefusals++
-					utils.LavaFormatInfo("error connecting to provider", utils.LogAttr("err", err), utils.Attribute{Key: "provider endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress}, utils.Attribute{Key: "endpoint", Value: endpoint}, utils.Attribute{Key: "refusals", Value: endpoint.ConnectionRefusals})
+					utils.LavaFormatInfo("error connecting to provider",
+						utils.LogAttr("err", err),
+						utils.LogAttr("provider endpoint", endpoint.NetworkAddress),
+						utils.LogAttr("provider address", cswp.PublicLavaAddress),
+						utils.LogAttr("endpoint", endpoint),
+						utils.LogAttr("refusals", endpoint.ConnectionRefusals),
+					)
+
 					if endpoint.ConnectionRefusals >= MaxConsecutiveConnectionAttempts {
 						endpoint.Enabled = false
-						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil, utils.Attribute{Key: "Endpoint", Value: endpoint.NetworkAddress}, utils.Attribute{Key: "address", Value: cswp.PublicLavaAddress})
+						utils.LavaFormatWarning("disabling provider endpoint for the duration of current epoch.", nil,
+							utils.LogAttr("Endpoint", endpoint.NetworkAddress),
+							utils.LogAttr("address", cswp.PublicLavaAddress),
+						)
 					}
 					return nil, false
 				}
 				endpoint.ConnectionRefusals = 0
-				newConnection := &EndpointConnection{connection: conn, Client: client}
+				newConnection := &EndpointConnection{connection: conn, Client: client, lbUniqueId: strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)}
 				endpoint.Connections = append(endpoint.Connections, newConnection)
 				return newConnection, true
 			}
@@ -533,7 +553,10 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 	var allDisabled bool
 	connected, endpointsList, allDisabled = getConnectionFromConsumerSessionsWithProvider(ctx)
 	if allDisabled {
-		utils.LavaFormatInfo("purging provider after all endpoints are disabled", utils.Attribute{Key: "provider endpoints", Value: cswp.Endpoints}, utils.Attribute{Key: "provider address", Value: cswp.PublicLavaAddress})
+		utils.LavaFormatInfo("purging provider after all endpoints are disabled",
+			utils.LogAttr("provider endpoints", cswp.Endpoints),
+			utils.LogAttr("provider address", cswp.PublicLavaAddress),
+		)
 		// report provider.
 		return connected, endpointsList, cswp.PublicLavaAddress, AllProviderEndpointsDisabledError
 	}

@@ -11,7 +11,7 @@ option go_package = "github.com/lavanet/lava/v2/x/conflict/types";
 
 // Msg defines the Msg service.
 service Msg {
-      rpc Detection(MsgDetection) returns (MsgDetectionResponse);
+  rpc Detection(MsgDetection) returns (MsgDetectionResponse);
   rpc ConflictVoteCommit(MsgConflictVoteCommit) returns (MsgConflictVoteCommitResponse);
   rpc ConflictVoteReveal(MsgConflictVoteReveal) returns (MsgConflictVoteRevealResponse);
 // this line is used by starport scaffolding # proto/tx/rpc
@@ -20,9 +20,13 @@ service Msg {
 // TODO:: change coin type to another proto (define proto in another file int this directory)
 message MsgDetection {
   string creator = 1;
-  FinalizationConflict finalizationConflict = 2; 
-  ResponseConflict responseConflict = 3;
-  FinalizationConflict sameProviderConflict = 4;
+  reserved 2; 
+  reserved 3;
+  reserved 4;
+  oneof conflict {
+    FinalizationConflict finalization_conflict = 5; 
+    ResponseConflict response_conflict = 6;
+  }
 }
 
 message MsgDetectionResponse {
