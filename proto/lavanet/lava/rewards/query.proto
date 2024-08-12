@@ -1,12 +1,13 @@
 syntax = "proto3";
 package lavanet.lava.rewards;
 
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos/base/query/v1beta1/pagination.proto";
-import "lavanet/lava/rewards/params.proto";
+import "lavanet/lava/rewards/base_pay.proto";
 import "lavanet/lava/rewards/iprpc.proto";
-import "cosmos/base/v1beta1/coin.proto";
+import "lavanet/lava/rewards/params.proto";
 // this line is used by starport scaffolding # 1
 
 option go_package = "github.com/lavanet/lava/v2/x/rewards/types";
@@ -34,8 +35,8 @@ service Query {
   }
 
   // ProviderReward queries for the providers reward for their services
-  rpc ProviderReward(QueryProviderRewardRequest) returns (QueryProviderRewardResponse) {
-    option (google.api.http).get = "/lavanet/lava/rewards/provider_reward";
+  rpc SpecTrackedInfo(QuerySpecTrackedInfoRequest) returns (QuerySpecTrackedInfoResponse) {
+    option (google.api.http).get = "/lavanet/lava/rewards/SpecTrackedInfo/{chain_id}/{provider}";
   }
 
   // IprpcProviderRewardEstimation queries for a provider's current IPRPC reward (relative to its serviced CU)
@@ -66,7 +67,7 @@ message PoolInfo {
   string name = 1; // pool name
   repeated cosmos.base.v1beta1.Coin balance = 2 [
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-    (gogoproto.nullable)     = false
+    (gogoproto.nullable) = false
   ]; // pool balance (all types of tokens)
 }
 
@@ -97,20 +98,14 @@ message QueryShowIprpcDataResponse {
 }
 
 // QueryProviderRewardRequest is request type for the Query/ProviderReward RPC method.
-message QueryProviderRewardRequest {
-  string chain_id  = 1;
-  string provider = 2;
-}
-
-message RewardInfo {
+message QuerySpecTrackedInfoRequest {
   string chain_id = 1;
   string provider = 2;
-  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
 }
 
 // QueryProviderRewardResponse is response type for the Query/ProviderReward RPC method.
-message QueryProviderRewardResponse {
-  repeated RewardInfo rewards = 1 [(gogoproto.nullable) = false];
+message QuerySpecTrackedInfoResponse {
+  repeated BasePayWithIndex info = 1 [(gogoproto.nullable) = false];
 }
 
 // QueryIprpcProviderRewardEstimationRequest is request type for the Query/IprpcProviderRewardEstimation RPC method.
@@ -120,7 +115,7 @@ message QueryIprpcProviderRewardEstimationRequest {
 
 // QueryIprpcProviderRewardEstimationResponse is response type for the Query/IprpcProviderRewardEstimation RPC method.
 message QueryIprpcProviderRewardEstimationResponse {
-  repeated Specfund spec_funds = 1 [(gogoproto.nullable) = false]; 
+  repeated Specfund spec_funds = 1 [(gogoproto.nullable) = false];
 }
 
 // QueryIprpcSpecRewardRequest is request type for the Query/IprpcSpecReward RPC method.
