@@ -261,12 +261,13 @@ func (apip *GrpcChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 }
 
 type GrpcChainListener struct {
-	endpoint       *lavasession.RPCEndpoint
-	relaySender    RelaySender
-	logger         *metrics.RPCConsumerLogs
-	chainParser    *GrpcChainParser
-	healthReporter HealthReporter
-	refererData    *RefererData
+	endpoint         *lavasession.RPCEndpoint
+	relaySender      RelaySender
+	logger           *metrics.RPCConsumerLogs
+	chainParser      *GrpcChainParser
+	healthReporter   HealthReporter
+	refererData      *RefererData
+	listeningAddress string
 }
 
 func NewGrpcChainListener(
@@ -280,12 +281,12 @@ func NewGrpcChainListener(
 ) (chainListener *GrpcChainListener) {
 	// Create a new instance of GrpcChainListener
 	chainListener = &GrpcChainListener{
-		listenEndpoint,
-		relaySender,
-		rpcConsumerLogs,
-		chainParser.(*GrpcChainParser),
-		healthReporter,
-		refererData,
+		endpoint:       listenEndpoint,
+		relaySender:    relaySender,
+		logger:         rpcConsumerLogs,
+		chainParser:    chainParser.(*GrpcChainParser),
+		healthReporter: healthReporter,
+		refererData:    refererData,
 	}
 	return chainListener
 }
@@ -298,6 +299,7 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	}
 
 	lis := GetListenerWithRetryGrpc("tcp", apil.endpoint.NetworkAddress)
+	apil.listeningAddress = lis.Addr().String()
 	apiInterface := apil.endpoint.ApiInterface
 	sendRelayCallback := func(ctx context.Context, method string, reqBody []byte) ([]byte, metadata.MD, error) {
 		if method == "grpc.reflection.v1.ServerReflection/ServerReflectionInfo" {
@@ -378,6 +380,10 @@ func (apil *GrpcChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	if err := serveExecutor(); !errors.Is(err, http.ErrServerClosed) {
 		utils.LavaFormatFatal("Portal failed to serve", err, utils.Attribute{Key: "Address", Value: lis.Addr()}, utils.Attribute{Key: "ChainID", Value: apil.endpoint.ChainID})
 	}
+}
+
+func (apil *GrpcChainListener) GetListeningAddress() string {
+	return apil.listeningAddress
 }
 
 type GrpcChainProxy struct {
@@ -528,13 +534,13 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 			return nil, "", nil, utils.LavaFormatError("rp.Next(msg) Failed", err, utils.Attribute{Key: "GUID", Value: ctx})
 		}
 	}
-	if debug {
-		utils.LavaFormatDebug("provider sending node message",
-			utils.Attribute{Key: "_method", Value: nodeMessage.Path},
-			utils.Attribute{Key: "headers", Value: metadataMap},
-			utils.Attribute{Key: "apiInterface", Value: "grpc"},
-		)
-	}
+
+	utils.LavaFormatTrace("provider sending node message",
+		utils.LogAttr("_method", nodeMessage.Path),
+		utils.LogAttr("headers", metadataMap),
+		utils.LogAttr("apiInterface", "grpc"),
+	)
+
 	var respHeaders metadata.MD
 	response := msgFactory.NewMessage(methodDescriptor.GetOutputType())
 	connectCtx, cancel := cp.CapTimeoutForSend(ctx, chainMessage)
