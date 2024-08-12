@@ -16,6 +16,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v2/utils/rand"
 	"github.com/lavanet/lava/v2/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -78,7 +79,7 @@ func createRpcConsumer(t *testing.T, ctrl *gomock.Controller, ctx context.Contex
 func handleRelay(t *testing.T, request *pairingtypes.RelayRequest, providerSK *btcSecp256k1.PrivateKey, consumerAccount types.AccAddress) *pairingtypes.RelayReply {
 	relayReply := &pairingtypes.RelayReply{
 		Data:                  []byte(`{"jsonrpc":"2.0","result":{}, "id":1}`),
-		FinalizedBlocksHashes: []byte(`{}`),
+		FinalizedBlocksHashes: []byte(`{"0":"hash0"}`),
 	}
 
 	relayExchange := &pairingtypes.RelayExchange{
@@ -91,10 +92,7 @@ func handleRelay(t *testing.T, request *pairingtypes.RelayRequest, providerSK *b
 	require.NoError(t, err)
 	relayReply.Sig = sig
 
-	sigBlocks, err := sigs.Sign(providerSK, pairingtypes.RelayFinalization{
-		Exchange: *relayExchange,
-		Addr:     consumerAccount,
-	})
+	sigBlocks, err := sigs.Sign(providerSK, conflicttypes.NewRelayFinalizationFromRelaySessionAndRelayReply(request.RelaySession, relayReply, consumerAccount))
 
 	require.NoError(t, err)
 	relayReply.SigBlocks = sigBlocks

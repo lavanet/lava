@@ -19,7 +19,7 @@ import (
 )
 
 type ConsumerTxSenderInf interface {
-	TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error
+	TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error
 }
 
 // ConsumerStateTracker CSTis a class for tracking consumer data from the lava blockchain, such as epoch changes.
@@ -103,7 +103,7 @@ func (cst *ConsumerStateTracker) RegisterFinalizationConsensusForUpdates(ctx con
 	finalizationConsensusUpdater.RegisterFinalizationConsensus(finalizationConsensus)
 }
 
-func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error {
+func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
 	if cst.disableConflictTransactions {
 		utils.LavaFormatInfo("found Conflict, but transactions are disabled, returning")
 		return nil
@@ -111,7 +111,7 @@ func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finali
 	if conflictHandler.ConflictAlreadyReported() {
 		return nil // already reported
 	}
-	err := cst.TxSenderConflictDetection(ctx, finalizationConflict, responseConflict, sameProviderConflict)
+	err := cst.TxSenderConflictDetection(ctx, finalizationConflict, responseConflict)
 	if err == nil { // if conflict report succeeded, we can set this provider as reported, so we wont need to report again.
 		conflictHandler.StoreConflictReported()
 	}
