@@ -9,8 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/goccy/go-json"
-
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
