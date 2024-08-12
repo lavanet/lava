@@ -115,15 +115,15 @@ func (k Keeper) UpdateReputationEpochQosScore(ctx sdk.Context, chainID string, c
 	k.SetReputation(ctx, chainID, cluster, provider, r)
 }
 
-type providerQosScore struct {
-	provider string
-	score    types.QosScore
-	stake    sdk.Coin
+type ProviderQosScore struct {
+	Provider string
+	Score    types.QosScore
+	Stake    sdk.Coin
 }
 
-type stakeProviderScores struct {
-	providerScores []providerQosScore
-	totalStake     sdk.Coin
+type StakeProviderScores struct {
+	ProviderScores []ProviderQosScore
+	TotalStake     sdk.Coin
 }
 
 // UpdateReputationQosScore updates all the reputations on epoch start with the epoch score aggregated over the epoch
@@ -131,41 +131,49 @@ func (k Keeper) UpdateReputationQosScore(ctx sdk.Context) {
 	// scores is a map of "chainID cluster" -> stakeProviderScores
 	// it will be used to compare providers QoS scores within the same chain ID and cluster and determine
 	// the providers' reputation pairing score.
-	// note, the map is already sorted by QoS score in descending order.
-	scores, err := k.updateReputationsScores(ctx)
+	// note, the map is already sorted by QoS score in ascending order.
+	scores, err := k.UpdateReputationsForEpochStart(ctx)
 	if err != nil {
 		panic(utils.LavaFormatError("UpdateReputationQosScore: could not update providers QoS scores", err))
 	}
 
+	// sort keys
+	keys := []string{}
+	for key := range scores {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
 	// iterate over providers QoS scores with the same chain ID and cluster
-	for chainCluster, stakeProvidersScore := range scores {
+	for _, chainCluster := range keys {
+		stakeProvidersScore := scores[chainCluster]
 		split := strings.Split(chainCluster, " ")
 		chainID, cluster := split[0], split[1]
 
 		// get benchmark score value
-		benchmark, err := k.getBenchmarkReputationScore(stakeProvidersScore)
+		benchmark, err := k.GetBenchmarkReputationScore(stakeProvidersScore)
 		if err != nil {
 			panic(utils.LavaFormatError("UpdateReputationQosScore: could not get benchmark QoS score", err))
 		}
 
 		// set reputation pairing score by the benchmark
-		err = k.setReputationPairingScoreByBenchmark(ctx, chainID, cluster, benchmark, stakeProvidersScore.providerScores)
+		err = k.setReputationPairingScoreByBenchmark(ctx, chainID, cluster, benchmark, stakeProvidersScore.ProviderScores)
 		if err != nil {
 			panic(utils.LavaFormatError("UpdateReputationQosScore: could not set repuatation pairing scores", err))
 		}
 	}
 }
 
-// updateReputationsScores does the following for each reputation:
+// UpdateReputationsForEpochStart does the following for each reputation:
 // 1. applies time decay
 // 2. resets the reputation epoch score
 // 3. updates it last update time
 // 4. add it to the scores map
-func (k Keeper) updateReputationsScores(ctx sdk.Context) (map[string]stakeProviderScores, error) {
+func (k Keeper) UpdateReputationsForEpochStart(ctx sdk.Context) (map[string]StakeProviderScores, error) {
 	halfLifeFactor := k.ReputationHalfLifeFactor(ctx)
 	currentTime := ctx.BlockTime().UTC().Unix()
 
-	scores := map[string]stakeProviderScores{}
+	scores := map[string]StakeProviderScores{}
 
 	// iterate over all reputations
 	iter, err := k.reputations.Iterate(ctx, nil)
@@ -193,7 +201,14 @@ func (k Keeper) updateReputationsScores(ctx sdk.Context) (map[string]stakeProvid
 		}
 
 		// apply time decay on current score and add the epoch score (which is reset right after)
-		reputation = reputation.ApplyTimeDecay(halfLifeFactor, currentTime)
+		reputation, err = reputation.ApplyTimeDecayAndUpdateScore(halfLifeFactor, currentTime)
+		if err != nil {
+			return nil, utils.LavaFormatError("updateReputationsScores: apply time decay and update reputation", err,
+				utils.LogAttr("chain_id", chainID),
+				utils.LogAttr("cluster", cluster),
+				utils.LogAttr("provider", provider),
+			)
+		}
 
 		// reset epoch score, update last update time and set the reputation
 		reputation.EpochScore = types.ZeroQosScore
@@ -203,11 +218,11 @@ func (k Keeper) updateReputationsScores(ctx sdk.Context) (map[string]stakeProvid
 		// add entry to the scores map
 		providerScores, ok := scores[chainID+" "+cluster]
 		if !ok {
-			providerScores.providerScores = []providerQosScore{{provider: provider, score: reputation.Score, stake: reputation.Stake}}
-			providerScores.totalStake = reputation.Stake
+			providerScores.ProviderScores = []ProviderQosScore{{Provider: provider, Score: reputation.Score, Stake: reputation.Stake}}
+			providerScores.TotalStake = reputation.Stake
 		} else {
-			providerScores.providerScores = append(providerScores.providerScores, providerQosScore{provider: provider, score: reputation.Score, stake: reputation.Stake})
-			providerScores.totalStake = providerScores.totalStake.Add(reputation.Stake)
+			providerScores.ProviderScores = append(providerScores.ProviderScores, ProviderQosScore{Provider: provider, Score: reputation.Score, Stake: reputation.Stake})
+			providerScores.TotalStake = providerScores.TotalStake.Add(reputation.Stake)
 		}
 		scores[chainID+" "+cluster] = providerScores
 	}
@@ -216,55 +231,62 @@ func (k Keeper) updateReputationsScores(ctx sdk.Context) (map[string]stakeProvid
 	return scores, nil
 }
 
-// sortProviderScores sorts the stakeProviderScores map score slices in descending order
-func sortProviderScores(scores map[string]stakeProviderScores) {
+// sortProviderScores sorts the stakeProviderScores map score slices in ascending order
+func sortProviderScores(scores map[string]StakeProviderScores) {
 	for chainCluster, stakeProviderScores := range scores {
 		split := strings.Split(chainCluster, " ")
 		chainID, cluster := split[0], split[1]
 
-		sort.Slice(stakeProviderScores.providerScores, func(i, j int) bool {
-			iScore, err := stakeProviderScores.providerScores[i].score.Score.Resolve()
+		sort.Slice(stakeProviderScores.ProviderScores, func(i, j int) bool {
+			iScore, err := stakeProviderScores.ProviderScores[i].Score.Score.Resolve()
 			if err != nil {
 				panic(utils.LavaFormatError("UpdateReputationQosScore: cannot sort provider scores", err,
-					utils.LogAttr("provider", stakeProviderScores.providerScores[i].provider),
+					utils.LogAttr("provider", stakeProviderScores.ProviderScores[i].Provider),
 					utils.LogAttr("chain_id", chainID),
 					utils.LogAttr("cluster", cluster),
 				))
 			}
 
-			jScore, err := stakeProviderScores.providerScores[j].score.Score.Resolve()
+			jScore, err := stakeProviderScores.ProviderScores[j].Score.Score.Resolve()
 			if err != nil {
 				panic(utils.LavaFormatError("UpdateReputationQosScore: cannot sort provider scores", err,
-					utils.LogAttr("provider", stakeProviderScores.providerScores[j].provider),
+					utils.LogAttr("provider", stakeProviderScores.ProviderScores[j].Provider),
 					utils.LogAttr("chain_id", chainID),
 					utils.LogAttr("cluster", cluster),
 				))
 			}
 
-			return iScore.GT(jScore)
+			// if scores are equal, determine order by address
+			if iScore.Equal(jScore) {
+				iProvider := stakeProviderScores.ProviderScores[i].Provider
+				jProvider := stakeProviderScores.ProviderScores[j].Provider
+				return iProvider < jProvider
+			}
+
+			return iScore.LT(jScore)
 		})
 	}
 }
 
-// getBenchmarkReputationScore gets the score that will be used as the normalization factor when converting
+// GetBenchmarkReputationScore gets the score that will be used as the normalization factor when converting
 // the provider's QoS score to the reputation pairing score.
-// To do that, we go over all the QoS scores of providers that share chain ID and cluster from the highest
-// score to the lowest (that input stakeProviderScores are sorted). We aggregate the providers stake until
+// To do that, we go over all the QoS scores of providers that share chain ID and cluster from the lowest
+// score to the heighest (that input stakeProviderScores are sorted). We aggregate the providers stake until
 // we pass totalStake * ReputationPairingScoreBenchmarkStakeThreshold (currently equal to 10% of total stake).
 // Then, we return the last provider's score as the benchmark
-func (k Keeper) getBenchmarkReputationScore(stakeProviderScores stakeProviderScores) (math.LegacyDec, error) {
-	threshold := types.ReputationPairingScoreBenchmarkStakeThreshold.MulInt(stakeProviderScores.totalStake.Amount)
+func (k Keeper) GetBenchmarkReputationScore(stakeProviderScores StakeProviderScores) (math.LegacyDec, error) {
+	threshold := types.ReputationPairingScoreBenchmarkStakeThreshold.MulInt(stakeProviderScores.TotalStake.Amount)
 	aggregatedStake := sdk.ZeroDec()
 	scoreBenchmarkIndex := 0
-	for i, providerScore := range stakeProviderScores.providerScores {
-		aggregatedStake = aggregatedStake.Add(providerScore.stake.Amount.ToLegacyDec())
+	for i, providerScore := range stakeProviderScores.ProviderScores {
+		aggregatedStake = aggregatedStake.Add(providerScore.Stake.Amount.ToLegacyDec())
 		if aggregatedStake.GTE(threshold) {
 			scoreBenchmarkIndex = i
 			break
 		}
 	}
 
-	benchmark, err := stakeProviderScores.providerScores[scoreBenchmarkIndex].score.Score.Resolve()
+	benchmark, err := stakeProviderScores.ProviderScores[scoreBenchmarkIndex].Score.Score.Resolve()
 	if err != nil {
 		return sdk.ZeroDec(), utils.LavaFormatError("getBenchmarkReputationScore: could not resolve benchmark score", err)
 	}
@@ -272,34 +294,55 @@ func (k Keeper) getBenchmarkReputationScore(stakeProviderScores stakeProviderSco
 	return benchmark, nil
 }
 
-// setReputationPairingScoreByBenchmark sets the reputation pairing score using a benchmark score for all providers with the same chain ID and cluster
-// The reputation pairing scores are determined as follows: if the provider's QoS score is larger than the benchmark, it gets the max
-// reputation pairing score. If not, it's normalized by the benchmark and scaled to fit the range [MinReputationPairingScore, MaxReputationPairingScore].
-// To scale, we use the following formula:
-// scaled_score = min_score + (max_score - min_score) * (score / benchmark)
-func (k Keeper) setReputationPairingScoreByBenchmark(ctx sdk.Context, chainID string, cluster string, benchmark math.LegacyDec, scores []providerQosScore) error {
+// setReputationPairingScoreByBenchmark sets the reputation pairing score using a benchmark score for all providers
+// with the same chain ID and cluster.
+// The reputation pairing scores are determined as follows: if the provider's QoS score is smaller than the benchmark,
+// it gets the max reputation pairing score. If not, it's normalized by the benchmark and scaled to fit the range
+// [MinReputationPairingScore, MaxReputationPairingScore]. Note, smaller scores are better.
+// To scale, we use the following formula: scaled_score = min_score + (max_score - min_score) * (benchmark / score)
+// We divide (benchmark / score) and not the other way around since we expect that benchmark < score.
+func (k Keeper) setReputationPairingScoreByBenchmark(ctx sdk.Context, chainID string, cluster string, benchmark math.LegacyDec, scores []ProviderQosScore) error {
+	if benchmark.IsNegative() {
+		return utils.LavaFormatError("setReputationPairingScoreByBenchmark: cannot set reputation pairing score with benchmark", fmt.Errorf("benchmark is negative"),
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("cluster", cluster),
+			utils.LogAttr("benchmark", benchmark.String()),
+		)
+	}
+
 	scale := types.MaxReputationPairingScore.Sub(types.MinReputationPairingScore)
 	for _, providerScore := range scores {
-		score, err := providerScore.score.Score.Resolve()
+		score, err := providerScore.Score.Score.Resolve()
 		if err != nil {
 			return utils.LavaFormatError("setReputationPairingScoreByBenchmark: cannot resolve provider score", err,
 				utils.LogAttr("chain_id", chainID),
 				utils.LogAttr("cluster", cluster),
-				utils.LogAttr("provider", providerScore.provider),
+				utils.LogAttr("provider", providerScore.Provider),
 			)
 		}
 
-		scaledScore := types.MaxReputationPairingScore
-		if score.LT(benchmark) {
-			scaledScore = types.MinReputationPairingScore.Add(score.Mul(scale))
+		if score.IsNegative() {
+			utils.LavaFormatError("setReputationPairingScoreByBenchmark: invalid provider score", fmt.Errorf("score is negative"),
+				utils.LogAttr("chain_id", chainID),
+				utils.LogAttr("cluster", cluster),
+				utils.LogAttr("provider", providerScore.Provider),
+				utils.LogAttr("score", score.String()),
+			)
 		}
 
-		err = k.SetReputationScore(ctx, chainID, cluster, providerScore.provider, scaledScore)
+		scaledScore := types.MinReputationPairingScore
+		if score.IsZero() {
+			scaledScore = types.MaxReputationPairingScore
+		} else if score.GT(benchmark) {
+			scaledScore = types.MinReputationPairingScore.Add((benchmark.Quo(score)).Mul(scale))
+		}
+
+		err = k.SetReputationScore(ctx, chainID, cluster, providerScore.Provider, scaledScore)
 		if err != nil {
 			return utils.LavaFormatError("setReputationPairingScoreByBenchmark: set reputation pairing score failed", err,
 				utils.LogAttr("chain_id", chainID),
 				utils.LogAttr("cluster", cluster),
-				utils.LogAttr("provider", providerScore.provider),
+				utils.LogAttr("provider", providerScore.Provider),
 			)
 		}
 	}
