@@ -381,9 +381,9 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 		}
 		parsed.parsedBlock = block
 		return parsed, nil
-		// TODO: Implement other cases for different parsers
 	case spectypes.PARSER_TYPE_BLOCK_HASH:
 		return parseGenericParserBlockHash(value)
+	// TODO: Implement other cases for different parsers
 	default:
 		return nil, fmt.Errorf("unsupported generic parser type")
 	}
