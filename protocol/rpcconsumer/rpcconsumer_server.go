@@ -979,7 +979,7 @@ func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions [
 	return blockHashesToHeights
 }
 
-func (rpccs RPCConsumerServer) newBlocksHashesToHeightsSliceFromRequestedBlockHashes(requestedBlockHashes []string) []*pairingtypes.BlockHashToHeight {
+func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromRequestedBlockHashes(requestedBlockHashes []string) []*pairingtypes.BlockHashToHeight {
 	var blocksHashesToHeights []*pairingtypes.BlockHashToHeight
 	for _, blockHash := range requestedBlockHashes {
 		blocksHashesToHeights = append(blocksHashesToHeights, &pairingtypes.BlockHashToHeight{Hash: blockHash, Height: spectypes.NOT_APPLICABLE})
@@ -987,7 +987,7 @@ func (rpccs RPCConsumerServer) newBlocksHashesToHeightsSliceFromRequestedBlockHa
 	return blocksHashesToHeights
 }
 
-func (rpccs RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashes map[int64]string) []*pairingtypes.BlockHashToHeight {
+func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashes map[int64]string) []*pairingtypes.BlockHashToHeight {
 	var blocksHashesToHeights []*pairingtypes.BlockHashToHeight
 	for height, blockHash := range finalizedBlockHashes {
 		blocksHashesToHeights = append(blocksHashesToHeights, &pairingtypes.BlockHashToHeight{Hash: blockHash, Height: height})
@@ -1016,7 +1016,7 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateToArchiveIfNeeded(
 	return reqBlock
 }
 
-func (rpccs RPCConsumerServer) getEarliestRequestedBlockFromCacheReply(cacheReply *pairingtypes.CacheRelayReply) int64 {
+func (rpccs *RPCConsumerServer) getEarliestRequestedBlockFromCacheReply(cacheReply *pairingtypes.CacheRelayReply) int64 {
 	blocksHashesToHeights := cacheReply.GetBlocksHashesToHeights()
 	earliestRequestedBlock := spectypes.NOT_APPLICABLE
 
