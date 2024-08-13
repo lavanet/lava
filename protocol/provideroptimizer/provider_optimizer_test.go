@@ -536,11 +536,14 @@ func TestExcellence(t *testing.T) {
 		}
 		time.Sleep(4 * time.Millisecond)
 	}
-	report := providerOptimizer.GetExcellenceQoSReportForProvider(providersGen.providersAddresses[0])
+	report, rawReport := providerOptimizer.GetExcellenceQoSReportForProvider(providersGen.providersAddresses[0])
 	require.NotNil(t, report)
-	report2 := providerOptimizer.GetExcellenceQoSReportForProvider(providersGen.providersAddresses[1])
+	require.NotNil(t, rawReport)
+	report2, rawReport2 := providerOptimizer.GetExcellenceQoSReportForProvider(providersGen.providersAddresses[1])
 	require.NotNil(t, report2)
 	require.Equal(t, report, report2)
+	require.NotNil(t, rawReport2)
+	require.Equal(t, rawReport, rawReport2)
 }
 
 func TestPerturbationWithNormalGaussianOnConcurrentComputation(t *testing.T) {
