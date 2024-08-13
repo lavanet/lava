@@ -39,7 +39,7 @@ func (k Keeper) ResetPairingRelayCache(ctx sdk.Context) {
 	}
 }
 
-//the cache used for the query, does not write into state
+// the cache used for the query, does not write into state
 func (k Keeper) SetPairingQueryCache(project string, chainID string, epoch uint64, pairedProviders []epochstoragetypes.StakeEntry) {
 	if k.pairingQueryCache == nil {
 		// pairing cache is not initialized, will be in next epoch so simply skip
