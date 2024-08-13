@@ -40,12 +40,19 @@ func (rf RelayFinalization) DataToSign() []byte {
 		return nil
 	}
 
+	// This is for backward compatibility with old relay finalization messages
+	sdkAccAddress, err := sdk.AccAddressFromBech32(rf.ConsumerAddress)
+	if err != nil {
+		utils.LavaFormatError("failed to convert consumer address to sdk.AccAddress", err)
+		return nil
+	}
+
 	relaySessionHash := tendermintcrypto.Sha256(rf.RelaySession.CalculateHashForFinalization())
 	latestBlockBytes := sigs.EncodeUint64(uint64(rf.LatestBlock))
 	msgParts := [][]byte{
 		latestBlockBytes,
 		rf.FinalizedBlocksHashes,
-		[]byte(rf.ConsumerAddress),
+		sdkAccAddress,
 		relaySessionHash,
 	}
 	return sigs.Join(msgParts)
