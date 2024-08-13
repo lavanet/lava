@@ -55,6 +55,11 @@ const (
 	TransferIprpcRewardToNextMonthEventName        = "transfer_iprpc_reward_to_next_month"
 )
 
+// Events
+const (
+	ValidatorsAndCommunityFund = "validators_and_community_fund"
+)
+
 // helper struct to track the serviced IPRPC CU for each spec+provider
 type SpecCuType struct {
 	ProvidersCu []ProviderCuType

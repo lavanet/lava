@@ -219,6 +219,10 @@ func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward s
 		}
 	}
 
+	utils.LogLavaEvent(ctx, ctx.Logger(), types.ValidatorsAndCommunityFund,
+		map[string]string{"community": communityParticipationReward.String(), "validators": validatorsParticipationReward.String(), "end_of_month": strconv.FormatBool(k.isEndOfMonth(ctx))},
+		"contribution to validators pool and community pool")
+
 	// update reward amount
 	reward = reward.SubAmount(communityParticipationReward.AmountOf(reward.Denom)).SubAmount(validatorsParticipationReward.AmountOf(reward.Denom))
 
