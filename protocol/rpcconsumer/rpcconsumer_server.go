@@ -997,7 +997,6 @@ func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationCon
 
 func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateToArchiveIfNeeded(reqBlock int64, relayRequestData *pairingtypes.RelayPrivateData, earliestRequestedBlock int64, addon string, relayProcessor *RelayProcessor) int64 {
 	if reqBlock == spectypes.LATEST_BLOCK && relayRequestData.SeenBlock != 0 {
-
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = relayRequestData.SeenBlock
 		if earliestRequestedBlock >= 0 && earliestRequestedBlock < reqBlock {
