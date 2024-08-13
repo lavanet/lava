@@ -45,6 +45,15 @@ func (qs QosScore) Equal(other QosScore) bool {
 	return qs.Score.Equal(other.Score) && qs.Variance.Equal(other.Variance)
 }
 
+// Validate validates that both nums are non-negative and both denoms are strictly positive (non-zero)
+func (qs QosScore) Validate() bool {
+	if qs.Score.Num.IsNegative() || !qs.Score.Denom.IsPositive() || qs.Variance.Num.IsNegative() ||
+		!qs.Variance.Denom.IsPositive() {
+		return false
+	}
+	return true
+}
+
 // Update updates a QosScore with a new score from the QoS excellence report. The new score is truncated by the
 // current variance. Then, it's updated using the weight (which is currently the relay num)
 func (qs QosScore) Update(score math.LegacyDec, truncate bool, weight int64) QosScore {
