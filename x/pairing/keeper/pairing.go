@@ -125,6 +125,7 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 		return nil, 0, nil, fmt.Errorf("invalid pairing data: %s", err)
 	}
 
+	// to be used only in queries as this changes gas calculations, and therefore must not be part of consensus
 	if useCache {
 		providers, found := k.GetPairingQueryCache(projectIndex, chainID, epoch)
 		if found {
