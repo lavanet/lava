@@ -135,7 +135,7 @@ func (apip *GrpcChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, grpcMessage, apiCollection), nil
+	return apip.newChainMessage(apiCont.api, spectypes.NOT_APPLICABLE, nil, grpcMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -172,37 +172,36 @@ func (apip *GrpcChainParser) ParseMsg(url string, data []byte, connectionType st
 
 	// // Fetch requested block, it is used for data reliability
 	// // Extract default block parser
-	blockParser := apiCont.api.BlockParsing
-	var requestedBlock int64
+	api := apiCont.api
+	parsedInput := parser.NewParsedInput()
 	if overwriteReqBlock == "" {
-		requestedBlock, err = parser.ParseBlockFromParams(grpcMessage, blockParser)
-		if err != nil {
-			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
-				utils.LogAttr("chain", apip.spec.Name),
-				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-				utils.LogAttr("apiName", apiCont.api.Name),
-				utils.LogAttr("connectionType", "grpc"),
-			)
-			requestedBlock = spectypes.NOT_APPLICABLE
-		}
+		parsedInput = parser.ParseBlockFromParams(grpcMessage, api.BlockParsing, api.Parsers)
 	} else {
-		requestedBlock, err = grpcMessage.ParseBlock(overwriteReqBlock)
+		parsedBlock, err := grpcMessage.ParseBlock(overwriteReqBlock)
+		parsedInput.SetBlock(parsedBlock)
 		if err != nil {
-			utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteRequestedBlock", Value: overwriteReqBlock})
-			requestedBlock = spectypes.NOT_APPLICABLE
+			utils.LavaFormatError("failed parsing block from an overwrite header", err,
+				utils.LogAttr("chain", apip.spec.Name),
+				utils.LogAttr("overwriteRequestedBlock", overwriteReqBlock),
+			)
+			parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
 		}
 	}
 
-	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &grpcMessage, apiCollection)
+	parsedBlock := parsedInput.GetBlock()
+	blockHashes, _ := parsedInput.GetBlockHashes()
+
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashes, &grpcMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64, requestedHashes []string, grpcMessage *rpcInterfaceMessages.GrpcMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      api,
 		msg:                      grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
 		latestRequestedBlock:     requestedBlock,
+		requestedBlockHashes:     requestedHashes,
 		apiCollection:            apiCollection,
 		resultErrorParsingMethod: grpcMessage.CheckResponseError,
 		parseDirective:           GetParseDirective(api, apiCollection),

@@ -578,6 +578,7 @@ func New(
 		app.PlansKeeper,
 		app.DualstakingKeeper,
 		app.RewardsKeeper,
+		app.SpecKeeper,
 		app.FixationStoreKeeper,
 		app.TimerStoreKeeper,
 		app.StakingKeeper,

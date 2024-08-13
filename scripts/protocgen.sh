@@ -1,4 +1,4 @@
-#!/usr/bin/env /bin/sh
+#!/bin/bash
 __dir=$(dirname "$0")
 . $__dir/useful_commands.sh
 
