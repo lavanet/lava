@@ -15,17 +15,6 @@ func NewScoreStore(num, denom float64, inpTime time.Time) ScoreStore {
 	return ScoreStore{Num: num, Denom: denom, Time: inpTime}
 }
 
-func ZeroScoreStore() ScoreStore {
-	return ScoreStore{Num: 0, Denom: 0, Time: time.Unix(1, 1)}
-}
-
-func (store ScoreStore) IsZeroScoreStore() bool {
-	if store.Num == float64(0) && store.Denom == float64(0) && store.Time.Equal(time.Unix(1, 1)) {
-		return true
-	}
-	return false
-}
-
 // CalculateTimeDecayFunctionUpdate calculates the time decayed score update between two ScoreStore entries.
 // It uses a decay function with a half life of halfLife to factor in the time elapsed since the oldScore was recorded.
 // Both the numerator and the denominator of the newScore are decayed by this function.

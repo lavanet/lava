@@ -374,10 +374,11 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync, baseSync, halfTime time.Duration, sampleTime time.Time, isHangingApi bool) ProviderData {
 	newScore := score.NewScoreStore(sync.Seconds(), baseSync.Seconds(), sampleTime)
 	oldScore := providerData.Sync
-	providerData.Sync, providerData.SyncRaw = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT, sampleTime)
-	if isHangingApi {
-		// use raw qos excellence reports for non-hanging API only
-		providerData.SyncRaw = score.ZeroScoreStore()
+	syncScoreStore, syncRawScoreStore := score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT, sampleTime)
+	providerData.Sync = syncScoreStore
+	if !isHangingApi {
+		// use raw qos excellence reports updates for non-hanging API only
+		providerData.SyncRaw = syncRawScoreStore
 	}
 	return providerData
 }
@@ -398,10 +399,12 @@ func (po *ProviderOptimizer) updateProbeEntryAvailability(providerData ProviderD
 func (po *ProviderOptimizer) updateProbeEntryLatency(providerData ProviderData, latency, baseLatency time.Duration, weight float64, halfTime time.Duration, sampleTime time.Time, isHangingApi bool) ProviderData {
 	newScore := score.NewScoreStore(latency.Seconds(), baseLatency.Seconds(), sampleTime)
 	oldScore := providerData.Latency
-	providerData.Latency, providerData.LatencyRaw = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
+
+	latencyScoreStore, latencyRawScoreStore := score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
+	providerData.Latency = latencyScoreStore
 	if isHangingApi {
-		// use raw qos excellence reports for non-hanging API only
-		providerData.LatencyRaw = score.ZeroScoreStore()
+		// use raw qos excellence reports updates for non-hanging API only
+		providerData.LatencyRaw = latencyRawScoreStore
 	}
 	return providerData
 }
@@ -509,14 +512,12 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 		Sync:         syncScore,
 	}
 
-	if !providerData.LatencyRaw.IsZeroScoreStore() && !providerData.SyncRaw.IsZeroScoreStore() {
-		latencyScoreRaw := turnFloatToDec(providerData.LatencyRaw.Num/providerData.LatencyRaw.Denom, precision)
-		syncScoreRaw := turnFloatToDec(providerData.SyncRaw.Num/providerData.SyncRaw.Denom, precision)
-		rawQosReport = &pairingtypes.QualityOfServiceReport{
-			Latency:      latencyScoreRaw,
-			Availability: availabilityScore,
-			Sync:         syncScoreRaw,
-		}
+	latencyScoreRaw := turnFloatToDec(providerData.LatencyRaw.Num/providerData.LatencyRaw.Denom, precision)
+	syncScoreRaw := turnFloatToDec(providerData.SyncRaw.Num/providerData.SyncRaw.Denom, precision)
+	rawQosReport = &pairingtypes.QualityOfServiceReport{
+		Latency:      latencyScoreRaw,
+		Availability: availabilityScore,
+		Sync:         syncScoreRaw,
 	}
 
 	utils.LavaFormatTrace("QoS Excellence for provider",
