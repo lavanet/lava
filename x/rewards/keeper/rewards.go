@@ -71,6 +71,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
 	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName, burnRate)
 	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, sdk.OneDec())
+	k.MovePoolToPool(ctx, types.ValidatorsRewardsLeftOverPoolName, types.ValidatorsRewardsDistributionPoolName)
 
 	if monthsLeft > 1 {
 		monthsLeft -= 1
@@ -99,6 +100,22 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	}
 
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.DistributionPoolRefillEventName, details, "distribution rewards pools refilled successfully")
+}
+
+func (k Keeper) MovePoolToPool(ctx sdk.Context, from types.Pool, to types.Pool) {
+	coins := k.TotalPoolTokens(ctx, from)
+	if coins.IsZero() {
+		return
+	}
+	err := k.bankKeeper.SendCoinsFromModuleToModule(
+		ctx,
+		string(from),
+		string(to),
+		coins,
+	)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate sdkmath.LegacyDec) {
