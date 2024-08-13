@@ -74,7 +74,7 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 	if err != nil {
 		return nil, err
 	}
-	return apip.newChainMessage(api, spectypes.NOT_APPLICABLE, restMessage, apiCollection), nil
+	return apip.newChainMessage(api, spectypes.NOT_APPLICABLE, nil, restMessage, apiCollection), nil
 }
 
 // ParseMsg parses message data into chain message object
@@ -96,7 +96,7 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	}
 
 	// Extract default block parser
-	blockParser := apiCont.api.BlockParsing
+	api := apiCont.api
 
 	apiCollection, err := apip.getApiCollection(connectionType, apiCont.collectionKey.InternalPath, apiCont.collectionKey.Addon)
 	if err != nil {
@@ -113,38 +113,37 @@ func (apip *RestChainParser) ParseMsg(urlPath string, data []byte, connectionTyp
 	}
 	// add spec path to rest message so we can extract the requested block.
 	restMessage.SpecPath = apiCont.api.Name
-	var requestedBlock int64
+	parsedInput := parser.NewParsedInput()
 	if overwriteReqBlock == "" {
 		// Fetch requested block, it is used for data reliability
-		requestedBlock, err = parser.ParseBlockFromParams(restMessage, blockParser)
-		if err != nil {
-			utils.LavaFormatError("ParseBlockFromParams failed parsing block", err,
-				utils.LogAttr("chain", apip.spec.Name),
-				utils.LogAttr("blockParsing", apiCont.api.BlockParsing),
-				utils.LogAttr("apiName", apiCont.api.Name),
-				utils.LogAttr("connectionType", "rest"),
-			)
-			requestedBlock = spectypes.NOT_APPLICABLE
-		}
+		parsedInput = parser.ParseBlockFromParams(restMessage, api.BlockParsing, api.Parsers)
 	} else {
-		requestedBlock, err = restMessage.ParseBlock(overwriteReqBlock)
+		parsedBlock, err := restMessage.ParseBlock(overwriteReqBlock)
+		parsedInput.SetBlock(parsedBlock)
 		if err != nil {
-			utils.LavaFormatError("failed parsing block from an overwrite header", err, utils.Attribute{Key: "chain", Value: apip.spec.Name}, utils.Attribute{Key: "overwriteReqBlock", Value: overwriteReqBlock})
-			requestedBlock = spectypes.NOT_APPLICABLE
+			utils.LavaFormatError("failed parsing block from an overwrite header", err,
+				utils.LogAttr("chain", apip.spec.Name),
+				utils.LogAttr("overwriteRequestedBlock", overwriteReqBlock),
+			)
+			parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
 		}
 	}
 
-	nodeMsg := apip.newChainMessage(apiCont.api, requestedBlock, &restMessage, apiCollection)
+	parsedBlock := parsedInput.GetBlock()
+	blockHashes, _ := parsedInput.GetBlockHashes()
+
+	nodeMsg := apip.newChainMessage(apiCont.api, parsedBlock, blockHashes, &restMessage, apiCollection)
 	apip.BaseChainParser.ExtensionParsing(apiCollection.CollectionData.AddOn, nodeMsg, extensionInfo)
 	return nodeMsg, apip.BaseChainParser.Validate(nodeMsg)
 }
 
-func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
+func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock int64, requestedHashes []string, restMessage *rpcInterfaceMessages.RestMessage, apiCollection *spectypes.ApiCollection) *baseChainMessageContainer {
 	nodeMsg := &baseChainMessageContainer{
 		api:                      serviceApi,
 		apiCollection:            apiCollection,
 		msg:                      restMessage,
 		latestRequestedBlock:     requestBlock,
+		requestedBlockHashes:     requestedHashes,
 		resultErrorParsingMethod: restMessage.CheckResponseError,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),
 	}
@@ -240,11 +239,12 @@ func (apip *RestChainParser) ChainBlockStats() (allowedBlockLagForQosSync int64,
 }
 
 type RestChainListener struct {
-	endpoint       *lavasession.RPCEndpoint
-	relaySender    RelaySender
-	healthReporter HealthReporter
-	logger         *metrics.RPCConsumerLogs
-	refererData    *RefererData
+	endpoint         *lavasession.RPCEndpoint
+	relaySender      RelaySender
+	healthReporter   HealthReporter
+	logger           *metrics.RPCConsumerLogs
+	refererData      *RefererData
+	listeningAddress string
 }
 
 // NewRestChainListener creates a new instance of RestChainListener
@@ -255,11 +255,11 @@ func NewRestChainListener(ctx context.Context, listenEndpoint *lavasession.RPCEn
 ) (chainListener *RestChainListener) {
 	// Create a new instance of JsonRPCChainListener
 	chainListener = &RestChainListener{
-		listenEndpoint,
-		relaySender,
-		healthReporter,
-		rpcConsumerLogs,
-		refererData,
+		endpoint:       listenEndpoint,
+		relaySender:    relaySender,
+		healthReporter: healthReporter,
+		logger:         rpcConsumerLogs,
+		refererData:    refererData,
 	}
 
 	return chainListener
@@ -434,7 +434,18 @@ func (apil *RestChainListener) Serve(ctx context.Context, cmdFlags common.Consum
 	app.Use("/*", handlerUse)
 
 	// Go
-	ListenWithRetry(app, apil.endpoint.NetworkAddress)
+	addrChannel := make(chan string)
+	addrChannelSafe := common.NewSafeChannelSender(ctx, addrChannel)
+	go func() {
+		addr := <-addrChannel
+		apil.listeningAddress = addr
+	}()
+
+	ListenWithRetry(app, apil.endpoint.NetworkAddress, addrChannelSafe)
+}
+
+func (apil *RestChainListener) GetListeningAddress() string {
+	return apil.listeningAddress
 }
 
 func addHeadersAndSendString(c *fiber.Ctx, metaData []pairingtypes.Metadata, data string) error {
@@ -516,13 +527,12 @@ func (rcp *RestChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{},
 	rcp.NodeUrl.SetAuthHeaders(ctx, req.Header.Set)
 	rcp.NodeUrl.SetIpForwardingIfNecessary(ctx, req.Header.Set)
 
-	if debug {
-		utils.LavaFormatDebug("provider sending node message",
-			utils.Attribute{Key: "_method", Value: nodeMessage.Path},
-			utils.Attribute{Key: "headers", Value: req.Header},
-			utils.Attribute{Key: "apiInterface", Value: "rest"},
-		)
-	}
+	utils.LavaFormatTrace("provider sending node message",
+		utils.LogAttr("_method", nodeMessage.Path),
+		utils.LogAttr("headers", req.Header),
+		utils.LogAttr("apiInterface", "rest"),
+	)
+
 	res, err := httpClient.Do(req)
 	if res != nil {
 		// resp can be non nil on error

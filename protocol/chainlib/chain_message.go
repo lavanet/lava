@@ -23,6 +23,7 @@ type updatableRPCInput interface {
 type baseChainMessageContainer struct {
 	api                    *spectypes.Api
 	latestRequestedBlock   int64
+	requestedBlockHashes   []string
 	earliestRequestedBlock int64
 	msg                    updatableRPCInput
 	apiCollection          *spectypes.ApiCollection

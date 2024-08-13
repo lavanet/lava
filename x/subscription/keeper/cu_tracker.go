@@ -70,8 +70,8 @@ func (k Keeper) GetAllSubTrackedCuIndices(ctx sdk.Context, sub string) []string 
 }
 
 // removeCuTracker removes a trackedCu entry
-func (k Keeper) resetCuTracker(ctx sdk.Context, sub string, info trackedCuInfo, subBlock uint64) error {
-	key := types.CuTrackerKey(sub, info.provider, info.chainID)
+func (k Keeper) resetCuTracker(ctx sdk.Context, sub string, info *types.TrackedCuInfo, subBlock uint64) error {
+	key := types.CuTrackerKey(sub, info.Provider, info.ChainID)
 	var trackedCu types.TrackedCu
 	_, _, isLatest, _ := k.cuTrackerFS.FindEntryDetailed(ctx, key, subBlock, &trackedCu)
 	if isLatest {
@@ -80,14 +80,7 @@ func (k Keeper) resetCuTracker(ctx sdk.Context, sub string, info trackedCuInfo, 
 	return nil
 }
 
-type trackedCuInfo struct {
-	provider  string
-	chainID   string
-	trackedCu uint64
-	block     uint64
-}
-
-func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string, block uint64) (trackedCuList []trackedCuInfo, totalCuTracked uint64) {
+func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string, block uint64) (trackedCuList []*types.TrackedCuInfo, totalCuTracked uint64) {
 	keys := k.GetAllSubTrackedCuIndices(ctx, sub)
 
 	for _, key := range keys {
@@ -102,11 +95,11 @@ func (k Keeper) GetSubTrackedCuInfo(ctx sdk.Context, sub string, block uint64) (
 			)
 			continue
 		}
-		trackedCuList = append(trackedCuList, trackedCuInfo{
-			provider:  provider,
-			trackedCu: cu,
-			chainID:   chainID,
-			block:     block,
+		trackedCuList = append(trackedCuList, &types.TrackedCuInfo{
+			Provider:  provider,
+			TrackedCu: cu,
+			ChainID:   chainID,
+			Block:     block,
 		})
 		totalCuTracked += cu
 	}
@@ -139,7 +132,7 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 	// Note: We take the subscription from the FixationStore, based on the given block.
 	// So, even if the plan changed during the month, we still take the original plan, based on the given block.
-	block := trackedCuList[0].block
+	block := trackedCuList[0].Block
 
 	totalTokenAmount := timerData.Credit.Amount
 	if totalTokenAmount.Quo(sdk.NewIntFromUint64(totalCuTracked)).GT(sdk.NewIntFromUint64(LIMIT_TOKEN_PER_CU)) {
@@ -155,9 +148,9 @@ func (k Keeper) RewardAndResetCuTracker(ctx sdk.Context, cuTrackerTimerKeyBytes 
 
 	totalTokenRewarded := sdk.ZeroInt()
 	for _, trackedCuInfo := range trackedCuList {
-		trackedCu := trackedCuInfo.trackedCu
-		provider := trackedCuInfo.provider
-		chainID := trackedCuInfo.chainID
+		trackedCu := trackedCuInfo.TrackedCu
+		provider := trackedCuInfo.Provider
+		chainID := trackedCuInfo.ChainID
 
 		err = k.resetCuTracker(ctx, sub, trackedCuInfo, block)
 		if err != nil {

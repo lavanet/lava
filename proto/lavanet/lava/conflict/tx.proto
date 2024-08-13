@@ -21,9 +21,13 @@ service Msg {
 message MsgDetection {
   option (amino.name) = "conflict/Detection";
   string creator = 1;
-  FinalizationConflict finalizationConflict = 2; 
-  ResponseConflict responseConflict = 3;
-  FinalizationConflict sameProviderConflict = 4;
+  reserved 2; 
+  reserved 3;
+  reserved 4;
+  oneof conflict {
+    FinalizationConflict finalization_conflict = 5; 
+    ResponseConflict response_conflict = 6;
+  }
 }
 
 message MsgDetectionResponse {
