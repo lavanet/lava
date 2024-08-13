@@ -701,10 +701,10 @@ func TestMultipleIprpcSpec(t *testing.T) {
 }
 
 // TestIprpcRewardWithZeroSubRewards checks that even if a subscription is free (providers won't get paid for their service)
-// if the providers service an IPRPC eligible subscription, they get IPRPC rewards
+// if the providers service an IPRPC eligible subscription, they get IPRPC rewards (which are taxed)
 // Scenarios:
-// 0. consumer is IPRPC eligible and community tax = 100% -> provider won't get paid for its service
-// 1. two providers provide service -> they get IPRPC reward relative to their serviced CU
+// consumer is IPRPC eligible and community tax = 100% -> provider won't get paid for its service and IPRPC
+// rewards will be transffered to the community pool
 func TestIprpcRewardWithZeroSubRewards(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(true) // create a consumer and buys subscription + funds iprpc
@@ -733,16 +733,13 @@ func TestIprpcRewardWithZeroSubRewards(t *testing.T) {
 	ts.AdvanceEpoch()
 	ts.AdvanceBlocks(ts.BlocksToSave() + 1)
 
-	// check provider rewards (should be only expected IPRPC rewards)
-	p1ExpectedReward := iprpcFunds.Sub(minIprpcCost).QuoInt(sdk.NewInt(5))
+	// check there are no provider rewards
 	res1, err := ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, p1ExpectedReward.IsEqual(res1.Rewards[0].Amount))
-
-	p2ExpectedReward := p1ExpectedReward.MulInt(sdk.NewInt(4))
+	require.Len(t, res1.Rewards, 0)
 	res2, err := ts.QueryDualstakingDelegatorRewards(p2Acc.GetVaultAddr(), p2, mockSpec2)
 	require.NoError(t, err)
-	require.True(t, p2ExpectedReward.IsEqual(res2.Rewards[0].Amount))
+	require.Len(t, res2.Rewards, 0)
 }
 
 // TestMinIprpcCostForSeveralMonths checks that if a user sends fund=1.1*minIprpcCost with duration=2
