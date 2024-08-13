@@ -20,8 +20,7 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
 
 	// get validator distribution pool balance
-	coins := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
-	distributionPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
+	distributionPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
 	if blocksToNextTimerExpiry == 0 {
 		utils.LavaFormatWarning("blocksToNextTimerExpiry is zero", fmt.Errorf("critical: Attempt to divide by zero"),
 			utils.LogAttr("blocksToNextTimerExpiry", blocksToNextTimerExpiry),
@@ -31,15 +30,13 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	}
 
 	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
-	validatorsRewards := bondedTargetFactor.MulInt(distributionPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
+	validatorsRewards, _ := sdk.NewDecCoinsFromCoins(distributionPoolBalance...).MulDec(bondedTargetFactor).QuoDecTruncate(sdk.NewDec(blocksToNextTimerExpiry)).TruncateDecimal()
 	if !validatorsRewards.IsZero() {
-		coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards))
-
 		// distribute rewards to validators (same as Cosmos mint module)
-		err := k.addCollectedFees(ctx, coins)
+		err := k.addCollectedFees(ctx, validatorsRewards)
 		if err != nil {
 			utils.LavaFormatWarning("could not send validators rewards to fee collector", err,
-				utils.Attribute{Key: "rewards", Value: coins.String()},
+				utils.Attribute{Key: "rewards", Value: validatorsRewards.String()},
 			)
 		}
 	}

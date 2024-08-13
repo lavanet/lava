@@ -437,7 +437,8 @@ func TestFundIprpcTwice(t *testing.T) {
 	ts := newTester(t, true)
 	ts.setupForIprpcTests(false)
 	ts.Keepers.Distribution.SetParams(ts.Ctx, distributiontypes.Params{CommunityTax: sdk.OneDec().QuoInt64(2)})
-	tax := sdk.NewInt(100).SubRaw(10).SubRaw(45) // tax is 10% validators and 45% community
+	validatorTax := sdk.NewInt(10)
+	tax := sdk.NewInt(100).Sub(validatorTax).SubRaw(45) // tax is 10% validators and 45% community
 
 	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
 	p1Acc, p1 := ts.GetAccount(common.PROVIDER, 0)
@@ -466,6 +467,10 @@ func TestFundIprpcTwice(t *testing.T) {
 	res, err := ts.QueryDualstakingDelegatorRewards(p1Acc.GetVaultAddr(), p1, mockSpec2)
 	require.NoError(t, err)
 	require.True(t, iprpcFunds.Sub(minIprpcCost).MulInt(tax).QuoInt(sdk.NewInt(100)).IsEqual(res.Rewards[0].Amount))
+
+	taxed := iprpcFunds.Sub(minIprpcCost).MulInt(validatorTax).QuoInt(sdk.NewInt(100))
+	validatorDistributionPoolTokens := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, rewardstypes.ValidatorsRewardsDistributionPoolName)
+	require.Equal(t, validatorDistributionPoolTokens.AmountOf(ibcDenom), taxed.AmountOf(ibcDenom))
 
 	// make a provider service an IPRPC eligible consumer and advance month again
 	relay = ts.SendRelay(p1, consumerAcc, []string{ts.specs[1].Index}, 100)
