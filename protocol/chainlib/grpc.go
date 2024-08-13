@@ -201,7 +201,7 @@ func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64
 		api:                      api,
 		msg:                      grpcMessage, // setting the grpc message as a pointer so we can set descriptors for parsing
 		latestRequestedBlock:     requestedBlock,
-		requestedBlocksHashes:    requestedHashes,
+		requestedBlockHashes:     requestedHashes,
 		apiCollection:            apiCollection,
 		resultErrorParsingMethod: grpcMessage.CheckResponseError,
 		parseDirective:           GetParseDirective(api, apiCollection),

@@ -26,7 +26,7 @@ type updatableRPCInput interface {
 type baseChainMessageContainer struct {
 	api                    *spectypes.Api
 	latestRequestedBlock   int64
-	requestedBlocksHashes  []string
+	requestedBlockHashes   []string
 	earliestRequestedBlock int64
 	msg                    updatableRPCInput
 	apiCollection          *spectypes.ApiCollection
@@ -52,7 +52,7 @@ func (pm *baseChainMessageContainer) sortExtensions() {
 }
 
 func (pm *baseChainMessageContainer) GetRequestedBlocksHashes() []string {
-	return pm.requestedBlocksHashes
+	return pm.requestedBlockHashes
 }
 func (bcnc *baseChainMessageContainer) SubscriptionIdExtractor(reply *rpcclient.JsonrpcMessage) string {
 	return bcnc.msg.SubscriptionIdExtractor(reply)
