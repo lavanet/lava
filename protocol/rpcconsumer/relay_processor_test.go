@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const paramsWithHash32Bits = `{"jsonrpc":"2.0","id":1,"method":"block","params":["HASH123456789123456789234567879123456789"]}`
+
 type relayProcessorMetricsMock struct{}
 
 func (romm *relayProcessorMetricsMock) SetRelayNodeErrorMetric(chainId string, apiInterface string) {}
@@ -324,7 +326,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 
 		testExtensionName := "banana"
 		require.NoError(t, err)
-		chainMsg, err := chainParser.ParseMsg("", []byte(`{"jsonrpc":"2.0","id":1,"method":"block","params":["HASH123"]}`), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		chainMsg, err := chainParser.ParseMsg("", []byte(paramsWithHash32Bits), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
 		chainMsg.SetExtension(&spectypes.Extension{Name: testExtensionName}) // add this extension to make sure it is not removed when we remove the archive extension
 
@@ -395,7 +397,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.Contains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
 	})
 
-	t.Run("retry_flow_with_force_archive__archive_message_already", func(t *testing.T) {
+	t.Run("retry_flow_with_force_archive_archive_message_already", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Handle the incoming request and provide the desired response
@@ -409,7 +411,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 
 		testExtensionName := "banana"
 		require.NoError(t, err)
-		chainMsg, err := chainParser.ParseMsg("", []byte(`{"jsonrpc":"2.0","id":1,"method":"block","params":["HASH123"]}`), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		chainMsg, err := chainParser.ParseMsg("", []byte(paramsWithHash32Bits), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
 		chainMsg.SetExtension(&spectypes.Extension{Name: extensionslib.ExtensionTypeArchive})
 		chainMsg.SetExtension(&spectypes.Extension{Name: testExtensionName}) // add this extension to make sure it is not removed when we remove the archive extension
