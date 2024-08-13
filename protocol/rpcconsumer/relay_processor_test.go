@@ -317,7 +317,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		})
 		specId := "NEAR"
-		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceJsonRPC, nil, serverHandler, "../../", nil)
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceJsonRPC, serverHandler, nil, "../../", nil)
 		if closeServer != nil {
 			defer closeServer()
 		}
