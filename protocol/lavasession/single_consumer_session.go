@@ -26,6 +26,7 @@ type SingleConsumerSession struct {
 	ConsecutiveErrors  []error
 	errorsCount        uint64
 	relayProcessor     UsedProvidersInf
+	providerUniqueId   string
 }
 
 // returns the expected latency to a threshold.
@@ -101,12 +102,13 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 	}
 }
 
-func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf) error {
+func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, rawQoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu
 	scs.RelayNum += RelayNumberIncrement   // increase relayNum
 	if scs.RelayNum > 1 {
 		// we only set excellence for sessions with more than one successful relays, this guarantees data within the epoch exists
 		scs.QoSInfo.LastExcellenceQoSReport = qoSExcellenceReport
+		scs.QoSInfo.LastExcellenceQoSReportRaw = rawQoSExcellenceReport
 	}
 	scs.relayProcessor = usedProviders
 	return nil
@@ -150,4 +152,22 @@ func (consumerSession *SingleConsumerSession) VerifyLock() error {
 		return LockMisUseDetectedError
 	}
 	return nil
+}
+
+func (scs *SingleConsumerSession) VerifyProviderUniqueIdAndStoreIfFirstTime(providerUniqueId string) bool {
+	if scs.providerUniqueId == "" {
+		utils.LavaFormatTrace("First time getting providerUniqueId for SingleConsumerSession",
+			utils.LogAttr("sessionId", scs.SessionId),
+			utils.LogAttr("providerUniqueId", providerUniqueId),
+		)
+
+		scs.providerUniqueId = providerUniqueId
+		return true
+	}
+
+	return providerUniqueId == scs.providerUniqueId
+}
+
+func (scs *SingleConsumerSession) GetProviderUniqueId() string {
+	return scs.providerUniqueId
 }

@@ -90,11 +90,13 @@
                                 "extra_compute_units": 0,
                                 "parsers": [
                                     {
-                                        "parse_path": ".finality",
-                                        "parse_type": "BLOCK_LATEST"
+                                        "parse_path": ".params.finality",
+                                        "value": "latest",
+                                        "rule": "=final || =optimistic",
+                                        "parse_type": "DEFAULT_VALUE"
                                     },
                                     {
-                                        "parse_path": ".[0]",
+                                        "parse_path": ".params.[0]",
                                         "parse_type": "BLOCK_HASH"
                                     }
                                 ]
@@ -140,7 +142,7 @@
                                 "extra_compute_units": 0,
                                 "parsers": [
                                     {
-                                        "parse_path": ".[0]",
+                                        "parse_path": ".params.[0]",
                                         "parse_type": "BLOCK_HASH"
                                     }
                                 ]

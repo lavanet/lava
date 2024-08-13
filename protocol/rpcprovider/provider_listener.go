@@ -3,6 +3,7 @@ package rpcprovider
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -10,7 +11,8 @@ import (
 	"github.com/gogo/status"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/v2/protocol/chainlib"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/utils"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
@@ -70,7 +72,7 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
-		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type, x-grpc-web, lava-sdk-relay-timeout")
+		resp.Header().Set("Access-Control-Allow-Headers", fmt.Sprintf("Content-Type, x-grpc-web, lava-sdk-relay-timeout, %s", common.LAVA_CONSUMER_PROCESS_GUID))
 
 		if req.URL.Path == healthCheckPath && req.Method == http.MethodGet {
 			resp.WriteHeader(http.StatusOK)
@@ -165,12 +167,12 @@ func (rs *relayServer) findReceiver(apiInterface string, specID string) (RelayRe
 		for k := range rs.relayReceivers {
 			keys = append(keys, k)
 		}
-		err := utils.LavaFormatError("got called with unhandled relay receiver", lavaprotocol.UnhandledRelayReceiverError, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
-		return nil, status.Error(codes.Code(lavaprotocol.UnhandledRelayReceiverError.ABCICode()), err.Error())
+		err := utils.LavaFormatError("got called with unhandled relay receiver", protocolerrors.UnhandledRelayReceiverError, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
+		return nil, status.Error(codes.Code(protocolerrors.UnhandledRelayReceiverError.ABCICode()), err.Error())
 	}
 	if !relayReceiver.enabled {
-		err := utils.LavaFormatError("relayReceiver is disabled", lavaprotocol.DisabledRelayReceiverError, utils.Attribute{Key: "relayReceiver", Value: endpoint.Key()})
-		return nil, status.Error(codes.Code(lavaprotocol.DisabledRelayReceiverError.ABCICode()), err.Error())
+		err := utils.LavaFormatError("relayReceiver is disabled", protocolerrors.DisabledRelayReceiverError, utils.Attribute{Key: "relayReceiver", Value: endpoint.Key()})
+		return nil, status.Error(codes.Code(protocolerrors.DisabledRelayReceiverError.ABCICode()), err.Error())
 	}
 	return *relayReceiver.relayReceiver, nil
 }

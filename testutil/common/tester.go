@@ -984,11 +984,6 @@ func (ts *Tester) QueryRewardsIprpcSpecReward(spec string) (*rewardstypes.QueryI
 }
 
 // block/epoch helpers
-// QueryRewardsProviderReward implements 'q rewards provider-reward'
-func (ts *Tester) QueryRewardsProviderReward(chainID string, provider string) (*rewardstypes.QueryProviderRewardResponse, error) {
-	msg := &rewardstypes.QueryProviderRewardRequest{ChainId: chainID, Provider: provider}
-	return ts.Keepers.Rewards.ProviderReward(ts.GoCtx, msg)
-} // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
 	return uint64(ts.Ctx.BlockHeight())

@@ -517,9 +517,8 @@ func TestAddonPairing(t *testing.T) {
 	err = ts.addProviderEndpoints(2, optionalSupportingEndpoints) // this errors out
 	require.Error(t, err)
 
-	stakeStorage, found := ts.Keepers.Epochstorage.GetStakeStorageCurrent(ts.Ctx, ts.spec.Index)
-	require.True(t, found)
-	require.Len(t, stakeStorage.StakeEntries, 12)
+	entries := ts.Keepers.Epochstorage.GetAllStakeEntriesCurrentForChainId(ts.Ctx, ts.spec.Index)
+	require.Len(t, entries, 12)
 
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1967,9 +1966,8 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 	err = ts.addProviderEndpoints(2, optionalExtSupportingEndpoints) // this errors as it doesnt implement mandatory
 	require.Error(t, err)
 
-	stakeStorage, found := ts.Keepers.Epochstorage.GetStakeStorageCurrent(ts.Ctx, ts.spec.Index)
-	require.True(t, found)
-	require.Len(t, stakeStorage.StakeEntries, 26) // one for stub and 25 others
+	entries := ts.Keepers.Epochstorage.GetAllStakeEntriesCurrentForChainId(ts.Ctx, ts.spec.Index)
+	require.Len(t, entries, 26) // one for stub and 25 others
 
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
