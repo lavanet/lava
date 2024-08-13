@@ -162,13 +162,16 @@ func ParseJsonRPCMsg(data []byte) (msgRet []JsonrpcMessage, err error) {
 		var batch []JsonrpcMessage
 		errBatch := json.Unmarshal(data, &batch)
 		if errBatch != nil {
-			// failed parsing both as batch and jsonrpc return the first unmarshal error, unless the first charqacter is "["
+			// failed parsing both as batch and jsonrpc return the first unmarshal error, unless the first character is "["
 			if len(data) > 0 && data[0] == '[' {
 				return nil, errBatch
 			}
 			return nil, err
 		}
 		return batch, nil
+	}
+	if msg.ID == nil {
+		msg.ID = []byte("null")
 	}
 	return []JsonrpcMessage{msg}, nil
 }
