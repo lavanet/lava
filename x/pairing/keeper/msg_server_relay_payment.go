@@ -14,7 +14,6 @@ import (
 	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
 	"github.com/lavanet/lava/v2/x/pairing/types"
 	projectstypes "github.com/lavanet/lava/v2/x/projects/types"
-	subscriptiontypes "github.com/lavanet/lava/v2/x/subscription/types"
 )
 
 type BadgeData struct {
@@ -72,7 +71,6 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 
 	var rejectedCu uint64 // aggregated rejected CU (due to badge CU overuse or provider double spending)
 	rejected_relays_num := len(msg.Relays)
-	validatePairingCache := map[string][]epochstoragetypes.StakeEntry{}
 	for relayIdx, relay := range msg.Relays {
 		rejectedCu += relay.CuSum
 		providerAddr, err := sdk.AccAddressFromBech32(relay.Provider)
@@ -180,44 +178,28 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 			)
 		}
 
-		// generate validate pairing cache key with CuTrackerKey() to reuse code (doesn't relate to CU tracking at all)
-		validatePairingKey := subscriptiontypes.CuTrackerKey(clientAddr.String(), relay.Provider, relay.SpecId)
 		var providers []epochstoragetypes.StakeEntry
 		allowedCU := uint64(0)
-		val, ok := validatePairingCache[validatePairingKey]
-		if ok {
-			providers = val
-			strictestPolicy, _, err := k.GetProjectStrictestPolicy(ctx, project, relay.SpecId, epochStart)
-			if err != nil {
-				return nil, utils.LavaFormatError("strictest policy calculation for pairing validation cache failed", err,
-					utils.LogAttr("project", project.Index),
-					utils.LogAttr("chainID", relay.SpecId),
-					utils.LogAttr("block", strconv.FormatUint(epochStart, 10)),
-				)
-			}
-			allowedCU = strictestPolicy.EpochCuLimit
-		} else {
-			isValidPairing := false
-			isValidPairing, allowedCU, providers, err = k.Keeper.ValidatePairingForClient(
-				ctx,
-				relay.SpecId,
-				providerAddr,
-				uint64(relay.Epoch),
-				project,
+
+		isValidPairing := false
+		isValidPairing, allowedCU, providers, err = k.Keeper.ValidatePairingForClient(
+			ctx,
+			relay.SpecId,
+			providerAddr,
+			uint64(relay.Epoch),
+			project,
+		)
+		if err != nil {
+			return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", err,
+				utils.Attribute{Key: "client", Value: clientAddr.String()},
+				utils.Attribute{Key: "provider", Value: providerAddr.String()},
 			)
-			if err != nil {
-				return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", err,
-					utils.Attribute{Key: "client", Value: clientAddr.String()},
-					utils.Attribute{Key: "provider", Value: providerAddr.String()},
-				)
-			}
-			if !isValidPairing {
-				return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", fmt.Errorf("pairing result doesn't include provider"),
-					utils.Attribute{Key: "client", Value: clientAddr.String()},
-					utils.Attribute{Key: "provider", Value: providerAddr.String()},
-				)
-			}
-			validatePairingCache[validatePairingKey] = providers
+		}
+		if !isValidPairing {
+			return nil, utils.LavaFormatWarning("invalid pairing on proof of relay", fmt.Errorf("pairing result doesn't include provider"),
+				utils.Attribute{Key: "client", Value: clientAddr.String()},
+				utils.Attribute{Key: "provider", Value: providerAddr.String()},
+			)
 		}
 
 		rewardedCU, err := k.Keeper.EnforceClientCUsUsageInEpoch(ctx, relay.CuSum, allowedCU, totalCUInEpochForUserProvider, clientAddr, relay.SpecId, uint64(relay.Epoch))
@@ -239,7 +221,16 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "epoch": strconv.FormatInt(relay.Epoch, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{
+			"chainID":           relay.SpecId,
+			"epoch":             strconv.FormatInt(relay.Epoch, 10),
+			"client":            clientAddr.String(),
+			"provider":          providerAddr.String(),
+			"CU":                strconv.FormatUint(relay.CuSum, 10),
+			"totalCUInEpoch":    strconv.FormatUint(totalCUInEpochForUserProvider, 10),
+			"uniqueIdentifier":  strconv.FormatUint(relay.SessionId, 10),
+			"descriptionString": msg.DescriptionString,
+		}
 		details["rewardedCU"] = strconv.FormatUint(relay.CuSum, 10)
 
 		if relay.QosReport != nil {

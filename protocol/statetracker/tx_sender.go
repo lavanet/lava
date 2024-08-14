@@ -162,7 +162,7 @@ func (ts *TxSender) parseTxErrorsAndTryGettingANewFactory(txResultString string,
 	} else if strings.Contains(txResultString, "insufficient fees; got:") { // handle a case where node minimum gas fees is misconfigured
 		return ts.txFactory, parseInsufficientFeesError(txResultString, gasUsed)
 	}
-	return txfactory, fmt.Errorf(txResultString)
+	return txfactory, fmt.Errorf("%s", txResultString)
 }
 
 func (ts *TxSender) simulateTxWithRetry(clientCtx client.Context, txfactory tx.Factory, msg sdk.Msg) (tx.Factory, uint64, error) {
