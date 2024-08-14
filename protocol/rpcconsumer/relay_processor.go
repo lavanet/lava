@@ -186,7 +186,22 @@ func (rp *RelayProcessor) GetUsedProviders(extension string) (*lavasession.UsedP
 	return usedProviders, nil
 }
 
-func (rp *RelayProcessor) GetAllCurrentlyUsedProviders() int {
+func (rp *RelayProcessor) GetAllUsedProviderAddresses() []string {
+	if rp == nil {
+		utils.LavaFormatError("RelayProcessor.GetAllErroredProviders is nil, misuse detected", nil)
+		return []string{}
+	}
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	allUsedProviderAddresses := make([]string, 0)
+
+	for _, usedProviders := range rp.usedProviders {
+		allUsedProviderAddresses = append(allUsedProviderAddresses, usedProviders.UnwantedAddresses()...)
+	}
+	return allUsedProviderAddresses
+}
+
+func (rp *RelayProcessor) GetNumberOfAllCurrentlyUsedProviders() int {
 	if rp == nil {
 		utils.LavaFormatError("RelayProcessor.GetAllCurrentlyUsedProviders is nil, misuse detected", nil)
 		return 0
@@ -609,11 +624,7 @@ func (rp *RelayProcessor) ProcessingResult() (returnedResult *common.RelayResult
 	}
 
 	// this must be here before the lock because this function locks
-	usedProviders, err := rp.GetUsedProviders(rp.chainMessage.GetConcatenatedExtensions())
-	if err != nil {
-		return nil, err
-	}
-	allProvidersAddresses := usedProviders.UnwantedAddresses()
+	allProvidersAddresses := rp.GetAllUsedProviderAddresses()
 
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
