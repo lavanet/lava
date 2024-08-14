@@ -233,8 +233,8 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 		err = rpccs.sendRelayToProvider(ctx, chainMessage, relay, "-init-", "", relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
-			usedProviders, err := relayProcessor.GetUsedProviders(extensionsKey)
-			if err != nil {
+			usedProviders, errFetchingUsedProviders := relayProcessor.GetUsedProviders(extensionsKey)
+			if errFetchingUsedProviders != nil {
 				return success, utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
 			}
 			usedProviders.ClearUnwanted()
