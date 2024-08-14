@@ -107,6 +107,7 @@ func NewExtensionParserRule(extension *spectypes.Extension) ExtensionParserRule 
 	}
 }
 
+// this wrapper is used to return a different earliest
 type EarliestOverriddenExtensionChainMessage struct {
 	earliest             int64
 	setExtensionCallback func(extension *spectypes.Extension)

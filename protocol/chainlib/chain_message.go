@@ -120,7 +120,18 @@ func (bcmc baseChainMessageContainer) GetApiCollection() *spectypes.ApiCollectio
 	return bcmc.apiCollection
 }
 
-func (bcmc baseChainMessageContainer) RequestedBlock() (latest int64, earliest int64) {
+func (bcmc *baseChainMessageContainer) CompareAndSwapEarliestRequestedBlockIfApplicable(incomingEarliest int64) bool {
+	swapped := false
+	if bcmc.earliestRequestedBlock != spectypes.EARLIEST_BLOCK {
+		if bcmc.earliestRequestedBlock > incomingEarliest {
+			bcmc.earliestRequestedBlock = incomingEarliest
+			swapped = true
+		}
+	}
+	return swapped
+}
+
+func (bcmc *baseChainMessageContainer) RequestedBlock() (latest int64, earliest int64) {
 	if bcmc.earliestRequestedBlock == 0 {
 		// earliest is optional and not set here
 		return bcmc.latestRequestedBlock, bcmc.latestRequestedBlock

@@ -12,7 +12,6 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/protocol/chainlib"
-	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/utils"
@@ -21,9 +20,9 @@ import (
 )
 
 const (
-	MaxCallsPerRelay                             = 50
-	NumberOfRetriesAllowedOnNodeErrors           = 2 // we will try maximum additional 2 relays on node errors
-	NumberOfRetriesAllowedOnNodeErrorsForArchive = 1 // we will try maximum additional 1 relay on node errors for archive nodes
+	MaxCallsPerRelay                                      = 50
+	NumberOfRetriesAllowedOnNodeErrors                    = 2 // we will try maximum additional 2 relays on node errors
+	NumberOfRetriesAllowedOnNodeErrorsForArchiveExtension = 1 // we will try maximum additional 1 relay on node errors for archive nodes
 )
 
 type Selection int
@@ -64,7 +63,7 @@ type RelayProcessor struct {
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
 	disableRelayRetry            bool
 	relayRetriesManager          *RelayRetriesManager
-	archiveMessageManager        *ArchiveMessageManager
+	relayExtensionManager        *RelayExtensionManager
 	userReturnHeaders            []pairingtypes.Metadata
 	directiveHeaders             map[string]string
 }
@@ -82,7 +81,7 @@ func NewRelayProcessor(
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
 	disableRelayRetry bool,
 	relayRetriesManager *RelayRetriesManager,
-	archiveMessageManager *ArchiveMessageManager,
+	relayExtensionManager *RelayExtensionManager,
 	directiveHeaders map[string]string,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
@@ -111,16 +110,16 @@ func NewRelayProcessor(
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
 		disableRelayRetry:            disableRelayRetry,
 		relayRetriesManager:          relayRetriesManager,
-		archiveMessageManager:        archiveMessageManager,
+		relayExtensionManager:        relayExtensionManager,
 		userReturnHeaders:            []pairingtypes.Metadata{},
 		directiveHeaders:             directiveHeaders,
 	}
 }
 
-func (rp *RelayProcessor) SetArchiveExtensionAsOriginal() {
+func (rp *RelayProcessor) SetExtensions() {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
-	rp.archiveMessageManager.SetArchiveExtensionAsOriginal()
+	rp.relayExtensionManager.SetManagedExtension()
 }
 
 // true if we never got an extension. (default value)
@@ -379,38 +378,36 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 	return hashString, err
 }
 
-func (rp *RelayProcessor) ForceArchiveNodeIfNeeded() {
+func (rp *RelayProcessor) ForceManagedExtensionIfNeeded() {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
-	rp.forceArchiveNodeIfNeededInner()
+	rp.forceManagedExtensionIfNeededInner()
 }
 
-func (rp *RelayProcessor) forceArchiveNodeIfNeededInner() {
-	if rp.archiveMessageManager == nil || rp.archiveMessageManager.IsOriginallyArchiveExtension() {
-		// We don't have an archive extension updater or we already have an archive extension asked from user, we don't need to force it
+func (rp *RelayProcessor) forceManagedExtensionIfNeededInner() {
+	if rp.relayExtensionManager == nil || rp.relayExtensionManager.IsExtensionActiveByDefault() {
+		// We don't have an extension updater or we already have an extension enabled by the user, we don't need to force it
 		return
 	}
 
 	if len(rp.chainMessage.GetRequestedBlocksHashes()) > 0 {
-		// These are the cases that will happen:
-		// 1. archiveNodeRetriesCount == 0
-		// 		-> we set currentRelayRetryIsArchive to true and set archive
-		// 2. archiveNodeRetriesCount == NumberOfRetriesAllowedOnNodeErrorsForArchive && currentRelayRetryIsArchive == false
-		// 		-> we set currentRelayRetryIsArchive to false and remove archive
-		// 3. archiveNodeRetriesCount == NumberOfRetriesAllowedOnNodeErrorsForArchive && currentRelayRetryIsArchive == true
-		// 		-> we do nothing, and that will happen on future calls
+		// Following scenarios:
+		// First retry will use managed extension.
+		// Second retry will turn off managed extension and try again until retry attempts are exhausted
 
 		numberOfRetriesHappened := len(rp.nodeResponseErrors.relayErrors)
-		if numberOfRetriesHappened < NumberOfRetriesAllowedOnNodeErrorsForArchive {
+		if numberOfRetriesHappened < NumberOfRetriesAllowedOnNodeErrorsForArchiveExtension {
 			// If we have a hash and we are not in archive mode, we can retry with archive node
-			rp.archiveMessageManager.AddArchiveExtensionToMessage()
-			rp.userReturnHeaders = append(rp.userReturnHeaders, pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
-			if _, ok := rp.usedProviders[extensionslib.ExtensionTypeArchive]; !ok {
-				rp.usedProviders[extensionslib.ExtensionTypeArchive] = lavasession.NewUsedProviders(rp.directiveHeaders)
+			rp.relayExtensionManager.SetManagedExtension()
+			managedExtension := rp.relayExtensionManager.GetManagedExtensionName()
+			rp.userReturnHeaders = append(rp.userReturnHeaders, pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: managedExtension})
+			// Add used providers for extension
+			if _, ok := rp.usedProviders[managedExtension]; !ok {
+				rp.usedProviders[managedExtension] = lavasession.NewUsedProviders(rp.directiveHeaders)
 			}
-		} else if numberOfRetriesHappened == NumberOfRetriesAllowedOnNodeErrorsForArchive {
-			// We already tried archive node, we can reset the flag and try a regular node again.
-			rp.archiveMessageManager.RemoveArchiveExtensionFromMessage()
+		} else if numberOfRetriesHappened == NumberOfRetriesAllowedOnNodeErrorsForArchiveExtension {
+			// We already tried extension node, we can reset the flag and try a regular node again.
+			rp.relayExtensionManager.RemoveManagedExtension()
 		}
 	}
 }
@@ -435,7 +432,8 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 				// If we didn't find the hash in the hash map we can retry
 				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
 				go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
-				rp.forceArchiveNodeIfNeededInner()
+				// check wether to retry using a managed extension
+				rp.forceManagedExtensionIfNeededInner()
 				return false
 			}
 			utils.LavaFormatTrace("found hash in map wont retry", utils.LogAttr("hash", hash))

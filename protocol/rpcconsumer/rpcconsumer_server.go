@@ -420,10 +420,10 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var relayArchiveExtensionEditor *ArchiveMessageManager
+	var relayArchiveExtensionEditor *RelayExtensionManager
 	archiveExtension := rpccs.chainParser.ExtensionsParser().GetExtensionByName(extensionslib.ExtensionTypeArchive)
 	if archiveExtension != nil { // archive extension is configured
-		relayArchiveExtensionEditor = NewArchiveMessageManager(chainMessage, relayRequestData, archiveExtension)
+		relayArchiveExtensionEditor = NewRelayExtensionManager(chainMessage, relayRequestData, archiveExtension)
 	}
 
 	newUsedProvidersMap := map[string]*lavasession.UsedProviders{chainMessage.GetConcatenatedExtensions(): lavasession.NewUsedProviders(directiveHeaders)}
@@ -533,7 +533,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 		case <-startNewBatchTicker.C:
 			// only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
 			if relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
-				relayProcessor.ForceArchiveNodeIfNeeded()
+				relayProcessor.ForceManagedExtensionIfNeeded()
 				// limit the number of retries called from the new batch ticker flow.
 				// if we pass the limit we just wait for the relays we sent to return.
 				err := rpccs.sendRelayToProvider(processingCtx, chainMessage, relayRequestData, dappID, consumerIp, relayProcessor, nil)
@@ -620,7 +620,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// Get Session. we get session here so we can use the epoch in the callbacks
 	reqBlock, _ := chainMessage.RequestedBlock()
 
-	earliestRequestedBlock := spectypes.NOT_APPLICABLE
+	earliestBlockHashRequested := spectypes.NOT_APPLICABLE
 	// try using cache before sending relay
 	var cacheError error
 	if rpccs.cache.CacheActive() { // use cache only if its defined.
@@ -677,7 +677,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						return nil
 					}
 
-					earliestRequestedBlock = rpccs.getEarliestRequestedBlockFromCacheReply(cacheReply)
+					earliestBlockHashRequested = rpccs.getEarliestBlockHashRequestedFromCacheReply(cacheReply)
 
 					// cache failed, move on to regular relay
 					if performance.NotConnectedError.Is(cacheError) {
@@ -693,7 +693,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	addon := chainlib.GetAddon(chainMessage)
-	reqBlock = rpccs.resolveRequestedBlockAndUpdateExtensionIfNeeded(reqBlock, relayRequestData, earliestRequestedBlock, addon, relayProcessor)
+	reqBlock = rpccs.resolveRequestedBlockAndUpdateExtensionIfNeeded(reqBlock, relayRequestData, earliestBlockHashRequested, addon, relayProcessor, chainMessage)
 	extensions := chainMessage.GetExtensions()
 	usedProviders, err := relayProcessor.GetUsedProviders(chainMessage.GetConcatenatedExtensions())
 	if err != nil {
@@ -1004,24 +1004,22 @@ func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationCon
 	return blocksHashesToHeights
 }
 
-func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateExtensionIfNeeded(reqBlock int64, relayRequestData *pairingtypes.RelayPrivateData, earliestRequestedBlock int64, addon string, relayProcessor *RelayProcessor) int64 {
+func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateExtensionIfNeeded(reqBlock int64, relayRequestData *pairingtypes.RelayPrivateData, earliestBlockHashRequested int64, addon string, relayProcessor *RelayProcessor, chainMessage chainlib.ChainMessage) int64 {
 	if reqBlock == spectypes.LATEST_BLOCK && relayRequestData.SeenBlock != 0 {
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = relayRequestData.SeenBlock
-		if earliestRequestedBlock >= 0 {
-			// set archive extension if the new requested block is passing archive rule.
-			// since we can't really change the requested block in the chain message, we create a wrapping class here that returns reqBlock here.
-			// that way, we can still set the extension in the chain message, even though it doesn't match the actual requested block inside the chain message.
-			overriddenChainMessageWithReqBlock := extensionslib.NewEarliestOverriddenExtensionChainMessage(earliestRequestedBlock, func(extension *spectypes.Extension) {
-				relayProcessor.SetArchiveExtensionAsOriginal()
-			})
-			rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, overriddenChainMessageWithReqBlock, uint64(relayRequestData.SeenBlock))
+		if earliestBlockHashRequested >= 0 {
+			// change earliest requested block if applicable
+			success := chainMessage.CompareAndSwapEarliestRequestedBlockIfApplicable(earliestBlockHashRequested)
+			if success {
+				rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, chainMessage, uint64(relayRequestData.SeenBlock))
+			}
 		}
 	}
 	return reqBlock
 }
 
-func (rpccs *RPCConsumerServer) getEarliestRequestedBlockFromCacheReply(cacheReply *pairingtypes.CacheRelayReply) int64 {
+func (rpccs *RPCConsumerServer) getEarliestBlockHashRequestedFromCacheReply(cacheReply *pairingtypes.CacheRelayReply) int64 {
 	blocksHashesToHeights := cacheReply.GetBlocksHashesToHeights()
 	earliestRequestedBlock := spectypes.NOT_APPLICABLE
 
