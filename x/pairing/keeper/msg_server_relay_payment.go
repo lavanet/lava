@@ -221,7 +221,16 @@ func (k msgServer) RelayPayment(goCtx context.Context, msg *types.MsgRelayPaymen
 		if len(msg.DescriptionString) > 20 {
 			msg.DescriptionString = msg.DescriptionString[:20]
 		}
-		details := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "epoch": strconv.FormatInt(relay.Epoch, 10), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "totalCUInEpoch": strconv.FormatUint(totalCUInEpochForUserProvider, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": msg.DescriptionString}
+		details := map[string]string{
+			"chainID":           relay.SpecId,
+			"epoch":             strconv.FormatInt(relay.Epoch, 10),
+			"client":            clientAddr.String(),
+			"provider":          providerAddr.String(),
+			"CU":                strconv.FormatUint(relay.CuSum, 10),
+			"totalCUInEpoch":    strconv.FormatUint(totalCUInEpochForUserProvider, 10),
+			"uniqueIdentifier":  strconv.FormatUint(relay.SessionId, 10),
+			"descriptionString": msg.DescriptionString,
+		}
 		details["rewardedCU"] = strconv.FormatUint(relay.CuSum, 10)
 
 		if relay.QosReport != nil {

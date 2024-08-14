@@ -147,7 +147,7 @@ func DialHTTP(endpoint string) (*Client, error) {
 func (c *Client) sendHTTP(ctx context.Context, op *requestOp, msg interface{}, isJsonRPC bool, strict bool) error {
 	hc, ok := c.writeConn.(*httpConn)
 	if !ok {
-		return fmt.Errorf("sendHTTP - c.writeConn.(*httpConn) - type assertion failed" + fmt.Sprintf("%s", c.writeConn))
+		return fmt.Errorf("sendHTTP - c.writeConn.(*httpConn) - type assertion failed %s", c.writeConn)
 	}
 	respBody, err := hc.doRequest(ctx, msg, isJsonRPC, strict)
 	if err != nil {
