@@ -10,6 +10,7 @@ import (
 
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 )
 
 const DAY_SECONDS = 60 * 60 * 24
@@ -194,12 +195,12 @@ func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward s
 	}
 
 	// send validators participation
+	validatorPool := types.ValidatorsRewardsDistributionPoolName
 	if !validatorsParticipationReward.AmountOf(reward.Denom).IsZero() {
-		pool := types.ValidatorsRewardsDistributionPoolName
 		if k.isEndOfMonth(ctx) {
-			pool = types.ValidatorsRewardsAllocationPoolName
+			validatorPool = types.ValidatorsRewardsLeftOverPoolName
 		}
-		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, string(pool), validatorsParticipationReward)
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, string(validatorPool), validatorsParticipationReward)
 		if err != nil {
 			return reward, utils.LavaFormatError("sending validators participation failed", err,
 				utils.Attribute{Key: "validators_participation_reward", Value: validatorsParticipationReward.String()},
@@ -218,6 +219,10 @@ func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward s
 			)
 		}
 	}
+
+	utils.LogLavaEvent(ctx, ctx.Logger(), types.ValidatorsAndCommunityFund,
+		map[string]string{"community": communityParticipationReward.String(), "validators": validatorsParticipationReward.String(), "validator_pool": string(validatorPool)},
+		"contribution to validators pool and community pool")
 
 	// update reward amount
 	reward = reward.SubAmount(communityParticipationReward.AmountOf(reward.Denom)).SubAmount(validatorsParticipationReward.AmountOf(reward.Denom))
@@ -255,7 +260,7 @@ func (k Keeper) CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Cont
 
 // CalculateContributionPercentages calculates the providers' rewards participation to the validators and community pool
 func (k Keeper) CalculateContributionPercentages(ctx sdk.Context, reward math.Int) (validatorsParticipation math.LegacyDec, communityParticipation math.LegacyDec, err error) {
-	communityTax := k.distributionKeeper.GetParams(ctx).CommunityTax
+	communityTax := k.GetCommunityTax(ctx)
 	if communityTax.Equal(sdk.OneDec()) {
 		return sdk.ZeroDec(), sdk.OneDec(), nil
 	}
@@ -307,5 +312,16 @@ func (k Keeper) FundCommunityPoolFromModule(ctx sdk.Context, amount sdk.Coins, s
 
 // isEndOfMonth checks that we're close to next timer expiry by at least 24 hours
 func (k Keeper) isEndOfMonth(ctx sdk.Context) bool {
-	return ctx.BlockTime().UTC().Unix()+DAY_SECONDS > k.TimeToNextTimerExpiry(ctx)
+	_, expiries, _ := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
+	if len(expiries) == 0 {
+		// there is no next timer, this is called in between the end and start of the new timer this is the end of the month
+		return true
+	}
+
+	NextExpiery := int64(expiries[0]) - ctx.BlockTime().UTC().Unix()
+	return ctx.BlockTime().UTC().Unix()+DAY_SECONDS > NextExpiery
+}
+
+func (k Keeper) GetCommunityTax(ctx sdk.Context) math.LegacyDec {
+	return k.distributionKeeper.GetParams(ctx).CommunityTax
 }

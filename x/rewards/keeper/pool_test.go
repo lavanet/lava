@@ -4,7 +4,9 @@ import (
 	"testing"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	distribution "github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/lavanet/lava/v2/testutil/common"
 	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
 	"github.com/lavanet/lava/v2/utils"
@@ -381,4 +383,21 @@ func TestRefillPoolsTimerStore(t *testing.T) {
 		testkeeper.EndBlock(ts.Ctx, ts.Keepers)
 		month = ts.GetNextMonth(ts.BlockTime()) - ts.BlockTime().UTC().Unix()
 	}
+}
+
+// TestBlockRewardsWith2Tokens tests that block rewatds from the distribution pool works with more than 1 kind of token
+func TestBlockRewardsWith2Tokens(t *testing.T) {
+	ts := newTester(t, true)
+	startTokens := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
+	err := ts.Keepers.BankKeeper.AddToBalance(testkeeper.GetModuleAddress(string(types.ValidatorsRewardsDistributionPoolName)),
+		sdk.NewCoins(sdk.NewCoin(ibcDenom, startTokens[0].Amount)))
+	require.NoError(t, err)
+	startTokens = ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
+
+	ts.AdvanceBlock()
+	distribution.BeginBlocker(ts.Ctx, abci.RequestBeginBlock{}, ts.Keepers.Distribution)
+
+	currentTokens := ts.Keepers.Rewards.TotalPoolTokens(ts.Ctx, types.ValidatorsRewardsDistributionPoolName)
+	require.Equal(t, currentTokens.AmountOf(ibcDenom), currentTokens.AmountOf(ts.BondDenom()))
+	require.True(t, currentTokens.IsAllLT(startTokens))
 }
