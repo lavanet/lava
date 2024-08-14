@@ -86,6 +86,7 @@ type RewardsKeeper interface {
 	GetIprpcRewardsCurrentId(ctx sdk.Context) uint64
 	GetIprpcReward(ctx sdk.Context, id uint64) (val rewardstypes.IprpcReward, found bool)
 	AllocationPoolMonthsLeft(ctx sdk.Context) int64
+	GetCommunityTax(ctx sdk.Context) math.LegacyDec
 }
 
 type StakingKeeper interface {

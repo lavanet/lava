@@ -266,7 +266,7 @@ func (k Keeper) CalculateContributionPercentages(ctx sdk.Context, reward math.In
 	}
 
 	// validators_participation = validators_participation_param / (1-community_tax)
-	validatorsParticipationParam := k.GetParams(ctx).ValidatorsSubscriptionParticipation
+	validatorsParticipationParam := k.GetCommunityTax(ctx)
 	validatorsParticipation = validatorsParticipationParam.Quo(sdk.OneDec().Sub(communityTax))
 	if validatorsParticipation.GT(sdk.OneDec()) {
 		return sdk.ZeroDec(), sdk.ZeroDec(), utils.LavaFormatError("validators participation bigger than 100%", fmt.Errorf("validators participation calc failed"),
@@ -320,4 +320,8 @@ func (k Keeper) isEndOfMonth(ctx sdk.Context) bool {
 
 	NextExpiery := int64(expiries[0]) - ctx.BlockTime().UTC().Unix()
 	return ctx.BlockTime().UTC().Unix()+DAY_SECONDS > NextExpiery
+}
+
+func (k Keeper) GetCommunityTax(ctx sdk.Context) math.LegacyDec {
+	return k.GetParams(ctx).ValidatorsSubscriptionParticipation
 }

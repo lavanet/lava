@@ -51,7 +51,7 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 		} else { // potential delegator
 			coins, err := sdk.ParseCoinsNormalized(req.AmountDelegator)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse coins: %w", err)
+				return nil, fmt.Errorf("failed to parse input, input should be a valid lava delegator account or coins")
 			}
 
 			totalStakedTokens = coins[0].Amount
@@ -85,17 +85,28 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 
 	monthsLeft := k.rewardsKeeper.AllocationPoolMonthsLeft(ctx)
 	allocationPool := k.rewardsKeeper.TotalPoolTokens(ctx, rewardstypes.ValidatorsRewardsAllocationPoolName)
-	blockRewards := allocationPool.QuoInt(sdk.NewInt(monthsLeft))
+	blockRewards := sdk.NewDecCoinsFromCoins(allocationPool...).QuoDec(sdk.NewDec(monthsLeft))
+	communityTax := k.rewardsKeeper.GetCommunityTax(ctx)
+	blockRewards = blockRewards.MulDec(sdk.OneDec().Sub(communityTax))
 
 	iprpcReward, found := k.rewardsKeeper.GetIprpcReward(ctx, k.rewardsKeeper.GetIprpcRewardsCurrentId(ctx))
 	if found {
 		for _, fund := range iprpcReward.SpecFunds {
-			res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "iprpc_" + fund.Spec, Amount: sdk.NewDecCoinsFromCoins(fund.Fund...).MulDec(delegatorPart)})
+			coinsForSpec := sdk.NewCoins()
+			for _, coin := range fund.Fund {
+				validatorCoins, _, err := k.rewardsKeeper.CalculateValidatorsAndCommunityParticipationRewards(ctx, coin)
+				if err != nil {
+					return nil, fmt.Errorf("failed to calculate Validators And Community Participation Rewards for iprpc")
+				}
+				coinsForSpec = coinsForSpec.Add(validatorCoins...)
+			}
+
+			res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "iprpc_" + fund.Spec, Amount: sdk.NewDecCoinsFromCoins(coinsForSpec...).MulDec(delegatorPart)})
 		}
 	}
 
 	res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "subscriptions", Amount: sdk.NewDecCoinsFromCoins(valRewardsFromSubscriptions...).MulDec(delegatorPart)})
-	res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "blocks", Amount: sdk.NewDecCoinsFromCoins(blockRewards...).MulDec(delegatorPart)})
+	res.Info = append(res.Info, &types.EstimatedRewardInfo{Source: "blocks", Amount: blockRewards.MulDec(delegatorPart)})
 
 	res.Total = sdk.NewDecCoins()
 	for _, k := range res.Info {
