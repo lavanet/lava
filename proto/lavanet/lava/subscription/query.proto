@@ -49,6 +49,10 @@ rpc EstimatedRewards(QueryEstimatedRewardsRequest) returns (QueryEstimatedReward
   option (google.api.http).get = "/lavanet/lava/subscription/estimated_rewards/{provider}/{chain_id}/{amount_delegator}";
 }
 
+rpc EstimatedValidatorRewards(QueryEstimatedValidatorRewardsRequest) returns (QueryEstimatedValidatorRewardsResponse) {
+  option (google.api.http).get = "/lavanet/lava/subscription/estimated_validator_rewards/{validator}/{amount_delegator}";
+}
+
   // this line is used by starport scaffolding # 2
 }
 
@@ -136,6 +140,20 @@ message EstimatedRewardInfo {
 }
 
 message QueryEstimatedRewardsResponse {
+  repeated EstimatedRewardInfo info = 1 [(gogoproto.nullable) = true];
+  repeated cosmos.base.v1beta1.DecCoin total = 2 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
+}
+
+message QueryEstimatedValidatorRewardsRequest {
+  string validator = 1;
+  string amount_delegator = 2; 
+}
+
+message QueryEstimatedValidatorRewardsResponse {
   repeated EstimatedRewardInfo info = 1 [(gogoproto.nullable) = true];
   repeated cosmos.base.v1beta1.DecCoin total = 2 [
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",

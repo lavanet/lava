@@ -30,6 +30,10 @@ func (k Keeper) Pools(goCtx context.Context, req *types.QueryPoolsRequest) (*typ
 			Balance: k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool),
 		},
 		{
+			Name:    string(types.ValidatorsRewardsLeftOverPoolName),
+			Balance: k.TotalPoolTokens(ctx, types.ValidatorsRewardsLeftOverPoolName),
+		},
+		{
 			Name:    string(types.ProvidersRewardsAllocationPool),
 			Balance: k.TotalPoolTokens(ctx, types.ProvidersRewardsAllocationPool),
 		},
