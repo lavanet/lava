@@ -95,11 +95,12 @@ func TestCacheSetGet(t *testing.T) {
 				Finalized:      tt.finalized,
 				RequestedBlock: request.RequestBlock,
 			}
-			_, err = cacheServer.GetRelay(ctx, &messageGet)
+			reply, err := cacheServer.GetRelay(ctx, &messageGet)
+			require.NoError(t, err)
 			if tt.valid {
-				require.NoError(t, err)
+				require.NotNil(t, reply.Reply)
 			} else {
-				require.Error(t, err)
+				require.Nil(t, reply.Reply)
 			}
 		})
 	}
@@ -179,9 +180,9 @@ func TestCacheGetWithoutSet(t *testing.T) {
 				Finalized:      tt.finalized,
 				RequestedBlock: request.RequestBlock,
 			}
-			_, err := cacheServer.GetRelay(ctx, &messageGet)
-
-			require.Error(t, err)
+			reply, err := cacheServer.GetRelay(ctx, &messageGet)
+			require.Nil(t, reply.Reply)
+			require.NoError(t, err)
 		})
 	}
 }
@@ -343,7 +344,7 @@ func TestCacheSetGetLatest(t *testing.T) {
 					require.Equal(t, cacheReply.GetReply().LatestBlock, latestBlockForRelay)
 				}
 			} else {
-				require.Error(t, err)
+				require.Nil(t, cacheReply.Reply)
 			}
 		})
 	}
@@ -420,7 +421,7 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 					require.Equal(t, cacheReply.GetReply().LatestBlock, latestBlockForRelay)
 				}
 			} else {
-				require.Error(t, err)
+				require.Nil(t, cacheReply.Reply)
 			}
 
 			request2 := shallowCopy(request)
@@ -445,8 +446,9 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 				RequestedBlock: request.RequestBlock,
 			}
 			// repeat our latest block get, this time we expect it to look for a newer block and fail
-			_, err = cacheServer.GetRelay(ctx, &messageGet)
-			require.Error(t, err)
+			reply, err := cacheServer.GetRelay(ctx, &messageGet)
+			require.NoError(t, err)
+			require.Nil(t, reply.Reply)
 		})
 	}
 }
@@ -472,7 +474,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 		{name: "NonFinalized With Hash", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}},
 		{name: "NonFinalized After delay With Hash", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}},
 
-		// Null ID in get and set
+		// // Null ID in get and set
 		{name: "Finalized No Hash, with null id in get and set", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullIdInGet: true, nullIdInSet: true},
 		{name: "Finalized After delay No Hash, with null id in get and set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullIdInGet: true, nullIdInSet: true},
 		{name: "NonFinalized No Hash, with null id in get and set", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullIdInGet: true, nullIdInSet: true},
@@ -482,7 +484,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 		{name: "NonFinalized With Hash, with null id in get and set", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true, nullIdInSet: true},
 		{name: "NonFinalized After delay With Hash, with null id in get and set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true, nullIdInSet: true},
 
-		// Null ID only in get
+		// // Null ID only in get
 		{name: "Finalized No Hash, with null id only in get", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullIdInGet: true},
 		{name: "Finalized After delay No Hash, with null id only in get", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullIdInGet: true},
 		{name: "NonFinalized No Hash, with null id only in get", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullIdInGet: true},
@@ -492,7 +494,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 		{name: "NonFinalized With Hash, with null id only in get", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true},
 		{name: "NonFinalized After delay With Hash, with null id only in get", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true},
 
-		// Null ID only in set
+		// // Null ID only in set
 		{name: "Finalized No Hash, with null id only in set", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullIdInSet: true},
 		{name: "Finalized After delay No Hash, with null id only in set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullIdInSet: true},
 		{name: "NonFinalized No Hash, with null id only in set", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullIdInSet: true},
@@ -557,20 +559,21 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			}
 
 			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
+			// because we always need a cache reply. we cant return an error in any case.
+			// grpc do not allow returning errors + messages
+			require.NoError(t, err)
+
 			if tt.valid {
 				cacheReply.Reply.Data = outputFormatter(cacheReply.Reply.Data)
-				require.NoError(t, err)
-
 				result := gjson.GetBytes(cacheReply.GetReply().Data, format.IDFieldName)
 				extractedID := result.Raw
-
 				if tt.nullIdInGet {
 					require.Equal(t, "null", extractedID)
 				} else {
 					require.Equal(t, strconv.FormatInt(changedID, 10), extractedID)
 				}
 			} else {
-				require.Error(t, err)
+				require.Nil(t, cacheReply.Reply)
 			}
 		})
 	}

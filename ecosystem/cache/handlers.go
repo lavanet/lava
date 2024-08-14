@@ -121,6 +121,8 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	)
 
 	var retError error
+
+	var blockHashes []*pairingtypes.BlockHashToHeight
 	if relayCacheGet.RequestedBlock >= 0 { // we can only fetch
 		// we don't need to fetch seen block prior as its already larger than requested block
 		waitGroup := sync.WaitGroup{}
@@ -149,7 +151,7 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		// fetch block hashes
 		go func() {
 			defer waitGroup.Done()
-			cacheReply.BlocksHashesToHeights = s.getBlockHeightsFromHashes(relayCacheGet.ChainId, relayCacheGet.BlocksHashesToHeights)
+			blockHashes = s.getBlockHeightsFromHashes(relayCacheGet.ChainId, relayCacheGet.BlocksHashesToHeights)
 		}()
 
 		// wait for all reads to complete before moving forward
@@ -172,6 +174,8 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		if relayCacheGet.SeenBlock > cacheReply.SeenBlock {
 			cacheReply.SeenBlock = relayCacheGet.SeenBlock
 		}
+		cacheReply.BlocksHashesToHeights = blockHashes
+
 	} else {
 		// set the error so cache miss will trigger.
 		retError = utils.LavaFormatDebug("Requested block is invalid",
