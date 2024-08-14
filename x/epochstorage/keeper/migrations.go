@@ -39,7 +39,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 		key := string(iterator.Key())
 
 		// identify stake storage type: regular, current or unstake
-		if key == v3.StakeStorageKeyUnstakeConst {
+		if m.isUnstakeStakeStorageKey(key) {
 			store.Delete(iterator.Key())
 			continue
 		}
@@ -97,6 +97,15 @@ func extractEpochFromStakeStorageKey(key string) (uint64, error) {
 		return 0, err
 	}
 	return parsedUint, nil
+}
+
+func (m Migrator) isUnstakeStakeStorageKey(key string) bool {
+	key, found := strings.CutSuffix(key, "/")
+	if !found {
+		return false
+	}
+
+	return key == v3.StakeStorageKeyUnstakeConst
 }
 
 func (m Migrator) isCurrentStakeStorageKey(ctx sdk.Context, key string) bool {
