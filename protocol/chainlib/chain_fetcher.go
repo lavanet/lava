@@ -126,7 +126,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 
 	collectionType := verification.ConnectionType
 	path := parsing.ApiName
-	data := []byte(fmt.Sprintf(parsing.FunctionTemplate))
+	data := []byte(parsing.FunctionTemplate)
 
 	if !verification.IsActive() {
 		utils.LavaFormatDebug("skipping disabled verification", []utils.Attribute{

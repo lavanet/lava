@@ -116,7 +116,7 @@ sleep_until_next_epoch
 HEALTH_FILE="config/health_examples/health_template.yml"
 create_health_config $HEALTH_FILE "$(lavad keys show user1 -a)" "$(lavad keys show servicer2 -a)" "$(lavad keys show servicer3 -a)"
 
-lavad tx gov submit-legacy-proposal set-iprpc-data 1000000000ulava --min-cost 100ulava --add-subscriptions $(lavad keys show -a user1) --from alice -y
+lavad tx gov submit-legacy-proposal set-iprpc-data 1000000000ulava --min-cost 100ulava --add-subscriptions "$(lavad keys show -a user1)" --from alice -y
 wait_count_blocks 1
 lavad tx gov vote "$(latest_vote)" yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 

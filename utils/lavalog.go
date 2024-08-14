@@ -286,7 +286,7 @@ func LavaFormatLog(description string, err error, attributes []Attribute, severi
 	// here we return the same type of the original error message, this handles nil case as well
 	errRet := sdkerrors.Wrap(err, output)
 	if errRet == nil { // we always want to return an error if lavaFormatError was called
-		return fmt.Errorf(output)
+		return fmt.Errorf("%s", output)
 	}
 	return errRet
 }

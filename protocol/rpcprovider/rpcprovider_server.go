@@ -228,7 +228,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 			if err != nil {
 				extraInfo = err.Error()
 			}
-			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: "+extraInfo)
+			err = sdkerrors.Wrapf(relayFailureError, "On relay failure: %s", extraInfo)
 		}
 		err = utils.LavaFormatError("TryRelay Failed", err,
 			utils.Attribute{Key: "request.SessionId", Value: request.RelaySession.SessionId},

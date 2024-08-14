@@ -14,4 +14,5 @@ done
 
 for user in "${users[@]}"; do
   lavad tx pairing unstake-provider ETH1 "$(operator_address)" --from $user -y --gas-adjustment "1.5" --gas "auto" --gas-prices "$GASPRICE"
+  echo "Unstake failed for user: $user" >&2
 done
