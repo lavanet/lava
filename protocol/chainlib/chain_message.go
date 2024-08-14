@@ -67,7 +67,7 @@ func (bcmc *baseChainMessageContainer) GetParseDirective() *spectypes.ParseDirec
 }
 
 func (bcmc *baseChainMessageContainer) GetRawRequestHash() ([]byte, error) {
-	if bcmc.inputHashCache != nil && len(bcmc.inputHashCache) > 0 {
+	if len(bcmc.inputHashCache) > 0 {
 		// Get the cached value
 		return bcmc.inputHashCache, nil
 	}
