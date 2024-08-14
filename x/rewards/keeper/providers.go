@@ -323,5 +323,5 @@ func (k Keeper) isEndOfMonth(ctx sdk.Context) bool {
 }
 
 func (k Keeper) GetCommunityTax(ctx sdk.Context) math.LegacyDec {
-	return k.GetParams(ctx).ValidatorsSubscriptionParticipation
+	return k.distributionKeeper.GetParams(ctx).CommunityTax
 }
