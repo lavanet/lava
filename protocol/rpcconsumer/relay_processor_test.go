@@ -42,7 +42,7 @@ const nodeError = `{"error":{"message": "bad"}, "message":"bad","code":123}`
 
 func sendSuccessResp(t *testing.T, relayProcessor *RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
-	usedProviders, err := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
+	usedProviders, err := relayProcessor.GetUsedProviders(relayProcessor.chainMessage.GetConcatenatedExtensions())
 	require.NoError(t, err)
 	usedProviders.RemoveUsed(provider, nil)
 	response := &relayResponse{
@@ -62,7 +62,7 @@ func sendSuccessResp(t *testing.T, relayProcessor *RelayProcessor, provider stri
 
 func sendProtocolError(t *testing.T, relayProcessor *RelayProcessor, provider string, delay time.Duration, err error) {
 	time.Sleep(delay)
-	usedProviders, errGet := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
+	usedProviders, errGet := relayProcessor.GetUsedProviders(relayProcessor.chainMessage.GetConcatenatedExtensions())
 	require.NoError(t, errGet)
 	usedProviders.RemoveUsed(provider, nil)
 	response := &relayResponse{
@@ -82,7 +82,7 @@ func sendProtocolError(t *testing.T, relayProcessor *RelayProcessor, provider st
 
 func sendNodeError(t *testing.T, relayProcessor *RelayProcessor, provider string, delay time.Duration) {
 	time.Sleep(delay)
-	usedProviders, err := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
+	usedProviders, err := relayProcessor.GetUsedProviders(relayProcessor.chainMessage.GetConcatenatedExtensions())
 	require.NoError(t, err)
 	usedProviders.RemoveUsed(provider, nil)
 	response := &relayResponse{
@@ -98,6 +98,93 @@ func sendNodeError(t *testing.T, relayProcessor *RelayProcessor, provider string
 		err: nil,
 	}
 	relayProcessor.SetResponse(response)
+}
+
+func TestRelayProcessorNodeErrorRetryFlowForceArchiveMessageWhenInitialIsArchive(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
+	})
+	specId := "NEAR"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceJsonRPC, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+
+	testExtensionName := "banana"
+	require.NoError(t, err)
+	chainMsg, err := chainParser.ParseMsg("", []byte(paramsWithHash32Bits), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	chainMsg.SetExtension(&spectypes.Extension{Name: extensionslib.ExtensionTypeArchive})
+	chainMsg.SetExtension(&spectypes.Extension{Name: testExtensionName}) // add this extension to make sure it is not removed when we remove the archive extension
+
+	relayPrivateData := &pairingtypes.RelayPrivateData{Extensions: []string{testExtensionName, extensionslib.ExtensionTypeArchive}} // add this extension to make sure it is not removed when we remove the archive extension
+	archiveExtension := &spectypes.Extension{Name: extensionslib.ExtensionTypeArchive}
+	relayArchiveExtensionEditor := NewRelayExtensionManager(chainMsg, relayPrivateData, archiveExtension)
+	newUsedProvidersMap := map[string]*lavasession.UsedProviders{chainMsg.GetConcatenatedExtensions(): lavasession.NewUsedProviders(nil)}
+	relayProcessor := NewRelayProcessor(ctx, newUsedProvidersMap, 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, relayArchiveExtensionEditor, nil)
+
+	usedProviders, err := relayProcessor.GetUsedProviders(chainMsg.GetConcatenatedExtensions())
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	canUse := usedProviders.TryLockSelection(ctx)
+	require.NoError(t, ctx.Err())
+	require.Nil(t, canUse)
+	require.Zero(t, usedProviders.CurrentlyUsed())
+	require.Zero(t, usedProviders.SessionsLatestBatch())
+	consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
+
+	// first node error
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+
+	// check first reply
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
+
+	resultsOk := relayProcessor.HasResults()
+	require.True(t, resultsOk)
+
+	requiredNodeResults := relayProcessor.HasRequiredNodeResults()
+	require.False(t, requiredNodeResults)
+
+	// verify that the archive is now forced
+	require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == extensionslib.ExtensionTypeArchive }))
+	require.True(t, lavaslices.Contains(relayPrivateData.Extensions, extensionslib.ExtensionTypeArchive))
+
+	// verify that the original extensions are still there
+	require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }))
+	require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName))
+
+	// verify that the header
+	require.NotContains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
+
+	// second node error
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+
+	// check first retry
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
+
+	resultsOk = relayProcessor.HasResults()
+	require.True(t, resultsOk)
+
+	requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+	require.False(t, requiredNodeResults)
+
+	// verify that the archive is now not in the extensions list
+	require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), relayArchiveExtensionEditor.matchManagedExtension), chainMsg.GetExtensions())
+	require.True(t, lavaslices.Contains(relayPrivateData.Extensions, extensionslib.ExtensionTypeArchive), relayPrivateData.Extensions)
+
+	// verify that the original extensions are still there
+	require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }), chainMsg.GetExtensions())
+	require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName), relayPrivateData.Extensions)
+
+	// verify that the header
+	require.NotContains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
 }
 
 func TestRelayProcessorHappyFlow(t *testing.T) {
@@ -144,358 +231,278 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 }
 
 func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
-	t.Run("retry_flow", func(t *testing.T) {
-		ctx := context.Background()
-		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Handle the incoming request and provide the desired response
-			w.WriteHeader(http.StatusOK)
-		})
-		specId := "LAV1"
-		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
-		if closeServer != nil {
-			defer closeServer()
-		}
-		require.NoError(t, err)
-		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
-
-		usedProviders, err := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
-		require.NoError(t, err)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
-		defer cancel()
-		canUse := usedProviders.TryLockSelection(ctx)
-		require.NoError(t, ctx.Err())
-		require.Nil(t, canUse)
-		require.Zero(t, usedProviders.CurrentlyUsed())
-		require.Zero(t, usedProviders.SessionsLatestBatch())
-		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, nil)
-		// check first reply
-		go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
-		resultsOk := relayProcessor.HasResults()
-		require.True(t, resultsOk)
-		requiredNodeResults := relayProcessor.HasRequiredNodeResults()
-		require.False(t, requiredNodeResults)
-		// check first retry
-		go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
-		resultsOk = relayProcessor.HasResults()
-		require.True(t, resultsOk)
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
-		require.False(t, requiredNodeResults)
-
-		// check first second retry
-		go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
-		resultsOk = relayProcessor.HasResults()
-		require.True(t, resultsOk)
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
-		require.True(t, requiredNodeResults)
-
-		// 2nd relay, same inputs
-		// check hash map flow:
-		chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-		require.NoError(t, err)
-		relayProcessor = NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
-		usedProviders, err = relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
-		require.NoError(t, err)
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
-		defer cancel()
-		canUse = usedProviders.TryLockSelection(ctx)
-		require.NoError(t, ctx.Err())
-		require.Nil(t, canUse)
-		require.Zero(t, usedProviders.CurrentlyUsed())
-		require.Zero(t, usedProviders.SessionsLatestBatch())
-		consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, nil)
-		// check first reply, this time we have hash in map, so we don't retry node errors.
-		go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
-		resultsOk = relayProcessor.HasResults()
-		require.True(t, resultsOk)
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
-		require.True(t, requiredNodeResults)
-
-		// 3nd relay, different inputs
-		// check hash map flow:
-		chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/18", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-		require.NoError(t, err)
-		relayProcessor = NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
-		usedProviders, err = relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
-		require.NoError(t, err)
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
-		defer cancel()
-		canUse = usedProviders.TryLockSelection(ctx)
-		require.NoError(t, ctx.Err())
-		require.Nil(t, canUse)
-		require.Zero(t, usedProviders.CurrentlyUsed())
-		require.Zero(t, usedProviders.SessionsLatestBatch())
-		consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, nil)
-		// check first reply, this time we have hash in map, so we don't retry node errors.
-		go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
-		resultsOk = relayProcessor.HasResults()
-		require.True(t, resultsOk)
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
-		// check our hashing mechanism works with different inputs
-		require.False(t, requiredNodeResults)
-
-		// 4th relay, same inputs, this time a successful relay, should remove the hash from the map
-		chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-		require.NoError(t, err)
-		relayProcessor = NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
-		usedProviders, err = relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
-		require.NoError(t, err)
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
-		defer cancel()
-		canUse = usedProviders.TryLockSelection(ctx)
-		require.NoError(t, ctx.Err())
-		require.Nil(t, canUse)
-		require.Zero(t, usedProviders.CurrentlyUsed())
-		require.Zero(t, usedProviders.SessionsLatestBatch())
-		consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, nil)
-		// check first reply, this time we have hash in map, so we don't retry node errors.
-		hash, err := relayProcessor.getInputMsgInfoHashString()
-		require.NoError(t, err)
-		require.True(t, relayProcessor.relayRetriesManager.CheckHashInCache(hash))
-		go sendSuccessResp(t, relayProcessor, "lava@test", time.Millisecond*5)
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
-		resultsOk = relayProcessor.HasResults()
-		require.True(t, resultsOk)
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
-		require.True(t, requiredNodeResults)
-
-		// A way for us to break early from sleep, just waiting up to 5 seconds and breaking as soon as the value we expect is there.
-		// After 5 seconds if its not there test will fail
-		for i := 0; i < 100; i++ {
-			if !relayProcessor.relayRetriesManager.CheckHashInCache(hash) {
-				break
-			}
-			time.Sleep(time.Millisecond * 50) // sleep up to 5 seconds
-		}
-		// after the sleep we should not have the hash anymore in the map as it was removed by a successful relay.
-		require.False(t, relayProcessor.relayRetriesManager.CheckHashInCache(hash))
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
 	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
 
-	t.Run("retry_flow_disabled", func(t *testing.T) {
-		ctx := context.Background()
-		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Handle the incoming request and provide the desired response
-			w.WriteHeader(http.StatusOK)
-		})
-		specId := "LAV1"
-		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
-		if closeServer != nil {
-			defer closeServer()
+	usedProviders, err := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
+	require.NoError(t, err)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+	defer cancel()
+	canUse := usedProviders.TryLockSelection(ctx)
+	require.NoError(t, ctx.Err())
+	require.Nil(t, canUse)
+	require.Zero(t, usedProviders.CurrentlyUsed())
+	require.Zero(t, usedProviders.SessionsLatestBatch())
+	consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
+	// check first reply
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
+	resultsOk := relayProcessor.HasResults()
+	require.True(t, resultsOk)
+	requiredNodeResults := relayProcessor.HasRequiredNodeResults()
+	require.False(t, requiredNodeResults)
+	// check first retry
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
+	resultsOk = relayProcessor.HasResults()
+	require.True(t, resultsOk)
+	requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+	require.False(t, requiredNodeResults)
+
+	// check first second retry
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
+	resultsOk = relayProcessor.HasResults()
+	require.True(t, resultsOk)
+	requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+	require.True(t, requiredNodeResults)
+
+	// 2nd relay, same inputs
+	// check hash map flow:
+	chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	relayProcessor = NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
+	usedProviders, err = relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
+	require.NoError(t, err)
+	ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
+	defer cancel()
+	canUse = usedProviders.TryLockSelection(ctx)
+	require.NoError(t, ctx.Err())
+	require.Nil(t, canUse)
+	require.Zero(t, usedProviders.CurrentlyUsed())
+	require.Zero(t, usedProviders.SessionsLatestBatch())
+	consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
+	// check first reply, this time we have hash in map, so we don't retry node errors.
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
+	resultsOk = relayProcessor.HasResults()
+	require.True(t, resultsOk)
+	requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+	require.True(t, requiredNodeResults)
+
+	// 3nd relay, different inputs
+	// check hash map flow:
+	chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/18", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	relayProcessor = NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
+	usedProviders, err = relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
+	require.NoError(t, err)
+	ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
+	defer cancel()
+	canUse = usedProviders.TryLockSelection(ctx)
+	require.NoError(t, ctx.Err())
+	require.Nil(t, canUse)
+	require.Zero(t, usedProviders.CurrentlyUsed())
+	require.Zero(t, usedProviders.SessionsLatestBatch())
+	consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
+	// check first reply, this time we have hash in map, so we don't retry node errors.
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
+	resultsOk = relayProcessor.HasResults()
+	require.True(t, resultsOk)
+	requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+	// check our hashing mechanism works with different inputs
+	require.False(t, requiredNodeResults)
+
+	// 4th relay, same inputs, this time a successful relay, should remove the hash from the map
+	chainMsg, err = chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	relayProcessor = NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
+	usedProviders, err = relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
+	require.NoError(t, err)
+	ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*10)
+	defer cancel()
+	canUse = usedProviders.TryLockSelection(ctx)
+	require.NoError(t, ctx.Err())
+	require.Nil(t, canUse)
+	require.Zero(t, usedProviders.CurrentlyUsed())
+	require.Zero(t, usedProviders.SessionsLatestBatch())
+	consumerSessionsMap = lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
+	// check first reply, this time we have hash in map, so we don't retry node errors.
+	hash, err := relayProcessor.getInputMsgInfoHashString()
+	require.NoError(t, err)
+	require.True(t, relayProcessor.relayRetriesManager.CheckHashInCache(hash))
+	go sendSuccessResp(t, relayProcessor, "lava@test", time.Millisecond*5)
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
+	resultsOk = relayProcessor.HasResults()
+	require.True(t, resultsOk)
+	requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+	require.True(t, requiredNodeResults)
+
+	// A way for us to break early from sleep, just waiting up to 5 seconds and breaking as soon as the value we expect is there.
+	// After 5 seconds if its not there test will fail
+	for i := 0; i < 100; i++ {
+		if !relayProcessor.relayRetriesManager.CheckHashInCache(hash) {
+			break
 		}
-		require.NoError(t, err)
-		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-		require.NoError(t, err)
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
-		relayProcessor.disableRelayRetry = true
-		usedProviders, err := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
-		require.NoError(t, err)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
-		defer cancel()
-		canUse := usedProviders.TryLockSelection(ctx)
-		require.NoError(t, ctx.Err())
-		require.Nil(t, canUse)
-		require.Zero(t, usedProviders.CurrentlyUsed())
-		require.Zero(t, usedProviders.SessionsLatestBatch())
-		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, nil)
-		// check first reply
-		go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
-		resultsOk := relayProcessor.HasResults()
-		require.True(t, resultsOk)
-		requiredNodeResults := relayProcessor.HasRequiredNodeResults()
-		require.True(t, requiredNodeResults)
+		time.Sleep(time.Millisecond * 50) // sleep up to 5 seconds
+	}
+	// after the sleep we should not have the hash anymore in the map as it was removed by a successful relay.
+	require.False(t, relayProcessor.relayRetriesManager.CheckHashInCache(hash))
+}
+
+func TestRelayProcessorNodeErrorRetryFlowDisabled(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
 	})
+	specId := "LAV1"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
+	require.NoError(t, err)
+	chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	relayProcessor := NewRelayProcessor(ctx, lavasession.NewDefaultUsedProvidersMap(nil), 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, nil, nil)
+	relayProcessor.disableRelayRetry = true
+	usedProviders, err := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
+	require.NoError(t, err)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+	defer cancel()
+	canUse := usedProviders.TryLockSelection(ctx)
+	require.NoError(t, ctx.Err())
+	require.Nil(t, canUse)
+	require.Zero(t, usedProviders.CurrentlyUsed())
+	require.Zero(t, usedProviders.SessionsLatestBatch())
+	consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
+	// check first reply
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
+	resultsOk := relayProcessor.HasResults()
+	require.True(t, resultsOk)
+	requiredNodeResults := relayProcessor.HasRequiredNodeResults()
+	require.True(t, requiredNodeResults)
+}
 
-	t.Run("retry_flow_with_force_archive__no_archive_message", func(t *testing.T) {
-		ctx := context.Background()
-		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Handle the incoming request and provide the desired response
-			w.WriteHeader(http.StatusOK)
-		})
-		specId := "NEAR"
-		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceJsonRPC, serverHandler, nil, "../../", nil)
-		if closeServer != nil {
-			defer closeServer()
-		}
-
-		testExtensionName := "banana"
-		require.NoError(t, err)
-		chainMsg, err := chainParser.ParseMsg("", []byte(paramsWithHash32Bits), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-		require.NoError(t, err)
-		chainMsg.SetExtension(&spectypes.Extension{Name: testExtensionName}) // add this extension to make sure it is not removed when we remove the archive extension
-
-		relayPrivateData := &pairingtypes.RelayPrivateData{Extensions: []string{testExtensionName}} // add this extension to make sure it is not removed when we remove the archive extension
-		archiveExtension := &spectypes.Extension{Name: extensionslib.ExtensionTypeArchive}
-		relayArchiveExtensionEditor := NewRelayExtensionManager(chainMsg, relayPrivateData, archiveExtension)
-		newUsedProvidersMap := map[string]*lavasession.UsedProviders{chainMsg.GetConcatenatedExtensions(): lavasession.NewUsedProviders(nil)}
-		relayProcessor := NewRelayProcessor(ctx, newUsedProvidersMap, 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, relayArchiveExtensionEditor, nil)
-
-		usedProviders, err := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
-		require.NoError(t, err)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
-		defer cancel()
-
-		canUse := usedProviders.TryLockSelection(ctx)
-		require.NoError(t, ctx.Err())
-		require.Nil(t, canUse)
-		require.Zero(t, usedProviders.CurrentlyUsed())
-		require.Zero(t, usedProviders.SessionsLatestBatch())
-		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, nil)
-
-		// first node error
-		go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
-
-		// check first reply
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
-
-		resultsOk := relayProcessor.HasResults()
-		require.True(t, resultsOk)
-
-		requiredNodeResults := relayProcessor.HasRequiredNodeResults()
-		require.False(t, requiredNodeResults)
-
-		// verify that the archive is now forced
-		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == extensionslib.ExtensionTypeArchive }))
-		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, extensionslib.ExtensionTypeArchive))
-
-		// verify that the original extensions are still there
-		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }))
-		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName))
-
-		// verify that the header
-		require.Contains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
-
-		// second node error
-		go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
-
-		// check first retry
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
-
-		resultsOk = relayProcessor.HasResults()
-		require.True(t, resultsOk)
-
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
-		require.False(t, requiredNodeResults)
-
-		// verify that the archive is now not in the extensions list
-		require.False(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), relayArchiveExtensionEditor.matchManagedExtension), chainMsg.GetExtensions())
-		require.False(t, lavaslices.Contains(relayPrivateData.Extensions, extensionslib.ExtensionTypeArchive), relayPrivateData.Extensions)
-
-		// verify that the original extensions are still there
-		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }), chainMsg.GetExtensions())
-		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName), relayPrivateData.Extensions)
-
-		// verify that the header
-		require.Contains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
+func TestRelayProcessorNodeErrorRetryFlowForceArchiveLaterNoArchiveMessage(t *testing.T) {
+	ctx := context.Background()
+	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Handle the incoming request and provide the desired response
+		w.WriteHeader(http.StatusOK)
 	})
+	specId := "NEAR"
+	chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceJsonRPC, serverHandler, nil, "../../", nil)
+	if closeServer != nil {
+		defer closeServer()
+	}
 
-	t.Run("retry_flow_with_force_archive_archive_message_already", func(t *testing.T) {
-		ctx := context.Background()
-		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Handle the incoming request and provide the desired response
-			w.WriteHeader(http.StatusOK)
-		})
-		specId := "NEAR"
-		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceJsonRPC, serverHandler, nil, "../../", nil)
-		if closeServer != nil {
-			defer closeServer()
-		}
+	testExtensionName := "banana"
+	require.NoError(t, err)
+	chainMsg, err := chainParser.ParseMsg("", []byte(paramsWithHash32Bits), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+	require.NoError(t, err)
+	chainMsg.SetExtension(&spectypes.Extension{Name: testExtensionName}) // add this extension to make sure it is not removed when we remove the archive extension
 
-		testExtensionName := "banana"
-		require.NoError(t, err)
-		chainMsg, err := chainParser.ParseMsg("", []byte(paramsWithHash32Bits), http.MethodPost, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
-		require.NoError(t, err)
-		chainMsg.SetExtension(&spectypes.Extension{Name: extensionslib.ExtensionTypeArchive})
-		chainMsg.SetExtension(&spectypes.Extension{Name: testExtensionName}) // add this extension to make sure it is not removed when we remove the archive extension
+	relayPrivateData := &pairingtypes.RelayPrivateData{Extensions: []string{testExtensionName}} // add this extension to make sure it is not removed when we remove the archive extension
+	archiveExtension := &spectypes.Extension{Name: extensionslib.ExtensionTypeArchive}
+	relayExtensionManager := NewRelayExtensionManager(chainMsg, relayPrivateData, archiveExtension)
+	newUsedProvidersMap := map[string]*lavasession.UsedProviders{chainMsg.GetConcatenatedExtensions(): lavasession.NewUsedProviders(nil)}
+	relayProcessor := NewRelayProcessor(ctx, newUsedProvidersMap, 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, relayExtensionManager, nil)
 
-		relayPrivateData := &pairingtypes.RelayPrivateData{Extensions: []string{testExtensionName, extensionslib.ExtensionTypeArchive}} // add this extension to make sure it is not removed when we remove the archive extension
-		archiveExtension := &spectypes.Extension{Name: extensionslib.ExtensionTypeArchive}
-		relayArchiveExtensionEditor := NewRelayExtensionManager(chainMsg, relayPrivateData, archiveExtension)
-		newUsedProvidersMap := map[string]*lavasession.UsedProviders{chainMsg.GetConcatenatedExtensions(): lavasession.NewUsedProviders(nil)}
-		relayProcessor := NewRelayProcessor(ctx, newUsedProvidersMap, 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, relayArchiveExtensionEditor, nil)
+	usedProviders, err := relayProcessor.GetUsedProviders(chainMsg.GetConcatenatedExtensions())
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-		usedProviders, err := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
-		require.NoError(t, err)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
-		defer cancel()
+	canUse := usedProviders.TryLockSelection(ctx)
+	require.NoError(t, ctx.Err())
+	require.Nil(t, canUse)
+	require.Zero(t, usedProviders.CurrentlyUsed())
+	require.Zero(t, usedProviders.SessionsLatestBatch())
+	consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+	usedProviders.AddUsed(consumerSessionsMap, nil)
 
-		canUse := usedProviders.TryLockSelection(ctx)
-		require.NoError(t, ctx.Err())
-		require.Nil(t, canUse)
-		require.Zero(t, usedProviders.CurrentlyUsed())
-		require.Zero(t, usedProviders.SessionsLatestBatch())
-		consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
-		usedProviders.AddUsed(consumerSessionsMap, nil)
+	// first node error
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
 
-		// first node error
-		go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+	// check first reply
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
 
-		// check first reply
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
+	resultsOk := relayProcessor.HasResults()
+	require.True(t, resultsOk)
 
-		resultsOk := relayProcessor.HasResults()
-		require.True(t, resultsOk)
+	requiredNodeResults := relayProcessor.HasRequiredNodeResults()
+	require.False(t, requiredNodeResults)
 
-		requiredNodeResults := relayProcessor.HasRequiredNodeResults()
-		require.False(t, requiredNodeResults)
+	// verify that the archive is now forced
+	require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == extensionslib.ExtensionTypeArchive }))
+	require.True(t, lavaslices.Contains(relayPrivateData.Extensions, extensionslib.ExtensionTypeArchive))
 
-		// verify that the archive is now forced
-		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == extensionslib.ExtensionTypeArchive }))
-		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, extensionslib.ExtensionTypeArchive))
+	// verify that the original extensions are still there
+	require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }))
+	require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName))
 
-		// verify that the original extensions are still there
-		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }))
-		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName))
+	// verify that the header
+	require.Contains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
 
-		// verify that the header
-		require.NotContains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
+	// second node error
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
 
-		// second node error
-		go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+	// check first retry
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
 
-		// check first retry
-		err = relayProcessor.WaitForResults(context.Background())
-		require.NoError(t, err)
+	resultsOk = relayProcessor.HasResults()
+	require.True(t, resultsOk)
 
-		resultsOk = relayProcessor.HasResults()
-		require.True(t, resultsOk)
+	requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+	require.False(t, requiredNodeResults)
 
-		requiredNodeResults = relayProcessor.HasRequiredNodeResults()
-		require.False(t, requiredNodeResults)
+	// verify that the archive is now not in the extensions list
+	require.False(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), relayExtensionManager.matchManagedExtension), chainMsg.GetExtensions())
+	require.False(t, lavaslices.Contains(relayPrivateData.Extensions, extensionslib.ExtensionTypeArchive), relayPrivateData.Extensions)
 
-		// verify that the archive is now not in the extensions list
-		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), relayArchiveExtensionEditor.matchManagedExtension), chainMsg.GetExtensions())
-		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, extensionslib.ExtensionTypeArchive), relayPrivateData.Extensions)
+	// verify that the original extensions are still there
+	require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }), chainMsg.GetExtensions())
+	require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName), relayPrivateData.Extensions)
 
-		// verify that the original extensions are still there
-		require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), func(ext *spectypes.Extension) bool { return ext.Name == testExtensionName }), chainMsg.GetExtensions())
-		require.True(t, lavaslices.Contains(relayPrivateData.Extensions, testExtensionName), relayPrivateData.Extensions)
+	// verify that the header
+	require.Contains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
 
-		// verify that the header
-		require.NotContains(t, relayProcessor.GetUserHeaders(), pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: extensionslib.ExtensionTypeArchive})
-	})
+	// third node error
+	go sendNodeError(t, relayProcessor, "lava@test", time.Millisecond*5)
+	// check third retry
+	err = relayProcessor.WaitForResults(context.Background())
+	require.NoError(t, err)
+	// should have enough results now.
+	requiredNodeResults = relayProcessor.HasRequiredNodeResults()
+	require.True(t, requiredNodeResults)
 }
 
 func TestRelayProcessorTimeout(t *testing.T) {

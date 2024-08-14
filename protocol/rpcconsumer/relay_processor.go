@@ -395,15 +395,17 @@ func (rp *RelayProcessor) forceManagedExtensionIfNeededInner() {
 		// First retry will use managed extension.
 		// Second retry will turn off managed extension and try again until retry attempts are exhausted
 
-		numberOfRetriesHappened := len(rp.nodeResponseErrors.relayErrors)
+		numberOfRetriesHappened := len(rp.nodeResponseErrors.relayErrors) - 1
 		if numberOfRetriesHappened < NumberOfRetriesAllowedOnNodeErrorsForArchiveExtension {
 			// If we have a hash and we are not in archive mode, we can retry with archive node
 			rp.relayExtensionManager.SetManagedExtension()
 			managedExtension := rp.relayExtensionManager.GetManagedExtensionName()
+			// after adding the extension we can use the new extension key for the used providers map.
+			extensionsKey := rp.chainMessage.GetConcatenatedExtensions()
 			rp.userReturnHeaders = append(rp.userReturnHeaders, pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: managedExtension})
 			// Add used providers for extension
-			if _, ok := rp.usedProviders[managedExtension]; !ok {
-				rp.usedProviders[managedExtension] = lavasession.NewUsedProviders(rp.directiveHeaders)
+			if _, ok := rp.usedProviders[extensionsKey]; !ok {
+				rp.usedProviders[extensionsKey] = lavasession.NewUsedProviders(rp.directiveHeaders)
 			}
 		} else if numberOfRetriesHappened == NumberOfRetriesAllowedOnNodeErrorsForArchiveExtension {
 			// We already tried extension node, we can reset the flag and try a regular node again.
