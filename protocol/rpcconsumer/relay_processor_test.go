@@ -62,8 +62,8 @@ func sendSuccessResp(t *testing.T, relayProcessor *RelayProcessor, provider stri
 
 func sendProtocolError(t *testing.T, relayProcessor *RelayProcessor, provider string, delay time.Duration, err error) {
 	time.Sleep(delay)
-	usedProviders, err := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
-	require.NoError(t, err)
+	usedProviders, errGet := relayProcessor.GetUsedProviders(lavasession.DefaultExtensionsKey)
+	require.NoError(t, errGet)
 	usedProviders.RemoveUsed(provider, nil)
 	response := &relayResponse{
 		relayResult: common.RelayResult{
