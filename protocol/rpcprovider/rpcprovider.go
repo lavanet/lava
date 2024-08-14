@@ -500,8 +500,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	return nil
 }
 
-func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
-	err = viper_endpoints.UnmarshalKey(common.EndpointsConfigName, &endpoints)
+func ParseEndpointsCustomName(viper_endpoints *viper.Viper, endpointsConfigName string, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
+	err = viper_endpoints.UnmarshalKey(endpointsConfigName, &endpoints)
 	if err != nil {
 		utils.LavaFormatFatal("could not unmarshal endpoints", err, utils.Attribute{Key: "viper_endpoints", Value: viper_endpoints.AllSettings()})
 	}
@@ -509,6 +509,10 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 		endpoint.Geolocation = geolocation
 	}
 	return
+}
+
+func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
+	return ParseEndpointsCustomName(viper_endpoints, common.EndpointsConfigName, geolocation)
 }
 
 func CreateRPCProviderCobraCommand() *cobra.Command {

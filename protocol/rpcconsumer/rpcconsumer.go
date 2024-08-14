@@ -24,6 +24,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/metrics"
 	"github.com/lavanet/lava/v2/protocol/performance"
 	"github.com/lavanet/lava/v2/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v2/protocol/rpcprovider"
 	"github.com/lavanet/lava/v2/protocol/statetracker"
 	"github.com/lavanet/lava/v2/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v2/protocol/upgrade"
@@ -89,7 +90,7 @@ func (s *strategyValue) Type() string {
 
 type ConsumerStateTrackerInf interface {
 	RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf)
-	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager)
+	RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProvidersList []*lavasession.RPCProviderEndpoint)
 	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
 	RegisterFinalizationConsensusForUpdates(context.Context, *finalizationconsensus.FinalizationConsensus)
 	RegisterForDowntimeParamsUpdates(ctx context.Context, downtimeParamsUpdatable updaters.DowntimeParamsUpdatable) error
@@ -121,6 +122,7 @@ type rpcConsumerStartOptions struct {
 	cmdFlags                  common.ConsumerCmdFlags
 	stateShare                bool
 	refererData               *chainlib.RefererData
+	staticProvidersList       []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -287,7 +289,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
 			// Register For Updates
-			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager)
+			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList)
 
 			var relaysMonitor *metrics.RelaysMonitor
 			if options.cmdFlags.RelaysHealthEnableFlag {
@@ -505,6 +507,17 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			if gasPricesStr == "" {
 				gasPricesStr = statetracker.DefaultGasPrice
 			}
+
+			// check if StaticProvidersConfigName exists in viper, if it does parse it with ParseStaticProvider function
+			var staticProviderEndpoints []*lavasession.RPCProviderEndpoint
+			if viper.IsSet(common.StaticProvidersConfigName) {
+				_, err = rpcprovider.ParseEndpointsCustomName(viper.GetViper(), common.StaticProvidersConfigName, geolocation)
+				if err != nil {
+					return utils.LavaFormatError("invalid static providers definition", err)
+				}
+			}
+
+			// set up the txFactory with gas adjustments and gas
 			txFactory = txFactory.WithGasAdjustment(viper.GetFloat64(flags.FlagGasAdjustment))
 			txFactory = txFactory.WithGasPrices(gasPricesStr)
 			utils.LavaFormatInfo("Setting gas for tx Factory", utils.LogAttr("gas-prices", gasPricesStr), utils.LogAttr("gas-adjustment", txFactory.GasAdjustment()))
@@ -560,7 +573,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
-			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags, rpcConsumerSharedState, refererData})
+			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags, rpcConsumerSharedState, refererData, staticProviderEndpoints})
 			return err
 		},
 	}
