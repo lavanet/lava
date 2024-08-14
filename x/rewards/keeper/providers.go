@@ -260,13 +260,13 @@ func (k Keeper) CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Cont
 
 // CalculateContributionPercentages calculates the providers' rewards participation to the validators and community pool
 func (k Keeper) CalculateContributionPercentages(ctx sdk.Context, reward math.Int) (validatorsParticipation math.LegacyDec, communityParticipation math.LegacyDec, err error) {
-	communityTax := k.distributionKeeper.GetParams(ctx).CommunityTax
+	communityTax := k.GetCommunityTax(ctx)
 	if communityTax.Equal(sdk.OneDec()) {
 		return sdk.ZeroDec(), sdk.OneDec(), nil
 	}
 
 	// validators_participation = validators_participation_param / (1-community_tax)
-	validatorsParticipationParam := k.GetCommunityTax(ctx)
+	validatorsParticipationParam := k.GetParams(ctx).ValidatorsSubscriptionParticipation
 	validatorsParticipation = validatorsParticipationParam.Quo(sdk.OneDec().Sub(communityTax))
 	if validatorsParticipation.GT(sdk.OneDec()) {
 		return sdk.ZeroDec(), sdk.ZeroDec(), utils.LavaFormatError("validators participation bigger than 100%", fmt.Errorf("validators participation calc failed"),
