@@ -48,7 +48,7 @@ func (wbd *WantedBlocksData) New(fromBlock, toBlock, specificBlock, latestBlock,
 			toBlockArg := fromBlockArg // [from,to] with only one block
 			wbd.specificBlock, err = NewBlockRange(fromBlockArg, toBlockArg, earliestBlockSaved, latestBlock)
 			if err != nil {
-				return InvalidRequestedSpecificBlock.Wrapf("specific " + err.Error())
+				return InvalidRequestedSpecificBlock.Wrapf("specific %s", err.Error())
 			}
 		}
 	} else {
