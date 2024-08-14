@@ -175,7 +175,6 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 			cacheReply.SeenBlock = relayCacheGet.SeenBlock
 		}
 		cacheReply.BlocksHashesToHeights = blockHashes
-
 	} else {
 		// set the error so cache miss will trigger.
 		retError = utils.LavaFormatDebug("Requested block is invalid",
