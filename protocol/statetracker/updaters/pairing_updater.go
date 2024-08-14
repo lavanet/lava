@@ -195,7 +195,7 @@ func (pu *PairingUpdater) addStaticProvidersToPairingList(pairingList map[uint64
 			endpoints,
 			math.MaxUint64/2,
 			epoch,
-			sdk.NewInt64Coin("ulava", 1000000000000000), //1b LAVA
+			sdk.NewInt64Coin("ulava", 1000000000000000), // 1b LAVA
 		)
 		staticProviderEntry.StaticProvider = true
 		pairingList[startIdx+uint64(idx)] = staticProviderEntry
