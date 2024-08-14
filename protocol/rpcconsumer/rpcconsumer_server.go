@@ -233,7 +233,11 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 		err = rpccs.sendRelayToProvider(ctx, chainMessage, relay, "-init-", "", relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
-			relayProcessor.GetUsedProviders(extensionsKey).ClearUnwanted()
+			usedProviders, err := relayProcessor.GetUsedProviders(extensionsKey)
+			if err != nil {
+				return success, utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
+			}
+			usedProviders.ClearUnwanted()
 
 			err = rpccs.sendRelayToProvider(ctx, chainMessage, relay, "-init-", "", relayProcessor, nil)
 		}
@@ -416,10 +420,10 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	var relayArchiveExtensionEditor *RelayArchiveExtensionEditor
+	var relayArchiveExtensionEditor *ArchiveMessageManager
 	archiveExtension := rpccs.chainParser.ExtensionsParser().GetExtensionByName(extensionslib.ExtensionTypeArchive)
 	if archiveExtension != nil { // archive extension is configured
-		relayArchiveExtensionEditor = NewRelayArchiveExtensionEditor(chainMessage, relayRequestData, archiveExtension)
+		relayArchiveExtensionEditor = NewArchiveMessageManager(chainMessage, relayRequestData, archiveExtension)
 	}
 
 	newUsedProvidersMap := map[string]*lavasession.UsedProviders{chainMessage.GetConcatenatedExtensions(): lavasession.NewUsedProviders(directiveHeaders)}
@@ -489,7 +493,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, directiveH
 		currentlyUsedIsEmptyCounter := 0
 		if err != nil {
 			for validateNoProvidersAreUsed := 0; validateNoProvidersAreUsed < numberOfTimesToCheckCurrentlyUsedIsEmpty; validateNoProvidersAreUsed++ {
-				if relayProcessor.GetUsedProviders(chainMessage.GetConcatenatedExtensions()).CurrentlyUsed() == 0 {
+				if relayProcessor.GetAllCurrentlyUsedProviders() == 0 {
 					currentlyUsedIsEmptyCounter++
 				}
 				time.Sleep(5 * time.Millisecond)
@@ -689,9 +693,12 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// consumerEmergencyTracker always use latest virtual epoch
 	virtualEpoch := rpccs.consumerTxSender.GetLatestVirtualEpoch()
 	addon := chainlib.GetAddon(chainMessage)
-	reqBlock = rpccs.resolveRequestedBlockAndUpdateToArchiveIfNeeded(reqBlock, relayRequestData, earliestRequestedBlock, addon, relayProcessor)
+	reqBlock = rpccs.resolveRequestedBlockAndUpdateExtensionIfNeeded(reqBlock, relayRequestData, earliestRequestedBlock, addon, relayProcessor)
 	extensions := chainMessage.GetExtensions()
-	usedProviders := relayProcessor.GetUsedProviders(chainMessage.GetConcatenatedExtensions())
+	usedProviders, err := relayProcessor.GetUsedProviders(chainMessage.GetConcatenatedExtensions())
+	if err != nil {
+		return err
+	}
 	sessions, err := rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(chainMessage), usedProviders, reqBlock, addon, extensions, chainlib.GetStateful(chainMessage), virtualEpoch)
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
@@ -919,7 +926,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 							blockHashesToHeights = rpccs.newBlocksHashesToHeightsSliceFromFinalizationConsensus(finalizedBlockHashesObj)
 						}
 
-						blockHashesToHeights = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, relayProcessor, chainMessage, blockHashesToHeights, latestBlock)
+						blockHashesToHeights = rpccs.updateBlocksHashesToHeightsIfNeeded(extensions, chainMessage, blockHashesToHeights, latestBlock)
 
 						new_ctx := context.Background()
 						new_ctx, cancel := context.WithTimeout(new_ctx, common.DataReliabilityTimeoutIncrease)
@@ -952,26 +959,28 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	return nil
 }
 
-func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, relayProcessor *RelayProcessor, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64) []*pairingtypes.BlockHashToHeight {
+func (rpccs *RPCConsumerServer) updateBlocksHashesToHeightsIfNeeded(extensions []*spectypes.Extension, chainMessage chainlib.ChainMessage, blockHashesToHeights []*pairingtypes.BlockHashToHeight, latestBlock int64) []*pairingtypes.BlockHashToHeight {
 	// This function will add the requested block hash with the height of the block that will force it to be archive on the following conditions:
 	// 1. The current extension is archive.
-	// 2. The current retry is archive.
-	// 3. The user requested a single block hash.
-	// 4. The archive extension rule is set.
+	// 2. The user requested a single block hash.
+	// 3. The archive extension rule is set.
 
 	predicate := func(ext *spectypes.Extension) bool { return ext.Name == extensionslib.ExtensionTypeArchive }
 	isCurrentlyArchiveExtension := lavaslices.ContainsPredicate(extensions, predicate)
-	isCurrentRetryIsArchive := relayProcessor.IsCurrentRelayRetryIsArchive()
 	requestedBlocksHashes := chainMessage.GetRequestedBlocksHashes()
 	isUserRequestedSingleBlocksHashes := len(requestedBlocksHashes) == 1
 	archiveExtension := rpccs.chainParser.ExtensionsParser().GetExtensionByName(extensionslib.ExtensionTypeArchive)
 
-	if isCurrentlyArchiveExtension && isCurrentRetryIsArchive && isUserRequestedSingleBlocksHashes && archiveExtension != nil && archiveExtension.Rule != nil {
+	if isCurrentlyArchiveExtension && isUserRequestedSingleBlocksHashes && archiveExtension != nil && archiveExtension.Rule != nil {
 		ruleBlock := int64(archiveExtension.Rule.Block)
-		if ruleBlock > 0 {
+		if ruleBlock >= 0 {
+			height := latestBlock - ruleBlock - 1
+			if height < 0 {
+				height = 0
+			}
 			blockHashesToHeights = append(blockHashesToHeights, &pairingtypes.BlockHashToHeight{
 				Hash:   requestedBlocksHashes[0],
-				Height: latestBlock - ruleBlock - 1,
+				Height: height,
 			})
 		}
 	}
@@ -995,21 +1004,18 @@ func (rpccs *RPCConsumerServer) newBlocksHashesToHeightsSliceFromFinalizationCon
 	return blocksHashesToHeights
 }
 
-func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateToArchiveIfNeeded(reqBlock int64, relayRequestData *pairingtypes.RelayPrivateData, earliestRequestedBlock int64, addon string, relayProcessor *RelayProcessor) int64 {
+func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateExtensionIfNeeded(reqBlock int64, relayRequestData *pairingtypes.RelayPrivateData, earliestRequestedBlock int64, addon string, relayProcessor *RelayProcessor) int64 {
 	if reqBlock == spectypes.LATEST_BLOCK && relayRequestData.SeenBlock != 0 {
 		// make optimizer select a provider that is likely to have the latest seen block
 		reqBlock = relayRequestData.SeenBlock
-		if earliestRequestedBlock >= 0 && earliestRequestedBlock < reqBlock {
-			reqBlock = earliestRequestedBlock
-
+		if earliestRequestedBlock >= 0 {
 			// set archive extension if the new requested block is passing archive rule.
 			// since we can't really change the requested block in the chain message, we create a wrapping class here that returns reqBlock here.
 			// that way, we can still set the extension in the chain message, even though it doesn't match the actual requested block inside the chain message.
-			overriddenChainMessageWithReqBlock := extensionslib.NewEarliestOverriddenExtensionChainMessage(reqBlock, func(extension *spectypes.Extension) {
+			overriddenChainMessageWithReqBlock := extensionslib.NewEarliestOverriddenExtensionChainMessage(earliestRequestedBlock, func(extension *spectypes.Extension) {
 				relayProcessor.SetArchiveExtensionAsOriginal()
 			})
-
-			rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, overriddenChainMessageWithReqBlock, rpccs.getLatestBlock())
+			rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, overriddenChainMessageWithReqBlock, uint64(relayRequestData.SeenBlock))
 		}
 	}
 	return reqBlock
@@ -1319,7 +1325,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, dappID string, consumerIp string, chainMessage chainlib.ChainMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor, directiveHeaders map[string]string) error {
 	processingTimeout, expectedRelayTimeout := rpccs.getProcessingTimeout(chainMessage)
 	// Wait another relayTimeout duration to maybe get additional relay results
-	if relayProcessor.GetUsedProviders(chainMessage.GetConcatenatedExtensions()).CurrentlyUsed() > 0 {
+	if relayProcessor.GetAllCurrentlyUsedProviders() > 0 {
 		time.Sleep(expectedRelayTimeout)
 	}
 
@@ -1515,7 +1521,7 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 
 	_, debugRelays := directiveHeaders[common.LAVA_DEBUG_RELAY]
 	if debugRelays {
-		erroredProviders := relayProcessor.GetUsedProviders(chainMessage.GetConcatenatedExtensions()).GetErroredProviders()
+		erroredProviders := relayProcessor.GetAllErroredProviders()
 		if len(erroredProviders) > 0 {
 			erroredProvidersArray := make([]string, len(erroredProviders))
 			idx := 0

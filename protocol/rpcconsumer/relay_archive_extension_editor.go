@@ -8,19 +8,18 @@ import (
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
-type RelayArchiveExtensionEditor struct {
+type ArchiveMessageManager struct {
 	chainMessage     chainlib.ChainMessage
 	relayRequestData *pairingtypes.RelayPrivateData
 
 	originalChainMessageHadArchive     bool
 	originalRelayRequestDataHadArchive bool
 	originalRelayRequestDataExtensions []string
-
-	archiveExtensions *spectypes.Extension
+	archiveExtensions                  *spectypes.Extension
 }
 
-func NewRelayArchiveExtensionEditor(chainMessage chainlib.ChainMessage, relayRequestData *pairingtypes.RelayPrivateData, archiveExtensions *spectypes.Extension) *RelayArchiveExtensionEditor {
-	newMessageArchiveExtensionEditor := &RelayArchiveExtensionEditor{
+func NewArchiveMessageManager(chainMessage chainlib.ChainMessage, relayRequestData *pairingtypes.RelayPrivateData, archiveExtensions *spectypes.Extension) *ArchiveMessageManager {
+	archiveMessageManager := &ArchiveMessageManager{
 		chainMessage:                       chainMessage,
 		relayRequestData:                   relayRequestData,
 		originalChainMessageHadArchive:     false,
@@ -30,51 +29,51 @@ func NewRelayArchiveExtensionEditor(chainMessage chainlib.ChainMessage, relayReq
 	}
 
 	if lavaslices.ContainsPredicate(chainMessage.GetExtensions(), isArchiveExtension) {
-		newMessageArchiveExtensionEditor.originalChainMessageHadArchive = true
+		archiveMessageManager.originalChainMessageHadArchive = true
 	}
 
 	if lavaslices.Contains(relayRequestData.Extensions, extensionslib.ExtensionTypeArchive) {
-		newMessageArchiveExtensionEditor.originalRelayRequestDataHadArchive = true
+		archiveMessageManager.originalRelayRequestDataHadArchive = true
 	}
 
-	return newMessageArchiveExtensionEditor
+	return archiveMessageManager
 }
 
 func isArchiveExtension(extension *spectypes.Extension) bool {
 	return extension.Name == extensionslib.ExtensionTypeArchive
 }
 
-func (raee *RelayArchiveExtensionEditor) SetArchiveExtensionAsOriginal() {
-	raee.AddArchiveExtensionToMessage()
+func (rmm *ArchiveMessageManager) SetArchiveExtensionAsOriginal() {
+	rmm.AddArchiveExtensionToMessage()
 
-	if !raee.originalRelayRequestDataHadArchive {
-		raee.relayRequestData.Extensions = append(raee.relayRequestData.Extensions, extensionslib.ExtensionTypeArchive)
+	if !rmm.originalRelayRequestDataHadArchive {
+		rmm.relayRequestData.Extensions = append(rmm.relayRequestData.Extensions, extensionslib.ExtensionTypeArchive)
 	}
 
-	raee.originalChainMessageHadArchive = true
-	raee.originalRelayRequestDataHadArchive = true
+	rmm.originalChainMessageHadArchive = true
+	rmm.originalRelayRequestDataHadArchive = true
 }
 
-func (raee *RelayArchiveExtensionEditor) IsOriginallyArchiveExtension() bool {
-	return raee.originalChainMessageHadArchive || raee.originalRelayRequestDataHadArchive
+func (rmm *ArchiveMessageManager) IsOriginallyArchiveExtension() bool {
+	return rmm.originalChainMessageHadArchive || rmm.originalRelayRequestDataHadArchive
 }
 
-func (raee *RelayArchiveExtensionEditor) AddArchiveExtensionToMessage() {
-	if !raee.originalRelayRequestDataHadArchive {
-		raee.relayRequestData.Extensions = append(raee.relayRequestData.Extensions, extensionslib.ExtensionTypeArchive)
+func (rmm *ArchiveMessageManager) AddArchiveExtensionToMessage() {
+	if !rmm.originalRelayRequestDataHadArchive {
+		rmm.relayRequestData.Extensions = append(rmm.relayRequestData.Extensions, extensionslib.ExtensionTypeArchive)
 	}
 
-	if !raee.originalChainMessageHadArchive {
-		raee.chainMessage.SetExtension(raee.archiveExtensions)
+	if !rmm.originalChainMessageHadArchive {
+		rmm.chainMessage.SetExtension(rmm.archiveExtensions)
 	}
 }
 
-func (raee *RelayArchiveExtensionEditor) RemoveArchiveExtensionFromMessage() {
-	if !raee.originalRelayRequestDataHadArchive {
-		raee.relayRequestData.Extensions = raee.originalRelayRequestDataExtensions
+func (rmm *ArchiveMessageManager) RemoveArchiveExtensionFromMessage() {
+	if !rmm.originalRelayRequestDataHadArchive {
+		rmm.relayRequestData.Extensions = rmm.originalRelayRequestDataExtensions
 	}
 
-	if !raee.originalChainMessageHadArchive {
-		raee.chainMessage.RemoveExtension(raee.archiveExtensions.Name)
+	if !rmm.originalChainMessageHadArchive {
+		rmm.chainMessage.RemoveExtension(rmm.archiveExtensions.Name)
 	}
 }

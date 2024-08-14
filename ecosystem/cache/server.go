@@ -46,7 +46,7 @@ const (
 
 type CacheServer struct {
 	finalizedCache                  *ristretto.Cache
-	tempCache                       *ristretto.Cache
+	tempCache                       *ristretto.Cache // cache for temporary inputs, such as latest blocks
 	blocksHashesToHeightsCache      *ristretto.Cache
 	ExpirationFinalized             time.Duration
 	ExpirationNonFinalized          time.Duration
@@ -73,23 +73,21 @@ func (cs *CacheServer) InitCache(
 	cs.ExpirationNodeErrors = expirationNodeErrorsOnFinalized
 	cs.ExpirationBlocksHashesToHeights = time.Duration(float64(expirationBlocksHashesToHeights) * expirationBlocksHashesToHeightsMultiplier)
 
-	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
+	var err error
+	cs.tempCache, err = ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("could not create cache", err)
 	}
-	cs.tempCache = cache
 
-	cache, err = ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
+	cs.finalizedCache, err = ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("could not create finalized cache", err)
 	}
-	cs.finalizedCache = cache
 
-	cache, err = ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
+	cs.blocksHashesToHeightsCache, err = ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
 	if err != nil {
 		utils.LavaFormatFatal("could not create blocks hashes to heights cache", err)
 	}
-	cs.blocksHashesToHeightsCache = cache
 
 	// initialize prometheus
 	cs.CacheMetrics = NewCacheMetricsServer(metricsAddr)

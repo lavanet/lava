@@ -600,7 +600,7 @@ func TestCacheExpirationMultiplier(t *testing.T) {
 				cache.DefaultExpirationNodeErrors,
 				cache.DefaultExpirationBlocksHashesToHeights,
 				cache.DisabledFlagOption,
-				1,
+				cache.DefaultExpirationTimeFinalizedMultiplier,
 				tt.multiplier,
 				cache.DefaultExpirationBlocksHashesToHeightsMultiplier,
 			)

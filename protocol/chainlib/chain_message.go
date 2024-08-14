@@ -41,8 +41,10 @@ type baseChainMessageContainer struct {
 	resultErrorParsingMethod func(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 }
 
+// Used to create the key for used providers so all extensions are
+// always in the same order. e.g. "archive;ws"
 func (bcmc *baseChainMessageContainer) sortExtensions() {
-	if len(bcmc.extensions) == 0 {
+	if len(bcmc.extensions) <= 1 { // nothing to sort
 		return
 	}
 
@@ -174,15 +176,13 @@ func (bcmc *baseChainMessageContainer) OverrideExtensions(extensionNames []strin
 			if extension != nil {
 				bcmc.extensions = append(bcmc.extensions, extension)
 				bcmc.addExtensionCu(extension)
+				bcmc.sortExtensions()
 			}
 		}
 	}
-
-	bcmc.sortExtensions()
 }
 
 func (bcmc *baseChainMessageContainer) SetExtension(extension *spectypes.Extension) {
-	// TODO: Need locks?
 	if len(bcmc.extensions) > 0 {
 		for _, ext := range bcmc.extensions {
 			if ext.Name == extension.Name {
@@ -191,11 +191,11 @@ func (bcmc *baseChainMessageContainer) SetExtension(extension *spectypes.Extensi
 			}
 		}
 		bcmc.extensions = append(bcmc.extensions, extension)
+		bcmc.sortExtensions()
 	} else {
 		bcmc.extensions = []*spectypes.Extension{extension}
 	}
 	bcmc.addExtensionCu(extension)
-	bcmc.sortExtensions()
 }
 
 func (bcmc *baseChainMessageContainer) RemoveExtension(extensionName string) {

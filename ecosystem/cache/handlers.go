@@ -86,9 +86,8 @@ func (s *RelayerCacheServer) getSeenBlockForSharedStateMode(chainId string, shar
 }
 
 func (s *RelayerCacheServer) getBlockHeightsFromHashes(chainId string, hashes []*pairingtypes.BlockHashToHeight) []*pairingtypes.BlockHashToHeight {
-	var formattedKey string
 	for _, hashToHeight := range hashes {
-		formattedKey = s.formatChainIdWithHashKey(chainId, hashToHeight.Hash)
+		formattedKey := s.formatChainIdWithHashKey(chainId, hashToHeight.Hash)
 		value, found := getNonExpiredFromCache(s.CacheServer.blocksHashesToHeightsCache, formattedKey)
 		if found {
 			if cacheValue, ok := value.(int64); ok {
@@ -106,7 +105,6 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	var cacheReplyTmp *pairingtypes.CacheRelayReply
 	var err error
 	var seenBlock int64
-	blockHashesToHeights := make([]*pairingtypes.BlockHashToHeight, 0) // set empty array to avoid nil pointer exception
 
 	originalRequestedBlock := relayCacheGet.RequestedBlock // save requested block prior to swap
 	if originalRequestedBlock < 0 {                        // we need to fetch stored latest block information.
@@ -151,7 +149,7 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		// fetch block hashes
 		go func() {
 			defer waitGroup.Done()
-			blockHashesToHeights = s.getBlockHeightsFromHashes(relayCacheGet.ChainId, relayCacheGet.BlocksHashesToHeights)
+			cacheReply.BlocksHashesToHeights = s.getBlockHeightsFromHashes(relayCacheGet.ChainId, relayCacheGet.BlocksHashesToHeights)
 		}()
 
 		// wait for all reads to complete before moving forward
@@ -175,8 +173,6 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 			cacheReply.SeenBlock = relayCacheGet.SeenBlock
 		}
 
-		// set block hashes
-		cacheReply.BlocksHashesToHeights = blockHashesToHeights
 	} else {
 		// set the error so cache miss will trigger.
 		retError = utils.LavaFormatDebug("Requested block is invalid",
@@ -211,7 +207,7 @@ func (s *RelayerCacheServer) formatHashKey(hash []byte, parsedRequestedBlock int
 }
 
 func (s *RelayerCacheServer) formatChainIdWithHashKey(chainId, hash string) string {
-	return fmt.Sprintf("%s_%s", chainId, hash)
+	return chainId + "_" + hash
 }
 
 func (s *RelayerCacheServer) getRelayInner(relayCacheGet *pairingtypes.RelayCacheGet) (*pairingtypes.CacheRelayReply, error) {
@@ -291,12 +287,10 @@ func (s *RelayerCacheServer) setSeenBlockOnSharedStateMode(chainId, sharedStateI
 }
 
 func (s *RelayerCacheServer) setBlocksHashesToHeights(chainId string, blocksHashesToHeights []*pairingtypes.BlockHashToHeight) {
-	cache := s.CacheServer.blocksHashesToHeightsCache
-	var formattedKey string
 	for _, hashToHeight := range blocksHashesToHeights {
 		if hashToHeight.Height >= 0 {
-			formattedKey = s.formatChainIdWithHashKey(chainId, hashToHeight.Hash)
-			cache.SetWithTTL(formattedKey, hashToHeight.Height, 1, s.CacheServer.ExpirationBlocksHashesToHeights)
+			formattedKey := s.formatChainIdWithHashKey(chainId, hashToHeight.Hash)
+			s.CacheServer.blocksHashesToHeightsCache.SetWithTTL(formattedKey, hashToHeight.Height, 1, s.CacheServer.ExpirationBlocksHashesToHeights)
 		}
 	}
 }
