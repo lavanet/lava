@@ -80,9 +80,9 @@ func (ep *ExtensionParser) SetConfiguredExtensions(configuredExtensions map[Exte
 	ep.configuredExtensions = configuredExtensions
 }
 
-func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage ExtensionsChainMessage, latestBlock uint64) {
+func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage ExtensionsChainMessage, latestBlock uint64) bool {
 	if len(ep.configuredExtensions) == 0 {
-		return
+		return false
 	}
 
 	for extensionKey, extension := range ep.configuredExtensions {
@@ -93,8 +93,10 @@ func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage
 		extensionParserRule := NewExtensionParserRule(extension)
 		if extensionParserRule.isPassingRule(extensionsChainMessage, latestBlock) {
 			extensionsChainMessage.SetExtension(extension)
+			return true
 		}
 	}
+	return false
 }
 
 func NewExtensionParserRule(extension *spectypes.Extension) ExtensionParserRule {

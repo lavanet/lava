@@ -2,6 +2,7 @@ package rpcconsumer
 
 import (
 	"github.com/lavanet/lava/v2/protocol/chainlib"
+	common "github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/utils/lavaslices"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
@@ -21,12 +22,14 @@ func NewRelayExtensionManager(chainMessage chainlib.ChainMessage, relayRequestDa
 		relayRequestData: relayRequestData,
 		managedExtension: managedExtension,
 	}
-
-	if lavaslices.ContainsPredicate(chainMessage.GetExtensions(), relayExtensionManager.matchManagedExtension) {
-		relayExtensionManager.extensionWasActiveOriginally = true
-	}
-
+	relayExtensionManager.SetExtensionWasActiveOriginally()
 	return relayExtensionManager
+}
+
+func (rem *RelayExtensionManager) SetExtensionWasActiveOriginally() {
+	if lavaslices.ContainsPredicate(rem.chainMessage.GetExtensions(), rem.matchManagedExtension) {
+		rem.extensionWasActiveOriginally = true
+	}
 }
 
 func (rem *RelayExtensionManager) matchManagedExtension(extension *spectypes.Extension) bool {
@@ -49,9 +52,13 @@ func (rem *RelayExtensionManager) SetManagedExtension() {
 			utils.LogAttr("rem.relayRequestData.Extensions", rem.relayRequestData.Extensions),
 			utils.LogAttr("rem.managedExtension.Name", rem.managedExtension.Name),
 		)
-		return
 	}
-	rem.relayRequestData.Extensions = append(rem.relayRequestData.Extensions, rem.managedExtension.Name)
+	// reset extension names to currently supported extensions
+	rem.SetRelayDataExtensionsToChainMessageValues()
+}
+
+func (rem *RelayExtensionManager) SetRelayDataExtensionsToChainMessageValues() {
+	rem.relayRequestData.Extensions = common.GetExtensionNames(rem.chainMessage.GetExtensions())
 }
 
 func (rem *RelayExtensionManager) IsExtensionActiveByDefault() bool {
@@ -60,14 +67,14 @@ func (rem *RelayExtensionManager) IsExtensionActiveByDefault() bool {
 
 func (rem *RelayExtensionManager) RemoveManagedExtension() {
 	if !rem.extensionWasActiveOriginally {
-		var success bool
-		rem.relayRequestData.Extensions, success = lavaslices.Remove(rem.relayRequestData.Extensions, rem.managedExtension.Name)
-		if !success {
+		rem.chainMessage.RemoveExtension(rem.managedExtension.Name)
+		if !lavaslices.Contains(rem.relayRequestData.Extensions, rem.managedExtension.Name) {
 			utils.LavaFormatError("Asked to remove missing extension from relay request data", nil,
 				utils.LogAttr("rem.relayRequestData.Extensions", rem.relayRequestData.Extensions),
 				utils.LogAttr("rem.managedExtension.Name", rem.managedExtension.Name),
 			)
 		}
-		rem.chainMessage.RemoveExtension(rem.managedExtension.Name)
+		// reset extension names to currently supported extensions
+		rem.SetRelayDataExtensionsToChainMessageValues()
 	}
 }

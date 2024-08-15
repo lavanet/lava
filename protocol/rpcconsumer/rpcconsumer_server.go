@@ -743,6 +743,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			utils.LogAttr("addons", addon),
 			utils.LogAttr("extensions", extensions),
 			utils.LogAttr("AllowSessionDegradation", relayProcessor.GetAllowSessionDegradation()),
+			utils.LogAttr("relayRequestData_extensions", relayRequestData.Extensions),
 		)
 	}
 
@@ -1028,9 +1029,11 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateExtensionIfNeeded(
 		// change earliest requested block if applicable
 		success := chainMessage.CompareAndSwapEarliestRequestedBlockIfApplicable(earliestBlockHashRequested)
 		if success {
-			rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, chainMessage, uint64(relayRequestData.SeenBlock))
-			// check used providers and set new used providers if we don't have it in relayProcessor
-			relayProcessor.AddUsedProvidersIfNecessary()
+			rulePassed := rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, chainMessage, uint64(relayRequestData.SeenBlock))
+			if rulePassed {
+				// handle extension changes
+				relayProcessor.HandleExtensionChangesIfNecessary()
+			}
 		}
 	}
 	return reqBlock

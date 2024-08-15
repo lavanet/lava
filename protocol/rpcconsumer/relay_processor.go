@@ -116,12 +116,6 @@ func NewRelayProcessor(
 	}
 }
 
-func (rp *RelayProcessor) SetExtensions() {
-	rp.lock.Lock()
-	defer rp.lock.Unlock()
-	rp.relayExtensionManager.SetManagedExtension()
-}
-
 // true if we never got an extension. (default value)
 func (rp *RelayProcessor) GetAllowSessionDegradation() bool {
 	return atomic.LoadUint32(&rp.allowSessionDegradation) == 0
@@ -420,7 +414,16 @@ func (rp *RelayProcessor) addUsedProvidersIfNecessaryInner() {
 	}
 }
 
-func (rp *RelayProcessor) AddUsedProvidersIfNecessary() {
+func (rp *RelayProcessor) HandleExtensionChangesIfNecessary() {
+	// 1. add used providers key if necessary
+	// 2. reset relayData extensions to current chain message values
+	// 3. change the extension originally active status so we don't mess with it when we retry
+	rp.AddUsedProvidersKeyIfNecessary()
+	rp.relayExtensionManager.SetRelayDataExtensionsToChainMessageValues()
+	rp.relayExtensionManager.SetExtensionWasActiveOriginally()
+}
+
+func (rp *RelayProcessor) AddUsedProvidersKeyIfNecessary() {
 	rp.lock.Lock()
 	defer rp.lock.Unlock()
 	rp.addUsedProvidersIfNecessaryInner()
