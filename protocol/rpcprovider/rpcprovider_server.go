@@ -25,6 +25,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/metrics"
 	"github.com/lavanet/lava/v2/protocol/performance"
 	"github.com/lavanet/lava/v2/protocol/provideroptimizer"
+	rewardserver "github.com/lavanet/lava/v2/protocol/rpcprovider/rewardserver"
 	"github.com/lavanet/lava/v2/protocol/upgrade"
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/utils/lavaslices"
@@ -65,6 +66,7 @@ type RPCProviderServer struct {
 	relaysMonitor                   *metrics.RelaysMonitor
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	providerUniqueId                string
+	staticProvider                  bool
 }
 
 type ReliabilityManagerInf interface {
@@ -105,12 +107,18 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	providerMetrics *metrics.ProviderMetrics,
 	relaysMonitor *metrics.RelaysMonitor,
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager,
+	staticProvider bool,
 ) {
 	rpcps.cache = cache
 	rpcps.chainRouter = chainRouter
 	rpcps.privKey = privKey
 	rpcps.providerSessionManager = providerSessionManager
 	rpcps.reliabilityManager = reliabilityManager
+	if rewardServer == nil {
+		utils.LavaFormatError("disabled rewards for provider, reward server not defined", nil)
+		rewardServer = &rewardserver.DisabledRewardServer{}
+	}
+	rpcps.staticProvider = staticProvider
 	rpcps.rewardServer = rewardServer
 	rpcps.chainParser = chainParser
 	rpcps.rpcProviderEndpoint = rpcProviderEndpoint
@@ -220,6 +228,11 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 		reply, err = rpcps.TryRelay(ctx, request, consumerAddress, chainMessage)
 	}
 
+	// static provider doesnt handle sessions, so just return the response
+	if rpcps.staticProvider {
+		return reply, rpcps.handleRelayErrorStatus(err)
+	}
+
 	if err != nil || common.ContextOutOfTime(ctx) {
 		// failed to send relay. we need to adjust session state. cuSum and relayNumber.
 		relayFailureError := rpcps.providerSessionManager.OnSessionFailure(relaySession, request.RelaySession.RelayNum)
@@ -274,17 +287,18 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 }
 
 func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
-	relaySession, consumerAddress, err = rpcps.verifyRelaySession(ctx, request)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	defer func(relaySession *lavasession.SingleProviderSession) {
-		// if we error in here until PrepareSessionForUsage was called successfully we can't call OnSessionFailure
+	if !rpcps.staticProvider {
+		relaySession, consumerAddress, err = rpcps.verifyRelaySession(ctx, request)
 		if err != nil {
-			relaySession.DisbandSession()
+			return nil, nil, nil, err
 		}
-	}(relaySession) // lock in the session address
-
+		defer func(relaySession *lavasession.SingleProviderSession) {
+			// if we error in here until PrepareSessionForUsage was called successfully we can't call OnSessionFailure
+			if err != nil {
+				relaySession.DisbandSession()
+			}
+		}(relaySession) // lock in the session address
+	}
 	extensionInfo := extensionslib.ExtensionInfo{LatestBlock: 0, ExtensionOverride: request.RelayData.Extensions}
 	if extensionInfo.ExtensionOverride == nil { // in case consumer did not set an extension, we skip the extension parsing and we are sending it to the regular url
 		extensionInfo.ExtensionOverride = []string{}
@@ -293,6 +307,10 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 	chainMessage, err = rpcps.chainParser.ParseMsg(request.RelayData.ApiUrl, request.RelayData.Data, request.RelayData.ConnectionType, request.RelayData.GetMetadata(), extensionInfo)
 	if err != nil {
 		return nil, nil, nil, err
+	}
+	// we only need the chainMessage for a static provider
+	if rpcps.staticProvider {
+		return nil, nil, chainMessage, nil
 	}
 	relayCU := chainMessage.GetApi().ComputeUnits
 	virtualEpoch := rpcps.stateTracker.GetVirtualEpoch(uint64(request.RelaySession.Epoch))
