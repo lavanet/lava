@@ -173,17 +173,30 @@ func (rp *RelayProcessor) String() string {
 	return fmt.Sprintf("relayProcessor {results:%d, nodeErrors:%d, protocolErrors:%d, usedProviders:[%s]}", results, nodeErrors, protocolErrors, strings.Join(extensionNameToUsedProvidersLogs, ", "))
 }
 
+func (rp *RelayProcessor) getUsedProvidersInner(usedProvidersKey string) (*lavasession.UsedProviders, error) {
+	usedProviders, ok := rp.usedProviders[usedProvidersKey]
+	if !ok {
+		return nil, utils.LavaFormatError("usedProvidersKey was not found in used providers map, returning default", nil, utils.LogAttr("usedProvidersKey", usedProvidersKey))
+	}
+	return usedProviders, nil
+}
+
+func (rp *RelayProcessor) GetCurrentUsedProviders() (*lavasession.UsedProviders, error) {
+	if rp == nil {
+		return nil, utils.LavaFormatError("RelayProcessor.GetCurrentUsedProviders is nil, misuse detected", nil)
+	}
+	rp.lock.RLock()
+	defer rp.lock.RUnlock()
+	return rp.getUsedProvidersInner(rp.chainMessage.GetConcatenatedExtensions())
+}
+
 func (rp *RelayProcessor) GetUsedProviders(extension string) (*lavasession.UsedProviders, error) {
 	if rp == nil {
 		return nil, utils.LavaFormatError("RelayProcessor.GetUsedProviders is nil, misuse detected", nil)
 	}
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	usedProviders, ok := rp.usedProviders[extension]
-	if !ok {
-		return nil, utils.LavaFormatError("extension not found in used providers, returning default", nil, utils.LogAttr("extension", extension))
-	}
-	return usedProviders, nil
+	return rp.getUsedProvidersInner(extension)
 }
 
 func (rp *RelayProcessor) GetAllUsedProviderAddresses() []string {
@@ -399,6 +412,20 @@ func (rp *RelayProcessor) ForceManagedExtensionIfNeeded() {
 	rp.forceManagedExtensionIfNeededInner()
 }
 
+// used while locked
+func (rp *RelayProcessor) addUsedProvidersIfNecessaryInner() {
+	extensionsKey := rp.chainMessage.GetConcatenatedExtensions()
+	if _, ok := rp.usedProviders[extensionsKey]; !ok {
+		rp.usedProviders[extensionsKey] = lavasession.NewUsedProviders(rp.directiveHeaders)
+	}
+}
+
+func (rp *RelayProcessor) AddUsedProvidersIfNecessary() {
+	rp.lock.Lock()
+	defer rp.lock.Unlock()
+	rp.addUsedProvidersIfNecessaryInner()
+}
+
 func (rp *RelayProcessor) forceManagedExtensionIfNeededInner() {
 	if rp.relayExtensionManager == nil || rp.relayExtensionManager.IsExtensionActiveByDefault() {
 		// We don't have an extension updater or we already have an extension enabled by the user, we don't need to force it
@@ -416,12 +443,8 @@ func (rp *RelayProcessor) forceManagedExtensionIfNeededInner() {
 			rp.relayExtensionManager.SetManagedExtension()
 			managedExtension := rp.relayExtensionManager.GetManagedExtensionName()
 			// after adding the extension we can use the new extension key for the used providers map.
-			extensionsKey := rp.chainMessage.GetConcatenatedExtensions()
 			rp.userReturnHeaders = append(rp.userReturnHeaders, pairingtypes.Metadata{Name: common.LAVA_EXTENSION_FORCED, Value: managedExtension})
-			// Add used providers for extension
-			if _, ok := rp.usedProviders[extensionsKey]; !ok {
-				rp.usedProviders[extensionsKey] = lavasession.NewUsedProviders(rp.directiveHeaders)
-			}
+			rp.addUsedProvidersIfNecessaryInner()
 		} else if numberOfRetriesHappened == NumberOfRetriesAllowedOnNodeErrorsForArchiveExtension {
 			// We already tried extension node, we can reset the flag and try a regular node again.
 			rp.relayExtensionManager.RemoveManagedExtension()

@@ -705,7 +705,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	addon := chainlib.GetAddon(chainMessage)
 	reqBlock = rpccs.resolveRequestedBlockAndUpdateExtensionIfNeeded(reqBlock, relayRequestData, latestBlockHashRequested, earliestBlockHashRequested, addon, relayProcessor, chainMessage)
 	extensions := chainMessage.GetExtensions()
-	usedProviders, err := relayProcessor.GetUsedProviders(chainMessage.GetConcatenatedExtensions())
+	usedProviders, err := relayProcessor.GetCurrentUsedProviders()
 	if err != nil {
 		return err
 	}
@@ -1029,6 +1029,8 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateExtensionIfNeeded(
 		success := chainMessage.CompareAndSwapEarliestRequestedBlockIfApplicable(earliestBlockHashRequested)
 		if success {
 			rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, chainMessage, uint64(relayRequestData.SeenBlock))
+			// check used providers and set new used providers if we don't have it in relayProcessor
+			relayProcessor.AddUsedProvidersIfNecessary()
 		}
 	}
 	return reqBlock
