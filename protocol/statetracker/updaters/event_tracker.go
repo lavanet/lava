@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	debug            = false
 	BlockResultRetry = 20
 )
 
@@ -92,9 +91,9 @@ func (et *EventTracker) getLatestPaymentEvents() (payments []*rewardserver.Payme
 				if err != nil {
 					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event})
 				}
-				if debug {
-					utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
-				}
+
+				utils.LavaFormatTrace("relay_payment_event", utils.LogAttr("payment", paymentList))
+
 				payments = append(payments, paymentList...)
 			}
 		}

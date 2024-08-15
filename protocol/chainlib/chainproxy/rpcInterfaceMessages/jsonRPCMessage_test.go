@@ -119,6 +119,18 @@ func TestParseJsonRPCMsg(t *testing.T) {
 	}
 }
 
+func TestParseJsonRPCMissingId(t *testing.T) {
+	// Test Case 1: Valid JSON input
+	data := []byte(`{"jsonrpc": "2.0", "id": nil, "method": "getblock", "params": []}`)
+	_, err := ParseJsonRPCMsg(data)
+	require.Error(t, err, err)
+
+	data = []byte(`{"jsonrpc": "2.0", "method": "getblock", "params": []}`)
+	msg, err := ParseJsonRPCMsg(data)
+	require.NoError(t, err)
+	require.Equal(t, json.RawMessage([]byte("null")), msg[0].ID)
+}
+
 func TestParseJsonRPCBatch(t *testing.T) {
 	// Test Case 1: Valid JSON input
 	data := []byte(`[{"method":"eth_chainId","params":[],"id":1,"jsonrpc":"2.0"},{"method":"eth_accounts","params":[],"id":2,"jsonrpc":"2.0"},{"method":"eth_blockNumber","params":[],"id":3,"jsonrpc":"2.0"}]`)

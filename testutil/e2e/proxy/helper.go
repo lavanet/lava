@@ -39,11 +39,11 @@ func createProxyRequest(req *http.Request, hostURL, body string) (proxyRequest *
 	}
 	reqUrlStr, err := url.QueryUnescape(reqUrl.String())
 	if err != nil {
-		return nil, fmt.Errorf(" ::: XXX ::: Could not QueryUnescape new request ::: " + reqUrl.Host + dotsStr + err.Error())
+		return nil, fmt.Errorf(" ::: XXX ::: Could not QueryUnescape new request ::: %s%s%s", reqUrl.Host, dotsStr, err.Error())
 	}
 	proxyReq, err := http.NewRequest(req.Method, scheme+":"+reqUrlStr, strings.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf(" ::: XXX ::: Could not reproduce new request ::: " + reqUrl.Host + dotsStr + err.Error())
+		return nil, fmt.Errorf(" ::: XXX ::: Could not reproduce new request ::: %s%s%s", reqUrl.Host, dotsStr, err.Error())
 	}
 	proxyReq.Header.Set("Host", req.Host)
 	proxyReq.Header.Set("X-Forwarded-For", req.RemoteAddr)

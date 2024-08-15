@@ -15,6 +15,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMatchSpecApiByName(t *testing.T) {
@@ -399,5 +400,123 @@ func TestGetServiceApis(t *testing.T) {
 	// Test serverApis
 	if len(serverApis) != 3 {
 		t.Errorf("Expected serverApis length to be 3, but got %d", len(serverApis))
+	}
+}
+
+func TestCompareRequestedBlockInBatch(t *testing.T) {
+	playbook := []struct {
+		latest           int64
+		earliest         int64
+		parsed           int64
+		expectedLatest   int64
+		expectedEarliest int64
+	}{
+		{
+			latest:           spectypes.LATEST_BLOCK,
+			earliest:         spectypes.LATEST_BLOCK,
+			parsed:           spectypes.LATEST_BLOCK,
+			expectedLatest:   spectypes.LATEST_BLOCK,
+			expectedEarliest: spectypes.LATEST_BLOCK,
+		},
+		{
+			latest:           10,
+			earliest:         5,
+			parsed:           7,
+			expectedLatest:   10,
+			expectedEarliest: 5,
+		},
+		{
+			latest:           10,
+			earliest:         5,
+			parsed:           2,
+			expectedLatest:   10,
+			expectedEarliest: 2,
+		},
+		{
+			latest:           10,
+			earliest:         5,
+			parsed:           12,
+			expectedLatest:   12,
+			expectedEarliest: 5,
+		},
+		{
+			latest:           spectypes.LATEST_BLOCK,
+			earliest:         5,
+			parsed:           10,
+			expectedLatest:   spectypes.LATEST_BLOCK,
+			expectedEarliest: 5,
+		},
+		{
+			latest:           10,
+			earliest:         5,
+			parsed:           spectypes.LATEST_BLOCK,
+			expectedLatest:   spectypes.LATEST_BLOCK,
+			expectedEarliest: 5,
+		},
+		{
+			latest:           10,
+			earliest:         5,
+			parsed:           spectypes.LATEST_BLOCK,
+			expectedLatest:   spectypes.LATEST_BLOCK,
+			expectedEarliest: 5,
+		},
+		{
+			latest:           10,
+			earliest:         spectypes.EARLIEST_BLOCK,
+			parsed:           2,
+			expectedLatest:   10,
+			expectedEarliest: spectypes.EARLIEST_BLOCK,
+		},
+		{
+			latest:           10,
+			earliest:         5,
+			parsed:           spectypes.EARLIEST_BLOCK,
+			expectedLatest:   10,
+			expectedEarliest: spectypes.EARLIEST_BLOCK,
+		},
+		{
+			latest:           spectypes.LATEST_BLOCK,
+			earliest:         spectypes.EARLIEST_BLOCK,
+			parsed:           5,
+			expectedLatest:   spectypes.LATEST_BLOCK,
+			expectedEarliest: spectypes.EARLIEST_BLOCK,
+		},
+		{
+			latest:           spectypes.EARLIEST_BLOCK,
+			earliest:         spectypes.LATEST_BLOCK,
+			parsed:           5,
+			expectedLatest:   5,
+			expectedEarliest: 5,
+		},
+		{
+			latest:           spectypes.LATEST_BLOCK,
+			earliest:         spectypes.EARLIEST_BLOCK,
+			parsed:           spectypes.NOT_APPLICABLE,
+			expectedLatest:   spectypes.NOT_APPLICABLE,
+			expectedEarliest: spectypes.EARLIEST_BLOCK,
+		},
+		{
+			latest:           4,
+			earliest:         spectypes.EARLIEST_BLOCK,
+			parsed:           spectypes.NOT_APPLICABLE,
+			expectedLatest:   spectypes.NOT_APPLICABLE,
+			expectedEarliest: spectypes.EARLIEST_BLOCK,
+		},
+		{
+			latest:           4,
+			earliest:         2,
+			parsed:           spectypes.NOT_APPLICABLE,
+			expectedLatest:   spectypes.NOT_APPLICABLE,
+			expectedEarliest: spectypes.NOT_APPLICABLE,
+		},
+	}
+
+	for _, test := range playbook {
+		testName := fmt.Sprintf("latest=%d_earliest=%d_parsed=%d", test.latest, test.earliest, test.parsed)
+		t.Run(testName, func(t *testing.T) {
+			latest, earliest := CompareRequestedBlockInBatch(test.latest, test.earliest, test.parsed)
+			require.Equal(t, test.expectedLatest, latest, "latest")
+			require.Equal(t, test.expectedEarliest, earliest, "earliest")
+		})
 	}
 }
