@@ -205,6 +205,7 @@ func (*GrpcChainParser) newChainMessage(api *spectypes.Api, requestedBlock int64
 		apiCollection:            apiCollection,
 		resultErrorParsingMethod: grpcMessage.CheckResponseError,
 		parseDirective:           GetParseDirective(api, apiCollection),
+		earliestRequestedBlock:   spectypes.NOT_APPLICABLE,
 	}
 	return nodeMsg
 }

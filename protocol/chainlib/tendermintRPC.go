@@ -272,6 +272,7 @@ func (*TendermintChainParser) newChainMessage(serviceApi *spectypes.Api, request
 		msg:                      msg,
 		resultErrorParsingMethod: msg.CheckResponseError,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		earliestRequestedBlock:   spectypes.NOT_APPLICABLE,
 	}
 	return nodeMsg
 }

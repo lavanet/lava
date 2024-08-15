@@ -238,6 +238,7 @@ func (*JsonRPCChainParser) newChainMessage(serviceApi *spectypes.Api, requestedB
 		msg:                      msg,
 		resultErrorParsingMethod: msg.CheckResponseError,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),
+		earliestRequestedBlock:   spectypes.NOT_APPLICABLE,
 	}
 	return nodeMsg
 }

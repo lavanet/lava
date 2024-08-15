@@ -16,6 +16,7 @@ import (
 	common "github.com/lavanet/lava/v2/protocol/common"
 	finalizationconsensus "github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationconsensus"
 	lavasession "github.com/lavanet/lava/v2/protocol/lavasession"
+	statetracker "github.com/lavanet/lava/v2/protocol/statetracker"
 	updaters "github.com/lavanet/lava/v2/protocol/statetracker/updaters"
 	types "github.com/lavanet/lava/v2/x/conflict/types"
 	types0 "github.com/lavanet/lava/v2/x/plans/types"
@@ -129,7 +130,7 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterForDowntimeParamsUpda
 }
 
 // RegisterForSpecUpdates mocks base method.
-func (m *MockConsumerStateTrackerInf) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
+func (m *MockConsumerStateTrackerInf) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint, offlineSpecOptions *statetracker.OfflineSpecOptions) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterForSpecUpdates", ctx, specUpdatable, endpoint)
 	ret0, _ := ret[0].(error)

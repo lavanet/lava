@@ -14,6 +14,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/protocol/rpcprovider"
 	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v2/protocol/statetracker"
 	"github.com/lavanet/lava/v2/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v2/utils"
 	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
@@ -34,7 +35,7 @@ func (m *mockConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context
 func (m *mockConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
 }
 
-func (m *mockConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
+func (m *mockConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint, offlineSpecOptions *statetracker.OfflineSpecOptions) error {
 	return nil
 }
 

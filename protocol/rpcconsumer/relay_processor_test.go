@@ -121,9 +121,9 @@ func TestRelayProcessorNodeErrorRetryFlowForceArchiveMessageWhenInitialIsArchive
 
 	relayPrivateData := &pairingtypes.RelayPrivateData{Extensions: []string{testExtensionName, extensionslib.ExtensionTypeArchive}} // add this extension to make sure it is not removed when we remove the archive extension
 	archiveExtension := &spectypes.Extension{Name: extensionslib.ExtensionTypeArchive}
-	relayArchiveExtensionEditor := NewRelayExtensionManager(chainMsg, relayPrivateData, archiveExtension)
+	relayExtensionManager := NewRelayExtensionManager(chainMsg, relayPrivateData, archiveExtension)
 	newUsedProvidersMap := map[string]*lavasession.UsedProviders{chainMsg.GetConcatenatedExtensions(): lavasession.NewUsedProviders(nil)}
-	relayProcessor := NewRelayProcessor(ctx, newUsedProvidersMap, 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, relayArchiveExtensionEditor, nil)
+	relayProcessor := NewRelayProcessor(ctx, newUsedProvidersMap, 1, chainMsg, nil, "", "", false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance, relayExtensionManager, nil)
 
 	usedProviders, err := relayProcessor.GetUsedProviders(chainMsg.GetConcatenatedExtensions())
 	require.NoError(t, err)
@@ -176,7 +176,7 @@ func TestRelayProcessorNodeErrorRetryFlowForceArchiveMessageWhenInitialIsArchive
 	require.False(t, requiredNodeResults)
 
 	// verify that the archive is now not in the extensions list
-	require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), relayArchiveExtensionEditor.matchManagedExtension), chainMsg.GetExtensions())
+	require.True(t, lavaslices.ContainsPredicate(chainMsg.GetExtensions(), relayExtensionManager.matchManagedExtension), chainMsg.GetExtensions())
 	require.True(t, lavaslices.Contains(relayPrivateData.Extensions, extensionslib.ExtensionTypeArchive), relayPrivateData.Extensions)
 
 	// verify that the original extensions are still there

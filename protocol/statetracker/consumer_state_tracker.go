@@ -12,11 +12,17 @@ import (
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/protocol/metrics"
 	updaters "github.com/lavanet/lava/v2/protocol/statetracker/updaters"
+	specutils "github.com/lavanet/lava/v2/testutil/keeper"
 	"github.com/lavanet/lava/v2/utils"
 	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
 	plantypes "github.com/lavanet/lava/v2/x/plans/types"
 	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
 )
+
+type OfflineSpecOptions struct {
+	SpecId       string
+	SpecFilePath string
+}
 
 type ConsumerTxSenderInf interface {
 	TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error
@@ -118,7 +124,17 @@ func (cst *ConsumerStateTracker) TxConflictDetection(ctx context.Context, finali
 	return err
 }
 
-func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
+func (cst *ConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint, offlineSpecOptions *OfflineSpecOptions) error {
+	if offlineSpecOptions.SpecFilePath != "" {
+		parsedOfflineSpec, err := specutils.GetSpecFromPath(offlineSpecOptions.SpecFilePath, offlineSpecOptions.SpecId, nil, nil)
+		if err != nil {
+			utils.LavaFormatFatal("failed loading offline spec", err, utils.LogAttr("spec_path", offlineSpecOptions.SpecFilePath), utils.LogAttr("spec_id", offlineSpecOptions.SpecId))
+		}
+		utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", offlineSpecOptions.SpecFilePath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
+		specUpdatable.SetSpec(parsedOfflineSpec)
+		return nil
+	}
+
 	// register for spec updates sets spec and updates when a spec has been modified
 	specUpdater := updaters.NewSpecUpdater(endpoint.ChainID, cst.stateQuery, cst.EventTracker)
 	specUpdaterRaw := cst.StateTracker.RegisterForUpdates(ctx, specUpdater)

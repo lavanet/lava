@@ -66,6 +66,49 @@ func specKeeper() (*keeper.Keeper, sdk.Context, error) {
 	return k, ctx, nil
 }
 
+func decodeProposal(path string) (utils.SpecAddProposalJSON, error) {
+	proposal := utils.SpecAddProposalJSON{}
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return proposal, err
+	}
+	decoder := json.NewDecoder(bytes.NewReader(contents))
+	decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
+
+	err = decoder.Decode(&proposal)
+	return proposal, err
+}
+
+func GetSpecFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet spectypes.Spec, err error) {
+	var ctx sdk.Context
+	if keeper == nil || ctxArg == nil {
+		keeper, ctx, err = specKeeper()
+		if err != nil {
+			return spectypes.Spec{}, err
+		}
+	} else {
+		ctx = *ctxArg
+	}
+
+	proposal, err := decodeProposal(path)
+	if err != nil {
+		return spectypes.Spec{}, err
+	}
+
+	for _, spec := range proposal.Proposal.Specs {
+		keeper.SetSpec(ctx, spec)
+		if specIndex != spec.Index {
+			continue
+		}
+		fullspec, err := keeper.ExpandSpec(ctx, spec)
+		if err != nil {
+			return spectypes.Spec{}, err
+		}
+		return fullspec, nil
+	}
+	return spectypes.Spec{}, fmt.Errorf("spec not found %s", path)
+}
+
 func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet spectypes.Spec, err error) {
 	var ctx sdk.Context
 	if keeper == nil || ctxArg == nil {
@@ -85,29 +128,9 @@ func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *k
 		"avalanche.json", "fvm.json", "near.json",
 	}
 	for _, fileName := range proposalFiles {
-		proposal := utils.SpecAddProposalJSON{}
-
-		contents, err := os.ReadFile(getToTopMostPath + proposalDirectory + fileName)
-		if err != nil {
-			return spectypes.Spec{}, err
-		}
-		decoder := json.NewDecoder(bytes.NewReader(contents))
-		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
-
-		if err := decoder.Decode(&proposal); err != nil {
-			return spectypes.Spec{}, err
-		}
-
-		for _, spec := range proposal.Proposal.Specs {
-			keeper.SetSpec(ctx, spec)
-			if specIndex != spec.Index {
-				continue
-			}
-			fullspec, err := keeper.ExpandSpec(ctx, spec)
-			if err != nil {
-				return spectypes.Spec{}, err
-			}
-			return fullspec, nil
+		spec, err := GetSpecFromPath(getToTopMostPath+proposalDirectory+fileName, specIndex, &ctx, keeper)
+		if err == nil {
+			return spec, nil
 		}
 	}
 	return spectypes.Spec{}, fmt.Errorf("spec not found %s", specIndex)

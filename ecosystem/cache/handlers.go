@@ -120,8 +120,6 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		utils.Attribute{Key: "seen_block", Value: relayCacheGet.SeenBlock},
 	)
 
-	var retError error
-
 	var blockHashes []*pairingtypes.BlockHashToHeight
 	if relayCacheGet.RequestedBlock >= 0 { // we can only fetch
 		// we don't need to fetch seen block prior as its already larger than requested block
@@ -174,14 +172,19 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 		if relayCacheGet.SeenBlock > cacheReply.SeenBlock {
 			cacheReply.SeenBlock = relayCacheGet.SeenBlock
 		}
-		cacheReply.BlocksHashesToHeights = blockHashes
 	} else {
 		// set the error so cache miss will trigger.
-		retError = utils.LavaFormatDebug("Requested block is invalid",
+		err = utils.LavaFormatDebug("Requested block is invalid",
 			utils.LogAttr("requested block", relayCacheGet.RequestedBlock),
 			utils.LogAttr("request_hash", string(relayCacheGet.RequestHash)),
 		)
-		err = retError
+		// even if we don't have information on requested block, we can still check if we have data on the block hash array.
+		blockHashes = s.getBlockHeightsFromHashes(relayCacheGet.ChainId, relayCacheGet.BlocksHashesToHeights)
+	}
+
+	cacheReply.BlocksHashesToHeights = blockHashes
+	if blockHashes != nil {
+		utils.LavaFormatDebug("block hashes:", utils.LogAttr("hashes", blockHashes))
 	}
 
 	// add prometheus metrics asynchronously
@@ -198,7 +201,9 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 
 		s.CacheServer.CacheMetrics.AddApiSpecific(originalRequestedBlock, relayCacheGet.ChainId, cacheHit)
 	}()
-	return cacheReply, retError
+	// no matter what we return nil from cache. as we need additional info even if we had cache miss
+	// such as block hashes array, seen block, etc...
+	return cacheReply, nil
 }
 
 // formatHashKey formats the hash key by adding latestBlock information.
@@ -313,6 +318,7 @@ func (s *RelayerCacheServer) SetRelay(ctx context.Context, relayCacheSet *pairin
 		utils.Attribute{Key: "requestHash", Value: string(relayCacheSet.BlockHash)},
 		utils.Attribute{Key: "latestKnownBlock", Value: string(relayCacheSet.BlockHash)},
 		utils.Attribute{Key: "IsNodeError", Value: relayCacheSet.IsNodeError},
+		utils.Attribute{Key: "BlocksHashesToHeights", Value: relayCacheSet.BlocksHashesToHeights},
 	)
 	// finalized entries can stay there
 	if relayCacheSet.Finalized {
