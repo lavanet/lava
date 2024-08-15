@@ -1,6 +1,5 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
-
 // this line is used by starport scaffolding # proto/tx/import
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
@@ -22,6 +21,7 @@ service Msg {
 }
 
 message MsgStakeProvider {
+  option (amino.name) = "pairing/StakeProvider";
   string creator = 1;
   string chainID = 2;
   cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
@@ -39,6 +39,7 @@ message MsgStakeProviderResponse {
 }
 
 message MsgUnstakeProvider {
+  option (amino.name) = "pairing/UnstakeProvider";
   string creator = 1;
   string chainID = 2;
   string validator = 3;
@@ -48,6 +49,7 @@ message MsgUnstakeProviderResponse {
 }
 
 message MsgRelayPayment {
+  option (amino.name) = "pairing/RelayPayment";
   reserved 3;
   string creator = 1;
   repeated RelaySession relays = 2;
@@ -65,6 +67,7 @@ message MsgRelayPaymentResponse {
 }
 
 message MsgFreezeProvider {
+  option (amino.name) = "pairing/Freeze";
   string creator = 1;
   repeated string chainIds = 2;
   string reason = 3;
@@ -74,6 +77,7 @@ message MsgFreezeProviderResponse {
 }
 
 message MsgUnfreezeProvider {
+  option (amino.name) = "pairing/Unfreeze";
   string creator = 1;
   repeated string chainIds = 2;
 }

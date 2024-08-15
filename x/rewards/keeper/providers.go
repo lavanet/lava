@@ -10,6 +10,7 @@ import (
 
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 )
 
 const DAY_SECONDS = 60 * 60 * 24
@@ -19,29 +20,31 @@ func (k Keeper) AggregateCU(ctx sdk.Context, subscription, provider string, chai
 		return
 	}
 
-	index := types.BasePayIndex{Provider: provider, ChainID: chainID}
-	basepay, found := k.getBasePay(ctx, index)
+	bp := types.BasePayWithIndex{Provider: provider, ChainId: chainID}
+	var found bool
+	bp.BasePay, found = k.getBasePay(ctx, bp)
 	if !found {
-		basepay = types.BasePay{IprpcCu: cu}
+		bp.BasePay = types.BasePay{IprpcCu: cu}
 	} else {
-		basepay.IprpcCu += cu
+		bp.BasePay.IprpcCu += cu
 	}
-	k.setBasePay(ctx, index, basepay)
+	k.setBasePay(ctx, bp)
 }
 
 func (k Keeper) AggregateRewards(ctx sdk.Context, provider, chainid string, adjustment sdk.Dec, rewards math.Int) {
-	index := types.BasePayIndex{Provider: provider, ChainID: chainid}
-	basepay, found := k.getBasePay(ctx, index)
+	bp := types.BasePayWithIndex{Provider: provider, ChainId: chainid}
+	var found bool
+	bp.BasePay, found = k.getBasePay(ctx, bp)
 	adjustedPay := adjustment.MulInt(rewards)
 	adjustedPay = sdk.MinDec(adjustedPay, sdk.NewDecFromInt(rewards))
 	if !found {
-		basepay = types.BasePay{Total: rewards, TotalAdjusted: adjustedPay}
+		bp.BasePay = types.BasePay{Total: rewards, TotalAdjusted: adjustedPay}
 	} else {
-		basepay.Total = basepay.Total.Add(rewards)
-		basepay.TotalAdjusted = basepay.TotalAdjusted.Add(adjustedPay)
+		bp.BasePay.Total = bp.BasePay.Total.Add(rewards)
+		bp.BasePay.TotalAdjusted = bp.BasePay.TotalAdjusted.Add(adjustedPay)
 	}
 
-	k.setBasePay(ctx, index, basepay)
+	k.setBasePay(ctx, bp)
 }
 
 // Distribute bonus rewards to providers across all chains based on performance
@@ -50,7 +53,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	total := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
 	totalRewarded := sdk.ZeroInt()
 	// specs emissions from the total reward pool base on stake
-	specs := k.specEmissionParts(ctx)
+	specs := k.SpecEmissionParts(ctx)
 
 	defer func() {
 		k.removeAllBasePay(ctx)
@@ -68,14 +71,14 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 		// calculate the maximum rewards for the spec
 		specTotalPayout := math.LegacyZeroDec()
 		if !totalbasepay.IsZero() {
-			specTotalPayout = k.specTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
+			specTotalPayout = k.SpecTotalPayout(ctx, total, sdk.NewDecFromInt(totalbasepay), spec)
 		}
 		details := map[string]string{}
 		// distribute the rewards to all providers
 		for _, basepay := range basepays {
 			if !specTotalPayout.IsZero() {
 				// calculate the providers bonus base on adjusted base pay
-				reward := specTotalPayout.Mul(basepay.TotalAdjusted).QuoInt(totalbasepay).TruncateInt()
+				reward := specTotalPayout.Mul(basepay.BasePay.TotalAdjusted).QuoInt(totalbasepay).TruncateInt()
 				totalRewarded = totalRewarded.Add(reward)
 				if totalRewarded.GT(total) {
 					utils.LavaFormatError("provider rewards are larger than the distribution pool balance", nil,
@@ -85,15 +88,15 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 					return
 				}
 				// now give the reward the provider contributor and delegators
-				_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainID, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
+				_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, basepay.Provider, basepay.ChainId, sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), reward)), string(types.ProviderRewardsDistributionPool), false, false, false)
 				if err != nil {
 					utils.LavaFormatError("failed to send bonus rewards to provider", err, utils.LogAttr("provider", basepay.Provider))
 				}
-				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.TotalAdjusted, reward.String())
+				details[basepay.Provider] = fmt.Sprintf("cu: %d reward: %s", basepay.BasePay.TotalAdjusted, reward.String())
 			}
 
 			// count iprpc cu
-			k.countIprpcCu(specCuMap, basepay.IprpcCu, spec.ChainID, basepay.Provider)
+			k.countIprpcCu(specCuMap, basepay.BasePay.IprpcCu, spec.ChainID, basepay.Provider)
 		}
 
 		details["block"] = strconv.FormatInt(ctx.BlockHeight(), 10)
@@ -114,18 +117,18 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 	k.distributeIprpcRewards(ctx, iprpcReward, specCuMap)
 }
 
-// specTotalPayout calculates the total bonus for a specific spec
+// SpecTotalPayout calculates the total bonus for a specific spec
 // specPayoutAllocation: maximum rewards that the spec can have
 // rewardBoost: bonus based on the total rewards providers got factored by maxboost
 // diminishingRewards: makes sure to diminish the bonuses in case there are enough consumers on the chain
-func (k Keeper) specTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec types.SpecEmissionPart) math.LegacyDec {
+func (k Keeper) SpecTotalPayout(ctx sdk.Context, totalMonthlyPayout math.Int, totalProvidersBaseRewards sdk.Dec, spec types.SpecEmissionPart) math.LegacyDec {
 	specPayoutAllocation := spec.Emission.MulInt(totalMonthlyPayout)
 	rewardBoost := totalProvidersBaseRewards.MulInt64(int64(k.MaxRewardBoost(ctx)))
 	diminishingRewards := sdk.MaxDec(sdk.ZeroDec(), (sdk.NewDecWithPrec(15, 1).Mul(specPayoutAllocation)).Sub(sdk.NewDecWithPrec(5, 1).Mul(totalProvidersBaseRewards)))
 	return sdk.MinDec(sdk.MinDec(specPayoutAllocation, rewardBoost), diminishingRewards)
 }
 
-func (k Keeper) specEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissionPart) {
+func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissionPart) {
 	chainIDs := k.specKeeper.GetAllChainIDs(ctx)
 	totalStake := sdk.ZeroDec()
 	chainStake := map[string]sdk.Dec{}
@@ -176,7 +179,7 @@ func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, pop bool) 
 
 	totalBasePay := math.ZeroInt()
 	for _, basepay := range basepays {
-		totalBasePay = totalBasePay.Add(basepay.Total)
+		totalBasePay = totalBasePay.Add(basepay.BasePay.Total)
 	}
 	return basepays, totalBasePay
 }
@@ -192,12 +195,12 @@ func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward s
 	}
 
 	// send validators participation
+	validatorPool := types.ValidatorsRewardsDistributionPoolName
 	if !validatorsParticipationReward.AmountOf(reward.Denom).IsZero() {
-		pool := types.ValidatorsRewardsDistributionPoolName
 		if k.isEndOfMonth(ctx) {
-			pool = types.ValidatorsRewardsAllocationPoolName
+			validatorPool = types.ValidatorsRewardsLeftOverPoolName
 		}
-		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, string(pool), validatorsParticipationReward)
+		err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, string(validatorPool), validatorsParticipationReward)
 		if err != nil {
 			return reward, utils.LavaFormatError("sending validators participation failed", err,
 				utils.Attribute{Key: "validators_participation_reward", Value: validatorsParticipationReward.String()},
@@ -216,6 +219,10 @@ func (k Keeper) ContributeToValidatorsAndCommunityPool(ctx sdk.Context, reward s
 			)
 		}
 	}
+
+	utils.LogLavaEvent(ctx, ctx.Logger(), types.ValidatorsAndCommunityFund,
+		map[string]string{"community": communityParticipationReward.String(), "validators": validatorsParticipationReward.String(), "validator_pool": string(validatorPool)},
+		"contribution to validators pool and community pool")
 
 	// update reward amount
 	reward = reward.SubAmount(communityParticipationReward.AmountOf(reward.Denom)).SubAmount(validatorsParticipationReward.AmountOf(reward.Denom))
@@ -253,7 +260,7 @@ func (k Keeper) CalculateValidatorsAndCommunityParticipationRewards(ctx sdk.Cont
 
 // CalculateContributionPercentages calculates the providers' rewards participation to the validators and community pool
 func (k Keeper) CalculateContributionPercentages(ctx sdk.Context, reward math.Int) (validatorsParticipation math.LegacyDec, communityParticipation math.LegacyDec, err error) {
-	communityTax := k.distributionKeeper.GetParams(ctx).CommunityTax
+	communityTax := k.GetCommunityTax(ctx)
 	if communityTax.Equal(sdk.OneDec()) {
 		return sdk.ZeroDec(), sdk.OneDec(), nil
 	}
@@ -305,5 +312,16 @@ func (k Keeper) FundCommunityPoolFromModule(ctx sdk.Context, amount sdk.Coins, s
 
 // isEndOfMonth checks that we're close to next timer expiry by at least 24 hours
 func (k Keeper) isEndOfMonth(ctx sdk.Context) bool {
-	return ctx.BlockTime().UTC().Unix()+DAY_SECONDS > k.TimeToNextTimerExpiry(ctx)
+	_, expiries, _ := k.refillRewardsPoolTS.GetFrontTimers(ctx, timerstoretypes.BlockTime)
+	if len(expiries) == 0 {
+		// there is no next timer, this is called in between the end and start of the new timer this is the end of the month
+		return true
+	}
+
+	NextExpiery := int64(expiries[0]) - ctx.BlockTime().UTC().Unix()
+	return ctx.BlockTime().UTC().Unix()+DAY_SECONDS > NextExpiery
+}
+
+func (k Keeper) GetCommunityTax(ctx sdk.Context) math.LegacyDec {
+	return k.distributionKeeper.GetParams(ctx).CommunityTax
 }

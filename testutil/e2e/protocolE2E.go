@@ -524,7 +524,7 @@ func jsonrpcTests(rpcURL string, testDuration time.Duration) error {
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf("%s", strings.Join(errors, ",\n"))
 	}
 
 	return nil
@@ -611,7 +611,7 @@ func tendermintTests(rpcURL string, testDuration time.Duration) error {
 		}
 	}
 	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf("%s", strings.Join(errors, ",\n"))
 	}
 	return nil
 }
@@ -638,7 +638,7 @@ func tendermintURITests(rpcURL string, testDuration time.Duration) error {
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf("%s", strings.Join(errors, ",\n"))
 	}
 	return nil
 }
@@ -694,7 +694,7 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf("%s", strings.Join(errors, ",\n"))
 	}
 	return nil
 }
@@ -711,7 +711,7 @@ func restRelayTest(rpcURL string) error {
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf("%s", strings.Join(errors, ",\n"))
 	}
 	return nil
 }
@@ -777,7 +777,7 @@ func grpcTests(rpcURL string, testDuration time.Duration) error {
 		}
 	}
 	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf("%s", strings.Join(errors, ",\n"))
 	}
 	return nil
 }
@@ -983,7 +983,7 @@ func (lt *lavaTest) checkQoS() error {
 	utils.LavaFormatInfo("QOS CHECK OK")
 
 	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf("%s", strings.Join(errors, ",\n"))
 	}
 	return nil
 }
@@ -1191,7 +1191,7 @@ func (lt *lavaTest) checkResponse(tendermintConsumerURL string, restConsumerURL 
 	}
 
 	if len(errors) > 0 {
-		return fmt.Errorf(strings.Join(errors, ",\n"))
+		return fmt.Errorf("%s", strings.Join(errors, ",\n"))
 	}
 	return nil
 }

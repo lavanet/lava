@@ -106,7 +106,7 @@ func TestConcat(t *testing.T) {
 	}
 }
 
-func TestMedian(t *testing.T) {
+func TestMedianInt(t *testing.T) {
 	for _, tt := range []struct {
 		name   string
 		slice  []int
@@ -128,6 +128,75 @@ func TestMedian(t *testing.T) {
 			require.Equal(t, tt.median, median)
 		})
 	}
+}
+
+func TestMedianInt64(t *testing.T) {
+	tests := []struct {
+		name  string
+		slice []int64
+		want  int64
+	}{
+		{"empty slice", []int64{}, 0},
+		{"single element", []int64{42}, 42},
+		{"odd count", []int64{10, 20, 30}, 20},
+		{"even count", []int64{10, 20, 30, 40}, 25},
+		{"negative values", []int64{-30, -20, -10}, -20},
+		{"mixed values", []int64{-10, 0, 10}, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			median := Median(tt.slice)
+			require.Equal(t, tt.want, median)
+		})
+	}
+}
+
+func TestMedianFloat64(t *testing.T) {
+	tests := []struct {
+		name  string
+		slice []float64
+		want  float64
+	}{
+		{"empty slice", []float64{}, 0},
+		{"single element", []float64{42.0}, 42.0},
+		{"odd count", []float64{1.1, 2.2, 3.3}, 2.2},
+		{"even count", []float64{1.1, 2.2, 3.3, 4.4}, 2.75},
+		{"negative values", []float64{-3.3, -2.2, -1.1}, -2.2},
+		{"mixed values", []float64{-1.1, 0, 1.1}, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			median := Median(tt.slice)
+			require.Equal(t, tt.want, median)
+		})
+	}
+}
+
+func TestMedianUint64(t *testing.T) {
+	tests := []struct {
+		name  string
+		slice []uint64
+		want  uint64
+	}{
+		{"odd count", []uint64{10, 20, 30}, 20},
+		{"even count", []uint64{10, 20, 30, 40}, 25},
+		{"single element", []uint64{42}, 42},
+		{"empty slice", []uint64{}, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			median := Median(tt.slice)
+			require.Equal(t, tt.want, median)
+		})
+	}
+}
+
+func TestMedianPrecision(t *testing.T) {
+	t.Run("test large int64", func(t *testing.T) {
+		const largeInt = 9007199254740993
+		median := Median([]int64{largeInt, largeInt})
+		require.Equal(t, int64(largeInt), median)
+	})
 }
 
 func TestPercentile(t *testing.T) {

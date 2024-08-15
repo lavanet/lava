@@ -23,12 +23,7 @@ func CmdDetection() *cobra.Command {
 				return err
 			}
 
-			msg := types.NewMsgDetection(
-				clientCtx.GetFromAddress().String(),
-				nil,
-				nil,
-				nil,
-			)
+			msg := types.NewMsgDetection(clientCtx.GetFromAddress().String())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

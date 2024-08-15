@@ -46,7 +46,7 @@ func stubPaymentEvents(num int, specId string, sessionId uint64) (tos []map[stri
 		QoS, _ := relay.QosReport.ComputeQoS()
 		rewardCoins, _ := sdk.ParseCoinNormalized("50ulava")
 		burnAmount, _ := sdk.ParseCoinNormalized("40ulava")
-		from := map[string]string{"chainID": fmt.Sprintf(relay.SpecId), "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(700, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": "banana"}
+		from := map[string]string{"chainID": relay.SpecId, "client": clientAddr.String(), "provider": providerAddr.String(), "CU": strconv.FormatUint(relay.CuSum, 10), "BasePay": rewardCoins.String(), "totalCUInEpoch": strconv.FormatUint(700, 10), "uniqueIdentifier": strconv.FormatUint(relay.SessionId, 10), "descriptionString": "banana"}
 		from["QoSReport"] = "Latency: " + relay.QosReport.Latency.String() + ", Availability: " + relay.QosReport.Availability.String() + ", Sync: " + relay.QosReport.Sync.String()
 		from["QoSLatency"] = relay.QosReport.Latency.String()
 		from["QoSAvailability"] = relay.QosReport.Availability.String()
