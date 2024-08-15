@@ -877,6 +877,26 @@ func (ts *Tester) QueryPairingProviderEpochCu(provider string, project string, c
 	return ts.Keepers.Pairing.ProvidersEpochCu(ts.GoCtx, msg)
 }
 
+// QueryPairingProviderReputation implements 'q pairing provider-reputation'
+func (ts *Tester) QueryPairingProviderReputation(provider string, chainID string, cluster string) (*pairingtypes.QueryProviderReputationResponse, error) {
+	msg := &pairingtypes.QueryProviderReputationRequest{
+		Address: provider,
+		ChainID: chainID,
+		Cluster: cluster,
+	}
+	return ts.Keepers.Pairing.ProviderReputation(ts.GoCtx, msg)
+}
+
+// QueryPairingProviderReputationDetails implements 'q pairing provider-reputation-details'
+func (ts *Tester) QueryPairingProviderReputationDetails(provider string, chainID string, cluster string) (*pairingtypes.QueryProviderReputationDetailsResponse, error) {
+	msg := &pairingtypes.QueryProviderReputationDetailsRequest{
+		Address: provider,
+		ChainID: chainID,
+		Cluster: cluster,
+	}
+	return ts.Keepers.Pairing.ProviderReputationDetails(ts.GoCtx, msg)
+}
+
 // QueryPairingSubscriptionMonthlyPayout implements 'q pairing subscription-monthly-payout'
 func (ts *Tester) QueryPairingSubscriptionMonthlyPayout(consumer string) (*pairingtypes.QuerySubscriptionMonthlyPayoutResponse, error) {
 	msg := &pairingtypes.QuerySubscriptionMonthlyPayoutRequest{
