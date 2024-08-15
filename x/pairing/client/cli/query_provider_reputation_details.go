@@ -14,7 +14,7 @@ var _ = strconv.Itoa(0)
 
 func CmdProviderReputationDetails() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "provider-reputation [address] [chain-id] [cluster]",
+		Use:   "provider-reputation-details [address] [chain-id] [cluster]",
 		Short: "Query for a provider's reputation details. Mainly used by developers. Use \"*\" for specify all for chain/cluster.",
 		Args:  cobra.ExactArgs(3),
 		Example: `

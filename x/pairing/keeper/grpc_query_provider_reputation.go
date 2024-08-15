@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	varianceThreshold = float64(1)
+	varianceThreshold = float64(1)   // decides if the overall_performance field can be calculated
+	percentileRank    = float64(0.8) // rank for percentile to decide whether the overall_performance is "good" or "bad"
 	goodScore         = "good"
 	badScore          = "bad"
-	lowVariance       = "low variance"
+	lowVariance       = "low_variance"
 )
 
 func (k Keeper) ProviderReputation(goCtx context.Context, req *types.QueryProviderReputationRequest) (*types.QueryProviderReputationResponse, error) {
@@ -63,7 +64,7 @@ func (k Keeper) ProviderReputation(goCtx context.Context, req *types.QueryProvid
 		// get all reputation pairing score indices for a chainID+cluster pair
 		inds := k.reputationsFS.GetAllEntryIndicesWithPrefix(ctx, types.ReputationScoreKey(data.chainID, data.cluster, ""))
 
-		// collect all pairing scores with indices and sort
+		// collect all pairing scores with indices and sort in descending order
 		pairingScores := []float64{}
 		for _, ind := range inds {
 			var score types.ReputationPairingScore
@@ -77,7 +78,7 @@ func (k Keeper) ProviderReputation(goCtx context.Context, req *types.QueryProvid
 			pairingScores = append(pairingScores, score.Score.MustFloat64())
 		}
 		sort.Slice(pairingScores, func(i, j int) bool {
-			return pairingScores[i] < pairingScores[j]
+			return pairingScores[i] > pairingScores[j]
 		})
 
 		// find the provider's rank
@@ -96,7 +97,7 @@ func (k Keeper) ProviderReputation(goCtx context.Context, req *types.QueryProvid
 		if variance < varianceThreshold {
 			chainClusterRes.OverallPerformance = lowVariance
 		} else {
-			if float64(rank) > float64(len(pairingScores))*0.8 {
+			if pairingScores[rank] > lavaslices.Percentile(pairingScores, percentileRank) {
 				chainClusterRes.OverallPerformance = goodScore
 			} else {
 				chainClusterRes.OverallPerformance = badScore

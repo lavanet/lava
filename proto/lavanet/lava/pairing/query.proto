@@ -260,7 +260,7 @@ message QueryProviderReputationRequest {
 message ReputationData {
 	uint64 rank = 1; // rank compared to other providers
 	uint64 providers = 2; // amount of providers with the same chainID+cluster
-	string overall_performance = 3; // overall performance metric which can be "good", "bad", or "not enough data"
+	string overall_performance = 3; // overall performance metric which can be "good", "bad", or "low variance"
 	string chainID = 4;
 	string cluster = 5;
 }
