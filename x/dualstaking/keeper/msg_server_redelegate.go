@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/utils"
+	commontypes "github.com/lavanet/lava/v2/utils/common/types"
 	"github.com/lavanet/lava/v2/x/dualstaking/types"
 )
 
@@ -17,6 +18,14 @@ func (k msgServer) Redelegate(goCtx context.Context, msg *types.MsgRedelegate) (
 
 	if _, err := sdk.AccAddressFromBech32(msg.Creator); err != nil {
 		return &types.MsgRedelegateResponse{}, err
+	}
+
+	// allow non empty chainID calls to redelegate form empty provider
+	if msg.FromChainID == commontypes.EMPTY_PROVIDER_CHAINID_STAR {
+		msg.FromChainID = commontypes.EMPTY_PROVIDER_CHAINID
+	}
+	if msg.ToChainID == commontypes.EMPTY_PROVIDER_CHAINID_STAR {
+		msg.ToChainID = commontypes.EMPTY_PROVIDER_CHAINID
 	}
 
 	err := k.Keeper.Redelegate(

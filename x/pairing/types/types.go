@@ -40,13 +40,3 @@ const (
 	EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER uint64 = 8 // number of epochs to sum CU that the provider serviced
 	EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS              uint64 = 2 // number of epochs to sum CU of complainers against the provider
 )
-
-type ClientUsedCU struct {
-	TotalUsed uint64
-	Providers map[string]uint64
-}
-
-type ClientProviderOverusedCUPercent struct {
-	TotalOverusedPercent    float64
-	OverusedPercentProvider float64
-}

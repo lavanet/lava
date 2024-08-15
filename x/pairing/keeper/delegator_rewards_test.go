@@ -283,7 +283,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	currentTimestamp := ts.Ctx.BlockTime().UTC().Unix()
 	relevantDelegations := lavaslices.Filter(res.Delegations,
 		func(d dualstakingtypes.Delegation) bool {
-			return d.ChainID == ts.spec.Index && d.IsFirstMonthPassed(currentTimestamp)
+			return d.ChainID == ts.spec.Index && d.IsFirstWeekPassed(currentTimestamp)
 		})
 	totalReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(relayCuSum))))
 	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(ts.Ctx, stakeEntry, totalReward, relevantDelegations)

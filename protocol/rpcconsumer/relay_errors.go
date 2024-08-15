@@ -114,7 +114,7 @@ func (r *RelayErrors) mergeAllErrors() error {
 			mergedMessage += ", "
 		}
 	}
-	return fmt.Errorf(mergedMessage)
+	return fmt.Errorf("%s", mergedMessage)
 }
 
 // TODO: there's no need to save error twice and provider info twice, this can just be a relayResponse
