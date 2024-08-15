@@ -123,7 +123,8 @@ func (bcmc baseChainMessageContainer) GetApiCollection() *spectypes.ApiCollectio
 func (bcmc *baseChainMessageContainer) CompareAndSwapEarliestRequestedBlockIfApplicable(incomingEarliest int64) bool {
 	swapped := false
 	if bcmc.earliestRequestedBlock != spectypes.EARLIEST_BLOCK {
-		if bcmc.earliestRequestedBlock < 0 || bcmc.earliestRequestedBlock > incomingEarliest {
+		// check earliest is not unset (0) or incoming is lower than current value
+		if bcmc.earliestRequestedBlock == 0 || bcmc.earliestRequestedBlock > incomingEarliest {
 			bcmc.earliestRequestedBlock = incomingEarliest
 			swapped = true
 		}

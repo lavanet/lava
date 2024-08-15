@@ -146,7 +146,6 @@ func (*RestChainParser) newChainMessage(serviceApi *spectypes.Api, requestBlock 
 		requestedBlockHashes:     requestedHashes,
 		resultErrorParsingMethod: restMessage.CheckResponseError,
 		parseDirective:           GetParseDirective(serviceApi, apiCollection),
-		earliestRequestedBlock:   spectypes.NOT_APPLICABLE,
 	}
 	return nodeMsg
 }
