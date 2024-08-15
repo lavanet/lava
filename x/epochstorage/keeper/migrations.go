@@ -12,6 +12,7 @@ import (
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/x/epochstorage/types"
 	v3 "github.com/lavanet/lava/v2/x/epochstorage/types/migrations/v3"
+	v6 "github.com/lavanet/lava/v2/x/epochstorage/types/migrations/v6"
 )
 
 type Migrator struct {
@@ -20,6 +21,53 @@ type Migrator struct {
 
 func NewMigrator(keeper Keeper) Migrator {
 	return Migrator{keeper: keeper}
+}
+
+// Migrate5to6 goes over all existing stake entries and populates the new vault address field with the stake entry address
+func (m Migrator) Migrate5to6(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate: epochstorage to include provider and vault addresses")
+
+	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(v3.StakeStorageKeyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var stakeStorageV6 v6.StakeStorage
+		m.keeper.cdc.MustUnmarshal(iterator.Value(), &stakeStorageV6)
+
+		for i := range stakeStorageV6.StakeEntries {
+			stakeStorageV6.StakeEntries[i].Vault = stakeStorageV6.StakeEntries[i].Address
+		}
+
+		store.Set(iterator.Key(), m.keeper.cdc.MustMarshal(&stakeStorageV6))
+	}
+
+	return nil
+}
+
+// Migrate6to7 goes over all existing stake entries and populates the new description field with current moniker
+func (m Migrator) Migrate6to7(ctx sdk.Context) error {
+	utils.LavaFormatDebug("migrate: epochstorage to include detailed description")
+
+	store := prefix.NewStore(ctx.KVStore(m.keeper.storeKey), types.KeyPrefix(v3.StakeStorageKeyPrefix))
+	iterator := sdk.KVStorePrefixIterator(store, []byte{})
+
+	defer iterator.Close()
+
+	for ; iterator.Valid(); iterator.Next() {
+		var stakeStorageV7 types.StakeStorage
+		m.keeper.cdc.MustUnmarshal(iterator.Value(), &stakeStorageV7)
+
+		for i := range stakeStorageV7.StakeEntries {
+			stakeStorageV7.StakeEntries[i].Description.Moniker = stakeStorageV7.StakeEntries[i].Moniker
+			stakeStorageV7.StakeEntries[i].Moniker = ""
+		}
+
+		store.Set(iterator.Key(), m.keeper.cdc.MustMarshal(&stakeStorageV7))
+	}
+
+	return nil
 }
 
 // Migrate7to8 transfers all the stake entries from the old stake storage to the new stake entries store
@@ -39,7 +87,7 @@ func (m Migrator) Migrate7to8(ctx sdk.Context) error {
 		key := string(iterator.Key())
 
 		// identify stake storage type: regular, current or unstake
-		if key == v3.StakeStorageKeyUnstakeConst {
+		if m.isUnstakeStakeStorageKey(key) {
 			store.Delete(iterator.Key())
 			continue
 		}
@@ -97,6 +145,15 @@ func extractEpochFromStakeStorageKey(key string) (uint64, error) {
 		return 0, err
 	}
 	return parsedUint, nil
+}
+
+func (m Migrator) isUnstakeStakeStorageKey(key string) bool {
+	key, found := strings.CutSuffix(key, "/")
+	if !found {
+		return false
+	}
+
+	return key == v3.StakeStorageKeyUnstakeConst
 }
 
 func (m Migrator) isCurrentStakeStorageKey(ctx sdk.Context, key string) bool {

@@ -155,15 +155,15 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterForVersionUpdates(ctx
 }
 
 // TxConflictDetection mocks base method.
-func (m *MockConsumerStateTrackerInf) TxConflictDetection(ctx context.Context, finalizationConflict *types.FinalizationConflict, responseConflict *types.ResponseConflict, sameProviderConflict *types.FinalizationConflict, conflictHandler common.ConflictHandlerInterface) error {
+func (m *MockConsumerStateTrackerInf) TxConflictDetection(ctx context.Context, finalizationConflict *types.FinalizationConflict, responseConflict *types.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TxConflictDetection", ctx, finalizationConflict, responseConflict, sameProviderConflict, conflictHandler)
+	ret := m.ctrl.Call(m, "TxConflictDetection", ctx, finalizationConflict, responseConflict, conflictHandler)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // TxConflictDetection indicates an expected call of TxConflictDetection.
-func (mr *MockConsumerStateTrackerInfMockRecorder) TxConflictDetection(ctx, finalizationConflict, responseConflict, sameProviderConflict, conflictHandler any) *gomock.Call {
+func (mr *MockConsumerStateTrackerInfMockRecorder) TxConflictDetection(ctx, finalizationConflict, responseConflict, conflictHandler any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxConflictDetection", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).TxConflictDetection), ctx, finalizationConflict, responseConflict, sameProviderConflict, conflictHandler)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxConflictDetection", reflect.TypeOf((*MockConsumerStateTrackerInf)(nil).TxConflictDetection), ctx, finalizationConflict, responseConflict, conflictHandler)
 }

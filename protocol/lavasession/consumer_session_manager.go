@@ -551,7 +551,15 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				sessionInfo.QoSSummeryResult = consumerSession.getQosComputedResultOrZero()
 				sessions[providerAddress] = sessionInfo
 
-				consumerSession.SetUsageForSession(cuNeededForSession, csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress), usedProviders)
+				qosReport, rawQosReport := csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress)
+				if csm.rpcEndpoint.Geolocation != uint64(endpoint.endpoint.Geolocation) {
+					// rawQosReport is used only when building the relay payment message to be used to update
+					// the provider's reputation on-chain. If the consumer and provider don't share geolocation
+					// (consumer geo: csm.rpcEndpoint.Geolocation, provider geo: endpoint.endpoint.Geolocation)
+					// we don't want to update the reputation by it, so we null the rawQosReport
+					rawQosReport = nil
+				}
+				consumerSession.SetUsageForSession(cuNeededForSession, qosReport, rawQosReport, usedProviders)
 				// We successfully added provider, we should ignore it if we need to fetch new
 				tempIgnoredProviders.providers[providerAddress] = struct{}{}
 				if len(sessions) == wantedSession {
@@ -849,7 +857,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	err := csm.removeAddressFromValidAddresses(address)
 	if err != nil {
 		if AddressIndexWasNotFoundError.Is(err) {
-			// in case index wasn,t found just continue with the method
+			// in case index wasn't  found just continue with the method
 			utils.LavaFormatDebug("address was not found in valid addresses list", utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses})
 		} else {
 			return err
@@ -940,7 +948,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		}
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
-	// latency, isHangingApi, syncScore arent updated when there is a failure
+	// latency, isHangingApi, syncScore aren't updated when there is a failure
 	go csm.providerOptimizer.AppendRelayFailure(consumerSession.Parent.PublicLavaAddress)
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
 	consecutiveErrors := uint64(len(consumerSession.ConsecutiveErrors))

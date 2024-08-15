@@ -23,6 +23,7 @@ type updatableRPCInput interface {
 type baseChainMessageContainer struct {
 	api                    *spectypes.Api
 	latestRequestedBlock   int64
+	requestedBlockHashes   []string
 	earliestRequestedBlock int64
 	msg                    updatableRPCInput
 	apiCollection          *spectypes.ApiCollection
@@ -47,7 +48,7 @@ func (bcnc *baseChainMessageContainer) GetParseDirective() *spectypes.ParseDirec
 }
 
 func (pm *baseChainMessageContainer) GetRawRequestHash() ([]byte, error) {
-	if pm.inputHashCache != nil && len(pm.inputHashCache) > 0 {
+	if len(pm.inputHashCache) > 0 {
 		// Get the cached value
 		return pm.inputHashCache, nil
 	}

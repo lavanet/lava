@@ -148,6 +148,18 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			continue
 		}
 
+		// tax the rewards to the community and validators
+		fundAfterTax := sdk.NewCoins()
+		for _, coin := range specFund.Fund {
+			leftover, err := k.ContributeToValidatorsAndCommunityPool(ctx, coin, string(types.IprpcPoolName))
+			if err != nil {
+				// if ContributeToValidatorsAndCommunityPool fails we continue with the next providerrewards
+				continue
+			}
+			fundAfterTax = fundAfterTax.Add(leftover)
+		}
+		specFund.Fund = fundAfterTax
+
 		UsedReward := sdk.NewCoins()
 		// distribute IPRPC reward for spec
 		for _, providerCU := range specCu.ProvidersCu {
