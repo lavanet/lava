@@ -10,10 +10,16 @@ func ConstructReplyMetadata(reply *pairingtypes.RelayReply, req *pairingtypes.Re
 	if reply == nil || req == nil {
 		return nil
 	}
+
 	relayExchange := pairingtypes.NewRelayExchange(*req, *reply)
-	allDataHash := sigs.HashMsg(relayExchange.DataToSign())
+
+	allDataHash := relayExchange.DataToSign()
+	for i := 0; i < relayExchange.HashRounds(); i++ {
+		allDataHash = sigs.HashMsg(allDataHash)
+	}
+
 	res := &types.ReplyMetadata{
-		HashAllDataHash:       sigs.HashMsg(allDataHash),
+		HashAllDataHash:       allDataHash,
 		Sig:                   reply.Sig,
 		LatestBlock:           reply.LatestBlock,
 		FinalizedBlocksHashes: reply.FinalizedBlocksHashes,
@@ -23,5 +29,8 @@ func ConstructReplyMetadata(reply *pairingtypes.RelayReply, req *pairingtypes.Re
 }
 
 func ConstructConflictRelayData(reply *pairingtypes.RelayReply, req *pairingtypes.RelayRequest) *types.ConflictRelayData {
-	return &types.ConflictRelayData{Reply: ConstructReplyMetadata(reply, req), Request: req}
+	return &types.ConflictRelayData{
+		Request: req,
+		Reply:   ConstructReplyMetadata(reply, req),
+	}
 }
