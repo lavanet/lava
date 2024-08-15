@@ -1,12 +1,12 @@
 syntax = "proto3";
 package lavanet.lava.rewards;
 
+import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
-import "lavanet/lava/rewards/params.proto";
 import "lavanet/lava/rewards/base_pay.proto";
 import "lavanet/lava/rewards/iprpc.proto";
+import "lavanet/lava/rewards/params.proto";
 import "lavanet/lava/timerstore/timer.proto";
-import "cosmos/base/v1beta1/coin.proto";
 // this line is used by starport scaffolding # genesis/proto/import
 
 option go_package = "github.com/lavanet/lava/v2/x/rewards/types";
@@ -15,7 +15,7 @@ option go_package = "github.com/lavanet/lava/v2/x/rewards/types";
 message GenesisState {
   Params params = 1 [(gogoproto.nullable) = false];
   lavanet.lava.timerstore.GenesisState refillRewardsTS = 2 [(gogoproto.nullable) = false];
-  repeated BasePayGenesis base_pays = 3 [(gogoproto.nullable) = false];
+  repeated BasePayWithIndex base_pays = 3 [(gogoproto.nullable) = false];
   repeated string iprpc_subscriptions = 4;
   cosmos.base.v1beta1.Coin min_iprpc_cost = 5 [(gogoproto.nullable) = false];
   repeated IprpcReward iprpc_rewards = 6 [(gogoproto.nullable) = false];

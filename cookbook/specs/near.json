@@ -87,7 +87,19 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.finality",
+                                        "value": "latest",
+                                        "rule": "=final || =optimistic",
+                                        "parse_type": "DEFAULT_VALUE"
+                                    },
+                                    {
+                                        "parse_path": ".params.[0]",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "EXPERIMENTAL_changes_in_block",
@@ -127,7 +139,13 @@
                                     "subscription": false,
                                     "stateful": 0
                                 },
-                                "extra_compute_units": 0
+                                "extra_compute_units": 0,
+                                "parsers": [
+                                    {
+                                        "parse_path": ".params.[0]",
+                                        "parse_type": "BLOCK_HASH"
+                                    }
+                                ]
                             },
                             {
                                 "name": "gas_price",
@@ -465,7 +483,6 @@
                                     }
                                 ]
                             }
-                            
                         ],
                         "extensions": [
                             {

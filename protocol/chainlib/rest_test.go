@@ -296,3 +296,27 @@ func TestSettingRequestedBlocksHeadersRest(t *testing.T) {
 		})
 	}
 }
+
+func TestRegexParsing(t *testing.T) {
+	chainParser, _, _, closeServer, _, err := CreateChainLibMocks(context.Background(), "LAV1", spectypes.APIInterfaceRest, nil, nil, "../../", nil)
+	require.NoError(t, err)
+	defer func() {
+		if closeServer != nil {
+			closeServer()
+		}
+	}()
+	for _, api := range []string{
+		"/cosmos/staking/v1beta1/delegations/",
+		"/lavanet/lava/pairing/provider/lava@1e9ma89h83azrfnqqy0u255zqxq0xluza6ydf9n/",
+		"/lavanet/lava/pairing/provider/lava@1e9ma89h83azrfnqqy0u255zqxq0xluza6ydf9n/ETH1",
+	} {
+		_, err := chainParser.ParseMsg(api, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+	}
+	for _, api := range []string{
+		"/cosmos/staking/v1beta1/delegations/lava@17ym998u666u8w2qgjd5m7w7ydjqmu3mlgl7ua2/",
+	} {
+		_, err := chainParser.ParseMsg(api, nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.Error(t, err)
+	}
+}

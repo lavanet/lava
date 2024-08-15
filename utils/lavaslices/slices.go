@@ -79,7 +79,9 @@ func Median[T Number](slice []T) T {
 	if data_len == 0 {
 		return 0
 	} else if data_len%2 == 0 {
-		return ((slice[data_len/2-1] + slice[data_len/2]) / T(2))
+		left := slice[data_len/2-1]
+		right := slice[data_len/2]
+		return (left + right) / 2
 	} else {
 		return slice[(data_len-1)/2]
 	}
@@ -295,4 +297,20 @@ func SplitGenericSliceIntoChunks[T any](arr []T, chunkSize int) [][]T {
 	}
 
 	return result
+}
+
+func SortStable[T constraints.Ordered](slice []T) {
+	slices.SortStableFunc(slice, func(i, j T) bool { return i < j })
+}
+
+// This function is used to check if the slice is consecutive.
+// It returns the index of the first non-consecutive element or 0 if all elements are consecutive.
+func IsSliceConsecutive[T constraints.Integer](slice []T) (int, bool) {
+	for index := range slice {
+		if index != 0 && slice[index]-1 != slice[index-1] {
+			return index, false
+		}
+	}
+
+	return 0, true
 }

@@ -20,14 +20,16 @@ const (
 )
 
 const (
-	ConflictVoteRevealEventName        = "conflict_vote_reveal_started"
-	ConflictDetectionRecievedEventName = "conflict_detection_received"
-	ConflictVoteDetectionEventName     = "response_conflict_detection"
-	ConflictVoteResolvedEventName      = "conflict_detection_vote_resolved"
-	ConflictVoteUnresolvedEventName    = "conflict_detection_vote_unresolved"
-	ConflictVoteGotCommitEventName     = "conflict_vote_got_commit"
-	ConflictVoteGotRevealEventName     = "conflict_vote_got_reveal"
-	ConflictUnstakeFraudVoterEventName = "conflict_unstake_fraud_voter"
+	ConflictVoteRevealEventName            = "conflict_vote_reveal_started"
+	ConflictDetectionReceivedEventName     = "conflict_detection_received"
+	ConflictVoteDetectionEventName         = "response_conflict_detection"
+	ConflictVoteResolvedEventName          = "conflict_detection_vote_resolved"
+	ConflictVoteUnresolvedEventName        = "conflict_detection_vote_unresolved"
+	ConflictVoteGotCommitEventName         = "conflict_vote_got_commit"
+	ConflictVoteGotRevealEventName         = "conflict_vote_got_reveal"
+	ConflictUnstakeFraudVoterEventName     = "conflict_unstake_fraud_voter"
+	ConflictDetectionSameProviderEventName = "conflict_detection_same_provider"
+	ConflictDetectionTwoProvidersEventName = "conflict_detection_two_providers"
 )
 
 // unstake description
