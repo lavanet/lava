@@ -9,18 +9,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (k Keeper) ProviderReward(goCtx context.Context, req *types.QueryProviderRewardRequest) (*types.QueryProviderRewardResponse, error) {
+func (k Keeper) SpecTrackedInfo(goCtx context.Context, req *types.QuerySpecTrackedInfoRequest) (*types.QuerySpecTrackedInfoResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	var rewards []types.RewardInfo
+	res := types.QuerySpecTrackedInfoResponse{}
+	res.Info = k.getAllBasePayForChain(ctx, req.ChainId, req.Provider)
 
-	for _, basepay := range k.getAllBasePayForChain(ctx, req.ChainId, req.ChainId) {
-		rewards = append(rewards, types.RewardInfo{Provider: basepay.Provider, ChainId: basepay.ChainID, Amount: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), basepay.BasePay.Total)})
-	}
-
-	return &types.QueryProviderRewardResponse{Rewards: rewards}, nil
+	return &res, nil
 }

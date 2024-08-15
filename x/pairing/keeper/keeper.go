@@ -7,6 +7,7 @@ import (
 	collcompat "github.com/lavanet/lava/v2/utils/collcompat"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
 	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -38,8 +39,9 @@ type (
 		dualstakingKeeper  types.DualstakingKeeper
 		stakingKeeper      types.StakingKeeper
 
-		schema      collections.Schema
-		reputations collections.Map[collections.Triple[string, string, string], types.Reputation] // save qos info per provider, chain and cluster
+		schema            collections.Schema
+		reputations       collections.Map[collections.Triple[string, string, string], types.Reputation] // save qos info per provider, chain and cluster
+		pairingQueryCache *map[string][]epochstoragetypes.StakeEntry
 	}
 )
 
@@ -78,6 +80,7 @@ func NewKeeper(
 	}
 
 	sb := collections.NewSchemaBuilder(collcompat.NewKVStoreService(storeKey))
+	emptypairingQueryCache := map[string][]epochstoragetypes.StakeEntry{}
 
 	keeper := &Keeper{
 		cdc:                cdc,
@@ -99,6 +102,7 @@ func NewKeeper(
 			collections.TripleKeyCodec(collections.StringKey, collections.StringKey, collections.StringKey),
 			collcompat.ProtoValue[types.Reputation](cdc),
 		),
+		pairingQueryCache: &emptypairingQueryCache,
 	}
 
 	// note that the timer and badgeUsedCu keys are the same (so we can use only the second arg)
@@ -126,6 +130,8 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 func (k Keeper) BeginBlock(ctx sdk.Context) {
 	if k.epochStorageKeeper.IsEpochStart(ctx) {
+		// reset pairing query cache every epoch
+		*k.pairingQueryCache = map[string][]epochstoragetypes.StakeEntry{}
 		// remove old session payments
 		k.RemoveOldEpochPayments(ctx)
 		// unstake/jail unresponsive providers
@@ -133,6 +139,11 @@ func (k Keeper) BeginBlock(ctx sdk.Context) {
 			types.EPOCHS_NUM_TO_CHECK_CU_FOR_UNRESPONSIVE_PROVIDER,
 			types.EPOCHS_NUM_TO_CHECK_FOR_COMPLAINERS)
 	}
+}
+
+func (k Keeper) EndBlock(ctx sdk.Context) {
+	// reset pairing relay cache every block
+	k.ResetPairingRelayCache(ctx)
 }
 
 func (k Keeper) InitReputations(ctx sdk.Context, gs fixationtypes.GenesisState) {

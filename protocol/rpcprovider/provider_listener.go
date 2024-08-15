@@ -12,7 +12,7 @@ import (
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"github.com/lavanet/lava/v2/protocol/chainlib"
 	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol/protocolerrors"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/utils"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
@@ -167,12 +167,12 @@ func (rs *relayServer) findReceiver(apiInterface string, specID string) (RelayRe
 		for k := range rs.relayReceivers {
 			keys = append(keys, k)
 		}
-		err := utils.LavaFormatError("got called with unhandled relay receiver", lavaprotocol.UnhandledRelayReceiverError, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
-		return nil, status.Error(codes.Code(lavaprotocol.UnhandledRelayReceiverError.ABCICode()), err.Error())
+		err := utils.LavaFormatError("got called with unhandled relay receiver", protocolerrors.UnhandledRelayReceiverError, utils.Attribute{Key: "requested_receiver", Value: endpoint.Key()}, utils.Attribute{Key: "handled_receivers", Value: strings.Join(keys, ",")})
+		return nil, status.Error(codes.Code(protocolerrors.UnhandledRelayReceiverError.ABCICode()), err.Error())
 	}
 	if !relayReceiver.enabled {
-		err := utils.LavaFormatError("relayReceiver is disabled", lavaprotocol.DisabledRelayReceiverError, utils.Attribute{Key: "relayReceiver", Value: endpoint.Key()})
-		return nil, status.Error(codes.Code(lavaprotocol.DisabledRelayReceiverError.ABCICode()), err.Error())
+		err := utils.LavaFormatError("relayReceiver is disabled", protocolerrors.DisabledRelayReceiverError, utils.Attribute{Key: "relayReceiver", Value: endpoint.Key()})
+		return nil, status.Error(codes.Code(protocolerrors.DisabledRelayReceiverError.ABCICode()), err.Error())
 	}
 	return *relayReceiver.relayReceiver, nil
 }

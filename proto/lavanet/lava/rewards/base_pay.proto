@@ -1,31 +1,32 @@
 syntax = "proto3";
 package lavanet.lava.rewards;
 
+import "amino/amino.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/lavanet/lava/v2/x/rewards/types";
-import "cosmos/base/v1beta1/coin.proto"; 
-import "cosmos_proto/cosmos.proto";
-import "amino/amino.proto";
 
 // aggregated rewards for the provider through out the month
 message BasePay {
   string total = 1 [
-  (cosmos_proto.scalar)  = "cosmos.Int",
-  (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
-  (gogoproto.nullable)   = false
+    (cosmos_proto.scalar) = "cosmos.Int",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Int",
+    (gogoproto.nullable) = false
   ];
 
   string totalAdjusted = 2 [
     (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
-    (gogoproto.nullable)   = false
-    ];
+    (gogoproto.nullable) = false
+  ];
 
-    uint64 iprpc_cu = 3;
+  uint64 iprpc_cu = 3;
 }
 
 // aggregated rewards for the provider through out the month
-message BasePayGenesis {
-  string index = 1; 
-  BasePay base_pay = 2 [(gogoproto.nullable)   = false ];
+message BasePayWithIndex {
+  string provider = 1;
+  string chain_id = 2;
+  BasePay base_pay = 3 [(gogoproto.nullable) = false];
 }

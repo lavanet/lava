@@ -552,7 +552,7 @@ func (csm *ConsumerSessionManager) GetSessions(ctx context.Context, cuNeededForS
 				sessions[providerAddress] = sessionInfo
 
 				qosReport, rawQosReport := csm.providerOptimizer.GetExcellenceQoSReportForProvider(providerAddress)
-				if csm.rpcEndpoint.Geolocation == uint64(endpoint.endpoint.Geolocation) {
+				if csm.rpcEndpoint.Geolocation != uint64(endpoint.endpoint.Geolocation) {
 					// rawQosReport is used only when building the relay payment message to be used to update
 					// the provider's reputation on-chain. If the consumer and provider don't share geolocation
 					// (consumer geo: csm.rpcEndpoint.Geolocation, provider geo: endpoint.endpoint.Geolocation)
@@ -857,7 +857,7 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 	err := csm.removeAddressFromValidAddresses(address)
 	if err != nil {
 		if AddressIndexWasNotFoundError.Is(err) {
-			// in case index wasn,t found just continue with the method
+			// in case index wasn't  found just continue with the method
 			utils.LavaFormatDebug("address was not found in valid addresses list", utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "error", Value: err}, utils.Attribute{Key: "validAddresses", Value: csm.validAddresses})
 		} else {
 			return err
@@ -948,7 +948,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 		}
 	}
 	cuToDecrease := consumerSession.LatestRelayCu
-	// latency, isHangingApi, syncScore arent updated when there is a failure
+	// latency, isHangingApi, syncScore aren't updated when there is a failure
 	go csm.providerOptimizer.AppendRelayFailure(consumerSession.Parent.PublicLavaAddress)
 	consumerSession.LatestRelayCu = 0 // making sure no one uses it in a wrong way
 	consecutiveErrors := uint64(len(consumerSession.ConsecutiveErrors))
