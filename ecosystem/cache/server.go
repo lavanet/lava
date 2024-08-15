@@ -36,7 +36,7 @@ const (
 	DefaultExpirationForNonFinalized                  = 500 * time.Millisecond
 	DefaultExpirationTimeFinalizedMultiplier          = 1.0
 	DefaultExpirationTimeNonFinalizedMultiplier       = 1.0
-	DefaultExpirationBlocksHashesToHeights            = 24 * time.Hour
+	DefaultExpirationBlocksHashesToHeights            = 48 * time.Hour
 	DefaultExpirationBlocksHashesToHeightsMultiplier  = 1.0
 	DefaultExpirationTimeFinalized                    = time.Hour
 	DefaultExpirationNodeErrors                       = 250 * time.Millisecond
