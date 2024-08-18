@@ -701,6 +701,10 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
 			staticProvider := viper.GetBool(common.StaticProvidersConfigName)
 
+			if staticProvider {
+				utils.LavaFormatWarning("Running in static provider mode, skipping rewards and allowing requests from anyone", nil)
+			}
+
 			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
 				enableRelaysHealth,
 				relaysHealthInterval,

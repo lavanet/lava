@@ -511,9 +511,12 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			// check if StaticProvidersConfigName exists in viper, if it does parse it with ParseStaticProvider function
 			var staticProviderEndpoints []*lavasession.RPCProviderEndpoint
 			if viper.IsSet(common.StaticProvidersConfigName) {
-				_, err = rpcprovider.ParseEndpointsCustomName(viper.GetViper(), common.StaticProvidersConfigName, geolocation)
+				staticProviderEndpoints, err = rpcprovider.ParseEndpointsCustomName(viper.GetViper(), common.StaticProvidersConfigName, geolocation)
 				if err != nil {
 					return utils.LavaFormatError("invalid static providers definition", err)
+				}
+				for _, endpoint := range staticProviderEndpoints {
+					utils.LavaFormatInfo("Static Provider Endpoint:", utils.Attribute{Key: "Urls", Value: endpoint.NodeUrls}, utils.Attribute{Key: "Chain ID", Value: endpoint.ChainID}, utils.Attribute{Key: "API Interface", Value: endpoint.ApiInterface})
 				}
 			}
 
