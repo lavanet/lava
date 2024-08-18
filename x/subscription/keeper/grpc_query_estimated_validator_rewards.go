@@ -38,7 +38,7 @@ func (k Keeper) EstimatedValidatorRewards(goCtx context.Context, req *types.Quer
 		if !found {
 			return nil, fmt.Errorf("self delegation not found")
 		}
-		delegatorPart = del.Shares.Quo(val.DelegatorShares).Add(val.DelegatorShares.Sub(del.Shares).Quo(val.DelegatorShares).Mul(val.Commission.Rate))
+		delegatorPart = del.Shares.Add(val.DelegatorShares.Sub(del.Shares).Mul(val.Commission.Rate)).Quo(val.DelegatorShares)
 	} else {
 		delAddress, err := sdk.AccAddressFromBech32(req.AmountDelegator)
 		// existing delegator
