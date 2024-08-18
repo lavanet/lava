@@ -85,8 +85,7 @@ type PaymentConfiguration struct {
 }
 
 // used to disable provider rewards claiming
-type DisabledRewardServer struct {
-}
+type DisabledRewardServer struct{}
 
 func (rws *DisabledRewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
 	return 0, true

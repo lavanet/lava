@@ -31,6 +31,7 @@ func (m matcher) Matches(arg interface{}) bool {
 	}
 	return true
 }
+
 func (m matcher) String() string {
 	return ""
 }
@@ -189,7 +190,6 @@ func TestPairingUpdater(t *testing.T) {
 		}
 		consumerSessionManager.EXPECT().UpdateAllProviders(gomock.Any(), pairingMatcher).Times(1).Return(nil)
 		err := pu.RegisterPairing(context.Background(), consumerSessionManager, staticProviders)
-
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
@@ -200,7 +200,5 @@ func TestPairingUpdater(t *testing.T) {
 
 		consumerSessionManager.EXPECT().UpdateAllProviders(gomock.Any(), pairingMatcher).Times(1).Return(nil)
 		pu.Update(20)
-
 	})
-
 }
