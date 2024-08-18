@@ -336,12 +336,6 @@ func (cswp *ConsumerSessionsWithProvider) getProviderStakeSize() sdk.Coin {
 	return cswp.stakeSize
 }
 
-func (cswp *ConsumerSessionsWithProvider) getStaticProvider() bool {
-	cswp.Lock.RLock()
-	defer cswp.Lock.RUnlock()
-	return cswp.StaticProvider
-}
-
 // Validate and add the compute units for this provider
 func (cswp *ConsumerSessionsWithProvider) decreaseUsedComputeUnits(cu uint64) error {
 	cswp.Lock.Lock()
@@ -425,7 +419,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		SessionId:          randomSessionId,
 		Parent:             cswp,
 		EndpointConnection: endpointConnection,
-		StaticProvider:     cswp.getStaticProvider(),
+		StaticProvider:     cswp.StaticProvider,
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
