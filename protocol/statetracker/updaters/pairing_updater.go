@@ -22,18 +22,28 @@ type PairingUpdatable interface {
 	UpdateEpoch(epoch uint64)
 }
 
+type ConsumerStateQueryInf interface {
+	GetPairing(ctx context.Context, chainID string, blockHeight int64) ([]epochstoragetypes.StakeEntry, uint64, uint64, error)
+	GetMaxCUForUser(ctx context.Context, chainID string, epoch uint64) (uint64, error)
+}
+
+type ConsumerSessionManagerInf interface {
+	RPCEndpoint() lavasession.RPCEndpoint
+	UpdateAllProviders(epoch uint64, pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider) error
+}
+
 type PairingUpdater struct {
 	lock                       sync.RWMutex
-	consumerSessionManagersMap map[string][]*lavasession.ConsumerSessionManager // key is chainID so we don;t run getPairing more than once per chain
+	consumerSessionManagersMap map[string][]ConsumerSessionManagerInf // key is chainID so we don;t run getPairing more than once per chain
 	nextBlockForUpdate         uint64
-	stateQuery                 *ConsumerStateQuery
+	stateQuery                 ConsumerStateQueryInf
 	pairingUpdatables          []*PairingUpdatable
 	specId                     string
 	staticProviders            []*lavasession.RPCProviderEndpoint
 }
 
-func NewPairingUpdater(stateQuery *ConsumerStateQuery, specId string) *PairingUpdater {
-	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery, specId: specId, staticProviders: []*lavasession.RPCProviderEndpoint{}}
+func NewPairingUpdater(stateQuery ConsumerStateQueryInf, specId string) *PairingUpdater {
+	return &PairingUpdater{consumerSessionManagersMap: map[string][]ConsumerSessionManagerInf{}, stateQuery: stateQuery, specId: specId, staticProviders: []*lavasession.RPCProviderEndpoint{}}
 }
 
 func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.RPCProviderEndpoint) {
@@ -48,7 +58,7 @@ func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.R
 	}
 }
 
-func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProviders []*lavasession.RPCProviderEndpoint) error {
+func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager ConsumerSessionManagerInf, staticProviders []*lavasession.RPCProviderEndpoint) error {
 	chainID := consumerSessionManager.RPCEndpoint().ChainID
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -66,7 +76,7 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 	defer pu.lock.Unlock()
 	consumerSessionsManagersList, ok := pu.consumerSessionManagersMap[chainID]
 	if !ok {
-		pu.consumerSessionManagersMap[chainID] = []*lavasession.ConsumerSessionManager{consumerSessionManager}
+		pu.consumerSessionManagersMap[chainID] = []ConsumerSessionManagerInf{consumerSessionManager}
 		return nil
 	}
 	pu.consumerSessionManagersMap[chainID] = append(consumerSessionsManagersList, consumerSessionManager)
@@ -151,7 +161,7 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 	pu.updateInner(latestBlock)
 }
 
-func (pu *PairingUpdater) updateConsumerSessionManager(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, consumerSessionManager *lavasession.ConsumerSessionManager, epoch uint64) (err error) {
+func (pu *PairingUpdater) updateConsumerSessionManager(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, consumerSessionManager ConsumerSessionManagerInf, epoch uint64) (err error) {
 	pairingListForThisCSM, err := pu.filterPairingListByEndpoint(ctx, planstypes.Geolocation(consumerSessionManager.RPCEndpoint().Geolocation), pairingList, consumerSessionManager.RPCEndpoint(), epoch)
 	if err != nil {
 		return err
@@ -166,8 +176,8 @@ func (pu *PairingUpdater) updateConsumerSessionManager(ctx context.Context, pair
 func (pu *PairingUpdater) addStaticProvidersToPairingList(pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider, rpcEndpoint lavasession.RPCEndpoint, epoch uint64) map[uint64]*lavasession.ConsumerSessionsWithProvider {
 	startIdx := uint64(0)
 	for key := range pairingList {
-		if key > startIdx {
-			startIdx = key
+		if key >= startIdx {
+			startIdx = key + 1
 		}
 	}
 	for idx, provider := range pu.staticProviders {
