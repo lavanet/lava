@@ -1205,8 +1205,17 @@ func TestConsumerProviderStatic(t *testing.T) {
 	rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
 	require.NotNil(t, rpcconsumerServer)
 	client := http.Client{}
+	// consumer sends the relay to a provider with an address BANANA+%d so the provider needs to skip validations for this to work
 	resp, err := client.Get("http://" + consumerListenAddress + "/status")
 	require.NoError(t, err)
+	// we expect provider to fail the request on a verification
+	require.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	for i := 0; i < numProviders; i++ {
+		providers[i].server.StaticProvider = true
+	}
+	resp, err = client.Get("http://" + consumerListenAddress + "/status")
+	require.NoError(t, err)
+	// we expect provider to fail the request on a verification
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)

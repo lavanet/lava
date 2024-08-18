@@ -66,7 +66,7 @@ type RPCProviderServer struct {
 	relaysMonitor                   *metrics.RelaysMonitor
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	providerUniqueId                string
-	staticProvider                  bool
+	StaticProvider                  bool
 }
 
 type ReliabilityManagerInf interface {
@@ -118,7 +118,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 		utils.LavaFormatError("disabled rewards for provider, reward server not defined", nil)
 		rewardServer = &rewardserver.DisabledRewardServer{}
 	}
-	rpcps.staticProvider = staticProvider
+	rpcps.StaticProvider = staticProvider
 	rpcps.rewardServer = rewardServer
 	rpcps.chainParser = chainParser
 	rpcps.rpcProviderEndpoint = rpcProviderEndpoint
@@ -229,7 +229,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 	}
 
 	// static provider doesnt handle sessions, so just return the response
-	if rpcps.staticProvider {
+	if rpcps.StaticProvider {
 		return reply, rpcps.handleRelayErrorStatus(err)
 	}
 
@@ -287,7 +287,7 @@ func (rpcps *RPCProviderServer) Relay(ctx context.Context, request *pairingtypes
 }
 
 func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingtypes.RelayRequest) (relaySession *lavasession.SingleProviderSession, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage, err error) {
-	if !rpcps.staticProvider {
+	if !rpcps.StaticProvider {
 		relaySession, consumerAddress, err = rpcps.verifyRelaySession(ctx, request)
 		if err != nil {
 			return nil, nil, nil, err
@@ -309,7 +309,7 @@ func (rpcps *RPCProviderServer) initRelay(ctx context.Context, request *pairingt
 		return nil, nil, nil, err
 	}
 	// we only need the chainMessage for a static provider
-	if rpcps.staticProvider {
+	if rpcps.StaticProvider {
 		return nil, nil, chainMessage, nil
 	}
 	relayCU := chainMessage.GetApi().ComputeUnits
