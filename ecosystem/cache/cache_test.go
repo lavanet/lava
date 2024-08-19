@@ -40,7 +40,6 @@ func initTest() (context.Context, *cache.RelayerCacheServer) {
 		cache.DisabledFlagOption,
 		cache.DefaultExpirationTimeFinalizedMultiplier,
 		cache.DefaultExpirationTimeNonFinalizedMultiplier,
-		cache.DefaultExpirationBlocksHashesToHeightsMultiplier,
 	)
 	cacheServer := &cache.RelayerCacheServer{CacheServer: &cs}
 	return ctx, cacheServer
@@ -605,7 +604,6 @@ func TestCacheExpirationMultiplier(t *testing.T) {
 				cache.DisabledFlagOption,
 				cache.DefaultExpirationTimeFinalizedMultiplier,
 				tt.multiplier,
-				cache.DefaultExpirationBlocksHashesToHeightsMultiplier,
 			)
 			cacheServer := &cache.RelayerCacheServer{CacheServer: &cs}
 
@@ -837,7 +835,7 @@ func TestCacheSetGetBlocksHashesToHeightsHappyFlow(t *testing.T) {
 				require.NoError(t, err, "step: %d", stepNum)
 
 				// sleep to make sure it's in the cache
-				time.Sleep(time.Millisecond)
+				time.Sleep(3 * time.Millisecond)
 			case GET_INPUT:
 				messageGet := pairingtypes.RelayCacheGet{
 					RequestHash:           HashRequest(t, request, StubChainID),

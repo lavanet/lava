@@ -3,12 +3,12 @@ package chainlib
 import (
 	"math"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
 	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/utils/lavaslices"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
@@ -120,7 +120,7 @@ func (bcmc baseChainMessageContainer) GetApiCollection() *spectypes.ApiCollectio
 	return bcmc.apiCollection
 }
 
-func (bcmc *baseChainMessageContainer) CompareAndSwapEarliestRequestedBlockIfApplicable(incomingEarliest int64) bool {
+func (bcmc *baseChainMessageContainer) UpdateEarliestInMessage(incomingEarliest int64) bool {
 	swapped := false
 	if bcmc.earliestRequestedBlock != spectypes.EARLIEST_BLOCK {
 		// check earliest is not unset (0) or incoming is lower than current value
@@ -162,11 +162,7 @@ func (bcmc *baseChainMessageContainer) GetExtensions() []*spectypes.Extension {
 }
 
 func (bcmc *baseChainMessageContainer) GetConcatenatedExtensions() string {
-	extensionsNames := []string{}
-	for _, extension := range bcmc.extensions {
-		extensionsNames = append(extensionsNames, extension.Name)
-	}
-	return strings.Join(extensionsNames, ";")
+	return string(lavasession.NewRouterKeyFromExtensions(bcmc.extensions))
 }
 
 // adds the following extensions

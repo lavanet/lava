@@ -92,7 +92,7 @@ type ChainMessage interface {
 	CheckResponseError(data []byte, httpStatusCode int) (hasError bool, errorMessage string)
 	GetRawRequestHash() ([]byte, error)
 	GetRequestedBlocksHashes() []string
-	CompareAndSwapEarliestRequestedBlockIfApplicable(incomingEarliest int64) bool
+	UpdateEarliestInMessage(incomingEarliest int64) bool
 
 	ChainMessageForSend
 }

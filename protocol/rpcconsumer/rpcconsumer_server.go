@@ -1027,7 +1027,7 @@ func (rpccs *RPCConsumerServer) resolveRequestedBlockAndUpdateExtensionIfNeeded(
 
 	if earliestBlockHashRequested >= 0 {
 		// change earliest requested block if applicable
-		success := chainMessage.CompareAndSwapEarliestRequestedBlockIfApplicable(earliestBlockHashRequested)
+		success := chainMessage.UpdateEarliestInMessage(earliestBlockHashRequested)
 		if success {
 			rulePassed := rpccs.chainParser.ExtensionsParser().ExtensionParsing(addon, chainMessage, uint64(relayRequestData.SeenBlock))
 			if rulePassed {

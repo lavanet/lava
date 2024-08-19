@@ -106,6 +106,13 @@ func (s *RelayerCacheServer) GetRelay(ctx context.Context, relayCacheGet *pairin
 	var err error
 	var seenBlock int64
 
+	// validating that if we had an error, we do not return a reply.
+	defer func() {
+		if err != nil {
+			cacheReply.Reply = nil
+		}
+	}()
+
 	originalRequestedBlock := relayCacheGet.RequestedBlock // save requested block prior to swap
 	if originalRequestedBlock < 0 {                        // we need to fetch stored latest block information.
 		getLatestBlock := s.getLatestBlock(latestBlockKey(relayCacheGet.ChainId, ""))

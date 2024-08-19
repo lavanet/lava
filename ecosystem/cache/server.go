@@ -25,23 +25,22 @@ import (
 )
 
 const (
-	ExpirationFlagName                                = "expiration"
-	ExpirationTimeFinalizedMultiplierFlagName         = "expiration-multiplier"
-	ExpirationNonFinalizedFlagName                    = "expiration-non-finalized"
-	ExpirationTimeNonFinalizedMultiplierFlagName      = "expiration-non-finalized-multiplier"
-	ExpirationBlocksHashesToHeightsFlagName           = "expiration-blocks-hashes-to-heights"
-	ExpirationBlocksHashesToHeightsMultiplierFlagName = "expiration-blocks-hashes-to-heights-multiplier"
-	ExpirationNodeErrorsOnFinalizedFlagName           = "expiration-finalized-node-errors"
-	FlagCacheSizeName                                 = "max-items"
-	DefaultExpirationForNonFinalized                  = 500 * time.Millisecond
-	DefaultExpirationTimeFinalizedMultiplier          = 1.0
-	DefaultExpirationTimeNonFinalizedMultiplier       = 1.0
-	DefaultExpirationBlocksHashesToHeights            = 48 * time.Hour
-	DefaultExpirationBlocksHashesToHeightsMultiplier  = 1.0
-	DefaultExpirationTimeFinalized                    = time.Hour
-	DefaultExpirationNodeErrors                       = 250 * time.Millisecond
-	CacheNumCounters                                  = 100000000 // expect 10M items
-	unixPrefix                                        = "unix:"
+	ExpirationFlagName                               = "expiration"
+	ExpirationTimeFinalizedMultiplierFlagName        = "expiration-multiplier"
+	ExpirationNonFinalizedFlagName                   = "expiration-non-finalized"
+	ExpirationTimeNonFinalizedMultiplierFlagName     = "expiration-non-finalized-multiplier"
+	ExpirationBlocksHashesToHeightsFlagName          = "expiration-blocks-hashes-to-heights"
+	ExpirationNodeErrorsOnFinalizedFlagName          = "expiration-finalized-node-errors"
+	FlagCacheSizeName                                = "max-items"
+	DefaultExpirationForNonFinalized                 = 500 * time.Millisecond
+	DefaultExpirationTimeFinalizedMultiplier         = 1.0
+	DefaultExpirationTimeNonFinalizedMultiplier      = 1.0
+	DefaultExpirationBlocksHashesToHeights           = 48 * time.Hour
+	DefaultExpirationBlocksHashesToHeightsMultiplier = 1.0
+	DefaultExpirationTimeFinalized                   = time.Hour
+	DefaultExpirationNodeErrors                      = 250 * time.Millisecond
+	CacheNumCounters                                 = 100000000 // expect 10M items
+	unixPrefix                                       = "unix:"
 )
 
 type CacheServer struct {
@@ -66,12 +65,11 @@ func (cs *CacheServer) InitCache(
 	metricsAddr string,
 	expirationFinalizedMultiplier float64,
 	expirationNonFinalizedMultiplier float64,
-	expirationBlocksHashesToHeightsMultiplier float64,
 ) {
 	cs.ExpirationFinalized = time.Duration(float64(expiration) * expirationFinalizedMultiplier)
 	cs.ExpirationNonFinalized = time.Duration(float64(expirationNonFinalized) * expirationNonFinalizedMultiplier)
 	cs.ExpirationNodeErrors = expirationNodeErrorsOnFinalized
-	cs.ExpirationBlocksHashesToHeights = time.Duration(float64(expirationBlocksHashesToHeights) * expirationBlocksHashesToHeightsMultiplier)
+	cs.ExpirationBlocksHashesToHeights = time.Duration(float64(expirationBlocksHashesToHeights))
 
 	var err error
 	cs.tempCache, err = ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: cs.CacheMaxCost, BufferItems: 64})
@@ -225,18 +223,13 @@ func Server(
 		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationTimeNonFinalizedMultiplierFlagName})
 	}
 
-	expirationBlocksHashesToHeightsMultiplier, err := flags.GetFloat64(ExpirationBlocksHashesToHeightsMultiplierFlagName)
-	if err != nil {
-		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: ExpirationBlocksHashesToHeightsMultiplierFlagName})
-	}
-
 	cacheMaxCost, err := flags.GetInt64(FlagCacheSizeName)
 	if err != nil {
 		utils.LavaFormatFatal("failed to read flag", err, utils.Attribute{Key: "flag", Value: FlagCacheSizeName})
 	}
 	cs := CacheServer{CacheMaxCost: cacheMaxCost}
 
-	cs.InitCache(ctx, expiration, expirationNonFinalized, expirationNodeErrorsOnFinalizedFlagName, expirationBlocksHashesToHeights, metricsAddr, expirationFinalizedMultiplier, expirationNonFinalizedMultiplier, expirationBlocksHashesToHeightsMultiplier)
+	cs.InitCache(ctx, expiration, expirationNonFinalized, expirationNodeErrorsOnFinalizedFlagName, expirationBlocksHashesToHeights, metricsAddr, expirationFinalizedMultiplier, expirationNonFinalizedMultiplier)
 	// TODO: have a state tracker
 	cs.Serve(ctx, listenAddr)
 }
