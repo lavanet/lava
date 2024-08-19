@@ -108,6 +108,7 @@ type rpcProviderStartOptions struct {
 	rewardsSnapshotThreshold  uint
 	rewardsSnapshotTimeoutSec uint
 	healthCheckMetricsOptions *rpcProviderHealthCheckMetricsOptions
+	staticProvider            bool
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -137,6 +138,7 @@ type RPCProvider struct {
 	relaysHealthCheckInterval time.Duration
 	grpcHealthCheckEndpoint   string
 	providerUniqueId          string
+	staticProvider            bool
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -159,6 +161,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.relaysHealthCheckInterval = options.healthCheckMetricsOptions.relaysHealthIntervalFlag
 	rpcp.relaysMonitorAggregator = metrics.NewRelaysMonitorAggregator(rpcp.relaysHealthCheckInterval, rpcp.providerMetricsManager)
 	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
+	rpcp.staticProvider = options.staticProvider
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
@@ -176,10 +179,12 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 
 	// single reward server
-	rewardDB := rewardserver.NewRewardDBWithTTL(options.rewardTTL)
-	rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, options.rewardStoragePath, options.rewardsSnapshotThreshold, options.rewardsSnapshotTimeoutSec, rpcp.chainTrackers)
-	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
-	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
+	if !options.staticProvider {
+		rewardDB := rewardserver.NewRewardDBWithTTL(options.rewardTTL)
+		rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, options.rewardStoragePath, options.rewardsSnapshotThreshold, options.rewardsSnapshotTimeoutSec, rpcp.chainTrackers)
+		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
+		rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
+	}
 	keyName, err := sigs.GetKeyName(options.clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
@@ -467,7 +472,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -500,8 +505,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	return nil
 }
 
-func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
-	err = viper_endpoints.UnmarshalKey(common.EndpointsConfigName, &endpoints)
+func ParseEndpointsCustomName(viper_endpoints *viper.Viper, endpointsConfigName string, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
+	err = viper_endpoints.UnmarshalKey(endpointsConfigName, &endpoints)
 	if err != nil {
 		utils.LavaFormatFatal("could not unmarshal endpoints", err, utils.Attribute{Key: "viper_endpoints", Value: viper_endpoints.AllSettings()})
 	}
@@ -509,6 +514,10 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 		endpoint.Geolocation = geolocation
 	}
 	return
+}
+
+func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
+	return ParseEndpointsCustomName(viper_endpoints, common.EndpointsConfigName, geolocation)
 }
 
 func CreateRPCProviderCobraCommand() *cobra.Command {
@@ -690,6 +699,11 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			enableRelaysHealth := viper.GetBool(common.RelaysHealthEnableFlag)
 			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
 			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
+			staticProvider := viper.GetBool(common.StaticProvidersConfigName)
+
+			if staticProvider {
+				utils.LavaFormatWarning("Running in static provider mode, skipping rewards and allowing requests from anyone", nil)
+			}
 
 			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
 				enableRelaysHealth,
@@ -711,6 +725,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				rewardsSnapshotThreshold,
 				rewardsSnapshotTimeoutSec,
 				&rpcProviderHealthCheckMetricsOptions,
+				staticProvider,
 			}
 
 			rpcProvider := RPCProvider{}
@@ -722,6 +737,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	// RPCProvider command flags
 	flags.AddTxFlagsToCmd(cmdRPCProvider)
 	cmdRPCProvider.MarkFlagRequired(flags.FlagFrom)
+	cmdRPCProvider.Flags().Bool(common.StaticProvidersConfigName, false, "set the provider as static, allowing it to get requests from anyone, and skipping rewards, can be used for local tests")
 	cmdRPCProvider.Flags().Bool(common.SaveConfigFlagName, false, "save cmd args to a config file")
 	cmdRPCProvider.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCProvider.MarkFlagRequired(common.GeolocationFlag)

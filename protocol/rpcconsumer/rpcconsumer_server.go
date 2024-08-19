@@ -1043,16 +1043,22 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 
 	filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	reply.Metadata = filteredHeaders
-	err = lavaprotocol.VerifyRelayReply(ctx, reply, relayRequest, providerPublicAddress)
-	if err != nil {
-		return 0, err, false
+
+	// check the signature on the reply
+	if !singleConsumerSession.StaticProvider {
+		err = lavaprotocol.VerifyRelayReply(ctx, reply, relayRequest, providerPublicAddress)
+		if err != nil {
+			return 0, err, false
+		}
 	}
 
 	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
 
 	// TODO: response data sanity, check its under an expected format add that format to spec
 	enabled, _ := rpccs.chainParser.DataReliabilityParams()
-	if enabled {
+	if enabled && !singleConsumerSession.StaticProvider {
+		// TODO: allow static providers to detect hash mismatches,
+		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
 		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
 		if err != nil {
 			if sdkerrors.IsOf(err, protocolerrors.ProviderFinalizationDataAccountabilityError) {
