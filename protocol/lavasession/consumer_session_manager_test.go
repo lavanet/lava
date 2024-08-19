@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -222,11 +223,18 @@ func createGRPCServer(changeListener string, probeDelay time.Duration) error {
 const providerStr = "provider"
 
 type DirectiveHeaders struct {
-	headers map[string]string
+	directiveHeaders map[string]string
 }
 
-func (dh DirectiveHeaders) GetDirectiveHeaders() map[string]string {
-	return dh.headers
+func (bpm DirectiveHeaders) GetBlockedProviders() []string {
+	if bpm.directiveHeaders == nil {
+		return nil
+	}
+	blockedProviders, ok := bpm.directiveHeaders[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME]
+	if ok {
+		return strings.Split(blockedProviders, ",")
+	}
+	return nil
 }
 
 func createPairingList(providerPrefixAddress string, enabled bool) map[uint64]*ConsumerSessionsWithProvider {
