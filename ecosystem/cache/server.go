@@ -25,22 +25,21 @@ import (
 )
 
 const (
-	ExpirationFlagName                               = "expiration"
-	ExpirationTimeFinalizedMultiplierFlagName        = "expiration-multiplier"
-	ExpirationNonFinalizedFlagName                   = "expiration-non-finalized"
-	ExpirationTimeNonFinalizedMultiplierFlagName     = "expiration-non-finalized-multiplier"
-	ExpirationBlocksHashesToHeightsFlagName          = "expiration-blocks-hashes-to-heights"
-	ExpirationNodeErrorsOnFinalizedFlagName          = "expiration-finalized-node-errors"
-	FlagCacheSizeName                                = "max-items"
-	DefaultExpirationForNonFinalized                 = 500 * time.Millisecond
-	DefaultExpirationTimeFinalizedMultiplier         = 1.0
-	DefaultExpirationTimeNonFinalizedMultiplier      = 1.0
-	DefaultExpirationBlocksHashesToHeights           = 48 * time.Hour
-	DefaultExpirationBlocksHashesToHeightsMultiplier = 1.0
-	DefaultExpirationTimeFinalized                   = time.Hour
-	DefaultExpirationNodeErrors                      = 250 * time.Millisecond
-	CacheNumCounters                                 = 100000000 // expect 10M items
-	unixPrefix                                       = "unix:"
+	ExpirationFlagName                           = "expiration"
+	ExpirationTimeFinalizedMultiplierFlagName    = "expiration-multiplier"
+	ExpirationNonFinalizedFlagName               = "expiration-non-finalized"
+	ExpirationTimeNonFinalizedMultiplierFlagName = "expiration-non-finalized-multiplier"
+	ExpirationBlocksHashesToHeightsFlagName      = "expiration-blocks-hashes-to-heights"
+	ExpirationNodeErrorsOnFinalizedFlagName      = "expiration-finalized-node-errors"
+	FlagCacheSizeName                            = "max-items"
+	DefaultExpirationForNonFinalized             = 500 * time.Millisecond
+	DefaultExpirationTimeFinalizedMultiplier     = 1.0
+	DefaultExpirationTimeNonFinalizedMultiplier  = 1.0
+	DefaultExpirationBlocksHashesToHeights       = 48 * time.Hour
+	DefaultExpirationTimeFinalized               = time.Hour
+	DefaultExpirationNodeErrors                  = 250 * time.Millisecond
+	CacheNumCounters                             = 100000000 // expect 10M items
+	unixPrefix                                   = "unix:"
 )
 
 type CacheServer struct {
