@@ -12,7 +12,12 @@ import (
 
 const MaximumNumberOfSelectionLockAttempts = 500
 
-func NewUsedProviders(directiveHeaders map[string]string) *UsedProviders {
+type DirectiveHeadersInf interface {
+	GetDirectiveHeaders() map[string]string
+}
+
+func NewUsedProviders(protocolMessage DirectiveHeadersInf) *UsedProviders {
+	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 	unwantedProviders := map[string]struct{}{}
 	if len(directiveHeaders) > 0 {
 		blockedProviders, ok := directiveHeaders[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME]
