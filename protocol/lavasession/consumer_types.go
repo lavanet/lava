@@ -219,6 +219,7 @@ type ConsumerSessionsWithProvider struct {
 	// blocked provider recovery status if 0 currently not used, if 1 a session has tried resume communication with this provider
 	// if the provider is not blocked at all this field is irrelevant
 	blockedAndUsedWithChanceForRecoveryStatus uint32
+	StaticProvider                            bool
 }
 
 func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints []*Endpoint, maxCu uint64, epoch uint64, stakeSize sdk.Coin) *ConsumerSessionsWithProvider {
@@ -435,6 +436,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		SessionId:          randomSessionId,
 		Parent:             cswp,
 		EndpointConnection: endpointConnection,
+		StaticProvider:     cswp.StaticProvider,
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
