@@ -67,7 +67,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 
 			chainMessage1, err := chainParser.ParseMsg("", play.subscriptionRequestData1, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
-
+			protocolMessage1 := NewProtocolMessage(chainMessage1, nil, nil)
 			relaySender := NewMockRelaySender(ctrl)
 			relaySender.
 				EXPECT().
@@ -84,7 +84,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			relaySender.
 				EXPECT().
 				ParseRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(chainMessage1, nil, nil, nil).
+				Return(protocolMessage1, nil).
 				AnyTimes()
 
 			mockRelayerClient1 := pairingtypes.NewMockRelayer_RelaySubscribeClient(ctrl)
@@ -140,7 +140,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			uniqueIdentifiers := make([]string, numberOfParallelSubscriptions)
 			wg := sync.WaitGroup{}
 			wg.Add(numberOfParallelSubscriptions)
-			protocolMessage1 := NewProtocolMessage(chainMessage1, nil, nil)
+
 			// Start a new subscription for the first time, called SendParsedRelay once while in parallel calling 10 times subscribe with the same message
 			// expected result is to have SendParsedRelay only once and 9 other messages waiting the broadcast.
 			for i := 0; i < numberOfParallelSubscriptions; i++ {
@@ -224,7 +224,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 
 			chainMessage1, err := chainParser.ParseMsg("", play.subscriptionRequestData1, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
-
+			protocolMessage1 := NewProtocolMessage(chainMessage1, nil, nil)
 			relaySender := NewMockRelaySender(ctrl)
 			relaySender.
 				EXPECT().
@@ -241,7 +241,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 			relaySender.
 				EXPECT().
 				ParseRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(chainMessage1, nil, nil, nil).
+				Return(protocolMessage1, nil).
 				AnyTimes()
 
 			mockRelayerClient1 := pairingtypes.NewMockRelayer_RelaySubscribeClient(ctrl)
@@ -294,7 +294,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 
 			// Create a new ConsumerWSSubscriptionManager
 			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage())
-			protocolMessage1 := NewProtocolMessage(chainMessage1, nil, nil)
+
 			wg := sync.WaitGroup{}
 			wg.Add(10)
 			// Start a new subscription for the first time, called SendParsedRelay once while in parallel calling 10 times subscribe with the same message
@@ -430,6 +430,10 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			subscribeChainMessage1, err := chainParser.ParseMsg("", play.subscriptionRequestData1, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
 
+			subscribeProtocolMessage1 := NewProtocolMessage(subscribeChainMessage1, nil, nil)
+			unsubscribeProtocolMessage1 := NewProtocolMessage(unsubscribeChainMessage1, nil, &pairingtypes.RelayPrivateData{
+				Data: play.unsubscribeMessage1,
+			})
 			relaySender := NewMockRelaySender(ctrl)
 			relaySender.
 				EXPECT().
@@ -469,9 +473,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					areEqual := reqData == string(play.unsubscribeMessage1)
 					return areEqual
 				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(unsubscribeChainMessage1, nil, &pairingtypes.RelayPrivateData{
-					Data: play.unsubscribeMessage1,
-				}, nil).
+				Return(unsubscribeProtocolMessage1, nil).
 				AnyTimes()
 
 			relaySender.
@@ -482,7 +484,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					areEqual := reqData == string(play.subscriptionRequestData1)
 					return areEqual
 				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(subscribeChainMessage1, nil, nil, nil).
+				Return(subscribeProtocolMessage1, nil).
 				AnyTimes()
 
 			mockRelayerClient1 := pairingtypes.NewMockRelayer_RelaySubscribeClient(ctrl)
@@ -538,8 +540,8 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a new subscription for the first time, called SendParsedRelay once
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			subscribeProtocolMessage := NewProtocolMessage(subscribeChainMessage1, nil, nil)
-			firstReply, repliesChan1, err := manager.StartSubscription(ctx, subscribeProtocolMessage, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
+
+			firstReply, repliesChan1, err := manager.StartSubscription(ctx, subscribeProtocolMessage1, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
 			assert.NoError(t, err)
 			unsubscribeMessageWg.Add(1)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
@@ -555,7 +557,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a subscription again, same params, same dappKey, should not call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan2, err := manager.StartSubscription(ctx, subscribeProtocolMessage, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
+			firstReply, repliesChan2, err := manager.StartSubscription(ctx, subscribeProtocolMessage1, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
 			assert.Nil(t, repliesChan2) // Same subscription, same dappKey, no need for a new channel
@@ -564,7 +566,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a subscription again, same params, different dappKey, should not call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			firstReply, repliesChan3, err := manager.StartSubscription(ctx, subscribeProtocolMessage, dapp2, ts.Consumer.Addr.String(), uniqueId, nil)
+			firstReply, repliesChan3, err := manager.StartSubscription(ctx, subscribeProtocolMessage1, dapp2, ts.Consumer.Addr.String(), uniqueId, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, string(play.subscriptionFirstReply1), string(firstReply.Data))
 			assert.NotNil(t, repliesChan3) // Same subscription, but different dappKey, so will create new channel
@@ -575,10 +577,10 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			// Prepare for the next subscription
 			unsubscribeChainMessage2, err := chainParser.ParseMsg("", play.unsubscribeMessage2, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
-
+			unsubscribeProtocolMessage2 := NewProtocolMessage(unsubscribeChainMessage2, nil, &pairingtypes.RelayPrivateData{Data: play.unsubscribeMessage2})
 			subscribeChainMessage2, err := chainParser.ParseMsg("", play.subscriptionRequestData2, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
-
+			subscribeProtocolMessage2 := NewProtocolMessage(subscribeChainMessage2, nil, nil)
 			relaySender.
 				EXPECT().
 				ParseRelay(gomock.Any(), gomock.Any(), gomockuber.Cond(func(x any) bool {
@@ -587,9 +589,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					areEqual := reqData == string(play.unsubscribeMessage2)
 					return areEqual
 				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(unsubscribeChainMessage2, nil, &pairingtypes.RelayPrivateData{
-					Data: play.unsubscribeMessage2,
-				}, nil).
+				Return(unsubscribeProtocolMessage2, nil).
 				AnyTimes()
 
 			relaySender.
@@ -600,7 +600,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 					areEqual := reqData == string(play.subscriptionRequestData2)
 					return areEqual
 				}), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(subscribeChainMessage2, nil, nil, nil).
+				Return(subscribeProtocolMessage2, nil).
 				AnyTimes()
 
 			mockRelayerClient2 := pairingtypes.NewMockRelayer_RelaySubscribeClient(ctrl)
@@ -649,7 +649,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			// Start a subscription again, different params, same dappKey, should call SendParsedRelay
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			subscribeProtocolMessage2 := NewProtocolMessage(subscribeChainMessage2, nil, nil)
+
 			firstReply, repliesChan4, err := manager.StartSubscription(ctx, subscribeProtocolMessage2, dapp1, ts.Consumer.Addr.String(), uniqueId, nil)
 			assert.NoError(t, err)
 			unsubscribeMessageWg.Add(1)
@@ -688,7 +688,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			relaySender.
 				EXPECT().
 				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-				DoAndReturn(func(ctx context.Context, dappID string, consumerIp string, analytics *metrics.RelayMetrics, chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData) (relayResult *common.RelayResult, errRet error) {
+				DoAndReturn(func(ctx context.Context, dappID string, consumerIp string, analytics *metrics.RelayMetrics, protocolMessage ProtocolMessage) (relayResult *common.RelayResult, errRet error) {
 					wg.Done()
 					return relayResult2, nil
 				}).
