@@ -438,12 +438,13 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			relaySender.
 				EXPECT().
 				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomockuber.Cond(func(x any) bool {
-					relayPrivateData, ok := x.(*pairingtypes.RelayPrivateData)
-					if !ok || relayPrivateData == nil {
+					protocolMsg, ok := x.(ProtocolMessage)
+					require.True(t, ok)
+					require.NotNil(t, protocolMsg)
+					if protocolMsg.RelayPrivateData() == nil {
 						return false
 					}
-
-					if strings.Contains(string(relayPrivateData.Data), "unsubscribe") {
+					if strings.Contains(string(protocolMsg.RelayPrivateData().Data), "unsubscribe") {
 						unsubscribeMessageWg.Done()
 					}
 
