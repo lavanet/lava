@@ -154,7 +154,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 					firstReply, repliesChan, err = manager.StartSubscription(ctx, protocolMessage1, dapp, ip, uniqueIdentifiers[index], nil)
 					go func() {
 						for subMsg := range repliesChan {
-							utils.LavaFormatInfo("got reply for index", utils.LogAttr("index", index))
+							// utils.LavaFormatInfo("got reply for index", utils.LogAttr("index", index))
 							require.Equal(t, string(play.subscriptionFirstReply1), string(subMsg.Data))
 						}
 					}()

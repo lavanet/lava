@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	tmdb "github.com/cometbft/cometbft-db"
@@ -67,6 +66,49 @@ func specKeeper() (*keeper.Keeper, sdk.Context, error) {
 	return k, ctx, nil
 }
 
+func decodeProposal(path string) (utils.SpecAddProposalJSON, error) {
+	proposal := utils.SpecAddProposalJSON{}
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return proposal, err
+	}
+	decoder := json.NewDecoder(bytes.NewReader(contents))
+	decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
+
+	err = decoder.Decode(&proposal)
+	return proposal, err
+}
+
+func GetSpecFromPath(path string, specIndex string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet spectypes.Spec, err error) {
+	var ctx sdk.Context
+	if keeper == nil || ctxArg == nil {
+		keeper, ctx, err = specKeeper()
+		if err != nil {
+			return spectypes.Spec{}, err
+		}
+	} else {
+		ctx = *ctxArg
+	}
+
+	proposal, err := decodeProposal(path)
+	if err != nil {
+		return spectypes.Spec{}, err
+	}
+
+	for _, spec := range proposal.Proposal.Specs {
+		keeper.SetSpec(ctx, spec)
+		if specIndex != spec.Index {
+			continue
+		}
+		fullspec, err := keeper.ExpandSpec(ctx, spec)
+		if err != nil {
+			return spectypes.Spec{}, err
+		}
+		return fullspec, nil
+	}
+	return spectypes.Spec{}, fmt.Errorf("spec not found %s", path)
+}
+
 func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *keeper.Keeper) (specRet spectypes.Spec, err error) {
 	var ctx sdk.Context
 	if keeper == nil || ctxArg == nil {
@@ -77,31 +119,18 @@ func GetASpec(specIndex, getToTopMostPath string, ctxArg *sdk.Context, keeper *k
 	} else {
 		ctx = *ctxArg
 	}
-	proposalFile := "./cookbook/specs/ibc.json,./cookbook/specs/cosmoswasm.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/cosmossdk_full.json,./cookbook/specs/ethereum.json,./cookbook/specs/cosmoshub.json,./cookbook/specs/lava.json,./cookbook/specs/osmosis.json,./cookbook/specs/fantom.json,./cookbook/specs/celo.json,./cookbook/specs/optimism.json,./cookbook/specs/arbitrum.json,./cookbook/specs/starknet.json,./cookbook/specs/aptos.json,./cookbook/specs/juno.json,./cookbook/specs/polygon.json,./cookbook/specs/evmos.json,./cookbook/specs/base.json,./cookbook/specs/canto.json,./cookbook/specs/sui.json,./cookbook/specs/solana.json,./cookbook/specs/bsc.json,./cookbook/specs/axelar.json,./cookbook/specs/avalanche.json,./cookbook/specs/fvm.json"
-	for _, fileName := range strings.Split(proposalFile, ",") {
-		proposal := utils.SpecAddProposalJSON{}
-
-		contents, err := os.ReadFile(getToTopMostPath + fileName)
-		if err != nil {
-			return spectypes.Spec{}, err
-		}
-		decoder := json.NewDecoder(bytes.NewReader(contents))
-		decoder.DisallowUnknownFields() // This will make the unmarshal fail if there are unused fields
-
-		if err := decoder.Decode(&proposal); err != nil {
-			return spectypes.Spec{}, err
-		}
-
-		for _, spec := range proposal.Proposal.Specs {
-			keeper.SetSpec(ctx, spec)
-			if specIndex != spec.Index {
-				continue
-			}
-			fullspec, err := keeper.ExpandSpec(ctx, spec)
-			if err != nil {
-				return spectypes.Spec{}, err
-			}
-			return fullspec, nil
+	proposalDirectory := "cookbook/specs/"
+	proposalFiles := []string{
+		"ibc.json", "cosmoswasm.json", "tendermint.json", "cosmossdk.json", "cosmossdk_full.json",
+		"ethereum.json", "cosmoshub.json", "lava.json", "osmosis.json", "fantom.json", "celo.json",
+		"optimism.json", "arbitrum.json", "starknet.json", "aptos.json", "juno.json", "polygon.json",
+		"evmos.json", "base.json", "canto.json", "sui.json", "solana.json", "bsc.json", "axelar.json",
+		"avalanche.json", "fvm.json", "near.json",
+	}
+	for _, fileName := range proposalFiles {
+		spec, err := GetSpecFromPath(getToTopMostPath+proposalDirectory+fileName, specIndex, &ctx, keeper)
+		if err == nil {
+			return spec, nil
 		}
 	}
 	return spectypes.Spec{}, fmt.Errorf("spec not found %s", specIndex)
