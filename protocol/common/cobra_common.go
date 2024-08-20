@@ -32,6 +32,7 @@ const (
 	// Disable relay retries when we get node errors.
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	DisableRetryOnNodeErrorsFlag = "disable-retry-on-node-error"
+	UseOfflineSpecFlag           = "use-offline-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
 )
 
 const (
@@ -55,6 +56,7 @@ type ConsumerCmdFlags struct {
 	DebugRelays                 bool          // enables debug mode for relays
 	DisableConflictTransactions bool          // disable conflict transactions
 	DisableRetryOnNodeErrors    bool          // disable retries on node errors
+	OfflineSpecPath             string        // path to the spec file, works only when bootstrapping a single chain.
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.
