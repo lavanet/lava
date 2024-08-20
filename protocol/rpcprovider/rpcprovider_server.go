@@ -367,7 +367,18 @@ func (rpcps *RPCProviderServer) ValidateRequest(chainMessage chainlib.ChainMessa
 				utils.Attribute{Key: "provider_requested_block", Value: reqBlock},
 				utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock},
 				utils.Attribute{Key: "GUID", Value: ctx})
-			return utils.LavaFormatError("requested block mismatch between consumer and provider", nil, utils.LogAttr("method", chainMessage.GetApi().Name), utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate}, utils.Attribute{Key: "provider_requested_block", Value: reqBlock}, utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata})
+			// TODO, we need to return an error here, this was disabled so relays will pass, but it will cause data reliability issues.
+			// once we understand the issue return the error.
+			utils.LavaFormatError("requested block mismatch between consumer and provider", nil,
+				utils.LogAttr("request data", string(request.RelayData.Data)),
+				utils.LogAttr("request path", request.RelayData.ApiUrl),
+				utils.LogAttr("method", chainMessage.GetApi().Name),
+				utils.Attribute{Key: "provider_parsed_block_pre_update", Value: providerRequestedBlockPreUpdate},
+				utils.Attribute{Key: "provider_requested_block", Value: reqBlock},
+				utils.Attribute{Key: "consumer_requested_block", Value: request.RelayData.RequestBlock},
+				utils.Attribute{Key: "GUID", Value: ctx},
+				utils.Attribute{Key: "metadata", Value: request.RelayData.Metadata},
+			)
 		}
 	}
 	return nil
