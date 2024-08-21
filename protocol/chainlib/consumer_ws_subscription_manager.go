@@ -19,9 +19,7 @@ import (
 )
 
 type unsubscribeRelayData struct {
-	chainMessage     ChainMessage
-	directiveHeaders map[string]string
-	relayRequestData *pairingtypes.RelayPrivateData
+	protocolMessage ProtocolMessage
 }
 
 type activeSubscriptionHolder struct {
@@ -186,15 +184,13 @@ func (cwsm *ConsumerWSSubscriptionManager) checkForActiveSubscriptionWithLock(
 
 func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	webSocketCtx context.Context,
-	chainMessage ChainMessage,
-	directiveHeaders map[string]string,
-	relayRequestData *pairingtypes.RelayPrivateData,
+	protocolMessage ProtocolMessage,
 	dappID string,
 	consumerIp string,
 	webSocketConnectionUniqueId string,
 	metricsData *metrics.RelayMetrics,
 ) (firstReply *pairingtypes.RelayReply, repliesChan <-chan *pairingtypes.RelayReply, err error) {
-	hashedParams, _, err := cwsm.getHashedParams(chainMessage)
+	hashedParams, _, err := cwsm.getHashedParams(protocolMessage)
 	if err != nil {
 		return nil, nil, utils.LavaFormatError("could not marshal params", err)
 	}
@@ -229,7 +225,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		<-closeWebsocketRepliesChan
 		utils.LavaFormatTrace("requested to close websocketRepliesChan",
 			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("dappKey", dappKey),
 		)
@@ -242,7 +238,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		<-webSocketCtx.Done()
 		utils.LavaFormatTrace("websocket context is done, removing websocket from active subscriptions",
 			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("dappKey", dappKey),
 		)
@@ -258,7 +254,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	}()
 
 	// Validated there are no active subscriptions that we can use.
-	firstSubscriptionReply, returnWebsocketRepliesChan := cwsm.checkForActiveSubscriptionWithLock(webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender, closeWebsocketRepliesChannel)
+	firstSubscriptionReply, returnWebsocketRepliesChan := cwsm.checkForActiveSubscriptionWithLock(webSocketCtx, hashedParams, protocolMessage, dappKey, websocketRepliesSafeChannelSender, closeWebsocketRepliesChannel)
 	if firstSubscriptionReply != nil {
 		if returnWebsocketRepliesChan {
 			return firstSubscriptionReply, websocketRepliesChan, nil
@@ -279,7 +275,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 			utils.LavaFormatTrace("Finished pending for subscription, have results", utils.LogAttr("success", res))
 			// Check res is valid, if not fall through logs and try again with a new client.
 			if res {
-				firstSubscriptionReply, returnWebsocketRepliesChan := cwsm.checkForActiveSubscriptionWithLock(webSocketCtx, hashedParams, chainMessage, dappKey, websocketRepliesSafeChannelSender, closeWebsocketRepliesChannel)
+				firstSubscriptionReply, returnWebsocketRepliesChan := cwsm.checkForActiveSubscriptionWithLock(webSocketCtx, hashedParams, protocolMessage, dappKey, websocketRepliesSafeChannelSender, closeWebsocketRepliesChannel)
 				if firstSubscriptionReply != nil {
 					if returnWebsocketRepliesChan {
 						return firstSubscriptionReply, websocketRepliesChan, nil
@@ -300,12 +296,12 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	utils.LavaFormatTrace("could not find active subscription for given params, creating new one",
 		utils.LogAttr("GUID", webSocketCtx),
-		utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+		utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		utils.LogAttr("dappKey", dappKey),
 	)
 
-	relayResult, err := cwsm.relaySender.SendParsedRelay(webSocketCtx, dappID, consumerIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
+	relayResult, err := cwsm.relaySender.SendParsedRelay(webSocketCtx, dappID, consumerIp, metricsData, protocolMessage)
 	if err != nil {
 		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("could not send subscription relay", err)
@@ -313,7 +309,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	utils.LavaFormatTrace("got relay result from SendParsedRelay",
 		utils.LogAttr("GUID", webSocketCtx),
-		utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+		utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		utils.LogAttr("dappKey", dappKey),
 		utils.LogAttr("relayResult", relayResult),
@@ -325,7 +321,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("reply server is nil, probably an error with the subscription initiation", nil,
 			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("dappKey", dappKey),
 		)
@@ -336,7 +332,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("Reply data is nil", nil,
 			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("dappKey", dappKey),
 		)
@@ -348,18 +344,18 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("could not copy relay request", err,
 			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("dappKey", dappKey),
 		)
 	}
 
-	err = cwsm.verifySubscriptionMessage(hashedParams, chainMessage, relayResult.Request, &reply, relayResult.ProviderInfo.ProviderAddress)
+	err = cwsm.verifySubscriptionMessage(hashedParams, protocolMessage, relayResult.Request, &reply, relayResult.ProviderInfo.ProviderAddress)
 	if err != nil {
 		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("Failed VerifyRelayReply on subscription message", err,
 			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("dappKey", dappKey),
 			utils.LogAttr("reply", string(reply.Data)),
@@ -373,7 +369,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("could not parse reply into json", err,
 			utils.LogAttr("GUID", webSocketCtx),
-			utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+			utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("dappKey", dappKey),
 			utils.LogAttr("reply", reply.Data),
@@ -391,7 +387,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	cwsm.lock.Lock()
 	defer cwsm.lock.Unlock()
 
-	subscriptionId := chainMessage.SubscriptionIdExtractor(&replyJsonrpcMessage)
+	subscriptionId := protocolMessage.SubscriptionIdExtractor(&replyJsonrpcMessage)
 	subscriptionId = common.UnSquareBracket(subscriptionId)
 	if common.IsQuoted(subscriptionId) {
 		subscriptionId, _ = strconv.Unquote(subscriptionId)
@@ -404,7 +400,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		firstSubscriptionReplyAsJsonrpcMessage:  &replyJsonrpcMessage,
 		replyServer:                             replyServer,
 		subscriptionOriginalRequest:             copiedRequest,
-		subscriptionOriginalRequestChainMessage: chainMessage,
+		subscriptionOriginalRequestChainMessage: protocolMessage,
 		closeSubscriptionChan:                   closeSubscriptionChan,
 		connectedDappKeys:                       map[string]struct{}{dappKey: {}},
 		subscriptionId:                          subscriptionId,
@@ -458,9 +454,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 		// we run the unsubscribe flow in an inner function so it wont prevent us from removing the activeSubscriptions at the end.
 		func() {
 			var err error
-			var chainMessage ChainMessage
-			var directiveHeaders map[string]string
-			var relayRequestData *pairingtypes.RelayPrivateData
+			var protocolMessage ProtocolMessage
 			if unsubscribeData != nil {
 				// This unsubscribe request was initiated by the user
 				utils.LavaFormatTrace("unsubscribe request was made by the user",
@@ -468,9 +462,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				)
 
-				chainMessage = unsubscribeData.chainMessage
-				directiveHeaders = unsubscribeData.directiveHeaders
-				relayRequestData = unsubscribeData.relayRequestData
+				protocolMessage = unsubscribeData.protocolMessage
 			} else {
 				// This unsubscribe request was initiated by us
 				utils.LavaFormatTrace("unsubscribe request was made automatically",
@@ -478,13 +470,13 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 					utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 				)
 
-				chainMessage, directiveHeaders, relayRequestData, err = cwsm.craftUnsubscribeMessage(hashedParams, dappID, userIp, metricsData)
+				protocolMessage, err = cwsm.craftUnsubscribeMessage(hashedParams, dappID, userIp, metricsData)
 				if err != nil {
 					utils.LavaFormatError("could not craft unsubscribe message", err, utils.LogAttr("GUID", webSocketCtx))
 					return
 				}
 
-				stringJson, err := gojson.Marshal(chainMessage.GetRPCMessage())
+				stringJson, err := gojson.Marshal(protocolMessage.GetRPCMessage())
 				if err != nil {
 					utils.LavaFormatError("could not marshal chain message", err, utils.LogAttr("GUID", webSocketCtx))
 					return
@@ -498,16 +490,16 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			}
 
 			unsubscribeRelayCtx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
-			err = cwsm.sendUnsubscribeMessage(unsubscribeRelayCtx, dappID, userIp, chainMessage, directiveHeaders, relayRequestData, metricsData)
+			err = cwsm.sendUnsubscribeMessage(unsubscribeRelayCtx, dappID, userIp, protocolMessage, metricsData)
 			if err != nil {
 				utils.LavaFormatError("could not send unsubscribe message due to a relay error",
 					err,
 					utils.LogAttr("GUID", webSocketCtx),
-					utils.LogAttr("relayRequestData", relayRequestData),
+					utils.LogAttr("relayRequestData", protocolMessage.RelayPrivateData()),
 					utils.LogAttr("dappID", dappID),
 					utils.LogAttr("userIp", userIp),
-					utils.LogAttr("api", chainMessage.GetApi().Name),
-					utils.LogAttr("params", chainMessage.GetRPCMessage().GetParams()),
+					utils.LogAttr("api", protocolMessage.GetApi().Name),
+					utils.LogAttr("params", protocolMessage.GetRPCMessage().GetParams()),
 				)
 			} else {
 				utils.LavaFormatTrace("success sending unsubscribe message, deleting hashed params from activeSubscriptions",
@@ -645,7 +637,7 @@ func (cwsm *ConsumerWSSubscriptionManager) getHashedParams(chainMessage ChainMes
 	return hashedParams, params, nil
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Context, chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, dappID, consumerIp string, webSocketConnectionUniqueId string, metricsData *metrics.RelayMetrics) error {
+func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Context, protocolMessage ProtocolMessage, dappID, consumerIp string, webSocketConnectionUniqueId string, metricsData *metrics.RelayMetrics) error {
 	utils.LavaFormatTrace("want to unsubscribe",
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("dappID", dappID),
@@ -657,16 +649,16 @@ func (cwsm *ConsumerWSSubscriptionManager) Unsubscribe(webSocketCtx context.Cont
 
 	cwsm.lock.Lock()
 	defer cwsm.lock.Unlock()
-	hashedParams, err := cwsm.findActiveSubscriptionHashedParamsFromChainMessage(chainMessage)
+	hashedParams, err := cwsm.findActiveSubscriptionHashedParamsFromChainMessage(protocolMessage)
 	if err != nil {
 		return err
 	}
 	return cwsm.verifyAndDisconnectDappFromSubscription(webSocketCtx, dappKey, hashedParams, func() (*unsubscribeRelayData, error) {
-		return &unsubscribeRelayData{chainMessage, directiveHeaders, relayRequestData}, nil
+		return &unsubscribeRelayData{protocolMessage}, nil
 	})
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams, dappID, consumerIp string, metricsData *metrics.RelayMetrics) (ChainMessage, map[string]string, *pairingtypes.RelayPrivateData, error) {
+func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams, dappID, consumerIp string, metricsData *metrics.RelayMetrics) (ProtocolMessage, error) {
 	request := cwsm.activeSubscriptions[hashedParams].subscriptionOriginalRequestChainMessage
 	subscriptionId := cwsm.activeSubscriptions[hashedParams].subscriptionId
 
@@ -682,14 +674,14 @@ func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams,
 	}
 
 	if !found {
-		return nil, nil, nil, utils.LavaFormatError("could not find unsubscribe parse directive for given chain message", nil,
+		return nil, utils.LavaFormatError("could not find unsubscribe parse directive for given chain message", nil,
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("subscriptionId", subscriptionId),
 		)
 	}
 
 	if unsubscribeRequestData == "" {
-		return nil, nil, nil, utils.LavaFormatError("unsubscribe request data is empty", nil,
+		return nil, utils.LavaFormatError("unsubscribe request data is empty", nil,
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("subscriptionId", subscriptionId),
 		)
@@ -697,9 +689,9 @@ func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams,
 
 	// Craft the unsubscribe chain message
 	ctx := context.Background()
-	chainMessage, directiveHeaders, relayRequestData, err := cwsm.relaySender.ParseRelay(ctx, "", unsubscribeRequestData, cwsm.connectionType, dappID, consumerIp, metricsData, nil)
+	protocolMessage, err := cwsm.relaySender.ParseRelay(ctx, "", unsubscribeRequestData, cwsm.connectionType, dappID, consumerIp, metricsData, nil)
 	if err != nil {
-		return nil, nil, nil, utils.LavaFormatError("could not craft unsubscribe chain message", err,
+		return nil, utils.LavaFormatError("could not craft unsubscribe chain message", err,
 			utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			utils.LogAttr("subscriptionId", subscriptionId),
 			utils.LogAttr("unsubscribeRequestData", unsubscribeRequestData),
@@ -707,10 +699,10 @@ func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams,
 		)
 	}
 
-	return chainMessage, directiveHeaders, relayRequestData, nil
+	return protocolMessage, nil
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) sendUnsubscribeMessage(ctx context.Context, dappID, consumerIp string, chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, metricsData *metrics.RelayMetrics) error {
+func (cwsm *ConsumerWSSubscriptionManager) sendUnsubscribeMessage(ctx context.Context, dappID, consumerIp string, protocolMessage ProtocolMessage, metricsData *metrics.RelayMetrics) error {
 	// Send the crafted unsubscribe relay
 	utils.LavaFormatTrace("sending unsubscribe relay",
 		utils.LogAttr("GUID", ctx),
@@ -718,7 +710,7 @@ func (cwsm *ConsumerWSSubscriptionManager) sendUnsubscribeMessage(ctx context.Co
 		utils.LogAttr("consumerIp", consumerIp),
 	)
 
-	_, err := cwsm.relaySender.SendParsedRelay(ctx, dappID, consumerIp, metricsData, chainMessage, directiveHeaders, relayRequestData)
+	_, err := cwsm.relaySender.SendParsedRelay(ctx, dappID, consumerIp, metricsData, protocolMessage)
 	if err != nil {
 		return utils.LavaFormatError("could not send unsubscribe relay", err)
 	}
@@ -775,12 +767,12 @@ func (cwsm *ConsumerWSSubscriptionManager) UnsubscribeAll(webSocketCtx context.C
 		)
 
 		unsubscribeRelayGetter := func() (*unsubscribeRelayData, error) {
-			chainMessage, directiveHeaders, relayRequestData, err := cwsm.craftUnsubscribeMessage(hashedParams, dappID, consumerIp, metricsData)
+			protocolMessage, err := cwsm.craftUnsubscribeMessage(hashedParams, dappID, consumerIp, metricsData)
 			if err != nil {
 				return nil, err
 			}
 
-			return &unsubscribeRelayData{chainMessage, directiveHeaders, relayRequestData}, nil
+			return &unsubscribeRelayData{protocolMessage}, nil
 		}
 
 		cwsm.verifyAndDisconnectDappFromSubscription(webSocketCtx, dappKey, hashedParams, unsubscribeRelayGetter)
