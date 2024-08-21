@@ -36,7 +36,6 @@ func CmdSpecTrackedInfo() *cobra.Command {
 			reqChainID := args[0]
 			reqProvider := ""
 			if len(args) == 2 {
-
 				reqProvider, err = utils.ParseCLIAddress(clientCtx, args[1])
 				if err != nil {
 					return err
