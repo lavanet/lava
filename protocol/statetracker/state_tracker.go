@@ -7,9 +7,12 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
 	"github.com/lavanet/lava/v2/protocol/chaintracker"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
 	updaters "github.com/lavanet/lava/v2/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v2/utils"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
@@ -38,6 +41,27 @@ type Updater interface {
 	Update(int64)
 	Reset(int64)
 	UpdaterKey() string
+}
+
+type SpecUpdaterInf interface {
+	RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error
+}
+
+// Either register for spec updates or set spec for offline spec, used in both consumer and provider process
+func RegisterForSpecUpdatesOrSetStaticSpec(ctx context.Context, chainParser chainlib.ChainParser, specPath string, rpcEndpoint lavasession.RPCEndpoint, specUpdaterInf SpecUpdaterInf) (err error) {
+	if specPath != "" {
+		// offline spec mode.
+		parsedOfflineSpec, loadError := specutils.GetSpecsFromPath(specPath, rpcEndpoint.ChainID, nil, nil)
+		if loadError != nil {
+			err = utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", specPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+		}
+		utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", specPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
+		chainParser.SetSpec(parsedOfflineSpec)
+	} else {
+		// register for spec updates
+		err = specUpdaterInf.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
+	}
+	return
 }
 
 func GetLavaSpecWithRetry(ctx context.Context, specQueryClient spectypes.QueryClient) (*spectypes.QueryGetSpecResponse, error) {
