@@ -425,7 +425,6 @@ func NewQueryTotalGasCmd() *cobra.Command {
 				tx := getResponse(account, sequence)
 
 				if tx != nil {
-
 					msgs := tx.GetTx().GetMsgs()
 					foundPayment := false
 					for _, msg := range msgs {
@@ -445,7 +444,6 @@ func NewQueryTotalGasCmd() *cobra.Command {
 						return err
 					}
 				}
-
 				fmt.Printf("\rsequence %d, totalgas %d txdiff %f sec", sequence, totalgas, now.Sub(txtime).Seconds())
 			}
 			totalgas /= numRelays
