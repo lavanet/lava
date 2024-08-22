@@ -690,7 +690,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			relaySender.
 				EXPECT().
 				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any()).
-				DoAndReturn(func(ctx context.Context, dappID string, consumerIp string, analytics *metrics.RelayMetrics, protocolMessage ProtocolMessage) (relayResult *common.RelayResult, errRet error) {
+				DoAndReturn(func(ctx context.Context, analytics *metrics.RelayMetrics, protocolMessage ProtocolMessage) (relayResult *common.RelayResult, errRet error) {
 					wg.Done()
 					return relayResult2, nil
 				}).
