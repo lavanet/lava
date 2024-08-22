@@ -751,6 +751,207 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 	}
 }
 
+func TestChainRouterWithMethodRoutes(t *testing.T) {
+	ctx := context.Background()
+	apiInterface := spectypes.APIInterfaceJsonRPC
+	chainParser, err := NewChainParser(apiInterface)
+	require.NoError(t, err)
+
+	IgnoreSubscriptionNotConfiguredError = false
+
+	addonsOptions := []string{"-addon-", "-addon2-"}
+	extensionsOptions := []string{"-test-", "-test2-", "-test3-"}
+
+	spec := testcommon.CreateMockSpec()
+	spec.ApiCollections = []*spectypes.ApiCollection{
+		{
+			Enabled: true,
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: apiInterface,
+				InternalPath: "",
+				Type:         "",
+				AddOn:        "",
+			},
+			Extensions: []*spectypes.Extension{
+				{
+					Name:         extensionsOptions[0],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[1],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[2],
+					CuMultiplier: 1,
+				},
+			},
+			ParseDirectives: []*spectypes.ParseDirective{{
+				FunctionTag: spectypes.FUNCTION_TAG_SUBSCRIBE,
+			}},
+			Apis: []*spectypes.Api{
+				{
+					Enabled: true,
+					Name:    "api-1",
+				},
+				{
+					Enabled: true,
+					Name:    "api-2",
+				},
+			},
+		},
+		{
+			Enabled: true,
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: apiInterface,
+				InternalPath: "",
+				Type:         "",
+				AddOn:        "",
+			},
+			Extensions: []*spectypes.Extension{
+				{
+					Name:         extensionsOptions[0],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[1],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[2],
+					CuMultiplier: 1,
+				},
+			},
+			Apis: []*spectypes.Api{
+				{
+					Enabled: true,
+					Name:    "api-3",
+				},
+				{
+					Enabled: true,
+					Name:    "api-4",
+				},
+			},
+		},
+		{
+			Enabled: true,
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: apiInterface,
+				InternalPath: "",
+				Type:         "",
+				AddOn:        addonsOptions[0],
+			},
+			Extensions: []*spectypes.Extension{
+				{
+					Name:         extensionsOptions[0],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[1],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[2],
+					CuMultiplier: 1,
+				},
+			},
+			Apis: []*spectypes.Api{
+				{
+					Enabled: true,
+					Name:    "api-5",
+				},
+				{
+					Enabled: true,
+					Name:    "api-6",
+				},
+			},
+		},
+		{
+			Enabled: true,
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: apiInterface,
+				InternalPath: "",
+				Type:         "",
+				AddOn:        addonsOptions[1],
+			},
+			Extensions: []*spectypes.Extension{
+				{
+					Name:         extensionsOptions[0],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[1],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[2],
+					CuMultiplier: 1,
+				},
+			},
+			Apis: []*spectypes.Api{
+				{
+					Enabled: true,
+					Name:    "api-7",
+				},
+				{
+					Enabled: true,
+					Name:    "api-8",
+				},
+			},
+		},
+	}
+	chainParser.SetSpec(spec)
+	endpoint := &lavasession.RPCProviderEndpoint{
+		NetworkAddress: lavasession.NetworkAddressData{},
+		ChainID:        spec.Index,
+		ApiInterface:   apiInterface,
+		Geolocation:    1,
+		NodeUrls:       []common.NodeUrl{},
+	}
+
+	playBook := []struct {
+		name                 string
+		nodeUrls             []common.NodeUrl
+		success              bool
+		expectedMethodRoutes int
+	}{
+		{
+			name: "basic routing",
+			nodeUrls: []common.NodeUrl{
+				{
+					Url:     "-0-",
+					Methods: []string{},
+				},
+				{
+					Url:     "-1-",
+					Methods: []string{"api-2"},
+				},
+			},
+			success:              true,
+			expectedMethodRoutes: 2,
+		},
+	}
+
+	mockProxyConstructor := func(context.Context, uint, lavasession.RPCProviderEndpoint, ChainParser) (ChainProxy, error) {
+		return nil, nil
+	}
+
+	for _, play := range playBook {
+		t.Run(play.name, func(t *testing.T) {
+			endpoint.NodeUrls = play.nodeUrls
+			chainRouter, err := newChainRouter(ctx, 1, *endpoint, chainParser, mockProxyConstructor)
+
+			if play.success {
+				require.NoError(t, err)
+				methodRoutes := len(chainRouter.methodRoutes)
+				require.Equal(t, play.expectedMethodRoutes, methodRoutes)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
+
 func createRPCServer() net.Listener {
 	listener, err := net.Listen("tcp", listenerAddressTcp)
 	if err != nil {

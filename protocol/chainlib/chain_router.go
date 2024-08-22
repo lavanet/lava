@@ -16,6 +16,11 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+type MethodRoute struct {
+	lavasession.RouterKey
+	method string
+}
+
 type chainRouterEntry struct {
 	ChainProxy
 	addonsSupported map[string]struct{}
@@ -34,12 +39,19 @@ func (cre *chainRouterEntry) isSupporting(addon string) bool {
 type chainRouterImpl struct {
 	lock             *sync.RWMutex
 	chainProxyRouter map[lavasession.RouterKey][]chainRouterEntry
+	methodRoutes     map[MethodRoute]uint // used to map between a method and it's method route id
 }
 
-func (cri *chainRouterImpl) getChainProxySupporting(ctx context.Context, addon string, extensions []string) (ChainProxy, error) {
+func (cri *chainRouterImpl) GetChainProxySupporting(ctx context.Context, addon string, extensions []string, method string) (ChainProxy, error) {
 	cri.lock.RLock()
 	defer cri.lock.RUnlock()
+
+	// check if that specific method has a special route, if it does apply it to the router key
 	wantedRouterKey := lavasession.NewRouterKey(extensions)
+	methodRoute, ok := cri.methodRoutes[MethodRoute{RouterKey: wantedRouterKey, method: method}] // make sure we have a method route for this method
+	if ok {
+		wantedRouterKey = wantedRouterKey.ApplyMethodsRoute(methodRoute)
+	}
 	if chainProxyEntries, ok := cri.chainProxyRouter[wantedRouterKey]; ok {
 		for _, chainRouterEntry := range chainProxyEntries {
 			if chainRouterEntry.isSupporting(addon) {
@@ -70,7 +82,7 @@ func (cri chainRouterImpl) ExtensionsSupported(extensions []string) bool {
 func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend, extensions []string) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error) {
 	// add the parsed addon from the apiCollection
 	addon := chainMessage.GetApiCollection().CollectionData.AddOn
-	selectedChainProxy, err := cri.getChainProxySupporting(ctx, addon, extensions)
+	selectedChainProxy, err := cri.GetChainProxySupporting(ctx, addon, extensions, chainMessage.GetApi().Name)
 	if err != nil {
 		return nil, "", nil, common.NodeUrl{}, "", err
 	}
@@ -79,56 +91,110 @@ func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{},
 	return relayReply, subscriptionID, relayReplyServer, proxyUrl, chainId, err
 }
 
+func (cri *chainRouterImpl) NewMethodRouteBatch(routerKey lavasession.RouterKey) uint {
+	methodRoute := MethodRoute{RouterKey: routerKey, method: ""} // empty method counts the batch
+	existingRouteBatch := cri.methodRoutes[methodRoute]
+	cri.methodRoutes[methodRoute]++
+	return existingRouteBatch
+}
+
+func (cri *chainRouterImpl) NewMethodRoute(routerKey lavasession.RouterKey, method string, methodBatch uint) error {
+	methodRoute := MethodRoute{RouterKey: routerKey, method: method}
+	if existingRoute, ok := cri.methodRoutes[methodRoute]; ok {
+		if existingRoute != methodBatch {
+			return utils.LavaFormatError("method route already exists with a different batch", nil, utils.LogAttr("routerKey", routerKey), utils.LogAttr("methodRoute", methodRoute), utils.LogAttr("existingRoute", existingRoute), utils.LogAttr("methodBatch", methodBatch))
+		}
+	}
+	cri.methodRoutes[methodRoute] = methodBatch
+	return nil
+}
+
 // batch nodeUrls with the same addons together in a copy
-func batchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint) map[lavasession.RouterKey]lavasession.RPCProviderEndpoint {
+func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint) (map[lavasession.RouterKey]lavasession.RPCProviderEndpoint, error) {
 	returnedBatch := map[lavasession.RouterKey]lavasession.RPCProviderEndpoint{}
+	routesToCheck := map[lavasession.RouterKey]bool{}
 	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
 		routerKey := lavasession.NewRouterKey(nodeUrl.Addons)
 
-		u, err := url.Parse(nodeUrl.Url)
-		// Some parsing may fail because of gRPC
-		if err == nil && (u.Scheme == "ws" || u.Scheme == "wss") {
-			// if websocket, check if we have a router key for http already. if not add a websocket router key
-			// so in case we didn't get an http endpoint, we can use the ws one.
-			if _, ok := returnedBatch[routerKey]; !ok {
-				returnedBatch[routerKey] = lavasession.RPCProviderEndpoint{
-					NetworkAddress: rpcProviderEndpoint.NetworkAddress,
-					ChainID:        rpcProviderEndpoint.ChainID,
-					ApiInterface:   rpcProviderEndpoint.ApiInterface,
-					Geolocation:    rpcProviderEndpoint.Geolocation,
-					NodeUrls:       []common.NodeUrl{nodeUrl}, // add existing nodeUrl to the batch
+		if len(nodeUrl.Methods) > 0 {
+			// all methods defined here will go to the same batch
+			methodBatch := cri.NewMethodRouteBatch(routerKey)
+
+			for _, method := range nodeUrl.Methods {
+				// define we need to check the route for a basic router key without method routes
+				if _, ok := routesToCheck[routerKey]; !ok {
+					routesToCheck[routerKey] = false
 				}
+				// update a new router key with a method route,
+				// the method route number needs to increase every time methods appear with the same router key which NewMethodRoute does
+				err := cri.NewMethodRoute(routerKey, method, methodBatch)
+				if err != nil {
+					return nil, err
+				}
+				routerKey = routerKey.ApplyMethodsRoute(methodBatch)
+
+				cri.parseNodeUrl(nodeUrl, returnedBatch, routerKey, rpcProviderEndpoint)
 			}
-
-			// now change the router key to fit the websocket extension key.
-			nodeUrl.Addons = append(nodeUrl.Addons, WebSocketExtension)
-			routerKey = lavasession.NewRouterKey(nodeUrl.Addons)
+		} else {
+			routesToCheck[routerKey] = true
+			cri.parseNodeUrl(nodeUrl, returnedBatch, routerKey, rpcProviderEndpoint)
 		}
+	}
+	if len(returnedBatch) == 0 {
+		return nil, utils.LavaFormatError("invalid batch, routes are empty", nil, utils.LogAttr("endpoint", rpcProviderEndpoint))
+	}
+	// validate all defined method routes have a regular route
 
-		if existingEndpoint, ok := returnedBatch[routerKey]; !ok {
+	return returnedBatch, nil
+}
+
+func (*chainRouterImpl) parseNodeUrl(nodeUrl common.NodeUrl, returnedBatch map[lavasession.RouterKey]lavasession.RPCProviderEndpoint, routerKey lavasession.RouterKey, rpcProviderEndpoint lavasession.RPCProviderEndpoint) {
+	u, err := url.Parse(nodeUrl.Url)
+	// Some parsing may fail because of gRPC
+	if err == nil && (u.Scheme == "ws" || u.Scheme == "wss") {
+		// if websocket, check if we have a router key for http already. if not add a websocket router key
+		// so in case we didn't get an http endpoint, we can use the ws one.
+		if _, ok := returnedBatch[routerKey]; !ok {
 			returnedBatch[routerKey] = lavasession.RPCProviderEndpoint{
 				NetworkAddress: rpcProviderEndpoint.NetworkAddress,
 				ChainID:        rpcProviderEndpoint.ChainID,
 				ApiInterface:   rpcProviderEndpoint.ApiInterface,
 				Geolocation:    rpcProviderEndpoint.Geolocation,
-				NodeUrls:       []common.NodeUrl{nodeUrl}, // add existing nodeUrl to the batch
+				NodeUrls:       []common.NodeUrl{nodeUrl},
 			}
-		} else {
-			// setting the incoming url first as it might be http while existing is websocket. (we prioritize http over ws when possible)
-			existingEndpoint.NodeUrls = append([]common.NodeUrl{nodeUrl}, existingEndpoint.NodeUrls...)
-			returnedBatch[routerKey] = existingEndpoint
 		}
+		// now change the router key to fit the websocket extension key.
+		nodeUrl.Addons = append(nodeUrl.Addons, WebSocketExtension)
+		routerKey = lavasession.NewRouterKey(nodeUrl.Addons)
 	}
 
-	return returnedBatch
+	if existingEndpoint, ok := returnedBatch[routerKey]; !ok {
+		returnedBatch[routerKey] = lavasession.RPCProviderEndpoint{
+			NetworkAddress: rpcProviderEndpoint.NetworkAddress,
+			ChainID:        rpcProviderEndpoint.ChainID,
+			ApiInterface:   rpcProviderEndpoint.ApiInterface,
+			Geolocation:    rpcProviderEndpoint.Geolocation,
+			NodeUrls:       []common.NodeUrl{nodeUrl},
+		}
+	} else {
+		// setting the incoming url first as it might be http while existing is websocket. (we prioritize http over ws when possible)
+		existingEndpoint.NodeUrls = append([]common.NodeUrl{nodeUrl}, existingEndpoint.NodeUrls...)
+		returnedBatch[routerKey] = existingEndpoint
+	}
 }
 
-func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser, proxyConstructor func(context.Context, uint, lavasession.RPCProviderEndpoint, ChainParser) (ChainProxy, error)) (ChainRouter, error) {
+func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser, proxyConstructor func(context.Context, uint, lavasession.RPCProviderEndpoint, ChainParser) (ChainProxy, error)) (*chainRouterImpl, error) {
 	chainProxyRouter := map[lavasession.RouterKey][]chainRouterEntry{}
-
+	cri := chainRouterImpl{
+		lock:         &sync.RWMutex{},
+		methodRoutes: map[MethodRoute]uint{},
+	}
 	requiredMap := map[requirementSt]struct{}{}
 	supportedMap := map[requirementSt]struct{}{}
-	rpcProviderEndpointBatch := batchNodeUrlsByServices(rpcProviderEndpoint)
+	rpcProviderEndpointBatch, err := cri.BatchNodeUrlsByServices(rpcProviderEndpoint)
+	if err != nil {
+		return nil, err
+	}
 	for _, rpcProviderEndpointEntry := range rpcProviderEndpointBatch {
 		addons, extensions, err := chainParser.SeparateAddonsExtensions(append(rpcProviderEndpointEntry.NodeUrls[0].Addons, ""))
 		if err != nil {
@@ -188,12 +254,9 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 			return nil, err
 		}
 	}
+	cri.chainProxyRouter = chainProxyRouter
 
-	cri := chainRouterImpl{
-		lock:             &sync.RWMutex{},
-		chainProxyRouter: chainProxyRouter,
-	}
-	return cri, nil
+	return &cri, nil
 }
 
 type requirementSt struct {
