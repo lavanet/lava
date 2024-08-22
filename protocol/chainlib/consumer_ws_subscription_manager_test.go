@@ -67,7 +67,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 
 			chainMessage1, err := chainParser.ParseMsg("", play.subscriptionRequestData1, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
-			protocolMessage1 := NewProtocolMessage(chainMessage1, nil, nil)
+			protocolMessage1 := NewProtocolMessage(chainMessage1, nil, nil, dapp, ip)
 			relaySender := NewMockRelaySender(ctrl)
 			relaySender.
 				EXPECT().
@@ -129,7 +129,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 
 			relaySender.
 				EXPECT().
-				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(relayResult1, nil).
 				Times(1) // Should call SendParsedRelay, because it is the first time we subscribe
 
@@ -224,7 +224,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 
 			chainMessage1, err := chainParser.ParseMsg("", play.subscriptionRequestData1, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
-			protocolMessage1 := NewProtocolMessage(chainMessage1, nil, nil)
+			protocolMessage1 := NewProtocolMessage(chainMessage1, nil, nil, dapp, "")
 			relaySender := NewMockRelaySender(ctrl)
 			relaySender.
 				EXPECT().
@@ -286,7 +286,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 
 			relaySender.
 				EXPECT().
-				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(relayResult1, nil).
 				Times(1) // Should call SendParsedRelay, because it is the first time we subscribe
 
@@ -430,14 +430,15 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			subscribeChainMessage1, err := chainParser.ParseMsg("", play.subscriptionRequestData1, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
 
-			subscribeProtocolMessage1 := NewProtocolMessage(subscribeChainMessage1, nil, nil)
+			subscribeProtocolMessage1 := NewProtocolMessage(subscribeChainMessage1, nil, nil, dapp1, ts.Consumer.Addr.String())
 			unsubscribeProtocolMessage1 := NewProtocolMessage(unsubscribeChainMessage1, nil, &pairingtypes.RelayPrivateData{
 				Data: play.unsubscribeMessage1,
-			})
+			}, dapp1, ts.Consumer.Addr.String(),
+			)
 			relaySender := NewMockRelaySender(ctrl)
 			relaySender.
 				EXPECT().
-				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomockuber.Cond(func(x any) bool {
+				SendParsedRelay(gomock.Any(), gomock.Any(), gomockuber.Cond(func(x any) bool {
 					protocolMsg, ok := x.(ProtocolMessage)
 					require.True(t, ok)
 					require.NotNil(t, protocolMsg)
@@ -530,7 +531,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			relaySender.
 				EXPECT().
-				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(relayResult1, nil).
 				Times(1) // Should call SendParsedRelay, because it is the first time we subscribe
 
@@ -552,7 +553,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			relaySender.
 				EXPECT().
-				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(relayResult1, nil).
 				Times(0) // Should not call SendParsedRelay, because it is already subscribed
 
@@ -578,10 +579,10 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			// Prepare for the next subscription
 			unsubscribeChainMessage2, err := chainParser.ParseMsg("", play.unsubscribeMessage2, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
-			unsubscribeProtocolMessage2 := NewProtocolMessage(unsubscribeChainMessage2, nil, &pairingtypes.RelayPrivateData{Data: play.unsubscribeMessage2})
+			unsubscribeProtocolMessage2 := NewProtocolMessage(unsubscribeChainMessage2, nil, &pairingtypes.RelayPrivateData{Data: play.unsubscribeMessage2}, dapp2, ts.Consumer.Addr.String())
 			subscribeChainMessage2, err := chainParser.ParseMsg("", play.subscriptionRequestData2, play.connectionType, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 			require.NoError(t, err)
-			subscribeProtocolMessage2 := NewProtocolMessage(subscribeChainMessage2, nil, nil)
+			subscribeProtocolMessage2 := NewProtocolMessage(subscribeChainMessage2, nil, nil, dapp2, ts.Consumer.Addr.String())
 			relaySender.
 				EXPECT().
 				ParseRelay(gomock.Any(), gomock.Any(), gomockuber.Cond(func(x any) bool {
@@ -644,7 +645,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 
 			relaySender.
 				EXPECT().
-				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(relayResult2, nil).
 				Times(1) // Should call SendParsedRelay, because it is the first time we subscribe
 
@@ -664,12 +665,12 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			// Prepare for unsubscribe from the first subscription
 			relaySender.
 				EXPECT().
-				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return(relayResult1, nil).
 				Times(0) // Should call SendParsedRelay, because it unsubscribed
 
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
-			unsubProtocolMessage := NewProtocolMessage(unsubscribeChainMessage1, nil, relayResult1.Request.RelayData)
+			unsubProtocolMessage := NewProtocolMessage(unsubscribeChainMessage1, nil, relayResult1.Request.RelayData, dapp2, ts.Consumer.Addr.String())
 			err = manager.Unsubscribe(ctx, unsubProtocolMessage, dapp2, ts.Consumer.Addr.String(), uniqueId, nil)
 			require.NoError(t, err)
 
@@ -688,7 +689,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			// Prepare for unsubscribe from the second subscription
 			relaySender.
 				EXPECT().
-				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				SendParsedRelay(gomock.Any(), gomock.Any(), gomock.Any()).
 				DoAndReturn(func(ctx context.Context, dappID string, consumerIp string, analytics *metrics.RelayMetrics, protocolMessage ProtocolMessage) (relayResult *common.RelayResult, errRet error) {
 					wg.Done()
 					return relayResult2, nil

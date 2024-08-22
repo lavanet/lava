@@ -721,18 +721,18 @@ func (mr *MockRelaySenderMockRecorder) ParseRelay(ctx, url, req, connectionType,
 }
 
 // SendParsedRelay mocks base method.
-func (m *MockRelaySender) SendParsedRelay(ctx context.Context, dappID, consumerIp string, analytics *metrics.RelayMetrics, protocolMessage ProtocolMessage) (*common.RelayResult, error) {
+func (m *MockRelaySender) SendParsedRelay(ctx context.Context, analytics *metrics.RelayMetrics, protocolMessage ProtocolMessage) (*common.RelayResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendParsedRelay", ctx, dappID, consumerIp, analytics, protocolMessage)
+	ret := m.ctrl.Call(m, "SendParsedRelay", ctx, analytics, protocolMessage)
 	ret0, _ := ret[0].(*common.RelayResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SendParsedRelay indicates an expected call of SendParsedRelay.
-func (mr *MockRelaySenderMockRecorder) SendParsedRelay(ctx, dappID, consumerIp, analytics, protocolMessage interface{}) *gomock.Call {
+func (mr *MockRelaySenderMockRecorder) SendParsedRelay(ctx, analytics, protocolMessage interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendParsedRelay", reflect.TypeOf((*MockRelaySender)(nil).SendParsedRelay), ctx, dappID, consumerIp, analytics, protocolMessage)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendParsedRelay", reflect.TypeOf((*MockRelaySender)(nil).SendParsedRelay), ctx, analytics, protocolMessage)
 }
 
 // SendRelay mocks base method.
