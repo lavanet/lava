@@ -8,8 +8,7 @@
         "name": "cosmos hub mainnet",
         "enabled": true,
         "imports": [
-          "COSMOSSDK50",
-          "COSMOSWASM"
+          "COSMOSSDK50"
         ],
         "reliability_threshold": 268435455,
         "data_reliability_enabled": true,
@@ -18,6 +17,7 @@
         "average_block_time": 6500,
         "allowed_block_lag_for_qos_sync": 2,
         "shares": 1,
+        "providers_types": 1,
         "min_stake_provider": {
           "denom": "ulava",
           "amount": "15000000000"
@@ -35,8 +35,8 @@
               {
                 "enabled": true,
                 "name": "/feemarket/v1/gas_price/{denom}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -51,14 +51,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/feemarket/v1/gas_prices",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -73,14 +72,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/feemarket/v1/params",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -95,14 +93,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/feemarket/v1/state",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -117,14 +114,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_chain_id",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -139,14 +135,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/opted_in_validators/{chain_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -161,14 +156,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_chain_start_proposals",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -183,14 +177,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_chain_stop_proposals",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -205,14 +198,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_chains",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -227,14 +219,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_chains_per_validator/{provider_address}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -249,14 +240,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_genesis/{chain_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -271,14 +261,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_validators/{chain_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -293,14 +282,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/oldest_unconfirmed_vsc/{chain_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -315,14 +303,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/params",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -337,14 +324,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/proposed_consumer_chains",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -359,14 +345,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/registered_consumer_reward_denoms",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -381,14 +366,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/throttle_state",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -403,14 +387,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/validator_consumer_addr",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -425,14 +408,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_commission_rate/{chain_id}/{provider_address}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -447,14 +429,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/validator_provider_addr",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -469,14 +450,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/blacklisted_denoms",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -491,14 +471,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/ratelimits",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -513,14 +492,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/whitelisted_addresses",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -535,14 +513,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/ratelimit/{channel_id}/by_denom",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -557,14 +534,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/ratelimits/{chain_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -579,14 +555,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/ratelimits/{channel_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -601,8 +576,7 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               }
             ],
             "headers": [],
@@ -621,7 +595,7 @@
                 "name": "pruning",
                 "values": [
                   {
-                    "latest_distance": 14400
+                    "latest_distance": "14400"
                   }
                 ]
               }
@@ -648,8 +622,8 @@
               {
                 "enabled": true,
                 "name": "feemarket.feemarket.v1.Query/GasPrice",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -664,14 +638,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "feemarket.feemarket.v1.Query/GasPrices",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -686,14 +659,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "feemarket.feemarket.v1.Query/Params",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -708,14 +680,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "feemarket.feemarket.v1.Query/State",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -730,14 +701,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryAllPairsValConAddrByConsumerChainID",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -752,14 +722,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainOptedInValidators",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -774,14 +743,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainStarts",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -796,14 +764,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainStops",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -818,14 +785,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChains",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -840,14 +806,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainsValidatorHasToValidate",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -862,14 +827,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerGenesis",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -884,14 +848,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerValidators",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -906,14 +869,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryOldestUnconfirmedVsc",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -928,14 +890,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryParams",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -950,14 +911,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryProposedConsumerChainIDs",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -972,14 +932,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryRegisteredConsumerRewardDenoms",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -994,14 +953,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryThrottleState",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1016,14 +974,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerAddr",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1038,14 +995,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerCommissionRate",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1060,14 +1016,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryValidatorProviderAddr",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1082,14 +1037,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/AllBlacklistedDenoms",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1104,14 +1058,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/AllRateLimits",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1126,14 +1079,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/AllWhitelistedAddresses",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1148,14 +1100,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/RateLimit",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1170,14 +1121,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/RateLimitsByChainId",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1192,14 +1142,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/RateLimitsByChannelId",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1214,8 +1163,7 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               }
             ],
             "headers": [],
@@ -1304,8 +1252,7 @@
         "name": "cosmos hub testnet",
         "enabled": true,
         "imports": [
-          "COSMOSSDK50",
-          "COSMOSWASM"
+          "COSMOSSDK50"
         ],
         "reliability_threshold": 268435455,
         "data_reliability_enabled": true,
@@ -1331,8 +1278,8 @@
               {
                 "enabled": true,
                 "name": "/feemarket/v1/gas_price/{denom}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1347,14 +1294,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/feemarket/v1/gas_prices",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1369,14 +1315,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/feemarket/v1/params",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1391,14 +1336,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/feemarket/v1/state",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1413,14 +1357,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_chain_id",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1435,14 +1378,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/opted_in_validators/{chain_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1457,14 +1399,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_chain_start_proposals",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1479,14 +1420,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_chain_stop_proposals",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1501,14 +1441,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_chains",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1523,14 +1462,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_chains_per_validator/{provider_address}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1545,14 +1483,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_genesis/{chain_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1567,14 +1504,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_validators/{chain_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1589,14 +1525,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/oldest_unconfirmed_vsc/{chain_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1611,14 +1546,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/params",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1633,14 +1567,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/proposed_consumer_chains",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1655,14 +1588,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/registered_consumer_reward_denoms",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1677,14 +1609,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/throttle_state",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1699,14 +1630,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/validator_consumer_addr",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1721,14 +1651,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/consumer_commission_rate/{chain_id}/{provider_address}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1743,14 +1672,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/interchain_security/ccv/provider/validator_provider_addr",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1765,14 +1693,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/blacklisted_denoms",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1787,14 +1714,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/ratelimits",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1809,14 +1735,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/whitelisted_addresses",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1831,14 +1756,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/ratelimit/{channel_id}/by_denom",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1853,14 +1777,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/ratelimits/{chain_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1875,14 +1798,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "/Stride-Labs/ibc-rate-limiting/ratelimit/ratelimits/{channel_id}",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1897,8 +1819,7 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               }
             ],
             "headers": [],
@@ -1927,8 +1848,8 @@
               {
                 "enabled": true,
                 "name": "feemarket.feemarket.v1.Query/GasPrice",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1943,14 +1864,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "feemarket.feemarket.v1.Query/GasPrices",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1965,14 +1885,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "feemarket.feemarket.v1.Query/Params",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -1987,14 +1906,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "feemarket.feemarket.v1.Query/State",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2009,14 +1927,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryAllPairsValConAddrByConsumerChainID",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2031,14 +1948,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainOptedInValidators",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2053,14 +1969,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainStarts",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2075,14 +1990,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainStops",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2097,14 +2011,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChains",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2119,14 +2032,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerChainsValidatorHasToValidate",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2141,14 +2053,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerGenesis",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2163,14 +2074,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryConsumerValidators",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2185,14 +2095,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryOldestUnconfirmedVsc",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2207,14 +2116,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryParams",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2229,14 +2137,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryProposedConsumerChainIDs",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2251,14 +2158,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryRegisteredConsumerRewardDenoms",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2273,14 +2179,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryThrottleState",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2295,14 +2200,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerAddr",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2317,14 +2221,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryValidatorConsumerCommissionRate",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2339,14 +2242,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "interchain_security.ccv.provider.v1.Query/QueryValidatorProviderAddr",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2361,14 +2263,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/AllBlacklistedDenoms",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2383,14 +2284,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/AllRateLimits",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2405,14 +2305,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/AllWhitelistedAddresses",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2427,14 +2326,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/RateLimit",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2449,14 +2347,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/RateLimitsByChainId",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2471,14 +2368,13 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               },
               {
                 "enabled": true,
                 "name": "ratelimit.v1.Query/RateLimitsByChannelId",
-                "compute_units": "10",
-                "extra_compute_units": "0",
+                "compute_units": 10,
+                "extra_compute_units": 0,
                 "category": {
                   "deterministic": true,
                   "local": false,
@@ -2493,8 +2389,7 @@
                   "parser_func": "DEFAULT",
                   "default_value": "",
                   "encoding": ""
-                },
-                "timeout_ms": "0"
+                }
               }
             ],
             "headers": [],
@@ -2537,7 +2432,7 @@
         ],
         "contributor_percentage": 0.03
       }
-    ],
-    "deposit": "7000000000ulava"
-  }
+    ]
+  },
+  "deposit": "7000000000ulava"
 }

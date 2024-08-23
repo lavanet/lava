@@ -11,14 +11,14 @@
         "data_reliability_enabled": true,
         "block_distance_for_finalized_data": 0,
         "blocks_in_finalization_proof": 1,
-        "average_block_time": "6500",
-        "allowed_block_lag_for_qos_sync": "2",
-        "block_last_updated": "910837",
+        "average_block_time": 6500,
+        "allowed_block_lag_for_qos_sync": 2,
+        "block_last_updated": 910837,
         "min_stake_provider": {
           "denom": "ulava",
           "amount": "47500000000"
         },
-        "providers_types": "dynamic",
+        "providers_types": 1,
         "api_collections": [
           {
             "enabled": true,
@@ -483,5 +483,6 @@
         ]
       }
     ]
-  }
+  },
+  "deposit": "7000000000ulava"
 }
