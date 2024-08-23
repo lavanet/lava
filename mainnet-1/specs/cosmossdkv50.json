@@ -20,7 +20,6 @@
         "shares": 1,
         "providers_types": 1,
         "imports": [
-          "TENDERMINT",
           "COSMOSSDK"
         ],
         "api_collections": [
