@@ -8,7 +8,8 @@
         "name": "cosmos hub mainnet",
         "enabled": true,
         "imports": [
-          "COSMOSSDK50"
+          "COSMOSSDK50",
+          "COSMOSWASM"
         ],
         "reliability_threshold": 268435455,
         "data_reliability_enabled": true,
@@ -1303,7 +1304,8 @@
         "name": "cosmos hub testnet",
         "enabled": true,
         "imports": [
-          "COSMOSSDK50"
+          "COSMOSSDK50",
+          "COSMOSWASM"
         ],
         "reliability_threshold": 268435455,
         "data_reliability_enabled": true,
