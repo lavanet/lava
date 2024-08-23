@@ -24,6 +24,7 @@ type MethodRoute struct {
 type chainRouterEntry struct {
 	ChainProxy
 	addonsSupported map[string]struct{}
+	methodsRouted   map[string]struct{}
 }
 
 func (cre *chainRouterEntry) isSupporting(addon string) bool {
@@ -39,7 +40,6 @@ func (cre *chainRouterEntry) isSupporting(addon string) bool {
 type chainRouterImpl struct {
 	lock             *sync.RWMutex
 	chainProxyRouter map[lavasession.RouterKey][]chainRouterEntry
-	methodRoutes     map[MethodRoute]uint // used to map between a method and it's method route id
 }
 
 func (cri *chainRouterImpl) GetChainProxySupporting(ctx context.Context, addon string, extensions []string, method string) (ChainProxy, error) {
@@ -48,13 +48,20 @@ func (cri *chainRouterImpl) GetChainProxySupporting(ctx context.Context, addon s
 
 	// check if that specific method has a special route, if it does apply it to the router key
 	wantedRouterKey := lavasession.NewRouterKey(extensions)
-	methodRoute, ok := cri.methodRoutes[MethodRoute{RouterKey: wantedRouterKey, method: method}] // make sure we have a method route for this method
-	if ok {
-		wantedRouterKey = wantedRouterKey.ApplyMethodsRoute(methodRoute)
-	}
 	if chainProxyEntries, ok := cri.chainProxyRouter[wantedRouterKey]; ok {
 		for _, chainRouterEntry := range chainProxyEntries {
 			if chainRouterEntry.isSupporting(addon) {
+				// check if the method is supported
+				if len(chainRouterEntry.methodsRouted) > 0 {
+					if _, ok := chainRouterEntry.methodsRouted[method]; !ok {
+						continue
+					}
+					utils.LavaFormatTrace("chainProxy supporting method routing selected",
+						utils.LogAttr("addon", addon),
+						utils.LogAttr("wantedRouterKey", wantedRouterKey),
+						utils.LogAttr("method", method),
+					)
+				}
 				if wantedRouterKey != lavasession.GetEmptyRouterKey() { // add trailer only when router key is not default (||)
 					grpc.SetTrailer(ctx, metadata.Pairs(RPCProviderNodeExtension, string(wantedRouterKey)))
 				}
@@ -91,60 +98,35 @@ func (cri chainRouterImpl) SendNodeMsg(ctx context.Context, ch chan interface{},
 	return relayReply, subscriptionID, relayReplyServer, proxyUrl, chainId, err
 }
 
-func (cri *chainRouterImpl) NewMethodRouteBatch(routerKey lavasession.RouterKey) uint {
-	methodRoute := MethodRoute{RouterKey: routerKey, method: ""} // empty method counts the batch
-	existingRouteBatch := cri.methodRoutes[methodRoute]
-	cri.methodRoutes[methodRoute]++
-	return existingRouteBatch
-}
-
-func (cri *chainRouterImpl) NewMethodRoute(routerKey lavasession.RouterKey, method string, methodBatch uint) error {
-	methodRoute := MethodRoute{RouterKey: routerKey, method: method}
-	if existingRoute, ok := cri.methodRoutes[methodRoute]; ok {
-		if existingRoute != methodBatch {
-			return utils.LavaFormatError("method route already exists with a different batch", nil, utils.LogAttr("routerKey", routerKey), utils.LogAttr("methodRoute", methodRoute), utils.LogAttr("existingRoute", existingRoute), utils.LogAttr("methodBatch", methodBatch))
-		}
-	}
-	cri.methodRoutes[methodRoute] = methodBatch
-	return nil
-}
-
 // batch nodeUrls with the same addons together in a copy
 func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasession.RPCProviderEndpoint) (map[lavasession.RouterKey]lavasession.RPCProviderEndpoint, error) {
 	returnedBatch := map[lavasession.RouterKey]lavasession.RPCProviderEndpoint{}
 	routesToCheck := map[lavasession.RouterKey]bool{}
+	methodRoutes := map[string]int{}
 	for _, nodeUrl := range rpcProviderEndpoint.NodeUrls {
 		routerKey := lavasession.NewRouterKey(nodeUrl.Addons)
-
 		if len(nodeUrl.Methods) > 0 {
 			// all methods defined here will go to the same batch
-			methodBatch := cri.NewMethodRouteBatch(routerKey)
-
-			for _, method := range nodeUrl.Methods {
-				// define we need to check the route for a basic router key without method routes
-				if _, ok := routesToCheck[routerKey]; !ok {
-					routesToCheck[routerKey] = false
-				}
-				// update a new router key with a method route,
-				// the method route number needs to increase every time methods appear with the same router key which NewMethodRoute does
-				err := cri.NewMethodRoute(routerKey, method, methodBatch)
-				if err != nil {
-					return nil, err
-				}
-				routerKey = routerKey.ApplyMethodsRoute(methodBatch)
-
-				cri.parseNodeUrl(nodeUrl, returnedBatch, routerKey, rpcProviderEndpoint)
+			methodRoutesUnique := strings.Join(nodeUrl.Methods, ",")
+			var existing int
+			var ok bool
+			if existing, ok = methodRoutes[methodRoutesUnique]; !ok {
+				methodRoutes[methodRoutesUnique] = len(methodRoutes)
+				existing = len(methodRoutes)
 			}
-		} else {
-			routesToCheck[routerKey] = true
-			cri.parseNodeUrl(nodeUrl, returnedBatch, routerKey, rpcProviderEndpoint)
+			routerKey = routerKey.ApplyMethodsRoute(existing)
 		}
+		cri.parseNodeUrl(nodeUrl, returnedBatch, routerKey, rpcProviderEndpoint)
 	}
 	if len(returnedBatch) == 0 {
 		return nil, utils.LavaFormatError("invalid batch, routes are empty", nil, utils.LogAttr("endpoint", rpcProviderEndpoint))
 	}
 	// validate all defined method routes have a regular route
-
+	for routerKey, valid := range routesToCheck {
+		if !valid {
+			return nil, utils.LavaFormatError("invalid batch, missing regular route for method route", nil, utils.LogAttr("routerKey", routerKey))
+		}
+	}
 	return returnedBatch, nil
 }
 
@@ -186,8 +168,7 @@ func (*chainRouterImpl) parseNodeUrl(nodeUrl common.NodeUrl, returnedBatch map[l
 func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavasession.RPCProviderEndpoint, chainParser ChainParser, proxyConstructor func(context.Context, uint, lavasession.RPCProviderEndpoint, ChainParser) (ChainProxy, error)) (*chainRouterImpl, error) {
 	chainProxyRouter := map[lavasession.RouterKey][]chainRouterEntry{}
 	cri := chainRouterImpl{
-		lock:         &sync.RWMutex{},
-		methodRoutes: map[MethodRoute]uint{},
+		lock: &sync.RWMutex{},
 	}
 	requiredMap := map[requirementSt]struct{}{}
 	supportedMap := map[requirementSt]struct{}{}
@@ -217,6 +198,14 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 			return allExtensionsRouterKey
 		}
 		routerKey := updateRouteCombinations(extensions, addons)
+		methodsRouted := map[string]struct{}{}
+		methods := rpcProviderEndpointEntry.NodeUrls[0].Methods
+		if len(methods) > 0 {
+			for _, method := range methods {
+				methodsRouted[method] = struct{}{}
+			}
+		}
+
 		chainProxy, err := proxyConstructor(ctx, nConns, rpcProviderEndpointEntry, chainParser)
 		if err != nil {
 			// TODO: allow some urls to be down
@@ -225,11 +214,17 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 		chainRouterEntryInst := chainRouterEntry{
 			ChainProxy:      chainProxy,
 			addonsSupported: addonsSupportedMap,
+			methodsRouted:   methodsRouted,
 		}
 		if chainRouterEntries, ok := chainProxyRouter[routerKey]; !ok {
 			chainProxyRouter[routerKey] = []chainRouterEntry{chainRouterEntryInst}
 		} else {
-			chainProxyRouter[routerKey] = append(chainRouterEntries, chainRouterEntryInst)
+			if len(methodsRouted) > 0 {
+				// if there are routed methods we want this in the beginning to intercept them
+				chainProxyRouter[routerKey] = append([]chainRouterEntry{chainRouterEntryInst}, chainRouterEntries...)
+			} else {
+				chainProxyRouter[routerKey] = append(chainRouterEntries, chainRouterEntryInst)
+			}
 		}
 	}
 	if len(requiredMap) > len(supportedMap) {
@@ -254,6 +249,16 @@ func newChainRouter(ctx context.Context, nConns uint, rpcProviderEndpoint lavase
 			return nil, err
 		}
 	}
+
+	// make sure all chainProxyRouter entries have one without a method routing
+	for routerKey, chainRouterEntries := range chainProxyRouter {
+		// get the last entry, if it has methods routed, we need to error out
+		lastEntry := chainRouterEntries[len(chainRouterEntries)-1]
+		if len(lastEntry.methodsRouted) > 0 {
+			return nil, utils.LavaFormatError("last entry in chainProxyRouter has methods routed, this means no chainProxy supports all methods", nil, utils.LogAttr("routerKey", routerKey))
+		}
+	}
+
 	cri.chainProxyRouter = chainProxyRouter
 
 	return &cri, nil

@@ -8,13 +8,13 @@ import (
 
 const (
 	sep            = "|"
-	methodRouteSep = "|method-route:"
+	methodRouteSep = "method-route:"
 )
 
 type RouterKey string
 
-func (rk *RouterKey) ApplyMethodsRoute(routeNum uint) RouterKey {
-	additionalPath := strconv.FormatUint(uint64(routeNum), 10)
+func (rk *RouterKey) ApplyMethodsRoute(routeNum int) RouterKey {
+	additionalPath := strconv.FormatInt(int64(routeNum), 10)
 	return RouterKey(string(*rk) + methodRouteSep + additionalPath)
 }
 
