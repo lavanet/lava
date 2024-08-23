@@ -2429,7 +2429,9 @@
             ]
           }
         ],
-
+        "contributor": [
+          "lava@1r0n6tl824c05h9gu48ms88mcxgtea9v9et9xtc"
+        ],
         "contributor_percentage": "0.03"
       }
     ]
