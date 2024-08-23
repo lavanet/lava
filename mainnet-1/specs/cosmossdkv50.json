@@ -624,67 +624,83 @@
               },
               {
                 "enabled": false,
-                "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}"
+                "name": "/cosmos/bank/v1beta1/balances/{address}/{denom}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/bank/v1beta1/base_denom"
+                "name": "/cosmos/bank/v1beta1/base_denom",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/bank/v1beta1/supply/{denom}"
+                "name": "/cosmos/bank/v1beta1/supply/{denom}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/bank/v1beta1/supply_without_offset"
+                "name": "/cosmos/bank/v1beta1/supply_without_offset",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/bank/v1beta1/supply_without_offset/{denom}"
+                "name": "/cosmos/bank/v1beta1/supply_without_offset/{denom}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}"
+                "name": "/cosmos/evidence/v1beta1/evidence/{evidence_hash}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/group/v1/vote_by_proposal_voter/{proposal_id}/{voter}"
+                "name": "/cosmos/group/v1/vote_by_proposal_voter/{proposal_id}/{voter}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/group/v1/proposals/{proposal_id}/tally"
+                "name": "/cosmos/group/v1/proposals/{proposal_id}/tally",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/group/v1/group_policies_by_group/{group_id}"
+                "name": "/cosmos/group/v1/group_policies_by_group/{group_id}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/group/v1/proposals_by_group_policy/{address}"
+                "name": "/cosmos/group/v1/proposals_by_group_policy/{address}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/group/v1/votes_by_proposal/{proposal_id}"
+                "name": "/cosmos/group/v1/votes_by_proposal/{proposal_id}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/cosmos/group/v1/group_policies_by_admin/{admin}"
+                "name": "/cosmos/group/v1/group_policies_by_admin/{admin}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/ibc/apps/router/v1/params"
+                "name": "/ibc/apps/router/v1/params",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/ibc/apps/transfer/v1/denom_hashes/{trace}"
+                "name": "/ibc/apps/transfer/v1/denom_hashes/{trace}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/ibc/apps/transfer/v1/denom_traces/{hash}"
+                "name": "/ibc/apps/transfer/v1/denom_traces/{hash}",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "/ibc/client/v1/params"
+                "name": "/ibc/client/v1/params",
+                "compute_units": 10
               }
             ],
             "headers": [],
@@ -1354,71 +1370,88 @@
               },
               {
                 "enabled": false,
-                "name": "cosmos.bank.v1beta1.Query/BaseDenom"
+                "name": "cosmos.bank.v1beta1.Query/BaseDenom",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.bank.v1beta1.Query/SupplyOfWithoutOffset"
+                "name": "cosmos.bank.v1beta1.Query/SupplyOfWithoutOffset",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.bank.v1beta1.Query/TotalSupplyWithoutOffset"
+                "name": "cosmos.bank.v1beta1.Query/TotalSupplyWithoutOffset",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/GroupsByAdmin"
+                "name": "cosmos.group.v1.Query/GroupsByAdmin",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/GroupPolicyInfo"
+                "name": "cosmos.group.v1.Query/GroupPolicyInfo",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/GroupInfo"
+                "name": "cosmos.group.v1.Query/GroupInfo",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/VoteByProposalVoter"
+                "name": "cosmos.group.v1.Query/VoteByProposalVoter",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/TallyResult"
+                "name": "cosmos.group.v1.Query/TallyResult",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/ProposalsByGroupPolicy"
+                "name": "cosmos.group.v1.Query/ProposalsByGroupPolicy",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/VotesByVoter"
+                "name": "cosmos.group.v1.Query/VotesByVoter",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/VotesByProposal"
+                "name": "cosmos.group.v1.Query/VotesByProposal",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/GroupsByMember"
+                "name": "cosmos.group.v1.Query/GroupsByMember",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/Proposal"
+                "name": "cosmos.group.v1.Query/Proposal",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/Groups"
+                "name": "cosmos.group.v1.Query/Groups",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/GroupMembers"
+                "name": "cosmos.group.v1.Query/GroupMembers",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/GroupPoliciesByGroup"
+                "name": "cosmos.group.v1.Query/GroupPoliciesByGroup",
+                "compute_units": 10
               },
               {
                 "enabled": false,
-                "name": "cosmos.group.v1.Query/GroupPoliciesByAdmin"
+                "name": "cosmos.group.v1.Query/GroupPoliciesByAdmin",
+                "compute_units": 10
               }
             ],
             "headers": [],
