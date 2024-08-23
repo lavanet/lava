@@ -596,7 +596,7 @@
                 "name": "pruning",
                 "values": [
                   {
-                    "latest_distance": "14400"
+                    "latest_distance": 14400
                   }
                 ]
               }
@@ -1246,7 +1246,7 @@
         "contributor": [
           "lava@1r0n6tl824c05h9gu48ms88mcxgtea9v9et9xtc"
         ],
-        "contributor_percentage": 0.025
+        "contributor_percentage": "0.03"
       },
       {
         "index": "COSMOSHUBT",
@@ -2429,10 +2429,8 @@
             ]
           }
         ],
-        "contributor": [
-          "lava@1r0n6tl824c05h9gu48ms88mcxgtea9v9et9xtc"
-        ],
-        "contributor_percentage": 0.03
+
+        "contributor_percentage": "0.03"
       }
     ]
   },
