@@ -9,6 +9,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v2/cmd/lavad/cmd"
 	"github.com/lavanet/lava/v2/testutil/common"
 	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
 	"github.com/lavanet/lava/v2/testutil/nullify"
@@ -807,6 +808,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 }
 
 func TestCookbookSpecs(t *testing.T) {
+	cmd.InitSDKConfig()
 	ts := newTester(t)
 
 	getToTopMostPath := "../../.././cookbook/specs/"
