@@ -125,15 +125,13 @@ type RelaySender interface {
 		consumerIp string,
 		analytics *metrics.RelayMetrics,
 		metadata []pairingtypes.Metadata,
-	) (ChainMessage, map[string]string, *pairingtypes.RelayPrivateData, error)
+	) (ProtocolMessage, error)
 	SendParsedRelay(
 		ctx context.Context,
 		dappID string,
 		consumerIp string,
 		analytics *metrics.RelayMetrics,
-		chainMessage ChainMessage,
-		directiveHeaders map[string]string,
-		relayRequestData *pairingtypes.RelayPrivateData,
+		protocolMessage ProtocolMessage,
 	) (relayResult *common.RelayResult, errRet error)
 	CreateDappKey(dappID, consumerIp string) string
 	CancelSubscriptionContext(subscriptionKey string)

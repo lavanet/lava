@@ -29,6 +29,11 @@ const (
 	ProvidersBonusRewardsEventName             = "provider_bonus_rewards"
 )
 
+// Validators leftover pool for coins that were moved near the end of the month
+const (
+	ValidatorsRewardsLeftOverPoolName Pool = "validators_rewards_leftover_pool"
+)
+
 // BlocksToTimerExpirySlackFactor is used to calculate the number of blocks until the
 // next timer expiry which determine the validators block rewards.
 // since the time/blocks conversion can be errornous, we multiply our calculated number
@@ -53,6 +58,11 @@ const (
 	SetIprpcDataEventName                          = "set_iprpc_data"
 	FundIprpcEventName                             = "fund_iprpc"
 	TransferIprpcRewardToNextMonthEventName        = "transfer_iprpc_reward_to_next_month"
+)
+
+// Events
+const (
+	ValidatorsAndCommunityFund = "validators_and_community_fund"
 )
 
 // helper struct to track the serviced IPRPC CU for each spec+provider

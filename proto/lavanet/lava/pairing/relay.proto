@@ -6,6 +6,7 @@ option go_package = "github.com/lavanet/lava/v2/x/pairing/types";
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
+import "lavanet/lava/epochstorage/stake_entry.proto";
 
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
@@ -109,4 +110,9 @@ message QualityOfServiceReport{
         (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
         (gogoproto.nullable)   = false
         ];
+}
+
+message PairingRelayCache {
+    repeated lavanet.lava.epochstorage.StakeEntry entries = 1 [(gogoproto.nullable) = false];
+    uint64 allowed_cu = 2;
 }

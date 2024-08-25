@@ -13,7 +13,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v2/protocol/common"
-	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
 	plantypes "github.com/lavanet/lava/v2/x/plans/types"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/assert"
@@ -253,7 +253,7 @@ func TestExtensions(t *testing.T) {
 	configuredExtensions := map[string]struct{}{
 		"archive": {},
 	}
-	spec, err := keepertest.GetASpec(specname, "../../", nil, nil)
+	spec, err := specutils.GetASpec(specname, "../../", nil, nil)
 	require.NoError(t, err)
 
 	chainParser.SetPolicy(&plantypes.Policy{ChainPolicies: []plantypes.ChainPolicy{{ChainId: specname, Requirements: []plantypes.ChainRequirement{{Collection: spectypes.CollectionData{ApiInterface: "jsonrpc"}, Extensions: []string{"archive"}}}}}}, specname, "jsonrpc")

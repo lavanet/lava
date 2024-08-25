@@ -199,6 +199,7 @@ var Upgrades = []upgrades.Upgrade{
 	upgrades.Upgrade_2_1_3,
 	upgrades.Upgrade_2_2_0,
 	upgrades.Upgrade_2_4_0,
+	upgrades.Upgrade_2_5_0,
 }
 
 // this line is used by starport scaffolding # stargate/wasm/app/enabledProposals
@@ -282,6 +283,7 @@ var (
 		subscriptionmoduletypes.ModuleName:                               {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsAllocationPoolName):   {authtypes.Minter, authtypes.Staking},
 		string(rewardsmoduletypes.ValidatorsRewardsDistributionPoolName): {authtypes.Burner, authtypes.Staking},
+		string(rewardsmoduletypes.ValidatorsRewardsLeftOverPoolName):     {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ProviderRewardsDistributionPool):       {authtypes.Burner, authtypes.Staking},
 		string(rewardsmoduletypes.ProvidersRewardsAllocationPool):        {authtypes.Minter, authtypes.Staking},
 		dualstakingmoduletypes.ModuleName:                                {authtypes.Burner, authtypes.Staking},
