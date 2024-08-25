@@ -25,6 +25,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/protocol/metrics"
 	"github.com/lavanet/lava/v2/protocol/performance"
+	"github.com/lavanet/lava/v2/protocol/upgrade"
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/utils/protocopy"
 	"github.com/lavanet/lava/v2/utils/rand"
@@ -227,7 +228,14 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	success := false
 	var err error
 	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, protocolMessage, rpccs.consumerConsistency, "-init-", "", rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+	usedProvidersResets := 1
 	for i := 0; i < retries; i++ {
+		// Check if we even have enough providers to communicate with them all.
+		// If we have 1 provider we will reset the used providers always.
+		if ((i + 1) * usedProvidersResets) > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
+			usedProvidersResets++
+			relayProcessor.GetUsedProviders().ClearUnwanted()
+		}
 		err = rpccs.sendRelayToProvider(ctx, protocolMessage, "-init-", "", relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
@@ -1418,6 +1426,12 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			}
 			relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, reportedProvidersMD)
 		}
+
+		version := pairingtypes.Metadata{
+			Name:  common.LAVAP_VERSION_HEADER_NAME,
+			Value: upgrade.GetCurrentVersion().ConsumerVersion,
+		}
+		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, version)
 	}
 
 	relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, metadataReply...)
