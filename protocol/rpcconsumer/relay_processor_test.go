@@ -44,7 +44,7 @@ func sendSuccessResp(relayProcessor *RelayProcessor, provider string, delay time
 				RelaySession: &pairingtypes.RelaySession{},
 				RelayData:    &pairingtypes.RelayPrivateData{},
 			},
-			Reply:        &pairingtypes.RelayReply{Data: []byte("ok")},
+			Reply:        &pairingtypes.RelayReply{Data: []byte("ok"), LatestBlock: 1},
 			ProviderInfo: common.ProviderInfo{ProviderAddress: provider},
 			StatusCode:   http.StatusOK,
 		},
@@ -133,9 +133,18 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		returnedResult, err := relayProcessor.ProcessingResult()
 		require.NoError(t, err)
 		require.Equal(t, string(returnedResult.Reply.Data), "ok")
-
-		seenBlock, found := consistency.GetSeenBlock(protocolMessage.GetUserData().DappId, protocolMessage.GetUserData().ConsumerIp)
-		fmt.Println(seenBlock, found)
+		var seenBlock int64
+		var found bool
+		// wait for cache to be added asynchronously
+		for i := 0; i < 10; i++ {
+			seenBlock, found = consistency.GetSeenBlock(protocolMessage.GetUserData().DappId, protocolMessage.GetUserData().ConsumerIp)
+			if found {
+				break
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		require.True(t, found)
+		require.Equal(t, seenBlock, int64(1))
 	})
 }
 
