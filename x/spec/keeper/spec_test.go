@@ -816,7 +816,6 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 }
 
 func TestCookbookSpecs(t *testing.T) {
-
 	ts := newTester(t)
 
 	getToTopMostPath := "../../.././cookbook/specs/"
