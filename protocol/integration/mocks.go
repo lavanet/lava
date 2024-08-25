@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 	"sync"
@@ -31,7 +32,7 @@ type mockConsumerStateTracker struct {
 func (m *mockConsumerStateTracker) RegisterForVersionUpdates(ctx context.Context, version *protocoltypes.Version, versionValidator updaters.VersionValidationInf) {
 }
 
-func (m *mockConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) {
+func (m *mockConsumerStateTracker) RegisterConsumerSessionManagerForPairingUpdates(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager, staticProviders []*lavasession.RPCProviderEndpoint) {
 }
 
 func (m *mockConsumerStateTracker) RegisterForSpecUpdates(ctx context.Context, specUpdatable updaters.SpecUpdatable, endpoint lavasession.RPCEndpoint) error {
@@ -267,6 +268,19 @@ type uniqueAddressGenerator struct {
 	lock        sync.Mutex
 }
 
+func isPortInUse(port int) bool {
+	// Attempt to listen on the port
+	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		// If there's an error, the port is likely in use
+		return true
+	}
+
+	// Close the listener immediately if successful
+	ln.Close()
+	return false
+}
+
 func NewUniqueAddressGenerator() uniqueAddressGenerator {
 	return uniqueAddressGenerator{
 		currentPort: minPort,
@@ -276,6 +290,13 @@ func NewUniqueAddressGenerator() uniqueAddressGenerator {
 func (ag *uniqueAddressGenerator) GetAddress() string {
 	ag.lock.Lock()
 	defer ag.lock.Unlock()
+
+	for {
+		if !isPortInUse(ag.currentPort) {
+			break
+		}
+		ag.currentPort++
+	}
 
 	if ag.currentPort > maxPort {
 		panic("all ports have been exhausted")
