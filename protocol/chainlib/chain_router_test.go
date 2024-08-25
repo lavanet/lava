@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,10 +15,12 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/websocket/v2"
 	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	testcommon "github.com/lavanet/lava/v2/testutil/common"
 	"github.com/lavanet/lava/v2/utils"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
@@ -744,6 +747,374 @@ func TestChainRouterWithEnabledWebSocketInSpec(t *testing.T) {
 			_, err := GetChainRouter(ctx, 1, endpoint, chainParser)
 			if play.success {
 				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}
+
+type chainProxyMock struct {
+	endpoint lavasession.RPCProviderEndpoint
+}
+
+func (m *chainProxyMock) GetChainProxyInformation() (common.NodeUrl, string) {
+	urlStr := ""
+	if len(m.endpoint.NodeUrls) > 0 {
+		urlStr = m.endpoint.NodeUrls[0].UrlStr()
+	}
+	return common.NodeUrl{}, urlStr
+}
+
+func (m *chainProxyMock) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
+	return nil, "", nil, nil
+}
+
+type PolicySt struct {
+	addons       []string
+	extensions   []string
+	apiInterface string
+}
+
+func (a PolicySt) GetSupportedAddons(string) ([]string, error) {
+	return a.addons, nil
+}
+
+func (a PolicySt) GetSupportedExtensions(string) ([]epochstoragetypes.EndpointService, error) {
+	ret := []epochstoragetypes.EndpointService{}
+	for _, ext := range a.extensions {
+		ret = append(ret, epochstoragetypes.EndpointService{Extension: ext, ApiInterface: a.apiInterface})
+	}
+	return ret, nil
+}
+
+func TestChainRouterWithMethodRoutes(t *testing.T) {
+	ctx := context.Background()
+	apiInterface := spectypes.APIInterfaceRest
+	chainParser, err := NewChainParser(apiInterface)
+	require.NoError(t, err)
+
+	IgnoreSubscriptionNotConfiguredError = false
+
+	addonsOptions := []string{"-addon-", "-addon2-"}
+	extensionsOptions := []string{"-test-", "-test2-", "-test3-"}
+
+	spec := testcommon.CreateMockSpec()
+	spec.ApiCollections = []*spectypes.ApiCollection{
+		{
+			Enabled: true,
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: apiInterface,
+				InternalPath: "",
+				Type:         "",
+				AddOn:        "",
+			},
+			Extensions: []*spectypes.Extension{
+				{
+					Name:         extensionsOptions[0],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[1],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[2],
+					CuMultiplier: 1,
+				},
+			},
+			ParseDirectives: []*spectypes.ParseDirective{{
+				FunctionTag: spectypes.FUNCTION_TAG_SUBSCRIBE,
+			}},
+			Apis: []*spectypes.Api{
+				{
+					Enabled: true,
+					Name:    "api-1",
+				},
+				{
+					Enabled: true,
+					Name:    "api-2",
+				},
+				{
+					Enabled: true,
+					Name:    "api-8",
+				},
+			},
+		},
+		{
+			Enabled: true,
+			CollectionData: spectypes.CollectionData{
+				ApiInterface: apiInterface,
+				InternalPath: "",
+				Type:         "",
+				AddOn:        addonsOptions[0],
+			},
+			Extensions: []*spectypes.Extension{
+				{
+					Name:         extensionsOptions[0],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[1],
+					CuMultiplier: 1,
+				},
+				{
+					Name:         extensionsOptions[2],
+					CuMultiplier: 1,
+				},
+			},
+			ParseDirectives: []*spectypes.ParseDirective{{
+				FunctionTag: spectypes.FUNCTION_TAG_SUBSCRIBE,
+			}},
+			Apis: []*spectypes.Api{
+				{
+					Enabled: true,
+					Name:    "api-3",
+				},
+				{
+					Enabled: true,
+					Name:    "api-4",
+				},
+			},
+		},
+	}
+	chainParser.SetSpec(spec)
+	endpoint := &lavasession.RPCProviderEndpoint{
+		NetworkAddress: lavasession.NetworkAddressData{},
+		ChainID:        spec.Index,
+		ApiInterface:   apiInterface,
+		Geolocation:    1,
+		NodeUrls:       []common.NodeUrl{},
+	}
+	const extMarker = "::ext::"
+	playBook := []struct {
+		name            string
+		nodeUrls        []common.NodeUrl
+		success         bool
+		apiToUrlMapping map[string]string
+	}{
+		{
+			name: "addon routing",
+			nodeUrls: []common.NodeUrl{
+				{
+					Url:     "-0-",
+					Methods: []string{},
+					Addons:  []string{addonsOptions[0]},
+				},
+				{
+					Url:    "ws:-0-",
+					Addons: []string{addonsOptions[0]},
+				},
+				{
+					Url:     "-1-",
+					Methods: []string{"api-2"},
+				},
+			},
+			success: true,
+			apiToUrlMapping: map[string]string{
+				"api-1": "-0-",
+				"api-2": "-1-",
+				"api-3": "-0-",
+			},
+		},
+		{
+			name: "basic method routing",
+			nodeUrls: []common.NodeUrl{
+				{
+					Url:     "-0-",
+					Methods: []string{},
+				},
+				{
+					Url:     "ws:-0-",
+					Methods: []string{},
+				},
+				{
+					Url:     "-1-",
+					Methods: []string{"api-2"},
+				},
+				{
+					Url:     "ws:-1-",
+					Methods: []string{},
+				},
+			},
+			success: true,
+			apiToUrlMapping: map[string]string{
+				"api-1": "-0-",
+				"api-2": "-1-",
+			},
+		},
+		{
+			name: "method routing with extension",
+			nodeUrls: []common.NodeUrl{
+				{
+					Url:     "-0-",
+					Methods: []string{},
+				},
+				{
+					Url:     "ws:-0-",
+					Methods: []string{},
+				},
+				{
+					Url:    "-1-",
+					Addons: []string{extensionsOptions[0]},
+				},
+				{
+					Url:     "-2-",
+					Methods: []string{"api-2"},
+					Addons:  []string{extensionsOptions[0]},
+				},
+			},
+			success: true,
+			apiToUrlMapping: map[string]string{
+				"api-1": "-0-",
+				"api-2": "-0-",
+				"api-1" + extMarker + extensionsOptions[0]: "-1-",
+				"api-2" + extMarker + extensionsOptions[0]: "-2-",
+			},
+		},
+		{
+			name: "method routing with two extensions",
+			nodeUrls: []common.NodeUrl{
+				{
+					Url:     "-0-",
+					Methods: []string{},
+				},
+				{
+					Url:     "ws:-0-",
+					Methods: []string{},
+				},
+				{
+					Url:    "-1-",
+					Addons: []string{extensionsOptions[0]},
+				},
+				{
+					Url:     "-2-",
+					Methods: []string{"api-2"},
+					Addons:  []string{extensionsOptions[0]},
+				},
+				{
+					Url:    "-3-",
+					Addons: []string{extensionsOptions[1]},
+				},
+				{
+					Url:     "-4-",
+					Methods: []string{"api-8"},
+					Addons:  []string{extensionsOptions[1]},
+				},
+			},
+			success: true,
+			apiToUrlMapping: map[string]string{
+				"api-1": "-0-",
+				"api-2": "-0-",
+				"api-1" + extMarker + extensionsOptions[0]: "-1-",
+				"api-2" + extMarker + extensionsOptions[0]: "-2-",
+				"api-1" + extMarker + extensionsOptions[1]: "-3-",
+				"api-8" + extMarker + extensionsOptions[1]: "-4-",
+			},
+		},
+		{
+			name: "two method routings with extension",
+			nodeUrls: []common.NodeUrl{
+				{
+					Url:     "-0-",
+					Methods: []string{},
+				},
+				{
+					Url:     "ws:-0-",
+					Methods: []string{},
+				},
+				{
+					Url:    "-1-",
+					Addons: []string{extensionsOptions[0]},
+				},
+				{
+					Url:     "-2-",
+					Methods: []string{"api-2"},
+					Addons:  []string{extensionsOptions[0]},
+				},
+				{
+					Url:     "-3-",
+					Methods: []string{"api-8"},
+					Addons:  []string{extensionsOptions[0]},
+				},
+				{
+					Url:     "ws:-1-",
+					Methods: []string{},
+				},
+			},
+			success: true,
+			apiToUrlMapping: map[string]string{
+				"api-1": "-0-",
+				"api-2": "-0-",
+				"api-1" + extMarker + extensionsOptions[0]: "-1-",
+				"api-2" + extMarker + extensionsOptions[0]: "-2-",
+				"api-8" + extMarker + extensionsOptions[0]: "-3-",
+			},
+		},
+		{
+			name: "method routing without base",
+			nodeUrls: []common.NodeUrl{
+				{
+					Url:     "-0-",
+					Methods: []string{"api-1"},
+				},
+				{
+					Url:     "ws:-0-",
+					Methods: []string{"api-1"},
+				},
+			},
+			success: false,
+		},
+		{
+			name: "method routing without base with extension",
+			nodeUrls: []common.NodeUrl{
+				{
+					Url:     "-0-",
+					Methods: []string{},
+				},
+				{
+					Url:     "ws:-0-",
+					Methods: []string{},
+				},
+				{
+					Url:     "-1-",
+					Addons:  []string{extensionsOptions[0]},
+					Methods: []string{"api-1"},
+				},
+			},
+			success: false,
+		},
+	}
+	mockProxyConstructor := func(_ context.Context, _ uint, endp lavasession.RPCProviderEndpoint, _ ChainParser) (ChainProxy, error) {
+		mockChainProxy := &chainProxyMock{endpoint: endp}
+		return mockChainProxy, nil
+	}
+	for _, play := range playBook {
+		t.Run(play.name, func(t *testing.T) {
+			endpoint.NodeUrls = play.nodeUrls
+			policy := PolicySt{
+				addons:       addonsOptions,
+				extensions:   extensionsOptions,
+				apiInterface: apiInterface,
+			}
+			chainParser.SetPolicy(policy, spec.Index, apiInterface)
+			chainRouter, err := newChainRouter(ctx, 1, *endpoint, chainParser, mockProxyConstructor)
+			if play.success {
+				require.NoError(t, err)
+				for api, url := range play.apiToUrlMapping {
+					extension := extensionslib.ExtensionInfo{}
+					if strings.Contains(api, extMarker) {
+						splitted := strings.Split(api, extMarker)
+						api = splitted[0]
+						extension.ExtensionOverride = []string{splitted[1]}
+					}
+					chainMsg, err := chainParser.ParseMsg(api, nil, "", nil, extension)
+					require.NoError(t, err)
+					chainProxy, err := chainRouter.GetChainProxySupporting(ctx, chainMsg.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMsg.GetExtensions()), api)
+					require.NoError(t, err)
+					_, urlFromProxy := chainProxy.GetChainProxyInformation()
+					require.Equal(t, url, urlFromProxy, "chainMsg: %+v, ---chainRouter: %+v", chainMsg, chainRouter)
+				}
 			} else {
 				require.Error(t, err)
 			}
