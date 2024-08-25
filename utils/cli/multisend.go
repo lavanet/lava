@@ -354,11 +354,11 @@ func loadProgress(filename string) Progress {
 
 func NewQueryTotalGasCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "total-gas address chainid",
-		Short:   `calculate the total gas used by a provider in 24H`,
-		Long:    `calculate the total gas used by a provider in 24H`,
-		Example: "total-gas lava@... NEAR",
-		Args:    cobra.ExactArgs(2),
+		Use:     "total-gas address",
+		Short:   `calculate the total gas used by a provider in 12H for all chains`,
+		Long:    `calculate the total gas used by a provider in 12H for all chains`,
+		Example: "total-gas lava@...",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -367,7 +367,6 @@ func NewQueryTotalGasCmd() *cobra.Command {
 			authquerier := authtypes.NewQueryClient(clientCtx)
 
 			account := args[0]
-			// chainid := args[1]
 
 			getSequence := func(account string) (uint64, error) {
 				res, err := authquerier.Account(cmd.Context(), &authtypes.QueryAccountRequest{Address: account})
@@ -424,26 +423,29 @@ func NewQueryTotalGasCmd() *cobra.Command {
 				sequence--
 				tx := getResponse(account, sequence)
 
-				if tx != nil {
-					msgs := tx.GetTx().GetMsgs()
-					foundPayment := false
-					for _, msg := range msgs {
-						msg, ok := msg.(*pairingtypes.MsgRelayPayment)
-						if !ok {
-							continue
-						}
-						numRelays += int64(len(msg.Relays))
-						foundPayment = true
-					}
-					if foundPayment {
-						totalgas += tx.GasUsed
-					}
-					// Parse the time string
-					txtime, err = time.Parse(layout, tx.Timestamp)
-					if err != nil {
-						return err
-					}
+				if tx == nil {
+					continue
 				}
+
+				msgs := tx.GetTx().GetMsgs()
+				foundPayment := false
+				for _, msg := range msgs {
+					msg, ok := msg.(*pairingtypes.MsgRelayPayment)
+					if !ok {
+						continue
+					}
+					numRelays += int64(len(msg.Relays))
+					foundPayment = true
+				}
+				if foundPayment {
+					totalgas += tx.GasUsed
+				}
+				// Parse the time string
+				txtime, err = time.Parse(layout, tx.Timestamp)
+				if err != nil {
+					return err
+				}
+
 				fmt.Printf("\rsequence %d, totalgas %d txdiff %f sec", sequence, totalgas, now.Sub(txtime).Seconds())
 			}
 			totalgas /= numRelays
