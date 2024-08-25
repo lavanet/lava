@@ -226,6 +226,14 @@ func TestSpecRemove(t *testing.T) {
 	}
 }
 
+func TestMain(m *testing.M) {
+	// This code will run once before any test cases are executed.
+	cmd.InitSDKConfig()
+	// Run the actual tests
+	exitCode := m.Run()
+	os.Exit(exitCode)
+}
+
 func TestSpecGetAll(t *testing.T) {
 	ts := newTester(t)
 	items := ts.createNSpec(10)
@@ -808,7 +816,7 @@ func TestApiCollectionsExpandAndInheritance(t *testing.T) {
 }
 
 func TestCookbookSpecs(t *testing.T) {
-	cmd.InitSDKConfig()
+
 	ts := newTester(t)
 
 	getToTopMostPath := "../../.././cookbook/specs/"
