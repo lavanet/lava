@@ -43,11 +43,19 @@ PROVIDER1_LISTENER="127.0.0.1:2221"
 # static configuration
 PROVIDER4_LISTENER="127.0.0.1:2220"
 
-# lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
 # lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1"  1 $(operator_address) -y --from servicer1 --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
+
+screen -d -m -S provider1 bash -c "source ~/.bashrc; lavap rpcprovider \
+$PROVIDER1_LISTENER LAV1 rest '$LAVA_REST' \
+$PROVIDER1_LISTENER LAV1 tendermintrpc '$LAVA_RPC,$LAVA_RPC_WS' \
+$PROVIDER1_LISTENER LAV1 grpc '$LAVA_GRPC' \
+$EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level trace --from servicer1 --chain-id lava --metrics-listen-address ":7776" 2>&1 | tee $LOGS_DIR/PROVIDER1.log" && sleep 0.25
+
+wait_next_block
 
 screen -d -m -S provider4 bash -c "source ~/.bashrc; lavap rpcprovider provider_examples/lava_example.yml\
 $EXTRA_PROVIDER_FLAGS --geolocation 1 --log_level debug --from servicer4 --static-providers --chain-id lava 2>&1 | tee $LOGS_DIR/PROVIDER4.log" && sleep 0.25
