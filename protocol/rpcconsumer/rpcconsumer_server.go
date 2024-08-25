@@ -411,6 +411,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	userData := protocolMessage.GetUserData()
 	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(protocolMessage), rpccs.requiredResponses, protocolMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
 	var err error
 	// try sending a relay 3 times. if failed return the error
@@ -522,8 +523,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 			// in case we got a processing timeout we return context deadline exceeded to the user.
 			utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
 				utils.LogAttr("processingTimeout", processingTimeout),
-				utils.LogAttr("dappId", relayProcessor.userData.DappId),
-				utils.LogAttr("consumerIp", relayProcessor.userData.ConsumerIp),
+				utils.LogAttr("dappId", userData.DappId),
+				utils.LogAttr("consumerIp", userData.ConsumerIp),
 				utils.LogAttr("protocolMessage.GetApi().Name", protocolMessage.GetApi().Name),
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("relayProcessor", relayProcessor),

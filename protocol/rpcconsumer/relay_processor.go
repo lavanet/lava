@@ -52,7 +52,6 @@ type RelayProcessor struct {
 	guid                         uint64
 	selection                    Selection
 	consumerConsistency          *ConsumerConsistency
-	userData                     chainlib.UserData
 	skipDataReliability          bool
 	debugRelay                   bool
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
@@ -230,7 +229,8 @@ func (rp *RelayProcessor) setValidResponse(response *relayResponse) {
 	// no error, update the seen block
 	blockSeen := response.relayResult.Reply.LatestBlock
 	// nil safe
-	rp.consumerConsistency.SetSeenBlock(blockSeen, rp.userData.DappId, rp.userData.ConsumerIp)
+	userData := rp.protocolMessage.GetUserData()
+	rp.consumerConsistency.SetSeenBlock(blockSeen, userData.DappId, userData.ConsumerIp)
 	// on subscribe results, we just append to successful results instead of parsing results because we already have a validation.
 	if chainlib.IsFunctionTagOfType(rp.protocolMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 		rp.successResults = append(rp.successResults, response.relayResult)

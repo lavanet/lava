@@ -104,8 +104,11 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		require.NoError(t, err)
 		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
 		require.NoError(t, err)
-		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, "", "")
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, protocolMessage, nil, false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := NewConsumerConsistency(specId)
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, protocolMessage, consistency, false, relayProcessorMetrics, relayProcessorMetrics, false, relayRetriesManagerInstance)
 
 		usedProviders := relayProcessor.GetUsedProviders()
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
@@ -126,9 +129,13 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Zero(t, protocolErrors)
+
 		returnedResult, err := relayProcessor.ProcessingResult()
 		require.NoError(t, err)
 		require.Equal(t, string(returnedResult.Reply.Data), "ok")
+
+		seenBlock, found := consistency.GetSeenBlock(protocolMessage.GetUserData().DappId, protocolMessage.GetUserData().ConsumerIp)
+		fmt.Println(seenBlock, found)
 	})
 }
 
