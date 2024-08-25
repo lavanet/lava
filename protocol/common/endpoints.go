@@ -27,10 +27,6 @@ const (
 	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
 	NODE_ERRORS_PROVIDERS_HEADER_NAME               = "Lava-Node-Errors-providers"
 	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
-	USER_REQUEST_TYPE                               = "lava-user-request-type"
-	STATEFUL_API_HEADER                             = "lava-stateful-api"
-	REQUESTED_BLOCK_HEADER_NAME                     = "lava-parsed-requested-block"
-	LAVA_IDENTIFIED_NODE_ERROR_HEADER               = "lava-identified-node-error"
 	LAVAP_VERSION_HEADER_NAME                       = "Lavap-Version"
 	LAVA_CONSUMER_PROCESS_GUID                      = "lava-consumer-process-guid"
 	// these headers need to be lowercase

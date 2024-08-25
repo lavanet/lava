@@ -61,6 +61,12 @@ func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.R
 	return len(pu.staticProviders)
 }
 
+func (pu *PairingUpdater) getNumberOfStaticProviders() int {
+	pu.lock.RLock()
+	defer pu.lock.RUnlock()
+	return len(pu.staticProviders)
+}
+
 func (pu *PairingUpdater) updateBackupProviders(backupProviders []*lavasession.RPCProviderEndpoint) {
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
@@ -85,13 +91,16 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 	chainID := consumerSessionManager.RPCEndpoint().ChainID
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
-	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, -1) // fetching pairing list from blockchain
-	numberOfRelevantProviders := pu.updateStaticProviders(staticProviders)                           // updating static providers, updateStaticProviders function returns the number of relevant static providers
-	if err != nil && (epoch == 0 || numberOfRelevantProviders == 0) {                                // if there is an error from blockchain AND no static providers || epoch = 0, return error
-		return err
+	pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, -1)
+	numberOfRelevantProviders := pu.updateStaticProviders(staticProviders)
+	// If user configured static providers but did not buy a subscription
+	if err != nil {
+		if numberOfRelevantProviders == 0 {
+			return err
+		}
+		// else we continue with static providers.
+		epoch += 1
 	}
-	utils.LavaFormatInfo("calling update backup providers", utils.Attribute{Key: "backupProviders", Value: len(backupProviders)})
-	pu.updateBackupProviders(backupProviders) // updating backup providers
 	pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
 	if nextBlockForUpdate > pu.nextBlockForUpdate {
 		// make sure we don't update twice, this updates pu.nextBlockForUpdate
@@ -112,7 +121,11 @@ func (pu *PairingUpdater) RegisterPairingUpdatable(ctx context.Context, pairingU
 	pu.lock.Lock()
 	defer pu.lock.Unlock()
 	_, epoch, _, err := pu.stateQuery.GetPairing(ctx, pu.specId, -1)
-	if err != nil && (epoch == 0 || len(pu.staticProviders) == 0) {
+	if err != nil {
+		if len(pu.staticProviders) > 0 {
+			// skipping errors for get pairing if static providers are set.
+			return nil
+		}
 		return err
 	}
 
@@ -137,9 +150,11 @@ func (pu *PairingUpdater) updateInner(latestBlock int64) {
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
 		pairingList, epoch, nextBlockForUpdate, err := pu.stateQuery.GetPairing(timeoutCtx, chainID, latestBlock)
-		nextBlockForUpdateList = append(nextBlockForUpdateList, nextBlockForUpdate)
-		if err != nil && (epoch == 0 || len(pu.staticProviders) == 0) {
-			// it's ok that we don't have pairing, only if there are static providers and epoch is not 0
+		cancel()
+		if err != nil {
+			if len(pu.staticProviders) > 0 {
+				return
+			}
 			utils.LavaFormatError("could not update pairing for chain, trying again next block", err, utils.Attribute{Key: "chain", Value: chainID})
 			continue
 		}

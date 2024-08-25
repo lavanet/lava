@@ -273,7 +273,126 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 					}()
 				}
 			}
-			return err
+
+			if options.cmdFlags.OfflineSpecPath != "" {
+				// offline spec mode.
+				parsedOfflineSpec, loadError := specutils.GetSpecFromPath(options.cmdFlags.OfflineSpecPath, rpcEndpoint.ChainID, nil, nil)
+				if loadError != nil {
+					err = utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", options.cmdFlags.OfflineSpecPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
+				}
+				utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", options.cmdFlags.OfflineSpecPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
+				chainParser.SetSpec(parsedOfflineSpec)
+			} else {
+				// register for spec updates
+				err = rpcc.consumerStateTracker.RegisterForSpecUpdates(ctx, chainParser, *rpcEndpoint)
+			}
+			if err != nil {
+				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+				errCh <- err
+				return err
+			}
+
+			// Filter the relevant static providers
+			relevantStaticProviderList := []*lavasession.RPCProviderEndpoint{}
+			for _, staticProvider := range options.staticProvidersList {
+				if staticProvider.ChainID == rpcEndpoint.ChainID {
+					relevantStaticProviderList = append(relevantStaticProviderList, staticProvider)
+				}
+			}
+			staticProvidersActive := len(relevantStaticProviderList) > 0
+
+			_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+			var optimizer *provideroptimizer.ProviderOptimizer
+			var consumerConsistency *ConsumerConsistency
+			var finalizationConsensus *finalizationconsensus.FinalizationConsensus
+			getOrCreateChainAssets := func() error {
+				// this is locked so we don't race optimizers creation
+				chainMutexes[chainID].Lock()
+				defer chainMutexes[chainID].Unlock()
+				value, exists := optimizers.Load(chainID)
+				if !exists {
+					// doesn't exist for this chain create a new one
+					baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
+					optimizer = provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders)
+					optimizers.Store(chainID, optimizer)
+				} else {
+					var ok bool
+					optimizer, ok = value.(*provideroptimizer.ProviderOptimizer)
+					if !ok {
+						err = utils.LavaFormatError("failed loading optimizer, value is of the wrong type", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						return err
+					}
+				}
+				value, exists = consumerConsistencies.Load(chainID)
+				if !exists { // doesn't exist for this chain create a new one
+					consumerConsistency = NewConsumerConsistency(chainID)
+					consumerConsistencies.Store(chainID, consumerConsistency)
+				} else {
+					var ok bool
+					consumerConsistency, ok = value.(*ConsumerConsistency)
+					if !ok {
+						err = utils.LavaFormatError("failed loading consumer consistency, value is of the wrong type", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						return err
+					}
+				}
+
+				value, exists = finalizationConsensuses.Load(chainID)
+				if !exists {
+					// doesn't exist for this chain create a new one
+					finalizationConsensus = finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
+					consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus, staticProvidersActive)
+					finalizationConsensuses.Store(chainID, finalizationConsensus)
+				} else {
+					var ok bool
+					finalizationConsensus, ok = value.(*finalizationconsensus.FinalizationConsensus)
+					if !ok {
+						err = utils.LavaFormatError("failed loading finalization consensus, value is of the wrong type", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+						return err
+					}
+				}
+				return nil
+			}
+			err = getOrCreateChainAssets()
+			if err != nil {
+				errCh <- err
+				return err
+			}
+
+			if finalizationConsensus == nil || optimizer == nil {
+				err = utils.LavaFormatError("failed getting assets, found a nil", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
+				errCh <- err
+				return err
+			}
+
+			// Create active subscription provider storage for each unique chain
+			activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
+			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+			// Register For Updates
+			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, relevantStaticProviderList)
+
+			var relaysMonitor *metrics.RelaysMonitor
+			if options.cmdFlags.RelaysHealthEnableFlag {
+				relaysMonitor = metrics.NewRelaysMonitor(options.cmdFlags.RelaysHealthIntervalFlag, rpcEndpoint.ChainID, rpcEndpoint.ApiInterface)
+				relaysMonitorAggregator.RegisterRelaysMonitor(rpcEndpoint.String(), relaysMonitor)
+			}
+
+			rpcConsumerServer := &RPCConsumerServer{}
+
+			var consumerWsSubscriptionManager *chainlib.ConsumerWSSubscriptionManager
+			var specMethodType string
+			if rpcEndpoint.ApiInterface == spectypes.APIInterfaceJsonRPC {
+				specMethodType = http.MethodPost
+			}
+			consumerWsSubscriptionManager = chainlib.NewConsumerWSSubscriptionManager(consumerSessionManager, rpcConsumerServer, options.refererData, specMethodType, chainParser, activeSubscriptionProvidersStorage)
+
+			utils.LavaFormatInfo("RPCConsumer Listening", utils.Attribute{Key: "endpoints", Value: rpcEndpoint.String()})
+			err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, rpcc.consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, options.requiredResponses, privKey, lavaChainID, options.cache, rpcConsumerMetrics, consumerAddr, consumerConsistency, relaysMonitor, options.cmdFlags, options.stateShare, options.refererData, consumerReportsManager, consumerWsSubscriptionManager)
+			if err != nil {
+				err = utils.LavaFormatError("failed serving rpc requests", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
+				errCh <- err
+				return err
+			}
+			return nil
 		}(rpcEndpoint)
 	}
 

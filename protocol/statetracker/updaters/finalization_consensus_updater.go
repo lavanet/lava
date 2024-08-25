@@ -46,7 +46,7 @@ func (fcu *FinalizationConsensusUpdater) updateInner(latestBlock int64) {
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 	_, epoch, nextBlockForUpdate, err := fcu.stateQuery.GetPairing(timeoutCtx, fcu.specId, latestBlock)
-	if err != nil && epoch == 0 {
+	if err != nil {
 		if !fcu.ignoreQueryErrors {
 			utils.LavaFormatError("could not get block stats for finalization consensus updater, trying again next block", err, utils.Attribute{Key: "latestBlock", Value: latestBlock})
 		}

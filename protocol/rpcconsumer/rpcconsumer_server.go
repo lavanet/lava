@@ -17,26 +17,25 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v5/protocol/chainlib"
-	"github.com/lavanet/lava/v5/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v5/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v5/protocol/common"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/finalizationverification"
-	"github.com/lavanet/lava/v5/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v5/protocol/lavasession"
-	"github.com/lavanet/lava/v5/protocol/metrics"
-	"github.com/lavanet/lava/v5/protocol/performance"
-	"github.com/lavanet/lava/v5/protocol/statetracker"
-	"github.com/lavanet/lava/v5/protocol/upgrade"
-	"github.com/lavanet/lava/v5/utils"
-	"github.com/lavanet/lava/v5/utils/protocopy"
-	"github.com/lavanet/lava/v5/utils/rand"
-	conflicttypes "github.com/lavanet/lava/v5/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v5/x/pairing/types"
-	plantypes "github.com/lavanet/lava/v5/x/plans/types"
-	spectypes "github.com/lavanet/lava/v5/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationverification"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/protocol/metrics"
+	"github.com/lavanet/lava/v2/protocol/performance"
+	"github.com/lavanet/lava/v2/protocol/upgrade"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/protocopy"
+	"github.com/lavanet/lava/v2/utils/rand"
+	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v2/x/plans/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -235,34 +234,16 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, protocolMessage chainlib.ProtocolMessage) (bool, error) {
 	success := false
 	var err error
-	usedProviders := lavasession.NewUsedProviders(nil)
-
-	// Get quorum parameters from protocol message
-	quorumParams, err := protocolMessage.GetQuorumParameters()
-	if err != nil {
-		return false, err
-	}
-
-	relayProcessor := NewRelayProcessor(
-		ctx,
-		quorumParams,
-		rpccs.consumerConsistency,
-		rpccs.rpcConsumerLogs,
-		rpccs,
-		rpccs.relayRetriesManager,
-		NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
-		rpccs.consumerSessionManager.GetQoSManager(),
-	)
+	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, protocolMessage, rpccs.consumerConsistency, "-init-", "", rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
 	usedProvidersResets := 1
 	for i := 0; i < retries; i++ {
 		// Check if we even have enough providers to communicate with them all.
 		// If we have 1 provider we will reset the used providers always.
-		// Instead of spamming no pairing available on bootstrap
 		if ((i + 1) * usedProvidersResets) > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
 			usedProvidersResets++
 			relayProcessor.GetUsedProviders().ClearUnwanted()
 		}
-		err = rpccs.sendRelayToProvider(ctx, 1, GetEmptyRelayState(ctx, protocolMessage), relayProcessor, nil)
+		err = rpccs.sendRelayToProvider(ctx, protocolMessage, "-init-", "", relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
 			relayProcessor.GetUsedProviders().ClearUnwanted()
@@ -1626,22 +1607,6 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 					Name:  common.NODE_ERRORS_PROVIDERS_HEADER_NAME,
 					Value: nodeErrorHeaderString,
 				})
-		}
-
-		if relayResult.Request != nil && relayResult.Request.RelaySession != nil {
-			currentReportedProviders := rpccs.consumerSessionManager.GetReportedProviders(uint64(relayResult.Request.RelaySession.Epoch))
-			if len(currentReportedProviders) > 0 {
-				reportedProvidersArray := make([]string, len(currentReportedProviders))
-				for idx, providerAddress := range currentReportedProviders {
-					reportedProvidersArray[idx] = providerAddress.Address
-				}
-				reportedProvidersString := fmt.Sprintf("%v", reportedProvidersArray)
-				reportedProvidersMD := pairingtypes.Metadata{
-					Name:  common.REPORTED_PROVIDERS_HEADER_NAME,
-					Value: reportedProvidersString,
-				}
-				relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, reportedProvidersMD)
-			}
 		}
 
 		version := pairingtypes.Metadata{
