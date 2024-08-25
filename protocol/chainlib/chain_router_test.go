@@ -760,7 +760,7 @@ type chainProxyMock struct {
 
 func (m *chainProxyMock) GetChainProxyInformation() (common.NodeUrl, string) {
 	urlStr := ""
-	if m.endpoint.NodeUrls != nil && len(m.endpoint.NodeUrls) > 0 {
+	if len(m.endpoint.NodeUrls) > 0 {
 		urlStr = m.endpoint.NodeUrls[0].UrlStr()
 	}
 	return common.NodeUrl{}, urlStr
