@@ -59,8 +59,14 @@ type RelayProcessor struct {
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
 	metricsInf                   MetricsInterface
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
-	disableRelayRetry            bool
 	relayRetriesManager          *RelayRetriesManager
+	retryOptions                 retryProcessorOptions
+}
+
+type retryProcessorOptions struct {
+	relayCountOnNodeError   int
+	disableCacheOnNodeError bool
+	disableRelayRetry       bool
 }
 
 func NewRelayProcessor(
@@ -74,7 +80,7 @@ func NewRelayProcessor(
 	debugRelay bool,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
-	disableRelayRetry bool,
+	retryOptions retryProcessorOptions,
 	relayRetriesManager *RelayRetriesManager,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
@@ -100,7 +106,7 @@ func NewRelayProcessor(
 		debugRelay:                   debugRelay,
 		metricsInf:                   metricsInf,
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
-		disableRelayRetry:            disableRelayRetry,
+		retryOptions:                 retryOptions,
 		relayRetriesManager:          relayRetriesManager,
 	}
 }
@@ -320,12 +326,13 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	// 2. If we have 0 successful relays and we have only node errors.
 	// 3. Hash calculation was successful.
 	// 4. Number of retries < NumberOfRetriesAllowedOnNodeErrors.
-	if !rp.disableRelayRetry && resultsCount == 0 && hashErr == nil {
-		if nodeErrors <= NumberOfRetriesAllowedOnNodeErrors {
+	if !rp.retryOptions.disableRelayRetry && resultsCount == 0 && hashErr == nil {
+		if nodeErrors <= rp.retryOptions.relayCountOnNodeError {
 			// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
 
+			// Check if user specified to disable caching - OR
 			// Check hash already exist, if it does, we don't want to retry
-			if !rp.relayRetriesManager.CheckHashInCache(hash) {
+			if rp.retryOptions.disableCacheOnNodeError || !rp.relayRetriesManager.CheckHashInCache(hash) {
 				// If we didn't find the hash in the hash map we can retry
 				utils.LavaFormatTrace("retrying on relay error", utils.LogAttr("retry_number", nodeErrors), utils.LogAttr("hash", hash))
 				go rp.metricsInf.SetNodeErrorAttemptMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
