@@ -6,7 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/x/conflict/types"
+	"github.com/lavanet/lava/v2/x/conflict/types"
 	"github.com/spf13/cobra"
 )
 
@@ -23,12 +23,7 @@ func CmdDetection() *cobra.Command {
 				return err
 			}
 
-			msg := types.NewMsgDetection(
-				clientCtx.GetFromAddress().String(),
-				nil,
-				nil,
-				nil,
-			)
+			msg := types.NewMsgDetection(clientCtx.GetFromAddress().String())
 			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}

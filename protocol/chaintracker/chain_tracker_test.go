@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	chaintracker "github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils"
-	rand "github.com/lavanet/lava/utils/rand"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	chaintracker "github.com/lavanet/lava/v2/protocol/chaintracker"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils"
+	rand "github.com/lavanet/lava/v2/utils/rand"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -357,6 +357,7 @@ func TestChainTrackerFetchSpreadAcrossPollingTime(t *testing.T) {
 		called := 0
 		lastCall := time.Now()
 		timeDiff := 0 * time.Millisecond
+		localTimeForPollingMock := 500 * time.Millisecond
 		callback := func() {
 			called++
 			timeDiff = time.Since(lastCall)
@@ -364,28 +365,30 @@ func TestChainTrackerFetchSpreadAcrossPollingTime(t *testing.T) {
 		}
 		mockChainFetcher := NewMockChainFetcher(1000, mockBlocks, callback)
 		mockChainFetcher.AdvanceBlock()
-		localTimeForPollingMock := 50 * time.Millisecond
 		chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: localTimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
 		tracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 		require.NoError(t, err)
-		// fool the tracker so it thinks blocks will come every 50ms, and not adjust it's polling timers
+		// fool the tracker so it thinks blocks will come every localTimeForPollingMock (ms), and not adjust it's polling timers
 		for i := 0; i < 50; i++ {
-			tracker.AddBlockGap(50*time.Millisecond, 1)
+			tracker.AddBlockGap(localTimeForPollingMock, 1)
 		}
 		// initially we start with 1/16 block probing
 		time.Sleep(localTimeForPollingMock)                           // we expect 15+init calls
 		require.GreaterOrEqual(t, called, 15*8/10)                    // 15 to give a gap, give a 20% margin
 		require.Greater(t, timeDiff, localTimeForPollingMock/16*8/10) // give a 20% margin
-		require.Less(t, timeDiff, localTimeForPollingMock/8*12/10)    // give a 20% margin
-		mockChainFetcher.AdvanceBlock()                               // we advanced a block
+		fmt.Println(timeDiff, localTimeForPollingMock/16*8/10, localTimeForPollingMock/8*12/10)
+		require.Less(t, timeDiff, localTimeForPollingMock/8*12/10) // give a 20% margin
+		mockChainFetcher.AdvanceBlock()                            // we advanced a block
 		time.Sleep(localTimeForPollingMock / 2)
-		require.LessOrEqual(t, called, (3+16)*12/10)                 // init + 2 new + 16 from first block advancement, give 20% margin
-		require.GreaterOrEqual(t, called, 17*8/10)                   // give a 20% margin
+		require.LessOrEqual(t, called, (3+16)*12/10) // init + 2 new + 16 from first block advancement, give 20% margin
+		require.GreaterOrEqual(t, called, 17*8/10)   // give a 20% margin
+		fmt.Println(timeDiff, localTimeForPollingMock/2*12/10, localTimeForPollingMock/8*8/10)
 		require.Less(t, timeDiff, localTimeForPollingMock/2*12/10)   // give a 20% margin
 		require.Greater(t, timeDiff, localTimeForPollingMock/8*8/10) // give a 20% margin
 		time.Sleep(localTimeForPollingMock / 2)
 		require.GreaterOrEqual(t, called, (6+16)*8/10)
-		require.Less(t, timeDiff, localTimeForPollingMock/8*12/10)    // give a 20% margin
+		require.Less(t, timeDiff, localTimeForPollingMock/8*12/10) // give a 20% margin
+		fmt.Println(timeDiff, localTimeForPollingMock/8*12/10, localTimeForPollingMock/16*8/10)
 		require.Greater(t, timeDiff, localTimeForPollingMock/16*8/10) // give a 20% margin
 	})
 }

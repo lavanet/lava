@@ -3,7 +3,7 @@ package chaintracker
 import (
 	fmt "fmt"
 
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 type BlockRange struct {
@@ -48,7 +48,7 @@ func (wbd *WantedBlocksData) New(fromBlock, toBlock, specificBlock, latestBlock,
 			toBlockArg := fromBlockArg // [from,to] with only one block
 			wbd.specificBlock, err = NewBlockRange(fromBlockArg, toBlockArg, earliestBlockSaved, latestBlock)
 			if err != nil {
-				return InvalidRequestedSpecificBlock.Wrapf("specific " + err.Error())
+				return InvalidRequestedSpecificBlock.Wrapf("specific %s", err.Error())
 			}
 		}
 	} else {

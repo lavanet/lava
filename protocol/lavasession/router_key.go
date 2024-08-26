@@ -2,14 +2,21 @@ package lavasession
 
 import (
 	"sort"
+	"strconv"
 	"strings"
 )
 
 const (
-	sep = "|"
+	sep            = "|"
+	methodRouteSep = "method-route:"
 )
 
 type RouterKey string
+
+func (rk *RouterKey) ApplyMethodsRoute(routeNum int) RouterKey {
+	additionalPath := strconv.FormatInt(int64(routeNum), 10)
+	return RouterKey(string(*rk) + methodRouteSep + additionalPath)
+}
 
 func NewRouterKey(extensions []string) RouterKey {
 	// make sure addons have no repetitions

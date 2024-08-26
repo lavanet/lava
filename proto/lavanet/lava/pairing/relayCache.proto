@@ -4,7 +4,7 @@ import "gogoproto/gogo.proto";
 import "lavanet/lava/pairing/relay.proto";
 import "google/protobuf/empty.proto";
 
-option go_package = "github.com/lavanet/lava/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v2/x/pairing/types";
 
 service RelayerCache {
     rpc GetRelay (RelayCacheGet) returns (CacheRelayReply) {}
@@ -16,6 +16,7 @@ message CacheRelayReply {
     RelayReply reply = 1;
     repeated Metadata optional_metadata = 2 [(gogoproto.nullable)   = false];
     int64 seen_block = 3;
+    repeated BlockHashToHeight blocks_hashes_to_heights = 4;
 }
 
 message CacheUsage {
@@ -37,6 +38,7 @@ message RelayCacheGet {
     string shared_state_id = 5; // empty id for no shared state
     string chain_id = 6; // used to set latest block per chain.
     int64 seen_block = 7;
+    repeated BlockHashToHeight blocks_hashes_to_heights = 8;
 }
 
 message RelayCacheSet {
@@ -51,4 +53,10 @@ message RelayCacheSet {
     int64 seen_block = 10;
     int64 average_block_time = 11;
     bool is_node_error = 12; // node errors wont be cached for long even if they are finalized in cases where it returns a valid response later on
+    repeated BlockHashToHeight blocks_hashes_to_heights = 13;
+}
+
+message BlockHashToHeight {
+    string hash = 1;
+    int64 height = 2;
 }

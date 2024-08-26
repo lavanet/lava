@@ -10,9 +10,9 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
+	fixationtypes "github.com/lavanet/lava/v2/x/fixationstore/types"
 
-	"github.com/lavanet/lava/x/dualstaking/types"
+	"github.com/lavanet/lava/v2/x/dualstaking/types"
 )
 
 type (

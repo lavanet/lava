@@ -11,7 +11,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 type QueueSender struct {

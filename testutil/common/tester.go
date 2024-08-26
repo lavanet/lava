@@ -14,20 +14,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/sigs"
-	dualstakingante "github.com/lavanet/lava/x/dualstaking/ante"
-	dualstakingtypes "github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
-	rewardstypes "github.com/lavanet/lava/x/rewards/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/x/subscription/types"
+	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/utils"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	dualstakingante "github.com/lavanet/lava/v2/x/dualstaking/ante"
+	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	fixationstoretypes "github.com/lavanet/lava/v2/x/fixationstore/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v2/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/v2/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -984,11 +985,6 @@ func (ts *Tester) QueryRewardsIprpcSpecReward(spec string) (*rewardstypes.QueryI
 }
 
 // block/epoch helpers
-// QueryRewardsProviderReward implements 'q rewards provider-reward'
-func (ts *Tester) QueryRewardsProviderReward(chainID string, provider string) (*rewardstypes.QueryProviderRewardResponse, error) {
-	msg := &rewardstypes.QueryProviderRewardRequest{ChainId: chainID, Provider: provider}
-	return ts.Keepers.Rewards.ProviderReward(ts.GoCtx, msg)
-} // block/epoch helpers
 
 func (ts *Tester) BlockHeight() uint64 {
 	return uint64(ts.Ctx.BlockHeight())
@@ -1132,7 +1128,7 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 	}
 
 	sdkContext := sdk.UnwrapSDKContext(ts.Ctx)
-	spec, err := testkeeper.GetASpec(specId, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
+	spec, err := specutils.GetASpec(specId, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
 	if err != nil {
 		return err
 	}

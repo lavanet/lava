@@ -15,12 +15,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
-	"github.com/lavanet/lava/app"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/app"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -78,6 +78,7 @@ func CreateBadgeServerCobraCommand() *cobra.Command {
 		},
 	}
 
+	flags.AddKeyringFlags(cmd.Flags())
 	cmd.Flags().Int("epoch-interval", 30, "--epoch-interval=30")
 	cmd.Flags().String("port", "8080", "badge server listening port")
 	cmd.Flags().String("metrics-port", "8081", "badge server metrics port")

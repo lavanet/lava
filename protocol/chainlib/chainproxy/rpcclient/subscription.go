@@ -32,7 +32,7 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 var (
@@ -340,7 +340,7 @@ func (sub *ClientSubscription) forward() (unsubscribeServer bool, err error) {
 				var ok bool
 				err, ok = recv.Interface().(error)
 				if !ok {
-					return false, fmt.Errorf("(sub *ClientSubscription) forward() - recv.Interface().(error) - type assertion failed" + fmt.Sprintf("%s", recv.Interface()))
+					return false, fmt.Errorf("(sub *ClientSubscription) forward() - recv.Interface().(error) - type assertion failed %s", recv.Interface())
 				}
 			}
 			if err == errUnsubscribed {
@@ -352,7 +352,7 @@ func (sub *ClientSubscription) forward() (unsubscribeServer bool, err error) {
 		case 1: // <-sub.in
 			msg, ok := recv.Interface().(*JsonrpcMessage)
 			if !ok {
-				return false, fmt.Errorf("(sub *ClientSubscription) forward() - recv.Interface().(*JsonrpcMessage) - type assertion failed" + fmt.Sprintf("%s", recv.Interface()))
+				return false, fmt.Errorf("(sub *ClientSubscription) forward() - recv.Interface().(*JsonrpcMessage) - type assertion failed %s", recv.Interface())
 			}
 			if msg.Error != nil {
 				return true, err

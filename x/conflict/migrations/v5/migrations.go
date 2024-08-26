@@ -7,7 +7,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 const (

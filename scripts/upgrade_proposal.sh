@@ -3,7 +3,7 @@ __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/useful_commands.sh
 . ${__dir}/vars/variables.sh
 
-GASPRICE="0.000000001ulava"
+GASPRICE="0.00002ulava"
 
 if [ -z "$1" ]; then
     versionName="vtest"
@@ -24,7 +24,7 @@ lavad tx gov submit-legacy-proposal software-upgrade $versionName \
 --from alice \
 --description "lala" \
 --keyring-backend "test" \
---gas-prices "0.000000001ulava" \
+--gas-prices "0.00002ulava" \
 --gas-adjustment "1.5" \
 --deposit 10000000ulava \
 --yes

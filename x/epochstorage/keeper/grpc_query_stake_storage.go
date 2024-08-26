@@ -3,10 +3,8 @@ package keeper
 import (
 	"context"
 
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/x/epochstorage/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,26 +14,10 @@ func (k Keeper) StakeStorageAll(c context.Context, req *types.QueryAllStakeStora
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
-	var stakeStorages []types.StakeStorage
 	ctx := sdk.UnwrapSDKContext(c)
+	stakeStorages := k.GetAllStakeEntriesForGenesis(ctx)
 
-	store := ctx.KVStore(k.storeKey)
-	stakeStorageStore := prefix.NewStore(store, types.KeyPrefix(types.StakeStorageKeyPrefix))
-
-	pageRes, err := query.Paginate(stakeStorageStore, req.Pagination, func(key, value []byte) error {
-		var stakeStorage types.StakeStorage
-		if err := k.cdc.Unmarshal(value, &stakeStorage); err != nil {
-			return err
-		}
-
-		stakeStorages = append(stakeStorages, stakeStorage)
-		return nil
-	})
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &types.QueryAllStakeStorageResponse{StakeStorage: stakeStorages, Pagination: pageRes}, nil
+	return &types.QueryAllStakeStorageResponse{StakeStorage: stakeStorages}, nil
 }
 
 func (k Keeper) StakeStorage(c context.Context, req *types.QueryGetStakeStorageRequest) (*types.QueryGetStakeStorageResponse, error) {
@@ -44,12 +26,13 @@ func (k Keeper) StakeStorage(c context.Context, req *types.QueryGetStakeStorageR
 	}
 	ctx := sdk.UnwrapSDKContext(c)
 
-	val, found := k.GetStakeStorage(
-		ctx,
-		req.Index,
-	)
-	if !found {
+	stakeEntries := k.GetAllStakeEntriesCurrentForChainId(ctx, req.Index)
+	if len(stakeEntries) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "not found")
+	}
+	val := types.StakeStorage{
+		Index:        req.Index,
+		StakeEntries: stakeEntries,
 	}
 
 	return &types.QueryGetStakeStorageResponse{StakeStorage: val}, nil

@@ -18,18 +18,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	updaters "github.com/lavanet/lava/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/utils"
-	commontypes "github.com/lavanet/lava/utils/common/types"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
+	updaters "github.com/lavanet/lava/v2/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v2/utils"
+	commontypes "github.com/lavanet/lava/v2/utils/common/types"
+	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 const (
-	defaultGasPrice      = "0.000000001" + commontypes.TokenDenom
-	DefaultGasAdjustment = "1000.0"
+	DefaultGasPrice      = "0.00002" + commontypes.TokenDenom
+	DefaultGasAdjustment = "3.0"
 	// same account can continue failing the more providers you have under the same account
 	// for example if you have a provider staked at 20 chains you will ask for 20 payments per epoch.
 	// therefore currently our best solution is to continue retrying increasing sequence number until successful
@@ -81,7 +81,7 @@ func (ts *TxSender) checkProfitability(simResult *typestx.SimulateResponse, gasU
 }
 
 func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Context, msg sdk.Msg, checkProfitability bool, feeGranter sdk.AccAddress) error {
-	txfactory := ts.txFactory.WithGasPrices(defaultGasPrice)
+	txfactory := ts.txFactory
 	if feeGranter != nil {
 		txfactory = ts.txFactory.WithFeeGranter(feeGranter)
 	}
@@ -101,7 +101,7 @@ func (ts *TxSender) SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx context.Con
 	latestResult := common.TxResultData{}
 	var gasUsed uint64
 	for ; idx < RETRY_INCORRECT_SEQUENCE && !success; idx++ {
-		utils.LavaFormatDebug("Attempting to send relay payment transaction", utils.LogAttr("index", idx+1))
+		utils.LavaFormatDebug("Attempting to send transaction", utils.LogAttr("index", idx+1))
 		txfactory, gasUsed, err = ts.simulateTxWithRetry(clientCtx, txfactory, msg)
 		if err != nil {
 			return utils.LavaFormatError("Failed Simulating transaction", err)
@@ -162,7 +162,7 @@ func (ts *TxSender) parseTxErrorsAndTryGettingANewFactory(txResultString string,
 	} else if strings.Contains(txResultString, "insufficient fees; got:") { // handle a case where node minimum gas fees is misconfigured
 		return ts.txFactory, parseInsufficientFeesError(txResultString, gasUsed)
 	}
-	return txfactory, fmt.Errorf(txResultString)
+	return txfactory, fmt.Errorf("%s", txResultString)
 }
 
 func (ts *TxSender) simulateTxWithRetry(clientCtx client.Context, txfactory tx.Factory, msg sdk.Msg) (tx.Factory, uint64, error) {
@@ -201,9 +201,9 @@ func (ts *TxSender) SendTxAndVerifyCommit(txfactory tx.Factory, msg sdk.Msg) (pa
 		return common.TxResultData{}, utils.LavaFormatInfo("Failed unmarshaling transaction results", utils.Attribute{Key: "transactionResult", Value: myWriter.String()})
 	}
 	myWriter.Reset()
-	if debug {
-		utils.LavaFormatDebug("transaction results", utils.Attribute{Key: "jsonParsedResult", Value: jsonParsedResult})
-	}
+
+	utils.LavaFormatTrace("transaction results", utils.LogAttr("jsonParsedResult", jsonParsedResult))
+
 	resultData, err := common.ParseTransactionResult(jsonParsedResult)
 	utils.LavaFormatInfo("Sent Transaction", utils.LogAttr("Hash", hex.EncodeToString(resultData.Txhash)))
 	if err != nil {
@@ -240,7 +240,7 @@ func (ts *TxSender) waitForTxCommit(resultData common.TxResultData) (common.TxRe
 				return
 			}
 			utils.LavaFormatDebug("Keep Waiting tx results...", utils.LogAttr("reason", err))
-			if debug {
+			if utils.IsTraceLogLevelEnabled() {
 				utils.LavaFormatWarning("Tx query got error", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "resultData", Value: resultData})
 			}
 		}
@@ -306,8 +306,16 @@ func NewConsumerTxSender(ctx context.Context, clientCtx client.Context, txFactor
 	return ts, nil
 }
 
-func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, sameProviderConflict *conflicttypes.FinalizationConflict) error {
-	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String(), finalizationConflict, responseConflict, sameProviderConflict)
+func (ts *ConsumerTxSender) TxSenderConflictDetection(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict) error {
+	msg := conflicttypes.NewMsgDetection(ts.clientCtx.FromAddress.String())
+	if finalizationConflict != nil {
+		msg.SetFinalizationConflict(finalizationConflict)
+	} else if responseConflict != nil {
+		msg.SetResponseConflict(responseConflict)
+	} else {
+		return utils.LavaFormatError("discrepancyChecker - TxSenderConflictDetection - no conflict provided", nil)
+	}
+
 	err := ts.SimulateAndBroadCastTxWithRetryOnSeqMismatch(ctx, msg, false, nil)
 	if err != nil {
 		return utils.LavaFormatError("discrepancyChecker - SimulateAndBroadCastTx Failed", err)
@@ -472,7 +480,7 @@ func parseInsufficientFeesError(msg string, gasUsed uint64) error {
 	}
 	minimumGasPricesGot := (float64(gasUsed) / float64(required))
 	return utils.LavaFormatError("Bad Lava Node Configuration detected, Gas fees inconsistencies can be related to the app.toml configuration of the lava node you are using under 'minimum-gas-prices', Please remove the field or set it to the required amount or change rpc to a different lava node", nil,
-		utils.Attribute{Key: "Required Minimum Gas Prices", Value: defaultGasPrice},
+		utils.Attribute{Key: "Required Minimum Gas Prices", Value: DefaultGasPrice},
 		utils.Attribute{Key: "Current (estimated) Minimum Gas Prices", Value: strconv.FormatFloat(minimumGasPricesGot, 'f', -1, 64) + commontypes.TokenDenom},
 	)
 }

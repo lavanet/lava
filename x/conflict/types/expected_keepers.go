@@ -3,9 +3,9 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	projectstypes "github.com/lavanet/lava/x/projects/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	projectstypes "github.com/lavanet/lava/v2/x/projects/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 type PairingKeeper interface {
@@ -17,6 +17,7 @@ type PairingKeeper interface {
 	BailEntry(ctx sdk.Context, address string, chainID string, bail sdk.Coin) error
 	SlashEntry(ctx sdk.Context, address string, chainID string, percentage sdk.Dec) (sdk.Coin, error)
 	GetProjectData(ctx sdk.Context, developerKey sdk.AccAddress, chainID string, blockHeight uint64) (proj projectstypes.Project, errRet error)
+	ValidatePairingForClient(ctx sdk.Context, chainID string, providerAddress sdk.AccAddress, reqEpoch uint64, project projectstypes.Project) (isValidPairing bool, allowedCU uint64, pairedProviders []epochstoragetypes.StakeEntry, errorRet error)
 }
 
 type EpochstorageKeeper interface {
@@ -26,16 +27,16 @@ type EpochstorageKeeper interface {
 	BlocksToSave(ctx sdk.Context, block uint64) (res uint64, err error)
 	GetEarliestEpochStart(ctx sdk.Context) uint64
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
-	GetStakeEntryForProviderEpoch(ctx sdk.Context, chainID string, selectedProvider string, epoch uint64) (entry epochstoragetypes.StakeEntry, found bool)
-	GetStakeEntryForAllProvidersEpoch(ctx sdk.Context, chainID string, epoch uint64) (entrys *[]epochstoragetypes.StakeEntry, err error)
-	ModifyStakeEntryCurrent(ctx sdk.Context, chainID string, stakeEntry epochstoragetypes.StakeEntry)
-	GetStakeEntryByAddressCurrent(ctx sdk.Context, chainID string, address string) (value epochstoragetypes.StakeEntry, found bool)
+	GetStakeEntryCurrent(ctx sdk.Context, chainID string, address string) (value epochstoragetypes.StakeEntry, found bool)
 	PushFixatedParams(ctx sdk.Context, block, limit uint64)
+	GetStakeEntry(ctx sdk.Context, epoch uint64, chainID string, provider string) (val epochstoragetypes.StakeEntry, found bool)
+	GetAllStakeEntriesForEpochChainId(ctx sdk.Context, epoch uint64, chainID string) []epochstoragetypes.StakeEntry
 }
 
 type SpecKeeper interface {
 	IsSpecFoundAndActive(ctx sdk.Context, chainID string) (foundAndActive, found bool, providersType spectypes.Spec_ProvidersTypes)
 	IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock, latestBlock int64) bool
+	GetSpec(ctx sdk.Context, index string) (val spectypes.Spec, found bool)
 }
 
 // AccountKeeper defines the expected account keeper used for simulations (noalias)

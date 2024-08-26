@@ -3,9 +3,9 @@ import { lavanet } from "../../../../ecosystem/lavajs/dist/codegen/lavanet/bundl
 async function main() {
     const client = await lavanet.ClientFactory.createRPCQueryClient({ rpcEndpoint: "http://127.0.0.1:26657" })
     const lavaClient = client.lavanet.lava;
-    let specResult = await lavaClient.spec.spec({ ChainID: "LAV1" })
+    let specResult = await lavaClient.spec.spec({ chainID: "LAV1" })
     const cosmosClient = client.cosmos;
-    if (specResult.Spec.index != "LAV1") {
+    if (specResult.spec.index != "LAV1") {
         console.log(specResult)
         throw new Error("Failed validating Lava spec.")
     }

@@ -86,4 +86,4 @@ validators:
 - name: alice
   bonded: 100000000000ulava
   app:
-    minimum-gas-prices: 0.000000001ulava
+    minimum-gas-prices: 0.00002ulava

@@ -10,16 +10,16 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/testutil/nullify"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
+	"github.com/lavanet/lava/v2/x/spec/types"
 )
 
 // Prevent strconv unused error
 var _ = strconv.IntSize
 
 func TestSpecQuerySingle(t *testing.T) {
-	keeper, ctx := keepertest.SpecKeeper(t)
+	keeper, ctx := specutils.SpecKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
 	msgs := createNSpec(keeper, ctx, 2)
 	for _, tc := range []struct {
@@ -70,7 +70,7 @@ func TestSpecQuerySingle(t *testing.T) {
 }
 
 func TestSpecQuerySingleRaw(t *testing.T) {
-	keeper, ctx := keepertest.SpecKeeper(t)
+	keeper, ctx := specutils.SpecKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
 	msgs := createNSpec(keeper, ctx, 2)
 
@@ -98,7 +98,7 @@ func TestSpecQuerySingleRaw(t *testing.T) {
 }
 
 func TestSpecQueryPaginated(t *testing.T) {
-	keeper, ctx := keepertest.SpecKeeper(t)
+	keeper, ctx := specutils.SpecKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
 	msgs := createNSpec(keeper, ctx, 5)
 

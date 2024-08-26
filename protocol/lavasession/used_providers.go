@@ -2,28 +2,34 @@ package lavasession
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 )
 
-const MaximumNumberOfSelectionLockAttempts = 10000
+const MaximumNumberOfSelectionLockAttempts = 500
 
-func NewUsedProviders(directiveHeaders map[string]string) *UsedProviders {
+type BlockedProvidersInf interface {
+	GetBlockedProviders() []string
+}
+
+func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 	unwantedProviders := map[string]struct{}{}
-	if len(directiveHeaders) > 0 {
-		blockedProviders, ok := directiveHeaders[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME]
-		if ok {
-			providerAddressesToBlock := strings.Split(blockedProviders, ",")
+	if blockedProviders != nil {
+		providerAddressesToBlock := blockedProviders.GetBlockedProviders()
+		if len(providerAddressesToBlock) > 0 {
 			for _, providerAddress := range providerAddressesToBlock {
 				unwantedProviders[providerAddress] = struct{}{}
 			}
 		}
 	}
-	return &UsedProviders{providers: map[string]struct{}{}, unwantedProviders: unwantedProviders, blockOnSyncLoss: map[string]struct{}{}, erroredProviders: map[string]struct{}{}}
+	return &UsedProviders{
+		providers:         map[string]struct{}{},
+		unwantedProviders: unwantedProviders,
+		blockOnSyncLoss:   map[string]struct{}{},
+		erroredProviders:  map[string]struct{}{},
+	}
 }
 
 type UsedProviders struct {
@@ -155,26 +161,26 @@ func (up *UsedProviders) setUnwanted(provider string) {
 	up.unwantedProviders[provider] = struct{}{}
 }
 
-func (up *UsedProviders) TryLockSelection(ctx context.Context) bool {
+func (up *UsedProviders) TryLockSelection(ctx context.Context) error {
 	if up == nil {
-		return true
+		return nil
 	}
 	for counter := 0; counter < MaximumNumberOfSelectionLockAttempts; counter++ {
 		select {
 		case <-ctx.Done():
-			return false
+			utils.LavaFormatTrace("Failed locking selection, context is done")
+			return ContextDoneNoNeedToLockSelectionError
 		default:
 			canSelect := up.tryLockSelection()
 			if canSelect {
-				return true
+				return nil
 			}
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(5 * time.Millisecond)
 		}
 	}
 
 	// if we got here we failed locking the selection.
-	utils.LavaFormatError("Failed locking selection after MaximumNumberOfSelectionLockAttempts", nil)
-	return false
+	return utils.LavaFormatError("Failed locking selection after MaximumNumberOfSelectionLockAttempts", nil, utils.LogAttr("GUID", ctx))
 }
 
 func (up *UsedProviders) tryLockSelection() bool {

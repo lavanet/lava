@@ -8,15 +8,16 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/testutil/common"
-	testkeeper "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingscores "github.com/lavanet/lava/x/pairing/keeper/scores"
-	"github.com/lavanet/lava/x/pairing/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/testutil/common"
+	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	pairingscores "github.com/lavanet/lava/v2/x/pairing/keeper/scores"
+	"github.com/lavanet/lava/v2/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -517,9 +518,8 @@ func TestAddonPairing(t *testing.T) {
 	err = ts.addProviderEndpoints(2, optionalSupportingEndpoints) // this errors out
 	require.Error(t, err)
 
-	stakeStorage, found := ts.Keepers.Epochstorage.GetStakeStorageCurrent(ts.Ctx, ts.spec.Index)
-	require.True(t, found)
-	require.Len(t, stakeStorage.StakeEntries, 12)
+	entries := ts.Keepers.Epochstorage.GetAllStakeEntriesCurrentForChainId(ts.Ctx, ts.spec.Index)
+	require.Len(t, entries, 12)
 
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1967,9 +1967,8 @@ func TestExtensionAndAddonPairing(t *testing.T) {
 	err = ts.addProviderEndpoints(2, optionalExtSupportingEndpoints) // this errors as it doesnt implement mandatory
 	require.Error(t, err)
 
-	stakeStorage, found := ts.Keepers.Epochstorage.GetStakeStorageCurrent(ts.Ctx, ts.spec.Index)
-	require.True(t, found)
-	require.Len(t, stakeStorage.StakeEntries, 26) // one for stub and 25 others
+	entries := ts.Keepers.Epochstorage.GetAllStakeEntriesCurrentForChainId(ts.Ctx, ts.spec.Index)
+	require.Len(t, entries, 26) // one for stub and 25 others
 
 	for _, tt := range templates {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2214,7 +2213,7 @@ func TestMixBothExetensionAndAddonPairing(t *testing.T) {
 func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 0, 0) // 1 provider, 0 client, default providers-to-pair
-	specEth, err := testkeeper.GetASpec("ETH1", "../../../", nil, nil)
+	specEth, err := specutils.GetASpec("ETH1", "../../../", nil, nil)
 	if err != nil {
 		require.NoError(t, err)
 	}

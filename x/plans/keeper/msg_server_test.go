@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/x/plans/keeper"
-	"github.com/lavanet/lava/x/plans/types"
+	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/x/plans/keeper"
+	"github.com/lavanet/lava/v2/x/plans/types"
 )
 
 func setupMsgServer(t testing.TB) (types.MsgServer, context.Context) {

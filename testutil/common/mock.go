@@ -2,9 +2,9 @@ package common
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commonconsts "github.com/lavanet/lava/testutil/common/consts"
-	plantypes "github.com/lavanet/lava/x/plans/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	commonconsts "github.com/lavanet/lava/v2/testutil/common/consts"
+	plantypes "github.com/lavanet/lava/v2/x/plans/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 func CreateMockSpec() spectypes.Spec {

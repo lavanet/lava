@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	fiberpprof "github.com/gofiber/fiber/v2/middleware/pprof"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 const (

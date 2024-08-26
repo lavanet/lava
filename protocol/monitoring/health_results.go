@@ -4,9 +4,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils/lavaslices"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 type HealthResults struct {

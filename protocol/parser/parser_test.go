@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,6 +29,10 @@ func (rpcInputTest *RPCInputTest) GetParams() interface{} {
 
 func (rpcInputTest *RPCInputTest) GetResult() json.RawMessage {
 	return rpcInputTest.Result
+}
+
+func (rpcInputTest *RPCInputTest) GetID() json.RawMessage {
+	return nil
 }
 
 func (rpcInputTest *RPCInputTest) ParseBlock(block string) (int64, error) {
@@ -342,9 +346,8 @@ func TestParseBlockFromParamsHappyFlow(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			block, err := ParseBlockFromParams(&testCase.message, testCase.blockParser)
-			require.NoError(t, err, fmt.Sprintf("Test case name: %s", testCase.name))
-			require.Equal(t, testCase.expectedBlock, block)
+			block := ParseBlockFromParams(&testCase.message, testCase.blockParser, nil)
+			require.Equal(t, testCase.expectedBlock, block.parsedBlock)
 		})
 	}
 }
@@ -407,4 +410,295 @@ func TestParseBlockFromReplyHappyFlow(t *testing.T) {
 			require.Equal(t, testCase.expectedBlock, block)
 		})
 	}
+}
+
+func TestParseBlockFromParams(t *testing.T) {
+	tests := []struct {
+		name           string
+		rpcInput       RPCInput
+		blockParser    spectypes.BlockParser
+		genericParsers []spectypes.GenericParser
+		expected       int64
+	}{
+		{
+			name: "generic_parser_happy_flow_default_value",
+			rpcInput: &RPCInputTest{
+				Params: map[string]interface{}{
+					"foo": map[string]interface{}{
+						"bar": []interface{}{
+							map[string]interface{}{
+								"baz": 123,
+							},
+						},
+					},
+				},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".params.foo.bar.[0].baz",
+					Rule:      "=123",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
+				},
+			},
+			expected: spectypes.LATEST_BLOCK,
+		},
+		{
+			name: "generic_parser_happy_flow_value",
+			rpcInput: &RPCInputTest{
+				Params: map[string]interface{}{
+					"foo": map[string]interface{}{
+						"bar": []interface{}{
+							map[string]interface{}{
+								"baz": 123,
+							},
+						},
+					},
+				},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".params.foo.bar.[0].baz",
+					ParseType: spectypes.PARSER_TYPE_BLOCK_LATEST,
+				},
+			},
+			expected: 123,
+		},
+		{
+			name:     "generic_parser_nil_params",
+			rpcInput: &RPCInputTest{},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".params.foo",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
+				},
+			},
+			expected: spectypes.NOT_APPLICABLE,
+		},
+		{
+			name: "generic_parser_fail_with_nil_var",
+			rpcInput: &RPCInputTest{
+				Params: map[string]interface{}{
+					"bar": 123,
+				},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".params.foo",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
+				},
+			},
+			expected: spectypes.NOT_APPLICABLE,
+		},
+		{
+			name: "generic_parser_fail_with_iter_error",
+			rpcInput: &RPCInputTest{
+				Params: map[string]interface{}{
+					"bar": 123,
+				},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".params.bar.foo",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
+				},
+			},
+			expected: spectypes.NOT_APPLICABLE,
+		},
+		{
+			name: "generic_parser_wrong_jq_path_no_default",
+			rpcInput: &RPCInputTest{
+				Params: map[string]interface{}{
+					"bar": 123,
+				},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: "!@#$%^&*()",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
+				},
+			},
+			expected: spectypes.NOT_APPLICABLE,
+		},
+		{
+			name: "generic_parser_wrong_jq_path_with_parser_func_default",
+			rpcInput: &RPCInputTest{
+				Params: map[string]interface{}{
+					"bar": 123,
+				},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: "!@#$%^&*()",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
+				},
+			},
+			blockParser: spectypes.BlockParser{
+				ParserFunc: spectypes.PARSER_FUNC_DEFAULT,
+				ParserArg:  []string{"latest"},
+			},
+			expected: spectypes.LATEST_BLOCK,
+		},
+		{
+			name: "generic_parser_and_block_parser_fail",
+			rpcInput: &RPCInputTest{
+				Params: map[string]interface{}{},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: "!@#$%^&*()",
+					Value:     "latest",
+					ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
+				},
+			},
+			blockParser: spectypes.BlockParser{
+				ParserFunc:   spectypes.PARSER_FUNC_PARSE_CANONICAL,
+				ParserArg:    []string{"0", "block"},
+				DefaultValue: "latest",
+			},
+			expected: spectypes.LATEST_BLOCK,
+		},
+
+		{
+			name: "generic_parser_no_generic_parser",
+			rpcInput: &RPCInputTest{
+				Params: []interface{}{
+					"block=10000",
+				},
+			},
+			genericParsers: []spectypes.GenericParser{},
+			blockParser: spectypes.BlockParser{
+				ParserArg:  []string{"block", "="},
+				ParserFunc: spectypes.PARSER_FUNC_PARSE_DICTIONARY,
+			},
+			expected: 10000,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			result := ParseBlockFromParams(test.rpcInput, test.blockParser, test.genericParsers)
+			require.Equal(t, test.expected, result.parsedBlock)
+		})
+	}
+}
+
+func TestParseBlockFromParamsHash(t *testing.T) {
+	tests := []struct {
+		name           string
+		rpcInput       RPCInput
+		blockParser    spectypes.BlockParser
+		genericParsers []spectypes.GenericParser
+		expected       int64
+		expectedHash   string
+	}{
+		{
+			name: "generic_parser_hash",
+			rpcInput: &RPCInputTest{
+				Params: []interface{}{"a3f1c5e6b8d3e7f9c9d3b7c5e2f9d6e7f9c9a3b7c8d3e7f9c9d3b7c5e2f9d6e7"},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".params.[0]",
+					ParseType: spectypes.PARSER_TYPE_BLOCK_HASH,
+				},
+			},
+			blockParser: spectypes.BlockParser{
+				ParserFunc:   spectypes.PARSER_FUNC_PARSE_CANONICAL,
+				ParserArg:    []string{"0", "block"},
+				DefaultValue: "latest",
+			},
+			expected:     spectypes.LATEST_BLOCK,
+			expectedHash: "a3f1c5e6b8d3e7f9c9d3b7c5e2f9d6e7f9c9a3b7c8d3e7f9c9d3b7c5e2f9d6e7",
+		},
+		{
+			name: "generic_parser_hash_bad_hash",
+			rpcInput: &RPCInputTest{
+				Params: []interface{}{"a3f1c5e6b8"},
+			},
+			genericParsers: []spectypes.GenericParser{
+				{
+					ParsePath: ".params.[0]",
+					ParseType: spectypes.PARSER_TYPE_BLOCK_HASH,
+				},
+			},
+			blockParser: spectypes.BlockParser{
+				ParserFunc:   spectypes.PARSER_FUNC_PARSE_CANONICAL,
+				ParserArg:    []string{"0", "block"},
+				DefaultValue: "latest",
+			},
+			expected:     spectypes.LATEST_BLOCK,
+			expectedHash: "",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			result := ParseBlockFromParams(test.rpcInput, test.blockParser, test.genericParsers)
+			if test.expectedHash == "" {
+				require.Len(t, result.parsedHashes, 0)
+			} else {
+				require.Equal(t, test.expectedHash, result.parsedHashes[0])
+			}
+			require.Equal(t, test.expected, result.parsedBlock)
+		})
+	}
+}
+
+func TestParseRule(t *testing.T) {
+	tests := []struct {
+		rule     string
+		value    string
+		expected bool
+	}{
+		{"=final || =optimistic", "final", true},
+		{"=final || =optimistic", "optimistic", true},
+		{"=final || =optimistic", "pessimistic", false},
+		{"=final", "final", true},
+		{"=final", "notfinal", false},
+		{"=final || =optimistic || =neutral", "neutral", true},
+		{"=final || =optimistic", "finale", false},
+	}
+
+	for _, test := range tests {
+		result := parseRule(test.rule, test.value)
+		if result != test.expected {
+			t.Errorf("parseRule(%q, %q) = %v; expected %v", test.rule, test.value, result, test.expected)
+		}
+	}
+}
+
+func TestParseGeneric(t *testing.T) {
+	jsonMap := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"id":      "nil",
+		"method":  "block",
+		"params": map[string]interface{}{
+			"finality": "final",
+		},
+	}
+	res, err := parseGeneric(jsonMap, spectypes.GenericParser{
+		ParsePath: ".params.finality",
+		Value:     "latest",
+		ParseType: spectypes.PARSER_TYPE_DEFAULT_VALUE,
+		Rule:      "=final || =optimistic",
+	})
+	require.NoError(t, err)
+	require.Equal(t, spectypes.LATEST_BLOCK, res.parsedBlock)
+}
+
+func TestHashLengthValidation(t *testing.T) {
+	_, err := parseGenericParserBlockHash("123")
+	require.Error(t, err)
+	_, err = parseGenericParserBlockHash("123456789,123456789,123456789,12")
+	require.NoError(t, err)
 }

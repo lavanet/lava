@@ -16,9 +16,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/lavanet/lava/x/rewards/client/cli"
-	"github.com/lavanet/lava/x/rewards/keeper"
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/x/rewards/client/cli"
+	"github.com/lavanet/lava/v2/x/rewards/keeper"
+	"github.com/lavanet/lava/v2/x/rewards/types"
 )
 
 var (

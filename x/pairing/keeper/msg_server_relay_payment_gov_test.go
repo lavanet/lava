@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/testutil/common"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -495,10 +495,6 @@ func TestStakePaymentUnstake(t *testing.T) {
 	require.NoError(t, err)
 	paramKey = string(epochstoragetypes.KeyEpochsToSave)
 	paramVal = "\"" + strconv.FormatUint(10, 10) + "\""
-	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
-	require.NoError(t, err)
-	paramKey = string(epochstoragetypes.KeyUnstakeHoldBlocks)
-	paramVal = "\"" + strconv.FormatUint(210, 10) + "\""
 	err = ts.TxProposalChangeParam(epochstoragetypes.ModuleName, paramKey, paramVal)
 	require.NoError(t, err)
 

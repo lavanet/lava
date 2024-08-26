@@ -4,7 +4,7 @@
 # Make sure you dont push the changes after this script ran. 
 
 echo "Buying subscription for user1"
-GASPRICE="0.000000001ulava"
+GASPRICE="0.00002ulava"
 lavad tx subscription buy "DefaultPlan" -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 privateKey=$(yes | lavad keys export user1 --unsafe --unarmored-hex)

@@ -22,6 +22,14 @@ jobs:
       contents: write
       
     steps:
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+      with:
+        large-packages: false
+        docker-images: false
+        swap-storage: false
+        tool-cache: false
+
     - name: Checkout code
       uses: actions/checkout@v4
       with:
@@ -31,19 +39,11 @@ jobs:
     - name: Fetch all tags
       run: |
         git fetch --force --tags
-
-    - name: Configure Go
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: go.mod
-        cache-dependency-path: go.sum
-
-
+        
     - name: Run GoReleaser
       id: releaser
-      uses: goreleaser/goreleaser-action@v5
+      uses: docker://goreleaser/goreleaser-cross:v1.22
       with:
-        version: latest
         args: release --clean --timeout 90m
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,7 +58,7 @@ jobs:
     env:
       REGISTRY: ghcr.io
       IMAGE_NAME: "lavanet/lava/${{ matrix.binary }}"
-    steps:
+    steps:      
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -85,7 +85,28 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           file: cmd/${{ matrix.binary }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
           build-args: |
             GIT_VERSION="${{ steps.meta.outputs.version }}"
+            GIT_COMMIT="${{ github.sha }}"
+          push: true
+      - name: Extract metadata (cosmovisor)
+        if: ${{ matrix.binary == 'lavad' }}
+        id: meta-cosmovisor
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-cosmovisor
+          tags: |
+            type=raw,value=latest,enable=true
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        if: ${{ matrix.binary == 'lavad' }}
+        with:
+          tags: ${{ steps.meta-cosmovisor.outputs.tags }}
+          labels: ${{ steps.meta-cosmovisor.outputs.labels }}
+          file: cmd/${{ matrix.binary }}/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            GIT_VERSION="${{ steps.meta-cosmovisor.outputs.version }}"
             GIT_COMMIT="${{ github.sha }}"
           push: true

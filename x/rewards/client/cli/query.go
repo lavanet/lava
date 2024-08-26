@@ -10,7 +10,7 @@ import (
 	// "github.com/cosmos/cosmos-sdk/client/flags"
 	// sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/x/rewards/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module
@@ -30,7 +30,7 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 	cmd.AddCommand(CmdQueryShowIprpcData())
 	cmd.AddCommand(CmdQueryIprpcProviderRewardEstimation())
 	cmd.AddCommand(CmdQueryIprpcSpecReward())
-	cmd.AddCommand(CmdQueryProviderReward())
+	cmd.AddCommand(CmdSpecTrackedInfo())
 	// this line is used by starport scaffolding # 1
 
 	return cmd

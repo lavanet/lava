@@ -10,7 +10,7 @@ async function main() {
         allowInsecureTransport: true,
         logLevel: "debug",
     }).catch(e => {
-        throw new Error(" ERR failed initializing lava-sdk jsonrpc test");
+        throw new Error(`ERR failed initializing lava-sdk jsonrpc test ${e.message}`);
     });
 
     let relayArray = [];

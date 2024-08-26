@@ -1,5 +1,6 @@
 syntax = "proto3";
 package lavanet.lava.projects;
+import "amino/amino.proto";
 
 import "lavanet/lava/projects/project.proto";
 import "lavanet/lava/plans/policy.proto";
@@ -7,7 +8,7 @@ import "gogoproto/gogo.proto";
 
 // this line is used by starport scaffolding # proto/tx/import
 
-option go_package = "github.com/lavanet/lava/x/projects/types";
+option go_package = "github.com/lavanet/lava/v2/x/projects/types";
 
 // Msg defines the Msg service.
 service Msg {
@@ -19,6 +20,7 @@ service Msg {
 }
 
 message MsgAddKeys {
+  option (amino.name) = "projects/AddKeys";
   string creator = 1;
   string project = 2;
   repeated ProjectKey project_keys = 3 [(gogoproto.nullable) = false];
@@ -28,6 +30,7 @@ message MsgAddKeysResponse {
 }
 
 message MsgDelKeys {
+  option (amino.name) = "projects/DelKeys";
   string creator = 1;
   string project = 2;
   repeated ProjectKey project_keys = 3 [(gogoproto.nullable) = false];
@@ -37,6 +40,7 @@ message MsgDelKeysResponse {
 }
 
 message MsgSetPolicy {
+  option (amino.name) = "projects/SetPolicy";
   string creator = 1;
   string project = 2;
   lavanet.lava.plans.Policy policy = 3;
@@ -46,6 +50,7 @@ message MsgSetPolicyResponse {
 }
 
 message MsgSetSubscriptionPolicy {
+  option (amino.name) = "projects/SetSubscriptionPolicy";
   string creator = 1;
   repeated string projects = 2;
   lavanet.lava.plans.Policy policy = 3;

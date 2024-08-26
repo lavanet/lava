@@ -9,16 +9,16 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/golang/protobuf/proto"
-	formatter "github.com/lavanet/lava/ecosystem/cache/format"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/protocol/parser"
-	"github.com/lavanet/lava/protocol/performance"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	formatter "github.com/lavanet/lava/v2/ecosystem/cache/format"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/protocol/parser"
+	"github.com/lavanet/lava/v2/protocol/performance"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"golang.org/x/exp/slices"
 )
 
@@ -126,7 +126,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 
 	collectionType := verification.ConnectionType
 	path := parsing.ApiName
-	data := []byte(fmt.Sprintf(parsing.FunctionTemplate))
+	data := []byte(parsing.FunctionTemplate)
 
 	if !verification.IsActive() {
 		utils.LavaFormatDebug("skipping disabled verification", []utils.Attribute{
@@ -149,13 +149,20 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				return utils.LavaFormatWarning("[-] verify failed getting non-earliest block for chainMessage", fmt.Errorf("latestBlock is smaller than latestDistance"),
 					utils.LogAttr("path", path),
 					utils.LogAttr("latest_block", latestBlock),
-					utils.LogAttr("Latest_distance", verification.LatestDistance),
+					utils.LogAttr("latest_distance", verification.LatestDistance),
 				)
 			}
+		} else if verification.Value != "" {
+			expectedValue, err := strconv.ParseInt(verification.Value, 10, 64)
+			if err != nil {
+				return utils.LavaFormatError("failed converting expected value to number", err, utils.LogAttr("value", verification.Value))
+			}
+			data = []byte(fmt.Sprintf(parsing.FunctionTemplate, expectedValue))
 		} else {
-			return utils.LavaFormatWarning("[-] verification misconfiguration", fmt.Errorf("FUNCTION_TAG_GET_BLOCK_BY_NUM defined without LatestDistance or LatestBlock"),
+			return utils.LavaFormatWarning("[-] verification misconfiguration", fmt.Errorf("FUNCTION_TAG_GET_BLOCK_BY_NUM defined without LatestDistance or LatestBlock or a proper expected value"),
 				utils.LogAttr("latest_block", latestBlock),
-				utils.LogAttr("Latest_distance", verification.LatestDistance),
+				utils.LogAttr("latest_distance", verification.LatestDistance),
+				utils.LogAttr("expected_value", verification.Value),
 			)
 		}
 	}
@@ -222,7 +229,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		}
 	}
 	// some verifications only want the response to be valid, and don't care about the value
-	if verification.Value != "*" && verification.Value != "" {
+	if verification.Value != "*" && verification.Value != "" && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
 		if parsedResult != verification.Value {
 			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err, []utils.Attribute{
 				{Key: "chainId", Value: chainId},
@@ -255,11 +262,12 @@ func (cf *ChainFetcher) ChainFetcherMetadata() []pairingtypes.Metadata {
 }
 
 func (cf *ChainFetcher) FetchLatestBlockNum(ctx context.Context) (int64, error) {
-	parsing, collectionData, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
+	parsing, apiCollection, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCKNUM)
 	tagName := spectypes.FUNCTION_TAG_GET_BLOCKNUM.String()
 	if !ok {
 		return spectypes.NOT_APPLICABLE, utils.LavaFormatError(tagName+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
+	collectionData := apiCollection.CollectionData
 	var craftData *CraftData
 	if parsing.FunctionTemplate != "" {
 		path := parsing.ApiName
@@ -314,11 +322,13 @@ func (cf *ChainFetcher) constructRelayData(conectionType string, path string, da
 }
 
 func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64) (string, error) {
-	parsing, collectionData, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
+	parsing, apiCollection, ok := cf.chainParser.GetParsingByTag(spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM)
 	tagName := spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM.String()
 	if !ok {
 		return "", utils.LavaFormatError(tagName+" tag function not found", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
+	collectionData := apiCollection.CollectionData
+
 	if parsing.FunctionTemplate == "" {
 		return "", utils.LavaFormatError(tagName+" missing function template", nil, []utils.Attribute{{Key: "chainID", Value: cf.endpoint.ChainID}, {Key: "APIInterface", Value: cf.endpoint.ApiInterface}}...)
 	}
@@ -358,8 +368,11 @@ func (cf *ChainFetcher) FetchBlockHashByNum(ctx context.Context, blockNum int64)
 	_, _, blockDistanceToFinalization, _ := cf.chainParser.ChainBlockStats()
 	latestBlock := atomic.LoadInt64(&cf.latestBlock) // assuming FetchLatestBlockNum is called before this one it's always true
 	if latestBlock > 0 {
-		finalized := spectypes.IsFinalizedBlock(blockNum, latestBlock, blockDistanceToFinalization)
-		cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply.RelayReply, []byte(res), finalized)
+		finalized := spectypes.IsFinalizedBlock(blockNum, latestBlock, int64(blockDistanceToFinalization))
+		isNodeError, _ := chainMessage.CheckResponseError(reply.RelayReply.Data, reply.StatusCode)
+		if !isNodeError { // skip cache populate on node errors, this is a protection but should never get here with node error as we parse the result prior.
+			cf.populateCache(cf.constructRelayData(collectionData.Type, path, data, blockNum, "", nil, latestBlock), reply.RelayReply, []byte(res), finalized)
+		}
 	}
 	return res, nil
 }

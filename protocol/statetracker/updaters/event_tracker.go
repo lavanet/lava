@@ -10,16 +10,15 @@ import (
 
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/utils"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v2/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v2/utils"
+	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 const (
-	debug            = false
 	BlockResultRetry = 20
 )
 
@@ -53,7 +52,7 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 
 	brp, err := TryIntoTendermintRPC(et.ClientCtx.Client)
 	if err != nil {
-		return utils.LavaFormatError("could not get block result provider", err)
+		return utils.LavaFormatError("failed converting client.TendermintRPC to tendermintRPC", err)
 	}
 	var blockResults *ctypes.ResultBlockResults
 	for i := 0; i < BlockResultRetry; i++ {
@@ -63,10 +62,10 @@ func (et *EventTracker) UpdateBlockResults(latestBlock int64) (err error) {
 		if err == nil {
 			break
 		}
-		time.Sleep(50 * time.Millisecond * time.Duration(i+1)) // need this so it doesnt just spam the attempts, and tendermint fails getting block results pretty often
+		time.Sleep(100 * time.Millisecond * time.Duration(i+1)) // need this so it doesn't just spam the attempts, and tendermint fails getting block results pretty often
 	}
 	if err != nil {
-		return utils.LavaFormatError("could not get block result", err)
+		return utils.LavaFormatError("could not get block result", err, utils.LogAttr("block_requested", latestBlock))
 	}
 	// lock for update after successful block result query
 	et.lock.Lock()
@@ -92,9 +91,9 @@ func (et *EventTracker) getLatestPaymentEvents() (payments []*rewardserver.Payme
 				if err != nil {
 					return nil, utils.LavaFormatError("failed relay_payment_event parsing", err, utils.Attribute{Key: "event", Value: event})
 				}
-				if debug {
-					utils.LavaFormatDebug("relay_payment_event", utils.Attribute{Key: "payment", Value: paymentList})
-				}
+
+				utils.LavaFormatTrace("relay_payment_event", utils.LogAttr("payment", paymentList))
+
 				payments = append(payments, paymentList...)
 			}
 		}

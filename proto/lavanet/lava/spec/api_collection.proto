@@ -1,7 +1,7 @@
 syntax = "proto3";
 package lavanet.lava.spec;
 
-option go_package = "github.com/lavanet/lava/x/spec/types";
+option go_package = "github.com/lavanet/lava/v2/x/spec/types";
 option (gogoproto.equal_all) = true;
 
 import "gogoproto/gogo.proto";
@@ -96,6 +96,7 @@ message GenericParser {
   string parse_path = 1;
   string value = 2;
   PARSER_TYPE parse_type = 3;
+  string rule = 4;
 }
 
 enum EXTENSION {
@@ -111,6 +112,9 @@ enum FUNCTION_TAG {
   SET_LATEST_IN_BODY = 4;
   VERIFICATION = 5;
   GET_EARLIEST_BLOCK = 6;
+  SUBSCRIBE = 7;
+  UNSUBSCRIBE = 8;
+  UNSUBSCRIBE_ALL = 9;
 }
 
 enum PARSER_TYPE {
@@ -121,6 +125,7 @@ enum PARSER_TYPE {
   EXTENSION_ARG = 4;
   IDENTIFIER = 5;
   DEFAULT_VALUE = 6;
+  BLOCK_HASH = 7;
 }
 
 enum PARSER_FUNC{

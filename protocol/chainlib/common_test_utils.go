@@ -2,28 +2,33 @@ package chainlib
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/sigs"
+	"github.com/gorilla/websocket"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/rand"
+	"github.com/lavanet/lava/v2/utils/sigs"
 
 	"github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/server/grpc/gogoreflection"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/lavanet/lava/protocol/chaintracker"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/protocol/lavasession"
-	testcommon "github.com/lavanet/lava/testutil/common"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	plantypes "github.com/lavanet/lava/x/plans/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/protocol/chaintracker"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	testcommon "github.com/lavanet/lava/v2/testutil/common"
+	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
+	plantypes "github.com/lavanet/lava/v2/x/plans/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -84,11 +89,45 @@ func generateCombinations(arr []string) [][]string {
 	return append(combinationsWithoutFirst, combinationsWithFirst...)
 }
 
+func genericWebSocketHandler() http.HandlerFunc {
+	upGrader := websocket.Upgrader{}
+
+	// Create a simple websocket server that mocks the node
+	return func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upGrader.Upgrade(w, r, nil)
+		if err != nil {
+			fmt.Println(err)
+			panic("got error in upgrader")
+		}
+		defer conn.Close()
+
+		for {
+			// Read the request
+			messageType, message, err := conn.ReadMessage()
+			if err != nil {
+				panic("got error in ReadMessage")
+			}
+			fmt.Println("got ws message", string(message), messageType)
+			conn.WriteMessage(messageType, message)
+			fmt.Println("writing ws message", string(message), messageType)
+		}
+	}
+}
+
 // generates a chain parser, a chain fetcher messages based on it
 // apiInterface can either be an ApiInterface string as in spectypes.ApiInterfaceXXX or a number for an index in the apiCollections
-func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface string, serverCallback http.HandlerFunc, getToTopMostPath string, services []string) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
+func CreateChainLibMocks(
+	ctx context.Context,
+	specIndex string,
+	apiInterface string,
+	httpServerCallback http.HandlerFunc,
+	wsServerCallback http.HandlerFunc,
+	getToTopMostPath string,
+	services []string,
+) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
+	utils.SetGlobalLoggingLevel("debug")
 	closeServer = nil
-	spec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
+	spec, err := specutils.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
@@ -114,6 +153,14 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 		return nil, nil, nil, nil, nil, err
 	}
 
+	if httpServerCallback == nil {
+		httpServerCallback = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+	}
+
+	if wsServerCallback == nil {
+		wsServerCallback = genericWebSocketHandler()
+	}
+
 	if apiInterface == spectypes.APIInterfaceGrpc {
 		// Start a new gRPC server using the buffered connection
 		grpcServer := grpc.NewServer()
@@ -127,7 +174,7 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 			endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: lis.Addr().String(), Addons: append(addons, extensionsList...)})
 		}
 		go func() {
-			service := myServiceImplementation{serverCallback: serverCallback}
+			service := myServiceImplementation{serverCallback: httpServerCallback}
 			tmservice.RegisterServiceServer(grpcServer, service)
 			gogoreflection.Register(grpcServer)
 			// Serve requests on the buffered connection
@@ -141,9 +188,17 @@ func CreateChainLibMocks(ctx context.Context, specIndex string, apiInterface str
 			return nil, nil, nil, closeServer, nil, err
 		}
 	} else {
-		mockServer := httptest.NewServer(serverCallback)
-		closeServer = mockServer.Close
-		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockServer.URL, Addons: addons})
+		var mockWebSocketServer *httptest.Server
+		var wsUrl string
+		mockWebSocketServer = httptest.NewServer(wsServerCallback)
+		wsUrl = "ws" + strings.TrimPrefix(mockWebSocketServer.URL, "http")
+		mockHttpServer := httptest.NewServer(httpServerCallback)
+		closeServer = func() {
+			mockHttpServer.Close()
+			mockWebSocketServer.Close()
+		}
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: mockHttpServer.URL, Addons: addons})
+		endpoint.NodeUrls = append(endpoint.NodeUrls, common.NodeUrl{Url: wsUrl, Addons: nil})
 		chainRouter, err = GetChainRouter(ctx, 1, endpoint, chainParser)
 		if err != nil {
 			return nil, nil, nil, closeServer, nil, err
@@ -196,7 +251,7 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 		ts.Providers = append(ts.Providers, testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance))
 	}
 	sdkContext := sdk.UnwrapSDKContext(ts.Ctx)
-	spec, err := keepertest.GetASpec(specID, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
+	spec, err := specutils.GetASpec(specID, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
 	if err != nil {
 		require.NoError(t, err)
 	}

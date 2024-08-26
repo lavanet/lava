@@ -6,9 +6,9 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	"github.com/cosmos/gogoproto/proto"
 	ibctypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	"github.com/lavanet/lava/app/keepers"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/app/keepers"
+	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 func v_35_0(

@@ -5,18 +5,29 @@ import (
 	"testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
+	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/testutil/nullify"
+	"github.com/lavanet/lava/v2/x/epochstorage/keeper"
+	"github.com/lavanet/lava/v2/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/epochstorage/types"
 )
 
 // Prevent strconv unused error
 var _ = strconv.IntSize
+
+func createNStakeStorage(k *keeper.Keeper, ctx sdk.Context, n int) []types.StakeStorage {
+	items := []types.StakeStorage{}
+	stakeEntries := createNStakeEntriesCurrent(k, ctx, n)
+	for _, entry := range stakeEntries {
+		items = append(items, types.StakeStorage{
+			Index:        entry.Address,
+			StakeEntries: []types.StakeEntry{entry},
+		})
+	}
+	return items
+}
 
 func TestStakeStorageQuerySingle(t *testing.T) {
 	keeper, ctx := keepertest.EpochstorageKeeper(t)
@@ -67,60 +78,4 @@ func TestStakeStorageQuerySingle(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestStakeStorageQueryPaginated(t *testing.T) {
-	keeper, ctx := keepertest.EpochstorageKeeper(t)
-	wctx := sdk.WrapSDKContext(ctx)
-	msgs := createNStakeStorage(keeper, ctx, 5)
-
-	request := func(next []byte, offset, limit uint64, total bool) *types.QueryAllStakeStorageRequest {
-		return &types.QueryAllStakeStorageRequest{
-			Pagination: &query.PageRequest{
-				Key:        next,
-				Offset:     offset,
-				Limit:      limit,
-				CountTotal: total,
-			},
-		}
-	}
-	t.Run("ByOffset", func(t *testing.T) {
-		step := 2
-		for i := 0; i < len(msgs); i += step {
-			resp, err := keeper.StakeStorageAll(wctx, request(nil, uint64(i), uint64(step), false))
-			require.NoError(t, err)
-			require.LessOrEqual(t, len(resp.StakeStorage), step)
-			require.Subset(t,
-				nullify.Fill(msgs),
-				nullify.Fill(resp.StakeStorage),
-			)
-		}
-	})
-	t.Run("ByKey", func(t *testing.T) {
-		step := 2
-		var next []byte
-		for i := 0; i < len(msgs); i += step {
-			resp, err := keeper.StakeStorageAll(wctx, request(next, 0, uint64(step), false))
-			require.NoError(t, err)
-			require.LessOrEqual(t, len(resp.StakeStorage), step)
-			require.Subset(t,
-				nullify.Fill(msgs),
-				nullify.Fill(resp.StakeStorage),
-			)
-			next = resp.Pagination.NextKey
-		}
-	})
-	t.Run("Total", func(t *testing.T) {
-		resp, err := keeper.StakeStorageAll(wctx, request(nil, 0, 0, true))
-		require.NoError(t, err)
-		require.Equal(t, len(msgs), int(resp.Pagination.Total))
-		require.ElementsMatch(t,
-			nullify.Fill(msgs),
-			nullify.Fill(resp.StakeStorage),
-		)
-	})
-	t.Run("InvalidRequest", func(t *testing.T) {
-		_, err := keeper.StakeStorageAll(wctx, nil)
-		require.ErrorIs(t, err, status.Error(codes.InvalidArgument, "invalid request"))
-	})
 }

@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/ecosystem/cache"
-	"github.com/lavanet/lava/ecosystem/cache/format"
-	"github.com/lavanet/lava/protocol/chainlib"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/ecosystem/cache"
+	"github.com/lavanet/lava/v2/ecosystem/cache/format"
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
@@ -31,7 +31,16 @@ const (
 func initTest() (context.Context, *cache.RelayerCacheServer) {
 	ctx := context.Background()
 	cs := cache.CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024}
-	cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DisabledFlagOption, cache.DefaultExpirationTimeFinalizedMultiplier, cache.DefaultExpirationTimeNonFinalizedMultiplier)
+	cs.InitCache(
+		ctx,
+		cache.DefaultExpirationTimeFinalized,
+		cache.DefaultExpirationForNonFinalized,
+		cache.DefaultExpirationNodeErrors,
+		cache.DefaultExpirationBlocksHashesToHeights,
+		cache.DisabledFlagOption,
+		cache.DefaultExpirationTimeFinalizedMultiplier,
+		cache.DefaultExpirationTimeNonFinalizedMultiplier,
+	)
 	cacheServer := &cache.RelayerCacheServer{CacheServer: &cs}
 	return ctx, cacheServer
 }
@@ -85,11 +94,12 @@ func TestCacheSetGet(t *testing.T) {
 				Finalized:      tt.finalized,
 				RequestedBlock: request.RequestBlock,
 			}
-			_, err = cacheServer.GetRelay(ctx, &messageGet)
+			reply, err := cacheServer.GetRelay(ctx, &messageGet)
+			require.NoError(t, err)
 			if tt.valid {
-				require.NoError(t, err)
+				require.NotNil(t, reply.Reply)
 			} else {
-				require.Error(t, err)
+				require.Nil(t, reply.Reply)
 			}
 		})
 	}
@@ -169,9 +179,9 @@ func TestCacheGetWithoutSet(t *testing.T) {
 				Finalized:      tt.finalized,
 				RequestedBlock: request.RequestBlock,
 			}
-			_, err := cacheServer.GetRelay(ctx, &messageGet)
-
-			require.Error(t, err)
+			reply, err := cacheServer.GetRelay(ctx, &messageGet)
+			require.Nil(t, reply.Reply)
+			require.NoError(t, err)
 		})
 	}
 }
@@ -333,7 +343,7 @@ func TestCacheSetGetLatest(t *testing.T) {
 					require.Equal(t, cacheReply.GetReply().LatestBlock, latestBlockForRelay)
 				}
 			} else {
-				require.Error(t, err)
+				require.Nil(t, cacheReply.Reply)
 			}
 		})
 	}
@@ -410,7 +420,7 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 					require.Equal(t, cacheReply.GetReply().LatestBlock, latestBlockForRelay)
 				}
 			} else {
-				require.Error(t, err)
+				require.Nil(t, cacheReply.Reply)
 			}
 
 			request2 := shallowCopy(request)
@@ -435,8 +445,9 @@ func TestCacheSetGetLatestWhenAdvancingLatest(t *testing.T) {
 				RequestedBlock: request.RequestBlock,
 			}
 			// repeat our latest block get, this time we expect it to look for a newer block and fail
-			_, err = cacheServer.GetRelay(ctx, &messageGet)
-			require.Error(t, err)
+			reply, err := cacheServer.GetRelay(ctx, &messageGet)
+			require.NoError(t, err)
+			require.Nil(t, reply.Reply)
 		})
 	}
 }
@@ -462,7 +473,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 		{name: "NonFinalized With Hash", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}},
 		{name: "NonFinalized After delay With Hash", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}},
 
-		// Null ID in get and set
+		// // Null ID in get and set
 		{name: "Finalized No Hash, with null id in get and set", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullIdInGet: true, nullIdInSet: true},
 		{name: "Finalized After delay No Hash, with null id in get and set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullIdInGet: true, nullIdInSet: true},
 		{name: "NonFinalized No Hash, with null id in get and set", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullIdInGet: true, nullIdInSet: true},
@@ -472,7 +483,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 		{name: "NonFinalized With Hash, with null id in get and set", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true, nullIdInSet: true},
 		{name: "NonFinalized After delay With Hash, with null id in get and set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true, nullIdInSet: true},
 
-		// Null ID only in get
+		// // Null ID only in get
 		{name: "Finalized No Hash, with null id only in get", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullIdInGet: true},
 		{name: "Finalized After delay No Hash, with null id only in get", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullIdInGet: true},
 		{name: "NonFinalized No Hash, with null id only in get", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullIdInGet: true},
@@ -482,7 +493,7 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 		{name: "NonFinalized With Hash, with null id only in get", valid: true, delay: time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true},
 		{name: "NonFinalized After delay With Hash, with null id only in get", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: false, hash: []byte{1, 2, 3}, nullIdInGet: true},
 
-		// Null ID only in set
+		// // Null ID only in set
 		{name: "Finalized No Hash, with null id only in set", valid: true, delay: time.Millisecond, finalized: true, hash: nil, nullIdInSet: true},
 		{name: "Finalized After delay No Hash, with null id only in set", valid: true, delay: cache.DefaultExpirationForNonFinalized + time.Millisecond, finalized: true, hash: nil, nullIdInSet: true},
 		{name: "NonFinalized No Hash, with null id only in set", valid: true, delay: time.Millisecond, finalized: false, hash: nil, nullIdInSet: true},
@@ -547,20 +558,21 @@ func TestCacheSetGetJsonRPCWithID(t *testing.T) {
 			}
 
 			cacheReply, err := cacheServer.GetRelay(ctx, &messageGet)
+			// because we always need a cache reply. we cant return an error in any case.
+			// grpc do not allow returning errors + messages
+			require.NoError(t, err)
+
 			if tt.valid {
 				cacheReply.Reply.Data = outputFormatter(cacheReply.Reply.Data)
-				require.NoError(t, err)
-
 				result := gjson.GetBytes(cacheReply.GetReply().Data, format.IDFieldName)
 				extractedID := result.Raw
-
 				if tt.nullIdInGet {
 					require.Equal(t, "null", extractedID)
 				} else {
 					require.Equal(t, strconv.FormatInt(changedID, 10), extractedID)
 				}
 			} else {
-				require.Error(t, err)
+				require.Nil(t, cacheReply.Reply)
 			}
 		})
 	}
@@ -583,11 +595,263 @@ func TestCacheExpirationMultiplier(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cs := cache.CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024}
-			cs.InitCache(context.Background(), cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DisabledFlagOption, 1, tt.multiplier)
+			cs.InitCache(
+				context.Background(),
+				cache.DefaultExpirationTimeFinalized,
+				cache.DefaultExpirationForNonFinalized,
+				cache.DefaultExpirationNodeErrors,
+				cache.DefaultExpirationBlocksHashesToHeights,
+				cache.DisabledFlagOption,
+				cache.DefaultExpirationTimeFinalizedMultiplier,
+				tt.multiplier,
+			)
 			cacheServer := &cache.RelayerCacheServer{CacheServer: &cs}
 
 			durationActual := cacheServer.CacheServer.ExpirationForChain(cache.DefaultExpirationForNonFinalized)
 			require.Equal(t, tt.expected, durationActual)
 		})
 	}
+}
+
+func TestCacheSetGetBlocksHashesToHeightsHappyFlow(t *testing.T) {
+	t.Parallel()
+	const (
+		SET_INPUT int = iota
+		GET_INPUT
+		EXPECTED_FROM_GET
+	)
+
+	type step struct {
+		blockHashesToHeights []*pairingtypes.BlockHashToHeight
+		inputOrExpected      int
+	}
+
+	steps := []step{
+		{
+			inputOrExpected:      SET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{},
+		},
+		{
+			inputOrExpected: GET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{Hash: "H1"},
+				{Hash: "H2"},
+			},
+		},
+		{
+			inputOrExpected: EXPECTED_FROM_GET,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{
+					Hash:   "H1",
+					Height: spectypes.NOT_APPLICABLE,
+				},
+				{
+					Hash:   "H2",
+					Height: spectypes.NOT_APPLICABLE,
+				},
+			},
+		},
+		{
+			inputOrExpected: SET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{
+					Hash:   "H1",
+					Height: 1,
+				},
+			},
+		},
+		{
+			inputOrExpected: GET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{Hash: "H1"},
+				{Hash: "H2"},
+			},
+		},
+		{
+			inputOrExpected: EXPECTED_FROM_GET,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{
+					Hash:   "H1",
+					Height: 1,
+				},
+				{
+					Hash:   "H2",
+					Height: spectypes.NOT_APPLICABLE,
+				},
+			},
+		},
+		{
+			inputOrExpected: GET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{Hash: "H1"},
+			},
+		},
+		{
+			inputOrExpected: EXPECTED_FROM_GET,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{
+					Hash:   "H1",
+					Height: 1,
+				},
+			},
+		},
+		{
+			inputOrExpected: GET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{Hash: "H2"},
+			},
+		},
+		{
+			inputOrExpected: EXPECTED_FROM_GET,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{
+					Hash:   "H2",
+					Height: spectypes.NOT_APPLICABLE,
+				},
+			},
+		},
+		{
+			inputOrExpected: SET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{
+					Hash:   "H3",
+					Height: 3,
+				},
+			},
+		},
+		{
+			inputOrExpected: GET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{Hash: "H1"},
+				{Hash: "H2"},
+			},
+		},
+		{
+			inputOrExpected: EXPECTED_FROM_GET,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{
+					Hash:   "H1",
+					Height: 1,
+				},
+				{
+					Hash:   "H2",
+					Height: spectypes.NOT_APPLICABLE,
+				},
+			},
+		},
+		{
+			inputOrExpected: GET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{Hash: "H1"},
+				{Hash: "H2"},
+				{Hash: "H3"},
+			},
+		},
+		{
+			inputOrExpected: EXPECTED_FROM_GET,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{
+					Hash:   "H1",
+					Height: 1,
+				},
+				{
+					Hash:   "H2",
+					Height: spectypes.NOT_APPLICABLE,
+				},
+				{
+					Hash:   "H3",
+					Height: 3,
+				},
+			},
+		},
+		{
+			inputOrExpected: SET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{
+					Hash:   "H1",
+					Height: 4,
+				},
+				{
+					Hash:   "H2",
+					Height: 2,
+				},
+				{
+					Hash:   "H5",
+					Height: 7,
+				},
+			},
+		},
+		{
+			inputOrExpected: GET_INPUT,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{Hash: "H1"},
+				{Hash: "H2"},
+				{Hash: "H3"},
+				{Hash: "H5"},
+			},
+		},
+		{
+			inputOrExpected: EXPECTED_FROM_GET,
+			blockHashesToHeights: []*pairingtypes.BlockHashToHeight{
+				{
+					Hash:   "H1",
+					Height: 4,
+				},
+				{
+					Hash:   "H2",
+					Height: 2,
+				},
+				{
+					Hash:   "H3",
+					Height: 3,
+				},
+				{
+					Hash:   "H5",
+					Height: 7,
+				},
+			},
+		},
+	}
+
+	t.Run("run cache steps", func(t *testing.T) {
+		ctx, cacheServer := initTest()
+		request := getRequest(1230, []byte(StubSig), StubApiInterface)
+
+		var lastCacheResult []*pairingtypes.BlockHashToHeight
+		for stepNum, step := range steps {
+			switch step.inputOrExpected {
+			case SET_INPUT:
+				messageSet := pairingtypes.RelayCacheSet{
+					RequestHash:           HashRequest(t, request, StubChainID),
+					BlockHash:             []byte("123456789"),
+					ChainId:               StubChainID,
+					Response:              &pairingtypes.RelayReply{},
+					Finalized:             true,
+					RequestedBlock:        request.RequestBlock,
+					BlocksHashesToHeights: step.blockHashesToHeights,
+				}
+
+				_, err := cacheServer.SetRelay(ctx, &messageSet)
+				require.NoError(t, err, "step: %d", stepNum)
+
+				// sleep to make sure it's in the cache
+				time.Sleep(3 * time.Millisecond)
+			case GET_INPUT:
+				messageGet := pairingtypes.RelayCacheGet{
+					RequestHash:           HashRequest(t, request, StubChainID),
+					BlockHash:             []byte("123456789"),
+					ChainId:               StubChainID,
+					Finalized:             true,
+					RequestedBlock:        request.RequestBlock,
+					BlocksHashesToHeights: step.blockHashesToHeights,
+				}
+
+				cacheResult, err := cacheServer.GetRelay(ctx, &messageGet)
+				require.NoError(t, err, "step: %d", stepNum)
+				lastCacheResult = cacheResult.BlocksHashesToHeights
+			case EXPECTED_FROM_GET:
+				require.Equal(t, step.blockHashesToHeights, lastCacheResult, "step: %d", stepNum)
+			}
+		}
+	})
 }

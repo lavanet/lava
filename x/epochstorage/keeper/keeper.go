@@ -3,6 +3,7 @@ package keeper
 import (
 	"fmt"
 
+	"cosmossdk.io/collections"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 
 	"github.com/cometbft/cometbft/libs/log"
@@ -10,8 +11,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/utils"
+	collcompat "github.com/lavanet/lava/v2/utils/collcompat"
+	"github.com/lavanet/lava/v2/x/epochstorage/types"
 )
 
 type (
@@ -27,6 +29,11 @@ type (
 		stakingKeeper types.StakingKeeper
 
 		fixationRegistries map[string]func(sdk.Context) any
+
+		schema              collections.Schema
+		stakeEntries        *collections.IndexedMap[collections.Triple[uint64, string, collections.Pair[uint64, string]], types.StakeEntry, types.EpochChainIdProviderIndexes]
+		stakeEntriesCurrent *collections.IndexedMap[collections.Pair[string, string], types.StakeEntry, types.ChainIdVaultIndexes]
+		epochHashes         collections.Map[uint64, []byte]
 	}
 )
 
@@ -46,6 +53,8 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	sb := collections.NewSchemaBuilder(collcompat.NewKVStoreService(storeKey))
+
 	keeper := &Keeper{
 		cdc:           cdc,
 		storeKey:      storeKey,
@@ -57,12 +66,27 @@ func NewKeeper(
 		stakingKeeper: stakingKeeper,
 
 		fixationRegistries: make(map[string]func(sdk.Context) any),
+
+		stakeEntries: collections.NewIndexedMap(sb, types.StakeEntriesPrefix, "stake_entries",
+			collections.TripleKeyCodec(collections.Uint64Key, collections.StringKey,
+				collections.PairKeyCodec(collections.Uint64Key, collections.StringKey)),
+			collcompat.ProtoValue[types.StakeEntry](cdc), types.NewEpochChainIdProviderIndexes(sb)),
+
+		stakeEntriesCurrent: collections.NewIndexedMap(sb, types.StakeEntriesCurrentPrefix, "stake_entries_current",
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+			collcompat.ProtoValue[types.StakeEntry](cdc), types.NewChainIdVaultIndexes(sb)),
+
+		epochHashes: collections.NewMap(sb, types.EpochHashesPrefix, "epoch_hashes", collections.Uint64Key, collections.BytesValue),
 	}
 
 	keeper.AddFixationRegistry(string(types.KeyEpochBlocks), func(ctx sdk.Context) any { return keeper.EpochBlocksRaw(ctx) })
 	keeper.AddFixationRegistry(string(types.KeyEpochsToSave), func(ctx sdk.Context) any { return keeper.EpochsToSaveRaw(ctx) })
-	keeper.AddFixationRegistry(string(types.KeyUnstakeHoldBlocks), func(ctx sdk.Context) any { return keeper.UnstakeHoldBlocksRaw(ctx) })
-	keeper.AddFixationRegistry(string(types.KeyUnstakeHoldBlocksStatic), func(ctx sdk.Context) any { return keeper.UnstakeHoldBlocksStaticRaw(ctx) })
+
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+	keeper.schema = schema
 
 	return keeper
 }
