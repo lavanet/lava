@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var retryOptionsTest = retryProcessorOptions{
+var retryOptionsTest = relayProcessorRetryOptions{
 	disableRelayRetry:       false,
 	relayCountOnNodeError:   2,
 	disableCacheOnNodeError: false,

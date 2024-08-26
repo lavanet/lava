@@ -73,7 +73,7 @@ type RPCConsumerServer struct {
 	connectedSubscriptionsContexts map[string]*CancelableContextHolder
 	chainListener                  chainlib.ChainListener
 	connectedSubscriptionsLock     sync.RWMutex
-	retryOptions                   retryProcessorOptions
+	retryOptions                   relayProcessorRetryOptions
 	relayRetriesManager            *RelayRetriesManager
 }
 
@@ -124,7 +124,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.debugRelays = cmdFlags.DebugRelays
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
-	rpccs.retryOptions = retryProcessorOptions{
+	rpccs.retryOptions = relayProcessorRetryOptions{
 		disableRelayRetry:       cmdFlags.DisableRetryOnNodeErrors,
 		relayCountOnNodeError:   cmdFlags.SetRelayCountOnNodeError,
 		disableCacheOnNodeError: cmdFlags.DisableCacheOnNodeError,

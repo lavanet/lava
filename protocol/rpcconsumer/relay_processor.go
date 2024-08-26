@@ -60,10 +60,10 @@ type RelayProcessor struct {
 	metricsInf                   MetricsInterface
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
 	relayRetriesManager          *RelayRetriesManager
-	retryOptions                 retryProcessorOptions
+	retryOptions                 relayProcessorRetryOptions
 }
 
-type retryProcessorOptions struct {
+type relayProcessorRetryOptions struct {
 	relayCountOnNodeError   int
 	disableCacheOnNodeError bool
 	disableRelayRetry       bool
@@ -80,7 +80,7 @@ func NewRelayProcessor(
 	debugRelay bool,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
-	retryOptions retryProcessorOptions,
+	retryOptions relayProcessorRetryOptions,
 	relayRetriesManager *RelayRetriesManager,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
