@@ -25,6 +25,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/protocol/metrics"
 	"github.com/lavanet/lava/v2/protocol/performance"
+	"github.com/lavanet/lava/v2/protocol/upgrade"
 	"github.com/lavanet/lava/v2/utils"
 	"github.com/lavanet/lava/v2/utils/protocopy"
 	"github.com/lavanet/lava/v2/utils/rand"
@@ -227,7 +228,15 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 	success := false
 	var err error
 	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, protocolMessage, rpccs.consumerConsistency, "-init-", "", rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+	usedProvidersResets := 1
 	for i := 0; i < retries; i++ {
+		// Check if we even have enough providers to communicate with them all.
+		// If we have 1 provider we will reset the used providers always.
+		// Instead of spamming no pairing available on bootstrap
+		if ((i + 1) * usedProvidersResets) > rpccs.consumerSessionManager.GetNumberOfValidProviders() {
+			usedProvidersResets++
+			relayProcessor.GetUsedProviders().ClearUnwanted()
+		}
 		err = rpccs.sendRelayToProvider(ctx, protocolMessage, "-init-", "", relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
@@ -1405,19 +1414,40 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, erroredProvidersMD)
 		}
 
-		currentReportedProviders := rpccs.consumerSessionManager.GetReportedProviders(uint64(relayResult.Request.RelaySession.Epoch))
-		if len(currentReportedProviders) > 0 {
-			reportedProvidersArray := make([]string, len(currentReportedProviders))
-			for idx, providerAddress := range currentReportedProviders {
-				reportedProvidersArray[idx] = providerAddress.Address
+		nodeErrors := relayProcessor.nodeErrors()
+		if len(nodeErrors) > 0 {
+			nodeErrorHeaderString := ""
+			for _, nodeError := range nodeErrors {
+				nodeErrorHeaderString += fmt.Sprintf("%s: %s,", nodeError.GetProvider(), string(nodeError.Reply.Data))
 			}
-			reportedProvidersString := fmt.Sprintf("%v", reportedProvidersArray)
-			reportedProvidersMD := pairingtypes.Metadata{
-				Name:  common.REPORTED_PROVIDERS_HEADER_NAME,
-				Value: reportedProvidersString,
-			}
-			relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, reportedProvidersMD)
+			relayResult.Reply.Metadata = append(relayResult.Reply.Metadata,
+				pairingtypes.Metadata{
+					Name:  common.NODE_ERRORS_PROVIDERS_HEADER_NAME,
+					Value: nodeErrorHeaderString,
+				})
 		}
+
+		if relayResult.Request != nil && relayResult.Request.RelaySession != nil {
+			currentReportedProviders := rpccs.consumerSessionManager.GetReportedProviders(uint64(relayResult.Request.RelaySession.Epoch))
+			if len(currentReportedProviders) > 0 {
+				reportedProvidersArray := make([]string, len(currentReportedProviders))
+				for idx, providerAddress := range currentReportedProviders {
+					reportedProvidersArray[idx] = providerAddress.Address
+				}
+				reportedProvidersString := fmt.Sprintf("%v", reportedProvidersArray)
+				reportedProvidersMD := pairingtypes.Metadata{
+					Name:  common.REPORTED_PROVIDERS_HEADER_NAME,
+					Value: reportedProvidersString,
+				}
+				relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, reportedProvidersMD)
+			}
+		}
+
+		version := pairingtypes.Metadata{
+			Name:  common.LAVAP_VERSION_HEADER_NAME,
+			Value: upgrade.GetCurrentVersion().ConsumerVersion,
+		}
+		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, version)
 	}
 
 	relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, metadataReply...)
