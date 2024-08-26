@@ -584,6 +584,8 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				DebugRelays:                 viper.GetBool(DebugRelaysFlagName),
 				DisableConflictTransactions: viper.GetBool(common.DisableConflictTransactionsFlag),
 				DisableRetryOnNodeErrors:    viper.GetBool(common.DisableRetryOnNodeErrorsFlag),
+				SetRelayCountOnNodeError:    viper.GetInt(common.SetRelayCountOnNodeErrorFlag),
+				DisableCacheOnNodeError:     viper.GetBool(common.DisableCacheOnNodeErrorFlag),
 				OfflineSpecPath:             viper.GetString(common.UseOfflineSpecFlag),
 			}
 
@@ -633,6 +635,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().Bool(common.DisableRetryOnNodeErrorsFlag, false, "Disable relay retries on node errors, prevent the rpcconsumer trying a different provider")
 	cmdRPCConsumer.Flags().String(common.UseOfflineSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
+
+	cmdRPCConsumer.Flags().Int(common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
+	cmdRPCConsumer.Flags().Bool(common.DisableCacheOnNodeErrorFlag, false, "cancel the use of cache to block retry attempts that failed in the past, this will cause every node error to send multiple relays for ever including spam")
 
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
