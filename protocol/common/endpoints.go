@@ -49,6 +49,11 @@ var SPECIAL_LAVA_DIRECTIVE_HEADERS = map[string]struct{}{
 	LAVA_DEBUG_RELAY:                      {},
 }
 
+type UserData struct {
+	ConsumerIp string
+	DappId     string
+}
+
 type NodeUrl struct {
 	Url               string        `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
 	InternalPath      string        `yaml:"internal-path,omitempty" json:"internal-path,omitempty" mapstructure:"internal-path"`
@@ -314,7 +319,7 @@ func GetTokenFromGrpcContext(ctx context.Context) string {
 	return ""
 }
 
-func GetUniqueToken(consumerAddress string, ip string) string {
-	data := []byte(consumerAddress + ip)
+func GetUniqueToken(userData UserData) string {
+	data := []byte(userData.DappId + userData.ConsumerIp)
 	return base64.StdEncoding.EncodeToString(sigs.HashMsg(data))
 }

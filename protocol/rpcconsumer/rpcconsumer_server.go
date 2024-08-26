@@ -43,6 +43,8 @@ const (
 	MaxRelayRetries                          = 6
 	SendRelayAttempts                        = 3
 	numberOfTimesToCheckCurrentlyUsedIsEmpty = 3
+	initRelaysDappId                         = "-init-"
+	initRelaysConsumerIp                     = ""
 )
 
 var NoResponseTimeout = sdkerrors.New("NoResponseTimeout Error", 685, "timeout occurred while waiting for providers responses")
@@ -227,7 +229,7 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, protocolMessage chainlib.ProtocolMessage) (bool, error) {
 	success := false
 	var err error
-	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, protocolMessage, rpccs.consumerConsistency, "-init-", "", rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, protocolMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
 	usedProvidersResets := 1
 	for i := 0; i < retries; i++ {
 		// Check if we even have enough providers to communicate with them all.
@@ -237,11 +239,11 @@ func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retrie
 			usedProvidersResets++
 			relayProcessor.GetUsedProviders().ClearUnwanted()
 		}
-		err = rpccs.sendRelayToProvider(ctx, protocolMessage, "-init-", "", relayProcessor, nil)
+		err = rpccs.sendRelayToProvider(ctx, protocolMessage, relayProcessor, nil)
 		if lavasession.PairingListEmptyError.Is(err) {
 			// we don't have pairings anymore, could be related to unwanted providers
 			relayProcessor.GetUsedProviders().ClearUnwanted()
-			err = rpccs.sendRelayToProvider(ctx, protocolMessage, "-init-", "", relayProcessor, nil)
+			err = rpccs.sendRelayToProvider(ctx, protocolMessage, relayProcessor, nil)
 		}
 		if err != nil {
 			utils.LavaFormatError("[-] failed sending init relay", err, []utils.Attribute{{Key: "chainID", Value: rpccs.listenEndpoint.ChainID}, {Key: "APIInterface", Value: rpccs.listenEndpoint.ApiInterface}, {Key: "relayProcessor", Value: relayProcessor}}...)
@@ -294,7 +296,7 @@ func (rpccs *RPCConsumerServer) sendCraftedRelays(retries int, initialRelays boo
 		}
 		return false, err
 	}
-	protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relay)
+	protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relay, initRelaysDappId, initRelaysConsumerIp)
 	return rpccs.sendRelayWithRetries(ctx, retries, initialRelays, protocolMessage)
 }
 
@@ -322,7 +324,7 @@ func (rpccs *RPCConsumerServer) SendRelay(
 		return nil, err
 	}
 
-	return rpccs.SendParsedRelay(ctx, dappID, consumerIp, analytics, protocolMessage)
+	return rpccs.SendParsedRelay(ctx, analytics, protocolMessage)
 }
 
 func (rpccs *RPCConsumerServer) ParseRelay(
@@ -350,20 +352,18 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
 	reqBlock, _ := chainMessage.RequestedBlock()
-	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(dappID, consumerIp)
+	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(common.UserData{DappId: dappID, ConsumerIp: consumerIp})
 	if seenBlock < 0 {
 		seenBlock = 0
 	}
 
 	relayRequestData := lavaprotocol.NewRelayData(ctx, connectionType, url, []byte(req), seenBlock, reqBlock, rpccs.listenEndpoint.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), chainlib.GetAddon(chainMessage), common.GetExtensionNames(chainMessage.GetExtensions()))
-	protocolMessage = chainlib.NewProtocolMessage(chainMessage, directiveHeaders, relayRequestData)
+	protocolMessage = chainlib.NewProtocolMessage(chainMessage, directiveHeaders, relayRequestData, dappID, consumerIp)
 	return protocolMessage, nil
 }
 
 func (rpccs *RPCConsumerServer) SendParsedRelay(
 	ctx context.Context,
-	dappID string,
-	consumerIp string,
 	analytics *metrics.RelayMetrics,
 	protocolMessage chainlib.ProtocolMessage,
 ) (relayResult *common.RelayResult, errRet error) {
@@ -373,10 +373,11 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	// asynchronously sends data reliability if necessary
 
 	relaySentTime := time.Now()
-	relayProcessor, err := rpccs.ProcessRelaySend(ctx, protocolMessage, dappID, consumerIp, analytics)
+	relayProcessor, err := rpccs.ProcessRelaySend(ctx, protocolMessage, analytics)
 	if err != nil && !relayProcessor.HasResults() {
+		userData := protocolMessage.GetUserData()
 		// we can't send anymore, and we don't have any responses
-		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", consumerIp), utils.LogAttr("relayProcessor", relayProcessor))
+		utils.LavaFormatError("failed getting responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()), utils.LogAttr("userIp", userData.ConsumerIp), utils.LogAttr("relayProcessor", relayProcessor))
 		return nil, err
 	}
 
@@ -391,7 +392,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 		if found {
 			dataReliabilityContext = utils.WithUniqueIdentifier(dataReliabilityContext, guid)
 		}
-		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, dappID, consumerIp, protocolMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
+		go rpccs.sendDataReliabilityRelayIfApplicable(dataReliabilityContext, protocolMessage, dataReliabilityThreshold, relayProcessor) // runs asynchronously
 	}
 
 	returnedResult, err := relayProcessor.ProcessingResult()
@@ -415,11 +416,11 @@ func (rpccs *RPCConsumerServer) GetChainIdAndApiInterface() (string, string) {
 	return rpccs.listenEndpoint.ChainID, rpccs.listenEndpoint.ApiInterface
 }
 
-func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dappID string, consumerIp string, analytics *metrics.RelayMetrics) (*RelayProcessor, error) {
+func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMessage chainlib.ProtocolMessage, analytics *metrics.RelayMetrics) (*RelayProcessor, error) {
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(protocolMessage), rpccs.requiredResponses, protocolMessage, rpccs.consumerConsistency, dappID, consumerIp, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(protocolMessage), rpccs.requiredResponses, protocolMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
 	var err error
 	// try sending a relay 3 times. if failed return the error
 	for retryFirstRelayAttempt := 0; retryFirstRelayAttempt < SendRelayAttempts; retryFirstRelayAttempt++ {
@@ -427,7 +428,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		if analytics != nil && retryFirstRelayAttempt > 0 {
 			analytics = nil
 		}
-		err = rpccs.sendRelayToProvider(ctx, protocolMessage, dappID, consumerIp, relayProcessor, analytics)
+		err = rpccs.sendRelayToProvider(ctx, protocolMessage, relayProcessor, analytics)
 
 		// check if we had an error. if we did, try again.
 		if err == nil {
@@ -494,7 +495,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 				return relayProcessor, nil
 			}
 			// otherwise continue sending another relay
-			err := rpccs.sendRelayToProvider(processingCtx, protocolMessage, dappID, consumerIp, relayProcessor, nil)
+			err := rpccs.sendRelayToProvider(processingCtx, protocolMessage, relayProcessor, nil)
 			go validateReturnCondition(err)
 			go readResultsFromProcessor()
 			// increase number of retries launched only if we still have pairing available, if we exhausted the list we don't want to break early
@@ -507,7 +508,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 			if relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
 				// limit the number of retries called from the new batch ticker flow.
 				// if we pass the limit we just wait for the relays we sent to return.
-				err := rpccs.sendRelayToProvider(processingCtx, protocolMessage, dappID, consumerIp, relayProcessor, nil)
+				err := rpccs.sendRelayToProvider(processingCtx, protocolMessage, relayProcessor, nil)
 				go validateReturnCondition(err)
 				// add ticker launch metrics
 				go rpccs.rpcConsumerLogs.SetRelaySentByNewBatchTickerMetric(rpccs.GetChainIdAndApiInterface())
@@ -528,10 +529,11 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 			return relayProcessor, returnErr
 		case <-processingCtx.Done():
 			// in case we got a processing timeout we return context deadline exceeded to the user.
+			userData := protocolMessage.GetUserData()
 			utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
 				utils.LogAttr("processingTimeout", processingTimeout),
-				utils.LogAttr("dappId", dappID),
-				utils.LogAttr("consumerIp", consumerIp),
+				utils.LogAttr("dappId", userData.DappId),
+				utils.LogAttr("consumerIp", userData.ConsumerIp),
 				utils.LogAttr("protocolMessage.GetApi().Name", protocolMessage.GetApi().Name),
 				utils.LogAttr("GUID", ctx),
 				utils.LogAttr("relayProcessor", relayProcessor),
@@ -541,8 +543,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	}
 }
 
-func (rpccs *RPCConsumerServer) CreateDappKey(dappID, consumerIp string) string {
-	return rpccs.consumerConsistency.Key(dappID, consumerIp)
+func (rpccs *RPCConsumerServer) CreateDappKey(userData common.UserData) string {
+	return rpccs.consumerConsistency.Key(userData)
 }
 
 func (rpccs *RPCConsumerServer) CancelSubscriptionContext(subscriptionKey string) {
@@ -562,8 +564,6 @@ func (rpccs *RPCConsumerServer) CancelSubscriptionContext(subscriptionKey string
 func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	ctx context.Context,
 	protocolMessage chainlib.ProtocolMessage,
-	dappID string,
-	consumerIp string,
 	relayProcessor *RelayProcessor,
 	analytics *metrics.RelayMetrics,
 ) (errRet error) {
@@ -578,9 +578,10 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	// if necessary send detection tx for hashes consensus mismatch
 	// handle QoS updates
 	// in case connection totally fails, update unresponsive providers in ConsumerSessionManager
+	userData := protocolMessage.GetUserData()
 	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
 	if rpccs.sharedState {
-		sharedStateId = rpccs.consumerConsistency.Key(dappID, consumerIp) // use same key as we use for consistency, (for better consistency :-D)
+		sharedStateId = rpccs.consumerConsistency.Key(userData) // use same key as we use for consistency, (for better consistency :-D)
 	}
 
 	privKey := rpccs.privKey
@@ -621,7 +622,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", protocolMessage.RelayPrivateData().SeenBlock))
 						protocolMessage.RelayPrivateData().SeenBlock = cacheSeenBlock
 						// setting the fetched seen block from the cache server to our local cache as well.
-						rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, dappID, consumerIp)
+						rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, userData)
 					}
 
 					// handle cache reply
@@ -668,7 +669,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	if err != nil {
 		if lavasession.PairingListEmptyError.Is(err) {
 			if addon != "" {
-				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", consumerIp))
+				return utils.LavaFormatError("No Providers For Addon", err, utils.LogAttr("addon", addon), utils.LogAttr("extensions", extensions), utils.LogAttr("userIp", userData.ConsumerIp))
 			} else if len(extensions) > 0 && relayProcessor.GetAllowSessionDegradation() { // if we have no providers for that extension, use a regular provider, otherwise return the extension results
 				sessions, err = rpccs.consumerSessionManager.GetSessions(ctx, chainlib.GetComputeUnits(protocolMessage), usedProviders, reqBlock, addon, []*spectypes.Extension{}, chainlib.GetStateful(protocolMessage), virtualEpoch)
 				if err != nil {
@@ -787,7 +788,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			// unique per dappId and ip
-			consumerToken := common.GetUniqueToken(dappID, consumerIp)
+			consumerToken := common.GetUniqueToken(userData)
 			processingTimeout, expectedRelayTimeoutForQOS := rpccs.getProcessingTimeout(protocolMessage)
 			deadline, ok := ctx.Deadline()
 			if ok { // we have ctx deadline. we cant go past it.
@@ -1200,7 +1201,7 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	return &reply, nil
 }
 
-func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, dappID string, consumerIp string, chainMessage chainlib.ChainMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
+func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, chainMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
 	processingTimeout, expectedRelayTimeout := rpccs.getProcessingTimeout(chainMessage)
 	// Wait another relayTimeout duration to maybe get additional relay results
 	if relayProcessor.usedProviders.CurrentlyUsed() > 0 {
@@ -1240,10 +1241,12 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	}
 	relayResult := results[0]
 	if len(results) < 2 {
+		userData := chainMessage.GetUserData()
 		relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
-		protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relayRequestData)
-		relayProcessorDataReliability := NewRelayProcessor(ctx, relayProcessor.usedProviders, 1, chainMessage, rpccs.consumerConsistency, dappID, consumerIp, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
-		err := rpccs.sendRelayToProvider(ctx, protocolMessage, dappID, consumerIp, relayProcessorDataReliability, nil)
+		// We create new protocol message from the old one, but with a new instance of relay request data.
+		protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
+		relayProcessorDataReliability := NewRelayProcessor(ctx, relayProcessor.usedProviders, 1, chainMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+		err := rpccs.sendRelayToProvider(ctx, protocolMessage, relayProcessorDataReliability, nil)
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
