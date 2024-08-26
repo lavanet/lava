@@ -57,10 +57,7 @@ type ConsumerCmdFlags struct {
 	RelaysHealthIntervalFlag    time.Duration // interval for relay health check
 	DebugRelays                 bool          // enables debug mode for relays
 	DisableConflictTransactions bool          // disable conflict transactions
-	DisableRetryOnNodeErrors    bool          // disable retries on node errors
-	SetRelayCountOnNodeError    int
-	DisableCacheOnNodeError     bool
-	OfflineSpecPath             string // path to the spec file, works only when bootstrapping a single chain.
+	OfflineSpecPath             string        // path to the spec file, works only when bootstrapping a single chain.
 }
 
 // default rolling logs behavior (if enabled) will store 3 files each 100MB for up to 1 day every time.
