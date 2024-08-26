@@ -72,8 +72,8 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			relaySender.
 				EXPECT().
 				CreateDappKey(gomock.Any()).
-				DoAndReturn(func(dappID, consumerIp string) string {
-					return dappID + consumerIp
+				DoAndReturn(func(userData common.UserData) string {
+					return userData.DappId + userData.ConsumerIp
 				}).
 				AnyTimes()
 			relaySender.
@@ -229,8 +229,8 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 			relaySender.
 				EXPECT().
 				CreateDappKey(gomock.Any()).
-				DoAndReturn(func(dappID, consumerIp string) string {
-					return dappID + consumerIp
+				DoAndReturn(func(userData common.UserData) string {
+					return userData.DappId + userData.ConsumerIp
 				}).
 				AnyTimes()
 			relaySender.
@@ -457,8 +457,8 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			relaySender.
 				EXPECT().
 				CreateDappKey(gomock.Any()).
-				DoAndReturn(func(dappID, consumerIp string) string {
-					return dappID + consumerIp
+				DoAndReturn(func(userData common.UserData) string {
+					return userData.DappId + userData.ConsumerIp
 				}).
 				AnyTimes()
 
