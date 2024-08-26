@@ -301,7 +301,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		utils.LogAttr("dappKey", dappKey),
 	)
 
-	relayResult, err := cwsm.relaySender.SendParsedRelay(webSocketCtx, dappID, consumerIp, metricsData, protocolMessage)
+	relayResult, err := cwsm.relaySender.SendParsedRelay(webSocketCtx, metricsData, protocolMessage)
 	if err != nil {
 		onSubscriptionFailure()
 		return nil, nil, utils.LavaFormatError("could not send subscription relay", err)
@@ -490,7 +490,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			}
 
 			unsubscribeRelayCtx := utils.WithUniqueIdentifier(context.Background(), utils.GenerateUniqueIdentifier())
-			err = cwsm.sendUnsubscribeMessage(unsubscribeRelayCtx, dappID, userIp, protocolMessage, metricsData)
+			err = cwsm.sendUnsubscribeMessage(unsubscribeRelayCtx, protocolMessage, metricsData)
 			if err != nil {
 				utils.LavaFormatError("could not send unsubscribe message due to a relay error",
 					err,
@@ -702,15 +702,16 @@ func (cwsm *ConsumerWSSubscriptionManager) craftUnsubscribeMessage(hashedParams,
 	return protocolMessage, nil
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) sendUnsubscribeMessage(ctx context.Context, dappID, consumerIp string, protocolMessage ProtocolMessage, metricsData *metrics.RelayMetrics) error {
+func (cwsm *ConsumerWSSubscriptionManager) sendUnsubscribeMessage(ctx context.Context, protocolMessage ProtocolMessage, metricsData *metrics.RelayMetrics) error {
 	// Send the crafted unsubscribe relay
+	userData := protocolMessage.GetUserData()
 	utils.LavaFormatTrace("sending unsubscribe relay",
 		utils.LogAttr("GUID", ctx),
-		utils.LogAttr("dappID", dappID),
-		utils.LogAttr("consumerIp", consumerIp),
+		utils.LogAttr("dappID", userData.DappId),
+		utils.LogAttr("consumerIp", userData.ConsumerIp),
 	)
 
-	_, err := cwsm.relaySender.SendParsedRelay(ctx, dappID, consumerIp, metricsData, protocolMessage)
+	_, err := cwsm.relaySender.SendParsedRelay(ctx, metricsData, protocolMessage)
 	if err != nil {
 		return utils.LavaFormatError("could not send unsubscribe relay", err)
 	}

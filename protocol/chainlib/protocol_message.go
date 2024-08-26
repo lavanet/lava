@@ -7,10 +7,20 @@ import (
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
+type UserData struct {
+	ConsumerIp string
+	DappId     string
+}
+
 type BaseProtocolMessage struct {
 	ChainMessage
 	directiveHeaders map[string]string
 	relayRequestData *pairingtypes.RelayPrivateData
+	userData         UserData
+}
+
+func (bpm *BaseProtocolMessage) GetUserData() UserData {
+	return bpm.userData
 }
 
 func (bpm *BaseProtocolMessage) GetDirectiveHeaders() map[string]string {
@@ -36,11 +46,12 @@ func (bpm *BaseProtocolMessage) GetBlockedProviders() []string {
 	return nil
 }
 
-func NewProtocolMessage(chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData) ProtocolMessage {
+func NewProtocolMessage(chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, dappId, consumerIp string) ProtocolMessage {
 	return &BaseProtocolMessage{
 		ChainMessage:     chainMessage,
 		directiveHeaders: directiveHeaders,
 		relayRequestData: relayRequestData,
+		userData:         UserData{DappId: dappId, ConsumerIp: consumerIp},
 	}
 }
 
@@ -50,4 +61,5 @@ type ProtocolMessage interface {
 	RelayPrivateData() *pairingtypes.RelayPrivateData
 	HashCacheRequest(chainId string) ([]byte, func([]byte) []byte, error)
 	GetBlockedProviders() []string
+	GetUserData() UserData
 }
