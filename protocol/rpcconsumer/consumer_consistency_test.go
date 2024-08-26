@@ -36,8 +36,8 @@ func TestBasic(t *testing.T) {
 	dappid_other := "/77777/"
 	ip_other := "2.1.1.1:443"
 
-	userDataOne := common.UserData{dappid, ip}
-	userDataOther := common.UserData{dappid_other, ip_other}
+	userDataOne := common.UserData{DappId: dappid, ConsumerIp: ip}
+	userDataOther := common.UserData{DappId: dappid_other, ConsumerIp: ip_other}
 
 	for i := 1; i < 100; i++ {
 		consumerConsistency.SetSeenBlock(int64(i), userDataOne)
