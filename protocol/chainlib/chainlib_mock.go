@@ -692,17 +692,17 @@ func (mr *MockRelaySenderMockRecorder) CancelSubscriptionContext(subscriptionKey
 }
 
 // CreateDappKey mocks base method.
-func (m *MockRelaySender) CreateDappKey(dappID, consumerIp string) string {
+func (m *MockRelaySender) CreateDappKey(userData common.UserData) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDappKey", dappID, consumerIp)
+	ret := m.ctrl.Call(m, "CreateDappKey", userData)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // CreateDappKey indicates an expected call of CreateDappKey.
-func (mr *MockRelaySenderMockRecorder) CreateDappKey(dappID, consumerIp interface{}) *gomock.Call {
+func (mr *MockRelaySenderMockRecorder) CreateDappKey(userData interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDappKey", reflect.TypeOf((*MockRelaySender)(nil).CreateDappKey), dappID, consumerIp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDappKey", reflect.TypeOf((*MockRelaySender)(nil).CreateDappKey), userData)
 }
 
 // ParseRelay mocks base method.

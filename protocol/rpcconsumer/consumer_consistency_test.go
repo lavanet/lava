@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	common "github.com/lavanet/lava/v2/protocol/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -35,21 +36,24 @@ func TestBasic(t *testing.T) {
 	dappid_other := "/77777/"
 	ip_other := "2.1.1.1:443"
 
+	userDataOne := common.UserData{dappid, ip}
+	userDataOther := common.UserData{dappid_other, ip_other}
+
 	for i := 1; i < 100; i++ {
-		consumerConsistency.SetSeenBlock(int64(i), dappid, ip)
+		consumerConsistency.SetSeenBlock(int64(i), userDataOne)
 		time.Sleep(4 * time.Millisecond) // need to let each set finish
 	}
-	consumerConsistency.SetSeenBlock(5, dappid_other, ip_other)
+	consumerConsistency.SetSeenBlock(5, userDataOther)
 	time.Sleep(4 * time.Millisecond)
 	// try to set older values and discard them
-	consumerConsistency.SetSeenBlock(3, dappid_other, ip_other)
+	consumerConsistency.SetSeenBlock(3, userDataOther)
 	time.Sleep(4 * time.Millisecond)
-	consumerConsistency.SetSeenBlock(3, dappid, ip)
+	consumerConsistency.SetSeenBlock(3, userDataOne)
 	time.Sleep(4 * time.Millisecond)
-	block, found := consumerConsistency.GetSeenBlock(dappid, ip)
+	block, found := consumerConsistency.GetSeenBlock(userDataOne)
 	require.True(t, found)
 	require.Equal(t, int64(99), block)
-	block, found = consumerConsistency.GetSeenBlock(dappid_other, ip_other)
+	block, found = consumerConsistency.GetSeenBlock(userDataOther)
 	require.True(t, found)
 	require.Equal(t, int64(5), block)
 }

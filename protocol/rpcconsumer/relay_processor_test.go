@@ -137,7 +137,7 @@ func TestRelayProcessorHappyFlow(t *testing.T) {
 		var found bool
 		// wait for cache to be added asynchronously
 		for i := 0; i < 10; i++ {
-			seenBlock, found = consistency.GetSeenBlock(protocolMessage.GetUserData().DappId, protocolMessage.GetUserData().ConsumerIp)
+			seenBlock, found = consistency.GetSeenBlock(protocolMessage.GetUserData())
 			if found {
 				break
 			}

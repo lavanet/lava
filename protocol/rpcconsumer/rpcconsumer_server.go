@@ -343,7 +343,7 @@ func (rpccs *RPCConsumerServer) ParseRelay(
 
 	// do this in a loop with retry attempts, configurable via a flag, limited by the number of providers in CSM
 	reqBlock, _ := chainMessage.RequestedBlock()
-	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(dappID, consumerIp)
+	seenBlock, _ := rpccs.consumerConsistency.GetSeenBlock(common.UserData{dappID, consumerIp})
 	if seenBlock < 0 {
 		seenBlock = 0
 	}
@@ -411,7 +411,6 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	userData := protocolMessage.GetUserData()
 	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(protocolMessage), rpccs.requiredResponses, protocolMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
 	var err error
 	// try sending a relay 3 times. if failed return the error
@@ -521,6 +520,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 			return relayProcessor, returnErr
 		case <-processingCtx.Done():
 			// in case we got a processing timeout we return context deadline exceeded to the user.
+			userData := protocolMessage.GetUserData()
 			utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
 				utils.LogAttr("processingTimeout", processingTimeout),
 				utils.LogAttr("dappId", userData.DappId),
@@ -534,8 +534,8 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	}
 }
 
-func (rpccs *RPCConsumerServer) CreateDappKey(dappID, consumerIp string) string {
-	return rpccs.consumerConsistency.Key(dappID, consumerIp)
+func (rpccs *RPCConsumerServer) CreateDappKey(userData common.UserData) string {
+	return rpccs.consumerConsistency.Key(userData)
 }
 
 func (rpccs *RPCConsumerServer) CancelSubscriptionContext(subscriptionKey string) {
@@ -572,7 +572,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 	userData := protocolMessage.GetUserData()
 	var sharedStateId string // defaults to "", if shared state is disabled then no shared state will be used.
 	if rpccs.sharedState {
-		sharedStateId = rpccs.consumerConsistency.Key(userData.DappId, userData.ConsumerIp) // use same key as we use for consistency, (for better consistency :-D)
+		sharedStateId = rpccs.consumerConsistency.Key(userData) // use same key as we use for consistency, (for better consistency :-D)
 	}
 
 	privKey := rpccs.privKey
@@ -613,7 +613,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 						utils.LavaFormatDebug("shared state seen block is newer", utils.LogAttr("cache_seen_block", cacheSeenBlock), utils.LogAttr("local_seen_block", protocolMessage.RelayPrivateData().SeenBlock))
 						protocolMessage.RelayPrivateData().SeenBlock = cacheSeenBlock
 						// setting the fetched seen block from the cache server to our local cache as well.
-						rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, userData.DappId, userData.ConsumerIp)
+						rpccs.consumerConsistency.SetSeenBlock(cacheSeenBlock, userData)
 					}
 
 					// handle cache reply
@@ -779,7 +779,7 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			// unique per dappId and ip
-			consumerToken := common.GetUniqueToken(userData.DappId, userData.ConsumerIp)
+			consumerToken := common.GetUniqueToken(userData)
 			processingTimeout, expectedRelayTimeoutForQOS := rpccs.getProcessingTimeout(protocolMessage)
 			deadline, ok := ctx.Deadline()
 			if ok { // we have ctx deadline. we cant go past it.
