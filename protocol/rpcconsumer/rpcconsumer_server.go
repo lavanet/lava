@@ -1239,7 +1239,6 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	}
 	relayResult := results[0]
 	if len(results) < 2 {
-		userData := chainMessage.GetUserData()
 		relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
 		// We create new protocol message from the old one, but with a new instance of relay request data.
 		protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relayRequestData)
