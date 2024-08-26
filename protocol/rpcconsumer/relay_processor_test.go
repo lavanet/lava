@@ -294,6 +294,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 
 	t.Run("retry_flow_disabled", func(t *testing.T) {
 		ctx := context.Background()
+		disableRelayRetry = true
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Handle the incoming request and provide the desired response
 			w.WriteHeader(http.StatusOK)
@@ -327,6 +328,7 @@ func TestRelayProcessorNodeErrorRetryFlow(t *testing.T) {
 		require.True(t, resultsOk)
 		requiredNodeResults := relayProcessor.HasRequiredNodeResults()
 		require.True(t, requiredNodeResults)
+		disableRelayRetry = false
 	})
 }
 
