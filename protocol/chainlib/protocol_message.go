@@ -11,6 +11,11 @@ type BaseProtocolMessage struct {
 	ChainMessage
 	directiveHeaders map[string]string
 	relayRequestData *pairingtypes.RelayPrivateData
+	userData         common.UserData
+}
+
+func (bpm *BaseProtocolMessage) GetUserData() common.UserData {
+	return bpm.userData
 }
 
 func (bpm *BaseProtocolMessage) GetDirectiveHeaders() map[string]string {
@@ -31,16 +36,20 @@ func (bpm *BaseProtocolMessage) GetBlockedProviders() []string {
 	}
 	blockedProviders, ok := bpm.directiveHeaders[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME]
 	if ok {
-		return strings.Split(blockedProviders, ",")
+		blockProviders := strings.Split(blockedProviders, ",")
+		if len(blockProviders) <= 2 {
+			return blockProviders
+		}
 	}
 	return nil
 }
 
-func NewProtocolMessage(chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData) ProtocolMessage {
+func NewProtocolMessage(chainMessage ChainMessage, directiveHeaders map[string]string, relayRequestData *pairingtypes.RelayPrivateData, dappId, consumerIp string) ProtocolMessage {
 	return &BaseProtocolMessage{
 		ChainMessage:     chainMessage,
 		directiveHeaders: directiveHeaders,
 		relayRequestData: relayRequestData,
+		userData:         common.UserData{DappId: dappId, ConsumerIp: consumerIp},
 	}
 }
 
@@ -50,4 +59,5 @@ type ProtocolMessage interface {
 	RelayPrivateData() *pairingtypes.RelayPrivateData
 	HashCacheRequest(chainId string) ([]byte, func([]byte) []byte, error)
 	GetBlockedProviders() []string
+	GetUserData() common.UserData
 }

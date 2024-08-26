@@ -25,7 +25,9 @@ const (
 	PROVIDER_LATEST_BLOCK_HEADER_NAME               = "Provider-Latest-Block"
 	GUID_HEADER_NAME                                = "Lava-Guid"
 	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
+	NODE_ERRORS_PROVIDERS_HEADER_NAME               = "Lava-Node-Errors-providers"
 	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
+	LAVAP_VERSION_HEADER_NAME                       = "Lavap-Version"
 	LAVA_CONSUMER_PROCESS_GUID                      = "lava-consumer-process-guid"
 	// these headers need to be lowercase
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
@@ -45,6 +47,11 @@ var SPECIAL_LAVA_DIRECTIVE_HEADERS = map[string]struct{}{
 	EXTENSION_OVERRIDE_HEADER_NAME:        {},
 	FORCE_CACHE_REFRESH_HEADER_NAME:       {},
 	LAVA_DEBUG_RELAY:                      {},
+}
+
+type UserData struct {
+	ConsumerIp string
+	DappId     string
 }
 
 type NodeUrl struct {
@@ -312,7 +319,7 @@ func GetTokenFromGrpcContext(ctx context.Context) string {
 	return ""
 }
 
-func GetUniqueToken(consumerAddress string, ip string) string {
-	data := []byte(consumerAddress + ip)
+func GetUniqueToken(userData UserData) string {
+	data := []byte(userData.DappId + userData.ConsumerIp)
 	return base64.StdEncoding.EncodeToString(sigs.HashMsg(data))
 }

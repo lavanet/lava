@@ -63,6 +63,12 @@ type ConsumerSessionManager struct {
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
 }
 
+func (csm *ConsumerSessionManager) GetNumberOfValidProviders() int {
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+	return len(csm.validAddresses)
+}
+
 // this is being read in multiple locations and but never changes so no need to lock.
 func (csm *ConsumerSessionManager) RPCEndpoint() RPCEndpoint {
 	return *csm.rpcEndpoint
