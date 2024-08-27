@@ -734,8 +734,8 @@ func (cwsm *ConsumerWSSubscriptionManager) connectDappWithSubscription(dappKey s
 	cwsm.connectedDapps[dappKey][hashedParams] = webSocketChan
 }
 
-func (cwsm *ConsumerWSSubscriptionManager) CreateWebSocketConnectionUniqueKey(dappID, consumerIp, webSocketConnectionUniqueId string) string {
-	return cwsm.relaySender.CreateDappKey(dappID, consumerIp) + "__" + webSocketConnectionUniqueId
+func (cwsm *ConsumerWSSubscriptionManager) CreateWebSocketConnectionUniqueKey(dappID, consumerIp string, webSocketConnectionUniqueId string) string {
+	return cwsm.relaySender.CreateDappKey(common.UserData{DappId: dappID, ConsumerIp: consumerIp}) + "__" + webSocketConnectionUniqueId
 }
 
 func (cwsm *ConsumerWSSubscriptionManager) UnsubscribeAll(webSocketCtx context.Context, dappID, consumerIp string, webSocketConnectionUniqueId string, metricsData *metrics.RelayMetrics) error {

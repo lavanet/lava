@@ -17,16 +17,17 @@ import (
 	"github.com/lavanet/lava/v2/utils"
 )
 
-const (
-	MaxCallsPerRelay                   = 50
-	NumberOfRetriesAllowedOnNodeErrors = 2 // we will try maximum additional 2 relays on node errors
-)
-
 type Selection int
 
 const (
-	Quorum     Selection = iota // get the majority out of requiredSuccesses
-	BestResult                  // get the best result, even if it means waiting
+	Quorum           Selection = iota // get the majority out of requiredSuccesses
+	BestResult                        // get the best result, even if it means waiting
+	MaxCallsPerRelay = 50
+)
+
+var (
+	relayCountOnNodeError = 2
+	disableRelayRetry     = false
 )
 
 type MetricsInterface interface {
@@ -48,13 +49,11 @@ type RelayProcessor struct {
 	guid                         uint64
 	selection                    Selection
 	consumerConsistency          *ConsumerConsistency
-	userData                     chainlib.UserData
 	skipDataReliability          bool
 	debugRelay                   bool
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
 	metricsInf                   MetricsInterface
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
-	disableRelayRetry            bool
 	relayRetriesManager          *RelayRetriesManager
 	ResultsManager
 }
@@ -68,7 +67,6 @@ func NewRelayProcessor(
 	debugRelay bool,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
-	disableRelayRetry bool,
 	relayRetriesManager *RelayRetriesManager,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
@@ -91,7 +89,6 @@ func NewRelayProcessor(
 		debugRelay:                   debugRelay,
 		metricsInf:                   metricsInf,
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
-		disableRelayRetry:            disableRelayRetry,
 		relayRetriesManager:          relayRetriesManager,
 	}
 }
@@ -197,10 +194,11 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	// 2. If we have 0 successful relays and we have only node errors.
 	// 3. Hash calculation was successful.
 	// 4. Number of retries < NumberOfRetriesAllowedOnNodeErrors.
-	if !rp.disableRelayRetry && resultsCount == 0 && hashErr == nil {
-		if nodeErrors <= NumberOfRetriesAllowedOnNodeErrors {
+	if !disableRelayRetry && resultsCount == 0 && hashErr == nil {
+		if nodeErrors <= relayCountOnNodeError {
 			// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
 
+			// Check if user specified to disable caching - OR
 			// Check hash already exist, if it does, we don't want to retry
 			if !rp.relayRetriesManager.CheckHashInCache(hash) {
 				// If we didn't find the hash in the hash map we can retry
@@ -272,7 +270,7 @@ func (rp *RelayProcessor) handleResponse(response *relayResponse) {
 	if response != nil && response.relayResult.GetReply().GetLatestBlock() > 0 {
 		// set consumer consistency when possible
 		blockSeen := response.relayResult.GetReply().GetLatestBlock()
-		rp.consumerConsistency.SetSeenBlock(blockSeen, rp.userData.DappId, rp.userData.ConsumerIp)
+		rp.consumerConsistency.SetSeenBlock(blockSeen, rp.protocolMessage.GetUserData())
 	}
 }
 
