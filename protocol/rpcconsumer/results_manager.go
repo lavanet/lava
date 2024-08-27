@@ -21,6 +21,7 @@ type ResultsManager interface {
 	SetResponse(response *relayResponse, protocolMessage chainlib.ProtocolMessage) (nodeError error)
 	GetBestNodeErrorMessageForUser() RelayError
 	GetBestProtocolErrorMessageForUser() RelayError
+	nodeErrors() (ret []common.RelayResult)
 }
 
 type ResultsManagerInst struct {
