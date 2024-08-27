@@ -206,5 +206,5 @@ func (rp *ResultsManagerInst) GetBestNodeErrorMessageForUser() RelayError {
 func (rp *ResultsManagerInst) GetBestProtocolErrorMessageForUser() RelayError {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
-	return rp.nodeResponseErrors.GetBestErrorMessageForUser()
+	return rp.protocolResponseErrors.GetBestErrorMessageForUser()
 }
