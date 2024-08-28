@@ -29,7 +29,6 @@ import (
 	"github.com/lavanet/lava/v2/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v2/protocol/upgrade"
 	"github.com/lavanet/lava/v2/utils"
-	specutils "github.com/lavanet/lava/v2/utils/keeper"
 	"github.com/lavanet/lava/v2/utils/rand"
 	"github.com/lavanet/lava/v2/utils/sigs"
 	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
@@ -216,18 +215,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 				policyUpdaters.Store(rpcEndpoint.ChainID, updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint))
 			}
 
-			if options.cmdFlags.OfflineSpecPath != "" {
-				// offline spec mode.
-				parsedOfflineSpec, loadError := specutils.GetSpecFromPath(options.cmdFlags.OfflineSpecPath, rpcEndpoint.ChainID, nil, nil)
-				if loadError != nil {
-					err = utils.LavaFormatError("failed loading offline spec", err, utils.LogAttr("spec_path", options.cmdFlags.OfflineSpecPath), utils.LogAttr("spec_id", rpcEndpoint.ChainID))
-				}
-				utils.LavaFormatInfo("Loaded offline spec successfully", utils.LogAttr("spec_path", options.cmdFlags.OfflineSpecPath), utils.LogAttr("chain_id", parsedOfflineSpec.Index))
-				chainParser.SetSpec(parsedOfflineSpec)
-			} else {
-				// register for spec updates
-				err = rpcc.consumerStateTracker.RegisterForSpecUpdates(ctx, chainParser, *rpcEndpoint)
-			}
+			err = statetracker.RegisterForSpecUpdatesOrSetStaticSpec(ctx, chainParser, options.cmdFlags.StaticSpecPath, *rpcEndpoint, rpcc.consumerStateTracker)
 			if err != nil {
 				err = utils.LavaFormatError("failed registering for spec updates", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint})
 				errCh <- err
@@ -583,12 +571,11 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				RelaysHealthIntervalFlag:    viper.GetDuration(common.RelayHealthIntervalFlag),
 				DebugRelays:                 viper.GetBool(DebugRelaysFlagName),
 				DisableConflictTransactions: viper.GetBool(common.DisableConflictTransactionsFlag),
-				DisableRetryOnNodeErrors:    viper.GetBool(common.DisableRetryOnNodeErrorsFlag),
-				OfflineSpecPath:             viper.GetString(common.UseOfflineSpecFlag),
+				StaticSpecPath:              viper.GetString(common.UseStaticSpecFlag),
 			}
 
 			// validate user is does not provide multi chain setup when using the offline spec feature.
-			if consumerPropagatedFlags.OfflineSpecPath != "" && len(rpcEndpoints) > 1 {
+			if consumerPropagatedFlags.StaticSpecPath != "" && len(rpcEndpoints) > 1 {
 				utils.LavaFormatFatal("offline spec modifications are supported only in single chain bootstrapping", nil, utils.LogAttr("len(rpcEndpoints)", len(rpcEndpoints)), utils.LogAttr("rpcEndpoints", rpcEndpoints))
 			}
 
@@ -631,9 +618,8 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().BoolVar(&lavasession.DebugProbes, DebugProbesFlagName, false, "adding information to probes")
 	cmdRPCConsumer.Flags().Bool(common.DisableConflictTransactionsFlag, false, "disabling conflict transactions, this flag should not be used as it harms the network's data reliability and therefore the service.")
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
-	cmdRPCConsumer.Flags().Bool(common.DisableRetryOnNodeErrorsFlag, false, "Disable relay retries on node errors, prevent the rpcconsumer trying a different provider")
-	cmdRPCConsumer.Flags().String(common.UseOfflineSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
-
+	cmdRPCConsumer.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
+	cmdRPCConsumer.Flags().IntVar(&relayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }

@@ -76,7 +76,6 @@ type RPCConsumerServer struct {
 	connectedSubscriptionsContexts map[string]*CancelableContextHolder
 	chainListener                  chainlib.ChainListener
 	connectedSubscriptionsLock     sync.RWMutex
-	disableNodeErrorRetry          bool
 	relayRetriesManager            *lavaprotocol.RelayRetriesManager
 }
 
@@ -127,7 +126,6 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.debugRelays = cmdFlags.DebugRelays
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
-	rpccs.disableNodeErrorRetry = cmdFlags.DisableRetryOnNodeErrors
 	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
 	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
 	if err != nil {
@@ -229,7 +227,7 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, protocolMessage chainlib.ProtocolMessage) (bool, error) {
 	success := false
 	var err error
-	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, protocolMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, protocolMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.relayRetriesManager)
 	usedProvidersResets := 1
 	for i := 0; i < retries; i++ {
 		// Check if we even have enough providers to communicate with them all.
@@ -420,7 +418,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(protocolMessage), rpccs.requiredResponses, protocolMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
+	relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(protocolMessage), rpccs.requiredResponses, protocolMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.relayRetriesManager)
 	var err error
 	// try sending a relay 3 times. if failed return the error
 	for retryFirstRelayAttempt := 0; retryFirstRelayAttempt < SendRelayAttempts; retryFirstRelayAttempt++ {
@@ -1201,8 +1199,8 @@ func (rpccs *RPCConsumerServer) getFirstSubscriptionReply(ctx context.Context, h
 	return &reply, nil
 }
 
-func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, chainMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
-	processingTimeout, expectedRelayTimeout := rpccs.getProcessingTimeout(chainMessage)
+func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context.Context, protocolMessage chainlib.ProtocolMessage, dataReliabilityThreshold uint32, relayProcessor *RelayProcessor) error {
+	processingTimeout, expectedRelayTimeout := rpccs.getProcessingTimeout(protocolMessage)
 	// Wait another relayTimeout duration to maybe get additional relay results
 	if relayProcessor.usedProviders.CurrentlyUsed() > 0 {
 		time.Sleep(expectedRelayTimeout)
@@ -1210,7 +1208,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	specCategory := chainMessage.GetApi().Category
+	specCategory := protocolMessage.GetApi().Category
 	if !specCategory.Deterministic {
 		return nil // disabled for this spec and requested block so no data reliability messages
 	}
@@ -1231,7 +1229,7 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		return nil
 	}
 
-	reqBlock, _ := chainMessage.RequestedBlock()
+	reqBlock, _ := protocolMessage.RequestedBlock()
 	if reqBlock <= spectypes.NOT_APPLICABLE {
 		if reqBlock <= spectypes.LATEST_BLOCK {
 			return utils.LavaFormatError("sendDataReliabilityRelayIfApplicable latest requestBlock", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "RequestBlock", Value: reqBlock})
@@ -1241,12 +1239,12 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	}
 	relayResult := results[0]
 	if len(results) < 2 {
-		userData := chainMessage.GetUserData()
-		relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, chainMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
-		// We create new protocol message from the old one, but with a new instance of relay request data.
-		protocolMessage := chainlib.NewProtocolMessage(chainMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
-		relayProcessorDataReliability := NewRelayProcessor(ctx, relayProcessor.usedProviders, 1, chainMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.disableNodeErrorRetry, rpccs.relayRetriesManager)
-		err := rpccs.sendRelayToProvider(ctx, protocolMessage, relayProcessorDataReliability, nil)
+		relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, protocolMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
+		userData := protocolMessage.GetUserData()
+		//  We create new protocol message from the old one, but with a new instance of relay request data.
+		dataReliabilityProtocolMessage := chainlib.NewProtocolMessage(protocolMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
+		relayProcessorDataReliability := NewRelayProcessor(ctx, relayProcessor.usedProviders, 1, protocolMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.relayRetriesManager)
+		err := rpccs.sendRelayToProvider(ctx, dataReliabilityProtocolMessage, relayProcessorDataReliability, nil)
 		if err != nil {
 			return utils.LavaFormatWarning("failed data reliability relay to provider", err, utils.LogAttr("relayProcessorDataReliability", relayProcessorDataReliability))
 		}
@@ -1273,21 +1271,21 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	for i := 0; i < len(results)-1; i++ {
 		relayResult := results[i]
 		relayResultDataReliability := results[i+1]
-		conflict := lavaprotocol.VerifyReliabilityResults(ctx, &relayResult, &relayResultDataReliability, chainMessage.GetApiCollection(), rpccs.chainParser)
+		conflict := lavaprotocol.VerifyReliabilityResults(ctx, &relayResult, &relayResultDataReliability, protocolMessage.GetApiCollection(), rpccs.chainParser)
 		if conflict != nil {
 			// TODO: remove this check when we fix the missing extensions information on conflict detection transaction
-			if len(chainMessage.GetExtensions()) == 0 {
+			if len(protocolMessage.GetExtensions()) == 0 {
 				err := rpccs.consumerTxSender.TxConflictDetection(ctx, nil, conflict, relayResultDataReliability.ConflictHandler)
 				if err != nil {
 					utils.LavaFormatError("could not send detection Transaction", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "conflict", Value: conflict})
 				}
 				if rpccs.reporter != nil {
-					utils.LavaFormatDebug("sending conflict report to BE", utils.LogAttr("conflicting api", chainMessage.GetApi().Name))
+					utils.LavaFormatDebug("sending conflict report to BE", utils.LogAttr("conflicting api", protocolMessage.GetApi().Name))
 					rpccs.reporter.AppendConflict(metrics.NewConflictRequest(relayResult.Request, relayResult.Reply, relayResultDataReliability.Request, relayResultDataReliability.Reply))
 				}
 			}
 		} else {
-			utils.LavaFormatDebug("[+] verified relay successfully with data reliability", utils.LogAttr("api", chainMessage.GetApi().Name))
+			utils.LavaFormatDebug("[+] verified relay successfully with data reliability", utils.LogAttr("api", protocolMessage.GetApi().Name))
 		}
 	}
 	return nil
