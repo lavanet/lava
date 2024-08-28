@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto"
+	common "github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/utils"
 )
 
@@ -40,8 +41,8 @@ func (cc *ConsumerConsistency) getLatestBlock(key string) (block int64, found bo
 	return block, found
 }
 
-func (cc *ConsumerConsistency) Key(dappId string, ip string) string {
-	return dappId + "__" + ip
+func (cc *ConsumerConsistency) Key(userData common.UserData) string {
+	return userData.DappId + "__" + userData.ConsumerIp
 }
 
 // used on subscription, where we already have the dapp key stored, but we don't keep the dappId and ip separately
@@ -55,19 +56,19 @@ func (cc *ConsumerConsistency) SetSeenBlockFromKey(blockSeen int64, key string) 
 	}
 }
 
-func (cc *ConsumerConsistency) SetSeenBlock(blockSeen int64, dappId string, ip string) {
+func (cc *ConsumerConsistency) SetSeenBlock(blockSeen int64, userData common.UserData) {
 	if cc == nil {
 		return
 	}
-	key := cc.Key(dappId, ip)
+	key := cc.Key(userData)
 	cc.SetSeenBlockFromKey(blockSeen, key)
 }
 
-func (cc *ConsumerConsistency) GetSeenBlock(dappId string, ip string) (int64, bool) {
+func (cc *ConsumerConsistency) GetSeenBlock(userData common.UserData) (int64, bool) {
 	if cc == nil {
 		return 0, false
 	}
-	return cc.getLatestBlock(cc.Key(dappId, ip))
+	return cc.getLatestBlock(cc.Key(userData))
 }
 
 func NewConsumerConsistency(specId string) *ConsumerConsistency {
