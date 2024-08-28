@@ -24,9 +24,7 @@ const (
 	MaxCallsPerRelay = 50
 )
 
-var (
-	relayCountOnNodeError = 2
-)
+var relayCountOnNodeError = 2
 
 // selection Enum, do not add other const
 const (
