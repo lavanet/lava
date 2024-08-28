@@ -310,9 +310,10 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 // Deciding wether we should send a relay retry attempt based on the node error
 func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, hash string) bool {
 	// Retries will be performed based on the following scenarios:
-	// 1. If we have 0 successful relays and we have only node errors.
-	// 2. Hash calculation was successful.
-	// 3. Number of retries < relayCountOnNodeError.
+	// 1. If relayCountOnNodeError > 0
+	// 2. If we have 0 successful relays and we have only node errors.
+	// 3. Hash calculation was successful.
+	// 4. Number of retries < relayCountOnNodeError.
 	if relayCountOnNodeError > 0 && resultsCount == 0 && hashErr == nil {
 		if nodeErrors <= relayCountOnNodeError {
 			// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
