@@ -1149,7 +1149,6 @@ func TestSameProviderConflictReport(t *testing.T) {
 		<-reported
 		require.True(t, sameProviderConflictSent)
 		require.True(t, twoProvidersConflictSent)
-
 	})
 }
 
