@@ -432,7 +432,7 @@ func NewQueryTotalGasCmd() *cobra.Command {
 				return nil
 			}
 			layout := time.RFC3339
-			for now.Sub(txtime) < time.Second {
+			for now.Sub(txtime) < 12*time.Hour {
 				sequence--
 				tx := getResponse(account, sequence)
 
