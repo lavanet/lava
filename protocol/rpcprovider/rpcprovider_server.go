@@ -925,13 +925,14 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 
 		// On the first retry, check if this hash has already failed previously
 		if retryAttempt == 0 && rpcps.relayRetriesManager.CheckHashInCache(requestHashString) {
+			utils.LavaFormatTrace("received node error, request hash was already in cache, skipping retry")
 			break
 		}
-		utils.LavaFormatDebug("Errored Node Message, retrying message", utils.LogAttr("retry", retryAttempt))
+		utils.LavaFormatTrace("Errored Node Message, retrying message", utils.LogAttr("retry", retryAttempt))
 	}
 
 	if isNodeError {
-		utils.LavaFormatDebug("failed all relay retries for message")
+		utils.LavaFormatTrace("failed all relay retries for message")
 		go rpcps.relayRetriesManager.AddHashToCache(requestHashString)
 	}
 	return replyWrapper, nil
