@@ -21,14 +21,17 @@ import (
 type Selection int
 
 const (
-	Quorum           Selection = iota // get the majority out of requiredSuccesses
-	BestResult                        // get the best result, even if it means waiting
 	MaxCallsPerRelay = 50
 )
 
 var (
 	relayCountOnNodeError = 2
-	disableRelayRetry     = false
+)
+
+// selection Enum, do not add other const
+const (
+	Quorum     Selection = iota // get the majority out of requiredSuccesses
+	BestResult                  // get the best result, even if it means waiting
 )
 
 type MetricsInterface interface {
@@ -309,11 +312,10 @@ func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
 // Deciding wether we should send a relay retry attempt based on the node error
 func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, nodeErrors int, hash string) bool {
 	// Retries will be performed based on the following scenarios:
-	// 1. rp.disableRelayRetry == false, In case we want to try again if we have a node error.
-	// 2. If we have 0 successful relays and we have only node errors.
-	// 3. Hash calculation was successful.
-	// 4. Number of retries < NumberOfRetriesAllowedOnNodeErrors.
-	if !disableRelayRetry && resultsCount == 0 && hashErr == nil {
+	// 1. If we have 0 successful relays and we have only node errors.
+	// 2. Hash calculation was successful.
+	// 3. Number of retries < relayCountOnNodeError.
+	if resultsCount == 0 && hashErr == nil {
 		if nodeErrors <= relayCountOnNodeError {
 			// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
 

@@ -586,10 +586,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				OfflineSpecPath:             viper.GetString(common.UseOfflineSpecFlag),
 			}
 
-			// set relay processor's global params
-			relayCountOnNodeError = viper.GetInt(common.SetRelayCountOnNodeErrorFlag)
-			disableRelayRetry = viper.GetBool(common.DisableRetryOnNodeErrorsFlag)
-
 			// validate user is does not provide multi chain setup when using the offline spec feature.
 			if consumerPropagatedFlags.OfflineSpecPath != "" && len(rpcEndpoints) > 1 {
 				utils.LavaFormatFatal("offline spec modifications are supported only in single chain bootstrapping", nil, utils.LogAttr("len(rpcEndpoints)", len(rpcEndpoints)), utils.LogAttr("rpcEndpoints", rpcEndpoints))
@@ -635,9 +631,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Bool(common.DisableConflictTransactionsFlag, false, "disabling conflict transactions, this flag should not be used as it harms the network's data reliability and therefore the service.")
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().String(common.UseOfflineSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
-	cmdRPCConsumer.Flags().Bool(common.DisableRetryOnNodeErrorsFlag, false, "Disable relay retries on node errors, prevent the rpcconsumer trying a different provider")
-	cmdRPCConsumer.Flags().Int(common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
-
+	cmdRPCConsumer.Flags().IntVar(&relayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }
