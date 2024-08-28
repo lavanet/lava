@@ -165,6 +165,7 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
 	rpcp.staticProvider = options.staticProvider
 	rpcp.staticSpecPath = options.staticSpecPath
+
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
@@ -223,6 +224,10 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		if idx > 0 && endpoint.NetworkAddress.Address == "" { // handle undefined addresses as the previous endpoint for shared listeners
 			endpoint.NetworkAddress = options.rpcProviderEndpoints[idx-1].NetworkAddress
 		}
+	}
+
+	if rpcp.staticSpecPath != "" && len(rpcp.chainMutexes) > 1 {
+		utils.LavaFormatFatal("Provider set static spec with more than one chain. static spec configuration supports only a single chain id", nil, utils.LogAttr("Chains", rpcp.chainMutexes), utils.LogAttr("static_spec", rpcp.staticSpecPath))
 	}
 
 	specValidator := NewSpecValidator()
@@ -303,11 +308,6 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
 	// validate static spec configuration is used only on a single chain setup.
 	chainIds := make(map[string]struct{})
-	defer func() {
-		if rpcp.staticSpecPath != "" && len(chainIds) > 1 {
-			utils.LavaFormatFatal("Provider set static spec with more than one chain. static spec configuration supports only a single chain id", nil, utils.LogAttr("Chains", chainIds), utils.LogAttr("static_spec", rpcp.staticSpecPath))
-		}
-	}()
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
 		chainIds[rpcProviderEndpoint.ChainID] = struct{}{}
 		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) {
