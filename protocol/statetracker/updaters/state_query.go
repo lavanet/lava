@@ -24,7 +24,7 @@ import (
 
 const (
 	CacheMaxCost                = 10 * 1024 // 10K cost
-	CacheNumCounters            = 100000    // expect 10K items
+	CacheNumCounters            = 10 * 1025 // expect 10K items
 	DefaultTimeToLiveExpiration = 30 * time.Minute
 	PairingRespKey              = "pairing-resp"
 	VerifyPairingRespKey        = "verify-pairing-resp"

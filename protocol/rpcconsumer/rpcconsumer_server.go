@@ -77,7 +77,7 @@ type RPCConsumerServer struct {
 	chainListener                  chainlib.ChainListener
 	connectedSubscriptionsLock     sync.RWMutex
 	disableNodeErrorRetry          bool
-	relayRetriesManager            *RelayRetriesManager
+	relayRetriesManager            *lavaprotocol.RelayRetriesManager
 }
 
 type relayResponse struct {
@@ -128,7 +128,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
 	rpccs.disableNodeErrorRetry = cmdFlags.DisableRetryOnNodeErrors
-	rpccs.relayRetriesManager = NewRelayRetriesManager()
+	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
 	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
 	if err != nil {
 		return err

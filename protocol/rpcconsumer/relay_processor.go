@@ -13,6 +13,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/protocol/chainlib"
 	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/utils"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
@@ -58,7 +59,7 @@ type RelayProcessor struct {
 	metricsInf                   MetricsInterface
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
 	disableRelayRetry            bool
-	relayRetriesManager          *RelayRetriesManager
+	relayRetriesManager          *lavaprotocol.RelayRetriesManager
 }
 
 func NewRelayProcessor(
@@ -71,7 +72,7 @@ func NewRelayProcessor(
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
 	disableRelayRetry bool,
-	relayRetriesManager *RelayRetriesManager,
+	relayRetriesManager *lavaprotocol.RelayRetriesManager,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses
