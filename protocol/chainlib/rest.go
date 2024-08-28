@@ -173,10 +173,11 @@ func (apip *RestChainParser) getSupportedApi(name, connectionType string) (*ApiC
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatWarning("rest api not supported", common.APINotSupportedError,
+		utils.LavaFormatDebug("rest api not supported",
 			utils.LogAttr("name", name),
 			utils.LogAttr("connectionType", connectionType),
 		)
+		return nil, common.APINotSupportedError
 	}
 	api := apiCont.api
 
