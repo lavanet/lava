@@ -1240,13 +1240,9 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 	relayResult := results[0]
 	if len(results) < 2 {
 		relayRequestData := lavaprotocol.NewRelayData(ctx, relayResult.Request.RelayData.ConnectionType, relayResult.Request.RelayData.ApiUrl, relayResult.Request.RelayData.Data, relayResult.Request.RelayData.SeenBlock, reqBlock, relayResult.Request.RelayData.ApiInterface, protocolMessage.GetRPCMessage().GetHeaders(), relayResult.Request.RelayData.Addon, relayResult.Request.RelayData.Extensions)
-		// We create new protocol message from the old one, but with a new instance of relay request data.
-		chainMsg, ok := protocolMessage.(chainlib.ChainMessage)
-		if !ok {
-			return utils.LavaFormatWarning("failed data reliability relay to provider, failed converting chain message", nil, utils.LogAttr("chainMessage", protocolMessage))
-		}
 		userData := protocolMessage.GetUserData()
-		dataReliabilityProtocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
+		//  We create new protocol message from the old one, but with a new instance of relay request data.
+		dataReliabilityProtocolMessage := chainlib.NewProtocolMessage(protocolMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
 		relayProcessorDataReliability := NewRelayProcessor(ctx, relayProcessor.usedProviders, 1, protocolMessage, rpccs.consumerConsistency, rpccs.debugRelays, rpccs.rpcConsumerLogs, rpccs, rpccs.relayRetriesManager)
 		err := rpccs.sendRelayToProvider(ctx, dataReliabilityProtocolMessage, relayProcessorDataReliability, nil)
 		if err != nil {

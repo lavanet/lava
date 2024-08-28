@@ -313,7 +313,7 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 	// 1. If we have 0 successful relays and we have only node errors.
 	// 2. Hash calculation was successful.
 	// 3. Number of retries < relayCountOnNodeError.
-	if resultsCount == 0 && hashErr == nil {
+	if relayCountOnNodeError > 0 && resultsCount == 0 && hashErr == nil {
 		if nodeErrors <= relayCountOnNodeError {
 			// TODO: check chain message retry on archive. (this feature will be added in the generic parsers feature)
 
