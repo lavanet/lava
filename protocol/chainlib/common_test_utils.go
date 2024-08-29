@@ -26,6 +26,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	testcommon "github.com/lavanet/lava/v2/testutil/common"
 	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
 	plantypes "github.com/lavanet/lava/v2/x/plans/types"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
@@ -126,7 +127,7 @@ func CreateChainLibMocks(
 ) (cpar ChainParser, crout ChainRouter, cfetc chaintracker.ChainFetcher, closeServer func(), endpointRet *lavasession.RPCProviderEndpoint, errRet error) {
 	utils.SetGlobalLoggingLevel("debug")
 	closeServer = nil
-	spec, err := keepertest.GetASpec(specIndex, getToTopMostPath, nil, nil)
+	spec, err := specutils.GetASpec(specIndex, getToTopMostPath, nil, nil)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
@@ -250,7 +251,7 @@ func SetupForTests(t *testing.T, numOfProviders int, specID string, getToTopMost
 		ts.Providers = append(ts.Providers, testcommon.CreateNewAccount(ts.Ctx, *ts.Keepers, balance))
 	}
 	sdkContext := sdk.UnwrapSDKContext(ts.Ctx)
-	spec, err := keepertest.GetASpec(specID, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
+	spec, err := specutils.GetASpec(specID, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
 	if err != nil {
 		require.NoError(t, err)
 	}

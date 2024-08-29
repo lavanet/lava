@@ -134,6 +134,10 @@ func CreateRevokeFeeGrantMsg(clientCtx client.Context, chainID string) (*feegran
 	feegrantQuerier := feegrant.NewQueryClient(clientCtx)
 	res, err := feegrantQuerier.Allowance(ctx, &feegrant.QueryAllowanceRequest{Granter: vault, Grantee: providerEntry.Address})
 	if err != nil {
+		if strings.Contains(err.Error(), "fee-grant not found") {
+			// fee grant not found, do nothing
+			return nil, nil //nolint
+		}
 		return nil, utils.LavaFormatError("failed querying feegrant for gas fees for granter", err,
 			utils.LogAttr("granter", vault),
 		)
