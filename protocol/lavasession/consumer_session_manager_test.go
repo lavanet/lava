@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -221,6 +222,21 @@ func createGRPCServer(changeListener string, probeDelay time.Duration) error {
 
 const providerStr = "provider"
 
+type DirectiveHeaders struct {
+	directiveHeaders map[string]string
+}
+
+func (bpm DirectiveHeaders) GetBlockedProviders() []string {
+	if bpm.directiveHeaders == nil {
+		return nil
+	}
+	blockedProviders, ok := bpm.directiveHeaders[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME]
+	if ok {
+		return strings.Split(blockedProviders, ",")
+	}
+	return nil
+}
+
 func createPairingList(providerPrefixAddress string, enabled bool) map[uint64]*ConsumerSessionsWithProvider {
 	cswpList := make(map[uint64]*ConsumerSessionsWithProvider, 0)
 	pairingEndpoints := make([]*Endpoint, 1)
@@ -322,7 +338,9 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 	timeLimit := time.Second * 30
 	loopStartTime := time.Now()
 	for {
-		usedProviders := NewUsedProviders(map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress})
+		// implement a struct that returns: map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress} in the implementation for the DirectiveHeadersInf interface
+		directiveHeaders := DirectiveHeaders{map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress}}
+		usedProviders := NewUsedProviders(directiveHeaders)
 		css, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 		require.NoError(t, err)
 		_, expectedProviderAddress := css[pairingList[0].PublicLavaAddress]
@@ -372,7 +390,8 @@ func TestSecondChanceRecoveryFlow(t *testing.T) {
 	loopStartTime = time.Now()
 	for {
 		utils.LavaFormatDebug("Test", utils.LogAttr("csm.validAddresses", csm.validAddresses), utils.LogAttr("csm.currentlyBlockedProviderAddresses", csm.currentlyBlockedProviderAddresses), utils.LogAttr("csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus", csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus))
-		usedProviders := NewUsedProviders(map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress})
+		directiveHeaders := DirectiveHeaders{map[string]string{"lava-providers-block": pairingList[1].PublicLavaAddress}}
+		usedProviders := NewUsedProviders(directiveHeaders)
 		require.Equal(t, BlockedProviderSessionUnusedStatus, csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus)
 		css, err := csm.GetSessions(ctx, cuForFirstRequest, usedProviders, servicedBlockNumber, "", nil, common.NO_STATE, 0) // get a session
 		require.Equal(t, BlockedProviderSessionUnusedStatus, csm.pairing[pairingList[0].PublicLavaAddress].blockedAndUsedWithChanceForRecoveryStatus)

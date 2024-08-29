@@ -27,6 +27,7 @@ type SingleConsumerSession struct {
 	errorsCount        uint64
 	relayProcessor     UsedProvidersInf
 	providerUniqueId   string
+	StaticProvider     bool
 }
 
 // returns the expected latency to a threshold.
