@@ -73,7 +73,7 @@ func (k Keeper) validateIprpcMemo(ctx sdk.Context, memo types.IprpcMemo) error {
 }
 
 func printInvalidMemoWarning(memo types.IprpcMemo, description string) error {
-	utils.LavaFormatWarning("invalid ibc over iprpc memo", fmt.Errorf(description),
+	utils.LavaFormatWarning("invalid ibc over iprpc memo", fmt.Errorf("%s", description),
 		utils.LogAttr("memo", memo.String()),
 	)
 	return types.ErrIprpcMemoInvalid
