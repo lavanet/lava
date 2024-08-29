@@ -16,6 +16,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
 	"github.com/lavanet/lava/v2/utils"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
 	"github.com/lavanet/lava/v2/utils/lavaslices"
 	"github.com/lavanet/lava/v2/utils/sigs"
 	dualstakingante "github.com/lavanet/lava/v2/x/dualstaking/ante"
@@ -1156,7 +1157,7 @@ func (ts *Tester) SetupForTests(getToTopMostPath string, specId string, validato
 	}
 
 	sdkContext := sdk.UnwrapSDKContext(ts.Ctx)
-	spec, err := testkeeper.GetASpec(specId, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
+	spec, err := specutils.GetASpec(specId, getToTopMostPath, &sdkContext, &ts.Keepers.Spec)
 	if err != nil {
 		return err
 	}

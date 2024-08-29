@@ -340,7 +340,8 @@ func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addo
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatWarning("api not supported", common.APINotSupportedError, utils.Attribute{Key: "connectionType", Value: connectionType})
+		utils.LavaFormatDebug("api not supported", utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, common.APINotSupportedError
 	}
 
 	// Return an error if api is disabled
