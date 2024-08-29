@@ -16,8 +16,8 @@ import (
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v2/x/rewards/types"
 )
 
 var DefaultRelativePacketTimeoutTimestamp = uint64((time.Duration(10) * time.Minute).Nanoseconds())
@@ -27,6 +27,8 @@ const (
 	listSeparator                    = ","
 	expeditedFlagName                = "expedited"
 	minIprpcCostFlagName             = "min-cost"
+	titleFlagName                    = "title"
+	descriptionFlagName              = "description"
 	addIprpcSubscriptionsFlagName    = "add-subscriptions"
 	removeIprpcSubscriptionsFlagName = "remove-subscriptions"
 )
@@ -82,16 +84,6 @@ $ %s tx gov submit-legacy-proposal set-iprpc-data --min-cost 0ulava --add-subscr
 				return err
 			}
 
-			// get min cost
-			costStr, err := cmd.Flags().GetString(minIprpcCostFlagName)
-			if err != nil {
-				return err
-			}
-			cost, err := sdk.ParseCoinNormalized(costStr)
-			if err != nil {
-				return err
-			}
-
 			// get current iprpc subscriptions
 			q := types.NewQueryClient(clientCtx)
 			res, err := q.ShowIprpcData(context.Background(), &types.QueryShowIprpcDataRequest{})
@@ -99,6 +91,19 @@ $ %s tx gov submit-legacy-proposal set-iprpc-data --min-cost 0ulava --add-subscr
 				return err
 			}
 			subs := res.IprpcSubscriptions
+
+			// get min cost
+			costStr, err := cmd.Flags().GetString(minIprpcCostFlagName)
+			if err != nil {
+				return err
+			}
+			cost := res.MinCost
+			if costStr != "" {
+				cost, err = sdk.ParseCoinNormalized(costStr)
+				if err != nil {
+					return err
+				}
+			}
 
 			// add from msg
 			subsToAdd, err := cmd.Flags().GetStringSlice(addIprpcSubscriptionsFlagName)
@@ -137,7 +142,16 @@ $ %s tx gov submit-legacy-proposal set-iprpc-data --min-cost 0ulava --add-subscr
 				MinIprpcCost:       cost,
 			}
 
-			submitPropMsg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{&msg}, deposit, from.String(), "", "Set IPRPC data", "Set IPRPC data", isExpedited)
+			title, err := cmd.Flags().GetString(titleFlagName)
+			if err != nil {
+				return err
+			}
+
+			description, err := cmd.Flags().GetString(descriptionFlagName)
+			if err != nil {
+				return err
+			}
+			submitPropMsg, err := govv1.NewMsgSubmitProposal([]sdk.Msg{&msg}, deposit, from.String(), "", title, description, isExpedited)
 			if err != nil {
 				return err
 			}
@@ -145,10 +159,11 @@ $ %s tx gov submit-legacy-proposal set-iprpc-data --min-cost 0ulava --add-subscr
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), submitPropMsg)
 		},
 	}
-	cmd.Flags().String(minIprpcCostFlagName, "0ulava", "set minimum iprpc cost")
+	cmd.Flags().String(minIprpcCostFlagName, "", "set minimum iprpc cost")
+	cmd.Flags().String(titleFlagName, "Set IPRPC data", "proposal title")
+	cmd.Flags().String(descriptionFlagName, "Set IPRPC data", "proposal description")
 	cmd.Flags().StringSlice(addIprpcSubscriptionsFlagName, []string{}, "add iprpc eligible subscriptions")
 	cmd.Flags().StringSlice(removeIprpcSubscriptionsFlagName, []string{}, "remove iprpc eligible subscriptions")
 	cmd.Flags().Bool(expeditedFlagName, false, "set to true to make the spec proposal expedited")
-	cmd.MarkFlagRequired(minIprpcCostFlagName)
 	return cmd
 }

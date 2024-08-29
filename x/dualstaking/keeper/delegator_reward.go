@@ -6,11 +6,11 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v2/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 )
 
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
@@ -172,7 +172,7 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributer bool) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
+func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
 	block := uint64(ctx.BlockHeight())
 	zeroCoins := sdk.NewCoins()
 	epoch, _, err := k.epochstorageKeeper.GetEpochStartForBlock(ctx, block)
@@ -181,7 +181,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 			utils.Attribute{Key: "block", Value: block},
 		)
 	}
-	stakeEntry, found := k.epochstorageKeeper.GetStakeEntryForProviderEpoch(ctx, chainID, provider, epoch)
+	stakeEntry, found := k.epochstorageKeeper.GetStakeEntry(ctx, epoch, chainID, provider)
 	if !found {
 		return zeroCoins, zeroCoins, err
 	}
@@ -199,7 +199,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 		// make sure to round it down for the integers division
 		contributorReward = contributorReward.QuoInt(contributorsNum).MulInt(contributorsNum)
 		claimableRewards = totalReward.Sub(contributorReward...)
-		if !calcOnlyContributer {
+		if !calcOnlyContributor {
 			err = k.PayContributors(ctx, senderModule, contributorAddresses, contributorReward, chainID)
 			if err != nil {
 				return zeroCoins, zeroCoins, err
@@ -209,7 +209,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 
 	relevantDelegations := lavaslices.Filter(delegations,
 		func(d types.Delegation) bool {
-			return d.ChainID == chainID && d.IsFirstMonthPassed(ctx.BlockTime().UTC().Unix()) && d.Delegator != stakeEntry.Vault
+			return d.ChainID == chainID && d.IsFirstWeekPassed(ctx.BlockTime().UTC().Unix()) && d.Delegator != stakeEntry.Vault
 		})
 
 	providerReward, delegatorsReward := k.CalcRewards(ctx, stakeEntry, claimableRewards, relevantDelegations)
@@ -272,8 +272,9 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 	}
 	rewardCoins := contributorReward.QuoInt(sdk.NewInt(int64(len(contributorAddresses))))
 	details := map[string]string{
-		"rewardCoins": rewardCoins.String(),
-		"specId":      specId,
+		"total_reward_coins":           contributorReward.String(),
+		"reward_coins_per_contributor": rewardCoins.String(),
+		"chain_id":                     specId,
 	}
 	leftRewards := contributorReward
 	for i, contributorAddress := range contributorAddresses {
@@ -287,7 +288,7 @@ func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributo
 			return err
 		}
 	}
-	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "contributors rewards given")
+	utils.LogLavaEvent(ctx, k.Logger(ctx), types.ContributorRewardEventName, details, "All contributors rewarded successfully")
 	if !leftRewards.IsZero() {
 		utils.LavaFormatError("leftover rewards", nil, utils.LogAttr("rewardCoins", rewardCoins.String()), utils.LogAttr("contributorReward", contributorReward.String()), utils.LogAttr("leftRewards", leftRewards.String()))
 		// we don;t want to bail on this

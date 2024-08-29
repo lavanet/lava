@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/pairing/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -28,11 +28,7 @@ func (k Keeper) StaticProvidersList(goCtx context.Context, req *types.QueryStati
 	}
 
 	epoch := k.epochStorageKeeper.GetEpochStart(ctx)
-	stakes, found, _ := k.epochStorageKeeper.GetEpochStakeEntries(ctx, epoch, req.GetChainID())
-
-	if !found {
-		return &types.QueryStaticProvidersListResponse{}, nil
-	}
+	stakes := k.epochStorageKeeper.GetAllStakeEntriesForEpochChainId(ctx, epoch, req.ChainID)
 
 	finalProviders := []epochstoragetypes.StakeEntry{}
 	for _, stake := range stakes {

@@ -9,10 +9,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	transfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/decoder"
-	"github.com/lavanet/lava/utils/maps"
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/decoder"
+	"github.com/lavanet/lava/v2/utils/maps"
+	"github.com/lavanet/lava/v2/x/rewards/types"
 )
 
 /*

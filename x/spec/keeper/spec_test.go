@@ -9,12 +9,13 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/testutil/common"
-	keepertest "github.com/lavanet/lava/testutil/keeper"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/spec/client/utils"
-	"github.com/lavanet/lava/x/spec/keeper"
-	"github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/cmd/lavad/cmd"
+	"github.com/lavanet/lava/v2/testutil/common"
+	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
+	"github.com/lavanet/lava/v2/testutil/nullify"
+	"github.com/lavanet/lava/v2/x/spec/client/utils"
+	"github.com/lavanet/lava/v2/x/spec/keeper"
+	"github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -223,6 +224,14 @@ func TestSpecRemove(t *testing.T) {
 		_, found := ts.getSpec(item.Index)
 		require.False(t, found)
 	}
+}
+
+func TestMain(m *testing.M) {
+	// This code will run once before any test cases are executed.
+	cmd.InitSDKConfig()
+	// Run the actual tests
+	exitCode := m.Run()
+	os.Exit(exitCode)
 }
 
 func TestSpecGetAll(t *testing.T) {

@@ -9,10 +9,10 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/sigs"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	"github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/x/spec/types"
 )
 
 // SetSpec set a specific Spec in the store from its index
@@ -324,7 +324,7 @@ func (k Keeper) IsFinalizedBlock(ctx sdk.Context, chainID string, requestedBlock
 	if !found {
 		return false
 	}
-	return types.IsFinalizedBlock(requestedBlock, latestBlock, spec.BlockDistanceForFinalizedData)
+	return types.IsFinalizedBlock(requestedBlock, latestBlock, int64(spec.BlockDistanceForFinalizedData))
 }
 
 // returns the reward per contributor

@@ -12,10 +12,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/lavanet/lava/testutil/network"
-	"github.com/lavanet/lava/testutil/nullify"
-	"github.com/lavanet/lava/x/epochstorage/client/cli"
-	"github.com/lavanet/lava/x/epochstorage/types"
+	"github.com/lavanet/lava/v2/testutil/network"
+	"github.com/lavanet/lava/v2/testutil/nullify"
+	"github.com/lavanet/lava/v2/x/epochstorage/client/cli"
+	"github.com/lavanet/lava/v2/x/epochstorage/types"
 )
 
 // Prevent strconv unused error
@@ -152,7 +152,7 @@ func TestListFixatedParams(t *testing.T) {
 		var resp types.QueryAllFixatedParamsResponse
 		require.NoError(t, net.Config.Codec.UnmarshalJSON(out.Bytes(), &resp))
 		require.NoError(t, err)
-		require.Equal(t, len(objs), int(resp.Pagination.Total)-4)
+		require.Equal(t, len(objs), int(resp.Pagination.Total)-2)
 		require.ElementsMatch(t,
 			nullify.Fill(objs),
 			nullify.Fill(resp.FixatedParams),

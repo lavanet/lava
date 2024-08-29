@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/dualstaking/types"
+	"github.com/lavanet/lava/v2/x/dualstaking/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -39,4 +39,8 @@ func (k Keeper) DelegatorRewards(goCtx context.Context, req *types.QueryDelegato
 	}
 
 	return &types.QueryDelegatorRewardsResponse{Rewards: rewards}, nil
+}
+
+func (k Keeper) DelegatorRewardsList(goCtx context.Context, req *types.QueryDelegatorRewardsRequest) (res *types.QueryDelegatorRewardsResponse, err error) {
+	return k.DelegatorRewards(goCtx, req)
 }

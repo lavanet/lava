@@ -1,9 +1,10 @@
 syntax = "proto3";
 package lavanet.lava.protocol;
+import "amino/amino.proto";
 
 // this line is used by starport scaffolding # proto/tx/import
 import "lavanet/lava/protocol/params.proto";
-option go_package = "github.com/lavanet/lava/x/protocol/types";
+option go_package = "github.com/lavanet/lava/v2/x/protocol/types";
 
 // Msg defines the Msg service.
 service Msg {
@@ -13,6 +14,7 @@ service Msg {
 
 // this line is used by starport scaffolding # proto/tx/message
 message MsgSetVersion {
+    option (amino.name) = "protocol/MsgSetVersion";
     string authority = 1;
     Version version = 2;
 }

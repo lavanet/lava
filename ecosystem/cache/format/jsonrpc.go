@@ -3,7 +3,7 @@ package format
 import (
 	"encoding/json"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )

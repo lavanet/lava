@@ -1,11 +1,12 @@
 syntax = "proto3";
 package lavanet.lava.pairing;
 
-option go_package = "github.com/lavanet/lava/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v2/x/pairing/types";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/timestamp.proto";
+import "lavanet/lava/epochstorage/stake_entry.proto";
 
 service Relayer {
     rpc Relay (RelayRequest) returns (RelayReply) {}
@@ -85,12 +86,12 @@ message RelayRequest {
 
 message RelayReply {
     bytes data = 1;
-    bytes sig = 2; // sign the data hash+query hash+nonce
+    bytes sig = 2;
     reserved 3;
     int64 latest_block = 4;
     bytes finalized_blocks_hashes = 5;
-    bytes sig_blocks = 6; //sign latest_block+finalized_blocks_hashes+session_id+block_height+relay_num
-    repeated Metadata metadata = 7 [(gogoproto.nullable)   = false];
+    bytes sig_blocks = 6;
+    repeated Metadata metadata = 7 [(gogoproto.nullable) = false];
 }
 
 message QualityOfServiceReport{
@@ -109,4 +110,9 @@ message QualityOfServiceReport{
         (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
         (gogoproto.nullable)   = false
         ];
+}
+
+message PairingRelayCache {
+    repeated lavanet.lava.epochstorage.StakeEntry entries = 1 [(gogoproto.nullable) = false];
+    uint64 allowed_cu = 2;
 }

@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	commonconsts "github.com/lavanet/lava/testutil/common/consts"
-	"github.com/lavanet/lava/testutil/e2e/sdk"
-	"github.com/lavanet/lava/utils"
-	epochStorageTypes "github.com/lavanet/lava/x/epochstorage/types"
+	commonconsts "github.com/lavanet/lava/v2/testutil/common/consts"
+	"github.com/lavanet/lava/v2/testutil/e2e/sdk"
+	"github.com/lavanet/lava/v2/utils"
+	epochStorageTypes "github.com/lavanet/lava/v2/x/epochstorage/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

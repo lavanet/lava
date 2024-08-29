@@ -7,24 +7,27 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/utils"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
 type SingleConsumerSession struct {
-	CuSum             uint64
-	LatestRelayCu     uint64 // set by GetSessions cuNeededForSession
-	QoSInfo           QoSReport
-	SessionId         int64
-	Parent            *ConsumerSessionsWithProvider
-	lock              utils.LavaMutex
-	RelayNum          uint64
-	LatestBlock       int64
-	Endpoint          *Endpoint
-	BlockListed       bool // if session lost sync we blacklist it.
-	ConsecutiveErrors []error
-	errorsCount       uint64
-	relayProcessor    UsedProvidersInf
+	CuSum         uint64
+	LatestRelayCu uint64 // set by GetSessions cuNeededForSession
+	QoSInfo       QoSReport
+	SessionId     int64
+	Parent        *ConsumerSessionsWithProvider
+	lock          utils.LavaMutex
+	RelayNum      uint64
+	LatestBlock   int64
+	// Each session will holds a pointer to a connection, if the connection is lost, this session will be banned (wont be picked)
+	EndpointConnection *EndpointConnection
+	BlockListed        bool // if session lost sync we blacklist it.
+	ConsecutiveErrors  []error
+	errorsCount        uint64
+	relayProcessor     UsedProvidersInf
+	providerUniqueId   string
+	StaticProvider     bool
 }
 
 // returns the expected latency to a threshold.
@@ -100,12 +103,13 @@ func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Dura
 	}
 }
 
-func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf) error {
+func (scs *SingleConsumerSession) SetUsageForSession(cuNeededForSession uint64, qoSExcellenceReport *pairingtypes.QualityOfServiceReport, rawQoSExcellenceReport *pairingtypes.QualityOfServiceReport, usedProviders UsedProvidersInf) error {
 	scs.LatestRelayCu = cuNeededForSession // set latestRelayCu
 	scs.RelayNum += RelayNumberIncrement   // increase relayNum
 	if scs.RelayNum > 1 {
 		// we only set excellence for sessions with more than one successful relays, this guarantees data within the epoch exists
 		scs.QoSInfo.LastExcellenceQoSReport = qoSExcellenceReport
+		scs.QoSInfo.LastExcellenceQoSReportRaw = rawQoSExcellenceReport
 	}
 	scs.relayProcessor = usedProviders
 	return nil
@@ -116,6 +120,7 @@ func (scs *SingleConsumerSession) Free(err error) {
 		scs.relayProcessor.RemoveUsed(scs.Parent.PublicLavaAddress, err)
 		scs.relayProcessor = nil
 	}
+	scs.EndpointConnection.decreaseSessionUsingConnection()
 	scs.lock.Unlock()
 }
 
@@ -131,6 +136,7 @@ func (session *SingleConsumerSession) TryUseSession() (blocked bool, ok bool) {
 			session.lock.Unlock()
 			return true, false
 		}
+		session.EndpointConnection.addSessionUsingConnection()
 		return false, true
 	}
 	return false, false
@@ -147,4 +153,22 @@ func (consumerSession *SingleConsumerSession) VerifyLock() error {
 		return LockMisUseDetectedError
 	}
 	return nil
+}
+
+func (scs *SingleConsumerSession) VerifyProviderUniqueIdAndStoreIfFirstTime(providerUniqueId string) bool {
+	if scs.providerUniqueId == "" {
+		utils.LavaFormatTrace("First time getting providerUniqueId for SingleConsumerSession",
+			utils.LogAttr("sessionId", scs.SessionId),
+			utils.LogAttr("providerUniqueId", providerUniqueId),
+		)
+
+		scs.providerUniqueId = providerUniqueId
+		return true
+	}
+
+	return providerUniqueId == scs.providerUniqueId
+}
+
+func (scs *SingleConsumerSession) GetProviderUniqueId() string {
+	return scs.providerUniqueId
 }

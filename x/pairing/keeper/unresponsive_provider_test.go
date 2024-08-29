@@ -4,17 +4,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/testutil/common"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/sigs"
-	"github.com/lavanet/lava/x/pairing/keeper"
-	"github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/testutil/common"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v2/utils/rand"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	"github.com/lavanet/lava/v2/x/pairing/keeper"
+	"github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
 func (ts *tester) checkProviderJailed(provider string, shouldFreeze bool) {
-	stakeEntry, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
+	stakeEntry, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Name, provider)
 	require.True(ts.T, stakeStorageFound)
 	require.Equal(ts.T, shouldFreeze, stakeEntry.IsJailed(ts.Ctx.BlockTime().UTC().Unix()))
 	if shouldFreeze {
@@ -34,9 +34,7 @@ func (ts *tester) checkComplainerReset(provider string, epoch uint64) {
 }
 
 func (ts *tester) checkProviderStaked(provider string) {
-	_, unstakeStoragefound := ts.Keepers.Epochstorage.UnstakeEntryByAddress(ts.Ctx, provider)
-	require.False(ts.T, unstakeStoragefound)
-	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Name, provider)
+	_, stakeStorageFound := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Name, provider)
 	require.True(ts.T, stakeStorageFound)
 }
 

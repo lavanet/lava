@@ -30,6 +30,7 @@ Please note that this module replaces Cosmos SDK's mint module, which is typical
 * [Queries](#queries)
 * [Transactions](#transactions)
 * [Proposals](#proposals)
+* [Events](#events)
 
 ## Concepts
 
@@ -265,3 +266,7 @@ The rewards module has the following events:
 | `pending_ibc_iprpc_fund_created`     | a successful IPRPC over IBC fund request which creates a pending fund request entry on-chain   |
 | `cover_ibc_iprpc_fund_cost`     | a successful cost coverage of a pending IPRPC fund request that applies the request and funds the IPRPC pool   |
 | `expired_pending_ibc_iprpc_fund_removed`     | a successful removal of an expired pending IPRPC fund request   |
+| `provider_reward` | a successful reward transfer to a provider |
+| `delegator_reward` | a successful reward transfer to a delegator |
+
+Note, providers and their delegators get rewards for several reasons: subscription rewards (relay payments), providers bonus rewards and IPRPC rewards. Those reasons and additional information are included in the `provider_reward` and `delegator_reward` events.

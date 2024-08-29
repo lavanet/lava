@@ -11,13 +11,13 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/protocol/common"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v2/protocol/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 type genericErrorHandler struct{}
@@ -87,11 +87,11 @@ func (geh *genericErrorHandler) HandleJSONFormatError(replyData []byte) error {
 func (geh *genericErrorHandler) ValidateRequestAndResponseIds(nodeMessageID json.RawMessage, replyMsgID json.RawMessage) error {
 	reqId, idErr := rpcInterfaceMessages.IdFromRawMessage(nodeMessageID)
 	if idErr != nil {
-		return fmt.Errorf("Failed parsing ID " + idErr.Error())
+		return fmt.Errorf("failed parsing ID %s", idErr.Error())
 	}
 	respId, idErr := rpcInterfaceMessages.IdFromRawMessage(replyMsgID)
 	if idErr != nil {
-		return fmt.Errorf("Failed parsing ID " + idErr.Error())
+		return fmt.Errorf("failed parsing ID %s", idErr.Error())
 	}
 	if reqId != respId {
 		return fmt.Errorf("ID mismatch error")

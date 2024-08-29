@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/lavanet/lava/protocol/lavasession"
-	"github.com/lavanet/lava/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,15 +16,15 @@ func TestSignAndExtract(t *testing.T) {
 	specId := "LAV1"
 	epoch := int64(100)
 	singleConsumerSession := &lavasession.SingleConsumerSession{
-		CuSum:         20,
-		LatestRelayCu: 10, // set by GetSessions cuNeededForSession
-		QoSInfo:       lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
-		SessionId:     123,
-		Parent:        nil,
-		RelayNum:      1,
-		LatestBlock:   epoch,
-		Endpoint:      nil,
-		BlockListed:   false, // if session lost sync we blacklist it.
+		CuSum:              20,
+		LatestRelayCu:      10, // set by GetSessions cuNeededForSession
+		QoSInfo:            lavasession.QoSReport{LastQoSReport: &pairingtypes.QualityOfServiceReport{}},
+		SessionId:          123,
+		Parent:             nil,
+		RelayNum:           1,
+		LatestBlock:        epoch,
+		EndpointConnection: nil,
+		BlockListed:        false, // if session lost sync we blacklist it.
 	}
 	metadataValue := make([]pairingtypes.Metadata, 1)
 	metadataValue[0] = pairingtypes.Metadata{

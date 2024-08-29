@@ -11,10 +11,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/lavanet/lava/x/downtime/client/cli"
-	"github.com/lavanet/lava/x/downtime/keeper"
-	"github.com/lavanet/lava/x/downtime/types"
-	v1 "github.com/lavanet/lava/x/downtime/v1"
+	"github.com/lavanet/lava/v2/x/downtime/client/cli"
+	"github.com/lavanet/lava/v2/x/downtime/keeper"
+	"github.com/lavanet/lava/v2/x/downtime/types"
+	v1 "github.com/lavanet/lava/v2/x/downtime/v1"
 	"github.com/spf13/cobra"
 )
 

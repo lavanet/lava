@@ -6,18 +6,18 @@ import (
 	"strconv"
 	"time"
 
-	downtimev1 "github.com/lavanet/lava/x/downtime/v1"
+	downtimev1 "github.com/lavanet/lava/v2/x/downtime/v1"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/dgraph-io/ristretto"
-	reliabilitymanager "github.com/lavanet/lava/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/utils"
-	conflicttypes "github.com/lavanet/lava/x/conflict/types"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
-	plantypes "github.com/lavanet/lava/x/plans/types"
-	protocoltypes "github.com/lavanet/lava/x/protocol/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	reliabilitymanager "github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v2/utils"
+	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v2/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -161,12 +161,34 @@ func (csq *ConsumerStateQuery) GetPairing(ctx context.Context, chainID string, l
 }
 
 func (csq *ConsumerStateQuery) GetMaxCUForUser(ctx context.Context, chainID string, epoch uint64) (maxCu uint64, err error) {
-	address := csq.clientCtx.FromAddress.String()
-	UserEntryRes, err := csq.PairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: epoch})
-	if err != nil {
-		return 0, utils.LavaFormatError("failed querying StakeEntry for consumer", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "block", Value: epoch})
+	var userEntryRes *pairingtypes.QueryUserEntryResponse = nil
+
+	key := csq.entryKey(chainID, epoch)
+	cachedInterface, found := csq.ResponsesCache.Get(key)
+
+	if found && cachedInterface != nil {
+		if cachedResp, ok := cachedInterface.(*pairingtypes.QueryUserEntryResponse); ok {
+			userEntryRes = cachedResp
+		} else {
+			utils.LavaFormatError("invalid cache entry - failed casting response", nil, utils.Attribute{Key: "castingType", Value: "*pairingtypes.QueryUserEntryResponse"}, utils.Attribute{Key: "type", Value: fmt.Sprintf("%T", cachedInterface)})
+		}
 	}
-	return UserEntryRes.GetMaxCU(), nil
+
+	if userEntryRes == nil {
+		address := csq.clientCtx.FromAddress.String()
+		userEntryRes, err = csq.PairingQueryClient.UserEntry(ctx, &pairingtypes.QueryUserEntryRequest{ChainID: chainID, Address: address, Block: epoch})
+		if err != nil {
+			return 0, utils.LavaFormatError("failed querying StakeEntry for consumer", err, utils.Attribute{Key: "chainID", Value: chainID}, utils.Attribute{Key: "address", Value: address}, utils.Attribute{Key: "block", Value: epoch})
+		}
+
+		csq.ResponsesCache.SetWithTTL(key, userEntryRes, 1, DefaultTimeToLiveExpiration)
+	}
+
+	return userEntryRes.GetMaxCU(), nil
+}
+
+func (csq *ConsumerStateQuery) entryKey(chainID string, epoch uint64) string {
+	return MaxCuResponseKey + chainID + strconv.FormatUint(epoch, 10)
 }
 
 type EpochStateQuery struct {

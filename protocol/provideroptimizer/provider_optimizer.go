@@ -8,17 +8,16 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/utils/lavaslices"
-	"github.com/lavanet/lava/utils/rand"
-	"github.com/lavanet/lava/utils/score"
-	pairingtypes "github.com/lavanet/lava/x/pairing/types"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v2/utils/rand"
+	"github.com/lavanet/lava/v2/utils/score"
+	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	"gonum.org/v1/gonum/mathext"
 )
 
 const (
-	debug                      = false
 	CacheMaxCost               = 2000  // each item cost would be 1
 	CacheNumCounters           = 20000 // expect 2000 items
 	INITIAL_DATA_STALENESS     = 24
@@ -57,6 +56,8 @@ type ProviderData struct {
 	Latency      score.ScoreStore // will be used to calculate the latency score
 	Sync         score.ScoreStore // will be used to calculate the sync score for spectypes.LATEST_BLOCK/spectypes.NOT_APPLICABLE requests
 	SyncBlock    uint64           // will be used to calculate the probability of block error
+	LatencyRaw   score.ScoreStore // will be used when reporting reputation to the node (Latency = LatencyRaw / baseLatency)
+	SyncRaw      score.ScoreStore // will be used when reporting reputation to the node (Sync = SyncRaw / baseSync)
 }
 
 type Strategy int
@@ -90,20 +91,26 @@ func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency tim
 			if isHangingApi {
 				baseLatency += po.averageBlockTime / 2 // hanging apis take longer
 			}
-			providerData = po.updateProbeEntryLatency(providerData, latency, baseLatency, RELAY_UPDATE_WEIGHT, halfTime, sampleTime)
+			providerData = po.updateProbeEntryLatency(providerData, latency, baseLatency, RELAY_UPDATE_WEIGHT, halfTime, sampleTime, isHangingApi)
 		}
 		if syncBlock > providerData.SyncBlock {
 			// do not allow providers to go back
 			providerData.SyncBlock = syncBlock
 		}
 		syncLag := po.calculateSyncLag(latestSync, timeSync, providerData.SyncBlock, sampleTime)
-		providerData = po.updateProbeEntrySync(providerData, syncLag, po.averageBlockTime, halfTime, sampleTime)
+		providerData = po.updateProbeEntrySync(providerData, syncLag, po.averageBlockTime, halfTime, sampleTime, isHangingApi)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 	po.updateRelayTime(providerAddress, sampleTime)
-	if debug {
-		utils.LavaFormatDebug("relay update", utils.Attribute{Key: "providerData", Value: providerData}, utils.Attribute{Key: "syncBlock", Value: syncBlock}, utils.Attribute{Key: "cu", Value: cu}, utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
-	}
+
+	utils.LavaFormatTrace("relay update",
+		utils.LogAttr("providerData", providerData),
+		utils.LogAttr("syncBlock", syncBlock),
+		utils.LogAttr("cu", cu),
+		utils.LogAttr("providerAddress", providerAddress),
+		utils.LogAttr("latency", latency),
+		utils.LogAttr("success", success),
+	)
 }
 
 func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latency time.Duration, success bool) {
@@ -113,12 +120,15 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	providerData = po.updateProbeEntryAvailability(providerData, success, PROBE_UPDATE_WEIGHT, halfTime, sampleTime)
 	if success && latency > 0 {
 		// base latency for a probe is the world latency
-		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime, sampleTime)
+		providerData = po.updateProbeEntryLatency(providerData, latency, po.baseWorldLatency, PROBE_UPDATE_WEIGHT, halfTime, sampleTime, false)
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
-	if debug {
-		utils.LavaFormatDebug("probe update", utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latency", Value: latency}, utils.Attribute{Key: "success", Value: success})
-	}
+
+	utils.LavaFormatTrace("probe update",
+		utils.LogAttr("providerAddress", providerAddress),
+		utils.LogAttr("latency", latency),
+		utils.LogAttr("success", success),
+	)
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
@@ -137,8 +147,8 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			continue
 		}
 		providerData, found := po.getProviderData(providerAddress)
-		if debug && !found {
-			utils.LavaFormatDebug("provider data was not found for address", utils.Attribute{Key: "providerAddress", Value: providerAddress})
+		if !found {
+			utils.LavaFormatTrace("provider data was not found for address", utils.LogAttr("providerAddress", providerAddress))
 		}
 		// latency score
 		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
@@ -154,9 +164,14 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			syncScoreCurrent = pertrubWithNormalGaussian(syncScoreCurrent, perturbationPercentage)
 		}
 
-		if debug {
-			utils.LavaFormatDebug("scores information", utils.Attribute{Key: "providerAddress", Value: providerAddress}, utils.Attribute{Key: "latencyScoreCurrent", Value: latencyScoreCurrent}, utils.Attribute{Key: "syncScoreCurrent", Value: syncScoreCurrent}, utils.Attribute{Key: "latencyScore", Value: latencyScore}, utils.Attribute{Key: "syncScore", Value: syncScore})
-		}
+		utils.LavaFormatTrace("scores information",
+			utils.LogAttr("providerAddress", providerAddress),
+			utils.LogAttr("latencyScoreCurrent", latencyScoreCurrent),
+			utils.LogAttr("syncScoreCurrent", syncScoreCurrent),
+			utils.LogAttr("latencyScore", latencyScore),
+			utils.LogAttr("syncScore", syncScore),
+		)
+
 		// we want the minimum latency and sync diff
 		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
 			if returnedProviders[0] != "" && po.shouldExplore(len(returnedProviders), numProviders) {
@@ -172,9 +187,12 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			returnedProviders = append(returnedProviders, providerAddress)
 		}
 	}
-	if debug {
-		utils.LavaFormatDebug("returned providers", utils.Attribute{Key: "providers", Value: strings.Join(returnedProviders, ",")}, utils.Attribute{Key: "cu", Value: cu})
-	}
+
+	utils.LavaFormatTrace("returned providers",
+		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
+		utils.LogAttr("cu", cu),
+	)
+
 	return returnedProviders
 }
 
@@ -290,16 +308,16 @@ func (po *ProviderOptimizer) calculateLatencyScore(providerData ProviderData, cu
 	costTimeout := timeoutDuration.Seconds() + baseLatency.Seconds()
 	// on success we are paying the time cost of this provider
 	costSuccess := historicalLatency.Seconds()
-	if debug {
-		utils.LavaFormatDebug("latency calculation breakdown",
-			utils.Attribute{Key: "probabilityBlockError", Value: probabilityBlockError},
-			utils.Attribute{Key: "costBlockError", Value: costBlockError},
-			utils.Attribute{Key: "probabilityOfTimeout", Value: probabilityOfTimeout},
-			utils.Attribute{Key: "costTimeout", Value: costTimeout},
-			utils.Attribute{Key: "probabilityOfSuccess", Value: probabilityOfSuccess},
-			utils.Attribute{Key: "costSuccess", Value: costSuccess},
-		)
-	}
+
+	utils.LavaFormatTrace("latency calculation breakdown",
+		utils.LogAttr("probabilityBlockError", probabilityBlockError),
+		utils.LogAttr("costBlockError", costBlockError),
+		utils.LogAttr("probabilityOfTimeout", probabilityOfTimeout),
+		utils.LogAttr("costTimeout", costTimeout),
+		utils.LogAttr("probabilityOfSuccess", probabilityOfSuccess),
+		utils.LogAttr("costSuccess", costSuccess),
+	)
+
 	return probabilityBlockError*costBlockError + probabilityOfTimeout*costTimeout + probabilityOfSuccess*costSuccess
 }
 
@@ -353,10 +371,15 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 	return providerData, found
 }
 
-func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync, baseSync, halfTime time.Duration, sampleTime time.Time) ProviderData {
+func (po *ProviderOptimizer) updateProbeEntrySync(providerData ProviderData, sync, baseSync, halfTime time.Duration, sampleTime time.Time, isHangingApi bool) ProviderData {
 	newScore := score.NewScoreStore(sync.Seconds(), baseSync.Seconds(), sampleTime)
 	oldScore := providerData.Sync
-	providerData.Sync = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT, sampleTime)
+	syncScoreStore, syncRawScoreStore := score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, RELAY_UPDATE_WEIGHT, sampleTime)
+	providerData.Sync = syncScoreStore
+	if !isHangingApi {
+		// use raw qos excellence reports updates for non-hanging API only
+		providerData.SyncRaw = syncRawScoreStore
+	}
 	return providerData
 }
 
@@ -368,15 +391,21 @@ func (po *ProviderOptimizer) updateProbeEntryAvailability(providerData ProviderD
 	}
 	oldScore := providerData.Availability
 	newScore := score.NewScoreStore(newNumerator, 1, sampleTime) // denom is 1, entry time is now
-	providerData.Availability = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
+	providerData.Availability, _ = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
 	return providerData
 }
 
 // update latency data, base latency is the latency for the api defined in the spec
-func (po *ProviderOptimizer) updateProbeEntryLatency(providerData ProviderData, latency, baseLatency time.Duration, weight float64, halfTime time.Duration, sampleTime time.Time) ProviderData {
+func (po *ProviderOptimizer) updateProbeEntryLatency(providerData ProviderData, latency, baseLatency time.Duration, weight float64, halfTime time.Duration, sampleTime time.Time, isHangingApi bool) ProviderData {
 	newScore := score.NewScoreStore(latency.Seconds(), baseLatency.Seconds(), sampleTime)
 	oldScore := providerData.Latency
-	providerData.Latency = score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
+
+	latencyScoreStore, latencyRawScoreStore := score.CalculateTimeDecayFunctionUpdate(oldScore, newScore, halfTime, weight, sampleTime)
+	providerData.Latency = latencyScoreStore
+	if isHangingApi {
+		// use raw qos excellence reports updates for non-hanging API only
+		providerData.LatencyRaw = latencyRawScoreStore
+	}
 	return providerData
 }
 
@@ -464,10 +493,10 @@ func pertrubWithNormalGaussian(orig, percentage float64) float64 {
 	return orig + perturb
 }
 
-func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress string) *pairingtypes.QualityOfServiceReport {
+func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress string) (qosReport *pairingtypes.QualityOfServiceReport, rawQosReport *pairingtypes.QualityOfServiceReport) {
 	providerData, found := po.getProviderData(providerAddress)
 	if !found {
-		return nil
+		return nil, nil
 	}
 	precision := WANTED_PRECISION
 	latencyScore := turnFloatToDec(providerData.Latency.Num/providerData.Latency.Denom, precision)
@@ -482,10 +511,22 @@ func (po *ProviderOptimizer) GetExcellenceQoSReportForProvider(providerAddress s
 		Availability: availabilityScore,
 		Sync:         syncScore,
 	}
-	if debug {
-		utils.LavaFormatDebug("QoS Excellence for provider", utils.Attribute{Key: "address", Value: providerAddress}, utils.Attribute{Key: "Report", Value: ret})
+
+	latencyScoreRaw := turnFloatToDec(providerData.LatencyRaw.Num/providerData.LatencyRaw.Denom, precision)
+	syncScoreRaw := turnFloatToDec(providerData.SyncRaw.Num/providerData.SyncRaw.Denom, precision)
+	rawQosReport = &pairingtypes.QualityOfServiceReport{
+		Latency:      latencyScoreRaw,
+		Availability: availabilityScore,
+		Sync:         syncScoreRaw,
 	}
-	return ret
+
+	utils.LavaFormatTrace("QoS Excellence for provider",
+		utils.LogAttr("address", providerAddress),
+		utils.LogAttr("Report", ret),
+		utils.LogAttr("raw_report", rawQosReport),
+	)
+
+	return ret, rawQosReport
 }
 
 func turnFloatToDec(floatNum float64, precision int64) sdk.Dec {

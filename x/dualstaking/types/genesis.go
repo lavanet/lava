@@ -3,7 +3,7 @@ package types
 import (
 	fmt "fmt"
 
-	fixationstoretypes "github.com/lavanet/lava/x/fixationstore/types"
+	fixationstoretypes "github.com/lavanet/lava/v2/x/fixationstore/types"
 )
 
 // DefaultIndex is the default global index

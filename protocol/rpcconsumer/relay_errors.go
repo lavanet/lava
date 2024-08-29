@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/protocol/common"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/protocol/common"
+	"github.com/lavanet/lava/v2/utils"
 )
 
 type RelayErrors struct {
@@ -114,7 +114,7 @@ func (r *RelayErrors) mergeAllErrors() error {
 			mergedMessage += ", "
 		}
 	}
-	return fmt.Errorf(mergedMessage)
+	return fmt.Errorf("%s", mergedMessage)
 }
 
 // TODO: there's no need to save error twice and provider info twice, this can just be a relayResponse

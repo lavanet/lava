@@ -9,9 +9,9 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/utils"
-	"github.com/lavanet/lava/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
+	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 )
 
 func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
@@ -20,8 +20,7 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	blocksToNextTimerExpiry := k.BlocksToNextTimerExpiry(ctx)
 
 	// get validator distribution pool balance
-	coins := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
-	distributionPoolBalance := coins.AmountOf(k.stakingKeeper.BondDenom(ctx))
+	distributionPoolBalance := k.TotalPoolTokens(ctx, types.ValidatorsRewardsDistributionPoolName)
 	if blocksToNextTimerExpiry == 0 {
 		utils.LavaFormatWarning("blocksToNextTimerExpiry is zero", fmt.Errorf("critical: Attempt to divide by zero"),
 			utils.LogAttr("blocksToNextTimerExpiry", blocksToNextTimerExpiry),
@@ -31,15 +30,13 @@ func (k Keeper) DistributeBlockReward(ctx sdk.Context) {
 	}
 
 	// validators bonus rewards = (distributionPoolBalance * bondedTargetFactor) / blocksToNextTimerExpiry
-	validatorsRewards := bondedTargetFactor.MulInt(distributionPoolBalance).QuoInt64(blocksToNextTimerExpiry).TruncateInt()
+	validatorsRewards, _ := sdk.NewDecCoinsFromCoins(distributionPoolBalance...).MulDec(bondedTargetFactor).QuoDecTruncate(sdk.NewDec(blocksToNextTimerExpiry)).TruncateDecimal()
 	if !validatorsRewards.IsZero() {
-		coins := sdk.NewCoins(sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), validatorsRewards))
-
 		// distribute rewards to validators (same as Cosmos mint module)
-		err := k.addCollectedFees(ctx, coins)
+		err := k.addCollectedFees(ctx, validatorsRewards)
 		if err != nil {
 			utils.LavaFormatWarning("could not send validators rewards to fee collector", err,
-				utils.Attribute{Key: "rewards", Value: coins.String()},
+				utils.Attribute{Key: "rewards", Value: validatorsRewards.String()},
 			)
 		}
 	}
@@ -71,6 +68,7 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	burnRate := k.GetParams(ctx).LeftoverBurnRate
 	k.refillDistributionPool(ctx, monthsLeft, types.ValidatorsRewardsAllocationPoolName, types.ValidatorsRewardsDistributionPoolName, burnRate)
 	k.refillDistributionPool(ctx, monthsLeft, types.ProvidersRewardsAllocationPool, types.ProviderRewardsDistributionPool, sdk.OneDec())
+	k.MovePoolToPool(ctx, types.ValidatorsRewardsLeftOverPoolName, types.ValidatorsRewardsDistributionPoolName)
 
 	if monthsLeft > 1 {
 		monthsLeft -= 1
@@ -99,6 +97,22 @@ func (k Keeper) RefillRewardsPools(ctx sdk.Context, _ []byte, data []byte) {
 	}
 
 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.DistributionPoolRefillEventName, details, "distribution rewards pools refilled successfully")
+}
+
+func (k Keeper) MovePoolToPool(ctx sdk.Context, from types.Pool, to types.Pool) {
+	coins := k.TotalPoolTokens(ctx, from)
+	if coins.IsZero() {
+		return
+	}
+	err := k.bankKeeper.SendCoinsFromModuleToModule(
+		ctx,
+		string(from),
+		string(to),
+		coins,
+	)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (k Keeper) refillDistributionPool(ctx sdk.Context, monthsLeft uint64, allocationPool types.Pool, distributionPool types.Pool, burnRate sdkmath.LegacyDec) {

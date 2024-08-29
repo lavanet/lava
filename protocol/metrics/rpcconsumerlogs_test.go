@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
-	"github.com/lavanet/lava/utils"
+	"github.com/lavanet/lava/v2/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,7 +60,9 @@ func TestAnalyzeWebSocketErrorAndWriteMessage(t *testing.T) {
 		mt, _, _ := c.ReadMessage()
 		plog, _ := NewRPCConsumerLogs(nil, nil)
 		responseError := errors.New("response error")
-		plog.AnalyzeWebSocketErrorAndWriteMessage(c, mt, responseError, "seed", []byte{}, "rpcType", 1*time.Millisecond)
+		formatterMsg := plog.AnalyzeWebSocketErrorAndGetFormattedMessage(c.LocalAddr().String(), responseError, "seed", []byte{}, "rpcType", 1*time.Millisecond)
+		assert.NotNil(t, formatterMsg)
+		c.WriteMessage(mt, formatterMsg)
 	}))
 
 	listenFunc := func() {

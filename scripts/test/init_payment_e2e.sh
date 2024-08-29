@@ -5,7 +5,7 @@ set -e
 __dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $__dir/../useful_commands.sh
 
-GASPRICE="0.000000001ulava"
+GASPRICE="0.00002ulava"
 
 # Specs proposal
 lavad tx gov submit-legacy-proposal spec-add ./cookbook/specs/cosmoswasm.json,./cookbook/specs/ibc.json,./cookbook/specs/tendermint.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/cosmossdk_full.json,./cookbook/specs/lava.json --lava-dev-test -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/x/rewards/types"
+	"github.com/lavanet/lava/v2/x/rewards/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -28,6 +28,10 @@ func (k Keeper) Pools(goCtx context.Context, req *types.QueryPoolsRequest) (*typ
 		{
 			Name:    string(types.ProviderRewardsDistributionPool),
 			Balance: k.TotalPoolTokens(ctx, types.ProviderRewardsDistributionPool),
+		},
+		{
+			Name:    string(types.ValidatorsRewardsLeftOverPoolName),
+			Balance: k.TotalPoolTokens(ctx, types.ValidatorsRewardsLeftOverPoolName),
 		},
 		{
 			Name:    string(types.ProvidersRewardsAllocationPool),

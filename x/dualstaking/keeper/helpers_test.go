@@ -4,10 +4,10 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
-	"github.com/lavanet/lava/testutil/common"
-	epochstoragetypes "github.com/lavanet/lava/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/x/plans/types"
-	spectypes "github.com/lavanet/lava/x/spec/types"
+	"github.com/lavanet/lava/v2/testutil/common"
+	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+	spectypes "github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -95,7 +95,7 @@ func (ts *tester) getStakeEntry(provider string, chainID string) epochstoragetyp
 	epoch := ts.EpochStart()
 	keeper := ts.Keepers.Epochstorage
 
-	stakeEntry, found := keeper.GetStakeEntryForProviderEpoch(ts.Ctx, chainID, provider, epoch)
+	stakeEntry, found := keeper.GetStakeEntry(ts.Ctx, epoch, chainID, provider)
 	if !found {
 		panic("getStakeEntry: no stake entry: " + provider + " " + chainID)
 	}

@@ -10,9 +10,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	fixationtypes "github.com/lavanet/lava/x/fixationstore/types"
-	"github.com/lavanet/lava/x/subscription/types"
-	timerstoretypes "github.com/lavanet/lava/x/timerstore/types"
+	fixationtypes "github.com/lavanet/lava/v2/x/fixationstore/types"
+	"github.com/lavanet/lava/v2/x/subscription/types"
+	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
 )
 
 type (
@@ -30,6 +30,7 @@ type (
 		dualstakingKeeper  types.DualStakingKeeper
 		rewardsKeeper      types.RewardsKeeper
 		stakingKeeper      types.StakingKeeper
+		specKeeper         types.SpecKeeper
 
 		subsFS fixationtypes.FixationStore
 		subsTS timerstoretypes.TimerStore
@@ -52,6 +53,7 @@ func NewKeeper(
 	plansKeeper types.PlansKeeper,
 	dualstakingKeeper types.DualStakingKeeper,
 	rewardsKeeper types.RewardsKeeper,
+	specKeeper types.SpecKeeper,
 	fixationStoreKeeper types.FixationStoreKeeper,
 	timerStoreKeeper types.TimerStoreKeeper,
 	stakingKeeper types.StakingKeeper,
@@ -78,6 +80,7 @@ func NewKeeper(
 		dualstakingKeeper:  dualstakingKeeper,
 		rewardsKeeper:      rewardsKeeper,
 		stakingKeeper:      stakingKeeper,
+		specKeeper:         specKeeper,
 
 		subsFS:      fs,
 		cuTrackerFS: cuTracker,
