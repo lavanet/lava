@@ -108,6 +108,8 @@ type rpcProviderStartOptions struct {
 	rewardsSnapshotThreshold  uint
 	rewardsSnapshotTimeoutSec uint
 	healthCheckMetricsOptions *rpcProviderHealthCheckMetricsOptions
+	staticProvider            bool
+	staticSpecPath            string
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -137,6 +139,8 @@ type RPCProvider struct {
 	relaysHealthCheckInterval time.Duration
 	grpcHealthCheckEndpoint   string
 	providerUniqueId          string
+	staticProvider            bool
+	staticSpecPath            string
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -159,6 +163,9 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.relaysHealthCheckInterval = options.healthCheckMetricsOptions.relaysHealthIntervalFlag
 	rpcp.relaysMonitorAggregator = metrics.NewRelaysMonitorAggregator(rpcp.relaysHealthCheckInterval, rpcp.providerMetricsManager)
 	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
+	rpcp.staticProvider = options.staticProvider
+	rpcp.staticSpecPath = options.staticSpecPath
+
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
@@ -176,10 +183,12 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.providerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 
 	// single reward server
-	rewardDB := rewardserver.NewRewardDBWithTTL(options.rewardTTL)
-	rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, options.rewardStoragePath, options.rewardsSnapshotThreshold, options.rewardsSnapshotTimeoutSec, rpcp.chainTrackers)
-	rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
-	rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
+	if !options.staticProvider {
+		rewardDB := rewardserver.NewRewardDBWithTTL(options.rewardTTL)
+		rpcp.rewardServer = rewardserver.NewRewardServer(providerStateTracker, rpcp.providerMetricsManager, rewardDB, options.rewardStoragePath, options.rewardsSnapshotThreshold, options.rewardsSnapshotTimeoutSec, rpcp.chainTrackers)
+		rpcp.providerStateTracker.RegisterForEpochUpdates(ctx, rpcp.rewardServer)
+		rpcp.providerStateTracker.RegisterPaymentUpdatableForPayments(ctx, rpcp.rewardServer)
+	}
 	keyName, err := sigs.GetKeyName(options.clientCtx)
 	if err != nil {
 		utils.LavaFormatFatal("failed getting key name from clientCtx", err)
@@ -215,6 +224,10 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		if idx > 0 && endpoint.NetworkAddress.Address == "" { // handle undefined addresses as the previous endpoint for shared listeners
 			endpoint.NetworkAddress = options.rpcProviderEndpoints[idx-1].NetworkAddress
 		}
+	}
+
+	if rpcp.staticSpecPath != "" && len(rpcp.chainMutexes) > 1 {
+		utils.LavaFormatFatal("Provider set static spec with more than one chain. static spec configuration supports only a single chain id", nil, utils.LogAttr("Chains", rpcp.chainMutexes), utils.LogAttr("static_spec", rpcp.staticSpecPath))
 	}
 
 	specValidator := NewSpecValidator()
@@ -293,7 +306,10 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	parallelJobs := len(rpcProviderEndpoints)
 	wg.Add(parallelJobs)
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
+	// validate static spec configuration is used only on a single chain setup.
+	chainIds := make(map[string]struct{})
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
+		chainIds[rpcProviderEndpoint.ChainID] = struct{}{}
 		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) {
 			defer wg.Done()
 			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator)
@@ -340,7 +356,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 
 	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: apiInterface}
-	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
+	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpec(ctx, chainParser, rpcp.staticSpecPath, rpcEndpoint, rpcp.providerStateTracker)
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
@@ -467,7 +483,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		providerNodeSubscriptionManager = chainlib.NewProviderNodeSubscriptionManager(chainRouter, chainParser, rpcProviderServer, rpcp.privKey)
 	}
 
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rpcp.rewardServer, providerSessionManager, reliabilityManager, rpcp.privKey, rpcp.cache, chainRouter, rpcp.providerStateTracker, rpcp.addr, rpcp.lavaChainID, DEFAULT_ALLOWED_MISSING_CU, providerMetrics, relaysMonitor, providerNodeSubscriptionManager, rpcp.staticProvider)
 	// set up grpc listener
 	var listener *ProviderListener
 	func() {
@@ -500,8 +516,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	return nil
 }
 
-func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
-	err = viper_endpoints.UnmarshalKey(common.EndpointsConfigName, &endpoints)
+func ParseEndpointsCustomName(viper_endpoints *viper.Viper, endpointsConfigName string, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
+	err = viper_endpoints.UnmarshalKey(endpointsConfigName, &endpoints)
 	if err != nil {
 		utils.LavaFormatFatal("could not unmarshal endpoints", err, utils.Attribute{Key: "viper_endpoints", Value: viper_endpoints.AllSettings()})
 	}
@@ -509,6 +525,10 @@ func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints
 		endpoint.Geolocation = geolocation
 	}
 	return
+}
+
+func ParseEndpoints(viper_endpoints *viper.Viper, geolocation uint64) (endpoints []*lavasession.RPCProviderEndpoint, err error) {
+	return ParseEndpointsCustomName(viper_endpoints, common.EndpointsConfigName, geolocation)
 }
 
 func CreateRPCProviderCobraCommand() *cobra.Command {
@@ -690,6 +710,11 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			enableRelaysHealth := viper.GetBool(common.RelaysHealthEnableFlag)
 			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
 			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
+			staticProvider := viper.GetBool(common.StaticProvidersConfigName)
+			offlineSpecPath := viper.GetString(common.UseStaticSpecFlag)
+			if staticProvider {
+				utils.LavaFormatWarning("Running in static provider mode, skipping rewards and allowing requests from anyone", nil)
+			}
 
 			rpcProviderHealthCheckMetricsOptions := rpcProviderHealthCheckMetricsOptions{
 				enableRelaysHealth,
@@ -711,6 +736,8 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				rewardsSnapshotThreshold,
 				rewardsSnapshotTimeoutSec,
 				&rpcProviderHealthCheckMetricsOptions,
+				staticProvider,
+				offlineSpecPath,
 			}
 
 			rpcProvider := RPCProvider{}
@@ -722,6 +749,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	// RPCProvider command flags
 	flags.AddTxFlagsToCmd(cmdRPCProvider)
 	cmdRPCProvider.MarkFlagRequired(flags.FlagFrom)
+	cmdRPCProvider.Flags().Bool(common.StaticProvidersConfigName, false, "set the provider as static, allowing it to get requests from anyone, and skipping rewards, can be used for local tests")
 	cmdRPCProvider.Flags().Bool(common.SaveConfigFlagName, false, "save cmd args to a config file")
 	cmdRPCProvider.Flags().Uint64(common.GeolocationFlag, 0, "geolocation to run from")
 	cmdRPCProvider.MarkFlagRequired(common.GeolocationFlag)
@@ -744,6 +772,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().String(HealthCheckURLPathFlagName, HealthCheckURLPathFlagDefault, "the url path for the provider's grpc health check")
 	cmdRPCProvider.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCProvider.Flags().BoolVar(&chainlib.IgnoreSubscriptionNotConfiguredError, chainlib.IgnoreSubscriptionNotConfiguredErrorFlag, chainlib.IgnoreSubscriptionNotConfiguredError, "ignore webSocket node url not configured error, when subscription is enabled in spec")
+	cmdRPCProvider.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain, example for spec with inheritance: --use-static-spec ./cookbook/specs/ibc.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/ethermint.json,./cookbook/specs/ethereum.json,./cookbook/specs/evmos.json")
 
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider

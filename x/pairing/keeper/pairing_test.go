@@ -10,6 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/testutil/common"
 	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
 	"github.com/lavanet/lava/v2/utils/lavaslices"
 	"github.com/lavanet/lava/v2/utils/sigs"
 	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
@@ -2206,7 +2207,7 @@ func TestMixBothExetensionAndAddonPairing(t *testing.T) {
 func TestMixSelectedProvidersAndArchivePairing(t *testing.T) {
 	ts := newTester(t)
 	ts.setupForPayments(1, 0, 0) // 1 provider, 0 client, default providers-to-pair
-	specEth, err := testkeeper.GetASpec("ETH1", "../../../", nil, nil)
+	specEth, err := specutils.GetASpec("ETH1", "../../../", nil, nil)
 	if err != nil {
 		require.NoError(t, err)
 	}
