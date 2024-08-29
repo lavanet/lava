@@ -454,7 +454,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	apiName := protocolMessage.GetApi().Name
 	resetUsedOnce := true
 	setArchiveOnSpecialApi := func() {
-		if apiName == "tx" || apiName == "chunk" || apiName == "EXPERIMENTAL_tx_status" {
+		if apiName == "tx" || apiName == "chunk" {
 			archiveExtensionArray := []string{"archive"}
 			protocolMessage.OverrideExtensions(archiveExtensionArray, rpccs.chainParser.ExtensionsParser())
 			protocolMessage.RelayPrivateData().Extensions = archiveExtensionArray
