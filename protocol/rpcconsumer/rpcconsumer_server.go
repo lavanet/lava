@@ -1049,38 +1049,42 @@ func (rpccs *RPCConsumerServer) relayInner(ctx context.Context, singleConsumerSe
 
 	filteredHeaders, _, ignoredHeaders := rpccs.chainParser.HandleHeaders(reply.Metadata, chainMessage.GetApiCollection(), spectypes.Header_pass_reply)
 	reply.Metadata = filteredHeaders
+	// we add the ignored headers after we verify the relay reply.
+	defer func() {
+		reply.Metadata = append(reply.Metadata, ignoredHeaders...)
+	}()
 
-	// check the signature on the reply
+	// handle non static providers sanity
 	if !singleConsumerSession.StaticProvider {
+		// check the signature on the reply
 		err = lavaprotocol.VerifyRelayReply(ctx, reply, relayRequest, providerPublicAddress)
 		if err != nil {
 			return 0, err, false
 		}
-	}
 
-	reply.Metadata = append(reply.Metadata, ignoredHeaders...)
-
-	// TODO: response data sanity, check its under an expected format add that format to spec
-	enabled, _ := rpccs.chainParser.DataReliabilityParams()
-	if enabled && !singleConsumerSession.StaticProvider {
-		// TODO: allow static providers to detect hash mismatches,
-		// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
-		finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
-		if err != nil {
-			if sdkerrors.IsOf(err, protocolerrors.ProviderFinalizationDataAccountabilityError) {
-				utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider))
+		// TODO: response data sanity, check its under an expected format add that format to spec
+		enabled, _ := rpccs.chainParser.DataReliabilityParams()
+		if enabled {
+			// TODO: allow static providers to detect hash mismatches,
+			// triggering conflict with them is impossible so we skip this for now, but this can be used to block malicious providers
+			finalizedBlocks, err := finalizationverification.VerifyFinalizationData(reply, relayRequest, providerPublicAddress, rpccs.ConsumerAddress, existingSessionLatestBlock, int64(blockDistanceForFinalizedData), int64(blocksInFinalizationProof))
+			if err != nil {
+				if sdkerrors.IsOf(err, protocolerrors.ProviderFinalizationDataAccountabilityError) {
+					utils.LavaFormatInfo("provider finalization data accountability error", utils.LogAttr("provider", relayRequest.RelaySession.Provider))
+				}
+				return 0, err, false
 			}
-			return 0, err, false
-		}
 
-		finalizationAccountabilityError, err := rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), rpccs.ConsumerAddress, providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
-		if err != nil {
-			if finalizationAccountabilityError != nil {
-				go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationAccountabilityError, nil, singleConsumerSession.Parent)
+			finalizationAccountabilityError, err := rpccs.finalizationConsensus.UpdateFinalizedHashes(int64(blockDistanceForFinalizedData), rpccs.ConsumerAddress, providerPublicAddress, finalizedBlocks, relayRequest.RelaySession, reply)
+			if err != nil {
+				if finalizationAccountabilityError != nil {
+					go rpccs.consumerTxSender.TxConflictDetection(ctx, finalizationAccountabilityError, nil, singleConsumerSession.Parent)
+				}
+				return 0, err, false
 			}
-			return 0, err, false
 		}
 	}
+
 	relayResult.Finalized = isFinalized
 	return relayLatency, nil, false
 }
