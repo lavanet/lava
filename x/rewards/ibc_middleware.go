@@ -105,9 +105,9 @@ func (im IBCMiddleware) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet
 		return im.app.OnRecvPacket(ctx, packet, relayer)
 	} else if errors.Is(err, types.ErrIprpcMemoInvalid) {
 		// memo is in the right format of IPRPC over IBC but the data is invalid
-		utils.LavaFormatWarning("rewards module IBC middleware processing failed, memo data is invalid", err,
+		detailedErr := utils.LavaFormatWarning("rewards module IBC middleware processing failed, memo data is invalid", err,
 			utils.LogAttr("memo", memo))
-		return channeltypes.NewErrorAcknowledgement(err)
+		return channeltypes.NewErrorAcknowledgement(detailedErr)
 	}
 
 	// get the IBC tokens that were transferred to the IbcIprpcReceiverAddress
@@ -197,10 +197,17 @@ func (im IBCMiddleware) SendPacket(ctx sdk.Context, chanCap *capabilitytypes.Cap
 
 // WriteAcknowledgement is called when handling async acks. Since the OnRecvPacket code returns on a nil ack (which indicates
 // that an async ack will occur), funds can stay stuck in the IbcIprpcReceiver account (which is a temp account that should
-// not hold funds). This code simply does the missing functionally that OnRecvPacket would do if the ack was not nil.
+// not hold funds). This code simply does the missing functionality that OnRecvPacket would do if the ack was not nil.
 func (im IBCMiddleware) WriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet exported.PacketI,
 	ack exported.Acknowledgement,
 ) error {
+	details := []utils.Attribute{
+		utils.LogAttr("src_channel", packet.GetSourceChannel()),
+		utils.LogAttr("src_port", packet.GetSourcePort()),
+		utils.LogAttr("dest_channel", packet.GetDestChannel()),
+		utils.LogAttr("dest_port", packet.GetDestPort()),
+		utils.LogAttr("sequence", packet.GetSequence()),
+	}
 	err := im.keeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
 	if err != nil {
 		return err
@@ -209,22 +216,19 @@ func (im IBCMiddleware) WriteAcknowledgement(ctx sdk.Context, chanCap *capabilit
 	// unmarshal the packet's data with the transfer module codec (expect an ibc-transfer packet)
 	var data transfertypes.FungibleTokenPacketData
 	if err := transfertypes.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		return err
+		return utils.LavaFormatError("WriteAcknowledgement: unmarshal ibc transfer packet failed", err, details...)
 	}
 
 	// sanity check: validate data
+	details = append(details, utils.LogAttr("data", data))
 	if err := data.ValidateBasic(); err != nil {
-		return utils.LavaFormatError("handling async transfer packet failed", err,
-			utils.LogAttr("data", data),
-		)
+		return utils.LavaFormatError("WriteAcknowledgement: handling async transfer packet failed", err, details...)
 	}
 
 	// get the IBC tokens that were transferred to the IbcIprpcReceiverAddress
 	amount, ok := sdk.NewIntFromString(data.Amount)
 	if !ok {
-		return utils.LavaFormatError("handling async transfer packet failed", fmt.Errorf("invalid amount in ibc-transfer data"),
-			utils.LogAttr("data", data),
-		)
+		return utils.LavaFormatError("WriteAcknowledgement: handling async transfer packet failed", fmt.Errorf("invalid amount in ibc-transfer data"), details...)
 	}
 	ibcTokens := transfertypes.GetTransferCoin(packet.GetDestPort(), packet.GetDestChannel(), data.Denom, amount)
 

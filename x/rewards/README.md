@@ -130,7 +130,7 @@ In order to fund the IPRPC pool, the user's funds must cover the monthly minimum
 
 #### IPRPC over IBC
 
-To ease the funding process of funding the IPRPC pool, users can send an `ibc-transfer` transaction to fund the IPRPC pool directly from the source chain. For example, using IPRPC over IBC allows funding the IPRPC pool by sending a single `ibc-transfer` to an Osmosis node.
+To ease the process of funding the IPRPC pool, users can send an `ibc-transfer` transaction directly from the source chain. For example, using IPRPC over IBC allows funding the IPRPC pool by sending a single `ibc-transfer` to an Osmosis node.
 
 To make the `ibc-transfer` transaction fund the IPRPC pool, it must contain a custom memo with the following format:
 
@@ -146,7 +146,7 @@ To make the `ibc-transfer` transaction fund the IPRPC pool, it must contain a cu
 
 The creator field can be any name, the spec field must be an on-chain spec ID, and the duration should be the funding period (in months). Users can use the `generate-ibc-iprpc-tx` helper command with the `--memo-only` flag to generate a valid IPRPC memo. If the flag is not included, this command creates a valid `ibc-transfer` transaction JSON with a custom memo. The only remaining step is to sign and send the transaction.
 
-As mentioned above, funding the IPRPC pool requires a fee derived from the monthly minimum IPRPC cost. Because of that, all IPRPC over IBC requests are considered a pending IPRPC fund request until the fee is paid. To view the current pending requests, users can use the `pending-ibc-iprpc-funds` query and cover the minimum cost using the `cover-ibc-iprpc-fund-cost` transaction. The expiration of pending IPRPC fund requests is dictated by the `IbcIprpcExpiration`, which equals the expiration period in months.
+As mentioned above, funding the IPRPC pool requires a fee derived from the monthly minimum IPRPC cost. Consequently, all IPRPC over IBC requests are considered pending IPRPC fund requests until the fee is paid. To view the current pending requests, users can use the `pending-ibc-iprpc-funds` query and cover the minimum cost using the `cover-ibc-iprpc-fund-cost` transaction. The expiration of pending IPRPC fund requests is dictated by the `IbcIprpcExpiration`, which equals the expiration period in months.
 
 ## Parameters
 

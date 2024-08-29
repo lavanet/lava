@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -12,6 +13,9 @@ func (im IprpcMemo) IsEqual(other IprpcMemo) bool {
 }
 
 func CreateIprpcMemo(creator string, spec string, duration uint64) (memoStr string, err error) {
+	if creator == "" || spec == "" {
+		return "", fmt.Errorf("CreateIprpcMemo: creator and spec cannot be empty")
+	}
 	memo := IprpcMemo{
 		Creator:  creator,
 		Spec:     spec,
