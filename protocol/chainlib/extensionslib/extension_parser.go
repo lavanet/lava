@@ -69,7 +69,7 @@ func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage
 			continue
 		}
 		extensionParserRule := NewExtensionParserRule(extension)
-		if extensionParserRule.isPassingRule(extensionsChainMessage, latestBlock) {
+		if extensionParserRule != nil && extensionParserRule.isPassingRule(extensionsChainMessage, latestBlock) {
 			extensionsChainMessage.SetExtension(extension)
 		}
 	}
