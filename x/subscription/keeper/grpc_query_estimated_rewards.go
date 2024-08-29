@@ -41,7 +41,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 
 	// delegation of the provider
 	delegationAmount := entry.Stake
-	delegatorPart := sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).MulInt64(int64(entry.DelegateCommission)).QuoInt64(100)
+	delegatorPart := sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake)
 	if req.AmountDelegator != "" {
 		_, err := sdk.AccAddressFromBech32(req.AmountDelegator)
 		if err == nil {
@@ -69,7 +69,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		if entry.DelegateLimit.Amount.LT(entry.DelegateTotal.Amount) {
 			totalDelegations = entry.DelegateLimit.Amount
 		}
-		commission := sdk.NewDecFromInt(totalDelegations).QuoInt(entry.EffectiveStake()).MulInt64(int64(entry.DelegateCommission)).QuoInt64(100)
+		commission := sdk.NewDecFromInt(totalDelegations).QuoInt(totalStake).MulInt64(int64(entry.DelegateCommission)).QuoInt64(100)
 		delegatorPart = delegatorPart.Add(commission)
 	}
 	delegatorPart = delegatorPart.Mul(sdk.OneDec().Sub(specContribut))
@@ -99,7 +99,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		return nil, fmt.Errorf("spec emission part not found for chain ID: %s", req.ChainId)
 	}
 
-	subscriptionRewards := sdk.NewCoins(totalSubsRewards.MulInt(specEmission.Emission.MulInt64(100).RoundInt())...)
+	subscriptionRewards, _ := sdk.NewDecCoinsFromCoins(totalSubsRewards...).MulDec(specEmission.Emission).TruncateDecimal()
 	valRewards, comRewards, err := k.rewardsKeeper.CalculateValidatorsAndCommunityParticipationRewards(ctx, subscriptionRewards[0])
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate Validators And Community Participation Rewards")

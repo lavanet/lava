@@ -2,22 +2,23 @@ package lavasession
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/utils"
 )
 
 const MaximumNumberOfSelectionLockAttempts = 500
 
-func NewUsedProviders(directiveHeaders map[string]string) *UsedProviders {
+type BlockedProvidersInf interface {
+	GetBlockedProviders() []string
+}
+
+func NewUsedProviders(blockedProviders BlockedProvidersInf) *UsedProviders {
 	unwantedProviders := map[string]struct{}{}
-	if len(directiveHeaders) > 0 {
-		blockedProviders, ok := directiveHeaders[common.BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME]
-		if ok {
-			providerAddressesToBlock := strings.Split(blockedProviders, ",")
+	if blockedProviders != nil {
+		providerAddressesToBlock := blockedProviders.GetBlockedProviders()
+		if len(providerAddressesToBlock) > 0 {
 			for _, providerAddress := range providerAddressesToBlock {
 				unwantedProviders[providerAddress] = struct{}{}
 			}

@@ -153,6 +153,23 @@ type Endpoint struct {
 	Geolocation        planstypes.Geolocation
 }
 
+func (e *Endpoint) CheckSupportForServices(addon string, extensions []string) (supported bool) {
+	if addon != "" {
+		if _, ok := e.Addons[addon]; !ok {
+			return false
+		}
+	}
+	for _, extension := range extensions {
+		if extension == "" {
+			continue
+		}
+		if _, ok := e.Extensions[extension]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 type SessionWithProvider struct {
 	SessionsWithProvider *ConsumerSessionsWithProvider
 	CurrentEpoch         uint64
@@ -202,6 +219,7 @@ type ConsumerSessionsWithProvider struct {
 	// blocked provider recovery status if 0 currently not used, if 1 a session has tried resume communication with this provider
 	// if the provider is not blocked at all this field is irrelevant
 	blockedAndUsedWithChanceForRecoveryStatus uint32
+	StaticProvider                            bool
 }
 
 func NewConsumerSessionWithProvider(publicLavaAddress string, pairingEndpoints []*Endpoint, maxCu uint64, epoch uint64, stakeSize sdk.Coin) *ConsumerSessionsWithProvider {
@@ -418,6 +436,7 @@ func (cswp *ConsumerSessionsWithProvider) GetConsumerSessionInstanceFromEndpoint
 		SessionId:          randomSessionId,
 		Parent:             cswp,
 		EndpointConnection: endpointConnection,
+		StaticProvider:     cswp.StaticProvider,
 	}
 
 	consumerSession.TryUseSession()                            // we must lock the session so other requests wont get it.
@@ -457,7 +476,7 @@ func (cswp *ConsumerSessionsWithProvider) sortEndpointsByLatency(endpointInfos [
 
 // fetching an endpoint from a ConsumerSessionWithProvider and establishing a connection,
 // can fail without an error if trying to connect once to each endpoint but none of them are active.
-func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, retryDisabledEndpoints bool, getAllEndpoints bool) (connected bool, endpointsList []*EndpointAndChosenConnection, providerAddress string, err error) {
+func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSessionWithProvider(ctx context.Context, retryDisabledEndpoints bool, getAllEndpoints bool, addon string, extensionNames []string) (connected bool, endpointsList []*EndpointAndChosenConnection, providerAddress string, err error) {
 	getConnectionFromConsumerSessionsWithProvider := func(ctx context.Context) (connected bool, endpointPtr []*EndpointAndChosenConnection, allDisabled bool) {
 		endpoints := make([]*EndpointAndChosenConnection, 0)
 		cswp.Lock.Lock()
@@ -466,6 +485,12 @@ func (cswp *ConsumerSessionsWithProvider) fetchEndpointConnectionFromConsumerSes
 			// retryDisabledEndpoints will attempt to reconnect to the provider even though we have disabled the endpoint
 			// this is used on a routine that tries to reconnect to a provider that has been disabled due to being unable to connect to it.
 			if !retryDisabledEndpoints && !endpoint.Enabled {
+				continue
+			}
+
+			// check endpoint supports the requested addons
+			supported := endpoint.CheckSupportForServices(addon, extensionNames)
+			if !supported {
 				continue
 			}
 			// return
