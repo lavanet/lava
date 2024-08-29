@@ -447,6 +447,21 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	if rpccs.debugRelays {
 		utils.LavaFormatDebug("Relay initiated with the following timeout schedule", utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("newRelayTimeout", relayTimeout))
 	}
+
+	apiName := protocolMessage.GetApi().Name
+	resetUsedOnce := true
+	setArchiveOnSpecialApi := func() {
+		if apiName == "tx" || apiName == "chunk" || apiName == "EXPERIMENTAL_tx_status" {
+			archiveExtensionArray := []string{"archive"}
+			protocolMessage.OverrideExtensions(archiveExtensionArray, rpccs.chainParser.ExtensionsParser())
+			protocolMessage.RelayPrivateData().Extensions = archiveExtensionArray
+			if resetUsedOnce {
+				resetUsedOnce = false
+				relayProcessor.usedProviders = lavasession.NewUsedProviders(protocolMessage)
+			}
+		}
+	}
+
 	// create the processing timeout prior to entering the method so it wont reset every time
 	processingCtx, processingCtxCancel := context.WithTimeout(ctx, processingTimeout)
 	defer processingCtxCancel()
@@ -458,6 +473,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		if relayProcessor.HasRequiredNodeResults() {
 			gotResults <- true
 		} else {
+			setArchiveOnSpecialApi()
 			gotResults <- false
 		}
 	}
@@ -506,6 +522,7 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 		case <-startNewBatchTicker.C:
 			// only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
 			if relayProcessor.ShouldRetry(numberOfRetriesLaunched) {
+				setArchiveOnSpecialApi()
 				// limit the number of retries called from the new batch ticker flow.
 				// if we pass the limit we just wait for the relays we sent to return.
 				err := rpccs.sendRelayToProvider(processingCtx, protocolMessage, relayProcessor, nil)
