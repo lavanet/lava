@@ -1,9 +1,12 @@
 package updaters
 
 import (
+	"math"
+	"strconv"
 	"sync"
 	"time"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v2/protocol/lavasession"
 	"github.com/lavanet/lava/v2/utils"
 	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
@@ -19,20 +22,43 @@ type PairingUpdatable interface {
 	UpdateEpoch(epoch uint64)
 }
 
+type ConsumerStateQueryInf interface {
+	GetPairing(ctx context.Context, chainID string, blockHeight int64) ([]epochstoragetypes.StakeEntry, uint64, uint64, error)
+	GetMaxCUForUser(ctx context.Context, chainID string, epoch uint64) (uint64, error)
+}
+
+type ConsumerSessionManagerInf interface {
+	RPCEndpoint() lavasession.RPCEndpoint
+	UpdateAllProviders(epoch uint64, pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider) error
+}
+
 type PairingUpdater struct {
 	lock                       sync.RWMutex
-	consumerSessionManagersMap map[string][]*lavasession.ConsumerSessionManager // key is chainID so we don;t run getPairing more than once per chain
+	consumerSessionManagersMap map[string][]ConsumerSessionManagerInf // key is chainID so we don;t run getPairing more than once per chain
 	nextBlockForUpdate         uint64
-	stateQuery                 *ConsumerStateQuery
+	stateQuery                 ConsumerStateQueryInf
 	pairingUpdatables          []*PairingUpdatable
 	specId                     string
+	staticProviders            []*lavasession.RPCProviderEndpoint
 }
 
-func NewPairingUpdater(stateQuery *ConsumerStateQuery, specId string) *PairingUpdater {
-	return &PairingUpdater{consumerSessionManagersMap: map[string][]*lavasession.ConsumerSessionManager{}, stateQuery: stateQuery, specId: specId}
+func NewPairingUpdater(stateQuery ConsumerStateQueryInf, specId string) *PairingUpdater {
+	return &PairingUpdater{consumerSessionManagersMap: map[string][]ConsumerSessionManagerInf{}, stateQuery: stateQuery, specId: specId, staticProviders: []*lavasession.RPCProviderEndpoint{}}
 }
 
-func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager *lavasession.ConsumerSessionManager) error {
+func (pu *PairingUpdater) updateStaticProviders(staticProviders []*lavasession.RPCProviderEndpoint) {
+	pu.lock.Lock()
+	defer pu.lock.Unlock()
+	if len(staticProviders) > 0 && len(pu.staticProviders) == 0 {
+		for _, staticProvider := range staticProviders {
+			if staticProvider.ChainID == pu.specId {
+				pu.staticProviders = append(pu.staticProviders, staticProvider)
+			}
+		}
+	}
+}
+
+func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionManager ConsumerSessionManagerInf, staticProviders []*lavasession.RPCProviderEndpoint) error {
 	chainID := consumerSessionManager.RPCEndpoint().ChainID
 	timeoutCtx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
@@ -40,6 +66,7 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 	if err != nil {
 		return err
 	}
+	pu.updateStaticProviders(staticProviders)
 	pu.updateConsumerSessionManager(ctx, pairingList, consumerSessionManager, epoch)
 	if nextBlockForUpdate > pu.nextBlockForUpdate {
 		// make sure we don't update twice, this updates pu.nextBlockForUpdate
@@ -49,7 +76,7 @@ func (pu *PairingUpdater) RegisterPairing(ctx context.Context, consumerSessionMa
 	defer pu.lock.Unlock()
 	consumerSessionsManagersList, ok := pu.consumerSessionManagersMap[chainID]
 	if !ok {
-		pu.consumerSessionManagersMap[chainID] = []*lavasession.ConsumerSessionManager{consumerSessionManager}
+		pu.consumerSessionManagersMap[chainID] = []ConsumerSessionManagerInf{consumerSessionManager}
 		return nil
 	}
 	pu.consumerSessionManagersMap[chainID] = append(consumerSessionsManagersList, consumerSessionManager)
@@ -134,13 +161,56 @@ func (pu *PairingUpdater) Update(latestBlock int64) {
 	pu.updateInner(latestBlock)
 }
 
-func (pu *PairingUpdater) updateConsumerSessionManager(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, consumerSessionManager *lavasession.ConsumerSessionManager, epoch uint64) (err error) {
+func (pu *PairingUpdater) updateConsumerSessionManager(ctx context.Context, pairingList []epochstoragetypes.StakeEntry, consumerSessionManager ConsumerSessionManagerInf, epoch uint64) (err error) {
 	pairingListForThisCSM, err := pu.filterPairingListByEndpoint(ctx, planstypes.Geolocation(consumerSessionManager.RPCEndpoint().Geolocation), pairingList, consumerSessionManager.RPCEndpoint(), epoch)
 	if err != nil {
 		return err
 	}
+	if len(pu.staticProviders) > 0 {
+		pairingListForThisCSM = pu.addStaticProvidersToPairingList(pairingListForThisCSM, consumerSessionManager.RPCEndpoint(), epoch)
+	}
 	err = consumerSessionManager.UpdateAllProviders(epoch, pairingListForThisCSM)
 	return
+}
+
+func (pu *PairingUpdater) addStaticProvidersToPairingList(pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider, rpcEndpoint lavasession.RPCEndpoint, epoch uint64) map[uint64]*lavasession.ConsumerSessionsWithProvider {
+	startIdx := uint64(0)
+	for key := range pairingList {
+		if key >= startIdx {
+			startIdx = key + 1
+		}
+	}
+	for idx, provider := range pu.staticProviders {
+		// only take the provider entries relevant for this apiInterface
+		if provider.ApiInterface != rpcEndpoint.ApiInterface {
+			continue
+		}
+		endpoints := []*lavasession.Endpoint{}
+		for _, url := range provider.NodeUrls {
+			extensions := map[string]struct{}{}
+			for _, extension := range url.Addons {
+				extensions[extension] = struct{}{}
+			}
+			endpoint := &lavasession.Endpoint{
+				NetworkAddress: url.Url,
+				Enabled:        true,
+				Addons:         map[string]struct{}{}, // TODO: does not support addons, if required need to add the functionality to differentiate the two
+				Extensions:     extensions,
+				Connections:    []*lavasession.EndpointConnection{},
+			}
+			endpoints = append(endpoints, endpoint)
+		}
+		staticProviderEntry := lavasession.NewConsumerSessionWithProvider(
+			"StaticProvider_"+strconv.Itoa(idx),
+			endpoints,
+			math.MaxUint64/2,
+			epoch,
+			sdk.NewInt64Coin("ulava", 1000000000000000), // 1b LAVA
+		)
+		staticProviderEntry.StaticProvider = true
+		pairingList[startIdx+uint64(idx)] = staticProviderEntry
+	}
+	return pairingList
 }
 
 func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, currentGeo planstypes.Geolocation, pairingList []epochstoragetypes.StakeEntry, rpcEndpoint lavasession.RPCEndpoint, epoch uint64) (filteredList map[uint64]*lavasession.ConsumerSessionsWithProvider, err error) {
@@ -149,24 +219,11 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 	for providerIdx, provider := range pairingList {
 		//
 		// Sanity
-		providerEndpoints := provider.GetEndpoints()
-		if len(providerEndpoints) == 0 {
-			utils.LavaFormatError("skipping provider with no endoints", nil, utils.Attribute{Key: "Address", Value: provider.Address}, utils.Attribute{Key: "ChainID", Value: provider.Chain})
-			continue
-		}
-
-		relevantEndpoints := []epochstoragetypes.Endpoint{}
-		for _, endpoint := range providerEndpoints {
-			// only take into account endpoints that use the same api interface and the same geolocation
-			for _, endpointApiInterface := range endpoint.ApiInterfaces {
-				if endpointApiInterface == rpcEndpoint.ApiInterface { // we take all geolocations provided by the chain. the provider optimizer will prioritize the relevant ones
-					relevantEndpoints = append(relevantEndpoints, endpoint)
-					break
-				}
-			}
-		}
+		// only take into account endpoints that use the same api interface and the same geolocation
+		// we take all geolocations provided by the chain. the provider optimizer will prioritize the relevant ones
+		relevantEndpoints := getRelevantEndpointsFromProvider(provider, rpcEndpoint)
 		if len(relevantEndpoints) == 0 {
-			utils.LavaFormatError("skipping provider, No relevant endpoints for apiInterface", nil, utils.Attribute{Key: "Address", Value: provider.Address}, utils.Attribute{Key: "ChainID", Value: provider.Chain}, utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface}, utils.Attribute{Key: "Endpoints", Value: providerEndpoints})
+			utils.LavaFormatError("skipping provider, No relevant endpoints for apiInterface", nil, utils.Attribute{Key: "Address", Value: provider.Address}, utils.Attribute{Key: "ChainID", Value: provider.Chain}, utils.Attribute{Key: "apiInterface", Value: rpcEndpoint.ApiInterface}, utils.Attribute{Key: "Endpoints", Value: provider.GetEndpoints()})
 			continue
 		}
 
@@ -203,4 +260,23 @@ func (pu *PairingUpdater) filterPairingListByEndpoint(ctx context.Context, curre
 	}
 	// replace previous pairing with new providers
 	return pairing, nil
+}
+
+func getRelevantEndpointsFromProvider(provider epochstoragetypes.StakeEntry, rpcEndpoint lavasession.RPCEndpoint) []epochstoragetypes.Endpoint {
+	providerEndpoints := provider.GetEndpoints()
+	if len(providerEndpoints) == 0 {
+		utils.LavaFormatError("skipping provider with no endoints", nil, utils.Attribute{Key: "Address", Value: provider.Address}, utils.Attribute{Key: "ChainID", Value: provider.Chain})
+		return nil
+	}
+
+	relevantEndpoints := []epochstoragetypes.Endpoint{}
+	for _, endpoint := range providerEndpoints {
+		for _, endpointApiInterface := range endpoint.ApiInterfaces {
+			if endpointApiInterface == rpcEndpoint.ApiInterface {
+				relevantEndpoints = append(relevantEndpoints, endpoint)
+				break
+			}
+		}
+	}
+	return relevantEndpoints
 }

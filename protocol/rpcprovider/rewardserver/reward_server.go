@@ -84,6 +84,21 @@ type PaymentConfiguration struct {
 	shouldAddExpectedPayment bool
 }
 
+// used to disable provider rewards claiming
+type DisabledRewardServer struct{}
+
+func (rws *DisabledRewardServer) SendNewProof(ctx context.Context, proof *pairingtypes.RelaySession, epoch uint64, consumerAddr string, apiInterface string) (existingCU uint64, updatedWithProof bool) {
+	return 0, true
+}
+
+func (rws *DisabledRewardServer) SubscribeStarted(consumer string, epoch uint64, subscribeID string) {
+	// TODO: hold off reward claims for subscription while this is still active
+}
+
+func (rws *DisabledRewardServer) SubscribeEnded(consumer string, epoch uint64, subscribeID string) {
+	// TODO: can collect now
+}
+
 type RewardServer struct {
 	rewardsTxSender                RewardsTxSender
 	lock                           sync.RWMutex
@@ -464,6 +479,9 @@ func (rws *RewardServer) updateCUPaid(cu uint64) {
 }
 
 func (rws *RewardServer) AddDataBase(specId string, providerPublicAddress string, shardID uint) {
+	if rws == nil {
+		return
+	}
 	// the db itself doesn't need locks. as it self manages locks inside.
 	// but opening a db can race. (NewLocalDB) so we lock this method.
 	// Also, we construct the in-memory rewards from the DB, so that needs a lock as well
@@ -477,6 +495,9 @@ func (rws *RewardServer) AddDataBase(specId string, providerPublicAddress string
 }
 
 func (rws *RewardServer) CloseAllDataBases() error {
+	if rws == nil {
+		return nil
+	}
 	return rws.rewardDB.Close()
 }
 

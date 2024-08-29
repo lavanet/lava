@@ -13,7 +13,7 @@ import (
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/lavanet/lava/v2/app"
-	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
 	plantypes "github.com/lavanet/lava/v2/x/plans/types"
 	"github.com/lavanet/lava/v2/x/spec/ante"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
@@ -181,7 +181,7 @@ func TestNewExpeditedProposalFilterAnteDecorator(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
-			k, ctx := testkeeper.SpecKeeper(t)
+			k, ctx := specutils.SpecKeeper(t)
 			params := spectypes.DefaultParams()
 			params.AllowlistedExpeditedMsgs = []string{
 				proto.MessageName(&banktypes.MsgSend{}),

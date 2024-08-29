@@ -111,7 +111,7 @@ func CmdModifyProvider() *cobra.Command {
 				return utils.LavaFormatError("provider isn't staked on chainID, no address match", nil)
 			}
 
-			var validator string
+			validator := getValidator(clientCtx, clientCtx.GetFromAddress().String())
 			newAmount, err := cmd.Flags().GetString(AmountFlagName)
 			if err != nil {
 				return err
@@ -131,8 +131,6 @@ func CmdModifyProvider() *cobra.Command {
 					} else {
 						return fmt.Errorf("increasing or decreasing stake must be accompanied with validator flag")
 					}
-				} else {
-					validator = getValidator(clientCtx, clientCtx.GetFromAddress().String())
 				}
 				providerEntry.Stake = newStake
 			}

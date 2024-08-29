@@ -3,13 +3,13 @@ package keeper_test
 import (
 	"testing"
 
-	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
+	specutils "github.com/lavanet/lava/v2/utils/keeper"
 	"github.com/lavanet/lava/v2/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGetParams(t *testing.T) {
-	k, ctx := testkeeper.SpecKeeper(t)
+	k, ctx := specutils.SpecKeeper(t)
 	params := types.DefaultParams()
 
 	k.SetParams(ctx, params)
