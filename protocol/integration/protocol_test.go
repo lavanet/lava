@@ -1090,12 +1090,12 @@ func TestSameProviderConflictReport(t *testing.T) {
 
 		twoProvidersConflictSent := false
 		sameProviderConflictSent := false
-		wg := sync.WaitGroup{}
-		wg.Add(1)
+		numberOfRelays := 10
+		reported := make(chan bool, numberOfRelays)
 		txConflictDetectionMock := func(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
 			if finalizationConflict == nil {
 				require.FailNow(t, "Finalization conflict should not be nil")
-				wg.Done()
+				reported <- true
 				return nil
 			}
 			utils.LavaFormatDebug("@@@@@@@@@@@@@@@ Called conflict mock tx", utils.LogAttr("provider0", finalizationConflict.RelayFinalization_0.RelaySession.Provider), utils.LogAttr("provider0", finalizationConflict.RelayFinalization_1.RelaySession.Provider))
@@ -1114,7 +1114,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 			}
 
 			twoProvidersConflictSent = true
-			wg.Done()
+			reported <- true
 			return nil
 		}
 		mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
@@ -1137,14 +1137,16 @@ func TestSameProviderConflictReport(t *testing.T) {
 		req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress+"/cosmos/tx/v1beta1/txs", nil)
 		require.NoError(t, err)
 
-		for i := 0; i < 2; i++ {
+		for i := 0; i < numberOfRelays; i++ {
 			// Two relays to trigger both same provider conflict and
-			resp, err := client.Do(req)
-			require.NoError(t, err)
-			require.Equal(t, http.StatusOK, resp.StatusCode)
+			go func() {
+				resp, err := client.Do(req)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, resp.StatusCode)
+			}()
 		}
 		// conflict calls happen concurrently, therefore we need to wait the call.
-		wg.Wait()
+		<-reported
 		require.True(t, sameProviderConflictSent)
 		require.True(t, twoProvidersConflictSent)
 	})
