@@ -70,7 +70,7 @@ type RPCProviderServer struct {
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	providerUniqueId                string
 	StaticProvider                  bool
-	relayRetriesManager             *lavaprotocol.RelayRetriesManager
+	providerStateMachine            *ProviderStateMachine
 }
 
 type ReliabilityManagerInf interface {
@@ -133,7 +133,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.metrics = providerMetrics
 	rpcps.relaysMonitor = relaysMonitor
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
-	rpcps.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
+	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID)
 
 	rpcps.initRelaysMonitor(ctx)
 }
@@ -874,7 +874,6 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 }
 
 func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, consumerAddr sdk.AccAddress) (*chainlib.RelayReplyWrapper, error) {
-	sendTime := time.Now()
 	if debugLatency {
 		utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
@@ -884,57 +883,8 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 	if debugConsistency {
 		utils.LavaFormatDebug("adding stickiness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(common.UserData{DappId: consumerAddr.String(), ConsumerIp: common.GetIpFromGrpcContext(ctx)})))
 	}
-
-	hash, err := chainMsg.GetRawRequestHash()
-	requestHashString := ""
-	if err != nil {
-		utils.LavaFormatWarning("Failed converting message to hash", err, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
-	} else {
-		requestHashString = string(hash)
-	}
-
-	var replyWrapper *chainlib.RelayReplyWrapper
-	var isNodeError bool
-	for retryAttempt := 0; retryAttempt <= numberOfRetriesAllowedOnNodeErrors; retryAttempt++ {
-		replyWrapper, _, _, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
-		if err != nil {
-			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
-		}
-
-		if replyWrapper == nil || replyWrapper.RelayReply == nil {
-			return nil, utils.LavaFormatError("Relay Wrapper returned nil without an error", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
-		}
-
-		if debugLatency {
-			utils.LavaFormatDebug("node reply received", utils.Attribute{Key: "timeTaken", Value: time.Since(sendTime)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
-		}
-
-		// Failed fetching hash return the reply.
-		if requestHashString == "" {
-			break // We can't perform the retries as we failed fetching the request hash.
-		}
-
-		// Check for node errors
-		isNodeError, _ = chainMsg.CheckResponseError(replyWrapper.RelayReply.Data, replyWrapper.StatusCode)
-		if !isNodeError {
-			// Successful relay, remove it from the cache if we have it and return a valid response.
-			go rpcps.relayRetriesManager.RemoveHashFromCache(requestHashString)
-			return replyWrapper, nil
-		}
-
-		// On the first retry, check if this hash has already failed previously
-		if retryAttempt == 0 && rpcps.relayRetriesManager.CheckHashInCache(requestHashString) {
-			utils.LavaFormatTrace("received node error, request hash was already in cache, skipping retry")
-			break
-		}
-		utils.LavaFormatTrace("Errored Node Message, retrying message", utils.LogAttr("retry", retryAttempt))
-	}
-
-	if isNodeError {
-		utils.LavaFormatTrace("failed all relay retries for message")
-		go rpcps.relayRetriesManager.AddHashToCache(requestHashString)
-	}
-	return replyWrapper, nil
+	// use the provider state machine to send the messages
+	return rpcps.providerStateMachine.SendNodeMessage(ctx, rpcps.chainRouter, chainMsg, request)
 }
 
 func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {
