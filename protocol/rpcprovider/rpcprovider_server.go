@@ -893,10 +893,9 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 		requestHashString = string(hash)
 	}
 
-	// TODO add a flag for retry attempts
 	var replyWrapper *chainlib.RelayReplyWrapper
 	var isNodeError bool
-	for retryAttempt := 0; retryAttempt < numberOfRetriesAllowedOnNodeErrors; retryAttempt++ {
+	for retryAttempt := 0; retryAttempt <= numberOfRetriesAllowedOnNodeErrors; retryAttempt++ {
 		replyWrapper, _, _, _, _, err = rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
