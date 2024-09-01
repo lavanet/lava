@@ -40,7 +40,6 @@ func TestStateMachineHappyFlow(t *testing.T) {
 				return true, ""
 			}
 			return false, ""
-
 		}).
 		AnyTimes()
 	stateMachine.SendNodeMessage(context.Background(), chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
