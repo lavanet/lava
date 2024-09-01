@@ -7,6 +7,11 @@ import (
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 )
 
+type UserData struct {
+	ConsumerIp string
+	DappId     string
+}
+
 type BaseProtocolMessage struct {
 	ChainMessage
 	directiveHeaders map[string]string
