@@ -11,6 +11,7 @@ import (
 	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v2/protocol/common"
 	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v2/utils/lavaslices"
 	epochstorage "github.com/lavanet/lava/v2/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v2/x/spec/types"
@@ -271,6 +272,12 @@ func (bcp *BaseChainParser) GetParsingByTag(tag spectypes.FUNCTION_TAG) (parsing
 		return nil, nil, false
 	}
 	return val.Parsing, val.ApiCollection, ok
+}
+
+func (bcp *BaseChainParser) GetAllInternalPaths() []string {
+	bcp.rwLock.RLock()
+	defer bcp.rwLock.RUnlock()
+	return lavaslices.KeysSlice(bcp.internalPaths)
 }
 
 func (bcp *BaseChainParser) ExtensionParsing(addon string, parsedMessageArg *baseChainMessageContainer, extensionInfo extensionslib.ExtensionInfo) {
