@@ -65,12 +65,12 @@ func (rk RouterKey) String() string {
 
 	// if we have a route number, we add it to the key
 	if rk.methodsRouteUniqueKey != 0 {
-		retStr = append(retStr, internalPathSep+strconv.FormatInt(int64(rk.methodsRouteUniqueKey), 10))
+		retStr = append(retStr, methodRouteSep+strconv.FormatInt(int64(rk.methodsRouteUniqueKey), 10))
 	}
 
 	// if we have an internal path, we add it to the key
 	if rk.internalPath != "" {
-		retStr = append(retStr, rk.internalPath)
+		retStr = append(retStr, internalPathSep+rk.internalPath)
 	}
 
 	return RouterKeySeparator + strings.Join(retStr, RouterKeySeparator) + RouterKeySeparator
