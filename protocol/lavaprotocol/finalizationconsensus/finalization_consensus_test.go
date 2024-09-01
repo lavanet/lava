@@ -9,15 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/rand"
-	"github.com/lavanet/lava/v2/utils/sigs"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/rand"
+	"github.com/lavanet/lava/v3/utils/sigs"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/protocol/chainlib"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/chainlib"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

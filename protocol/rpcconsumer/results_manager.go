@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/lavanet/lava/v2/protocol/chainlib"
-	common "github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/utils"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/chainlib"
+	common "github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/utils"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 type ResultsManager interface {
