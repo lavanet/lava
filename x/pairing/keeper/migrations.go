@@ -26,7 +26,6 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 // MigrateVersion3To4 fix delegation total in the stake entries
 func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
 	entries := m.keeper.epochStorageKeeper.GetAllStakeEntriesCurrent(ctx)
-
 	epoch := m.keeper.epochStorageKeeper.GetCurrentNextEpoch(ctx)
 	for _, e := range entries {
 		delegations, err := m.keeper.dualstakingKeeper.GetProviderDelegators(ctx, e.Address, epoch)
@@ -43,9 +42,13 @@ func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
 		}
 		if !e.DelegateTotal.Amount.Equal(delegateTotal) {
 			fmt.Println("fixing delegate total for", e.Address, e.Chain)
+
+			e.DelegateTotal.Amount = delegateTotal
+			if e.EffectiveStake().LT(m.keeper.specKeeper.GetMinStake(ctx, e.Chain).Amount) {
+				e.Freeze()
+			}
+			m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, e)
 		}
-		e.DelegateTotal.Amount = delegateTotal
-		m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, e)
 	}
 
 	return nil
