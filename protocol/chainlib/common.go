@@ -51,7 +51,13 @@ type VerificationKey struct {
 	Addon     string
 }
 
+type VerificationCollectionKey struct {
+	ApiInterface string
+	InternalPath string
+}
+
 type VerificationContainer struct {
+	InternalPath   string
 	ConnectionType string
 	Name           string
 	ParseDirective spectypes.ParseDirective

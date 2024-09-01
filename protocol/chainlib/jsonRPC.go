@@ -61,7 +61,12 @@ func (apip *JsonRPCChainParser) getSupportedApi(name, connectionType string, int
 
 func (apip *JsonRPCChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
+		path := craftData.Path
+		if craftData.InternalPath != "" {
+			path = craftData.InternalPath
+		}
+
+		chainMessage, err := apip.ParseMsg(path, craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
 		if err == nil {
 			chainMessage.AppendHeader(metadata)
 		}
@@ -504,7 +509,10 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 		return nil, utils.LavaFormatError("rpcProviderEndpoint.NodeUrl list is empty missing node url", nil, utils.Attribute{Key: "chainID", Value: rpcProviderEndpoint.ChainID}, utils.Attribute{Key: "ApiInterface", Value: rpcProviderEndpoint.ApiInterface})
 	}
 	_, averageBlockTime, _, _ := chainParser.ChainBlockStats()
+
+	// look for the first node url that has no internal path, otherwise take first node url
 	nodeUrl := rpcProviderEndpoint.NodeUrls[0]
+
 	cp := &JrpcChainProxy{
 		BaseChainProxy: BaseChainProxy{
 			averageBlockTime: averageBlockTime,
@@ -517,57 +525,20 @@ func NewJrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 
 	validateEndpoints(rpcProviderEndpoint.NodeUrls, spectypes.APIInterfaceJsonRPC)
 
-	internalPaths := map[string]struct{}{}
-	jsonRPCChainParser, ok := chainParser.(*JsonRPCChainParser)
-	if ok {
-		internalPaths = jsonRPCChainParser.GetInternalPaths()
-	}
-	internalPathsLength := len(internalPaths)
-	if internalPathsLength > 1 && internalPathsLength == len(rpcProviderEndpoint.NodeUrls) {
-		return cp, cp.startWithSpecificInternalPaths(ctx, nConns, rpcProviderEndpoint.NodeUrls, internalPaths)
-	} else if internalPathsLength > 1 && len(rpcProviderEndpoint.NodeUrls) > 1 {
-		// provider provided specific endpoints but not enough to fill all requirements
-		return nil, utils.LavaFormatError("Internal Paths specified but not all paths provided", nil, utils.Attribute{Key: "required", Value: internalPaths}, utils.Attribute{Key: "provided", Value: rpcProviderEndpoint.NodeUrls})
-	}
-	return cp, cp.start(ctx, nConns, nodeUrl, internalPaths)
+	return cp, cp.start(ctx, nConns, nodeUrl)
 }
 
-func (cp *JrpcChainProxy) startWithSpecificInternalPaths(ctx context.Context, nConns uint, nodeUrls []common.NodeUrl, internalPaths map[string]struct{}) error {
-	for _, url := range nodeUrls {
-		_, ok := internalPaths[url.InternalPath]
-		if !ok {
-			return utils.LavaFormatError("url.InternalPath was not found in internalPaths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "url.InternalPath", Value: url.InternalPath})
-		}
-		utils.LavaFormatDebug("connecting", utils.Attribute{Key: "url", Value: url.String()})
-		conn, err := chainproxy.NewConnector(ctx, nConns, url)
-		if err != nil {
-			return err
-		}
-		cp.conn[url.InternalPath] = conn
+func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl) error {
+	conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
+	if err != nil {
+		return err
 	}
-	if len(cp.conn) != len(internalPaths) {
-		return utils.LavaFormatError("missing connectors for a chain with internal paths", nil, utils.Attribute{Key: "internalPaths", Value: internalPaths}, utils.Attribute{Key: "nodeUrls", Value: nodeUrls})
-	}
-	return nil
-}
 
-func (cp *JrpcChainProxy) start(ctx context.Context, nConns uint, nodeUrl common.NodeUrl, internalPaths map[string]struct{}) error {
-	if len(internalPaths) == 0 {
-		internalPaths = map[string]struct{}{"": {}} // add default path
+	cp.conn[nodeUrl.InternalPath] = conn
+	if cp.conn == nil {
+		return errors.New("g_conn == nil")
 	}
-	basePath := nodeUrl.Url
-	for path := range internalPaths {
-		nodeUrl.Url = basePath + path
-		conn, err := chainproxy.NewConnector(ctx, nConns, nodeUrl)
-		if err != nil {
-			return err
-		}
 
-		cp.conn[path] = conn
-		if cp.conn == nil {
-			return errors.New("g_conn == nil")
-		}
-	}
 	return nil
 }
 

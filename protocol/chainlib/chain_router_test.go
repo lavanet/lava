@@ -1110,7 +1110,7 @@ func TestChainRouterWithMethodRoutes(t *testing.T) {
 					}
 					chainMsg, err := chainParser.ParseMsg(api, nil, "", nil, extension)
 					require.NoError(t, err)
-					chainProxy, err := chainRouter.GetChainProxySupporting(ctx, chainMsg.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMsg.GetExtensions()), api)
+					chainProxy, err := chainRouter.GetChainProxySupporting(ctx, chainMsg.GetApiCollection().CollectionData.AddOn, common.GetExtensionNames(chainMsg.GetExtensions()), api, "")
 					require.NoError(t, err)
 					_, urlFromProxy := chainProxy.GetChainProxyInformation()
 					require.Equal(t, url, urlFromProxy, "chainMsg: %+v, ---chainRouter: %+v", chainMsg, chainRouter)

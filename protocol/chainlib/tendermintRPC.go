@@ -61,7 +61,12 @@ func (apip *TendermintChainParser) getSupportedApi(name, connectionType string) 
 
 func (apip *TendermintChainParser) CraftMessage(parsing *spectypes.ParseDirective, connectionType string, craftData *CraftData, metadata []pairingtypes.Metadata) (ChainMessageForSend, error) {
 	if craftData != nil {
-		chainMessage, err := apip.ParseMsg("", craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
+		path := craftData.Path
+		if craftData.InternalPath != "" {
+			path = craftData.InternalPath
+		}
+
+		chainMessage, err := apip.ParseMsg(path, craftData.Data, craftData.ConnectionType, metadata, extensionslib.ExtensionInfo{LatestBlock: 0})
 		if err == nil {
 			chainMessage.AppendHeader(metadata)
 		}
@@ -605,7 +610,7 @@ func NewtendermintRpcChainProxy(ctx context.Context, nConns uint, rpcProviderEnd
 		},
 	}
 
-	return cp, cp.start(ctx, nConns, nodeUrl, nil)
+	return cp, cp.start(ctx, nConns, nodeUrl)
 }
 
 func (cp *tendermintRpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage ChainMessageForSend) (relayReply *RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, err error) {
