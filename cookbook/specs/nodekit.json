@@ -82,6 +82,12 @@
                         ],
                         "inheritance_apis": [],
                         "parse_directives": [],
+                        "headers": [
+                            {
+                                "name": "x-chain-id",
+                                "kind": "pass_both"
+                            }
+                        ],
                         "verifications": [
                         ]
                     }

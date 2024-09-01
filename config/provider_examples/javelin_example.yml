@@ -1,0 +1,7 @@
+endpoints:
+    - api-interface: jsonrpc
+      chain-id: JAVELIN
+      network-address:
+        address: "127.0.0.1:2221"
+      node-urls:
+        - url: http://devnet.nodekit.xyz/javelin/rpc
