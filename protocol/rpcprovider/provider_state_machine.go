@@ -17,13 +17,13 @@ type RelaySender interface {
 }
 
 type ProviderStateMachine struct {
-	relayRetriesManager *lavaprotocol.RelayRetriesManager
+	relayRetriesManager lavaprotocol.RelayRetriesManagerInf
 	chainId             string
 }
 
-func NewProviderStateMachine(chainId string) *ProviderStateMachine {
+func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf) *ProviderStateMachine {
 	return &ProviderStateMachine{
-		relayRetriesManager: lavaprotocol.NewRelayRetriesManager(),
+		relayRetriesManager: relayRetriesManager,
 		chainId:             chainId,
 	}
 }
@@ -56,6 +56,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, relaySende
 
 		// Failed fetching hash return the reply.
 		if requestHashString == "" {
+			utils.LavaFormatWarning("Failed to hash request, shouldn't happen", nil, utils.LogAttr("url", request.RelayData.ApiUrl), utils.LogAttr("data", string(request.RelayData.Data)))
 			break // We can't perform the retries as we failed fetching the request hash.
 		}
 

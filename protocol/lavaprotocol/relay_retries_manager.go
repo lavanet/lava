@@ -14,6 +14,12 @@ const (
 	RetryEntryTTL    = 6 * time.Hour
 )
 
+type RelayRetriesManagerInf interface {
+	AddHashToCache(hash string)
+	CheckHashInCache(hash string) bool
+	RemoveHashFromCache(hash string)
+}
+
 // On node errors we try to send a relay again.
 // If this relay failed all retries we ban it from retries to avoid spam and save resources
 type RelayRetriesManager struct {
