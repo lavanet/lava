@@ -21,11 +21,22 @@ type RouterKey struct {
 }
 
 func NewRouterKey(extensions []string) RouterKey {
+	routerKey := RouterKey{}
+	routerKey.SetExtensions(extensions)
+	return routerKey
+}
+
+func GetEmptyRouterKey() RouterKey {
+	return NewRouterKey([]string{})
+}
+
+func (rk *RouterKey) SetExtensions(extensions []string) {
 	// make sure addons have no repetitions
-	uniqueExtensions := map[string]struct{}{}
+	uniqueExtensions := map[string]struct{}{"": {}} // init with the empty extension
 	for _, extension := range extensions {
 		uniqueExtensions[extension] = struct{}{}
 	}
+
 	uniqueExtensionsSlice := []string{}
 	for addon := range uniqueExtensions { // we are sorting this anyway so we don't have to keep order
 		uniqueExtensionsSlice = append(uniqueExtensionsSlice, addon)
@@ -33,13 +44,7 @@ func NewRouterKey(extensions []string) RouterKey {
 
 	sort.Strings(uniqueExtensionsSlice)
 
-	return RouterKey{
-		uniqueExtensions: uniqueExtensionsSlice,
-	}
-}
-
-func GetEmptyRouterKey() RouterKey {
-	return NewRouterKey([]string{})
+	rk.uniqueExtensions = uniqueExtensionsSlice
 }
 
 func (rk *RouterKey) ApplyMethodsRoute(routeNum int) {
