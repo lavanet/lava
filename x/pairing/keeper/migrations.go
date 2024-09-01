@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v2/utils"
 	v2 "github.com/lavanet/lava/v2/x/pairing/migrations/v2"
 )
 
@@ -30,7 +31,8 @@ func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
 	for _, e := range entries {
 		delegations, err := m.keeper.dualstakingKeeper.GetProviderDelegators(ctx, e.Address, epoch)
 		if err != nil {
-			return err
+			utils.LavaFormatError("failed getting provider delegators at MigrateVersion3To4", err, utils.LogAttr("provider", e.Address))
+			continue
 		}
 
 		delegateTotal := sdk.ZeroInt()
