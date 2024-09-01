@@ -133,6 +133,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err := cfg.RegisterMigration(types.ModuleName, 2, migrator.MigrateVersion2To3); err != nil {
 		panic(fmt.Errorf("%s: failed to register migration to v3: %w", types.ModuleName, err))
 	}
+	// register v3 -> v4 migration
+	if err := cfg.RegisterMigration(types.ModuleName, 3, migrator.MigrateVersion3To4); err != nil {
+		panic(fmt.Errorf("%s: failed to register migration to v4: %w", types.ModuleName, err))
+	}
 }
 
 // RegisterInvariants registers the capability module's invariants.
