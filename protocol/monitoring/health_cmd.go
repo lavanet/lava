@@ -68,7 +68,7 @@ func CreateHealthCobraCommand() *cobra.Command {
 		Short: `start monitoring the health of the protocol processes defined in the config`,
 		Long:  `config_file if a path to a yml file`,
 		Example: `health config/health_examples/health_config.yml
-example health config files can be found in https://github.com/lavanet/lava/v3/blob/main/config/health_examples
+example health config files can be found in https://github.com/lavanet/lava/blob/main/config/health_examples
 subscription_addresses:
 	- lava@...
 	- lava@...
