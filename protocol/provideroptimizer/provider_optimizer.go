@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	CacheMaxCost               = 2000  // each item cost would be 1
+	CacheMaxCost               = 20000 // each item cost would be 1
 	CacheNumCounters           = 20000 // expect 2000 items
 	INITIAL_DATA_STALENESS     = 24
 	HALF_LIFE_TIME             = time.Hour

@@ -378,7 +378,6 @@ func (cs *ChainTracker) start(ctx context.Context, pollingTime time.Duration) er
 		for {
 			select {
 			case <-cs.timer.C:
-				utils.LavaFormatTrace("chain tracker fetch triggered", utils.LogAttr("currTime", time.Now()))
 				fetchCtx, cancel := context.WithTimeout(ctx, 3*time.Second) // protect this flow from hanging code
 				err := cs.fetchAllPreviousBlocksIfNecessary(fetchCtx)
 				cancel()
@@ -424,12 +423,6 @@ func (cs *ChainTracker) updateTimer(tickerBaseTime time.Duration, fetchFails uin
 	if PollingMultiplier > 1 {
 		newTickerDuration /= time.Duration(PollingMultiplier)
 	}
-
-	utils.LavaFormatTrace("state tracker ticker set",
-		utils.LogAttr("timeSinceLastUpdate", timeSinceLastUpdate),
-		utils.LogAttr("time", time.Now()),
-		utils.LogAttr("newTickerDuration", newTickerDuration),
-	)
 
 	cs.timer = time.NewTimer(newTickerDuration)
 }

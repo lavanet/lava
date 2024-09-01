@@ -1,4 +1,4 @@
-package rpcconsumer
+package lavaprotocol
 
 import (
 	"time"
@@ -8,7 +8,17 @@ import (
 )
 
 // entries ttl duration
-const RetryEntryTTL = 6 * time.Hour
+const (
+	CacheMaxCost     = 10 * 1024 // each item cost would be 1
+	CacheNumCounters = 20000     // expect 2000 items
+	RetryEntryTTL    = 6 * time.Hour
+)
+
+type RelayRetriesManagerInf interface {
+	AddHashToCache(hash string)
+	CheckHashInCache(hash string) bool
+	RemoveHashFromCache(hash string)
+}
 
 // On node errors we try to send a relay again.
 // If this relay failed all retries we ban it from retries to avoid spam and save resources

@@ -13,6 +13,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/protocol/chainlib"
 	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v3/protocol/lavasession"
 	"github.com/lavanet/lava/v3/utils"
 )
@@ -55,7 +56,7 @@ type RelayProcessor struct {
 	allowSessionDegradation      uint32 // used in the scenario where extension was previously used.
 	metricsInf                   MetricsInterface
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
-	relayRetriesManager          *RelayRetriesManager
+	relayRetriesManager          *lavaprotocol.RelayRetriesManager
 	ResultsManager
 }
 
@@ -68,7 +69,7 @@ func NewRelayProcessor(
 	debugRelay bool,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
-	relayRetriesManager *RelayRetriesManager,
+	relayRetriesManager *lavaprotocol.RelayRetriesManager,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
 	selection := Quorum // select the majority of node responses

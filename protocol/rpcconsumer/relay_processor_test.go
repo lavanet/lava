@@ -10,6 +10,7 @@ import (
 	"github.com/lavanet/lava/v3/protocol/chainlib"
 	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
 	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v3/protocol/lavasession"
 	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
@@ -31,7 +32,7 @@ func (romm *relayProcessorMetricsMock) GetChainIdAndApiInterface() (string, stri
 }
 
 var (
-	relayRetriesManagerInstance = NewRelayRetriesManager()
+	relayRetriesManagerInstance = lavaprotocol.NewRelayRetriesManager()
 	relayProcessorMetrics       = &relayProcessorMetricsMock{}
 )
 
