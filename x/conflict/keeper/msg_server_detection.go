@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/x/conflict/types"
-	pairingfilters "github.com/lavanet/lava/v2/x/pairing/keeper/filters"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/x/conflict/types"
+	pairingfilters "github.com/lavanet/lava/v3/x/pairing/keeper/filters"
 	"golang.org/x/exp/slices"
 )
 

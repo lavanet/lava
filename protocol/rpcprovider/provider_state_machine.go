@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/lavanet/lava/v2/protocol/chainlib"
-	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v2/utils"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	"github.com/lavanet/lava/v3/protocol/chainlib"
+	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v3/utils"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 )
 
 type RelaySender interface {

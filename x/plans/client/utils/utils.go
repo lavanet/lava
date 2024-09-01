@@ -6,9 +6,9 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	commontypes "github.com/lavanet/lava/v2/utils/common/types"
-	"github.com/lavanet/lava/v2/utils/decoder"
-	"github.com/lavanet/lava/v2/x/plans/types"
+	commontypes "github.com/lavanet/lava/v3/utils/common/types"
+	"github.com/lavanet/lava/v3/utils/decoder"
+	"github.com/lavanet/lava/v3/x/plans/types"
 	"github.com/mitchellh/mapstructure"
 )
 

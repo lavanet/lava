@@ -3,8 +3,8 @@ package chainlib
 import (
 	"strings"
 
-	"github.com/lavanet/lava/v2/protocol/common"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	"github.com/lavanet/lava/v3/protocol/common"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 )
 
 type UserData struct {
