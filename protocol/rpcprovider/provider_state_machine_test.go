@@ -24,8 +24,8 @@ func (rs *relaySenderMock) SendNodeMsg(ctx context.Context, ch chan interface{},
 }
 
 func TestStateMachineHappyFlow(t *testing.T) {
-	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager())
 	relaySender := &relaySenderMock{}
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender)
 	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
 	chainMsgMock.
 		EXPECT().
@@ -43,15 +43,15 @@ func TestStateMachineHappyFlow(t *testing.T) {
 
 		}).
 		AnyTimes()
-	stateMachine.SendNodeMessage(context.Background(), relaySender, chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
+	stateMachine.SendNodeMessage(context.Background(), chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
 	hash, _ := chainMsgMock.GetRawRequestHash()
 	require.Equal(t, relaySender.numberOfTimesHitSendNodeMsg, numberOfRetriesAllowedOnNodeErrors)
 	require.False(t, stateMachine.relayRetriesManager.CheckHashInCache(string(hash)))
 }
 
 func TestStateMachineAllFailureFlows(t *testing.T) {
-	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager())
 	relaySender := &relaySenderMock{}
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender)
 	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
 	returnFalse := false
 	chainMsgMock.
@@ -69,7 +69,7 @@ func TestStateMachineAllFailureFlows(t *testing.T) {
 			return true, ""
 		}).
 		AnyTimes()
-	stateMachine.SendNodeMessage(context.Background(), relaySender, chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
+	stateMachine.SendNodeMessage(context.Background(), chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
 	hash, _ := chainMsgMock.GetRawRequestHash()
 	require.Equal(t, numberOfRetriesAllowedOnNodeErrors+1, relaySender.numberOfTimesHitSendNodeMsg)
 	for i := 0; i < 10; i++ {
@@ -82,14 +82,13 @@ func TestStateMachineAllFailureFlows(t *testing.T) {
 	require.True(t, stateMachine.relayRetriesManager.CheckHashInCache(string(hash)))
 
 	// send second relay with same hash.
-	relaySender2 := &relaySenderMock{}
-	stateMachine.SendNodeMessage(context.Background(), relaySender2, chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
-	require.Equal(t, 1, relaySender2.numberOfTimesHitSendNodeMsg) // no retries.
+	stateMachine.SendNodeMessage(context.Background(), chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
+	require.Equal(t, 4, relaySender.numberOfTimesHitSendNodeMsg) // no retries.
 }
 
 func TestStateMachineFailureAndRecoveryFlow(t *testing.T) {
-	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager())
 	relaySender := &relaySenderMock{}
+	stateMachine := NewProviderStateMachine("test", lavaprotocol.NewRelayRetriesManager(), relaySender)
 	chainMsgMock := chainlib.NewMockChainMessage(gomock.NewController(t))
 	returnFalse := false
 	chainMsgMock.
@@ -107,7 +106,7 @@ func TestStateMachineFailureAndRecoveryFlow(t *testing.T) {
 			return true, ""
 		}).
 		AnyTimes()
-	stateMachine.SendNodeMessage(context.Background(), relaySender, chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
+	stateMachine.SendNodeMessage(context.Background(), chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
 	hash, _ := chainMsgMock.GetRawRequestHash()
 	require.Equal(t, numberOfRetriesAllowedOnNodeErrors+1, relaySender.numberOfTimesHitSendNodeMsg)
 	for i := 0; i < 10; i++ {
@@ -120,10 +119,9 @@ func TestStateMachineFailureAndRecoveryFlow(t *testing.T) {
 	require.True(t, stateMachine.relayRetriesManager.CheckHashInCache(string(hash)))
 
 	// send second relay with same hash.
-	relaySender3 := &relaySenderMock{}
 	returnFalse = true
-	stateMachine.SendNodeMessage(context.Background(), relaySender3, chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
-	require.Equal(t, 1, relaySender3.numberOfTimesHitSendNodeMsg) // no retries, first success.
+	stateMachine.SendNodeMessage(context.Background(), chainMsgMock, &types.RelayRequest{RelayData: &types.RelayPrivateData{Extensions: []string{}}})
+	require.Equal(t, 4, relaySender.numberOfTimesHitSendNodeMsg) // no retries, first success.
 	// wait for routine to end..
 	for i := 0; i < 10; i++ {
 		if !stateMachine.relayRetriesManager.CheckHashInCache(string(hash)) {

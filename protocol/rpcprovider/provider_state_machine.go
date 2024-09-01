@@ -19,16 +19,18 @@ type RelaySender interface {
 type ProviderStateMachine struct {
 	relayRetriesManager lavaprotocol.RelayRetriesManagerInf
 	chainId             string
+	relaySender         RelaySender
 }
 
-func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf) *ProviderStateMachine {
+func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender RelaySender) *ProviderStateMachine {
 	return &ProviderStateMachine{
 		relayRetriesManager: relayRetriesManager,
 		chainId:             chainId,
+		relaySender:         relaySender,
 	}
 }
 
-func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, relaySender RelaySender, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) (*chainlib.RelayReplyWrapper, error) {
+func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, chainMsg chainlib.ChainMessage, request *pairingtypes.RelayRequest) (*chainlib.RelayReplyWrapper, error) {
 	hash, err := chainMsg.GetRawRequestHash()
 	requestHashString := ""
 	if err != nil {
@@ -41,7 +43,7 @@ func (psm *ProviderStateMachine) SendNodeMessage(ctx context.Context, relaySende
 	var isNodeError bool
 	for retryAttempt := 0; retryAttempt <= numberOfRetriesAllowedOnNodeErrors; retryAttempt++ {
 		sendTime := time.Now()
-		replyWrapper, _, _, _, _, err = relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
+		replyWrapper, _, _, _, _, err = psm.relaySender.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
 		if err != nil {
 			return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.LogAttr("attempt", retryAttempt), utils.LogAttr("GUID", ctx), utils.LogAttr("specID", psm.chainId))
 		}
