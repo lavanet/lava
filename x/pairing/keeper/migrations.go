@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	v2 "github.com/lavanet/lava/v2/x/pairing/migrations/v2"
 )
@@ -38,6 +40,9 @@ func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
 				continue
 			}
 			delegateTotal = delegateTotal.Add(d.Amount.Amount)
+		}
+		if !e.DelegateTotal.Amount.Equal(delegateTotal) {
+			fmt.Println("fixing delegate total for", e.Address, e.Chain)
 		}
 		e.DelegateTotal.Amount = delegateTotal
 		m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, e)
