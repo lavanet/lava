@@ -235,7 +235,7 @@ func (bcp *BaseChainParser) GetVerifications(supported []string, internalPath st
 			}
 		}
 	}
-	return
+	return retVerifications, nil
 }
 
 func (bcp *BaseChainParser) Construct(spec spectypes.Spec, internalPaths map[string]struct{}, taggedApis map[spectypes.FUNCTION_TAG]TaggedContainer,
