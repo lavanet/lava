@@ -1,0 +1,378 @@
+package rpcconsumer
+
+import (
+	context "context"
+	"time"
+
+	"github.com/lavanet/lava/v2/protocol/chainlib"
+	common "github.com/lavanet/lava/v2/protocol/common"
+	lavasession "github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v2/protocol/metrics"
+	"github.com/lavanet/lava/v2/utils"
+)
+
+type RelayStateMachine interface {
+	GetProtocolMessage() chainlib.ProtocolMessage
+	InitStateAndSendFirstMessage() error
+	SetRelayProcessor(relayProcessor *RelayProcessor)
+	ShouldRetry(numberOfRetriesLaunched int) bool
+	WaitForResultsWithFallback() (*RelayProcessor, error)
+	GetDebugState() bool
+	GetRelayTaskChannel() chan RelayStateSendInstructions
+	UpdateBatch(err error)
+}
+
+type ConsumerRelaySender interface {
+	sendRelayToProvider(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayProcessor *RelayProcessor, analytics *metrics.RelayMetrics) (errRet error)
+	getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration)
+	GetChainIdAndApiInterface() (string, string)
+}
+
+type tickerMetricSetterInf interface {
+	SetRelaySentByNewBatchTickerMetric(chainId string, apiInterface string)
+}
+
+type ConsumerRelayStateMachine struct {
+	ctx                  context.Context // same context as user context.
+	parentRelayProcessor *RelayProcessor // parent pointer
+	relaySender          ConsumerRelaySender
+	protocolMessage      chainlib.ProtocolMessage // only one should make changes to protocol message is ConsumerRelayStateMachine.
+	analytics            *metrics.RelayMetrics    // first relay metrics
+	selection            Selection
+	debugRelays          bool
+	tickerMetricSetter   tickerMetricSetterInf
+	batchUpdate          chan error
+}
+
+func NewRelayStateMachine(
+	ctx context.Context,
+	relaySender ConsumerRelaySender,
+	protocolMessage chainlib.ProtocolMessage,
+	analytics *metrics.RelayMetrics,
+	debugRelays bool,
+	tickerMetricSetter tickerMetricSetterInf,
+) RelayStateMachine {
+	selection := Quorum // select the majority of node responses
+	if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
+		selection = BestResult // select the majority of node successes
+	}
+
+	return &ConsumerRelayStateMachine{
+		ctx:                ctx,
+		relaySender:        relaySender,
+		protocolMessage:    protocolMessage,
+		analytics:          analytics,
+		selection:          selection,
+		debugRelays:        debugRelays,
+		tickerMetricSetter: tickerMetricSetter,
+	}
+}
+
+func (rp *ConsumerRelayStateMachine) ShouldRetry(numberOfRetriesLaunched int) bool {
+	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
+		return false
+	}
+	// best result sends to top 10 providers anyway.
+	return rp.selection != BestResult
+}
+
+func (crsm *ConsumerRelayStateMachine) SetRelayProcessor(relayProcessor *RelayProcessor) {
+	crsm.parentRelayProcessor = relayProcessor
+}
+
+func (crsm *ConsumerRelayStateMachine) GetDebugState() bool {
+	return crsm.debugRelays
+}
+
+func (crsm *ConsumerRelayStateMachine) GetProtocolMessage() chainlib.ProtocolMessage {
+	return crsm.protocolMessage
+}
+
+// initializing the send message flow. making sure we have at least one provider to send the message to
+// before we continue to the second stage of the relay
+func (crsm *ConsumerRelayStateMachine) InitStateAndSendFirstMessage() (err error) {
+	// try sending a relay 3 times. if failed return the error
+	for retryFirstRelayAttempt := 0; retryFirstRelayAttempt < SendRelayAttempts; retryFirstRelayAttempt++ {
+		// record the relay analytics only on the first attempt.
+		if crsm.analytics != nil && retryFirstRelayAttempt > 0 {
+			crsm.analytics = nil
+		}
+		if crsm.parentRelayProcessor == nil {
+			return utils.LavaFormatError("InitStateAndSendFirstMessage - Relay Processor is nil", nil)
+		}
+
+		err = crsm.relaySender.sendRelayToProvider(crsm.ctx, crsm.GetProtocolMessage(), crsm.parentRelayProcessor, crsm.analytics)
+
+		// check if we had an error. if we did, try again.
+		if err == nil {
+			break
+		}
+		utils.LavaFormatWarning("Failed retryFirstRelayAttempt, will retry.", err, utils.LogAttr("attempt", retryFirstRelayAttempt))
+	}
+	return err
+}
+
+type RelayStateSendInstructions struct {
+	protocolMessage chainlib.ProtocolMessage
+	analytics       *metrics.RelayMetrics
+	err             error
+	done            bool
+}
+
+func (rssi *RelayStateSendInstructions) IsDone() bool {
+	return rssi.done || rssi.err != nil
+}
+
+func (crsm *ConsumerRelayStateMachine) getAnalytics(batchNumber int) *metrics.RelayMetrics {
+	if batchNumber == 0 {
+		return crsm.analytics
+	}
+	return nil
+}
+
+func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSendInstructions {
+	relayTaskChannel := make(chan RelayStateSendInstructions)
+	go func() {
+		// a channel to be notified processing was done, true means we have results and can return
+		gotResults := make(chan bool)
+		processingTimeout, relayTimeout := crsm.relaySender.getProcessingTimeout(crsm.GetProtocolMessage())
+		if crsm.debugRelays {
+			utils.LavaFormatDebug("Relay initiated with the following timeout schedule", utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("newRelayTimeout", relayTimeout))
+		}
+		// create the processing timeout prior to entering the method so it wont reset every time
+		processingCtx, processingCtxCancel := context.WithTimeout(crsm.ctx, processingTimeout)
+		defer processingCtxCancel()
+
+		readResultsFromProcessor := func() {
+			// ProcessResults is reading responses while blocking until the conditions are met
+			crsm.parentRelayProcessor.WaitForResults(processingCtx)
+			// decide if we need to resend or not
+			if crsm.parentRelayProcessor.HasRequiredNodeResults() {
+				gotResults <- true
+			} else {
+				gotResults <- false
+			}
+		}
+		go readResultsFromProcessor()
+		returnCondition := make(chan error)
+		// used for checking whether to return an error to the user or to allow other channels return their result first see detailed description on the switch case below
+		validateReturnCondition := func(err error) {
+			currentlyUsedIsEmptyCounter := 0
+			if err != nil {
+				for validateNoProvidersAreUsed := 0; validateNoProvidersAreUsed < numberOfTimesToCheckCurrentlyUsedIsEmpty; validateNoProvidersAreUsed++ {
+					if crsm.parentRelayProcessor.usedProviders.CurrentlyUsed() == 0 {
+						currentlyUsedIsEmptyCounter++
+					}
+					time.Sleep(5 * time.Millisecond)
+				}
+				// we failed to send a batch of relays, if there are no active sends we can terminate after validating X amount of times to make sure no racing channels
+				if currentlyUsedIsEmptyCounter >= numberOfTimesToCheckCurrentlyUsedIsEmpty {
+					returnCondition <- err
+				}
+			}
+		}
+
+		// Send First Message.
+		relayTaskChannel <- RelayStateSendInstructions{
+			protocolMessage: crsm.GetProtocolMessage(),
+			analytics:       crsm.analytics,
+		}
+
+		// Initialize parameters
+		startNewBatchTicker := time.NewTicker(relayTimeout) // Every relay timeout we send a new batch
+		defer startNewBatchTicker.Stop()
+		batchNumber := 0 // Current batch number
+		consecutiveBatchErrors := 0
+
+		// Start the relay state machine
+		for {
+			select {
+			// Getting batch update for either errors sending message or successful batches
+			case err := <-crsm.batchUpdate:
+				if err != nil { // Error handling
+					consecutiveBatchErrors++                        // Increase consecutive error counter
+					if consecutiveBatchErrors > SendRelayAttempts { // If we failed sending a message more than "SendRelayAttempts" time in a row.
+						if batchNumber == 0 { // First relay attempt.
+							utils.LavaFormatWarning("Failed Sending First Message", err, utils.LogAttr("consecutive errors", consecutiveBatchErrors))
+						}
+						go validateReturnCondition(err) // Check if we have ongoing messages pending return.
+					} else {
+						// Failed sending message, but we still want to attempt sending messages.
+						relayTaskChannel <- RelayStateSendInstructions{
+							protocolMessage: crsm.GetProtocolMessage(),
+							analytics:       crsm.getAnalytics(batchNumber),
+						}
+					}
+					continue
+				}
+				// Successfully sent message.
+				batchNumber++
+				// Reset consecutiveBatchErrors
+				consecutiveBatchErrors = 0
+				// Batch number validation, should never happen.
+				if batchNumber != crsm.parentRelayProcessor.usedProviders.BatchNumber() {
+					// Mismatch, return error
+					relayTaskChannel <- RelayStateSendInstructions{
+						err:  utils.LavaFormatError("Batch Number mismatch between state machine and used providers", nil, utils.LogAttr("batchNumber", batchNumber), utils.LogAttr("crsm.parentRelayProcessor.usedProviders.BatchNumber()", crsm.parentRelayProcessor.usedProviders.BatchNumber())),
+						done: true,
+					}
+					return
+				}
+			case success := <-gotResults:
+				// If we had a successful result or if we don't need to retry return what we currently have
+				if success || !crsm.ShouldRetry(batchNumber) { // Check wether we can return the valid results or we need to send another relay
+					relayTaskChannel <- RelayStateSendInstructions{done: true}
+					return
+				}
+				relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
+				go readResultsFromProcessor()
+			case <-startNewBatchTicker.C:
+				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
+				if crsm.ShouldRetry(batchNumber) {
+					relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
+					// Add ticker launch metrics
+					go crsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(crsm.relaySender.GetChainIdAndApiInterface())
+				}
+			case returnErr := <-returnCondition:
+				// we use this channel because there could be a race condition between us releasing the provider and about to send the return
+				// to an error happening on another relay processor's routine. this can cause an error that returns to the user
+				// if we don't release the case, it will cause the success case condition to not be executed
+				// detailed scenario:
+				// sending first relay -> waiting -> sending second relay -> getting an error on the second relay (not returning yet) ->
+				// -> (in parallel) first relay finished, removing from CurrentlyUsed providers -> checking currently used (on second failed relay) -> returning error instead of the successful relay.
+				// by releasing the case we allow the channel to be chosen again by the successful case.
+				relayTaskChannel <- RelayStateSendInstructions{err: returnErr, done: true}
+				return
+			case <-processingCtx.Done():
+				// In case we got a processing timeout we return context deadline exceeded to the user.
+				userData := crsm.GetProtocolMessage().GetUserData()
+				utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
+					utils.LogAttr("processingTimeout", processingTimeout),
+					utils.LogAttr("dappId", userData.DappId),
+					utils.LogAttr("consumerIp", userData.ConsumerIp),
+					utils.LogAttr("protocolMessage.GetApi().Name", crsm.GetProtocolMessage().GetApi().Name),
+					utils.LogAttr("GUID", crsm.ctx),
+					utils.LogAttr("relayProcessor", crsm.parentRelayProcessor),
+				)
+				// returning the context error
+				relayTaskChannel <- RelayStateSendInstructions{err: processingCtx.Err(), done: true}
+				return
+			}
+		}
+	}()
+	return relayTaskChannel
+}
+
+func (crsm *ConsumerRelayStateMachine) UpdateBatch(err error) {
+	// todo logic if err == nil increase batch number
+	// else, increase consecutive batch failures
+
+	// if batch increased and err != nil - not good, print error
+	// number of batch errors. (up to 3 attempts)
+	// top batch number == 10. (up to 10 relay batches)
+	crsm.batchUpdate <- err
+}
+
+func (crsm *ConsumerRelayStateMachine) WaitForResultsWithFallback() (*RelayProcessor, error) {
+	// a channel to be notified processing was done, true means we have results and can return
+	gotResults := make(chan bool)
+	processingTimeout, relayTimeout := crsm.relaySender.getProcessingTimeout(crsm.GetProtocolMessage())
+	if crsm.debugRelays {
+		utils.LavaFormatDebug("Relay initiated with the following timeout schedule", utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("newRelayTimeout", relayTimeout))
+	}
+	// create the processing timeout prior to entering the method so it wont reset every time
+	processingCtx, processingCtxCancel := context.WithTimeout(crsm.ctx, processingTimeout)
+	defer processingCtxCancel()
+
+	readResultsFromProcessor := func() {
+		// ProcessResults is reading responses while blocking until the conditions are met
+		crsm.parentRelayProcessor.WaitForResults(processingCtx)
+		// decide if we need to resend or not
+		if crsm.parentRelayProcessor.HasRequiredNodeResults() {
+			gotResults <- true
+		} else {
+			gotResults <- false
+		}
+	}
+	go readResultsFromProcessor()
+
+	returnCondition := make(chan error)
+	// used for checking whether to return an error to the user or to allow other channels return their result first see detailed description on the switch case below
+	validateReturnCondition := func(err error) {
+		currentlyUsedIsEmptyCounter := 0
+		if err != nil {
+			for validateNoProvidersAreUsed := 0; validateNoProvidersAreUsed < numberOfTimesToCheckCurrentlyUsedIsEmpty; validateNoProvidersAreUsed++ {
+				if crsm.parentRelayProcessor.usedProviders.CurrentlyUsed() == 0 {
+					currentlyUsedIsEmptyCounter++
+				}
+				time.Sleep(5 * time.Millisecond)
+			}
+			// we failed to send a batch of relays, if there are no active sends we can terminate after validating X amount of times to make sure no racing channels
+			if currentlyUsedIsEmptyCounter >= numberOfTimesToCheckCurrentlyUsedIsEmpty {
+				returnCondition <- err
+			}
+		}
+	}
+
+	// every relay timeout we send a new batch
+	startNewBatchTicker := time.NewTicker(relayTimeout)
+	defer startNewBatchTicker.Stop()
+	numberOfRetriesLaunched := 0
+	for {
+		select {
+		case success := <-gotResults:
+			if success { // check wether we can return the valid results or we need to send another relay
+				return crsm.parentRelayProcessor, nil
+			}
+			// if we don't need to retry return what we currently have
+			if !crsm.parentRelayProcessor.ShouldRetry(numberOfRetriesLaunched) {
+				return crsm.parentRelayProcessor, nil
+			}
+			// otherwise continue sending another relay
+			err := crsm.relaySender.sendRelayToProvider(crsm.ctx, crsm.GetProtocolMessage(), crsm.parentRelayProcessor, nil)
+			go validateReturnCondition(err)
+			go readResultsFromProcessor()
+			// increase number of retries launched only if we still have pairing available, if we exhausted the list we don't want to break early
+			// so it will just wait for the entire duration of the relay
+			if !lavasession.PairingListEmptyError.Is(err) {
+				numberOfRetriesLaunched++
+			}
+		case <-startNewBatchTicker.C:
+			// only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
+			if crsm.parentRelayProcessor.ShouldRetry(numberOfRetriesLaunched) {
+				// limit the number of retries called from the new batch ticker flow.
+				// if we pass the limit we just wait for the relays we sent to return.
+				err := crsm.relaySender.sendRelayToProvider(crsm.ctx, crsm.GetProtocolMessage(), crsm.parentRelayProcessor, nil)
+				go validateReturnCondition(err)
+				// add ticker launch metrics
+				go crsm.tickerMetricSetter.SetRelaySentByNewBatchTickerMetric(crsm.relaySender.GetChainIdAndApiInterface())
+				// increase number of retries launched only if we still have pairing available, if we exhausted the list we don't want to break early
+				// so it will just wait for the entire duration of the relay
+				if !lavasession.PairingListEmptyError.Is(err) {
+					numberOfRetriesLaunched++
+				}
+			}
+		case returnErr := <-returnCondition:
+			// we use this channel because there could be a race condition between us releasing the provider and about to send the return
+			// to an error happening on another relay processor's routine. this can cause an error that returns to the user
+			// if we don't release the case, it will cause the success case condition to not be executed
+			// detailed scenario:
+			// sending first relay -> waiting -> sending second relay -> getting an error on the second relay (not returning yet) ->
+			// -> (in parallel) first relay finished, removing from CurrentlyUsed providers -> checking currently used (on second failed relay) -> returning error instead of the successful relay.
+			// by releasing the case we allow the channel to be chosen again by the successful case.
+			return crsm.parentRelayProcessor, returnErr
+		case <-processingCtx.Done():
+			// in case we got a processing timeout we return context deadline exceeded to the user.
+			userData := crsm.GetProtocolMessage().GetUserData()
+			utils.LavaFormatWarning("Relay Got processingCtx timeout", nil,
+				utils.LogAttr("processingTimeout", processingTimeout),
+				utils.LogAttr("dappId", userData.DappId),
+				utils.LogAttr("consumerIp", userData.ConsumerIp),
+				utils.LogAttr("protocolMessage.GetApi().Name", crsm.GetProtocolMessage().GetApi().Name),
+				utils.LogAttr("GUID", crsm.ctx),
+				utils.LogAttr("relayProcessor", crsm.parentRelayProcessor),
+			)
+			return crsm.parentRelayProcessor, processingCtx.Err() // returning the context error
+		}
+	}
+}
