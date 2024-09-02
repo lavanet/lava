@@ -141,14 +141,28 @@ func (cri *chainRouterImpl) BatchNodeUrlsByServices(rpcProviderEndpoint lavasess
 	}
 
 	// check if batch has http configured, if not, add a websocket one
+	// prefer one without internal path
 	if !httpRouteSet {
-		firstWsRoute := returnedBatch[firstWsRouterKey.String()]
-		returnedBatch[firstWsRouterKey.String()] = lavasession.RPCProviderEndpoint{
-			NetworkAddress: firstWsRoute.NetworkAddress,
-			ChainID:        firstWsRoute.ChainID,
-			ApiInterface:   firstWsRoute.ApiInterface,
-			Geolocation:    firstWsRoute.Geolocation,
-			NodeUrls:       []common.NodeUrl{firstWsNodeUrl},
+		websocketRouterKey := lavasession.GetEmptyRouterKey()
+		websocketRouterKey.SetExtensions([]string{WebSocketExtension})
+		if websocketRouter, ok := returnedBatch[websocketRouterKey.String()]; ok {
+			// we have a websocket route with no internal paths
+			returnedBatch[lavasession.GetEmptyRouterKey().String()] = lavasession.RPCProviderEndpoint{
+				NetworkAddress: websocketRouter.NetworkAddress,
+				ChainID:        websocketRouter.ChainID,
+				ApiInterface:   websocketRouter.ApiInterface,
+				Geolocation:    websocketRouter.Geolocation,
+				NodeUrls:       websocketRouter.NodeUrls,
+			}
+		} else {
+			firstWsRoute := returnedBatch[firstWsRouterKey.String()]
+			returnedBatch[firstWsRouterKey.String()] = lavasession.RPCProviderEndpoint{
+				NetworkAddress: firstWsRoute.NetworkAddress,
+				ChainID:        firstWsRoute.ChainID,
+				ApiInterface:   firstWsRoute.ApiInterface,
+				Geolocation:    firstWsRoute.Geolocation,
+				NodeUrls:       []common.NodeUrl{firstWsNodeUrl},
+			}
 		}
 	}
 
