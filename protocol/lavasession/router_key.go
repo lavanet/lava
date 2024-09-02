@@ -32,9 +32,13 @@ func GetEmptyRouterKey() RouterKey {
 
 func (rk *RouterKey) SetExtensions(extensions []string) {
 	// make sure addons have no repetitions
-	uniqueExtensions := map[string]struct{}{"": {}} // init with the empty extension
-	for _, extension := range extensions {
-		uniqueExtensions[extension] = struct{}{}
+	uniqueExtensions := map[string]struct{}{} // init with the empty extension
+	if len(extensions) == 0 {
+		uniqueExtensions[""] = struct{}{}
+	} else {
+		for _, extension := range extensions {
+			uniqueExtensions[extension] = struct{}{}
+		}
 	}
 
 	uniqueExtensionsSlice := []string{}

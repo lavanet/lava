@@ -1291,8 +1291,8 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 					},
 				},
 				expectedServicesToNodeUrls: map[string][]common.NodeUrl{
-					"||":           {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
-					"||websocket|": {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
+					"||":          {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
+					"|websocket|": {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
 				},
 			},
 			{
@@ -1324,7 +1324,7 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 						{Url: "wss://localhost:1234/ws", InternalPath: ""},
 						{Url: "wss://localhost:1234/websocket", InternalPath: ""},
 					},
-					"||websocket|": {
+					"|websocket|": {
 						{Url: "wss://localhost:1234/ws", InternalPath: ""},
 						{Url: "wss://localhost:1234/websocket", InternalPath: ""},
 					},
@@ -1355,8 +1355,8 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 					},
 				},
 				expectedServicesToNodeUrls: map[string][]common.NodeUrl{
-					"||":           {{Url: "https://localhost:1234", InternalPath: ""}},
-					"||websocket|": {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
+					"||":          {{Url: "https://localhost:1234", InternalPath: ""}},
+					"|websocket|": {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
 				},
 			},
 			{
@@ -1584,8 +1584,8 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 					},
 				},
 				expectedServicesToNodeUrls: map[string][]common.NodeUrl{
-					"||":           {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
-					"||websocket|": {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
+					"||":          {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
+					"|websocket|": {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
 				},
 			},
 			{
@@ -1631,9 +1631,9 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 					},
 				},
 				expectedServicesToNodeUrls: map[string][]common.NodeUrl{
-					"||":                            {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
-					"||websocket|":                  {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
-					"||websocket|internal-path:/X|": {{Url: "wss://localhost:1234/ws/X", InternalPath: "/X"}},
+					"||":                           {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
+					"|websocket|":                  {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
+					"|websocket|internal-path:/X|": {{Url: "wss://localhost:1234/ws/X", InternalPath: "/X"}},
 				},
 			},
 			{
@@ -1683,10 +1683,10 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 					},
 				},
 				expectedServicesToNodeUrls: map[string][]common.NodeUrl{
-					"||":                            {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
-					"||websocket|":                  {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
-					"||websocket|internal-path:/X|": {{Url: "wss://localhost:1234/ws/X", InternalPath: "/X"}},
-					"||websocket|internal-path:/Y|": {{Url: "wss://localhost:1234/ws/Y", InternalPath: "/Y"}},
+					"||":                           {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
+					"|websocket|":                  {{Url: "wss://localhost:1234/ws", InternalPath: ""}},
+					"|websocket|internal-path:/X|": {{Url: "wss://localhost:1234/ws/X", InternalPath: "/X"}},
+					"|websocket|internal-path:/Y|": {{Url: "wss://localhost:1234/ws/Y", InternalPath: "/Y"}},
 				},
 			},
 			{
@@ -1732,9 +1732,9 @@ func TestChainRouterWithInternalPaths(t *testing.T) {
 					},
 				},
 				expectedServicesToNodeUrls: map[string][]common.NodeUrl{
-					"||internal-path:/Y|":           {{Url: "wss://localhost:1234/ws/Y", InternalPath: "/Y"}},
-					"||websocket|internal-path:/X|": {{Url: "wss://localhost:1234/ws/X", InternalPath: "/X"}},
-					"||websocket|internal-path:/Y|": {{Url: "wss://localhost:1234/ws/Y", InternalPath: "/Y"}},
+					"||internal-path:/Y|":          {{Url: "wss://localhost:1234/ws/Y", InternalPath: "/Y"}},
+					"|websocket|internal-path:/X|": {{Url: "wss://localhost:1234/ws/X", InternalPath: "/X"}},
+					"|websocket|internal-path:/Y|": {{Url: "wss://localhost:1234/ws/Y", InternalPath: "/Y"}},
 				},
 			},
 		}...)
