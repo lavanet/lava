@@ -11,9 +11,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	websocket2 "github.com/gorilla/websocket"
-	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

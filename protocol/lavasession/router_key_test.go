@@ -3,7 +3,7 @@ package lavasession_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v2/protocol/lavasession"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
 	"github.com/stretchr/testify/require"
 )
 

@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 

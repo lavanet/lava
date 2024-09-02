@@ -7,10 +7,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/utils"
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/utils"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	planstypes "github.com/lavanet/lava/v3/x/plans/types"
 	"golang.org/x/net/context"
 )
 

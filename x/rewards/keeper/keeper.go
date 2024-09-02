@@ -9,8 +9,8 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/lavanet/lava/v2/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
+	"github.com/lavanet/lava/v3/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
 )
 
 type (
