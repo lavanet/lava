@@ -166,7 +166,6 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 						// Failed sending message, but we still want to attempt sending more.
 						relayTaskChannel <- RelayStateSendInstructions{
 							protocolMessage: crsm.GetProtocolMessage(),
-							analytics:       nil,
 						}
 					}
 					continue

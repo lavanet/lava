@@ -439,16 +439,16 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	)
 
 	relayTaskChannel := relayProcessor.GetRelayTaskChannel()
-	for {
-		select {
-		case task := <-relayTaskChannel:
-			if task.IsDone() {
-				return relayProcessor, task.err
-			}
-			err := rpccs.sendRelayToProvider(ctx, task.protocolMessage, relayProcessor, task.analytics)
-			relayProcessor.UpdateBatch(err)
+	for task := range relayTaskChannel {
+		if task.IsDone() {
+			return relayProcessor, task.err
 		}
+		err := rpccs.sendRelayToProvider(ctx, task.protocolMessage, relayProcessor, task.analytics)
+		relayProcessor.UpdateBatch(err)
 	}
+
+	// shouldn't happen.
+	return relayProcessor, utils.LavaFormatError("ProcessRelaySend channel closed unexpectedly", nil)
 }
 
 func (rpccs *RPCConsumerServer) CreateDappKey(userData common.UserData) string {
