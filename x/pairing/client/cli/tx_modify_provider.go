@@ -170,17 +170,6 @@ func CmdModifyProvider() *cobra.Command {
 				}
 			}
 
-			if cmd.Flags().Changed(types.FlagDelegationLimit) {
-				delegationLimitStr, err := cmd.Flags().GetString(types.FlagDelegationLimit)
-				if err != nil {
-					return err
-				}
-				providerEntry.DelegateLimit, err = sdk.ParseCoinNormalized(delegationLimitStr)
-				if err != nil {
-					return err
-				}
-			}
-
 			identity, err := cmd.Flags().GetString(types.FlagIdentity)
 			if err != nil {
 				return err
@@ -226,7 +215,6 @@ func CmdModifyProvider() *cobra.Command {
 				providerEntry.Stake,
 				providerEntry.Endpoints,
 				providerEntry.Geolocation,
-				providerEntry.DelegateLimit,
 				providerEntry.DelegateCommission,
 				providerEntry.Address,
 				description,
@@ -248,7 +236,6 @@ func CmdModifyProvider() *cobra.Command {
 	cmd.Flags().String(ValidatorFlag, "", "the validator to delegate/bond to with dualstaking")
 	cmd.Flags().Var(&geolocationVar, GeolocationFlag, `modify the provider's geolocation int32 or string value "EU,US"`)
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
-	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
 	cmd.Flags().String(types.FlagSecurityContact, "", "The provider's security contact info")
