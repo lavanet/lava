@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
-	"github.com/lavanet/lava/v2/testutil/common"
-	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
-	"github.com/lavanet/lava/v2/testutil/nullify"
-	"github.com/lavanet/lava/v2/x/plans/types"
+	"github.com/lavanet/lava/v3/testutil/common"
+	testkeeper "github.com/lavanet/lava/v3/testutil/keeper"
+	"github.com/lavanet/lava/v3/testutil/nullify"
+	"github.com/lavanet/lava/v3/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
 

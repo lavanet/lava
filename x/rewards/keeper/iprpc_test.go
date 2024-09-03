@@ -6,9 +6,9 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	"github.com/lavanet/lava/v2/testutil/common"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
+	"github.com/lavanet/lava/v3/testutil/common"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
 	"github.com/stretchr/testify/require"
 )
 
