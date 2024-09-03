@@ -62,6 +62,7 @@ func NewRelayStateMachine(
 		selection:          selection,
 		debugRelays:        debugRelays,
 		tickerMetricSetter: tickerMetricSetter,
+		batchUpdate:        make(chan error),
 	}
 }
 
@@ -229,5 +230,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 }
 
 func (crsm *ConsumerRelayStateMachine) UpdateBatch(err error) {
+	utils.LavaFormatDebug("updating batch before")
 	crsm.batchUpdate <- err
+	utils.LavaFormatDebug("updating batch after")
 }
