@@ -47,7 +47,7 @@ func (apip *RestChainParser) CraftMessage(parsing *spectypes.ParseDirective, con
 		var data []byte = nil
 		urlPath := string(craftData.Data)
 		if craftData.ConnectionType == http.MethodPost {
-			// on post we need to send the data provided in the templace with the api as method
+			// on post we need to send the data provided in the template with the api as method
 			data = craftData.Data
 			urlPath = craftData.Path
 		}
