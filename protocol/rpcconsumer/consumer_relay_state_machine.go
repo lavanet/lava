@@ -4,10 +4,10 @@ import (
 	context "context"
 	"time"
 
-	"github.com/lavanet/lava/v2/protocol/chainlib"
-	common "github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/metrics"
-	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v3/protocol/chainlib"
+	common "github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/metrics"
+	"github.com/lavanet/lava/v3/utils"
 )
 
 type RelayStateMachine interface {
