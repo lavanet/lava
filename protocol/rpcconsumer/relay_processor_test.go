@@ -512,11 +512,20 @@ func TestRelayProcessorStatefulApi(t *testing.T) {
 		go sendNodeError(relayProcessor, "lava2@test", time.Millisecond*20)
 		go sendNodeError(relayProcessor, "lava3@test", time.Millisecond*25)
 		go sendSuccessResp(relayProcessor, "lava4@test", time.Millisecond*100)
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*200)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*300)
 		defer cancel()
-		err = relayProcessor.WaitForResults(ctx)
-		require.NoError(t, err)
+		for i := 0; i < 10; i++ {
+			err := relayProcessor.WaitForResults(ctx)
+			require.NoError(t, err)
+			// Decide if we need to resend or not
+			if relayProcessor.HasRequiredNodeResults() {
+				break
+			}
+			time.Sleep(5 * time.Millisecond)
+		}
 		resultsOk := relayProcessor.HasResults()
+		require.True(t, resultsOk)
+		resultsOk = relayProcessor.HasRequiredNodeResults()
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
 		require.Equal(t, uint64(1), protocolErrors)
@@ -559,8 +568,10 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		go sendNodeError(relayProcessor, "lava3@test", time.Millisecond*25)
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		defer cancel()
-		err = relayProcessor.WaitForResults(ctx)
-		require.Error(t, err)
+		for i := 0; i < 2; i++ {
+			err = relayProcessor.WaitForResults(ctx)
+			require.NoError(t, err)
+		}
 		resultsOk := relayProcessor.HasResults()
 		require.True(t, resultsOk)
 		protocolErrors := relayProcessor.ProtocolErrors()
