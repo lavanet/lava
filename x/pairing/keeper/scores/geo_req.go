@@ -20,13 +20,17 @@ const (
 	minGeoLatency        = 1
 )
 
-func (gr GeoReq) Init(policy planstypes.Policy) bool {
-	return true
+func (gr *GeoReq) Init(policy planstypes.Policy) bool {
+	return gr != nil
 }
 
 // Score calculates the geo score of a provider based on preset latency data
 // Note: each GeoReq must have exactly a single geolocation (bit)
-func (gr GeoReq) Score(score PairingScore) math.Uint {
+func (gr *GeoReq) Score(score PairingScore) math.Uint {
+	if gr == nil {
+		return calculateCostFromLatency(maxGeoLatency)
+	}
+
 	// check if the provider supports the required geolocation
 	if gr.Geo&^score.Provider.Geolocation == 0 {
 		return calculateCostFromLatency(minGeoLatency)
@@ -38,13 +42,16 @@ func (gr GeoReq) Score(score PairingScore) math.Uint {
 	return cost
 }
 
-func (gr GeoReq) GetName() string {
+func (gr *GeoReq) GetName() string {
+	if gr == nil {
+		return ""
+	}
 	return geoReqName
 }
 
 // Equal() used to compare slots to determine slot groups
-func (gr GeoReq) Equal(other ScoreReq) bool {
-	otherGeoReq, ok := other.(GeoReq)
+func (gr *GeoReq) Equal(other ScoreReq) bool {
+	otherGeoReq, ok := other.(*GeoReq)
 	if !ok {
 		return false
 	}
@@ -54,17 +61,17 @@ func (gr GeoReq) Equal(other ScoreReq) bool {
 
 // TODO: this function doesn't return the optimal geo reqs for the case
 // that there are more required geos than providers to pair
-func (gr GeoReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
+func (gr *GeoReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
 	policyGeoEnums := planstypes.GetGeolocationsFromUint(policy.GeolocationProfile)
 
 	if len(policyGeoEnums) == 0 {
 		utils.LavaFormatError("length of policyGeoEnums is zero", fmt.Errorf("critical: Attempt to divide by zero"),
 			utils.LogAttr("policyGeoProfile", policy.GeolocationProfile),
 		)
-		return GeoReq{Geo: int32(planstypes.Geolocation_USC)}
+		return &GeoReq{Geo: int32(planstypes.Geolocation_USC)}
 	}
 
-	return GeoReq{Geo: int32(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
+	return &GeoReq{Geo: int32(policyGeoEnums[slotIdx%len(policyGeoEnums)])}
 }
 
 // CalcGeoCost() finds the minimal latency between the required geo and the provider's supported geolocations

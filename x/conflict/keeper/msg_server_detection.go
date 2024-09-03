@@ -15,6 +15,9 @@ import (
 )
 
 func DetectionIndex(creatorAddr string, conflict *types.ResponseConflict, epochStart uint64) string {
+	if conflict.IsDataNil() {
+		return ""
+	}
 	return creatorAddr + conflict.ConflictRelayData0.Request.RelaySession.Provider + conflict.ConflictRelayData1.Request.RelaySession.Provider + strconv.FormatUint(epochStart, 10)
 }
 
@@ -125,6 +128,11 @@ func (k msgServer) handleSameProviderFinalizationConflict(ctx sdk.Context, confl
 }
 
 func (k msgServer) handleResponseConflict(ctx sdk.Context, goCtx context.Context, conflict *types.ResponseConflict, clientAddr sdk.AccAddress) (eventData map[string]string, err error) {
+	if conflict.IsDataNil() {
+		return nil, utils.LavaFormatWarning("conflict data is nil", fmt.Errorf("handleResponseConflict: cannot handle response conflict"),
+			utils.LogAttr("client", clientAddr.String()),
+		)
+	}
 	err = k.Keeper.ValidateResponseConflict(ctx, conflict, clientAddr)
 	if err != nil {
 		return nil, utils.LavaFormatWarning("Simulation: invalid response conflict detection", err,

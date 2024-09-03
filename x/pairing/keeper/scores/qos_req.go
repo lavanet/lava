@@ -16,12 +16,12 @@ type QosGetter interface {
 // QosReq implements the ScoreReq interface for provider staking requirement(s)
 type QosReq struct{}
 
-func (qr QosReq) Init(policy planstypes.Policy) bool {
-	return true
+func (qr *QosReq) Init(policy planstypes.Policy) bool {
+	return qr != nil
 }
 
 // Score calculates the the provider's qos score
-func (qr QosReq) Score(score PairingScore) math.Uint {
+func (qr *QosReq) Score(score PairingScore) math.Uint {
 	// TODO: update Qos in providerQosFS properly and uncomment this code below
 	// Also, the qos score should range between 0.5-2
 
@@ -31,19 +31,25 @@ func (qr QosReq) Score(score PairingScore) math.Uint {
 	// }
 
 	// return math.Uint(qosScore)
+	if qr == nil {
+		return math.NewUint(1)
+	}
 	return math.NewUint(1)
 }
 
-func (qr QosReq) GetName() string {
+func (qr *QosReq) GetName() string {
+	if qr == nil {
+		return ""
+	}
 	return qosReqName
 }
 
 // Equal used to compare slots to determine slot groups.
 // Equal always returns true (there are no different "types" of qos)
-func (qr QosReq) Equal(other ScoreReq) bool {
-	return true
+func (qr *QosReq) Equal(other ScoreReq) bool {
+	return qr != nil
 }
 
-func (qr QosReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
+func (qr *QosReq) GetReqForSlot(policy planstypes.Policy, slotIdx int) ScoreReq {
 	return qr
 }

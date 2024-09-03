@@ -363,7 +363,7 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, provid
 			utils.LavaFormatPanic("critical: invalid provider address for payment", err,
 				utils.Attribute{Key: "chainID", Value: chainID},
 				utils.Attribute{Key: "client", Value: project.Subscription},
-				utils.Attribute{Key: "provider", Value: providerAccAddr.String()},
+				utils.Attribute{Key: "provider", Value: possibleAddr.Address},
 				utils.Attribute{Key: "epochBlock", Value: strconv.FormatUint(epoch, 10)},
 			)
 		}

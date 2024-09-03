@@ -107,6 +107,9 @@ func (k Keeper) RefreshSpec(ctx sdk.Context, spec types.Spec, ancestors []types.
 	}
 
 	if details, err := spec.ValidateSpec(k.MaxCU(ctx)); err != nil {
+		if details != nil {
+			details = map[string]string{}
+		}
 		details["invalidates"] = spec.Index
 		attrs := utils.StringMapToAttributes(details)
 		return nil, utils.LavaFormatWarning("spec refresh failed (invalidate)", err, attrs...)
@@ -137,6 +140,9 @@ func (k Keeper) doExpandSpec(
 	inherit *map[string]bool,
 	details string,
 ) (string, error) {
+	if spec == nil {
+		return "", fmt.Errorf("doExpandSpec: spec is nil")
+	}
 	parentsCollections := map[types.CollectionData][]*types.ApiCollection{}
 
 	if len(spec.Imports) != 0 {

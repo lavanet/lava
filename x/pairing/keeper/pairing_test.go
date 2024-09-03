@@ -1203,7 +1203,7 @@ func verifyGeoScoreForTesting(providerScores []*pairingscores.PairingScore, slot
 	})
 
 	geoReqObject := pairingscores.GeoReq{}
-	geoReq, ok := slot.Reqs[geoReqObject.GetName()].(pairingscores.GeoReq)
+	geoReq, ok := slot.Reqs[geoReqObject.GetName()].(*pairingscores.GeoReq)
 	if !ok {
 		return false
 	}
@@ -1331,7 +1331,8 @@ func TestNoRequiredGeo(t *testing.T) {
 
 // TestGeoSlotCalc checks that the calculated slots always hold a single bit geo req
 func TestGeoSlotCalc(t *testing.T) {
-	geoReqName := pairingscores.GeoReq{}.GetName()
+	geoReq := pairingscores.GeoReq{}
+	geoReqName := geoReq.GetName()
 
 	allGeos := planstypes.GetAllGeolocations()
 	maxGeo := lavaslices.Max(allGeos)
@@ -1347,7 +1348,7 @@ func TestGeoSlotCalc(t *testing.T) {
 		slots := pairingscores.CalcSlots(&policy)
 		for _, slot := range slots {
 			geoReqFromMap := slot.Reqs[geoReqName]
-			geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)
+			geoReq, ok := geoReqFromMap.(*pairingscores.GeoReq)
 			if !ok {
 				require.Fail(t, "slot geo req is not of GeoReq type")
 			}
@@ -1366,7 +1367,7 @@ func TestGeoSlotCalc(t *testing.T) {
 	slots := pairingscores.CalcSlots(&policy)
 	for _, slot := range slots {
 		geoReqFromMap := slot.Reqs[geoReqName]
-		geoReq, ok := geoReqFromMap.(pairingscores.GeoReq)
+		geoReq, ok := geoReqFromMap.(*pairingscores.GeoReq)
 		if !ok {
 			require.Fail(t, "slot geo req is not of GeoReq type")
 		}
