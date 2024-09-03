@@ -96,7 +96,56 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 				require.Equal(t, http.StatusOK, returnedResult.StatusCode)
 				return // end test.
 			}
+			taskNumber++
+		}
+	})
+}
 
+func TestConsumerStateMachineExhaustRetries(t *testing.T) {
+	t.Run("happy", func(t *testing.T) {
+		ctx := context.Background()
+		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Handle the incoming request and provide the desired response
+			w.WriteHeader(http.StatusOK)
+		})
+		specId := "LAV1"
+		chainParser, _, _, closeServer, _, err := chainlib.CreateChainLibMocks(ctx, specId, spectypes.APIInterfaceRest, serverHandler, nil, "../../", nil)
+		if closeServer != nil {
+			defer closeServer()
+		}
+		require.NoError(t, err)
+		chainMsg, err := chainParser.ParseMsg("/cosmos/base/tendermint/v1beta1/blocks/17", nil, http.MethodGet, nil, extensionslib.ExtensionInfo{LatestBlock: 0})
+		require.NoError(t, err)
+		dappId := "dapp"
+		consumerIp := "123.11"
+		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
+		consistency := NewConsumerConsistency(specId)
+
+		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics))
+
+		usedProviders := relayProcessor.GetUsedProviders()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+		defer cancel()
+		canUse := usedProviders.TryLockSelection(ctx)
+		require.NoError(t, ctx.Err())
+		require.Nil(t, canUse)
+		require.Zero(t, usedProviders.CurrentlyUsed())
+		require.Zero(t, usedProviders.SessionsLatestBatch())
+		// consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
+
+		relayTaskChannel := relayProcessor.GetRelayTaskChannel()
+		taskNumber := 0
+		for task := range relayTaskChannel {
+			switch taskNumber {
+			case 0, 1, 2:
+				require.False(t, task.IsDone())
+				// usedProviders.AddUsed(consumerSessionsMap, nil)
+				relayProcessor.UpdateBatch(fmt.Errorf("failed sending message"))
+			case 4:
+				require.False(t, task.IsDone())
+				require.Error(t, task.err)
+				return
+			}
 			taskNumber++
 		}
 	})
