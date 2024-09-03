@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -15,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v3/utils"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
 	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	"github.com/lavanet/lava/v3/x/pairing/types"
@@ -288,10 +286,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 						provider,
 						description,
 					)
-
-					if msg.DelegateLimit.Denom != commontypes.TokenDenom {
-						return nil, sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
-					}
 
 					if err := msg.ValidateBasic(); err != nil {
 						return nil, err
