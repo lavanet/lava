@@ -79,6 +79,7 @@ if ! command_exists protoc-gen-gocosmos; then
     make install
     cd ..
     rm -rf gogoproto
+    go get github.com/grpc-ecosystem/grpc-gateway/v2@v2.22.0
 fi
 
 if ! command_exists yq; then
