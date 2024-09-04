@@ -1,0 +1,73 @@
+name: Protobuf
+# Protobuf runs buf (https://buf.build/) lint and check-breakage
+# This workflow is only run when a .proto file has been changed
+on:
+  pull_request:
+    paths:
+      - "proto/**"
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1.38.0
+      - uses: bufbuild/buf-lint-action@v1
+        with:
+          input: "proto"
+
+  break-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-setup-action@v1.38.0
+      - uses: bufbuild/buf-breaking-action@v1
+        with:
+          input: "proto"
+          against: "https://github.com/${{ github.repository }}.git#branch=${{ github.event.pull_request.base.ref }},ref=HEAD~1,subdir=proto"
+
+  validate-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.20.5
+
+      - name: install buf
+        run: |
+          BIN="/usr/local/bin" && \
+          VERSION="1.25.0" && \
+          curl -sSL \
+          "https://github.com/bufbuild/buf/releases/download/v${VERSION}/buf-$(uname -s)-$(uname -m)" \
+          -o "${BIN}/buf" && \
+          chmod +x "${BIN}/buf"
+
+      - name: install proto cosmos
+        run: |
+          git clone https://github.com/cosmos/gogoproto.git
+          cd gogoproto
+          go mod download
+          make install
+          cd ..
+          rm -rf gogoproto
+
+      - name: generate proto
+        run: |
+          ./scripts/protocgen.sh 
+      
+      - name: Check for differences
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "Error: The generated .pb.go files are not up to date."
+            git diff
+            exit 1
+          fi
+        shell: bash
+
+
+
