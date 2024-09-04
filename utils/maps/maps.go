@@ -1,7 +1,7 @@
 package maps
 
 import (
-	"github.com/lavanet/lava/v2/utils/lavaslices"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
 	"golang.org/x/exp/constraints"
 )
 

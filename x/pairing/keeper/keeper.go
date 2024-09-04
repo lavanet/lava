@@ -4,16 +4,16 @@ import (
 	"fmt"
 
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
 
 	"github.com/cometbft/cometbft/libs/log"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	fixationtypes "github.com/lavanet/lava/v2/x/fixationstore/types"
-	"github.com/lavanet/lava/v2/x/pairing/types"
+	fixationtypes "github.com/lavanet/lava/v3/x/fixationstore/types"
+	"github.com/lavanet/lava/v3/x/pairing/types"
 )
 
 type (

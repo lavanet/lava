@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"cosmossdk.io/math"
-	"github.com/lavanet/lava/v2/utils"
-	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+
+	"github.com/lavanet/lava/v3/utils"
+	planstypes "github.com/lavanet/lava/v3/x/plans/types"
 )
 
 // geo requirement that implements the ScoreReq interface
