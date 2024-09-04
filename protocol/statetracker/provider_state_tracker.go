@@ -6,14 +6,14 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/v2/protocol/chaintracker"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/protocol/metrics"
-	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
-	updaters "github.com/lavanet/lava/v2/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v2/utils"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
+	"github.com/lavanet/lava/v3/protocol/chaintracker"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/protocol/metrics"
+	"github.com/lavanet/lava/v3/protocol/rpcprovider/reliabilitymanager"
+	updaters "github.com/lavanet/lava/v3/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v3/utils"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/v3/x/protocol/types"
 )
 
 // ProviderStateTracker PST is a class for tracking provider data from the lava blockchain, such as epoch changes.

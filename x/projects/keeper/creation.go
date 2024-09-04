@@ -6,9 +6,9 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	legacyerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/lavanet/lava/v2/utils"
-	plantypes "github.com/lavanet/lava/v2/x/plans/types"
-	"github.com/lavanet/lava/v2/x/projects/types"
+	"github.com/lavanet/lava/v3/utils"
+	plantypes "github.com/lavanet/lava/v3/x/plans/types"
+	"github.com/lavanet/lava/v3/x/projects/types"
 )
 
 // Keys management logic:

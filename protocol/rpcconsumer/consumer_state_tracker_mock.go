@@ -13,13 +13,13 @@ import (
 	context "context"
 	reflect "reflect"
 
-	common "github.com/lavanet/lava/v2/protocol/common"
-	finalizationconsensus "github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationconsensus"
-	lavasession "github.com/lavanet/lava/v2/protocol/lavasession"
-	updaters "github.com/lavanet/lava/v2/protocol/statetracker/updaters"
-	types "github.com/lavanet/lava/v2/x/conflict/types"
-	types0 "github.com/lavanet/lava/v2/x/plans/types"
-	types1 "github.com/lavanet/lava/v2/x/protocol/types"
+	common "github.com/lavanet/lava/v3/protocol/common"
+	finalizationconsensus "github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationconsensus"
+	lavasession "github.com/lavanet/lava/v3/protocol/lavasession"
+	updaters "github.com/lavanet/lava/v3/protocol/statetracker/updaters"
+	types "github.com/lavanet/lava/v3/x/conflict/types"
+	types0 "github.com/lavanet/lava/v3/x/plans/types"
+	types1 "github.com/lavanet/lava/v3/x/protocol/types"
 	gomock "go.uber.org/mock/gomock"
 )
 

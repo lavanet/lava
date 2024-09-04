@@ -6,9 +6,9 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
-	"github.com/lavanet/lava/v2/x/subscription/types"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
+	"github.com/lavanet/lava/v3/x/subscription/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

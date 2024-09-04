@@ -3,9 +3,9 @@ package updaters
 import (
 	"sync"
 
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v3/utils"
 	"golang.org/x/net/context"
 )
 

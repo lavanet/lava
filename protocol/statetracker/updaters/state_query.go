@@ -6,25 +6,25 @@ import (
 	"strconv"
 	"time"
 
-	downtimev1 "github.com/lavanet/lava/v2/x/downtime/v1"
+	downtimev1 "github.com/lavanet/lava/v3/x/downtime/v1"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/dgraph-io/ristretto"
-	reliabilitymanager "github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/v2/utils"
-	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	plantypes "github.com/lavanet/lava/v2/x/plans/types"
-	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	reliabilitymanager "github.com/lavanet/lava/v3/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v3/utils"
+	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v3/x/plans/types"
+	protocoltypes "github.com/lavanet/lava/v3/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
 const (
 	CacheMaxCost                = 10 * 1024 // 10K cost
-	CacheNumCounters            = 100000    // expect 10K items
+	CacheNumCounters            = 10 * 1025 // expect 10K items
 	DefaultTimeToLiveExpiration = 30 * time.Minute
 	PairingRespKey              = "pairing-resp"
 	VerifyPairingRespKey        = "verify-pairing-resp"

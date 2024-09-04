@@ -10,9 +10,9 @@ import (
 	"runtime"
 	"strings"
 
-	lvutil "github.com/lavanet/lava/v2/ecosystem/lavavisor/pkg/util"
-	"github.com/lavanet/lava/v2/utils"
-	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
+	lvutil "github.com/lavanet/lava/v3/ecosystem/lavavisor/pkg/util"
+	"github.com/lavanet/lava/v3/utils"
+	protocoltypes "github.com/lavanet/lava/v3/x/protocol/types"
 )
 
 type ProtocolBinaryFetcher struct {

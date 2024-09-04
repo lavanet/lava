@@ -5,9 +5,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	dualstakingv4 "github.com/lavanet/lava/v2/x/dualstaking/migrations/v4"
-	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
-	"github.com/lavanet/lava/v2/x/pairing/types"
+	dualstakingv4 "github.com/lavanet/lava/v3/x/dualstaking/migrations/v4"
+	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
+	"github.com/lavanet/lava/v3/x/pairing/types"
 )
 
 type Migrator struct {
