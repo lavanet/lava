@@ -1,10 +1,12 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	v2 "github.com/lavanet/lava/v2/x/pairing/migrations/v2"
-	"github.com/lavanet/lava/v2/x/pairing/types"
+	"github.com/lavanet/lava/v3/utils"
+	v2 "github.com/lavanet/lava/v3/x/pairing/migrations/v2"
+	"github.com/lavanet/lava/v3/x/pairing/types"
 )
 
 type Migrator struct {
@@ -23,8 +25,42 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 	return nil
 }
 
-// MigrateVersion3To4 sets new parameters
+// MigrateVersion3To4 fix delegation total in the stake entries
 func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
+	entries := m.keeper.epochStorageKeeper.GetAllStakeEntriesCurrent(ctx)
+	epoch := m.keeper.epochStorageKeeper.GetCurrentNextEpoch(ctx)
+	for _, e := range entries {
+		delegations, err := m.keeper.dualstakingKeeper.GetProviderDelegators(ctx, e.Address, epoch)
+		if err != nil {
+			utils.LavaFormatError("failed getting provider delegators at MigrateVersion3To4", err, utils.LogAttr("provider", e.Address))
+			continue
+		}
+
+		delegateTotal := sdk.ZeroInt()
+		for _, d := range delegations {
+			if e.Address == d.Delegator || e.Vault == d.Delegator || d.ChainID != e.Chain {
+				continue
+			}
+			delegateTotal = delegateTotal.Add(d.Amount.Amount)
+		}
+		if !e.DelegateTotal.Amount.Equal(delegateTotal) {
+			fmt.Println("fixing delegate total for", e.Address, e.Chain)
+
+			e.DelegateTotal.Amount = delegateTotal
+			if e.EffectiveStake().LT(m.keeper.specKeeper.GetMinStake(ctx, e.Chain).Amount) {
+				e.Freeze()
+			}
+			m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, e)
+		}
+	}
+
+	return nil
+}
+
+// MigrateVersion4To5 sets new parameters:
+// ReputationVarianceStabilizationPeriod, ReputationLatencyOverSyncFactor,
+// ReputationHalfLifeFactor, ReputationRelayFailureCost
+func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 	utils.LavaFormatInfo("migrate: pairing to set new parameters")
 
 	m.keeper.SetParams(ctx, types.DefaultParams())

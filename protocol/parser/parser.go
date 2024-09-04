@@ -11,9 +11,9 @@ import (
 	"github.com/itchyny/gojq"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/lavanet/lava/v2/utils"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/utils"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 const (

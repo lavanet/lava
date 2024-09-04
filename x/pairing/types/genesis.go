@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	fixationtypes "github.com/lavanet/lava/v2/x/fixationstore/types"
-	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
+	fixationtypes "github.com/lavanet/lava/v3/x/fixationstore/types"
+	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
 )
 
 // DefaultIndex is the default capability global index

@@ -8,17 +8,17 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	"github.com/lavanet/lava/v2/utils/rand"
-	"github.com/lavanet/lava/v2/utils/score"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v3/utils/rand"
+	"github.com/lavanet/lava/v3/utils/score"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	"gonum.org/v1/gonum/mathext"
 )
 
 const (
-	CacheMaxCost               = 2000  // each item cost would be 1
+	CacheMaxCost               = 20000 // each item cost would be 1
 	CacheNumCounters           = 20000 // expect 2000 items
 	INITIAL_DATA_STALENESS     = 24
 	HALF_LIFE_TIME             = time.Hour

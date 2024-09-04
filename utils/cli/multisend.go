@@ -17,7 +17,7 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	"github.com/spf13/cobra"
 )
 
@@ -418,6 +418,19 @@ func NewQueryTotalGasCmd() *cobra.Command {
 			totalgas := int64(0)
 			numRelays := int64(0)
 			sequence, _ := getSequence(account)
+			if sequence == 0 {
+				block := clientCtx.Height
+				if block == 0 {
+					res, err := clientCtx.Client.Status(context.Background())
+					if err != nil {
+						fmt.Println("failed to get latest block height and account sequence")
+						return nil
+					}
+					block = res.SyncInfo.LatestBlockHeight
+				}
+				fmt.Printf("could not get account sequence for block %d\n", block)
+				return nil
+			}
 			layout := time.RFC3339
 			for now.Sub(txtime) < 12*time.Hour {
 				sequence--
