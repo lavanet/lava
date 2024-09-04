@@ -59,6 +59,10 @@ jobs:
           cd ..
           rm -rf gogoproto
 
+      - name: install grpc gateway
+        run: |
+          go get github.com/grpc-ecosystem/grpc-gateway/v2@v2.22.0      
+    
       - name: generate proto
         run: |
           ./scripts/protocgen.sh 
