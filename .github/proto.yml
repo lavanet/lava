@@ -5,11 +5,9 @@ on:
   push:
     branches:
       - main
-      - CNS-generate-proto-files
   pull_request:
     branches:
       - main
-      - CNS-generate-proto-files
 
 permissions:
   contents: read
