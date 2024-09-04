@@ -46,6 +46,18 @@ jobs:
       - name: export GOPATH
         run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
 
+      - name: install grpc gateway
+        run: |
+          git clone https://github.com/grpc-ecosystem/grpc-gateway -b v1.16.0
+          cd grpc-gateway
+          go mod download
+          go install \
+          github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
+          github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
+          github.com/golang/protobuf/protoc-gen-go
+          cd ..
+          rm -rf grpc-gateway
+
       - name: install buf
         run: |
           BIN="/usr/local/bin" && \
@@ -63,10 +75,6 @@ jobs:
           make install
           cd ..
           rm -rf gogoproto
-
-      - name: install grpc gateway
-        run: |
-          go get github.com/grpc-ecosystem/grpc-gateway/v2@v2.22.0
     
       - name: generate proto
         run: |
