@@ -6,6 +6,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/utils"
 	v2 "github.com/lavanet/lava/v3/x/pairing/migrations/v2"
+	"github.com/lavanet/lava/v3/x/pairing/types"
 )
 
 type Migrator struct {
@@ -53,5 +54,15 @@ func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
 		}
 	}
 
+	return nil
+}
+
+// MigrateVersion4To5 sets new parameters:
+// ReputationVarianceStabilizationPeriod, ReputationLatencyOverSyncFactor,
+// ReputationHalfLifeFactor, ReputationRelayFailureCost
+func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
+	utils.LavaFormatInfo("migrate: pairing to set new parameters")
+
+	m.keeper.SetParams(ctx, types.DefaultParams())
 	return nil
 }

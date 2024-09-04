@@ -17,4 +17,12 @@ message Params {
       (gogoproto.nullable)   = false
       ];
   uint64 recommendedEpochNumToCollectPayment = 14 [(gogoproto.moretags) = "yaml:\"recommended_epoch_num_to_collect_payment\""];
+  int64 reputation_variance_stabilization_period = 15 [(gogoproto.moretags) = "yaml:\"reputation_variance_stabilization_period\""];
+  string reputation_latency_over_sync_factor = 16 [
+    (gogoproto.moretags) = "yaml:\"reputation_latency_over_sync_factor\"",
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.nullable)   = false
+  ];
+  int64 reputation_half_life_factor = 17 [(gogoproto.moretags) = "yaml:\"reputation_half_life_factor\""];
+  uint64 reputation_relay_failure_cost = 18 [(gogoproto.moretags) = "yaml:\"reputation_relay_failure_cost\""];
 }

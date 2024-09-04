@@ -312,6 +312,22 @@ EpochBlocksOverlap is the number of blocks a consumer waits before interacting w
 
 RecommendedEpochNumToCollectPayment is the recommended max number of epochs for providers to claim payments. It's also used for determining unresponsiveness.
 
+### ReputationVarianceStabilizationPeriod
+
+ReputationVarianceStabilizationPeriod is the period in which reputation reports are not truncated due to variance.
+
+### ReputationLatencyOverSyncFactor
+
+ReputationLatencyOverSyncFactor is the factor that decreases the reputation's sync report influence when calculating the reputation score.
+
+### ReputationHalfLifeFactor
+
+ReputationHalfLifeFactor is the half life factor that determines the degradation in old reputation samples (when the reputation is updated).
+
+### ReputationRelayFailureCost
+
+ReputationRelayFailureCost is the cost (in seconds) for a failed relay sent from the consumer to the provider. This is part of the reputation report calculation.
+
 ## Queries
 
 The pairing module supports the following queries:
