@@ -114,6 +114,7 @@ func (rssi *RelayStateSendInstructions) IsDone() bool {
 func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSendInstructions {
 	relayTaskChannel := make(chan RelayStateSendInstructions)
 	go func() {
+		batchNumber := 0 // Set batch number
 		// A channel to be notified processing was done, true means we have results and can return
 		gotResults := make(chan bool)
 		processingTimeout, relayTimeout := crsm.relaySender.getProcessingTimeout(crsm.GetProtocolMessage())
@@ -162,7 +163,6 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 		// Initialize parameters
 		startNewBatchTicker := time.NewTicker(relayTimeout) // Every relay timeout we send a new batch
 		defer startNewBatchTicker.Stop()
-		batchNumber := 0 // Current batch number
 		consecutiveBatchErrors := 0
 
 		// Start the relay state machine
@@ -201,14 +201,13 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 				}
 			case success := <-gotResults:
 				// If we had a successful result return what we currently have
-				if success { // Check wether we can return the valid results or we need to send another relay
+				// Or we are done sending relays, used providers might not be 0 at this time.
+				if success || !crsm.ShouldRetry(batchNumber) { // Check wether we can return the valid results or we need to send another relay
 					relayTaskChannel <- RelayStateSendInstructions{done: true}
 					return
 				}
-				// If should retry == true, send a new batch. (success == false)
-				if crsm.ShouldRetry(batchNumber) {
-					relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
-				}
+				// If should retry == true || success == false send a new batch.
+				relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
 				go readResultsFromProcessor()
 			case <-startNewBatchTicker.C:
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
