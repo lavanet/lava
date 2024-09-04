@@ -33,7 +33,6 @@ message MsgStakeProvider {
   string validator = 9;
   string address = 10;
   cosmos.staking.v1beta1.Description description = 11 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
-  string lala = 12;
 }
 
 message MsgStakeProviderResponse {
