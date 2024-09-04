@@ -41,6 +41,11 @@ jobs:
         with:
           go-version: 1.20.5
 
+      - name: export PATH
+        run: export PATH=$PATH:/go:/go/bin:$(go env GOPATH)/bin:/usr/local:`pwd`:/home/runner/work/lava/lava/
+      - name: export GOPATH
+        run: export GOPATH=$GOPATH:$(go env GOPATH):/go:/go/lava:/usr/local:`pwd`
+
       - name: install buf
         run: |
           BIN="/usr/local/bin" && \
@@ -61,7 +66,7 @@ jobs:
 
       - name: install grpc gateway
         run: |
-          go get github.com/grpc-ecosystem/grpc-gateway/v2@v2.22.0      
+          go get github.com/grpc-ecosystem/grpc-gateway/v2@v2.22.0
     
       - name: generate proto
         run: |
