@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -40,6 +41,11 @@ var (
 	DefaultValidatorsSubscriptionParticipation sdk.Dec = sdk.NewDecWithPrec(5, 2) // 0.05
 )
 
+var (
+	KeyIbcIprpcExpiration                   = []byte("IbcIprpcExpiration")
+	DefaultIbcIprpcExpiration time.Duration = time.Hour * 24 * 30 * 3 // 3 months
+)
+
 // ParamKeyTable the param key table for launch module
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -53,6 +59,7 @@ func NewParams(
 	leftoverBurnRate sdk.Dec,
 	maxRewardBoost uint64,
 	validatorsSubscriptionParticipation sdk.Dec,
+	ibcIprpcExpiration time.Duration,
 ) Params {
 	return Params{
 		MinBondedTarget:                     minBondedTarget,
@@ -61,6 +68,7 @@ func NewParams(
 		LeftoverBurnRate:                    leftoverBurnRate,
 		MaxRewardBoost:                      maxRewardBoost,
 		ValidatorsSubscriptionParticipation: validatorsSubscriptionParticipation,
+		IbcIprpcExpiration:                  ibcIprpcExpiration,
 	}
 }
 
@@ -73,6 +81,7 @@ func DefaultParams() Params {
 		DefaultLeftOverBurnRate,
 		DefaultMaxRewardBoost,
 		DefaultValidatorsSubscriptionParticipation,
+		DefaultIbcIprpcExpiration,
 	)
 }
 
@@ -85,6 +94,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(KeyLeftoverBurnRate, &p.LeftoverBurnRate, validateDec),
 		paramtypes.NewParamSetPair(KeyMaxRewardBoost, &p.MaxRewardBoost, validateuint64),
 		paramtypes.NewParamSetPair(KeyValidatorsSubscriptionParticipation, &p.ValidatorsSubscriptionParticipation, validateDec),
+		paramtypes.NewParamSetPair(KeyIbcIprpcExpiration, &p.IbcIprpcExpiration, validateDuration),
 	}
 }
 
@@ -118,6 +128,10 @@ func (p Params) Validate() error {
 		return fmt.Errorf("invalid ValidatorsSubscriptionParticipation. Error: %s", err.Error())
 	}
 
+	if err := validateDuration(p.IbcIprpcExpiration); err != nil {
+		return fmt.Errorf("invalid IbcIprpcExpiration. Error: %s", err.Error())
+	}
+
 	return nil
 }
 
@@ -145,6 +159,19 @@ func validateuint64(v interface{}) error {
 	_, ok := v.(uint64)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	return nil
+}
+
+func validateDuration(v interface{}) error {
+	param, ok := v.(time.Duration)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	if param.Seconds() == float64(0) {
+		return fmt.Errorf("invalid duration parameter")
 	}
 
 	return nil

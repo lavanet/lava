@@ -13,6 +13,13 @@ func AccAddress() string {
 	return sdk.AccAddress(addr).String()
 }
 
+// AccAddress returns a sample account address of type sdk.AccAddress
+func AccAddressObject() sdk.AccAddress {
+	pk := ed25519.GenPrivKey().PubKey()
+	addr := pk.Address()
+	return sdk.AccAddress(addr)
+}
+
 // ValAddress returns a sample validator account address
 func ValAddress() string {
 	pk := ed25519.GenPrivKey().PubKey()

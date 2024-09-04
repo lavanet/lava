@@ -186,6 +186,13 @@ trace lavad q rewards show-iprpc-data > /dev/null
 trace lavad q rewards iprpc-provider-reward > /dev/null
 trace lavad q rewards iprpc-spec-reward > /dev/null
 trace lavad q rewards provider-reward >/dev/null
+trace lavad q rewards pending-ibc-iprpc-funds > /dev/null
+
+echo "Testing rewards tx commands"
+trace lavad tx rewards fund-iprpc ETH1 4 100000ulava --from alice >/dev/null
+wait_count_blocks 1 >/dev/null
+trace lavad tx rewards submit-ibc-iprpc-tx ETH1 3 100ulava transfer channel-0 --from bob --home ~/.lava --node tcp://localhost:26657 >/dev/null
+
 
 echo "Testing events command"
 trace lavad test events 30 10 --event lava_relay_payment --from alice --timeout 1s >/dev/null

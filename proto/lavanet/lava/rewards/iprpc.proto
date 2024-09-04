@@ -18,3 +18,18 @@ message Specfund {
         (gogoproto.nullable)     = false
     ];
 }
+
+message IprpcMemo {
+    string creator = 1;
+    string spec = 2;
+    uint64 duration = 3; // Iprpc fund period in months
+}
+
+message PendingIbcIprpcFund {
+    uint64 index = 1;     // unique index
+    string creator = 2;
+    string spec = 3;
+    uint64 duration = 4;
+    cosmos.base.v1beta1.Coin fund = 5 [(gogoproto.nullable) = false];
+    uint64 expiry = 6; // expiry timestamp
+}

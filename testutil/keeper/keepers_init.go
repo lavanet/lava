@@ -31,6 +31,7 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
 	commonconsts "github.com/lavanet/lava/v3/testutil/common/consts"
 	"github.com/lavanet/lava/v3/utils/sigs"
 	conflictkeeper "github.com/lavanet/lava/v3/x/conflict/keeper"
@@ -95,6 +96,7 @@ type Keepers struct {
 	SlashingKeeper      slashingkeeper.Keeper
 	Rewards             rewardskeeper.Keeper
 	Distribution        distributionkeeper.Keeper
+	IbcTransfer         mockIbcTransferKeeper
 }
 
 type Servers struct {
@@ -111,6 +113,7 @@ type Servers struct {
 	SlashingServer     slashingtypes.MsgServer
 	RewardsServer      rewardstypes.MsgServer
 	DistributionServer distributiontypes.MsgServer
+	IbcTransferServer  ibctransfertypes.MsgServer
 }
 
 type KeeperBeginBlockerWithRequest interface {
@@ -141,6 +144,9 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 
 	distributionStoreKey := sdk.NewKVStoreKey(distributiontypes.StoreKey)
 	stateStore.MountStoreWithDB(distributionStoreKey, storetypes.StoreTypeIAVL, db)
+
+	ibctransferStoreKey := sdk.NewKVStoreKey(ibctransfertypes.StoreKey)
+	stateStore.MountStoreWithDB(ibctransferStoreKey, storetypes.StoreTypeIAVL, db)
 
 	stakingStoreKey := sdk.NewKVStoreKey(stakingtypes.StoreKey)
 	stateStore.MountStoreWithDB(stakingStoreKey, storetypes.StoreTypeIAVL, db)
@@ -217,6 +223,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	paramsKeeper.Subspace(rewardstypes.ModuleName)
 	paramsKeeper.Subspace(distributiontypes.ModuleName)
 	paramsKeeper.Subspace(dualstakingtypes.ModuleName)
+	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	// paramsKeeper.Subspace(conflicttypes.ModuleName) //TODO...
 
 	epochparamsSubspace, _ := paramsKeeper.GetSubspace(epochstoragetypes.ModuleName)
@@ -245,11 +252,13 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	)
 
 	downtimeParamsSubspace, _ := paramsKeeper.GetSubspace(downtimemoduletypes.ModuleName)
+	ibctransferparamsSubspace, _ := paramsKeeper.GetSubspace(ibctransfertypes.ModuleName)
 
 	ks := Keepers{}
 	ks.TimerStoreKeeper = timerstorekeeper.NewKeeper(cdc)
 	ks.AccountKeeper = mockAccountKeeper{}
 	ks.BankKeeper = mockBankKeeper{}
+	ks.IbcTransfer = NewMockIbcTransferKeeper(ibctransferStoreKey, cdc, ibctransferparamsSubspace, ks.AccountKeeper, ks.BankKeeper)
 	init_balance()
 	ks.StakingKeeper = *stakingkeeper.NewKeeper(cdc, stakingStoreKey, ks.AccountKeeper, ks.BankKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Distribution = distributionkeeper.NewKeeper(cdc, distributionStoreKey, ks.AccountKeeper, ks.BankKeeper, ks.StakingKeeper, authtypes.FeeCollectorName, authtypes.NewModuleAddress(govtypes.ModuleName).String())
@@ -264,7 +273,7 @@ func InitAllKeepers(t testing.TB) (*Servers, *Keepers, context.Context) {
 	ks.Projects = *projectskeeper.NewKeeper(cdc, projectsStoreKey, projectsMemStoreKey, projectsparamsSubspace, ks.Epochstorage, ks.FixationStoreKeeper)
 	ks.Protocol = *protocolkeeper.NewKeeper(cdc, protocolStoreKey, protocolMemStoreKey, protocolparamsSubspace, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	ks.Downtime = downtimekeeper.NewKeeper(cdc, downtimeKey, downtimeParamsSubspace, ks.Epochstorage)
-	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Spec, ks.Epochstorage, ks.Downtime, ks.StakingKeeper, ks.Dualstaking, ks.Distribution, authtypes.FeeCollectorName, ks.TimerStoreKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	ks.Rewards = *rewardskeeper.NewKeeper(cdc, rewardsStoreKey, rewardsMemStoreKey, rewardsparamsSubspace, ks.BankKeeper, ks.AccountKeeper, ks.Spec, ks.Epochstorage, ks.Downtime, ks.StakingKeeper, ks.Dualstaking, ks.Distribution, authtypes.FeeCollectorName, ks.TimerStoreKeeper, authtypes.NewModuleAddress(govtypes.ModuleName).String(), nil)
 	ks.Subscription = *subscriptionkeeper.NewKeeper(cdc, subscriptionStoreKey, subscriptionMemStoreKey, subscriptionparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, &ks.Epochstorage, ks.Projects, ks.Plans, ks.Dualstaking, ks.Rewards, ks.Spec, ks.FixationStoreKeeper, ks.TimerStoreKeeper, ks.StakingKeeper)
 	ks.Pairing = *pairingkeeper.NewKeeper(cdc, pairingStoreKey, pairingMemStoreKey, pairingparamsSubspace, &ks.BankKeeper, &ks.AccountKeeper, ks.Spec, &ks.Epochstorage, ks.Projects, ks.Subscription, ks.Plans, ks.Downtime, ks.Dualstaking, &ks.StakingKeeper, ks.FixationStoreKeeper, ks.TimerStoreKeeper)
 	ks.ParamsKeeper = paramsKeeper
