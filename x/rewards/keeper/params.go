@@ -4,7 +4,7 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/x/rewards/types"
+	"github.com/lavanet/lava/v3/x/rewards/types"
 )
 
 // GetParams get all parameters as types.Params

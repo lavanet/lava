@@ -1,7 +1,7 @@
 package common
 
 import (
-	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v3/utils"
 	"github.com/spf13/cobra"
 )
 

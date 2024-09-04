@@ -20,7 +20,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	ibcchanneltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	"github.com/lavanet/lava/v2/x/rewards/types"
+	"github.com/lavanet/lava/v3/x/rewards/types"
 	"github.com/spf13/cobra"
 )
 

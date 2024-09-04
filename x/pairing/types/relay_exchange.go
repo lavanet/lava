@@ -3,8 +3,8 @@ package types
 import (
 	"strings"
 
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/sigs"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/sigs"
 )
 
 // RelayExchange consists a relay request and its corresponding response

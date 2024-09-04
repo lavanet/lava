@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/x/rewards/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/x/rewards/types"
 )
 
 func (k msgServer) CoverIbcIprpcFundCost(goCtx context.Context, msg *types.MsgCoverIbcIprpcFundCost) (*types.MsgCoverIbcIprpcFundCostResponse, error) {

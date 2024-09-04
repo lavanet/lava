@@ -6,14 +6,14 @@ import (
 	"encoding/binary"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
-	conflictconstruct "github.com/lavanet/lava/v2/x/conflict/types/construct"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
+	conflictconstruct "github.com/lavanet/lava/v3/x/conflict/types/construct"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 type HeaderFilterer interface {

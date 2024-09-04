@@ -12,9 +12,9 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v7/modules/core/05-port/types"
 	"github.com/cosmos/ibc-go/v7/modules/core/exported"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/x/rewards/keeper"
-	"github.com/lavanet/lava/v2/x/rewards/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/x/rewards/keeper"
+	"github.com/lavanet/lava/v3/x/rewards/types"
 )
 
 var _ porttypes.Middleware = &IBCMiddleware{}
