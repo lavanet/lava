@@ -346,7 +346,7 @@ The pairing module supports the following transactions:
 
 | Transaction      | Arguments       | What it does                                  |
 | ---------- | --------------- | ----------------------------------------------|
-| `bulk-stake-provider`     | chain-ids ([]string), amount (Coin), endpoints ([]Endpoint), geolocation (int32), {repeat args for another bulk}, validator (string, optional), --provider-moniker (string)  | stake provider in multiple chains with multiple endpoints with one command                  |
+| `bulk-stake-provider`     | chain-ids ([]string), amount (Coin), endpoints ([]Endpoint), geolocation (int32), {repeat args for another bulk}, validator (string, optional), --provider-moniker (string), --delegate-limit (Coin)  | stake provider in multiple chains with multiple endpoints with one command                  |
 | `freeze`     | chain-ids ([]string)  | freeze a provider in multiple chains                  |
 | `modify-provider`     | chain-id (string)  | modify a provider's stake entry (use the TX optional flags)                  |
 | `relay-payment`     | chain-id (string) | automatically generated TX used by a provider to request payment for their service                  | 
@@ -356,6 +356,8 @@ The pairing module supports the following transactions:
 | `unstake-provider`     | chain-ids ([]string), validator (string, optional)  | unstake a provider from multiple chains                  |
 
 Note, the `Coin` type is from Cosmos-SDK (`cosmos.base.v1beta1.Coin`). From the CLI, use `100ulava` to assign a `Coin` argument. The `Endpoint` type defines a provider endpoint. From the CLI, use "my-provider-grpc-addr.com:9090,1" for one endpoint (includes the endpoint's URL+port and the endpoint's geolocation). When it comes to staking-related transactions, the geolocation argument should encompass the geolocations of all the endpoints combined.
+
+Additionally, `stake-provider` and `bulk-stake-provider` require using the `provider-moniker` and `delegate-limit` flags. The provider's moniker is a non-unique "human" name for the provider. The delegation limit is the maximum amount of delegations the provider is willing to use for the pairing process (for more information see the DualStaking module's [README](../dualstaking/README.md)).
 
 Moreover, using `--grant-provider-gas-fees-auth` flag when staking a provider entity will let the provider address use the vault address funds for gas fees. When sending a TX, the provider address should add the `--fee-granter` flag to specify the vault's account as the payer of gas fees.
 

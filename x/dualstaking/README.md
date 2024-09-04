@@ -36,6 +36,8 @@ Dualstaking makes this happen by "duplicating" delegations, for each validator d
 Dualstaking introduces provider delegations to the Lava network. Provider delegations allow users to delegate their tokens to a specific provider, similar to validators, in order to contribute to their success and claim a portion of the rewards awarded to the provider.
 When a provider stakes tokens, they create a self-delegation entry. Whenever a provider receives rewards, all delegators are eligible for a portion of the rewards based on their delegation amount and the commission rate set by the provider.
 
+Note, the provider can define a self-restraining limit on its delegations with the `DelegateLimit` property. Larger delegations mean the provider will be paired more often with consumers. If a provider receives many delegations but can't handle the resulting consumer traffic, they can set the delegate limit lower than their actual total delegations. This reduces their pairing frequency and workload. The delegated tokens remain with the provider, but their influence is reduced by artificially lowering the provider's effective stake (composed of self-stake and delegations). Delegators can always redelegate their funds to a provider that might better utilize their delegations.
+
 ### Empty Provider
 
 The empty provider is a place holder for provider delegations that are issued by the staking module. 
