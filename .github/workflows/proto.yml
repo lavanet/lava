@@ -52,7 +52,7 @@ jobs:
 
       - name: install proto cosmos
         run: |
-          git clone https://github.com/cosmos/gogoproto.git
+          git clone https://github.com/cosmos/gogoproto.git -b v1.4.11
           cd gogoproto
           go mod download
           make install
