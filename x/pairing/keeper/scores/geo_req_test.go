@@ -3,9 +3,9 @@ package scores
 import (
 	"testing"
 
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	"github.com/lavanet/lava/v2/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	"github.com/lavanet/lava/v3/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v3/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
 
