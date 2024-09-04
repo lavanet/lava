@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/utils"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/utils"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 )
 
 type RelayerConnectionServer struct {

@@ -7,11 +7,11 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/websocket/v2"
-	formatter "github.com/lavanet/lava/v2/ecosystem/cache/format"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/metrics"
-	"github.com/lavanet/lava/v2/utils"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	formatter "github.com/lavanet/lava/v3/ecosystem/cache/format"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/metrics"
+	"github.com/lavanet/lava/v3/utils"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 type ConsumerWebsocketManager struct {

@@ -4,13 +4,13 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto"
-	common "github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/utils"
+	common "github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/utils"
 )
 
 // this class handles seen block values in requests
 const (
-	CacheMaxCost     = 2000  // each item cost would be 1
+	CacheMaxCost     = 20000 // each item cost would be 1
 	CacheNumCounters = 20000 // expect 2000 items
 	EntryTTL         = 5 * time.Minute
 )

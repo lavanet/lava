@@ -14,25 +14,25 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/protocol/chainlib"
-	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationverification"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/protocol/metrics"
-	"github.com/lavanet/lava/v2/protocol/performance"
-	"github.com/lavanet/lava/v2/protocol/upgrade"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/protocopy"
-	"github.com/lavanet/lava/v2/utils/rand"
-	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	plantypes "github.com/lavanet/lava/v2/x/plans/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/chainlib"
+	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationverification"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/protocol/metrics"
+	"github.com/lavanet/lava/v3/protocol/performance"
+	"github.com/lavanet/lava/v3/protocol/upgrade"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/protocopy"
+	"github.com/lavanet/lava/v3/utils/rand"
+	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	plantypes "github.com/lavanet/lava/v3/x/plans/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -76,7 +76,7 @@ type RPCConsumerServer struct {
 	connectedSubscriptionsContexts map[string]*CancelableContextHolder
 	chainListener                  chainlib.ChainListener
 	connectedSubscriptionsLock     sync.RWMutex
-	relayRetriesManager            *RelayRetriesManager
+	relayRetriesManager            *lavaprotocol.RelayRetriesManager
 }
 
 type relayResponse struct {
@@ -126,7 +126,7 @@ func (rpccs *RPCConsumerServer) ServeRPCRequests(ctx context.Context, listenEndp
 	rpccs.debugRelays = cmdFlags.DebugRelays
 	rpccs.connectedSubscriptionsContexts = make(map[string]*CancelableContextHolder)
 	rpccs.consumerProcessGuid = strconv.FormatUint(utils.GenerateUniqueIdentifier(), 10)
-	rpccs.relayRetriesManager = NewRelayRetriesManager()
+	rpccs.relayRetriesManager = lavaprotocol.NewRelayRetriesManager()
 	rpccs.chainListener, err = chainlib.NewChainListener(ctx, listenEndpoint, rpccs, rpccs, rpcConsumerLogs, chainParser, refererData, consumerWsSubscriptionManager)
 	if err != nil {
 		return err

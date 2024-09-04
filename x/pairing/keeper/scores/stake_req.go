@@ -2,7 +2,7 @@ package scores
 
 import (
 	"cosmossdk.io/math"
-	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+	planstypes "github.com/lavanet/lava/v3/x/plans/types"
 )
 
 const stakeReqName = "stake-req"

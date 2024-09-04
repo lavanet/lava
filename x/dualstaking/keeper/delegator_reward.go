@@ -6,11 +6,11 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	"github.com/lavanet/lava/v2/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v3/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
