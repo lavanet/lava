@@ -73,7 +73,7 @@ else
 fi
 
 if ! command_exists protoc-gen-gocosmos; then
-    git clone https://github.com/cosmos/gogoproto.git
+    git clone https://github.com/cosmos/gogoproto.git -b v1.4.9
     cd gogoproto
     go mod download
     make install
