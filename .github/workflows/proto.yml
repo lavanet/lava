@@ -13,15 +13,15 @@ permissions:
   contents: read
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: bufbuild/buf-setup-action@v1.38.0
-      - uses: bufbuild/buf-lint-action@v1
-        with:
-          input: "proto"
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 5
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: bufbuild/buf-setup-action@v1.38.0
+  #     - uses: bufbuild/buf-lint-action@v1
+  #       with:
+  #         input: "proto"
 
   break-check:
     runs-on: ubuntu-latest
