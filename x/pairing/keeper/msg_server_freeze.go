@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	commontypes "github.com/lavanet/lava/v2/utils/common/types"
-	"github.com/lavanet/lava/v2/x/pairing/types"
+	"github.com/lavanet/lava/v3/utils"
+	commontypes "github.com/lavanet/lava/v3/utils/common/types"
+	"github.com/lavanet/lava/v3/x/pairing/types"
 )
 
 func (k msgServer) FreezeProvider(goCtx context.Context, msg *types.MsgFreezeProvider) (*types.MsgFreezeProviderResponse, error) {

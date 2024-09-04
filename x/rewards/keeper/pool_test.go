@@ -7,11 +7,11 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distribution "github.com/cosmos/cosmos-sdk/x/distribution"
-	"github.com/lavanet/lava/v2/testutil/common"
-	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
+	"github.com/lavanet/lava/v3/testutil/common"
+	testkeeper "github.com/lavanet/lava/v3/testutil/keeper"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
 	"github.com/stretchr/testify/require"
 )
 

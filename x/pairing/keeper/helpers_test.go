@@ -5,15 +5,14 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/testutil/common"
-	testutil "github.com/lavanet/lava/v2/testutil/keeper"
-	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	"github.com/lavanet/lava/v2/x/pairing/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v2/x/plans/types"
-	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/testutil/common"
+	testutil "github.com/lavanet/lava/v3/testutil/keeper"
+	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -155,13 +154,13 @@ const (
 func (ts *tester) setupForReputation(modifyHalfLifeFactor bool) (*tester, []pairingtypes.QualityOfServiceReport) {
 	ts.setupForPayments(0, 1, 5) // 0 providers, 1 client, default providers-to-pair
 
-	greatQos := types.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}
-	goodQos := types.QualityOfServiceReport{Latency: sdk.NewDec(3), Availability: sdk.OneDec(), Sync: sdk.NewDec(3)}
-	badQos := types.QualityOfServiceReport{Latency: sdk.NewDec(1000), Availability: sdk.OneDec(), Sync: sdk.NewDec(1000)}
+	greatQos := pairingtypes.QualityOfServiceReport{Latency: sdk.OneDec(), Availability: sdk.OneDec(), Sync: sdk.OneDec()}
+	goodQos := pairingtypes.QualityOfServiceReport{Latency: sdk.NewDec(3), Availability: sdk.OneDec(), Sync: sdk.NewDec(3)}
+	badQos := pairingtypes.QualityOfServiceReport{Latency: sdk.NewDec(1000), Availability: sdk.OneDec(), Sync: sdk.NewDec(1000)}
 
 	if modifyHalfLifeFactor {
 		// set half life factor to be epoch time
-		resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &types.QueryParamsRequest{})
+		resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &pairingtypes.QueryParamsRequest{})
 		require.NoError(ts.T, err)
 		resQParams.Params.ReputationHalfLifeFactor = int64(ts.EpochTimeDefault().Seconds())
 		ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)

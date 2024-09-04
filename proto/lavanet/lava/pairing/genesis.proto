@@ -10,7 +10,7 @@ import "lavanet/lava/pairing/reputation.proto";
 
 // this line is used by starport scaffolding # genesis/proto/import
 
-option go_package = "github.com/lavanet/lava/v2/x/pairing/types";
+option go_package = "github.com/lavanet/lava/v3/x/pairing/types";
 
 message BadgeUsedCu {
   bytes badge_used_cu_key = 1; 

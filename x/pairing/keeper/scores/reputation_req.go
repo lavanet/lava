@@ -3,8 +3,8 @@ package scores
 import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+	"github.com/lavanet/lava/v3/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v3/x/plans/types"
 )
 
 const reputationReqName = "reputation-req"

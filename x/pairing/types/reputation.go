@@ -7,8 +7,8 @@ import (
 	"cosmossdk.io/collections"
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	commontypes "github.com/lavanet/lava/v2/utils/common/types"
+	"github.com/lavanet/lava/v3/utils"
+	commontypes "github.com/lavanet/lava/v3/utils/common/types"
 )
 
 var (
