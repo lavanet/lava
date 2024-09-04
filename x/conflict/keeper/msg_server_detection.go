@@ -14,6 +14,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// DetectionIndex creates an index for detection instances.
+// WARNING: the detection index should not be used for prefixed iteration.
 func DetectionIndex(creatorAddr string, conflict *types.ResponseConflict, epochStart uint64) string {
 	if conflict.IsDataNil() {
 		return ""
