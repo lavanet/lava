@@ -6,17 +6,20 @@ import (
 
 	"github.com/lavanet/lava/v3/protocol/chainlib"
 	common "github.com/lavanet/lava/v3/protocol/common"
+	lavasession "github.com/lavanet/lava/v3/protocol/lavasession"
 	"github.com/lavanet/lava/v3/protocol/metrics"
 	"github.com/lavanet/lava/v3/utils"
 )
 
 type RelayStateMachine interface {
 	GetProtocolMessage() chainlib.ProtocolMessage
-	SetRelayProcessor(relayProcessor *RelayProcessor)
 	ShouldRetry(numberOfRetriesLaunched int) bool
 	GetDebugState() bool
 	GetRelayTaskChannel() chan RelayStateSendInstructions
 	UpdateBatch(err error)
+	GetSelection() Selection
+	GetUsedProviders() *lavasession.UsedProviders
+	SetRelayProcessor(relayProcessor *RelayProcessor)
 }
 
 type ConsumerRelaySender interface {
@@ -31,18 +34,20 @@ type tickerMetricSetterInf interface {
 
 type ConsumerRelayStateMachine struct {
 	ctx                  context.Context // same context as user context.
-	parentRelayProcessor *RelayProcessor // parent pointer
 	relaySender          ConsumerRelaySender
+	parentRelayProcessor *RelayProcessor
 	protocolMessage      chainlib.ProtocolMessage // only one should make changes to protocol message is ConsumerRelayStateMachine.
 	analytics            *metrics.RelayMetrics    // first relay metrics
 	selection            Selection
 	debugRelays          bool
 	tickerMetricSetter   tickerMetricSetterInf
 	batchUpdate          chan error
+	usedProviders        *lavasession.UsedProviders
 }
 
 func NewRelayStateMachine(
 	ctx context.Context,
+	usedProviders *lavasession.UsedProviders,
 	relaySender ConsumerRelaySender,
 	protocolMessage chainlib.ProtocolMessage,
 	analytics *metrics.RelayMetrics,
@@ -56,6 +61,7 @@ func NewRelayStateMachine(
 
 	return &ConsumerRelayStateMachine{
 		ctx:                ctx,
+		usedProviders:      usedProviders,
 		relaySender:        relaySender,
 		protocolMessage:    protocolMessage,
 		analytics:          analytics,
@@ -66,16 +72,24 @@ func NewRelayStateMachine(
 	}
 }
 
-func (rp *ConsumerRelayStateMachine) ShouldRetry(numberOfRetriesLaunched int) bool {
+func (crsm *ConsumerRelayStateMachine) SetRelayProcessor(relayProcessor *RelayProcessor) {
+	crsm.parentRelayProcessor = relayProcessor
+}
+
+func (crsm *ConsumerRelayStateMachine) GetUsedProviders() *lavasession.UsedProviders {
+	return crsm.usedProviders
+}
+
+func (crsm *ConsumerRelayStateMachine) GetSelection() Selection {
+	return crsm.selection
+}
+
+func (crsm *ConsumerRelayStateMachine) ShouldRetry(numberOfRetriesLaunched int) bool {
 	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
 		return false
 	}
 	// best result sends to top 10 providers anyway.
-	return rp.selection != BestResult
-}
-
-func (crsm *ConsumerRelayStateMachine) SetRelayProcessor(relayProcessor *RelayProcessor) {
-	crsm.parentRelayProcessor = relayProcessor
+	return crsm.selection != BestResult
 }
 
 func (crsm *ConsumerRelayStateMachine) GetDebugState() bool {
@@ -127,7 +141,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 			currentlyUsedIsEmptyCounter := 0
 			if err != nil {
 				for validateNoProvidersAreUsed := 0; validateNoProvidersAreUsed < numberOfTimesToCheckCurrentlyUsedIsEmpty; validateNoProvidersAreUsed++ {
-					if crsm.parentRelayProcessor.usedProviders.CurrentlyUsed() == 0 {
+					if crsm.usedProviders.CurrentlyUsed() == 0 {
 						currentlyUsedIsEmptyCounter++
 					}
 					time.Sleep(5 * time.Millisecond)
@@ -139,7 +153,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 			}
 		}
 
-		// Send First Message.
+		// Send First Message, with analytics and without waiting for batch update.
 		relayTaskChannel <- RelayStateSendInstructions{
 			protocolMessage: crsm.GetProtocolMessage(),
 			analytics:       crsm.analytics,
@@ -157,9 +171,10 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 			// Getting batch update for either errors sending message or successful batches
 			case err := <-crsm.batchUpdate:
 				if err != nil { // Error handling
+					// Sending a new batch failed (consumer's protocol side), handling the state machine
 					consecutiveBatchErrors++                        // Increase consecutive error counter
 					if consecutiveBatchErrors > SendRelayAttempts { // If we failed sending a message more than "SendRelayAttempts" time in a row.
-						if batchNumber == 0 { // First relay attempt.
+						if batchNumber == 0 && consecutiveBatchErrors == SendRelayAttempts+1 { // First relay attempt. print on first failure only.
 							utils.LavaFormatWarning("Failed Sending First Message", err, utils.LogAttr("consecutive errors", consecutiveBatchErrors))
 						}
 						go validateReturnCondition(err) // Check if we have ongoing messages pending return.
@@ -176,21 +191,24 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 				// Reset consecutiveBatchErrors
 				consecutiveBatchErrors = 0
 				// Batch number validation, should never happen.
-				if batchNumber != crsm.parentRelayProcessor.usedProviders.BatchNumber() {
+				if batchNumber != crsm.usedProviders.BatchNumber() {
 					// Mismatch, return error
 					relayTaskChannel <- RelayStateSendInstructions{
-						err:  utils.LavaFormatError("Batch Number mismatch between state machine and used providers", nil, utils.LogAttr("batchNumber", batchNumber), utils.LogAttr("crsm.parentRelayProcessor.usedProviders.BatchNumber()", crsm.parentRelayProcessor.usedProviders.BatchNumber())),
+						err:  utils.LavaFormatError("Batch Number mismatch between state machine and used providers", nil, utils.LogAttr("batchNumber", batchNumber), utils.LogAttr("crsm.parentRelayProcessor.usedProviders.BatchNumber()", crsm.usedProviders.BatchNumber())),
 						done: true,
 					}
 					return
 				}
 			case success := <-gotResults:
-				// If we had a successful result or if we don't need to retry return what we currently have
-				if success || !crsm.ShouldRetry(batchNumber) { // Check wether we can return the valid results or we need to send another relay
+				// If we had a successful result return what we currently have
+				if success { // Check wether we can return the valid results or we need to send another relay
 					relayTaskChannel <- RelayStateSendInstructions{done: true}
 					return
 				}
-				relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
+				// If should retry == true, send a new batch. (success == false)
+				if crsm.ShouldRetry(batchNumber) {
+					relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
+				}
 				go readResultsFromProcessor()
 			case <-startNewBatchTicker.C:
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
@@ -218,7 +236,8 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 					utils.LogAttr("consumerIp", userData.ConsumerIp),
 					utils.LogAttr("protocolMessage.GetApi().Name", crsm.GetProtocolMessage().GetApi().Name),
 					utils.LogAttr("GUID", crsm.ctx),
-					utils.LogAttr("relayProcessor", crsm.parentRelayProcessor),
+					utils.LogAttr("batchNumber", batchNumber),
+					utils.LogAttr("consecutiveBatchErrors", consecutiveBatchErrors),
 				)
 				// returning the context error
 				relayTaskChannel <- RelayStateSendInstructions{err: processingCtx.Err(), done: true}

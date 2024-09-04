@@ -227,15 +227,15 @@ func (rpccs *RPCConsumerServer) craftRelay(ctx context.Context) (ok bool, relay 
 func (rpccs *RPCConsumerServer) sendRelayWithRetries(ctx context.Context, retries int, initialRelays bool, protocolMessage chainlib.ProtocolMessage) (bool, error) {
 	success := false
 	var err error
+	usedProviders := lavasession.NewUsedProviders(nil)
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		lavasession.NewUsedProviders(nil),
 		1,
 		rpccs.consumerConsistency,
 		rpccs.rpcConsumerLogs,
 		rpccs,
 		rpccs.relayRetriesManager,
-		NewRelayStateMachine(ctx, rpccs, protocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
+		NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
 	)
 	usedProvidersResets := 1
 	for i := 0; i < retries; i++ {
@@ -427,15 +427,15 @@ func (rpccs *RPCConsumerServer) ProcessRelaySend(ctx context.Context, protocolMe
 	// make sure all of the child contexts are cancelled when we exit
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	usedProviders := lavasession.NewUsedProviders(protocolMessage)
 	relayProcessor := NewRelayProcessor(
 		ctx,
-		lavasession.NewUsedProviders(protocolMessage),
 		rpccs.requiredResponses,
 		rpccs.consumerConsistency,
 		rpccs.rpcConsumerLogs,
 		rpccs,
 		rpccs.relayRetriesManager,
-		NewRelayStateMachine(ctx, rpccs, protocolMessage, analytics, rpccs.debugRelays, rpccs.rpcConsumerLogs),
+		NewRelayStateMachine(ctx, usedProviders, rpccs, protocolMessage, analytics, rpccs.debugRelays, rpccs.rpcConsumerLogs),
 	)
 
 	relayTaskChannel := relayProcessor.GetRelayTaskChannel()
@@ -1155,13 +1155,12 @@ func (rpccs *RPCConsumerServer) sendDataReliabilityRelayIfApplicable(ctx context
 		dataReliabilityProtocolMessage := chainlib.NewProtocolMessage(protocolMessage, nil, relayRequestData, userData.DappId, userData.ConsumerIp)
 		relayProcessorDataReliability := NewRelayProcessor(
 			ctx,
-			relayProcessor.usedProviders,
 			1,
 			rpccs.consumerConsistency,
 			rpccs.rpcConsumerLogs,
 			rpccs,
 			rpccs.relayRetriesManager,
-			NewRelayStateMachine(ctx, rpccs, dataReliabilityProtocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
+			NewRelayStateMachine(ctx, relayProcessor.usedProviders, rpccs, dataReliabilityProtocolMessage, nil, rpccs.debugRelays, rpccs.rpcConsumerLogs),
 		)
 		err := rpccs.sendRelayToProvider(ctx, dataReliabilityProtocolMessage, relayProcessorDataReliability, nil)
 		if err != nil {

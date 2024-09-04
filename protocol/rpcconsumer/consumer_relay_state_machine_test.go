@@ -16,7 +16,8 @@ import (
 )
 
 type ConsumerRelaySenderMock struct {
-	retValue error
+	retValue    error
+	tickerValue time.Duration
 }
 
 func (crsm *ConsumerRelaySenderMock) sendRelayToProvider(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayProcessor *RelayProcessor, analytics *metrics.RelayMetrics) (errRet error) {
@@ -24,6 +25,9 @@ func (crsm *ConsumerRelaySenderMock) sendRelayToProvider(ctx context.Context, pr
 }
 
 func (crsm *ConsumerRelaySenderMock) getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration) {
+	if crsm.tickerValue != 0 {
+		return time.Second * 50000, crsm.tickerValue
+	}
 	return time.Second * 50000, 100 * time.Millisecond
 }
 
@@ -50,10 +54,9 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsumerConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics))
 
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics))
-
-		usedProviders := relayProcessor.GetUsedProviders()
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -102,7 +105,7 @@ func TestConsumerStateMachineHappyFlow(t *testing.T) {
 }
 
 func TestConsumerStateMachineExhaustRetries(t *testing.T) {
-	t.Run("happy", func(t *testing.T) {
+	t.Run("retries", func(t *testing.T) {
 		ctx := context.Background()
 		serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Handle the incoming request and provide the desired response
@@ -120,10 +123,9 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		consumerIp := "123.11"
 		protocolMessage := chainlib.NewProtocolMessage(chainMsg, nil, nil, dappId, consumerIp)
 		consistency := NewConsumerConsistency(specId)
+		usedProviders := lavasession.NewUsedProviders(nil)
+		relayProcessor := NewRelayProcessor(ctx, 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, usedProviders, &ConsumerRelaySenderMock{retValue: nil, tickerValue: 100 * time.Second}, protocolMessage, nil, false, relayProcessorMetrics))
 
-		relayProcessor := NewRelayProcessor(ctx, lavasession.NewUsedProviders(nil), 1, consistency, relayProcessorMetrics, relayProcessorMetrics, relayRetriesManagerInstance, NewRelayStateMachine(ctx, &ConsumerRelaySenderMock{retValue: nil}, protocolMessage, nil, false, relayProcessorMetrics))
-
-		usedProviders := relayProcessor.GetUsedProviders()
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
 		defer cancel()
 		canUse := usedProviders.TryLockSelection(ctx)
@@ -131,18 +133,16 @@ func TestConsumerStateMachineExhaustRetries(t *testing.T) {
 		require.Nil(t, canUse)
 		require.Zero(t, usedProviders.CurrentlyUsed())
 		require.Zero(t, usedProviders.SessionsLatestBatch())
-		// consumerSessionsMap := lavasession.ConsumerSessionsMap{"lava@test": &lavasession.SessionInfo{}, "lava@test2": &lavasession.SessionInfo{}}
 
 		relayTaskChannel := relayProcessor.GetRelayTaskChannel()
 		taskNumber := 0
 		for task := range relayTaskChannel {
 			switch taskNumber {
-			case 0, 1, 2:
+			case 0, 1, 2, 3:
 				require.False(t, task.IsDone())
-				// usedProviders.AddUsed(consumerSessionsMap, nil)
 				relayProcessor.UpdateBatch(fmt.Errorf("failed sending message"))
 			case 4:
-				require.False(t, task.IsDone())
+				require.True(t, task.IsDone())
 				require.Error(t, task.err)
 				return
 			}

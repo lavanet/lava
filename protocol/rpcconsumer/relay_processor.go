@@ -61,7 +61,6 @@ type RelayProcessor struct {
 
 func NewRelayProcessor(
 	ctx context.Context,
-	usedProviders *lavasession.UsedProviders,
 	requiredSuccesses int,
 	consumerConsistency *ConsumerConsistency,
 	metricsInf MetricsInterface,
@@ -74,17 +73,18 @@ func NewRelayProcessor(
 		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", requiredSuccesses))
 	}
 	relayProcessor := &RelayProcessor{
-		usedProviders:                usedProviders,
 		requiredSuccesses:            requiredSuccesses,
 		responses:                    make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
 		ResultsManager:               NewResultsManager(guid),
-		RelayStateMachine:            relayStateMachine,
 		guid:                         guid,
 		consumerConsistency:          consumerConsistency,
 		debugRelay:                   relayStateMachine.GetDebugState(),
 		metricsInf:                   metricsInf,
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
 		relayRetriesManager:          relayRetriesManager,
+		RelayStateMachine:            relayStateMachine,
+		selection:                    relayStateMachine.GetSelection(),
+		usedProviders:                relayStateMachine.GetUsedProviders(),
 	}
 	relayProcessor.RelayStateMachine.SetRelayProcessor(relayProcessor)
 	return relayProcessor
