@@ -676,10 +676,10 @@ func restTests(rpcURL string, testDuration time.Duration) error {
 	errors := []string{}
 	mostImportantApisToTest := []string{
 		"%s/cosmos/base/tendermint/v1beta1/blocks/latest",
-		"%s/lavanet/lava/pairing/providers/LAV1",
-		"%s/lavanet/lava/pairing/clients/LAV1",
+		"%s/lavanet/lava/v2/pairing/providers/LAV1",
+		"%s/lavanet/lava/v2/pairing/clients/LAV1",
 		"%s/cosmos/gov/v1beta1/proposals",
-		"%s/lavanet/lava/spec/spec",
+		"%s/lavanet/lava/v2/spec/spec",
 		"%s/cosmos/base/tendermint/v1beta1/blocks/1",
 	}
 	for start := time.Now(); time.Since(start) < testDuration; {

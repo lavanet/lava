@@ -77,7 +77,7 @@ func v0_23_0_UpgradeHandler(
 	lk *keepers.LavaKeepers,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-		lk.PairingKeeper.InitProviderQoS(ctx, *fixationtypes.DefaultGenesis())
+		lk.PairingKeeper.InitReputations(ctx, *fixationtypes.DefaultGenesis())
 		return m.RunMigrations(ctx, c, vm)
 	}
 }

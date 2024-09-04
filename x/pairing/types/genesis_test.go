@@ -82,6 +82,20 @@ func TestGenesisState_Validate(t *testing.T) {
 						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 20},
 					},
 				},
+				Reputations: []types.ReputationGenesis{
+					{
+						ChainId:    "0",
+						Cluster:    "0",
+						Provider:   "0",
+						Reputation: types.Reputation{},
+					},
+					{
+						ChainId:    "1",
+						Cluster:    "1",
+						Provider:   "1",
+						Reputation: types.Reputation{},
+					},
+				},
 				// this line is used by starport scaffolding # types/genesis/validField
 			},
 			valid: true,
@@ -170,6 +184,27 @@ func TestGenesisState_Validate(t *testing.T) {
 						Project:                 "0",
 						ChainId:                 "0",
 						ProviderConsumerEpochCu: types.ProviderConsumerEpochCu{Cu: 10},
+					},
+				},
+			},
+			valid: false,
+		},
+		{
+			desc: "duplicated reputations",
+			genState: &types.GenesisState{
+				Params: types.DefaultParams(),
+				Reputations: []types.ReputationGenesis{
+					{
+						ChainId:    "0",
+						Cluster:    "0",
+						Provider:   "0",
+						Reputation: types.Reputation{},
+					},
+					{
+						ChainId:    "0",
+						Cluster:    "0",
+						Provider:   "0",
+						Reputation: types.Reputation{},
 					},
 				},
 			},
