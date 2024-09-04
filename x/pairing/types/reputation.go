@@ -32,6 +32,13 @@ func (r Reputation) Equal(other Reputation) bool {
 		r.Stake.IsEqual(other.Stake)
 }
 
+// ShouldTruncate checks if the ReputationVarianceStabilizationPeriod has passed since
+// the reputation's creation. If so, QoS score reports should be truncated before they're added to the
+// reputation's epoch QoS score.
+func (r Reputation) ShouldTruncate(stabilizationPeriod int64, currentTime int64) bool {
+	return r.CreationTime+stabilizationPeriod < currentTime
+}
+
 // ReputationScoreKey returns a key for the reputations fixation store (reputationsFS)
 func ReputationScoreKey(chainID string, cluster string, provider string) string {
 	return chainID + " " + cluster + " " + provider

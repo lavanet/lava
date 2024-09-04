@@ -1063,3 +1063,197 @@ func TestPairingCaching(t *testing.T) {
 		require.Equal(t, totalCU*3, sub.Sub.MonthCuTotal-sub.Sub.MonthCuLeft)
 	}
 }
+
+// TestUpdateReputationEpochQosScore tests the update of the reputation's epoch qos score
+// Scenarios:
+//  1. provider1 sends relay -> its reputation is updated (epoch score and time last updated),
+//     also, provider2 reputation is not updated
+func TestUpdateReputationEpochQosScore(t *testing.T) {
+	ts := newTester(t)
+	ts.setupForPayments(2, 1, 0) // 2 providers, 1 client, default providers-to-pair
+
+	consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+	_, provider1 := ts.GetAccount(common.PROVIDER, 0)
+	_, provider2 := ts.GetAccount(common.PROVIDER, 1)
+	qos := &types.QualityOfServiceReport{
+		Latency:      sdk.ZeroDec(),
+		Availability: sdk.OneDec(),
+		Sync:         sdk.ZeroDec(),
+	}
+
+	res, err := ts.QuerySubscriptionCurrent(consumer)
+	require.NoError(t, err)
+	cluster := res.Sub.Cluster
+
+	// set default reputations for both providers. Advance epoch to change the current block time
+	ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider1, types.NewReputation(ts.Ctx))
+	ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider2, types.NewReputation(ts.Ctx))
+	ts.AdvanceEpoch()
+
+	// send relay payment msg from provider1
+	relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), 1)
+	relaySession.QosExcellenceReport = qos
+	sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+	require.NoError(t, err)
+	relaySession.Sig = sig
+
+	payment := types.MsgRelayPayment{
+		Creator: provider1,
+		Relays:  []*types.RelaySession{relaySession},
+	}
+	ts.relayPaymentWithoutPay(payment, true)
+
+	// get both providers reputation: provider1 should have its epoch score and time last updated changed,
+	// provider2 should have nothing change from the default
+	r1, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
+	require.True(t, found)
+	r2, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider2)
+	require.True(t, found)
+
+	require.Greater(t, r1.TimeLastUpdated, r2.TimeLastUpdated)
+	epochScore1, err := r1.EpochScore.Score.Resolve()
+	require.NoError(t, err)
+	epochScore2, err := r2.EpochScore.Score.Resolve()
+	require.NoError(t, err)
+	variance1, err := r1.EpochScore.Variance.Resolve()
+	require.NoError(t, err)
+	variance2, err := r2.EpochScore.Variance.Resolve()
+	require.NoError(t, err)
+	require.True(t, epochScore1.LT(epochScore2)) // score is lower because QoS is excellent
+	require.True(t, variance1.GT(variance2))     // variance is higher because the QoS is significantly differnet from DefaultQos
+
+	entry, found := ts.Keepers.Epochstorage.GetStakeEntryByAddressCurrent(ts.Ctx, ts.spec.Index, provider1)
+	require.True(t, found)
+	require.True(t, entry.Stake.IsEqual(r1.Stake))
+}
+
+// TestUpdateReputationEpochQosScoreTruncation tests the following scenarios:
+// 1. stabilization period has not passed -> no truncation
+// 2. stabilization period passed -> with truncation (score update is smaller than the first one)
+// note, this test works since we use a bad QoS report (compared to default) so we know that the score should
+// increase (which is considered worse)
+func TestUpdateReputationEpochQosScoreTruncation(t *testing.T) {
+	// these will be used to compare the score change with/without truncation
+	scoreUpdates := []sdk.Dec{}
+
+	// we set the stabilization period to 2 epochs time. Advancing one epoch means we won't truncate,
+	// advancing 3 means we will truncate.
+	epochsToAdvance := []uint64{1, 3}
+
+	for i := range epochsToAdvance {
+		ts := newTester(t)
+		ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+
+		consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+		_, provider1 := ts.GetAccount(common.PROVIDER, 0)
+		qos := &types.QualityOfServiceReport{
+			Latency:      sdk.NewDec(1000),
+			Availability: sdk.OneDec(),
+			Sync:         sdk.NewDec(1000),
+		}
+
+		resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+		require.NoError(t, err)
+		cluster := resQCurrent.Sub.Cluster
+
+		// set stabilization period to be 2*epoch time
+		resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &types.QueryParamsRequest{})
+		require.NoError(t, err)
+		resQParams.Params.ReputationVarianceStabilizationPeriod = int64(ts.EpochTimeDefault().Seconds())
+		ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
+
+		// set default reputation
+		ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider1, types.NewReputation(ts.Ctx))
+
+		// advance epochs
+		ts.AdvanceEpochs(epochsToAdvance[i])
+
+		// send relay payment msg from provider1
+		relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), 1)
+		relaySession.QosExcellenceReport = qos
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
+
+		payment := types.MsgRelayPayment{
+			Creator: provider1,
+			Relays:  []*types.RelaySession{relaySession},
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+
+		// get update of epoch score
+		r, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
+		require.True(t, found)
+		epochScoreNoTruncation, err := r.EpochScore.Score.Resolve()
+		require.NoError(t, err)
+		defaultEpochScore, err := types.ZeroQosScore.Score.Resolve()
+		require.NoError(t, err)
+		scoreUpdates = append(scoreUpdates, epochScoreNoTruncation.Sub(defaultEpochScore))
+	}
+
+	// require that the score update that was not truncated is larger than the one that was truncated
+	require.True(t, scoreUpdates[0].GT(scoreUpdates[1]))
+}
+
+// TestUpdateReputationEpochQosScoreTruncation tests the following scenario:
+// 1. relay num is the reputation update weight. More relays = bigger update
+func TestUpdateReputationEpochQosScoreRelayNumWeight(t *testing.T) {
+	// these will be used to compare the score change with high/low relay numbers
+	scoreUpdates := []sdk.Dec{}
+
+	// we set the stabilization period to 2 epochs time. Advancing one epoch means we won't truncate,
+	// advancing 3 means we will truncate.
+	relayNums := []uint64{100, 1}
+
+	for i := range relayNums {
+		ts := newTester(t)
+		ts.setupForPayments(1, 1, 0) // 1 provider, 1 client, default providers-to-pair
+
+		consumerAcc, consumer := ts.GetAccount(common.CONSUMER, 0)
+		_, provider1 := ts.GetAccount(common.PROVIDER, 0)
+		qos := &types.QualityOfServiceReport{
+			Latency:      sdk.NewDec(1000),
+			Availability: sdk.OneDec(),
+			Sync:         sdk.NewDec(1000),
+		}
+
+		resQCurrent, err := ts.QuerySubscriptionCurrent(consumer)
+		require.NoError(t, err)
+		cluster := resQCurrent.Sub.Cluster
+
+		// set stabilization period to be 2*epoch time to avoid truncation
+		resQParams, err := ts.Keepers.Pairing.Params(ts.GoCtx, &types.QueryParamsRequest{})
+		require.NoError(t, err)
+		resQParams.Params.ReputationVarianceStabilizationPeriod = int64(ts.EpochTimeDefault().Seconds())
+		ts.Keepers.Pairing.SetParams(ts.Ctx, resQParams.Params)
+
+		// set default reputation
+		ts.Keepers.Pairing.SetReputation(ts.Ctx, ts.spec.Index, cluster, provider1, types.NewReputation(ts.Ctx))
+		ts.AdvanceEpoch()
+
+		// send relay payment msg from provider1
+		relaySession := ts.newRelaySession(provider1, 0, 100, ts.BlockHeight(), relayNums[i])
+		relaySession.QosExcellenceReport = qos
+		sig, err := sigs.Sign(consumerAcc.SK, *relaySession)
+		require.NoError(t, err)
+		relaySession.Sig = sig
+
+		payment := types.MsgRelayPayment{
+			Creator: provider1,
+			Relays:  []*types.RelaySession{relaySession},
+		}
+		ts.relayPaymentWithoutPay(payment, true)
+
+		// get update of epoch score
+		r, found := ts.Keepers.Pairing.GetReputation(ts.Ctx, ts.spec.Index, cluster, provider1)
+		require.True(t, found)
+		epochScoreNoTruncation, err := r.EpochScore.Score.Resolve()
+		require.NoError(t, err)
+		defaultEpochScore, err := types.ZeroQosScore.Score.Resolve()
+		require.NoError(t, err)
+		scoreUpdates = append(scoreUpdates, epochScoreNoTruncation.Sub(defaultEpochScore))
+	}
+
+	// require that the score update that was with 1000 relay num is larger than the one with one relay num
+	require.True(t, scoreUpdates[0].GT(scoreUpdates[1]))
+}
