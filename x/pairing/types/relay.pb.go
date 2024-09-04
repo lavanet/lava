@@ -765,9 +765,14 @@ func (m *RelayReply) GetMetadata() []Metadata {
 }
 
 type QualityOfServiceReport struct {
-	Latency      github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=latency,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"latency" yaml:"Latency"`
+	// Latency of provider answers in milliseconds, range 0-inf, lower is better
+	Latency github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,1,opt,name=latency,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"latency" yaml:"Latency"`
+	// Percentage of times the provider returned a non-error response, range 0-1, higher is better
 	Availability github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,2,opt,name=availability,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"availability" yaml:"availability"`
-	Sync         github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=sync,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"sync" yaml:"sync"`
+	// Amount of time the provider is not synced (have the latest block) in milliseconds, range 0-inf, lower is better.
+	// Example: in ETH we have 15sec block time. So sync = 15000 means that the provider is one block
+	// behind the actual latest block.
+	Sync github_com_cosmos_cosmos_sdk_types.Dec `protobuf:"bytes,3,opt,name=sync,proto3,customtype=github.com/cosmos/cosmos-sdk/types.Dec" json:"sync" yaml:"sync"`
 }
 
 func (m *QualityOfServiceReport) Reset()         { *m = QualityOfServiceReport{} }
