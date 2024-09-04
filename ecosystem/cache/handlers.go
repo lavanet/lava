@@ -13,12 +13,12 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/dgraph-io/ristretto"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v2/protocol/parser"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v3/protocol/parser"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 

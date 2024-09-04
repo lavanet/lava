@@ -6,10 +6,10 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	keepertest "github.com/lavanet/lava/v2/testutil/keeper"
-	commontypes "github.com/lavanet/lava/v2/utils/common/types"
-	"github.com/lavanet/lava/v2/x/pairing/keeper"
-	"github.com/lavanet/lava/v2/x/pairing/types"
+	keepertest "github.com/lavanet/lava/v3/testutil/keeper"
+	commontypes "github.com/lavanet/lava/v3/utils/common/types"
+	"github.com/lavanet/lava/v3/x/pairing/keeper"
+	"github.com/lavanet/lava/v3/x/pairing/types"
 	"github.com/stretchr/testify/require"
 )
 

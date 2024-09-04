@@ -3,11 +3,11 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v2/testutil/common"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	planstypes "github.com/lavanet/lava/v2/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v2/x/projects/types"
+	"github.com/lavanet/lava/v3/testutil/common"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 

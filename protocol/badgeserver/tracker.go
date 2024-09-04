@@ -6,11 +6,11 @@ import (
 
 	cosmosclient "github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/lavanet/lava/v2/protocol/chaintracker"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/protocol/statetracker"
-	"github.com/lavanet/lava/v2/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v3/protocol/chaintracker"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/protocol/statetracker"
+	"github.com/lavanet/lava/v3/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v3/utils"
 )
 
 // adding 3 blocks delay, to update the epoch.

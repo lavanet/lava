@@ -4,9 +4,9 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	commontypes "github.com/lavanet/lava/v2/utils/common/types"
-	"github.com/lavanet/lava/v2/x/dualstaking/types"
+	"github.com/lavanet/lava/v3/utils"
+	commontypes "github.com/lavanet/lava/v3/utils/common/types"
+	"github.com/lavanet/lava/v3/x/dualstaking/types"
 )
 
 func (k msgServer) Redelegate(goCtx context.Context, msg *types.MsgRedelegate) (*types.MsgRedelegateResponse, error) {

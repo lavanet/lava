@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
 )
 
 const DAY_SECONDS = 60 * 60 * 24

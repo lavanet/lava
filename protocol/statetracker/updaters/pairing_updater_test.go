@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/utils/rand"
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/utils/rand"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	"github.com/stretchr/testify/require"
 )
 

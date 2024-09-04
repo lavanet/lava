@@ -18,13 +18,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	typestx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
-	updaters "github.com/lavanet/lava/v2/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v2/utils"
-	commontypes "github.com/lavanet/lava/v2/utils/common/types"
-	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/rpcprovider/reliabilitymanager"
+	updaters "github.com/lavanet/lava/v3/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v3/utils"
+	commontypes "github.com/lavanet/lava/v3/utils/common/types"
+	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 )
 
 const (

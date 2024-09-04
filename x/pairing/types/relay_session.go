@@ -1,7 +1,7 @@
 package types
 
 import (
-	"github.com/lavanet/lava/v2/utils/sigs"
+	"github.com/lavanet/lava/v3/utils/sigs"
 )
 
 func (rs RelaySession) GetSignature() []byte {
