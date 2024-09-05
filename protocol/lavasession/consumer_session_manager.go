@@ -639,6 +639,9 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else {
 		providers = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, OptimizerPerturbation)
+		for _, chosenProvider := range providers {
+			go csm.consumerMetricsManager.UpdateProviderChosenByOptimizerCount(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, chosenProvider, csm.currentEpoch)
+		}
 	}
 
 	utils.LavaFormatTrace("Choosing providers",

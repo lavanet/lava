@@ -54,6 +54,7 @@ type ConsumerMetricsManager struct {
 	relayProcessingLatencyBeforeProvider        *prometheus.GaugeVec
 	relayProcessingLatencyAfterProvider         *prometheus.GaugeVec
 	averageProcessingLatency                    map[string]*LatencyTracker
+	providerChosenByOptimizerCount              *prometheus.GaugeVec
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -175,6 +176,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "average latency of processing a successful relay after it is received from the provider in µs (10^6)",
 	}, []string{"spec", "apiInterface"})
 
+	providerChosenByOptimizerCount := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_provider_chosen_by_optimizer_count",
+		Help: "The total number of times a provider was chosen by the optimizer",
+	}, []string{"spec", "apiInterface", "provider_address", "epoch"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -197,6 +203,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(totalNodeErroredRecoveryAttemptsMetric)
 	prometheus.MustRegister(relayProcessingLatencyBeforeProvider)
 	prometheus.MustRegister(relayProcessingLatencyAfterProvider)
+	prometheus.MustRegister(providerChosenByOptimizerCount)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                      totalCURequestedMetric,
@@ -225,6 +232,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		relayProcessingLatencyBeforeProvider:        relayProcessingLatencyBeforeProvider,
 		relayProcessingLatencyAfterProvider:         relayProcessingLatencyAfterProvider,
 		averageProcessingLatency:                    map[string]*LatencyTracker{},
+		providerChosenByOptimizerCount:              providerChosenByOptimizerCount,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -442,6 +450,7 @@ func (pme *ConsumerMetricsManager) ResetSessionRelatedMetrics() {
 	pme.qosMetric.Reset()
 	pme.qosExcellenceMetric.Reset()
 	pme.providerRelays = map[string]uint64{}
+	pme.providerChosenByOptimizerCount.Reset()
 }
 
 func (pme *ConsumerMetricsManager) SetVersion(version string) {
@@ -449,6 +458,13 @@ func (pme *ConsumerMetricsManager) SetVersion(version string) {
 		return
 	}
 	SetVersionInner(pme.protocolVersionMetric, version)
+}
+
+func (pme *ConsumerMetricsManager) UpdateProviderChosenByOptimizerCount(chainId string, apiInterface string, providerAddress string, epoch uint64) {
+	if pme == nil {
+		return
+	}
+	pme.providerChosenByOptimizerCount.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10)).Inc()
 }
 
 func SetVersionInner(protocolVersionMetric *prometheus.GaugeVec, version string) {
