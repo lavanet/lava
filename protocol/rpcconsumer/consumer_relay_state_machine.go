@@ -68,7 +68,7 @@ func NewRelayStateMachine(
 		selection:          selection,
 		debugRelays:        debugRelays,
 		tickerMetricSetter: tickerMetricSetter,
-		batchUpdate:        make(chan error),
+		batchUpdate:        make(chan error, MaximumNumberOfTickerRelayRetries),
 	}
 }
 
@@ -116,7 +116,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 	go func() {
 		batchNumber := 0 // Set batch number
 		// A channel to be notified processing was done, true means we have results and can return
-		gotResults := make(chan bool)
+		gotResults := make(chan bool, 1)
 		processingTimeout, relayTimeout := crsm.relaySender.getProcessingTimeout(crsm.GetProtocolMessage())
 		if crsm.debugRelays {
 			utils.LavaFormatDebug("Relay initiated with the following timeout schedule", utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("newRelayTimeout", relayTimeout))
@@ -136,21 +136,19 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 			}
 		}
 		go readResultsFromProcessor()
-		returnCondition := make(chan error)
+		returnCondition := make(chan error, 1)
 		// Used for checking whether to return an error to the user or to allow other channels return their result first see detailed description on the switch case below
 		validateReturnCondition := func(err error) {
 			currentlyUsedIsEmptyCounter := 0
-			if err != nil {
-				for validateNoProvidersAreUsed := 0; validateNoProvidersAreUsed < numberOfTimesToCheckCurrentlyUsedIsEmpty; validateNoProvidersAreUsed++ {
-					if crsm.usedProviders.CurrentlyUsed() == 0 {
-						currentlyUsedIsEmptyCounter++
-					}
-					time.Sleep(5 * time.Millisecond)
+			for validateNoProvidersAreUsed := 0; validateNoProvidersAreUsed < numberOfTimesToCheckCurrentlyUsedIsEmpty; validateNoProvidersAreUsed++ {
+				if crsm.usedProviders.CurrentlyUsed() == 0 {
+					currentlyUsedIsEmptyCounter++
 				}
-				// we failed to send a batch of relays, if there are no active sends we can terminate after validating X amount of times to make sure no racing channels
-				if currentlyUsedIsEmptyCounter >= numberOfTimesToCheckCurrentlyUsedIsEmpty {
-					returnCondition <- err
-				}
+				time.Sleep(5 * time.Millisecond)
+			}
+			// we failed to send a batch of relays, if there are no active sends we can terminate after validating X amount of times to make sure no racing channels
+			if currentlyUsedIsEmptyCounter >= numberOfTimesToCheckCurrentlyUsedIsEmpty {
+				returnCondition <- err
 			}
 		}
 
@@ -201,13 +199,17 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 				}
 			case success := <-gotResults:
 				// If we had a successful result return what we currently have
-				// Or we are done sending relays, used providers might not be 0 at this time.
-				if success || !crsm.ShouldRetry(batchNumber) { // Check wether we can return the valid results or we need to send another relay
+				// Or we are done sending relays, and we have no other relays pending results.
+				if success { // Check wether we can return the valid results or we need to send another relay
 					relayTaskChannel <- RelayStateSendInstructions{done: true}
 					return
 				}
-				// If should retry == true || success == false send a new batch.
-				relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
+				// If should retry == true, send a new batch. (success == false)
+				if crsm.ShouldRetry(batchNumber) {
+					relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
+				} else {
+					go validateReturnCondition(nil)
+				}
 				go readResultsFromProcessor()
 			case <-startNewBatchTicker.C:
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
