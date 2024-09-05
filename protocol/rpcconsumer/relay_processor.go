@@ -293,7 +293,7 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 				return nil
 			}
 		case <-ctx.Done():
-			return utils.LavaFormatWarning("cancelled relay processor", nil, utils.LogAttr("total responses", responsesCount))
+			return utils.LavaFormatDebug("cancelled relay processor", utils.LogAttr("total responses", responsesCount))
 		}
 	}
 }
