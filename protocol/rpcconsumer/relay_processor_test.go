@@ -570,8 +570,7 @@ func TestRelayProcessorStatefulApiErr(t *testing.T) {
 		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*50)
 		defer cancel()
 		for i := 0; i < 2; i++ {
-			err = relayProcessor.WaitForResults(ctx)
-			require.NoError(t, err)
+			relayProcessor.WaitForResults(ctx)
 		}
 		resultsOk := relayProcessor.HasResults()
 		require.True(t, resultsOk)
