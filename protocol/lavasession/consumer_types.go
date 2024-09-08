@@ -75,6 +75,7 @@ type ProviderOptimizer interface {
 	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string)
 	GetExcellenceQoSReportForProvider(string) (*pairingtypes.QualityOfServiceReport, *pairingtypes.QualityOfServiceReport)
 	Strategy() provideroptimizer.Strategy
+	UpdateWeights(map[string]int64)
 }
 
 type ignoredProviders struct {
@@ -594,4 +595,25 @@ func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, sc
 	downtimePercentage := sdk.NewDecWithPrec(int64(qosReport.TotalRelays-qosReport.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(qosReport.TotalRelays), 0))
 	scaledAvailabilityScore := sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
 	return downtimePercentage, scaledAvailabilityScore
+}
+
+func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (weights map[string]int64) {
+	weights = make(map[string]int64)
+	staticProviders := make([]*ConsumerSessionsWithProvider, 0)
+	maxWeight := int64(1)
+	for _, cswp := range providers {
+		if cswp.StaticProvider {
+			staticProviders = append(staticProviders, cswp)
+			continue
+		}
+		stake := cswp.getProviderStakeSize().Amount.Int64()
+		if stake > maxWeight {
+			maxWeight = stake
+		}
+		weights[cswp.PublicLavaAddress] = stake
+	}
+	for _, cswp := range staticProviders {
+		weights[cswp.PublicLavaAddress] = maxWeight * 10
+	}
+	return weights
 }

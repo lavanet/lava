@@ -49,6 +49,7 @@ type ProviderOptimizer struct {
 	baseWorldLatency                time.Duration
 	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
+	selectionWeighter               SelectionWeighter
 }
 
 type ProviderData struct {
@@ -71,6 +72,10 @@ const (
 	STRATEGY_ACCURACY
 	STRATEGY_DISTRIBUTED
 )
+
+func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64) {
+	po.selectionWeighter.SetWeights(weights)
+}
 
 func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
 	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now())
@@ -469,7 +474,15 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 		// overwrite
 		wantedNumProvidersInConcurrency = 1
 	}
-	return &ProviderOptimizer{strategy: strategy, providersStorage: cache, averageBlockTime: averageBlockTIme, baseWorldLatency: baseWorldLatency, providerRelayStats: relayCache, wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency}
+	return &ProviderOptimizer{
+		strategy:                        strategy,
+		providersStorage:                cache,
+		averageBlockTime:                averageBlockTIme,
+		baseWorldLatency:                baseWorldLatency,
+		providerRelayStats:              relayCache,
+		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
+		selectionWeighter:               NewSelectionWeighter(),
+	}
 }
 
 // calculate the probability a random variable with a poisson distribution
