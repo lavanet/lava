@@ -40,6 +40,31 @@ func (k Keeper) GetStakeEntry(ctx sdk.Context, epoch uint64, chainID string, pro
 	return entry, true
 }
 
+// HasStakeEntry checks if a specific stake entry exists in the stake entries KV store
+func (k Keeper) HasStakeEntry(ctx sdk.Context, epoch uint64, chainID string, provider string) bool {
+	pk, err := k.stakeEntries.Indexes.Index.MatchExact(ctx, collections.Join3(epoch, chainID, provider))
+	if err != nil {
+		utils.LavaFormatWarning("HasStakeEntry: MatchExact with ref key failed", err,
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("provider", provider),
+		)
+		return false
+	}
+
+	found, err := k.stakeEntries.Has(ctx, pk)
+	if err != nil {
+		utils.LavaFormatError("HasStakeEntry: Has with primary key failed", err,
+			utils.LogAttr("epoch", epoch),
+			utils.LogAttr("chain_id", chainID),
+			utils.LogAttr("provider", provider),
+		)
+		return false
+	}
+
+	return found
+}
+
 // Set stake entry
 func (k Keeper) SetStakeEntry(ctx sdk.Context, epoch uint64, stakeEntry types.StakeEntry) {
 	stake := uint64(0)

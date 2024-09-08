@@ -132,7 +132,6 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 		k.handleNoIprpcRewardToProviders(ctx, iprpcReward.SpecFunds)
 		return
 	}
-
 	leftovers := sdk.NewCoins()
 	for _, specFund := range iprpcReward.SpecFunds {
 		details := map[string]string{}
@@ -146,6 +145,26 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 				utils.LogAttr("rewards", specFund.Fund.String()),
 			)
 			continue
+		}
+
+		// remove providers that are registered in the spec fund but unstaked (can't reward unstaked providers)
+		epoch, _, err := k.epochstorage.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
+		if err != nil {
+			// should never happen, print an error and return
+			utils.LavaFormatError("cannot distribute iprpc rewards", err,
+				utils.LogAttr("block", ctx.BlockHeight()),
+			)
+		}
+		stakedProvidersCu := []types.ProviderCuType{}
+		for _, providerCu := range specCu.ProvidersCu {
+			if k.epochstorage.HasStakeEntry(ctx, epoch, specFund.Spec, providerCu.Provider) {
+				// provider is found, add to the stakedProvidersCu list
+				stakedProvidersCu = append(stakedProvidersCu, providerCu)
+			} else {
+				// provider is not found, don't add to the stakedProvidersCu list and subtract its CU from the spec's
+				// total CU
+				specCu.TotalCu -= providerCu.CU
+			}
 		}
 
 		// tax the rewards to the community and validators
@@ -162,7 +181,7 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 
 		UsedReward := sdk.NewCoins()
 		// distribute IPRPC reward for spec
-		for _, providerCU := range specCu.ProvidersCu {
+		for _, providerCU := range stakedProvidersCu {
 			if specCu.TotalCu == 0 {
 				// spec was not serviced by any provider, continue
 				continue
@@ -178,9 +197,11 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			UsedReward = UsedRewardTemp
 
 			// reward the provider
-			_, _, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
+			_, claimableRewards, err := k.dualstakingKeeper.RewardProvidersAndDelegators(ctx, providerCU.Provider, specFund.Spec, providerIprpcReward, string(types.IprpcPoolName), false, false, false)
 			if err != nil {
+				// failed sending the rewards, add the claimable rewards to the leftovers that will be transferred to the community pool
 				utils.LavaFormatError("failed to send iprpc rewards to provider", err, utils.LogAttr("provider", providerCU))
+				leftovers = leftovers.Add(claimableRewards...)
 			}
 			details[providerCU.Provider] = fmt.Sprintf("cu: %d reward: %s", providerCU.CU, providerIprpcReward.String())
 		}
