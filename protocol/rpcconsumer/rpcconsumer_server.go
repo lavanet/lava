@@ -403,7 +403,7 @@ func (rpccs *RPCConsumerServer) SendParsedRelay(
 	}
 
 	returnedResult, err := relayProcessor.ProcessingResult()
-	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage.GetDirectiveHeaders(), protocolMessage.GetApi().GetName())
+	rpccs.appendHeadersToRelayResult(ctx, returnedResult, relayProcessor.ProtocolErrors(), relayProcessor, protocolMessage, protocolMessage.GetApi().GetName())
 	if err != nil {
 		return returnedResult, utils.LavaFormatError("failed processing responses from providers", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.LogAttr("endpoint", rpccs.listenEndpoint.Key()))
 	}
@@ -1260,10 +1260,11 @@ func (rpccs *RPCConsumerServer) HandleDirectiveHeadersForMessage(chainMessage ch
 	chainMessage.SetForceCacheRefresh(ok)
 }
 
-func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor *RelayProcessor, directiveHeaders map[string]string, apiName string) {
+func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, relayResult *common.RelayResult, protocolErrors uint64, relayProcessor *RelayProcessor, protocolMessage chainlib.ProtocolMessage, apiName string) {
 	if relayResult == nil {
 		return
 	}
+
 	metadataReply := []pairingtypes.Metadata{}
 	// add the provider that responded
 
@@ -1312,6 +1313,17 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 			Value: apiName,
 		})
 
+	// add is node error flag
+	isNodeError, _ := protocolMessage.CheckResponseError(relayResult.Reply.Data, relayResult.StatusCode)
+	if isNodeError {
+		metadataReply = append(metadataReply,
+			pairingtypes.Metadata{
+				Name:  common.LAVA_IDENTIFIED_NODE_ERROR_HEADER,
+				Value: "true",
+			})
+
+	}
+
 	// fetch trailer information from the provider by using the provider trailer field.
 	providerNodeExtensions := relayResult.ProviderTrailer.Get(chainlib.RPCProviderNodeExtension)
 	if len(providerNodeExtensions) > 0 {
@@ -1322,6 +1334,7 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 		relayResult.Reply.Metadata = append(relayResult.Reply.Metadata, extensionMD)
 	}
 
+	directiveHeaders := protocolMessage.GetDirectiveHeaders()
 	_, debugRelays := directiveHeaders[common.LAVA_DEBUG_RELAY]
 	if debugRelays {
 		erroredProviders := relayProcessor.GetUsedProviders().GetErroredProviders()
