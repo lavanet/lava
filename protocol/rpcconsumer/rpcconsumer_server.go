@@ -1320,7 +1320,6 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 				Name:  common.LAVA_IDENTIFIED_NODE_ERROR_HEADER,
 				Value: "true",
 			})
-
 	}
 
 	// fetch trailer information from the provider by using the provider trailer field.
