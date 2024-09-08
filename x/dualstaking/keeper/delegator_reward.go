@@ -211,8 +211,8 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 			if err != nil {
 				return zeroCoins, claimableRewards, err
 			}
-			claimableRewards = claimableRewards.Sub(contributorReward...)
 		}
+		claimableRewards = claimableRewards.Sub(contributorReward...)
 	}
 
 	relevantDelegations := lavaslices.Filter(delegations,
@@ -227,11 +227,7 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 
 	if !calcOnlyProvider {
 		// reward provider's vault
-		err := k.rewardDelegator(ctx, types.Delegation{Provider: stakeEntry.Address, ChainID: chainID, Delegator: stakeEntry.Vault}, fullProviderReward, senderModule)
-		if err == nil {
-			// if there is no error, update the claimable rewards
-			claimableRewards = claimableRewards.Sub(fullProviderReward...)
-		}
+		k.rewardDelegator(ctx, types.Delegation{Provider: stakeEntry.Address, ChainID: chainID, Delegator: stakeEntry.Vault}, fullProviderReward, senderModule)
 	}
 
 	return fullProviderReward, claimableRewards, nil
@@ -243,24 +239,18 @@ func (k Keeper) updateDelegatorsReward(ctx sdk.Context, totalDelegations math.In
 
 	for _, delegation := range delegations {
 		delegatorReward := k.CalcDelegatorReward(ctx, delegatorsReward, totalDelegations, delegation)
-
-		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorReward...)
-
 		if !calcOnly {
-			err := k.rewardDelegator(ctx, delegation, delegatorReward, senderModule)
-			if err != nil {
-				// on error, remove the delegator reward from the used rewards so it'll be part of the leftovers
-				usedDelegatorRewards = usedDelegatorRewards.Sub(delegatorReward...)
-			}
+			k.rewardDelegator(ctx, delegation, delegatorReward, senderModule)
 		}
+		usedDelegatorRewards = usedDelegatorRewards.Add(delegatorReward...)
 	}
 
 	return delegatorsReward.Sub(usedDelegatorRewards...)
 }
 
-func (k Keeper) rewardDelegator(ctx sdk.Context, delegation types.Delegation, amount sdk.Coins, senderModule string) error {
+func (k Keeper) rewardDelegator(ctx sdk.Context, delegation types.Delegation, amount sdk.Coins, senderModule string) {
 	if amount.IsZero() {
-		return fmt.Errorf("cannot reward delegator, amount is zero")
+		return
 	}
 
 	rewardMapKey := types.DelegationKey(delegation.Provider, delegation.Delegator, delegation.ChainID)
@@ -276,10 +266,8 @@ func (k Keeper) rewardDelegator(ctx sdk.Context, delegation types.Delegation, am
 	k.SetDelegatorReward(ctx, delegatorReward)
 	err := k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, types.ModuleName, amount)
 	if err != nil {
-		return utils.LavaFormatError("failed to send rewards to module", err, utils.LogAttr("sender", senderModule), utils.LogAttr("amount", amount.String()))
+		utils.LavaFormatError("failed to send rewards to module", err, utils.LogAttr("sender", senderModule), utils.LogAttr("amount", amount.String()))
 	}
-
-	return nil
 }
 
 func (k Keeper) PayContributors(ctx sdk.Context, senderModule string, contributorAddresses []sdk.AccAddress, contributorReward sdk.Coins, specId string) error {
