@@ -11,7 +11,7 @@ import (
 type SelectionWeighter interface {
 	Weight(address string) int64
 	SetWeights(weights map[string]int64)
-	WeightedChoice(possibilities []string) string
+	WeightedChoice(possibilities []Entry) string
 }
 
 type selectionWeighterInst struct {
@@ -45,22 +45,22 @@ func (sw *selectionWeighterInst) SetWeights(weights map[string]int64) {
 	sw.totalWeight = totalWeight
 }
 
-func (sw *selectionWeighterInst) WeightedChoice(addresses []string) string {
-	if len(addresses) == 0 {
+func (sw *selectionWeighterInst) WeightedChoice(entries []Entry) string {
+	if len(entries) == 0 {
 		return ""
 	}
 	sw.lock.RLock()
 	defer sw.lock.RUnlock()
 	randWeight := rand.Int63n(sw.totalWeight)
 	currentWeight := int64(0)
-	for _, address := range addresses {
-		currentWeight += sw.Weight(address)
+	for _, entry := range entries {
+		currentWeight += sw.Weight(entry.Address)
 		if currentWeight > randWeight {
-			return address
+			return entry.Address
 		}
 	}
-	utils.LavaFormatError("invalid weighted choice, no address chosen, fallback to last one", nil, utils.LogAttr("addresses", addresses),
+	utils.LavaFormatError("invalid weighted choice, no address chosen, fallback to last one", nil, utils.LogAttr("addresses", entries),
 		utils.LogAttr("totalWeight", sw.totalWeight))
 	// Fallback to the last address if no address is selected
-	return addresses[len(addresses)-1]
+	return entries[len(entries)-1].Address
 }

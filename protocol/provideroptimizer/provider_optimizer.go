@@ -30,6 +30,13 @@ const (
 	WANTED_PRECISION           = int64(8)
 )
 
+var (
+	NumTiers       = 4
+	MinimumEntries = 5
+	ATierChance    = 0.75
+	LastTierChance = 0.0
+)
+
 type ConcurrentBlockStore struct {
 	Lock  sync.Mutex
 	Time  time.Time
@@ -138,14 +145,18 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string) {
-	returnedProviders := make([]string, 1) // location 0 is always the best score
-	latencyScore := math.MaxFloat64        // smaller = better i.e less latency
-	syncScore := math.MaxFloat64           // smaller = better i.e less sync lag
-	numProviders := len(allAddresses)
+	latencyScore := math.MaxFloat64 // smaller = better i.e less latency
+	syncScore := math.MaxFloat64    // smaller = better i.e less sync lag
 	if po.strategy == STRATEGY_DISTRIBUTED {
 		// distribute relays across more providers
 		perturbationPercentage *= 2
 	}
+	type exploration struct {
+		address string
+		time    time.Time
+	}
+	explorationCandidate := exploration{address: "", time: time.Now().Add(time.Hour)}
+	selectionTier := NewSelectionTier()
 	for _, providerAddress := range allAddresses {
 		if _, ok := ignoredProviders[providerAddress]; ok {
 			// ignored provider, skip it
@@ -176,23 +187,23 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			utils.LogAttr("latencyScore", latencyScore),
 			utils.LogAttr("syncScore", syncScore),
 		)
+		providerScore := po.calcProviderScore(latencyScoreCurrent, syncScoreCurrent)
+		selectionTier.AddScore(providerAddress, providerScore)
 
-		// we want the minimum latency and sync diff
-		if po.isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent) || len(returnedProviders) == 0 {
-			if returnedProviders[0] != "" && po.shouldExplore(len(returnedProviders), numProviders) {
-				// we are about to overwrite position 0, and this provider needs a chance to be in exploration
-				returnedProviders = append(returnedProviders, returnedProviders[0])
-			}
-			returnedProviders[0] = providerAddress // best provider is always on position 0
-			latencyScore = latencyScoreCurrent
-			syncScore = syncScoreCurrent
-			continue
-		}
-		if po.shouldExplore(len(returnedProviders), numProviders) {
-			returnedProviders = append(returnedProviders, providerAddress)
+		// check if candidate for exploration
+		updateTime := providerData.Latency.Time
+		if updateTime.Add(30*time.Second).Before(time.Now()) && updateTime.Before(explorationCandidate.time) {
+			// if the provider didn't update its data for 30 seconds, it is a candidate for exploration
+			explorationCandidate = exploration{address: providerAddress, time: updateTime}
 		}
 	}
-
+	tier := selectionTier.SelectTierRandomly(NumTiers, map[int]float64{0: ATierChance, (NumTiers - 1): LastTierChance})
+	tierProviders := selectionTier.GetTier(tier, NumTiers, MinimumEntries)
+	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
+	returnedProviders := []string{selectedProvider}
+	if explorationCandidate.address != "" && po.shouldExplore(1, len(allAddresses)) {
+		returnedProviders = append(returnedProviders, explorationCandidate.address)
+	}
 	utils.LavaFormatTrace("returned providers",
 		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
 		utils.LogAttr("cu", cu),
@@ -252,25 +263,31 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders, numProviders int)
 }
 
 func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent float64) bool {
-	var latencyWeight float64
 	switch po.strategy {
-	case STRATEGY_LATENCY:
-		latencyWeight = 0.7
-	case STRATEGY_SYNC_FRESHNESS:
-		latencyWeight = 0.2
 	case STRATEGY_PRIVACY:
 		// pick at random regardless of score
 		if rand.Intn(2) == 0 {
 			return true
 		}
 		return false
-	default:
-		latencyWeight = 0.6
 	}
 	if syncScoreCurrent == 0 {
 		return latencyScore > latencyScoreCurrent
 	}
-	return latencyScore*latencyWeight+syncScore*(1-latencyWeight) > latencyScoreCurrent*latencyWeight+syncScoreCurrent*(1-latencyWeight)
+	return po.calcProviderScore(latencyScore, syncScore) > po.calcProviderScore(latencyScoreCurrent, syncScoreCurrent)
+}
+
+func (po *ProviderOptimizer) calcProviderScore(latencyScore, syncScore float64) float64 {
+	var latencyWeight float64
+	switch po.strategy {
+	case STRATEGY_LATENCY:
+		latencyWeight = 0.7
+	case STRATEGY_SYNC_FRESHNESS:
+		latencyWeight = 0.2
+	default:
+		latencyWeight = 0.6
+	}
+	return latencyScore*latencyWeight + syncScore*(1-latencyWeight)
 }
 
 func (po *ProviderOptimizer) calculateSyncScore(syncScore score.ScoreStore) float64 {
