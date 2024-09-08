@@ -95,14 +95,12 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			// a provider can be the same as the vault, so we verify it's not the case
 			if isProvider {
 				if delegationCommission != existingEntry.DelegateCommission ||
-					!delegationLimit.Equal(existingEntry.DelegateLimit) ||
 					!amount.Equal(existingEntry.Stake) {
 					return utils.LavaFormatWarning("only vault address can change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
 						utils.LogAttr("creator", creator),
 						utils.LogAttr("vault", existingEntry.Vault),
 						utils.LogAttr("provider", provider),
 						utils.LogAttr("description", description.String()),
-						utils.LogAttr("current_delegation_limit", existingEntry.DelegateLimit),
 						utils.LogAttr("req_delegation_limit", delegationLimit),
 						utils.LogAttr("current_delegation_commission", existingEntry.DelegateCommission),
 						utils.LogAttr("req_delegation_commission", delegationCommission),
@@ -134,7 +132,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		if !existingEntry.DelegateTotal.IsZero() {
 			// if there was a change in the last 24h than we dont allow changes
 			if ctx.BlockTime().UTC().Unix()-int64(existingEntry.LastChange) < int64(CHANGE_WINDOW.Seconds()) {
-				if delegationCommission != existingEntry.DelegateCommission || !existingEntry.DelegateLimit.IsEqual(delegationLimit) {
+				if delegationCommission != existingEntry.DelegateCommission {
 					return utils.LavaFormatWarning(fmt.Sprintf("stake entry commmision or delegate limit can only be changes once in %s", CHANGE_WINDOW), nil,
 						utils.LogAttr("last_change_time", existingEntry.LastChange))
 				}
@@ -147,15 +145,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 					utils.LogAttr("wanted_commission", delegationCommission),
 				)
 			}
-
-			// check that the change in delegation limit is decreasing and that new_limit*100/old_limit < (100-MAX_CHANGE_RATE)
-			if delegationLimit.IsLT(existingEntry.DelegateLimit) && delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount).LT(sdk.NewInt(100-MAX_CHANGE_RATE)) {
-				return utils.LavaFormatWarning("stake entry DelegateLimit decrease too high", fmt.Errorf("DelegateLimit change cannot decrease by more than %d at a time", MAX_CHANGE_RATE),
-					utils.LogAttr("change_percentage", delegationLimit.Amount.MulRaw(100).Quo(existingEntry.DelegateLimit.Amount)),
-					utils.LogAttr("original_limit", existingEntry.DelegateLimit),
-					utils.LogAttr("wanted_limit", delegationLimit),
-				)
-			}
 		}
 
 		// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
@@ -163,7 +152,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		existingEntry.Endpoints = endpointsVerified
 		existingEntry.Description = description
 		existingEntry.DelegateCommission = delegationCommission
-		existingEntry.DelegateLimit = delegationLimit
 		existingEntry.LastChange = uint64(ctx.BlockTime().UTC().Unix())
 
 		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)
@@ -257,7 +245,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		Chain:              chainID,
 		Description:        description,
 		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
-		DelegateLimit:      delegationLimit,
 		DelegateCommission: delegationCommission,
 		Vault:              creator, // the stake-provider TX creator is always regarded as the vault address
 		LastChange:         uint64(ctx.BlockTime().UTC().Unix()),

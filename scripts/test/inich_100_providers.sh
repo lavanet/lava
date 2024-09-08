@@ -73,13 +73,13 @@ CHAINS="ETH1,SEP1,HOL1,OSMOSIS,FTM250,CELO,LAV1,OSMOSIST,ALFAJORES,ARB1,ARBN,APT
 BASE_CHAINS="ETH1,LAV1"
 # stake providers on all chains
 echo; echo "#### Staking provider 1 ####"
-lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 "$(operator_address)" -y --delegate-commission 50 --delegate-limit $PROVIDERSTAKE --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing bulk-stake-provider $CHAINS $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 "$(operator_address)" -y --delegate-commission 50  --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 echo; echo "#### Staking provider 2 ####"
-lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "$PROVIDER2_LISTENER,1" 1 "$(operator_address)" -y --delegate-commission 50 --delegate-limit $PROVIDERSTAKE --from servicer2 --provider-moniker "servicer2" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "$PROVIDER2_LISTENER,1" 1 "$(operator_address)" -y --delegate-commission 50  --from servicer2 --provider-moniker "servicer2" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 echo; echo "#### Staking provider 3 ####"
-lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "$PROVIDER3_LISTENER,1" 1 "$(operator_address)" -y --delegate-commission 50 --delegate-limit $PROVIDERSTAKE --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing bulk-stake-provider $BASE_CHAINS $PROVIDERSTAKE "$PROVIDER3_LISTENER,1" 1 "$(operator_address)" -y --delegate-commission 50  --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 echo; echo "#### Staking 100 providers ####"
 users=()
@@ -88,7 +88,7 @@ for i in $(seq 1 100); do
 done
 
 for user in "${users[@]}"; do
-  lavad tx pairing stake-provider ETH1 600000000000ulava "127.0.0.1:2221,EU" EU "$(operator_address)" --from $user -y --provider-moniker $user --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava --delegate-limit 0ulava
+  lavad tx pairing stake-provider ETH1 600000000000ulava "127.0.0.1:2221,EU" EU "$(operator_address)" --from $user -y --provider-moniker $user --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava 
 done
 
 echo; echo "#### Waiting 1 block ####"
@@ -121,7 +121,7 @@ wait_count_blocks 1
 lavad tx gov vote "$(latest_vote)" yes -y --from alice --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 for user in "${users[@]}"; do
-  lavad tx pairing stake-provider ETH1 600000000000ulava "127.0.0.1:2221,EU" EU "$(operator_address)" --from $user -y --provider-moniker $user --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava --delegate-limit 0ulava
+  lavad tx pairing stake-provider ETH1 600000000000ulava "127.0.0.1:2221,EU" EU "$(operator_address)" --from $user -y --provider-moniker $user --gas-adjustment "1.5" --gas "auto" --gas-prices 0.000000001ulava 
 done
 
 wait_count_blocks 1
