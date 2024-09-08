@@ -757,9 +757,9 @@ func (rpccs *RPCConsumerServer) sendRelayToProvider(
 			}
 
 			errResponse = rpccs.consumerSessionManager.OnSessionDone(singleConsumerSession, latestBlock, chainlib.GetComputeUnits(protocolMessage), relayLatency, singleConsumerSession.CalculateExpectedLatency(expectedRelayTimeoutForQOS), expectedBH, numOfProviders, pairingAddressesLen, protocolMessage.GetApi().Category.HangingApi) // session done successfully
-
+			isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
+			localRelayResult.IsNodeError = isNodeError
 			if rpccs.cache.CacheActive() && rpcclient.ValidateStatusCodes(localRelayResult.StatusCode, true) == nil {
-				isNodeError, _ := protocolMessage.CheckResponseError(localRelayResult.Reply.Data, localRelayResult.StatusCode)
 				// in case the error is a node error we don't want to cache
 				if !isNodeError {
 					// copy reply data so if it changes it doesn't panic mid async send
@@ -1314,8 +1314,7 @@ func (rpccs *RPCConsumerServer) appendHeadersToRelayResult(ctx context.Context, 
 		})
 
 	// add is node error flag
-	isNodeError, _ := protocolMessage.CheckResponseError(relayResult.Reply.Data, relayResult.StatusCode)
-	if isNodeError {
+	if relayResult.IsNodeError {
 		metadataReply = append(metadataReply,
 			pairingtypes.Metadata{
 				Name:  common.LAVA_IDENTIFIED_NODE_ERROR_HEADER,

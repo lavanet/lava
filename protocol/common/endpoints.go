@@ -260,6 +260,7 @@ type RelayResult struct {
 	StatusCode      int
 	Quorum          int
 	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
+	IsNodeError     bool
 }
 
 func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {
