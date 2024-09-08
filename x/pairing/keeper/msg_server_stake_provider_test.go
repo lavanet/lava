@@ -746,7 +746,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
-	require.Equal(t, minSelfDelegation.Amount.AddRaw(1), stakeEntry.EffectiveStake())
+	require.Equal(t, minSelfDelegation.Amount.AddRaw(1), stakeEntry.TotalStake())
 
 	// try to unfreeze -> should fail
 	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
@@ -755,7 +755,6 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	// increase delegation limit of stake entry from 0 to MinStakeProvider + 100
 	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
-	stakeEntry.DelegateLimit = ts.spec.MinStakeProvider.AddAmount(math.NewInt(100))
 	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
 
@@ -768,7 +767,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 	require.True(t, stakeEntry.IsFrozen())
-	require.Equal(t, ts.spec.MinStakeProvider.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.EffectiveStake())
+	require.Equal(t, ts.spec.MinStakeProvider.Add(minSelfDelegation).Amount.AddRaw(1), stakeEntry.TotalStake())
 
 	// try to unfreeze -> should succeed
 	_, err = ts.TxPairingUnfreezeProvider(provider, ts.spec.Index)
@@ -790,14 +789,14 @@ func TestCommisionChange(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	_, provider := ts.AddAccount(common.PROVIDER, 1, ts.spec.MinStakeProvider.Amount.Int64())
-	_, err := ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 50, 100, "", "", "", "", "")
+	_, err := ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 50, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// there are no delegations, can change as much as we want
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 55, 120, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 55, "", "", "", "", "")
 	require.NoError(t, err)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 60, 140, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 60, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// add delegator and delegate to provider
@@ -808,24 +807,24 @@ func TestCommisionChange(t *testing.T) {
 	ts.AdvanceBlock(time.Hour * 25) // advance time to allow changes
 
 	// now changes are limited
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, 139, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, "", "", "", "", "")
 	require.NoError(t, err)
 
 	// same values, should pass
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, 139, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 61, "", "", "", "", "")
 	require.NoError(t, err)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, 138, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, "", "", "", "", "")
 	require.Error(t, err)
 
 	ts.AdvanceBlock(time.Hour * 25)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, 138, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 62, "", "", "", "", "")
 	require.NoError(t, err)
 
 	ts.AdvanceBlock(time.Hour * 25)
 
-	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 68, 100, "", "", "", "", "")
+	_, err = ts.TxPairingStakeProviderFull(provider, provider, ts.spec.Index, ts.spec.MinStakeProvider, nil, 0, 68, "", "", "", "", "")
 	require.Error(t, err)
 }
 
@@ -1019,7 +1018,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		STAKE = iota + 1
 		ENDPOINTS_GEOLOCATION
 		DESCRIPTION
-		DELEGATE_LIMIT
 		DELEGATE_COMMISSION
 		PROVIDER
 	)
@@ -1034,7 +1032,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		{"stake change vault", vault, STAKE, true},
 		{"endpoints_geo change vault", vault, ENDPOINTS_GEOLOCATION, true},
 		{"description change vault", vault, DESCRIPTION, true},
-		{"delegate total change vault", vault, DELEGATE_LIMIT, true},
 		{"delegate commission change vault", vault, DELEGATE_COMMISSION, true},
 		{"provider change vault", vault, PROVIDER, true},
 
@@ -1042,7 +1039,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 		{"stake change provider", provider, STAKE, false},
 		{"endpoints_geo change provider", provider, ENDPOINTS_GEOLOCATION, true},
 		{"description change provider", provider, DESCRIPTION, true},
-		{"delegate total change provider", provider, DELEGATE_LIMIT, false},
 		{"delegate commission change provider", provider, DELEGATE_COMMISSION, false},
 		{"provider change provider", provider, PROVIDER, true},
 	}
@@ -1056,7 +1052,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 				Amount:             stakeEntry.Stake,
 				Geolocation:        stakeEntry.Geolocation,
 				Endpoints:          stakeEntry.Endpoints,
-				DelegateLimit:      stakeEntry.DelegateLimit,
 				DelegateCommission: stakeEntry.DelegateCommission,
 				Address:            stakeEntry.Address,
 				Description:        stakeEntry.Description,
@@ -1070,8 +1065,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 				msg.Geolocation = 2
 			case DESCRIPTION:
 				msg.Description = stakingtypes.NewDescription("bla", "bla", "", "", "")
-			case DELEGATE_LIMIT:
-				msg.DelegateLimit = msg.DelegateLimit.AddAmount(math.NewInt(100))
 			case DELEGATE_COMMISSION:
 				msg.DelegateCommission -= 10
 			case PROVIDER:
@@ -1086,7 +1079,6 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 				msg.Endpoints,
 				msg.Geolocation,
 				msg.DelegateCommission,
-				msg.DelegateLimit.Amount.Uint64(),
 				msg.Description.Moniker,
 				msg.Description.Identity,
 				msg.Description.Website,

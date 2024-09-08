@@ -88,7 +88,6 @@ if [ "$dry" = false ]; then
     sleep 4
 
     PROVIDERSTAKE="500000000000ulava"
-    DELEGATE_LIMIT="0ulava"
 
     # do not change this port without modifying the input_yaml
     PROVIDER1_LISTENER="127.0.0.1:2220"
@@ -98,7 +97,7 @@ if [ "$dry" = false ]; then
     for index in ${index_list[@]}
     do
         echo "Processing index: $index"
-        lavad tx pairing stake-provider "$index" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --delegate-limit $DELEGATE_LIMIT  --provider-moniker "provider-$index" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+        lavad tx pairing stake-provider "$index" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "provider-$index" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
         wait_next_block
     done
 

@@ -75,15 +75,8 @@ func NewChainIdVaultIndexes(sb *collections.SchemaBuilder) ChainIdVaultIndexes {
 }
 
 // StakeEntry methods
-
-func (se StakeEntry) EffectiveStake() math.Int {
-	effective := se.Stake.Amount
-	if se.DelegateLimit.Amount.LT(se.DelegateTotal.Amount) {
-		effective = effective.Add(se.DelegateLimit.Amount)
-	} else {
-		effective = effective.Add(se.DelegateTotal.Amount)
-	}
-	return effective
+func (se StakeEntry) TotalStake() math.Int {
+	return se.Stake.Amount.Add(se.DelegateTotal.Amount)
 }
 
 // Frozen provider block const
