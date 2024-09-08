@@ -10,9 +10,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/lavanet/lava/v2/testutil/nullify"
-	specutils "github.com/lavanet/lava/v2/utils/keeper"
-	"github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/testutil/nullify"
+	specutils "github.com/lavanet/lava/v3/utils/keeper"
+	"github.com/lavanet/lava/v3/x/spec/types"
 )
 
 // Prevent strconv unused error

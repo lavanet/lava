@@ -8,10 +8,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
@@ -27,6 +27,7 @@ const (
 	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
 	NODE_ERRORS_PROVIDERS_HEADER_NAME               = "Lava-Node-Errors-providers"
 	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
+	USER_REQUEST_TYPE                               = "lava-user-request-type"
 	LAVAP_VERSION_HEADER_NAME                       = "Lavap-Version"
 	LAVA_CONSUMER_PROCESS_GUID                      = "lava-consumer-process-guid"
 	// these headers need to be lowercase

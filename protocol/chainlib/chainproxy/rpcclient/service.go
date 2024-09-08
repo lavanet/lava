@@ -26,7 +26,7 @@ import (
 	"unicode"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v3/utils"
 )
 
 var (

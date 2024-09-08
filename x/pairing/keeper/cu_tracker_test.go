@@ -6,12 +6,12 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/testutil/common"
-	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	"github.com/lavanet/lava/v2/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+	"github.com/lavanet/lava/v3/testutil/common"
+	testkeeper "github.com/lavanet/lava/v3/testutil/keeper"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	"github.com/lavanet/lava/v3/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v3/x/plans/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -147,7 +147,6 @@ func TestTrackedCuWithDelegations(t *testing.T) {
 	// change the provider's delegation limit and commission
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
-	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	stakeEntry.DelegateCommission = 0
 	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
@@ -488,7 +487,6 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	// change the provider's delegation limit and commission
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
-	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	stakeEntry.DelegateCommission = 0
 	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
@@ -608,7 +606,6 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	// change the provider's delegation limit and commission
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
-	stakeEntry.DelegateLimit = sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	stakeEntry.DelegateCommission = 0
 	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()

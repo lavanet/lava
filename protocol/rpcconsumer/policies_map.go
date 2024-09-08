@@ -3,8 +3,8 @@ package rpcconsumer
 import (
 	"sync"
 
-	"github.com/lavanet/lava/v2/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v2/utils"
+	"github.com/lavanet/lava/v3/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v3/utils"
 )
 
 type syncMapPolicyUpdaters struct {

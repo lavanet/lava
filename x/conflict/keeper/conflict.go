@@ -6,13 +6,13 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	"github.com/lavanet/lava/v2/utils/maps"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	"github.com/lavanet/lava/v2/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v3/utils/maps"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	"github.com/lavanet/lava/v3/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 func (k Keeper) ValidateFinalizationConflict(ctx sdk.Context, conflictData *types.FinalizationConflict, clientAddr sdk.AccAddress) error {

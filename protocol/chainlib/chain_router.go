@@ -6,11 +6,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/utils"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/utils"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"

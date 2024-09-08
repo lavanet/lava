@@ -15,24 +15,24 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/gogo/status"
-	"github.com/lavanet/lava/v2/protocol/chainlib"
-	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v2/protocol/chaintracker"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/protocol/metrics"
-	"github.com/lavanet/lava/v2/protocol/performance"
-	"github.com/lavanet/lava/v2/protocol/provideroptimizer"
-	rewardserver "github.com/lavanet/lava/v2/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/v2/protocol/upgrade"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	"github.com/lavanet/lava/v2/utils/protocopy"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/chainlib"
+	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v3/protocol/chaintracker"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/protocol/metrics"
+	"github.com/lavanet/lava/v3/protocol/performance"
+	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
+	rewardserver "github.com/lavanet/lava/v3/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v3/protocol/upgrade"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v3/utils/protocopy"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -43,7 +43,10 @@ const (
 	debugLatency     = false
 )
 
-var RPCProviderStickinessHeaderName = "X-Node-Sticky"
+var (
+	RPCProviderStickinessHeaderName    = "X-Node-Sticky"
+	numberOfRetriesAllowedOnNodeErrors = 2
+)
 
 const (
 	RPCProviderAddressHeader = "Lava-Provider-Address"
@@ -67,6 +70,7 @@ type RPCProviderServer struct {
 	providerNodeSubscriptionManager *chainlib.ProviderNodeSubscriptionManager
 	providerUniqueId                string
 	StaticProvider                  bool
+	providerStateMachine            *ProviderStateMachine
 }
 
 type ReliabilityManagerInf interface {
@@ -129,6 +133,7 @@ func (rpcps *RPCProviderServer) ServeRPCRequests(
 	rpcps.metrics = providerMetrics
 	rpcps.relaysMonitor = relaysMonitor
 	rpcps.providerNodeSubscriptionManager = providerNodeSubscriptionManager
+	rpcps.providerStateMachine = NewProviderStateMachine(rpcProviderEndpoint.ChainID, lavaprotocol.NewRelayRetriesManager(), chainRouter)
 
 	rpcps.initRelaysMonitor(ctx)
 }
@@ -869,7 +874,6 @@ func (rpcps *RPCProviderServer) trySetRelayReplyInCache(ctx context.Context, req
 }
 
 func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, request *pairingtypes.RelayRequest, chainMsg chainlib.ChainMessage, consumerAddr sdk.AccAddress) (*chainlib.RelayReplyWrapper, error) {
-	sendTime := time.Now()
 	if debugLatency {
 		utils.LavaFormatDebug("sending relay to node", utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
 	}
@@ -879,21 +883,8 @@ func (rpcps *RPCProviderServer) sendRelayMessageToNode(ctx context.Context, requ
 	if debugConsistency {
 		utils.LavaFormatDebug("adding stickiness header", utils.LogAttr("tokenFromContext", common.GetTokenFromGrpcContext(ctx)), utils.LogAttr("unique_token", common.GetUniqueToken(common.UserData{DappId: consumerAddr.String(), ConsumerIp: common.GetIpFromGrpcContext(ctx)})))
 	}
-
-	replyWrapper, _, _, _, _, err := rpcps.chainRouter.SendNodeMsg(ctx, nil, chainMsg, request.RelayData.Extensions)
-	if err != nil {
-		return nil, utils.LavaFormatError("Sending chainMsg failed", err, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
-	}
-
-	if replyWrapper == nil || replyWrapper.RelayReply == nil {
-		return nil, utils.LavaFormatError("Relay Wrapper returned nil without an error", nil, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
-	}
-
-	if debugLatency {
-		utils.LavaFormatDebug("node reply received", utils.Attribute{Key: "timeTaken", Value: time.Since(sendTime)}, utils.Attribute{Key: "GUID", Value: ctx}, utils.Attribute{Key: "specID", Value: rpcps.rpcProviderEndpoint.ChainID})
-	}
-
-	return replyWrapper, nil
+	// use the provider state machine to send the messages
+	return rpcps.providerStateMachine.SendNodeMessage(ctx, chainMsg, request)
 }
 
 func (rpcps *RPCProviderServer) TryRelayUnsubscribe(ctx context.Context, request *pairingtypes.RelayRequest, consumerAddress sdk.AccAddress, chainMessage chainlib.ChainMessage) (*pairingtypes.RelayReply, error) {

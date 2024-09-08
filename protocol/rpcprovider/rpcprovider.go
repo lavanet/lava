@@ -16,26 +16,26 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/app"
-	"github.com/lavanet/lava/v2/protocol/chainlib"
-	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy"
-	"github.com/lavanet/lava/v2/protocol/chaintracker"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/protocol/metrics"
-	"github.com/lavanet/lava/v2/protocol/performance"
-	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/v2/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/v2/protocol/statetracker"
-	"github.com/lavanet/lava/v2/protocol/statetracker/updaters"
-	"github.com/lavanet/lava/v2/protocol/upgrade"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/rand"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	epochstorage "github.com/lavanet/lava/v2/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	protocoltypes "github.com/lavanet/lava/v2/x/protocol/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/app"
+	"github.com/lavanet/lava/v3/protocol/chainlib"
+	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy"
+	"github.com/lavanet/lava/v3/protocol/chaintracker"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/protocol/metrics"
+	"github.com/lavanet/lava/v3/protocol/performance"
+	"github.com/lavanet/lava/v3/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v3/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v3/protocol/statetracker"
+	"github.com/lavanet/lava/v3/protocol/statetracker/updaters"
+	"github.com/lavanet/lava/v3/protocol/upgrade"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/rand"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	epochstorage "github.com/lavanet/lava/v3/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	protocoltypes "github.com/lavanet/lava/v3/x/protocol/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -109,6 +109,7 @@ type rpcProviderStartOptions struct {
 	rewardsSnapshotTimeoutSec uint
 	healthCheckMetricsOptions *rpcProviderHealthCheckMetricsOptions
 	staticProvider            bool
+	staticSpecPath            string
 }
 
 type rpcProviderHealthCheckMetricsOptions struct {
@@ -139,6 +140,7 @@ type RPCProvider struct {
 	grpcHealthCheckEndpoint   string
 	providerUniqueId          string
 	staticProvider            bool
+	staticSpecPath            string
 }
 
 func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
@@ -162,6 +164,8 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 	rpcp.relaysMonitorAggregator = metrics.NewRelaysMonitorAggregator(rpcp.relaysHealthCheckInterval, rpcp.providerMetricsManager)
 	rpcp.grpcHealthCheckEndpoint = options.healthCheckMetricsOptions.grpcHealthCheckEndpoint
 	rpcp.staticProvider = options.staticProvider
+	rpcp.staticSpecPath = options.staticSpecPath
+
 	// single state tracker
 	lavaChainFetcher := chainlib.NewLavaChainFetcher(ctx, options.clientCtx)
 	providerStateTracker, err := statetracker.NewProviderStateTracker(ctx, options.txFactory, options.clientCtx, lavaChainFetcher, rpcp.providerMetricsManager)
@@ -220,6 +224,10 @@ func (rpcp *RPCProvider) Start(options *rpcProviderStartOptions) (err error) {
 		if idx > 0 && endpoint.NetworkAddress.Address == "" { // handle undefined addresses as the previous endpoint for shared listeners
 			endpoint.NetworkAddress = options.rpcProviderEndpoints[idx-1].NetworkAddress
 		}
+	}
+
+	if rpcp.staticSpecPath != "" && len(rpcp.chainMutexes) > 1 {
+		utils.LavaFormatFatal("Provider set static spec with more than one chain. static spec configuration supports only a single chain id", nil, utils.LogAttr("Chains", rpcp.chainMutexes), utils.LogAttr("static_spec", rpcp.staticSpecPath))
 	}
 
 	specValidator := NewSpecValidator()
@@ -298,7 +306,10 @@ func (rpcp *RPCProvider) SetupProviderEndpoints(rpcProviderEndpoints []*lavasess
 	parallelJobs := len(rpcProviderEndpoints)
 	wg.Add(parallelJobs)
 	disabledEndpoints := make(chan *lavasession.RPCProviderEndpoint, parallelJobs)
+	// validate static spec configuration is used only on a single chain setup.
+	chainIds := make(map[string]struct{})
 	for _, rpcProviderEndpoint := range rpcProviderEndpoints {
+		chainIds[rpcProviderEndpoint.ChainID] = struct{}{}
 		setupEndpoint := func(rpcProviderEndpoint *lavasession.RPCProviderEndpoint, specValidator *SpecValidator) {
 			defer wg.Done()
 			err := rpcp.SetupEndpoint(context.Background(), rpcProviderEndpoint, specValidator)
@@ -345,7 +356,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 	}
 
 	rpcEndpoint := lavasession.RPCEndpoint{ChainID: chainID, ApiInterface: apiInterface}
-	err = rpcp.providerStateTracker.RegisterForSpecUpdates(ctx, chainParser, rpcEndpoint)
+	err = statetracker.RegisterForSpecUpdatesOrSetStaticSpec(ctx, chainParser, rpcp.staticSpecPath, rpcEndpoint, rpcp.providerStateTracker)
 	if err != nil {
 		return utils.LavaFormatError("[PANIC] failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 	}
@@ -700,7 +711,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 			relaysHealthInterval := viper.GetDuration(common.RelayHealthIntervalFlag)
 			healthCheckURLPath := viper.GetString(HealthCheckURLPathFlagName)
 			staticProvider := viper.GetBool(common.StaticProvidersConfigName)
-
+			offlineSpecPath := viper.GetString(common.UseStaticSpecFlag)
 			if staticProvider {
 				utils.LavaFormatWarning("Running in static provider mode, skipping rewards and allowing requests from anyone", nil)
 			}
@@ -726,6 +737,7 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 				rewardsSnapshotTimeoutSec,
 				&rpcProviderHealthCheckMetricsOptions,
 				staticProvider,
+				offlineSpecPath,
 			}
 
 			rpcProvider := RPCProvider{}
@@ -760,6 +772,8 @@ rpcprovider 127.0.0.1:3333 OSMOSIS tendermintrpc "wss://www.node-path.com:80,htt
 	cmdRPCProvider.Flags().String(HealthCheckURLPathFlagName, HealthCheckURLPathFlagDefault, "the url path for the provider's grpc health check")
 	cmdRPCProvider.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCProvider.Flags().BoolVar(&chainlib.IgnoreSubscriptionNotConfiguredError, chainlib.IgnoreSubscriptionNotConfiguredErrorFlag, chainlib.IgnoreSubscriptionNotConfiguredError, "ignore webSocket node url not configured error, when subscription is enabled in spec")
+	cmdRPCProvider.Flags().IntVar(&numberOfRetriesAllowedOnNodeErrors, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
+	cmdRPCProvider.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain, example for spec with inheritance: --use-static-spec ./cookbook/specs/ibc.json,./cookbook/specs/tendermint.json,./cookbook/specs/cosmossdk.json,./cookbook/specs/ethermint.json,./cookbook/specs/ethereum.json,./cookbook/specs/evmos.json")
 
 	common.AddRollingLogConfig(cmdRPCProvider)
 	return cmdRPCProvider

@@ -5,8 +5,8 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/testutil/common"
-	commontypes "github.com/lavanet/lava/v2/utils/common/types"
+	"github.com/lavanet/lava/v3/testutil/common"
+	commontypes "github.com/lavanet/lava/v3/utils/common/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -642,7 +642,7 @@ func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
 	stakeEntry = ts.getStakeEntry(provider2Acct.Addr.String(), ts.spec.Name)
 	require.True(t, stakeEntry.Stake.Amount.Equal(amountToUnbond.Amount))
 	require.True(t, stakeEntry.DelegateTotal.IsEqual(stake.SubAmount(amountToUnbond.Amount)))
-	require.True(t, stakeEntry.IsFrozen())
+	require.False(t, stakeEntry.IsFrozen())
 }
 
 func TestStakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {

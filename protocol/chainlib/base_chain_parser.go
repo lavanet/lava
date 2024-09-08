@@ -8,12 +8,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/utils"
-	epochstorage "github.com/lavanet/lava/v2/x/epochstorage/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/utils"
+	epochstorage "github.com/lavanet/lava/v3/x/epochstorage/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 type PolicyInf interface {
@@ -340,7 +340,8 @@ func (apip *BaseChainParser) getApiCollection(connectionType, internalPath, addo
 
 	// Return an error if spec does not exist
 	if !ok {
-		return nil, utils.LavaFormatWarning("api not supported", common.APINotSupportedError, utils.Attribute{Key: "connectionType", Value: connectionType})
+		utils.LavaFormatDebug("api not supported", utils.Attribute{Key: "connectionType", Value: connectionType})
+		return nil, common.APINotSupportedError
 	}
 
 	// Return an error if api is disabled

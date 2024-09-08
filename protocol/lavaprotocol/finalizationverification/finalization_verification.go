@@ -5,15 +5,15 @@ import (
 	"errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol/protocolerrors"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol/protocolerrors"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 func VerifyFinalizationData(reply *pairingtypes.RelayReply, relayRequest *pairingtypes.RelayRequest, providerAddr string, consumerAcc sdk.AccAddress, latestSessionBlock, blockDistanceForFinalization, blocksInFinalizationProof int64) (finalizedBlocks map[int64]string, errRet error) {

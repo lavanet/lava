@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/x/rewards/types"
-	timerstoretypes "github.com/lavanet/lava/v2/x/timerstore/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/x/rewards/types"
+	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
 )
 
 const DAY_SECONDS = 60 * 60 * 24
@@ -145,7 +145,7 @@ func (k Keeper) SpecEmissionParts(ctx sdk.Context) (emissions []types.SpecEmissi
 		stakeEntries := k.epochstorage.GetAllStakeEntriesCurrentForChainId(ctx, chainID)
 		chainStake[chainID] = sdk.ZeroDec()
 		for _, entry := range stakeEntries {
-			chainStake[chainID] = chainStake[chainID].Add(sdk.NewDecFromInt(entry.EffectiveStake()))
+			chainStake[chainID] = chainStake[chainID].Add(sdk.NewDecFromInt(entry.TotalStake()))
 		}
 
 		chainStake[chainID] = chainStake[chainID].MulInt64(int64(spec.Shares))

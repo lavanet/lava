@@ -3,7 +3,7 @@ package keeper
 import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/x/rewards/types"
+	"github.com/lavanet/lava/v3/x/rewards/types"
 )
 
 // SetBasePay set a specific BasePay in the store from its index
