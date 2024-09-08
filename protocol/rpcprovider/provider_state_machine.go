@@ -12,17 +12,17 @@ import (
 	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 )
 
-type RelaySender interface {
+type ProviderRelaySender interface {
 	SendNodeMsg(ctx context.Context, ch chan interface{}, chainMessage chainlib.ChainMessageForSend, extensions []string) (relayReply *chainlib.RelayReplyWrapper, subscriptionID string, relayReplyServer *rpcclient.ClientSubscription, proxyUrl common.NodeUrl, chainId string, err error)
 }
 
 type ProviderStateMachine struct {
 	relayRetriesManager lavaprotocol.RelayRetriesManagerInf
 	chainId             string
-	relaySender         RelaySender
+	relaySender         ProviderRelaySender
 }
 
-func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender RelaySender) *ProviderStateMachine {
+func NewProviderStateMachine(chainId string, relayRetriesManager lavaprotocol.RelayRetriesManagerInf, relaySender ProviderRelaySender) *ProviderStateMachine {
 	return &ProviderStateMachine{
 		relayRetriesManager: relayRetriesManager,
 		chainId:             chainId,

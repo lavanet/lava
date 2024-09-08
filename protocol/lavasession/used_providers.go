@@ -40,6 +40,7 @@ type UsedProviders struct {
 	erroredProviders    map[string]struct{} // providers who returned protocol errors (used to debug relays for now)
 	blockOnSyncLoss     map[string]struct{}
 	sessionsLatestBatch int
+	batchNumber         int
 }
 
 func (up *UsedProviders) CurrentlyUsed() int {
@@ -60,6 +61,16 @@ func (up *UsedProviders) SessionsLatestBatch() int {
 	up.lock.RLock()
 	defer up.lock.RUnlock()
 	return up.sessionsLatestBatch
+}
+
+func (up *UsedProviders) BatchNumber() int {
+	if up == nil {
+		utils.LavaFormatError("UsedProviders.BatchNumber is nil, misuse detected", nil)
+		return 0
+	}
+	up.lock.RLock()
+	defer up.lock.RUnlock()
+	return up.batchNumber
 }
 
 func (up *UsedProviders) CurrentlyUsedAddresses() []string {
@@ -149,6 +160,8 @@ func (up *UsedProviders) AddUsed(sessions ConsumerSessionsMap, err error) {
 			up.providers[provider] = struct{}{}
 			up.sessionsLatestBatch++
 		}
+		// increase batch number
+		up.batchNumber++
 	}
 	up.selecting = false
 }
