@@ -49,9 +49,13 @@ const (
 )
 
 var (
-	Yaml_config_properties         = []string{"network-address", "chain-id", "api-interface"}
-	RelaysHealthEnableFlagDefault  = true
-	RelayHealthIntervalFlagDefault = 5 * time.Minute
+	Yaml_config_properties                         = []string{"network-address", "chain-id", "api-interface"}
+	RelaysHealthEnableFlagDefault                  = true
+	RelayHealthIntervalFlagDefault                 = 5 * time.Minute
+	CollectOptimizerProviderDataFlag               = false
+	CollectOptimizerProviderDataFlagName           = "collect-optimizer-provider-data"
+	OptimizerProviderDataCollectionIntervalFlag    = 1 * time.Second
+	OptimizerProviderDataCollectionIntervalFlagNam = "optimizer-provider-data-collection-interval"
 )
 
 type strategyValue struct {
@@ -232,9 +236,14 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 				defer chainMutexes[chainID].Unlock()
 				value, exists := optimizers.Load(chainID)
 				if !exists {
-					// doesn't exist for this chain create a new one
+					// if doesn't exist for this chain, create a new one
+					var consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector
+					if CollectOptimizerProviderDataFlag {
+						consumerOptimizerDataCollector = metrics.NewConsumerOptimizerDataCollector(chainID, rpcEndpoint.ApiInterface, OptimizerProviderDataCollectionIntervalFlag, consumerMetricsManager) // TODO: From flag
+						consumerOptimizerDataCollector.Start(ctx)
+					}
 					baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-					optimizer = provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders)
+					optimizer = provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders, consumerOptimizerDataCollector)
 					optimizers.Store(chainID, optimizer)
 				} else {
 					var ok bool
@@ -620,6 +629,8 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().String(common.UseStaticSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
 	cmdRPCConsumer.Flags().IntVar(&relayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
+	cmdRPCConsumer.Flags().BoolVar(&CollectOptimizerProviderDataFlag, CollectOptimizerProviderDataFlagName, CollectOptimizerProviderDataFlag, "enables collection of data from the provider optimizer")
+	cmdRPCConsumer.Flags().DurationVar(&OptimizerProviderDataCollectionIntervalFlag, OptimizerProviderDataCollectionIntervalFlagNam, OptimizerProviderDataCollectionIntervalFlag, "sets the interval for collecting data from the provider optimizer")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }
