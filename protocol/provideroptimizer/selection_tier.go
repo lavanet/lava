@@ -10,6 +10,7 @@ type Entry struct {
 	Part    float64
 }
 
+// selectionTier is a utility to get a tier of addresses based on their scores
 type SelectionTier interface {
 	AddScore(entry string, score float64)
 	GetTier(tier int, numTiers int, minimumEntries int) []Entry
