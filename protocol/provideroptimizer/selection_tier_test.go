@@ -173,6 +173,56 @@ func TestSelectionTierInstGetTierBig(t *testing.T) {
 	}
 
 }
+
+func TestSelectionTierInstShiftTierChanceEquals(t *testing.T) {
+	st := NewSelectionTier()
+	numTiers := 4
+	for i := 0; i < 25; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 0.1)
+	}
+	for i := 25; i < 50; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 0.1)
+	}
+	for i := 50; i < 75; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 0.1)
+	}
+	for i := 75; i < 100; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 0.1)
+	}
+	selectionTierChances := st.ShiftTierChance(numTiers, nil)
+	require.Equal(t, numTiers, len(selectionTierChances))
+	require.Equal(t, selectionTierChances[0], selectionTierChances[1])
+
+	selectionTierChances = st.ShiftTierChance(numTiers, map[int]float64{0: 0.5, 1: 0.5})
+	require.Equal(t, 0.0, selectionTierChances[len(selectionTierChances)-1])
+	require.Equal(t, 0.5, selectionTierChances[0])
+
+	selectionTierChances = st.ShiftTierChance(numTiers, map[int]float64{0: 0.5, len(selectionTierChances) - 1: 0.1})
+	require.Less(t, 0.5, selectionTierChances[0])
+	require.Greater(t, 0.25, selectionTierChances[0])
+	require.Greater(t, selectionTierChances[len(selectionTierChances)-1], 0.1)
+
+	st = NewSelectionTier()
+	for i := 0; i < 25; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 0.1)
+	}
+	for i := 25; i < 50; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 0.2)
+	}
+	for i := 50; i < 75; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 0.3)
+	}
+	for i := 75; i < 100; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 0.4)
+	}
+	selectionTierChances = st.ShiftTierChance(numTiers, nil)
+	require.Equal(t, numTiers, len(selectionTierChances))
+	require.Greater(t, selectionTierChances[0], selectionTierChances[1])
+	require.Greater(t, selectionTierChances[1]*2, selectionTierChances[0]) // make sure the adjustment is not that strong
+	require.Greater(t, selectionTierChances[1], selectionTierChances[2])
+
+}
+
 func TestSelectionTierInst_SelectTierRandomly(t *testing.T) {
 	st := NewSelectionTier()
 	rand.InitRandomSeed()
