@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/lavanet/lava/v3/utils/rand"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,22 +31,6 @@ func TestSelectionTierInst_AddScore(t *testing.T) {
 	}
 
 	assert.Equal(t, expectedScores, st.scores)
-}
-
-func TestSelectionTierInst_SelectTierRandomly(t *testing.T) {
-	st := NewSelectionTier()
-
-	numTiers := 5
-	tierChances := map[int]float64{
-		0: 0.2,
-		1: 0.3,
-		2: 0.1,
-	}
-
-	tier := st.SelectTierRandomly(numTiers, tierChances)
-
-	assert.GreaterOrEqual(t, tier, 0)
-	assert.Less(t, tier, numTiers)
 }
 
 func TestSelectionTierInst_GetTier(t *testing.T) {
@@ -187,4 +172,40 @@ func TestSelectionTierInstGetTierBig(t *testing.T) {
 		})
 	}
 
+}
+func TestSelectionTierInst_SelectTierRandomly(t *testing.T) {
+	st := NewSelectionTier()
+	rand.InitRandomSeed()
+	numTiers := 5
+	counter := map[int]int{}
+	for i := 0; i < 10000; i++ {
+		tier := st.SelectTierRandomly(numTiers, map[int]float64{0: 0.8, 4: 0})
+		counter[tier]++
+		assert.GreaterOrEqual(t, tier, 0)
+		assert.Less(t, tier, numTiers)
+	}
+
+	require.Zero(t, counter[4])
+	for i := 1; i < 4; i++ {
+		require.Greater(t, counter[i], 100)
+	}
+	require.Greater(t, counter[0], 7000)
+}
+
+func TestSelectionTierInst_SelectTierRandomly_Default(t *testing.T) {
+	st := NewSelectionTier()
+	rand.InitRandomSeed()
+	numTiers := 5
+	counter := map[int]int{}
+	for i := 0; i < 10000; i++ {
+		tier := st.SelectTierRandomly(numTiers, nil)
+		counter[tier]++
+		assert.GreaterOrEqual(t, tier, 0)
+		assert.Less(t, tier, numTiers)
+	}
+
+	expectedDistribution := 10000 / numTiers
+	for _, count := range counter {
+		assert.InDelta(t, expectedDistribution, count, 300)
+	}
 }
