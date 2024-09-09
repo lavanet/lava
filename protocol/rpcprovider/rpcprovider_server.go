@@ -780,6 +780,9 @@ func (rpcps *RPCProviderServer) TryRelay(ctx context.Context, request *pairingty
 		if rpcps.cache.CacheActive() && (requestedBlockHash != nil || finalized) {
 			rpcps.trySetRelayReplyInCache(ctx, request, chainMsg, replyWrapper, latestBlock, averageBlockTime, requestedBlockHash, finalized, ignoredMetadata)
 		}
+	} else if len(request.RelayData.Extensions) > 0 {
+		// if cached, Add Archive trailer if requested by the consumer.
+		grpc.SetTrailer(ctx, metadata.Pairs(chainlib.RPCProviderNodeExtension, string(lavasession.NewRouterKey(request.RelayData.Extensions))))
 	}
 
 	if dataReliabilityEnabled {
