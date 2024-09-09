@@ -2,6 +2,7 @@ package provideroptimizer
 
 import (
 	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
 	"github.com/lavanet/lava/v3/utils/rand"
 )
 
@@ -17,6 +18,7 @@ type SelectionTier interface {
 	GetTier(tier int, numTiers int, minimumEntries int) []Entry
 	SelectTierRandomly(numTiers int, tierChances map[int]float64) int
 	ShiftTierChance(numTiers int, initialYierChances map[int]float64) map[int]float64
+	ScoresCount() int
 }
 
 type SelectionTierInst struct {
@@ -25,6 +27,10 @@ type SelectionTierInst struct {
 
 func NewSelectionTier() SelectionTier {
 	return &SelectionTierInst{scores: []Entry{}}
+}
+
+func (st *SelectionTierInst) ScoresCount() int {
+	return len(st.scores)
 }
 
 func (st *SelectionTierInst) AddScore(entry string, score float64) {
@@ -102,15 +108,20 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 	// shift the chances
 	shiftedTierChances := make(map[int]float64)
 	// shift tier chances based on the difference in the average score of each tier
-	reversedScores := make([]float64, numTiers)
-	totalScore := 0.0
+	scores := make([]float64, numTiers)
 	for i := 0; i < numTiers; i++ {
-		reversedScores[i] = 1 / (st.averageScoreForTier(i, numTiers) + 0.0001) // add epsilon to avoid 0
-		totalScore += reversedScores[i]
+		// scores[i] = 1 / (st.averageScoreForTier(i, numTiers) + 0.0001) // add epsilon to avoid 0
+		scores[i] = st.averageScoreForTier(i, numTiers)
 	}
+	medianScore := lavaslices.Median(scores)
+	percentile75Score := lavaslices.Percentile(scores, 0.75)
+
 	averageChance := 1 / float64(numTiers)
 	for i := 0; i < numTiers; i++ {
-		offsetFactor := reversedScores[i] / totalScore
+		// reverse the score so that higher scores get higher chances
+		reversedScore := 1 / (scores[i] + 0.0001)
+		// offset the score based on the median and 75th percentile scores, the better they are compared to them the higher the chance
+		offsetFactor := 0.5*reversedScore/medianScore + 0.5*reversedScore/percentile75Score
 		if _, ok := initialTierChances[i]; !ok {
 			if chanceForDefaultTiers > 0 {
 				shiftedTierChances[i] = chanceForDefaultTiers + averageChance*offsetFactor

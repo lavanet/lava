@@ -144,13 +144,9 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string) {
+func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
 	latencyScore := math.MaxFloat64 // smaller = better i.e less latency
 	syncScore := math.MaxFloat64    // smaller = better i.e less sync lag
-	if po.strategy == STRATEGY_DISTRIBUTED {
-		// distribute relays across more providers
-		perturbationPercentage *= 2
-	}
 	type exploration struct {
 		address string
 		time    time.Time
@@ -168,16 +164,12 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		}
 		// latency score
 		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
-		// latency perturbation
-		latencyScoreCurrent = pertrubWithNormalGaussian(latencyScoreCurrent, perturbationPercentage)
 
 		// sync score
 		syncScoreCurrent := float64(0)
 		if requestedBlock < 0 {
 			// means user didn't ask for a specific block and we want to give him the best
 			syncScoreCurrent = po.calculateSyncScore(providerData.Sync) // smaller == better i.e less sync lag
-			// sync perturbation
-			syncScoreCurrent = pertrubWithNormalGaussian(syncScoreCurrent, perturbationPercentage)
 		}
 
 		utils.LavaFormatTrace("scores information",
@@ -197,16 +189,28 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			explorationCandidate = exploration{address: providerAddress, time: updateTime}
 		}
 	}
-	tier := selectionTier.SelectTierRandomly(NumTiers, map[int]float64{0: ATierChance, (NumTiers - 1): LastTierChance})
+	if selectionTier.ScoresCount() == 0 {
+		// no providers to choose from
+		return []string{}
+	}
+	initialChances := map[int]float64{0: ATierChance}
+	if len(allAddresses) > MinimumEntries*2 {
+		// if we have more than 2*MinimumEntries we set the LastTierChance configured
+		initialChances[(NumTiers - 1)] = LastTierChance
+	}
+	shiftedChances := selectionTier.ShiftTierChance(NumTiers, initialChances)
+	tier := selectionTier.SelectTierRandomly(NumTiers, shiftedChances)
 	tierProviders := selectionTier.GetTier(tier, NumTiers, MinimumEntries)
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
 	if explorationCandidate.address != "" && po.shouldExplore(1, len(allAddresses)) {
 		returnedProviders = append(returnedProviders, explorationCandidate.address)
 	}
-	utils.LavaFormatTrace("returned providers",
+	utils.LavaFormatTrace("[Optimizer] returned providers",
 		utils.LogAttr("providers", strings.Join(returnedProviders, ",")),
 		utils.LogAttr("cu", cu),
+		utils.LogAttr("shiftedChances", shiftedChances),
+		utils.LogAttr("tier", tier),
 	)
 
 	return returnedProviders

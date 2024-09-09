@@ -21,13 +21,13 @@ func TestSelectionTierInst_AddScore(t *testing.T) {
 	st.AddScore("entry7", 0.5)
 
 	expectedScores := []Entry{
-		{Address: "entry7", Score: 0.5},
-		{Address: "entry4", Score: 1.0},
-		{Address: "entry2", Score: 3.0},
-		{Address: "entry6", Score: 4.0},
-		{Address: "entry1", Score: 5.0},
-		{Address: "entry3", Score: 7.0},
-		{Address: "entry5", Score: 8.0},
+		{Address: "entry7", Score: 0.5, Part: 1},
+		{Address: "entry4", Score: 1.0, Part: 1},
+		{Address: "entry2", Score: 3.0, Part: 1},
+		{Address: "entry6", Score: 4.0, Part: 1},
+		{Address: "entry1", Score: 5.0, Part: 1},
+		{Address: "entry3", Score: 7.0, Part: 1},
+		{Address: "entry5", Score: 8.0, Part: 1},
 	}
 
 	assert.Equal(t, expectedScores, st.scores)
@@ -71,7 +71,7 @@ func TestSelectionTierInst_GetTier(t *testing.T) {
 		{
 			tier:           0,
 			minimumEntries: 3,
-			expectedTier:   []string{"entry1", "entry5", "entry4"},
+			expectedTier:   []string{"entry1", "entry5"}, // we can only bring better entries
 			name:           "tier 0, 3 entries",
 		},
 		{
@@ -83,7 +83,7 @@ func TestSelectionTierInst_GetTier(t *testing.T) {
 		{
 			tier:           1,
 			minimumEntries: 5,
-			expectedTier:   []string{"entry1", "entry5", "entry4", "entry2", "entry3"},
+			expectedTier:   []string{"entry1", "entry5", "entry4", "entry2"}, // we can only bring better entries
 			name:           "tier 1, 5 entries",
 		},
 		{
@@ -158,7 +158,7 @@ func TestSelectionTierInstGetTierBig(t *testing.T) {
 		{
 			tier:            0,
 			minimumEntries:  26,
-			expectedTierLen: 26,
+			expectedTierLen: 25, // we can't bring entries from lower tiers
 			name:            "tier 0, 26 entries",
 		},
 	}
@@ -174,7 +174,7 @@ func TestSelectionTierInstGetTierBig(t *testing.T) {
 
 }
 
-func TestSelectionTierInstShiftTierChanceEquals(t *testing.T) {
+func TestSelectionTierInstShiftTierChance(t *testing.T) {
 	st := NewSelectionTier()
 	numTiers := 4
 	for i := 0; i < 25; i++ {
@@ -198,8 +198,8 @@ func TestSelectionTierInstShiftTierChanceEquals(t *testing.T) {
 	require.Equal(t, 0.5, selectionTierChances[0])
 
 	selectionTierChances = st.ShiftTierChance(numTiers, map[int]float64{0: 0.5, len(selectionTierChances) - 1: 0.1})
-	require.Less(t, 0.5, selectionTierChances[0])
-	require.Greater(t, 0.25, selectionTierChances[0])
+	require.Less(t, selectionTierChances[0], 0.5)
+	require.Greater(t, selectionTierChances[0], 0.25)
 	require.Greater(t, selectionTierChances[len(selectionTierChances)-1], 0.1)
 
 	st = NewSelectionTier()
@@ -220,6 +220,23 @@ func TestSelectionTierInstShiftTierChanceEquals(t *testing.T) {
 	require.Greater(t, selectionTierChances[0], selectionTierChances[1])
 	require.Greater(t, selectionTierChances[1]*2, selectionTierChances[0]) // make sure the adjustment is not that strong
 	require.Greater(t, selectionTierChances[1], selectionTierChances[2])
+
+	st = NewSelectionTier()
+	for i := 0; i < 25; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 0.01)
+	}
+	for i := 25; i < 50; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 1.2)
+	}
+	for i := 50; i < 75; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 1.3)
+	}
+	for i := 75; i < 100; i++ {
+		st.AddScore("entry"+strconv.Itoa(i), 1.4)
+	}
+	selectionTierChances = st.ShiftTierChance(numTiers, nil)
+	require.Equal(t, numTiers, len(selectionTierChances))
+	require.Greater(t, selectionTierChances[0], 0.9)
 
 }
 
