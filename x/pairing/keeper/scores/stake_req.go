@@ -12,7 +12,7 @@ const stakeReqName = "stake-req"
 type StakeReq struct{}
 
 func (sr *StakeReq) Init(policy planstypes.Policy) bool {
-	return sr != nil
+	return true
 }
 
 // Score calculates the the provider score as the normalized stake
@@ -28,9 +28,6 @@ func (sr *StakeReq) Score(score PairingScore) math.Uint {
 }
 
 func (sr *StakeReq) GetName() string {
-	if sr == nil {
-		return ""
-	}
 	return stakeReqName
 }
 
