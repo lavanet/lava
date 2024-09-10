@@ -229,8 +229,6 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			}
 		}
 
-		utils.LavaFormatDebug("ELAD: metricsTiers", utils.LogAttr("metricsTiers", metricsTiers))
-
 		go po.metrics.UpdateOptimizerProvidersScore(po.chainId, po.apiInterface, epoch, metricsTiers)
 	} else {
 		tierProviders = selectionTier.GetTier(tier, NumTiers, MinimumEntries)
