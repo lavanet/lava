@@ -42,6 +42,7 @@ const (
 	AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
 	AllowGRPCCompressionFlag               = "allow-grpc-compression-for-consumer-provider-communication"
 	maximumStreamsOverASingleConnection    = 100
+	StaticProviderStakeMultiplier          = 10
 )
 
 var (
@@ -613,7 +614,7 @@ func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (wei
 		weights[cswp.PublicLavaAddress] = stake
 	}
 	for _, cswp := range staticProviders {
-		weights[cswp.PublicLavaAddress] = maxWeight * 10
+		weights[cswp.PublicLavaAddress] = maxWeight * StaticProviderStakeMultiplier
 	}
 	return weights
 }
