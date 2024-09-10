@@ -51,8 +51,6 @@ type ProviderOptimizer struct {
 	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
 	consumerOptimizerDataCollector  *metrics.ConsumerOptimizerDataCollector
-	chainId                         string
-	apiInterface                    string
 }
 
 type ProviderData struct {
@@ -188,14 +186,14 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			returnedProviders[0] = providerAddress // best provider is always on position 0
 			latencyScore = latencyScoreCurrent
 			syncScore = syncScoreCurrent
-			po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, true, providerData.Availability.Num/providerData.Availability.Denom, syncScoreCurrent, latencyScoreCurrent)
+			po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, true, providerData.Availability.Num/providerData.Availability.Denom, providerData.Sync.Num/providerData.Sync.Denom, providerData.Latency.Num/providerData.Latency.Denom)
 			continue
 		}
 		if po.shouldExplore(len(returnedProviders), numProviders) {
 			returnedProviders = append(returnedProviders, providerAddress)
-			po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, true, providerData.Availability.Num/providerData.Availability.Denom, syncScoreCurrent, latencyScoreCurrent)
+			po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, true, providerData.Availability.Num/providerData.Availability.Denom, providerData.Sync.Num/providerData.Sync.Denom, providerData.Latency.Num/providerData.Latency.Denom)
 		} else {
-			po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, false, providerData.Availability.Num/providerData.Availability.Denom, syncScoreCurrent, latencyScoreCurrent)
+			po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, false, providerData.Availability.Num/providerData.Availability.Denom, providerData.Sync.Num/providerData.Sync.Denom, providerData.Latency.Num/providerData.Latency.Denom)
 		}
 	}
 
@@ -373,9 +371,9 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 		}
 	} else {
 		providerData = ProviderData{
-			Availability: score.NewScoreStore(0.99, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of 99%
+			Availability: score.NewScoreStore(99, 100, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of 99%
 			Latency:      score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of 1 score (encourage exploration)
-			Sync:         score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of half score (encourage exploration)
+			Sync:         score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of 1 score (encourage exploration)
 			SyncBlock:    0,
 		}
 	}

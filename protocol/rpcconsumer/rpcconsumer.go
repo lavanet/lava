@@ -54,7 +54,7 @@ var (
 	RelayHealthIntervalFlagDefault                 = 5 * time.Minute
 	CollectOptimizerProviderDataFlag               = false
 	CollectOptimizerProviderDataFlagName           = "collect-optimizer-provider-data"
-	OptimizerProviderDataCollectionIntervalFlag    = 1 * time.Second
+	OptimizerProviderDataCollectionIntervalFlag    = 5 * time.Second
 	OptimizerProviderDataCollectionIntervalFlagNam = "optimizer-provider-data-collection-interval"
 )
 
