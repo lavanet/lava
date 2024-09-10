@@ -42,6 +42,7 @@ const (
 	AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
 	AllowGRPCCompressionFlag               = "allow-grpc-compression-for-consumer-provider-communication"
 	maximumStreamsOverASingleConnection    = 100
+	StaticProviderStakeMultiplier          = 10
 )
 
 var (

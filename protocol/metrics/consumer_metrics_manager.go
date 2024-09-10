@@ -56,6 +56,7 @@ type ConsumerMetricsManager struct {
 	relayProcessingLatencyAfterProvider         *prometheus.GaugeVec
 	averageProcessingLatency                    map[string]*LatencyTracker
 	providerChosenByOptimizerCount              *prometheus.GaugeVec
+	providersStake                              *prometheus.GaugeVec
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -187,6 +188,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The total number of times a provider was chosen by the optimizer",
 	}, []string{"spec", "apiInterface", "provider_address", "epoch"})
 
+	providersStake := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_provider_stake",
+		Help: "The stake size of the provider",
+	}, []string{"spec", "apiInterface", "provider_address", "epoch"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -211,6 +217,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(relayProcessingLatencyBeforeProvider)
 	prometheus.MustRegister(relayProcessingLatencyAfterProvider)
 	prometheus.MustRegister(providerChosenByOptimizerCount)
+	prometheus.MustRegister(providersStake)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                      totalCURequestedMetric,
@@ -241,6 +248,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		relayProcessingLatencyAfterProvider:         relayProcessingLatencyAfterProvider,
 		averageProcessingLatency:                    map[string]*LatencyTracker{},
 		providerChosenByOptimizerCount:              providerChosenByOptimizerCount,
+		providersStake:                              providersStake,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -490,6 +498,16 @@ func (pme *ConsumerMetricsManager) UpdateOptimizerChoosingProviderWithData(
 	pme.qosMetricPerChoosing.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10), strconv.FormatBool(chosen), AvailabilityLabel).Set(providerDataScore.Availability)
 	pme.qosMetricPerChoosing.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10), strconv.FormatBool(chosen), SyncLabel).Set(providerDataScore.Sync)
 	pme.qosMetricPerChoosing.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10), strconv.FormatBool(chosen), LatencyLabel).Set(providerDataScore.Latency)
+}
+
+func (pme *ConsumerMetricsManager) UpdateProvidersStake(chainId, apiInterface string, epoch uint64, stakeEntries map[string]uint64) {
+	if pme == nil {
+		return
+	}
+
+	for providerAddress, stake := range stakeEntries {
+		pme.providersStake.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10)).Set(float64(stake))
+	}
 }
 
 func SetVersionInner(protocolVersionMetric *prometheus.GaugeVec, version string) {
