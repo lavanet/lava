@@ -75,12 +75,7 @@ func (k Keeper) handleNoIprpcRewardToProviders(ctx sdk.Context, iprpcFunds []typ
 }
 
 // countIprpcCu updates the specCuMap which keeps records of spec->SpecCuType (which holds the IPRPC CU per provider)
-func (k Keeper) countIprpcCu(ctx sdk.Context, specCuMap map[string]types.SpecCuType, iprpcCu uint64, spec string, provider string) {
-	if _, found := k.epochstorage.GetStakeEntryCurrent(ctx, spec, provider); !found {
-		// don't count IPRPC CU of unstaked provider
-		return
-	}
-
+func (k Keeper) countIprpcCu(specCuMap map[string]types.SpecCuType, iprpcCu uint64, spec string, provider string) {
 	if iprpcCu != 0 {
 		specCu, ok := specCuMap[spec]
 		if !ok {

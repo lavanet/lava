@@ -96,7 +96,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 			}
 
 			// count iprpc cu
-			k.countIprpcCu(ctx, specCuMap, basepay.BasePay.IprpcCu, spec.ChainID, basepay.Provider)
+			k.countIprpcCu(specCuMap, basepay.BasePay.IprpcCu, spec.ChainID, basepay.Provider)
 		}
 
 		details["block"] = strconv.FormatInt(ctx.BlockHeight(), 10)
@@ -178,10 +178,14 @@ func (k Keeper) specProvidersBasePay(ctx sdk.Context, chainID string, pop bool) 
 	}
 
 	totalBasePay := math.ZeroInt()
+	stakedBasePays := []types.BasePayWithIndex{}
 	for _, basepay := range basepays {
-		totalBasePay = totalBasePay.Add(basepay.BasePay.Total)
+		if _, found := k.epochstorage.GetStakeEntryCurrent(ctx, basepay.ChainId, basepay.Provider); found {
+			totalBasePay = totalBasePay.Add(basepay.BasePay.Total)
+			stakedBasePays = append(stakedBasePays, basepay)
+		}
 	}
-	return basepays, totalBasePay
+	return stakedBasePays, totalBasePay
 }
 
 // ContributeToValidatorsAndCommunityPool transfers some of the providers' rewards to the validators and community pool
