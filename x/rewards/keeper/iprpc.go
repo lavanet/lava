@@ -75,7 +75,12 @@ func (k Keeper) handleNoIprpcRewardToProviders(ctx sdk.Context, iprpcFunds []typ
 }
 
 // countIprpcCu updates the specCuMap which keeps records of spec->SpecCuType (which holds the IPRPC CU per provider)
-func (k Keeper) countIprpcCu(specCuMap map[string]types.SpecCuType, iprpcCu uint64, spec string, provider string) {
+func (k Keeper) countIprpcCu(ctx sdk.Context, specCuMap map[string]types.SpecCuType, iprpcCu uint64, spec string, provider string) {
+	if _, found := k.epochstorage.GetStakeEntryCurrent(ctx, spec, provider); !found {
+		// don't count IPRPC CU of unstaked provider
+		return
+	}
+
 	if iprpcCu != 0 {
 		specCu, ok := specCuMap[spec]
 		if !ok {
@@ -147,26 +152,6 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 			continue
 		}
 
-		// remove providers that are registered in the spec fund but unstaked (can't reward unstaked providers)
-		epoch, _, err := k.epochstorage.GetEpochStartForBlock(ctx, uint64(ctx.BlockHeight()))
-		if err != nil {
-			// should never happen, print an error and return
-			utils.LavaFormatError("cannot distribute iprpc rewards", err,
-				utils.LogAttr("block", ctx.BlockHeight()),
-			)
-		}
-		stakedProvidersCu := []types.ProviderCuType{}
-		for _, providerCu := range specCu.ProvidersCu {
-			if k.epochstorage.HasStakeEntry(ctx, epoch, specFund.Spec, providerCu.Provider) {
-				// provider is found, add to the stakedProvidersCu list
-				stakedProvidersCu = append(stakedProvidersCu, providerCu)
-			} else {
-				// provider is not found, don't add to the stakedProvidersCu list and subtract its CU from the spec's
-				// total CU
-				specCu.TotalCu -= providerCu.CU
-			}
-		}
-
 		// tax the rewards to the community and validators
 		fundAfterTax := sdk.NewCoins()
 		for _, coin := range specFund.Fund {
@@ -181,7 +166,7 @@ func (k Keeper) distributeIprpcRewards(ctx sdk.Context, iprpcReward types.IprpcR
 
 		UsedReward := sdk.NewCoins()
 		// distribute IPRPC reward for spec
-		for _, providerCU := range stakedProvidersCu {
+		for _, providerCU := range specCu.ProvidersCu {
 			if specCu.TotalCu == 0 {
 				// spec was not serviced by any provider, continue
 				continue

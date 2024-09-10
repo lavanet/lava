@@ -96,7 +96,7 @@ func (k Keeper) distributeMonthlyBonusRewards(ctx sdk.Context) {
 			}
 
 			// count iprpc cu
-			k.countIprpcCu(specCuMap, basepay.BasePay.IprpcCu, spec.ChainID, basepay.Provider)
+			k.countIprpcCu(ctx, specCuMap, basepay.BasePay.IprpcCu, spec.ChainID, basepay.Provider)
 		}
 
 		details["block"] = strconv.FormatInt(ctx.BlockHeight(), 10)
