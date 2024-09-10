@@ -80,7 +80,7 @@ func (k Keeper) GetPairingForClient(ctx sdk.Context, chainID string, clientAddre
 		return nil, fmt.Errorf("invalid user for pairing: %s", err.Error())
 	}
 
-	providers, _, _, err = k.getPairingForClient(ctx, chainID, block, strictestPolicy, cluster, project.Index, false)
+	providers, _, _, err = k.getPairingForClient(ctx, chainID, block, strictestPolicy, cluster, project.Index, false, true)
 
 	return providers, err
 }
@@ -90,7 +90,7 @@ func (k Keeper) CalculatePairingChance(ctx sdk.Context, provider string, chainID
 	totalScore := cosmosmath.ZeroUint()
 	providerScore := cosmosmath.ZeroUint()
 
-	_, _, scores, err := k.getPairingForClient(ctx, chainID, uint64(ctx.BlockHeight()), policy, cluster, "dummy", true)
+	_, _, scores, err := k.getPairingForClient(ctx, chainID, uint64(ctx.BlockHeight()), policy, cluster, "dummy", true, false)
 	if err != nil {
 		return cosmosmath.LegacyZeroDec(), err
 	}
@@ -117,10 +117,20 @@ func (k Keeper) CalculatePairingChance(ctx sdk.Context, provider string, chainID
 
 // function used to get a new pairing from provider and client
 // first argument has all metadata, second argument is only the addresses
-func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint64, policy *planstypes.Policy, cluster string, projectIndex string, calcChance bool) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, providerScores []*pairingscores.PairingScore, errorRet error) {
+// useCache is a boolean argument that is used to determine whether pairing cache should be used
+// Note: useCache should only be true for queries! functions that write to the state and use this function should never put useCache=true
+func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint64, policy *planstypes.Policy, cluster string, projectIndex string, calcChance bool, useCache bool) (providers []epochstoragetypes.StakeEntry, allowedCU uint64, providerScores []*pairingscores.PairingScore, errorRet error) {
 	epoch, providersType, err := k.VerifyPairingData(ctx, chainID, block)
 	if err != nil {
 		return nil, 0, nil, fmt.Errorf("invalid pairing data: %s", err)
+	}
+
+	// to be used only in queries as this changes gas calculations, and therefore must not be part of consensus
+	if useCache {
+		providers, found := k.GetPairingQueryCache(projectIndex, chainID, epoch)
+		if found {
+			return providers, policy.EpochCuLimit, nil, nil
+		}
 	}
 
 	stakeEntries := k.epochStorageKeeper.GetAllStakeEntriesForEpochChainId(ctx, epoch, chainID)
@@ -138,6 +148,9 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 			if filterResults[i] {
 				stakeEntriesFiltered = append(stakeEntriesFiltered, stakeEntries[i])
 			}
+		}
+		if useCache {
+			k.SetPairingQueryCache(projectIndex, chainID, epoch, stakeEntriesFiltered)
 		}
 		return stakeEntriesFiltered, policy.EpochCuLimit, nil, nil
 	}
@@ -158,6 +171,9 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 		for _, score := range providerScores {
 			filteredEntries = append(filteredEntries, *score.Provider)
 		}
+		if useCache {
+			k.SetPairingQueryCache(projectIndex, chainID, epoch, filteredEntries)
+		}
 		return filteredEntries, policy.EpochCuLimit, nil, nil
 	}
 
@@ -176,6 +192,10 @@ func (k Keeper) getPairingForClient(ctx sdk.Context, chainID string, block uint6
 		pickedProviders := pairingscores.PickProviders(ctx, providerScores, group.Indexes(), hashData)
 		providers = append(providers, pickedProviders...)
 		prevGroupSlot = group
+	}
+
+	if useCache {
+		k.SetPairingQueryCache(projectIndex, chainID, epoch, providers)
 	}
 
 	return providers, policy.EpochCuLimit, providerScores, nil
@@ -330,7 +350,7 @@ func (k Keeper) ValidatePairingForClient(ctx sdk.Context, chainID string, provid
 			return false, allowedCU, []epochstoragetypes.StakeEntry{}, fmt.Errorf("invalid user for pairing: %s", err.Error())
 		}
 
-		validAddresses, allowedCU, _, err = k.getPairingForClient(ctx, chainID, epoch, strictestPolicy, cluster, project.Index, false)
+		validAddresses, allowedCU, _, err = k.getPairingForClient(ctx, chainID, epoch, strictestPolicy, cluster, project.Index, false, false)
 		if err != nil {
 			return false, allowedCU, []epochstoragetypes.StakeEntry{}, err
 		}
