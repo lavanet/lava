@@ -144,7 +144,7 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
+func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
 	latencyScore := math.MaxFloat64 // smaller = better i.e less latency
 	syncScore := math.MaxFloat64    // smaller = better i.e less sync lag
 	type exploration struct {
@@ -191,15 +191,18 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	}
 	if selectionTier.ScoresCount() == 0 {
 		// no providers to choose from
-		return []string{}
+		return []string{}, -1
 	}
 	initialChances := map[int]float64{0: ATierChance}
-	if len(allAddresses) > MinimumEntries*2 {
+	if selectionTier.ScoresCount() < NumTiers {
+		NumTiers = selectionTier.ScoresCount()
+	}
+	if selectionTier.ScoresCount() >= MinimumEntries*2 {
 		// if we have more than 2*MinimumEntries we set the LastTierChance configured
 		initialChances[(NumTiers - 1)] = LastTierChance
 	}
 	shiftedChances := selectionTier.ShiftTierChance(NumTiers, initialChances)
-	tier := selectionTier.SelectTierRandomly(NumTiers, shiftedChances)
+	tier = selectionTier.SelectTierRandomly(NumTiers, shiftedChances)
 	tierProviders := selectionTier.GetTier(tier, NumTiers, MinimumEntries)
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
@@ -213,7 +216,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		utils.LogAttr("tier", tier),
 	)
 
-	return returnedProviders
+	return returnedProviders, tier
 }
 
 // calculate the expected average time until this provider catches up with the given latestSync block

@@ -1,6 +1,8 @@
 package provideroptimizer
 
 import (
+	"math"
+
 	"github.com/lavanet/lava/v3/utils"
 	"github.com/lavanet/lava/v3/utils/lavaslices"
 	"github.com/lavanet/lava/v3/utils/rand"
@@ -58,7 +60,7 @@ func (st *SelectionTierInst) SelectTierRandomly(numTiers int, tierChances map[in
 	// select a tier randomly based on the chances given
 	// if the chances are not given, select a tier randomly based on the number of tiers
 	if len(tierChances) == 0 || len(tierChances) > numTiers {
-		utils.LavaFormatError("Invalid tier chances usage", nil)
+		utils.LavaFormatError("Invalid tier chances usage", nil, utils.LogAttr("tierChances", tierChances), utils.LogAttr("numTiers", numTiers))
 		return rand.Intn(numTiers)
 	}
 	// calculate the total chance
@@ -82,9 +84,16 @@ func (st *SelectionTierInst) SelectTierRandomly(numTiers int, tierChances map[in
 }
 
 func (*SelectionTierInst) calcChanceForDefaultTiers(tierChances map[int]float64, numTiers int) float64 {
+	if numTiers <= len(tierChances) {
+		return 0
+	}
 	totalChance := 0.0
 	for _, chance := range tierChances {
 		totalChance += chance
+	}
+	// rounding errors can happen
+	if totalChance > 1 {
+		totalChance = 1
 	}
 	chanceForDefaultTiers := (1 - totalChance) / float64(numTiers-len(tierChances))
 	return chanceForDefaultTiers
@@ -113,15 +122,17 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 		// scores[i] = 1 / (st.averageScoreForTier(i, numTiers) + 0.0001) // add epsilon to avoid 0
 		scores[i] = st.averageScoreForTier(i, numTiers)
 	}
-	medianScoreReversed := 1 / (lavaslices.Median(scores) + 0.0001)
-	percentile75Score := 1 / (lavaslices.Percentile(scores, 0.75) + 0.0001)
+	medianScore := lavaslices.Median(scores)
+	medianScoreReversed := 1 / (medianScore + 0.0001)
+	percentile25Score := lavaslices.Percentile(scores, 0.25)
+	percentile25ScoreReversed := 1 / (percentile25Score + 0.0001)
 
 	averageChance := 1 / float64(numTiers)
 	for i := 0; i < numTiers; i++ {
 		// reverse the score so that higher scores get higher chances
 		reversedScore := 1 / (scores[i] + 0.0001)
 		// offset the score based on the median and 75th percentile scores, the better they are compared to them the higher the chance
-		offsetFactor := 0.5*reversedScore/medianScoreReversed + 0.5*reversedScore/percentile75Score
+		offsetFactor := 0.5*math.Pow(reversedScore/medianScoreReversed, 2) + 0.5*math.Pow(reversedScore/percentile25ScoreReversed, 2)
 		if _, ok := initialTierChances[i]; !ok {
 			if chanceForDefaultTiers > 0 {
 				shiftedTierChances[i] = chanceForDefaultTiers + averageChance*offsetFactor

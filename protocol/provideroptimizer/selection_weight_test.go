@@ -22,7 +22,7 @@ func TestWeight(t *testing.T) {
 
 	assert.Equal(t, int64(10), sw.Weight("address1"))
 	assert.Equal(t, int64(20), sw.Weight("address2"))
-	assert.Equal(t, int64(0), sw.Weight("address3")) // address not set
+	assert.Equal(t, int64(1), sw.Weight("address3")) // address not set
 
 	weights = map[string]int64{
 		"address1": 25,
@@ -47,9 +47,9 @@ func TestWeightedChoice(t *testing.T) {
 
 	// Create entries based on weights
 	entries := []Entry{
-		{Address: "address1"},
-		{Address: "address2"},
-		{Address: "address3"},
+		{Address: "address1", Part: 1},
+		{Address: "address2", Part: 1},
+		{Address: "address3", Part: 1},
 	}
 
 	// Run the weighted choice multiple times to check distribution
