@@ -113,15 +113,15 @@ func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances ma
 		// scores[i] = 1 / (st.averageScoreForTier(i, numTiers) + 0.0001) // add epsilon to avoid 0
 		scores[i] = st.averageScoreForTier(i, numTiers)
 	}
-	medianScore := lavaslices.Median(scores)
-	percentile75Score := lavaslices.Percentile(scores, 0.75)
+	medianScoreReversed := 1 / (lavaslices.Median(scores) + 0.0001)
+	percentile75Score := 1 / (lavaslices.Percentile(scores, 0.75) + 0.0001)
 
 	averageChance := 1 / float64(numTiers)
 	for i := 0; i < numTiers; i++ {
 		// reverse the score so that higher scores get higher chances
 		reversedScore := 1 / (scores[i] + 0.0001)
 		// offset the score based on the median and 75th percentile scores, the better they are compared to them the higher the chance
-		offsetFactor := 0.5*reversedScore/medianScore + 0.5*reversedScore/percentile75Score
+		offsetFactor := 0.5*reversedScore/medianScoreReversed + 0.5*reversedScore/percentile75Score
 		if _, ok := initialTierChances[i]; !ok {
 			if chanceForDefaultTiers > 0 {
 				shiftedTierChances[i] = chanceForDefaultTiers + averageChance*offsetFactor
