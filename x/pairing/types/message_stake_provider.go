@@ -12,7 +12,7 @@ const TypeMsgStakeProvider = "stake_provider"
 
 var _ sdk.Msg = &MsgStakeProvider{}
 
-func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, delegateLimit sdk.Coin, delegateCommission uint64, provider string, description stakingtypes.Description) *MsgStakeProvider {
+func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, endpoints []epochstoragetypes.Endpoint, geolocation int32, delegateCommission uint64, provider string, description stakingtypes.Description) *MsgStakeProvider {
 	return &MsgStakeProvider{
 		Creator:            creator,
 		Validator:          validator,
@@ -20,7 +20,7 @@ func NewMsgStakeProvider(creator, validator, chainID string, amount sdk.Coin, en
 		Amount:             amount,
 		Endpoints:          endpoints,
 		Geolocation:        geolocation,
-		DelegateLimit:      delegateLimit,
+		DelegateLimit:      sdk.Coin{},
 		DelegateCommission: delegateCommission,
 		Address:            provider,
 		Description:        description,
@@ -67,10 +67,6 @@ func (msg *MsgStakeProvider) ValidateBasic() error {
 
 	if msg.DelegateCommission > 100 {
 		return sdkerrors.Wrapf(DelegateCommissionOOBError, "commission out of bound (%d)", msg.DelegateCommission)
-	}
-
-	if err := msg.DelegateLimit.Validate(); err != nil {
-		return sdkerrors.Wrapf(DelegateLimitError, "Invalid coin (%s)", err.Error())
 	}
 
 	if !msg.Amount.IsValid() {

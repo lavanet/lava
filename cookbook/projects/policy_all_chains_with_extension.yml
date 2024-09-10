@@ -22,6 +22,14 @@ Policy:
           extensions:
             - "archive"
           mixed: true
+    - chain_id: NEART
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+          extensions:
+            - "archive"
+          mixed: true
     - chain_id: SEP1
       requirements:
         - collection:
@@ -31,6 +39,32 @@ Policy:
             - "archive"
           mixed: true
     - chain_id: EVMOS
+      requirements:
+        - collection:
+            api_interface: "jsonrpc"
+            type: "POST"
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "rest"
+            type: "GET"
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "grpc"
+            type: ""
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "tendermintrpc"
+            type: ""
+          extensions:
+            - "archive"
+          mixed: true
+    - chain_id: EVMOST
       requirements:
         - collection:
             api_interface: "jsonrpc"
@@ -77,6 +111,46 @@ Policy:
             - "archive"
           mixed: true
     - chain_id: COSMOSHUB
+      requirements:
+        - collection:
+            api_interface: "rest"
+            type: "GET"
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "grpc"
+            type: ""
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "tendermintrpc"
+            type: ""
+          extensions:
+            - "archive"
+          mixed: true
+    - chain_id: AXELAR
+      requirements:
+        - collection:
+            api_interface: "rest"
+            type: "GET"
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "grpc"
+            type: ""
+          extensions:
+            - "archive"
+          mixed: true
+        - collection:
+            api_interface: "tendermintrpc"
+            type: ""
+          extensions:
+            - "archive"
+          mixed: true
+    - chain_id: AXELART
       requirements:
         - collection:
             api_interface: "rest"

@@ -99,7 +99,7 @@ func (k Keeper) HandleAndCloseVote(ctx sdk.Context, conflictVote types.ConflictV
 			ConsensusVote = false
 			continue
 		}
-		stake := entry.EffectiveStake()
+		stake := entry.TotalStake()
 		totalVotes = totalVotes.Add(stake) // count all the stake in the vote
 		votersStake[vote.Address] = stake  // save stake for reward weight
 		switch vote.Result {               // count vote for each provider

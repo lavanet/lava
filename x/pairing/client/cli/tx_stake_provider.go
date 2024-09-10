@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -15,7 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/feegrant"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v3/utils"
-	commontypes "github.com/lavanet/lava/v3/utils/common/types"
 	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	"github.com/lavanet/lava/v3/x/pairing/types"
@@ -104,15 +102,6 @@ func CmdStakeProvider() *cobra.Command {
 				return err
 			}
 
-			delegationLimitStr, err := cmd.Flags().GetString(types.FlagDelegationLimit)
-			if err != nil {
-				return err
-			}
-			delegationLimit, err := sdk.ParseCoinNormalized(delegationLimitStr)
-			if err != nil {
-				return err
-			}
-
 			validator := args[4]
 
 			identity, err := cmd.Flags().GetString(types.FlagIdentity)
@@ -144,7 +133,6 @@ func CmdStakeProvider() *cobra.Command {
 				argAmount,
 				argEndpoints,
 				argGeolocation,
-				delegationLimit,
 				commission,
 				provider,
 				description,
@@ -163,7 +151,6 @@ func CmdStakeProvider() *cobra.Command {
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
-	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational address (address used to operate the provider process, default is vault address)")
 	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
@@ -171,7 +158,6 @@ func CmdStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
 	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the provider use the vault address' funds for gas fees")
 	cmd.MarkFlagRequired(types.FlagMoniker)
-	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
@@ -218,15 +204,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 			}
 
 			commission, err := cmd.Flags().GetUint64(types.FlagCommission)
-			if err != nil {
-				return err
-			}
-
-			delegationLimitStr, err := cmd.Flags().GetString(types.FlagDelegationLimit)
-			if err != nil {
-				return err
-			}
-			delegationLimit, err := sdk.ParseCoinNormalized(delegationLimitStr)
 			if err != nil {
 				return err
 			}
@@ -305,15 +282,10 @@ func CmdBulkStakeProvider() *cobra.Command {
 						argAmount,
 						allEndpoints,
 						argGeolocation,
-						delegationLimit,
 						commission,
 						provider,
 						description,
 					)
-
-					if msg.DelegateLimit.Denom != commontypes.TokenDenom {
-						return nil, sdkerrors.Wrapf(types.DelegateLimitError, "Coin denomanator is not ulava")
-					}
 
 					if err := msg.ValidateBasic(); err != nil {
 						return nil, err
@@ -339,7 +311,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 	}
 	cmd.Flags().String(types.FlagMoniker, "", "The provider's moniker (non-unique name)")
 	cmd.Flags().Uint64(types.FlagCommission, 50, "The provider's commission from the delegators (default 50)")
-	cmd.Flags().String(types.FlagDelegationLimit, "0ulava", "The provider's total delegation limit from delegators (default 0)")
 	cmd.Flags().String(types.FlagProvider, "", "The provider's operational addresses (addresses that are used to operate the provider process. default is vault address)")
 	cmd.Flags().String(types.FlagIdentity, "", "The provider's identity")
 	cmd.Flags().String(types.FlagWebsite, "", "The provider's website")
@@ -347,7 +318,6 @@ func CmdBulkStakeProvider() *cobra.Command {
 	cmd.Flags().String(types.FlagDescriptionDetails, "", "The provider's description details")
 	cmd.Flags().Bool(types.FlagGrantFeeAuth, false, "Let the provider use the vault address' funds for gas fees")
 	cmd.MarkFlagRequired(types.FlagMoniker)
-	cmd.MarkFlagRequired(types.FlagDelegationLimit)
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd

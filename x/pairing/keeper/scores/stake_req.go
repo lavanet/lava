@@ -20,7 +20,7 @@ func (sr *StakeReq) Score(score PairingScore) math.Uint {
 	if sr == nil {
 		return math.OneUint()
 	}
-	effectiveStake := score.Provider.EffectiveStake()
+	effectiveStake := score.Provider.TotalStake()
 	if !effectiveStake.IsPositive() {
 		return math.OneUint()
 	}
