@@ -31,10 +31,10 @@ const (
 )
 
 var (
-	NumTiers       = 4
-	MinimumEntries = 5
-	ATierChance    = 0.75
-	LastTierChance = 0.0
+	OptimizerNumTiers = 4
+	MinimumEntries    = 5
+	ATierChance       = 0.75
+	LastTierChance    = 0.0
 )
 
 type ConcurrentBlockStore struct {
@@ -194,16 +194,16 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		return []string{}, -1
 	}
 	initialChances := map[int]float64{0: ATierChance}
-	if selectionTier.ScoresCount() < NumTiers {
-		NumTiers = selectionTier.ScoresCount()
+	if selectionTier.ScoresCount() < OptimizerNumTiers {
+		OptimizerNumTiers = selectionTier.ScoresCount()
 	}
 	if selectionTier.ScoresCount() >= MinimumEntries*2 {
 		// if we have more than 2*MinimumEntries we set the LastTierChance configured
-		initialChances[(NumTiers - 1)] = LastTierChance
+		initialChances[(OptimizerNumTiers - 1)] = LastTierChance
 	}
-	shiftedChances := selectionTier.ShiftTierChance(NumTiers, initialChances)
-	tier = selectionTier.SelectTierRandomly(NumTiers, shiftedChances)
-	tierProviders := selectionTier.GetTier(tier, NumTiers, MinimumEntries)
+	shiftedChances := selectionTier.ShiftTierChance(OptimizerNumTiers, initialChances)
+	tier = selectionTier.SelectTierRandomly(OptimizerNumTiers, shiftedChances)
+	tierProviders := selectionTier.GetTier(tier, OptimizerNumTiers, MinimumEntries)
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
 	if explorationCandidate.address != "" && po.shouldExplore(1, len(allAddresses)) {
