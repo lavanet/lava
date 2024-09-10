@@ -639,7 +639,10 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else {
-		providers = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock)
+		providers = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, csm.currentEpoch)
+		for _, chosenProvider := range providers {
+			go csm.consumerMetricsManager.UpdateProviderChosenByOptimizerCount(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, chosenProvider, csm.currentEpoch)
+		}
 	}
 
 	utils.LavaFormatTrace("Choosing providers",
@@ -1068,7 +1071,7 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
 
 	go func() {
-		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
+		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful, csm.currentEpoch)
 	}()
 }
 

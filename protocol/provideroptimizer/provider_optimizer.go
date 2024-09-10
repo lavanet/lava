@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/metrics"
 	"github.com/lavanet/lava/v3/utils"
 	"github.com/lavanet/lava/v3/utils/lavaslices"
 	"github.com/lavanet/lava/v3/utils/rand"
@@ -57,6 +58,7 @@ type ProviderOptimizer struct {
 	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
 	selectionWeighter               SelectionWeighter
+	consumerOptimizerDataCollector  *metrics.ConsumerOptimizerDataCollector
 }
 
 type ProviderData struct {
@@ -86,10 +88,12 @@ func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64) {
 
 func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
 	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now())
+	// Add to prometheus
 }
 
 func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64) {
 	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock, time.Now())
+	// Add to prometheus
 }
 
 func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi, success bool, cu, syncBlock uint64, sampleTime time.Time) {
@@ -136,6 +140,7 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 
+	// Add to prometheus
 	utils.LavaFormatTrace("probe update",
 		utils.LogAttr("providerAddress", providerAddress),
 		utils.LogAttr("latency", latency),
@@ -144,7 +149,7 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string) {
+func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string) {
 	latencyScore := math.MaxFloat64 // smaller = better i.e less latency
 	syncScore := math.MaxFloat64    // smaller = better i.e less sync lag
 	type exploration struct {
@@ -212,6 +217,19 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		utils.LogAttr("shiftedChances", shiftedChances),
 		utils.LogAttr("tier", tier),
 	)
+
+	for _, providerAddress := range allAddresses {
+		providerData, found := po.getProviderData(providerAddress)
+		if !found {
+			utils.LavaFormatWarning("provider data was not found for address", nil, utils.LogAttr("providerAddress", providerAddress))
+			continue
+		}
+		availabilityScore := providerData.Availability.Num / providerData.Availability.Denom
+		syncScore := providerData.Sync.Num / providerData.Sync.Denom
+		latencyScore := providerData.Latency.Num / providerData.Latency.Denom
+		chosen := lavaslices.Contains(returnedProviders, providerAddress)
+		po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, chosen, availabilityScore, syncScore, latencyScore)
+	}
 
 	return returnedProviders
 }
@@ -388,9 +406,9 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 		}
 	} else {
 		providerData = ProviderData{
-			Availability: score.NewScoreStore(0.99, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of 99%
+			Availability: score.NewScoreStore(99, 100, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of 99%
 			Latency:      score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of 1 score (encourage exploration)
-			Sync:         score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of half score (encourage exploration)
+			Sync:         score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of 1 score (encourage exploration)
 			SyncBlock:    0,
 		}
 	}
@@ -482,7 +500,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -495,6 +513,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 		// overwrite
 		wantedNumProvidersInConcurrency = 1
 	}
+
 	return &ProviderOptimizer{
 		strategy:                        strategy,
 		providersStorage:                cache,
@@ -503,6 +522,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 		providerRelayStats:              relayCache,
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
 		selectionWeighter:               NewSelectionWeighter(),
+		consumerOptimizerDataCollector:  consumerOptimizerDataCollector,
 	}
 }
 
