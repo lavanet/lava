@@ -14,6 +14,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+type ProviderTierEntry struct {
+	Address string
+	Tier    int
+	Score   float64
+}
+
 type LatencyTracker struct {
 	AverageLatency time.Duration // in nano seconds (time.Since result)
 	TotalRequests  int
@@ -57,6 +63,7 @@ type ConsumerMetricsManager struct {
 	averageProcessingLatency                    map[string]*LatencyTracker
 	providerChosenByOptimizerCount              *prometheus.GaugeVec
 	providersStake                              *prometheus.GaugeVec
+	optimizerProvidersScore                     *prometheus.GaugeVec
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -193,6 +200,11 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "The stake size of the provider",
 	}, []string{"spec", "apiInterface", "provider_address", "epoch"})
 
+	optimizerProvidersScore := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_optimizer_providers_score",
+		Help: "The scores and tiers of the providers, calculated by the optimizer",
+	}, []string{"spec", "apiInterface", "provider_address", "epoch", "tier"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -218,6 +230,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(relayProcessingLatencyAfterProvider)
 	prometheus.MustRegister(providerChosenByOptimizerCount)
 	prometheus.MustRegister(providersStake)
+	prometheus.MustRegister(optimizerProvidersScore)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                      totalCURequestedMetric,
@@ -249,6 +262,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		averageProcessingLatency:                    map[string]*LatencyTracker{},
 		providerChosenByOptimizerCount:              providerChosenByOptimizerCount,
 		providersStake:                              providersStake,
+		optimizerProvidersScore:                     optimizerProvidersScore,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -507,6 +521,18 @@ func (pme *ConsumerMetricsManager) UpdateProvidersStake(chainId, apiInterface st
 
 	for providerAddress, stake := range stakeEntries {
 		pme.providersStake.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10)).Set(float64(stake))
+	}
+}
+
+func (pme *ConsumerMetricsManager) UpdateOptimizerProvidersScore(chainId, apiInterface string, epoch uint64, tiers []ProviderTierEntry) {
+	if pme == nil {
+		return
+	}
+
+	for _, tierEntry := range tiers {
+		epochStr := strconv.FormatUint(epoch, 10)
+		tierStr := strconv.FormatInt(int64(tierEntry.Tier), 10)
+		pme.optimizerProvidersScore.WithLabelValues(chainId, apiInterface, tierEntry.Address, epochStr, tierStr).Set(tierEntry.Score)
 	}
 }
 

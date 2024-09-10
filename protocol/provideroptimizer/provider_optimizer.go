@@ -32,10 +32,12 @@ const (
 )
 
 var (
-	NumTiers       = 4
-	MinimumEntries = 5
-	ATierChance    = 0.75
-	LastTierChance = 0.0
+	NumTiers                               = 4
+	MinimumEntries                         = 5
+	ATierChance                            = 0.75
+	LastTierChance                         = 0.0
+	CollectOptimizerProvidersScore         = false
+	CollectOptimizerProvidersScoreFlagName = "collect-optimizer-providers-score"
 )
 
 type ConcurrentBlockStore struct {
@@ -59,6 +61,9 @@ type ProviderOptimizer struct {
 	latestSyncData                  ConcurrentBlockStore
 	selectionWeighter               SelectionWeighter
 	consumerOptimizerDataCollector  *metrics.ConsumerOptimizerDataCollector
+	metrics                         *metrics.ConsumerMetricsManager
+	chainId                         string
+	apiInterface                    string
 }
 
 type ProviderData struct {
@@ -205,7 +210,32 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	}
 	shiftedChances := selectionTier.ShiftTierChance(NumTiers, initialChances)
 	tier := selectionTier.SelectTierRandomly(NumTiers, shiftedChances)
-	tierProviders := selectionTier.GetTier(tier, NumTiers, MinimumEntries)
+
+	var tierProviders []Entry
+	if CollectOptimizerProvidersScore {
+		metricsTiers := []metrics.ProviderTierEntry{}
+		for i := 0; i < NumTiers; i++ {
+			tierEntries := selectionTier.GetTier(i, NumTiers, MinimumEntries)
+			if i == tier {
+				tierProviders = tierEntries
+			}
+
+			for _, entry := range tierEntries {
+				metricsTiers = append(metricsTiers, metrics.ProviderTierEntry{
+					Address: entry.Address,
+					Score:   entry.Score,
+					Tier:    i,
+				})
+			}
+		}
+
+		utils.LavaFormatDebug("ELAD: metricsTiers", utils.LogAttr("metricsTiers", metricsTiers))
+
+		go po.metrics.UpdateOptimizerProvidersScore(po.chainId, po.apiInterface, epoch, metricsTiers)
+	} else {
+		tierProviders = selectionTier.GetTier(tier, NumTiers, MinimumEntries)
+	}
+
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
 	if explorationCandidate.address != "" && po.shouldExplore(1, len(allAddresses)) {
@@ -500,7 +530,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector) *ProviderOptimizer {
+func NewProviderOptimizer(chainId, apiInterface string, strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector, metrics *metrics.ConsumerMetricsManager) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -522,7 +552,10 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 		providerRelayStats:              relayCache,
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
 		selectionWeighter:               NewSelectionWeighter(),
+		metrics:                         metrics,
 		consumerOptimizerDataCollector:  consumerOptimizerDataCollector,
+		chainId:                         chainId,
+		apiInterface:                    apiInterface,
 	}
 }
 

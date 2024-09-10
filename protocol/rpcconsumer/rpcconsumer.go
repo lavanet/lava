@@ -243,7 +243,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 						consumerOptimizerDataCollector.Start(ctx)
 					}
 					baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
-					optimizer = provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders, consumerOptimizerDataCollector)
+					optimizer = provideroptimizer.NewProviderOptimizer(chainID, rpcEndpoint.ApiInterface, options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders, consumerOptimizerDataCollector, consumerMetricsManager)
 					optimizers.Store(chainID, optimizer)
 				} else {
 					var ok bool
@@ -631,6 +631,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().IntVar(&relayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	cmdRPCConsumer.Flags().BoolVar(&CollectOptimizerProviderDataFlag, CollectOptimizerProviderDataFlagName, CollectOptimizerProviderDataFlag, "enables collection of data from the provider optimizer")
 	cmdRPCConsumer.Flags().DurationVar(&OptimizerProviderDataCollectionIntervalFlag, OptimizerProviderDataCollectionIntervalFlagNam, OptimizerProviderDataCollectionIntervalFlag, "sets the interval for collecting data from the provider optimizer")
+	cmdRPCConsumer.Flags().BoolVar(&provideroptimizer.CollectOptimizerProvidersScore, provideroptimizer.CollectOptimizerProvidersScoreFlagName, provideroptimizer.CollectOptimizerProvidersScore, "enables collection of provider scores from the provider optimizer")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }

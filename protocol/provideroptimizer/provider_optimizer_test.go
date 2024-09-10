@@ -40,7 +40,7 @@ func (posc *providerOptimizerSyncCache) Set(key, value interface{}, cost int64) 
 func setupProviderOptimizer(maxProvidersCount int) *ProviderOptimizer {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
 	baseWorldLatency := TEST_BASE_WORLD_LATENCY
-	return NewProviderOptimizer(STRATEGY_BALANCED, averageBlockTIme, baseWorldLatency, 1, nil)
+	return NewProviderOptimizer("", "", STRATEGY_BALANCED, averageBlockTIme, baseWorldLatency, 1, nil, nil)
 }
 
 type providersGenerator struct {

@@ -37,6 +37,22 @@ func NewConsumerOptimizerDataCollector(chainId, apiInterface string, interval ti
 	}
 }
 
+func (codc *ConsumerOptimizerDataCollector) GetChinId() string {
+	if codc == nil {
+		return ""
+	}
+
+	return codc.chainId
+}
+
+func (codc *ConsumerOptimizerDataCollector) GetApiInterface() string {
+	if codc == nil {
+		return ""
+	}
+
+	return codc.apiInterface
+}
+
 func (codc *ConsumerOptimizerDataCollector) SetProviderData(providerAddress string, epoch uint64, chosen bool, availability, sync, latency float64) {
 	if codc == nil {
 		return
