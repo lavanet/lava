@@ -433,7 +433,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			return utils.LavaFormatError("panic severity critical error, aborting support for chain api due to node access, continuing with other endpoints", err, utils.Attribute{Key: "chainTrackerConfig", Value: chainTrackerConfig}, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint})
 		}
 
-		_, loaded, err = rpcp.chainTrackers.LoadOrStore(chainID, chainTracker)
+		chainTrackerLoaded, loaded, err := rpcp.chainTrackers.LoadOrStore(chainID, chainTracker)
 		if err != nil {
 			utils.LavaFormatFatal("failed to load or store chain tracker", err, utils.LogAttr("chainID", chainID))
 		}
@@ -445,10 +445,8 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 			if err != nil {
 				return utils.LavaFormatError("failed to RegisterForSpecUpdates, panic severity critical error, aborting support for chain api due to invalid chain parser, continuing with others", err, utils.Attribute{Key: "endpoint", Value: rpcProviderEndpoint.String()})
 			}
-
-			// Any validation needs to be before we store chain tracker for given chain id
-			rpcp.chainTrackers.Store(rpcProviderEndpoint.ChainID, chainTracker)
-		} else {
+		} else { // loaded an existing chain tracker. use the same one instead
+			chainTracker = chainTrackerLoaded
 			utils.LavaFormatDebug("reusing chain tracker", utils.Attribute{Key: "chain", Value: rpcProviderEndpoint.ChainID})
 		}
 		return nil
