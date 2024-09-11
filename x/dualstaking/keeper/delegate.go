@@ -135,17 +135,16 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 			k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, entry.Chain, entry.Address)
 			details["min_self_delegation"] = k.GetParams(ctx).MinSelfDelegation.String()
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeFromUnbond, details, "unstaking provider due to unbond that lowered its stake below min self delegation")
-			return nil
+			continue
 		} else if entry.TotalStake().LT(k.specKeeper.GetMinStake(ctx, entry.Chain).Amount) {
 			details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, entry.Chain).String()
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
 			entry.Freeze()
-			k.epochstorageKeeper.SetStakeEntryCurrent(ctx, entry)
+
 		} else if delegator == entry.Vault && entry.IsFrozen() && !entry.IsJailed(ctx.BlockTime().UTC().Unix()) {
 			entry.UnFreeze(k.epochstorageKeeper.GetCurrentNextEpoch(ctx) + 1)
-			k.epochstorageKeeper.SetStakeEntryCurrent(ctx, entry)
 		}
-
+		k.epochstorageKeeper.SetStakeEntryCurrent(ctx, entry)
 	}
 
 	return nil

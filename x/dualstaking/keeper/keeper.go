@@ -11,6 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
+	collcompat "github.com/lavanet/lava/v3/utils/collcompat"
 	"github.com/lavanet/lava/v3/x/dualstaking/types"
 )
 
@@ -27,8 +28,9 @@ type (
 		epochstorageKeeper types.EpochstorageKeeper
 		specKeeper         types.SpecKeeper
 
+		schema      collections.Schema
 		delegations *collections.IndexedMap[collections.Pair[string, string], types.Delegation, types.DelegationIndexes]
-		rewards     *collections.Map[collections.Pair[string, string], types.DelegatorReward]
+		rewards     collections.Map[collections.Pair[string, string], types.DelegatorReward]
 	}
 )
 
@@ -49,6 +51,8 @@ func NewKeeper(
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
 
+	sb := collections.NewSchemaBuilder(collcompat.NewKVStoreService(storeKey))
+
 	keeper := &Keeper{
 		cdc:        cdc,
 		storeKey:   storeKey,
@@ -60,7 +64,22 @@ func NewKeeper(
 		accountKeeper:      accountKeeper,
 		epochstorageKeeper: epochstorageKeeper,
 		specKeeper:         specKeeper,
+
+		delegations: collections.NewIndexedMap(sb, types.DelegationsPrefix, "delegations",
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+			collcompat.ProtoValue[types.Delegation](cdc),
+			types.NewDelegationIndexes(sb)),
+
+		rewards: collections.NewMap(sb, types.RewardPrefix, "rewards",
+			collections.PairKeyCodec(collections.StringKey, collections.StringKey),
+			collcompat.ProtoValue[types.DelegatorReward](cdc)),
 	}
+
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+	keeper.schema = schema
 	return keeper
 }
 

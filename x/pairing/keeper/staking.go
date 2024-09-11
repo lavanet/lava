@@ -153,6 +153,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		existingEntry.Description = description
 		existingEntry.DelegateCommission = delegationCommission
 		existingEntry.LastChange = uint64(ctx.BlockTime().UTC().Unix())
+		existingEntry.Stake = amount
 
 		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)
 
@@ -220,24 +221,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
-	delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, provider)
-	if err != nil {
-		utils.LavaFormatWarning("cannot get provider's delegators", err,
-			utils.LogAttr("provider", provider),
-			utils.LogAttr("block", nextEpoch),
-		)
-	}
-
-	for _, d := range delegations {
-		if d.Delegator == creator && d.Provider == provider {
-			// ignore provider self delegation (delegator = vault, provider = provider) or delegations from other chains
-			continue
-		}
-		delegateTotal = delegateTotal.Add(d.Amount.Amount)
-	}
-
 	stakeEntry := epochstoragetypes.StakeEntry{
-		Stake:              sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()), // we set this to 0 since the delegate will take care of this
+		Stake:              amount,
 		Address:            provider,
 		StakeAppliedBlock:  stakeAppliedBlock,
 		Endpoints:          endpointsVerified,

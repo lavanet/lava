@@ -40,7 +40,7 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
-	delegation, found := k.GetDelegation(ctx, delegator, commontypes.EMPTY_PROVIDER)
+	delegation, found := k.GetDelegation(ctx, commontypes.EMPTY_PROVIDER, delegator)
 	amountBefore := sdk.ZeroInt()
 	if found {
 		amountBefore = delegation.Amount.Amount
@@ -51,7 +51,7 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		return err
 	}
 
-	delegation, _ = k.GetDelegation(ctx, delegator, commontypes.EMPTY_PROVIDER)
+	delegation, _ = k.GetDelegation(ctx, commontypes.EMPTY_PROVIDER, delegator)
 
 	amount.Amount = delegation.Amount.Amount.Sub(amountBefore)
 

@@ -34,7 +34,7 @@ type (
 		stakeEntries        *collections.IndexedMap[collections.Triple[uint64, string, collections.Pair[uint64, string]], types.StakeEntry, types.EpochChainIdProviderIndexes]
 		stakeEntriesCurrent *collections.IndexedMap[collections.Pair[string, string], types.StakeEntry, types.ChainIdVaultIndexes]
 		epochHashes         collections.Map[uint64, []byte]
-		providersMetaData   *collections.Map[string, types.ProviderMetadata]
+		providersMetaData   collections.Map[string, types.ProviderMetadata]
 	}
 )
 
@@ -78,6 +78,8 @@ func NewKeeper(
 			collcompat.ProtoValue[types.StakeEntry](cdc), types.NewChainIdVaultIndexes(sb)),
 
 		epochHashes: collections.NewMap(sb, types.EpochHashesPrefix, "epoch_hashes", collections.Uint64Key, collections.BytesValue),
+
+		providersMetaData: collections.NewMap(sb, types.ProviderMetaDataPrefix, "provider_metadata", collections.StringKey, collcompat.ProtoValue[types.ProviderMetadata](cdc)),
 	}
 
 	keeper.AddFixationRegistry(string(types.KeyEpochBlocks), func(ctx sdk.Context) any { return keeper.EpochBlocksRaw(ctx) })

@@ -17,15 +17,6 @@ const (
 	// MemStoreKey defines the in-memory store key
 	MemStoreKey = "mem_dualstaking"
 
-	// prefix for the delegations fixation store
-	DelegationPrefix = "delegation-fs"
-
-	// prefix for the delegators fixation store
-	DelegatorPrefix = "delegator-fs"
-
-	// prefix for the unbonding timer store
-	UnbondingPrefix = "unbonding-ts"
-
 	// DisableDualstakingHooks prefix
 	DisableDualstakingHookPrefix = "disable-dualstaking-hooks"
 
@@ -40,3 +31,6 @@ func KeyPrefix(p string) []byte {
 func DelegationKey(provider, delegator string) collections.Pair[string, string] {
 	return collections.Join(provider, delegator)
 }
+
+var DelegationsPrefix = collections.NewPrefix([]byte("Delegations/"))
+var RewardPrefix = collections.NewPrefix([]byte("Rewards/"))
