@@ -16,6 +16,10 @@ func (k Keeper) SetMetadata(ctx sdk.Context, metadata types.ProviderMetadata) {
 	}
 }
 
+func (k Keeper) RemoveMetadata(ctx sdk.Context, provider string) error {
+	return k.providersMetaData.Remove(ctx, provider)
+}
+
 func (k Keeper) SetAllMetadata(ctx sdk.Context, metadata []types.ProviderMetadata) {
 	for _, md := range metadata {
 		k.SetMetadata(ctx, md)

@@ -2,12 +2,14 @@ package keeper
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 
 	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
 	"github.com/lavanet/lava/v3/x/epochstorage/types"
 )
 
@@ -178,6 +180,21 @@ func (k Keeper) SetStakeEntryCurrent(ctx sdk.Context, stakeEntry types.StakeEntr
 	if err != nil {
 		panic(fmt.Errorf("SetStakeEntryCurrent: Failed to set entry for key %v, error: %w", key, err))
 	}
+
+	metadata, err := k.GetMetadata(ctx, stakeEntry.Address)
+	if err != nil {
+		// init metadata
+		metadata = types.ProviderMetadata{
+			Provider:         stakeEntry.Address,
+			Chains:           []string{},
+			SelfDelegation:   sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
+			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
+		}
+	}
+	if !slices.Contains(metadata.Chains, stakeEntry.Chain) {
+		metadata.Chains = append(metadata.Chains, stakeEntry.Chain)
+	}
+	k.SetMetadata(ctx, metadata)
 }
 
 // RemoveStakeEntryCurrent deletes a current stake entry from the store
@@ -186,6 +203,23 @@ func (k Keeper) RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, provide
 	err := k.stakeEntriesCurrent.Remove(ctx, key)
 	if err != nil {
 		panic(fmt.Errorf("RemoveStakeEntryCurrent: Failed to remove entry with key %v, error: %w", key, err))
+	}
+
+	metadata, err := k.GetMetadata(ctx, provider)
+	if err != nil {
+		panic(fmt.Errorf("RemoveStakeEntryCurrent: Failed to fetch provider metadata %v, error: %w", provider, err))
+	}
+	var ok bool
+	metadata.Chains, ok = lavaslices.Remove(metadata.Chains, chainID)
+	if !ok {
+		panic(fmt.Errorf("RemoveStakeEntryCurrent: Failed to remove chain from provider metadata %v, error: %w", provider, err))
+	}
+	if len(metadata.Chains) == 0 {
+		if k.RemoveMetadata(ctx, provider) != nil {
+			panic(fmt.Errorf("RemoveStakeEntryCurrent: Failed to remove provider metadata %v, error: %w", provider, err))
+		}
+	} else {
+		k.SetMetadata(ctx, metadata)
 	}
 }
 
