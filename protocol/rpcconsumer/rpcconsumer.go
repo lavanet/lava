@@ -174,12 +174,15 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	for _, endpoint := range options.rpcEndpoints {
 		chainMutexes[endpoint.ChainID] = &sync.Mutex{} // create a mutex per chain for shared resources
 	}
-	var optimizers sync.Map
-	var consumerConsistencies sync.Map
-	var finalizationConsensuses sync.Map
+
+	optimizers := &common.SafeSyncMap[string, *provideroptimizer.ProviderOptimizer]{}
+	consumerConsistencies := &common.SafeSyncMap[string, *ConsumerConsistency]{}
+	finalizationConsensuses := &common.SafeSyncMap[string, *finalizationconsensus.FinalizationConsensus]{}
+
 	var wg sync.WaitGroup
 	parallelJobs := len(options.rpcEndpoints)
 	wg.Add(parallelJobs)
+
 	errCh := make(chan error)
 
 	consumerStateTracker.RegisterForUpdates(ctx, updaters.NewMetricsUpdater(consumerMetricsManager))
@@ -193,7 +196,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	}
 	consumerStateTracker.RegisterForVersionUpdates(ctx, version.Version, &upgrade.ProtocolVersion{})
 	relaysMonitorAggregator := metrics.NewRelaysMonitorAggregator(options.cmdFlags.RelaysHealthIntervalFlag, consumerMetricsManager)
-	policyUpdaters := syncMapPolicyUpdaters{}
+	policyUpdaters := &common.SafeSyncMap[string, *updaters.PolicyUpdater]{}
 	for _, rpcEndpoint := range options.rpcEndpoints {
 		go func(rpcEndpoint *lavasession.RPCEndpoint) error {
 			defer wg.Done()
@@ -206,7 +209,11 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			chainID := rpcEndpoint.ChainID
 			// create policyUpdaters per chain
 			newPolicyUpdater := updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint)
-			if policyUpdater, ok := policyUpdaters.LoadOrStore(chainID, newPolicyUpdater); ok {
+			policyUpdater, ok, err := policyUpdaters.LoadOrStore(chainID, newPolicyUpdater)
+			if err != nil {
+				utils.LavaFormatFatal("failed loading or storing policy updater", err, utils.LogAttr("endpoint", rpcEndpoint))
+			}
+			if ok {
 				err := policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
 				if err != nil {
 					errCh <- err
@@ -229,46 +236,39 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 				// this is locked so we don't race optimizers creation
 				chainMutexes[chainID].Lock()
 				defer chainMutexes[chainID].Unlock()
-				value, exists := optimizers.Load(chainID)
-				if !exists {
+				var loaded bool
+				var err error
+
+				optimizer, loaded, err = optimizers.Load(chainID)
+				if err != nil {
+					optimizer = nil
+					return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+				}
+				if !loaded {
 					// doesn't exist for this chain create a new one
 					baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 					optimizer = provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders)
 					optimizers.Store(chainID, optimizer)
-				} else {
-					var ok bool
-					optimizer, ok = value.(*provideroptimizer.ProviderOptimizer)
-					if !ok {
-						err = utils.LavaFormatError("failed loading optimizer, value is of the wrong type", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
-						return err
-					}
-				}
-				value, exists = consumerConsistencies.Load(chainID)
-				if !exists { // doesn't exist for this chain create a new one
-					consumerConsistency = NewConsumerConsistency(chainID)
-					consumerConsistencies.Store(chainID, consumerConsistency)
-				} else {
-					var ok bool
-					consumerConsistency, ok = value.(*ConsumerConsistency)
-					if !ok {
-						err = utils.LavaFormatError("failed loading consumer consistency, value is of the wrong type", err, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
-						return err
-					}
 				}
 
-				value, exists = finalizationConsensuses.Load(chainID)
-				if !exists {
+				consumerConsistency, loaded, err = consumerConsistencies.Load(chainID)
+				if err != nil {
+					return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+				}
+				if !loaded { // doesn't exist for this chain create a new one
+					consumerConsistency = NewConsumerConsistency(chainID)
+					consumerConsistencies.Store(chainID, consumerConsistency)
+				}
+
+				finalizationConsensus, loaded, err = finalizationConsensuses.Load(chainID)
+				if err != nil {
+					return utils.LavaFormatError("failed loading finalization consensus", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+				}
+				if !loaded {
 					// doesn't exist for this chain create a new one
 					finalizationConsensus = finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
 					consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 					finalizationConsensuses.Store(chainID, finalizationConsensus)
-				} else {
-					var ok bool
-					finalizationConsensus, ok = value.(*finalizationconsensus.FinalizationConsensus)
-					if !ok {
-						err = utils.LavaFormatError("failed loading finalization consensus, value is of the wrong type", nil, utils.Attribute{Key: "endpoint", Value: rpcEndpoint.Key()})
-						return err
-					}
 				}
 				return nil
 			}
@@ -327,7 +327,10 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
 	for chainId := range chainMutexes {
-		policyUpdater, ok := policyUpdaters.Load(chainId)
+		policyUpdater, ok, err := policyUpdaters.Load(chainId)
+		if err != nil {
+			utils.LavaFormatFatal("could not load policy Updater for chain", err, utils.LogAttr("chain", chainId))
+		}
 		if !ok {
 			utils.LavaFormatError("could not load policy Updater for chain", nil, utils.LogAttr("chain", chainId))
 			continue
