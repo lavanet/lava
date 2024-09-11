@@ -15,26 +15,26 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/lavanet/lava/v2/protocol/chainlib"
-	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v2/protocol/chaintracker"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavaprotocol/finalizationconsensus"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/protocol/metrics"
-	"github.com/lavanet/lava/v2/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v2/protocol/rpcconsumer"
-	"github.com/lavanet/lava/v2/protocol/rpcprovider"
-	"github.com/lavanet/lava/v2/protocol/rpcprovider/reliabilitymanager"
-	"github.com/lavanet/lava/v2/protocol/rpcprovider/rewardserver"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/rand"
-	"github.com/lavanet/lava/v2/utils/sigs"
+	"github.com/lavanet/lava/v3/protocol/chainlib"
+	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v3/protocol/chaintracker"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationconsensus"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/protocol/metrics"
+	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v3/protocol/rpcconsumer"
+	"github.com/lavanet/lava/v3/protocol/rpcprovider"
+	"github.com/lavanet/lava/v3/protocol/rpcprovider/reliabilitymanager"
+	"github.com/lavanet/lava/v3/protocol/rpcprovider/rewardserver"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/rand"
+	"github.com/lavanet/lava/v3/utils/sigs"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/connectivity"
 
-	conflicttypes "github.com/lavanet/lava/v2/x/conflict/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	conflicttypes "github.com/lavanet/lava/v3/x/conflict/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 var (
@@ -941,6 +941,132 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 	}
 }
 
+func TestArchiveProvidersRetry(t *testing.T) {
+	playbook := []struct {
+		name               string
+		numOfProviders     int
+		archiveProviders   int
+		nodeErrorProviders int
+		expectedResult     string
+		statusCode         int
+	}{
+		{
+			name:               "happy flow",
+			numOfProviders:     3,
+			archiveProviders:   3,
+			nodeErrorProviders: 0,
+			expectedResult:     `{"result": "success"}`,
+			statusCode:         200,
+		},
+		{
+			name:               "archive with 1 errored provider",
+			numOfProviders:     3,
+			archiveProviders:   3,
+			nodeErrorProviders: 1,
+			expectedResult:     `{"result": "success"}`,
+			statusCode:         200,
+		},
+		{
+			name:               "archive with 2 errored provider",
+			numOfProviders:     3,
+			archiveProviders:   3,
+			nodeErrorProviders: 2,
+			expectedResult:     `{"result": "success"}`,
+			statusCode:         200,
+		},
+		{
+			name:               "archive with 3 errored provider",
+			numOfProviders:     3,
+			archiveProviders:   3,
+			nodeErrorProviders: 3,
+			expectedResult:     `{"error": "failure", "message": "test", "code": "-32132"}`,
+			statusCode:         555,
+		},
+	}
+	for _, play := range playbook {
+		t.Run(play.name, func(t *testing.T) {
+			ctx := context.Background()
+			// can be any spec and api interface
+			specId := "LAV1"
+			apiInterface := spectypes.APIInterfaceRest
+			epoch := uint64(100)
+			requiredResponses := 1
+			lavaChainID := "lava"
+			numProviders := play.numOfProviders
+
+			consumerListenAddress := addressGen.GetAddress()
+			pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+
+			type providerData struct {
+				account                sigs.Account
+				endpoint               *lavasession.RPCProviderEndpoint
+				server                 *rpcprovider.RPCProviderServer
+				replySetter            *ReplySetter
+				mockChainFetcher       *MockChainFetcher
+				mockReliabilityManager *MockReliabilityManager
+			}
+			providers := []providerData{}
+
+			for i := 0; i < numProviders; i++ {
+				account := sigs.GenerateDeterministicFloatingKey(randomizer)
+				providerDataI := providerData{account: account}
+				providers = append(providers, providerDataI)
+			}
+			consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+
+			for i := 0; i < numProviders; i++ {
+				ctx := context.Background()
+				providerDataI := providers[i]
+				listenAddress := addressGen.GetAddress()
+				addons := []string(nil)
+				if i+1 <= play.archiveProviders {
+					addons = []string{"archive"}
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, addons, fmt.Sprintf("provider%d", i))
+				providers[i].replySetter.replyDataBuf = []byte(`{"result": "success"}`)
+				if i+1 <= play.nodeErrorProviders {
+					providers[i].replySetter.replyDataBuf = []byte(`{"error": "failure", "message": "test", "code": "-32132"}`)
+					providers[i].replySetter.status = 555
+				}
+			}
+
+			for i := 0; i < numProviders; i++ {
+				pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
+					PublicLavaAddress: providers[i].account.Addr.String(),
+					Endpoints: []*lavasession.Endpoint{
+						{
+							NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
+							Enabled:        true,
+							Geolocation:    1,
+						},
+					},
+					Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+					MaxComputeUnits:  10000,
+					UsedComputeUnits: 0,
+					PairingEpoch:     epoch,
+				}
+			}
+			rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+			require.NotNil(t, rpcconsumerServer)
+
+			client := http.Client{Timeout: 1000 * time.Millisecond}
+			req, err := http.NewRequest(http.MethodGet, "http://"+consumerListenAddress+"/lavanet/lava/conflict/params", nil)
+			req.Header["lava-extension"] = []string{"archive"}
+			require.NoError(t, err)
+
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+			require.Equal(t, play.statusCode, resp.StatusCode)
+
+			bodyBytes, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+
+			resp.Body.Close()
+			require.Equal(t, string(bodyBytes), play.expectedResult)
+		})
+	}
+}
+
 func TestSameProviderConflictReport(t *testing.T) {
 	type providerData struct {
 		account                sigs.Account
@@ -1090,12 +1216,12 @@ func TestSameProviderConflictReport(t *testing.T) {
 
 		twoProvidersConflictSent := false
 		sameProviderConflictSent := false
-		wg := sync.WaitGroup{}
-		wg.Add(1)
+		numberOfRelays := 10
+		reported := make(chan bool, numberOfRelays)
 		txConflictDetectionMock := func(ctx context.Context, finalizationConflict *conflicttypes.FinalizationConflict, responseConflict *conflicttypes.ResponseConflict, conflictHandler common.ConflictHandlerInterface) error {
 			if finalizationConflict == nil {
 				require.FailNow(t, "Finalization conflict should not be nil")
-				wg.Done()
+				reported <- true
 				return nil
 			}
 			utils.LavaFormatDebug("@@@@@@@@@@@@@@@ Called conflict mock tx", utils.LogAttr("provider0", finalizationConflict.RelayFinalization_0.RelaySession.Provider), utils.LogAttr("provider0", finalizationConflict.RelayFinalization_1.RelaySession.Provider))
@@ -1114,7 +1240,7 @@ func TestSameProviderConflictReport(t *testing.T) {
 			}
 
 			twoProvidersConflictSent = true
-			wg.Done()
+			reported <- true
 			return nil
 		}
 		mockConsumerStateTracker.SetTxConflictDetectionWrapper(txConflictDetectionMock)
@@ -1137,14 +1263,16 @@ func TestSameProviderConflictReport(t *testing.T) {
 		req, err := http.NewRequest(http.MethodPost, "http://"+consumerListenAddress+"/cosmos/tx/v1beta1/txs", nil)
 		require.NoError(t, err)
 
-		for i := 0; i < 2; i++ {
+		for i := 0; i < numberOfRelays; i++ {
 			// Two relays to trigger both same provider conflict and
-			resp, err := client.Do(req)
-			require.NoError(t, err)
-			require.Equal(t, http.StatusOK, resp.StatusCode)
+			go func() {
+				resp, err := client.Do(req)
+				require.NoError(t, err)
+				require.Equal(t, http.StatusOK, resp.StatusCode)
+			}()
 		}
 		// conflict calls happen concurrently, therefore we need to wait the call.
-		wg.Wait()
+		<-reported
 		require.True(t, sameProviderConflictSent)
 		require.True(t, twoProvidersConflictSent)
 	})

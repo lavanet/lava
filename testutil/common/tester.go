@@ -14,21 +14,21 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	testkeeper "github.com/lavanet/lava/v2/testutil/keeper"
-	"github.com/lavanet/lava/v2/utils"
-	specutils "github.com/lavanet/lava/v2/utils/keeper"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	dualstakingante "github.com/lavanet/lava/v2/x/dualstaking/ante"
-	dualstakingtypes "github.com/lavanet/lava/v2/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	fixationstoretypes "github.com/lavanet/lava/v2/x/fixationstore/types"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	planstypes "github.com/lavanet/lava/v2/x/plans/types"
-	projectstypes "github.com/lavanet/lava/v2/x/projects/types"
-	rewardstypes "github.com/lavanet/lava/v2/x/rewards/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
-	subscriptiontypes "github.com/lavanet/lava/v2/x/subscription/types"
+	testkeeper "github.com/lavanet/lava/v3/testutil/keeper"
+	"github.com/lavanet/lava/v3/utils"
+	specutils "github.com/lavanet/lava/v3/utils/keeper"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	dualstakingante "github.com/lavanet/lava/v3/x/dualstaking/ante"
+	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	fixationstoretypes "github.com/lavanet/lava/v3/x/fixationstore/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	planstypes "github.com/lavanet/lava/v3/x/plans/types"
+	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
+	rewardstypes "github.com/lavanet/lava/v3/x/rewards/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
+	subscriptiontypes "github.com/lavanet/lava/v3/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -599,7 +599,6 @@ func (ts *Tester) TxPairingStakeProviderFull(
 	endpoints []epochstoragetypes.Endpoint,
 	geoloc int32,
 	commission uint64,
-	delegateLimit uint64,
 	moniker string,
 	identity string,
 	website string,
@@ -639,7 +638,6 @@ func (ts *Tester) TxPairingStakeProviderFull(
 		Amount:             amount,
 		Geolocation:        geoloc,
 		Endpoints:          endpoints,
-		DelegateLimit:      sdk.NewCoin(ts.Keepers.StakingKeeper.BondDenom(ts.Ctx), sdk.NewIntFromUint64(delegateLimit)),
 		DelegateCommission: commission,
 		Address:            provider,
 		Description:        description,

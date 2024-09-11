@@ -3,9 +3,9 @@ package keeper_test
 import (
 	"testing"
 
-	"github.com/lavanet/lava/v2/testutil/common"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	projectTypes "github.com/lavanet/lava/v2/x/projects/types"
+	"github.com/lavanet/lava/v3/testutil/common"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	projectTypes "github.com/lavanet/lava/v3/x/projects/types"
 	"github.com/stretchr/testify/require"
 )
 

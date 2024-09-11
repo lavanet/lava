@@ -1,12 +1,12 @@
 package cli
 
 import (
+	"context"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -17,6 +17,7 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	"github.com/spf13/cobra"
 )
 
@@ -353,11 +354,11 @@ func loadProgress(filename string) Progress {
 
 func NewQueryTotalGasCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "total-gas address chainid",
-		Short:   `calculate the total gas used by a provider in 24H`,
-		Long:    `calculate the total gas used by a provider in 24H`,
-		Example: "total-gas lava@... NEAR",
-		Args:    cobra.ExactArgs(2),
+		Use:     "total-gas address",
+		Short:   `calculate the total gas used by a provider in 12H for all chains`,
+		Long:    `calculate the total gas used by a provider in 12H for all chains`,
+		Example: "total-gas lava@...",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
@@ -366,7 +367,6 @@ func NewQueryTotalGasCmd() *cobra.Command {
 			authquerier := authtypes.NewQueryClient(clientCtx)
 
 			account := args[0]
-			chainid := args[1]
 
 			getSequence := func(account string) (uint64, error) {
 				res, err := authquerier.Account(cmd.Context(), &authtypes.QueryAccountRequest{Address: account})
@@ -405,15 +405,52 @@ func NewQueryTotalGasCmd() *cobra.Command {
 			}
 
 			now := time.Now().UTC()
+			if clientCtx.Height != 0 {
+				res, err := clientCtx.Client.Block(context.Background(), &clientCtx.Height)
+				if err != nil {
+					fmt.Println("failed to get latest block time")
+					return nil
+				}
+				now = res.Block.Header.Time
+			}
+
 			txtime := now
 			totalgas := int64(0)
+			numRelays := int64(0)
 			sequence, _ := getSequence(account)
+			if sequence == 0 {
+				block := clientCtx.Height
+				if block == 0 {
+					res, err := clientCtx.Client.Status(context.Background())
+					if err != nil {
+						fmt.Println("failed to get latest block height and account sequence")
+						return nil
+					}
+					block = res.SyncInfo.LatestBlockHeight
+				}
+				fmt.Printf("could not get account sequence for block %d\n", block)
+				return nil
+			}
 			layout := time.RFC3339
-			for now.Sub(txtime) < 24*time.Hour {
+			for now.Sub(txtime) < 12*time.Hour {
 				sequence--
 				tx := getResponse(account, sequence)
 
-				if strings.Contains(tx.RawLog, chainid) && strings.Contains(tx.RawLog, "MsgRelayPayment") {
+				if tx == nil {
+					continue
+				}
+
+				msgs := tx.GetTx().GetMsgs()
+				foundPayment := false
+				for _, msg := range msgs {
+					msg, ok := msg.(*pairingtypes.MsgRelayPayment)
+					if !ok {
+						continue
+					}
+					numRelays += int64(len(msg.Relays))
+					foundPayment = true
+				}
+				if foundPayment {
 					totalgas += tx.GasUsed
 				}
 				// Parse the time string
@@ -422,9 +459,10 @@ func NewQueryTotalGasCmd() *cobra.Command {
 					return err
 				}
 
-				fmt.Printf("sequence %d, totalgas %d txdiff %f sec\n", sequence, totalgas, now.Sub(txtime).Seconds())
+				fmt.Printf("\rsequence %d, totalgas %d txdiff %f sec", sequence, totalgas, now.Sub(txtime).Seconds())
 			}
-
+			totalgas /= numRelays
+			fmt.Printf("\navg totalgas %d numTX %d \n", totalgas, numRelays)
 			return nil
 		},
 	}

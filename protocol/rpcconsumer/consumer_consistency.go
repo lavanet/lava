@@ -4,12 +4,13 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto"
-	"github.com/lavanet/lava/v2/utils"
+	common "github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/utils"
 )
 
 // this class handles seen block values in requests
 const (
-	CacheMaxCost     = 2000  // each item cost would be 1
+	CacheMaxCost     = 20000 // each item cost would be 1
 	CacheNumCounters = 20000 // expect 2000 items
 	EntryTTL         = 5 * time.Minute
 )
@@ -40,8 +41,8 @@ func (cc *ConsumerConsistency) getLatestBlock(key string) (block int64, found bo
 	return block, found
 }
 
-func (cc *ConsumerConsistency) Key(dappId string, ip string) string {
-	return dappId + "__" + ip
+func (cc *ConsumerConsistency) Key(userData common.UserData) string {
+	return userData.DappId + "__" + userData.ConsumerIp
 }
 
 // used on subscription, where we already have the dapp key stored, but we don't keep the dappId and ip separately
@@ -55,19 +56,19 @@ func (cc *ConsumerConsistency) SetSeenBlockFromKey(blockSeen int64, key string) 
 	}
 }
 
-func (cc *ConsumerConsistency) SetSeenBlock(blockSeen int64, dappId string, ip string) {
+func (cc *ConsumerConsistency) SetSeenBlock(blockSeen int64, userData common.UserData) {
 	if cc == nil {
 		return
 	}
-	key := cc.Key(dappId, ip)
+	key := cc.Key(userData)
 	cc.SetSeenBlockFromKey(blockSeen, key)
 }
 
-func (cc *ConsumerConsistency) GetSeenBlock(dappId string, ip string) (int64, bool) {
+func (cc *ConsumerConsistency) GetSeenBlock(userData common.UserData) (int64, bool) {
 	if cc == nil {
 		return 0, false
 	}
-	return cc.getLatestBlock(cc.Key(dappId, ip))
+	return cc.getLatestBlock(cc.Key(userData))
 }
 
 func NewConsumerConsistency(specId string) *ConsumerConsistency {

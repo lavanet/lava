@@ -3,7 +3,7 @@ package scores
 import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	planstypes "github.com/lavanet/lava/v2/x/plans/types"
+	planstypes "github.com/lavanet/lava/v3/x/plans/types"
 )
 
 const stakeReqName = "stake-req"
@@ -17,7 +17,7 @@ func (sr *StakeReq) Init(policy planstypes.Policy) bool {
 
 // Score calculates the the provider score as the normalized stake
 func (sr *StakeReq) Score(score PairingScore) math.Uint {
-	effectiveStake := score.Provider.EffectiveStake()
+	effectiveStake := score.Provider.TotalStake()
 	if !effectiveStake.IsPositive() {
 		return math.OneUint()
 	}

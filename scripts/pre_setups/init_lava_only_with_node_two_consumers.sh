@@ -44,7 +44,7 @@ lavad tx subscription buy DefaultPlan $(lavad keys show user1 -a) -y --from user
 wait_next_block
 lavad tx subscription buy DefaultPlan $(lavad keys show user2 -a) -y --from user2 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 wait_next_block
-lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --delegate-limit 1000ulava --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1  --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 sleep_until_next_epoch
 wait_next_block

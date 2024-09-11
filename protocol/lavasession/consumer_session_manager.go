@@ -10,13 +10,13 @@ import (
 	"time"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/lavanet/lava/v2/protocol/common"
-	metrics "github.com/lavanet/lava/v2/protocol/metrics"
-	"github.com/lavanet/lava/v2/protocol/provideroptimizer"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/rand"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/common"
+	metrics "github.com/lavanet/lava/v3/protocol/metrics"
+	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/rand"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -61,6 +61,12 @@ type ConsumerSessionManager struct {
 	consumerMetricsManager             *metrics.ConsumerMetricsManager
 	consumerPublicAddress              string
 	activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage
+}
+
+func (csm *ConsumerSessionManager) GetNumberOfValidProviders() int {
+	csm.lock.RLock()
+	defer csm.lock.RUnlock()
+	return len(csm.validAddresses)
 }
 
 // this is being read in multiple locations and but never changes so no need to lock.
@@ -826,6 +832,8 @@ func (csm *ConsumerSessionManager) removeAddressFromValidAddresses(address strin
 // Blocks a provider making him unavailable for pick this epoch, will also report him as unavailable if reportProvider is set to true.
 // Validates that the sessionEpoch is equal to cs.currentEpoch otherwise doesn't take effect.
 func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider bool, sessionEpoch uint64, disconnections uint64, errors uint64, allowSecondChance bool, reconnectCallback func() error, errorsForReport []error) error {
+	utils.LavaFormatDebug("CSM Blocking provider", utils.LogAttr("address", address), utils.LogAttr("errorsForReport", errorsForReport), utils.LogAttr("allowing_second_chance", allowSecondChance))
+
 	// find Index of the address
 	if sessionEpoch != csm.atomicReadCurrentEpoch() { // we read here atomically so cs.currentEpoch cant change in the middle, so we can save time if epochs mismatch
 		return EpochMismatchError
@@ -841,10 +849,10 @@ func (csm *ConsumerSessionManager) blockProvider(address string, reportProvider 
 			go func() {
 				<-time.After(retrySecondChanceAfter)
 				// check epoch is still relevant, if not just return
-				utils.LavaFormatDebug("Running second chance for provider", utils.LogAttr("address", address))
 				if sessionEpoch != csm.atomicReadCurrentEpoch() {
 					return
 				}
+				utils.LavaFormatDebug("Running second chance for provider", utils.LogAttr("address", address))
 				csm.validateAndReturnBlockedProviderToValidAddressesList(address)
 			}()
 		}
@@ -961,6 +969,7 @@ func (csm *ConsumerSessionManager) OnSessionFailure(consumerSession *SingleConsu
 	if err != nil {
 		return err
 	}
+
 	if !redemptionSession && blockProvider {
 		publicProviderAddress, pairingEpoch := parentConsumerSessionsWithProvider.getPublicLavaAddressAndPairingEpoch()
 		err = csm.blockProvider(publicProviderAddress, reportProvider, pairingEpoch, 0, consecutiveErrors, allowSecondChance, nil, errorsForConsumerSession)

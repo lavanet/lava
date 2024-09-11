@@ -3,9 +3,9 @@ package types
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	projectstypes "github.com/lavanet/lava/v2/x/projects/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	projectstypes "github.com/lavanet/lava/v3/x/projects/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 type PairingKeeper interface {

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/x/subscription/types"
+	"github.com/lavanet/lava/v3/x/subscription/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -20,7 +20,7 @@ func (k Keeper) TrackedUsage(goCtx context.Context, req *types.QuerySubscription
 	sub, _ := k.GetSubscription(ctx, req.Subscription)
 
 	res.Subscription = &sub
-	res.Usage, res.TotalUsage = k.GetSubTrackedCuInfo(ctx, req.Subscription, uint64(ctx.BlockHeader().Height))
+	res.Usage, res.TotalUsage = k.GetSubTrackedCuInfo(ctx, req.Subscription, sub.Block)
 
 	return &res, nil
 }

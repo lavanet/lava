@@ -6,11 +6,11 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/lavaslices"
-	"github.com/lavanet/lava/v2/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v2/x/epochstorage/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
+	"github.com/lavanet/lava/v3/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
@@ -84,34 +84,20 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 // delegatorsReward = totalReward - providerReward
 func (k Keeper) CalcRewards(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, totalReward sdk.Coins, delegations []types.Delegation) (providerReward sdk.Coins, delegatorsReward sdk.Coins) {
 	zeroCoins := sdk.NewCoins()
-	effectiveDelegations, effectiveStake := k.CalcEffectiveDelegationsAndStake(stakeEntry, delegations)
 
 	// Sanity check - effectiveStake != 0
-	if effectiveStake.IsZero() {
+	if stakeEntry.DelegateTotal.IsZero() && stakeEntry.Stake.IsZero() {
 		return zeroCoins, zeroCoins
 	}
-	providerReward = totalReward.MulInt(stakeEntry.Stake.Amount).QuoInt(effectiveStake)
-	if !effectiveDelegations.IsZero() && stakeEntry.DelegateCommission != 0 {
-		rawDelegatorsReward := totalReward.MulInt(effectiveDelegations).QuoInt(effectiveStake)
+
+	providerReward = totalReward.MulInt(stakeEntry.Stake.Amount).QuoInt(stakeEntry.TotalStake())
+	if !stakeEntry.DelegateTotal.IsZero() && stakeEntry.DelegateCommission != 0 {
+		rawDelegatorsReward := totalReward.MulInt(stakeEntry.DelegateTotal.Amount).QuoInt(stakeEntry.TotalStake())
 		providerCommission := rawDelegatorsReward.MulInt(sdk.NewIntFromUint64(stakeEntry.DelegateCommission)).QuoInt(sdk.NewInt(100))
 		providerReward = providerReward.Add(providerCommission...)
 	}
 
 	return providerReward, totalReward.Sub(providerReward...)
-}
-
-// CalcEffectiveDelegationsAndStake calculates the effective stake and effective delegations (for delegator rewards calculations)
-// effectiveDelegations = min(totalDelegations, delegateLimit)
-// effectiveStake = effectiveDelegations + providerStake
-func (k Keeper) CalcEffectiveDelegationsAndStake(stakeEntry epochstoragetypes.StakeEntry, delegations []types.Delegation) (effectiveDelegations math.Int, effectiveStake math.Int) {
-	var totalDelegations int64
-	for _, d := range delegations {
-		totalDelegations += d.Amount.Amount.Int64()
-	}
-
-	effectiveDelegationsInt64 := math.Min(totalDelegations, stakeEntry.DelegateLimit.Amount.Int64())
-	effectiveDelegations = math.NewInt(effectiveDelegationsInt64)
-	return effectiveDelegations, effectiveDelegations.Add(stakeEntry.Stake.Amount)
 }
 
 // CalcDelegatorReward calculates a single delegator reward according to its delegation

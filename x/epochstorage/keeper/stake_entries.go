@@ -7,8 +7,8 @@ import (
 
 	"cosmossdk.io/collections"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/x/epochstorage/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/x/epochstorage/types"
 )
 
 /* ########## StakeEntry ############ */
@@ -224,10 +224,6 @@ func (k Keeper) GetAllStakeEntriesCurrentForChainId(ctx sdk.Context, chainID str
 func (k Keeper) GetStakeEntryCurrentForChainIdByVault(ctx sdk.Context, chainID string, vault string) (val types.StakeEntry, found bool) {
 	pk, err := k.stakeEntriesCurrent.Indexes.Index.MatchExact(ctx, collections.Join(chainID, vault))
 	if err != nil {
-		utils.LavaFormatWarning("GetStakeEntryCurrentForChainIdByVault: MatchExact with primary key failed", err,
-			utils.LogAttr("chain_id", chainID),
-			utils.LogAttr("vault", vault),
-		)
 		return types.StakeEntry{}, false
 	}
 

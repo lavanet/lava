@@ -5,8 +5,8 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/x/rewards/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/x/rewards/types"
 	"github.com/spf13/cobra"
 )
 
@@ -28,18 +28,18 @@ func CmdSpecTrackedInfo() *cobra.Command {
 
 		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			reqChainID := ""
-			if len(args) == 2 {
-				reqChainID = args[0]
-			}
-
 			clientCtx, err := client.GetClientQueryContext(cmd)
 			if err != nil {
 				return err
 			}
-			reqProvider, err := utils.ParseCLIAddress(clientCtx, args[1])
-			if err != nil {
-				return err
+
+			reqChainID := args[0]
+			reqProvider := ""
+			if len(args) == 2 {
+				reqProvider, err = utils.ParseCLIAddress(clientCtx, args[1])
+				if err != nil {
+					return err
+				}
 			}
 
 			queryClient := types.NewQueryClient(clientCtx)

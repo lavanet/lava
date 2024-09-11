@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	"github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
-	"github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/lavasession"
-	"github.com/lavanet/lava/v2/protocol/metrics"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
+	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/lavasession"
+	"github.com/lavanet/lava/v3/protocol/metrics"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 var (
@@ -128,12 +128,10 @@ type RelaySender interface {
 	) (ProtocolMessage, error)
 	SendParsedRelay(
 		ctx context.Context,
-		dappID string,
-		consumerIp string,
 		analytics *metrics.RelayMetrics,
 		protocolMessage ProtocolMessage,
 	) (relayResult *common.RelayResult, errRet error)
-	CreateDappKey(dappID, consumerIp string) string
+	CreateDappKey(userData common.UserData) string
 	CancelSubscriptionContext(subscriptionKey string)
 	SetConsistencySeenBlock(blockSeen int64, key string)
 }

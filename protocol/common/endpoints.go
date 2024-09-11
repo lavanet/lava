@@ -8,10 +8,10 @@ import (
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v2/utils"
-	"github.com/lavanet/lava/v2/utils/sigs"
-	pairingtypes "github.com/lavanet/lava/v2/x/pairing/types"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/sigs"
+	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 )
@@ -25,7 +25,11 @@ const (
 	PROVIDER_LATEST_BLOCK_HEADER_NAME               = "Provider-Latest-Block"
 	GUID_HEADER_NAME                                = "Lava-Guid"
 	ERRORED_PROVIDERS_HEADER_NAME                   = "Lava-Errored-Providers"
+	NODE_ERRORS_PROVIDERS_HEADER_NAME               = "Lava-Node-Errors-providers"
 	REPORTED_PROVIDERS_HEADER_NAME                  = "Lava-Reported-Providers"
+	USER_REQUEST_TYPE                               = "lava-user-request-type"
+	LAVA_IDENTIFIED_NODE_ERROR_HEADER               = "lava-identified-node-error"
+	LAVAP_VERSION_HEADER_NAME                       = "Lavap-Version"
 	LAVA_CONSUMER_PROCESS_GUID                      = "lava-consumer-process-guid"
 	// these headers need to be lowercase
 	BLOCK_PROVIDERS_ADDRESSES_HEADER_NAME = "lava-providers-block"
@@ -47,6 +51,11 @@ var SPECIAL_LAVA_DIRECTIVE_HEADERS = map[string]struct{}{
 	LAVA_DEBUG_RELAY:                      {},
 }
 
+type UserData struct {
+	ConsumerIp string
+	DappId     string
+}
+
 type NodeUrl struct {
 	Url               string        `yaml:"url,omitempty" json:"url,omitempty" mapstructure:"url"`
 	InternalPath      string        `yaml:"internal-path,omitempty" json:"internal-path,omitempty" mapstructure:"internal-path"`
@@ -55,6 +64,7 @@ type NodeUrl struct {
 	Timeout           time.Duration `yaml:"timeout,omitempty" json:"timeout,omitempty" mapstructure:"timeout"`
 	Addons            []string      `yaml:"addons,omitempty" json:"addons,omitempty" mapstructure:"addons"`
 	SkipVerifications []string      `yaml:"skip-verifications,omitempty" json:"skip-verifications,omitempty" mapstructure:"skip-verifications"`
+	Methods           []string      `yaml:"methods,omitempty" json:"methods,omitempty" mapstructure:"methods"`
 }
 
 type ChainMessageGetApiInterface interface {
@@ -250,6 +260,7 @@ type RelayResult struct {
 	StatusCode      int
 	Quorum          int
 	ProviderTrailer metadata.MD // the provider trailer attached to the request. used to transfer useful information (which is not signed so shouldn't be trusted completely).
+	IsNodeError     bool
 }
 
 func (rr *RelayResult) GetReplyServer() pairingtypes.Relayer_RelaySubscribeClient {
@@ -311,7 +322,7 @@ func GetTokenFromGrpcContext(ctx context.Context) string {
 	return ""
 }
 
-func GetUniqueToken(consumerAddress string, ip string) string {
-	data := []byte(consumerAddress + ip)
+func GetUniqueToken(userData UserData) string {
+	data := []byte(userData.DappId + userData.ConsumerIp)
 	return base64.StdEncoding.EncodeToString(sigs.HashMsg(data))
 }

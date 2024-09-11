@@ -7,11 +7,12 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/websocket/v2"
-	formatter "github.com/lavanet/lava/v2/ecosystem/cache/format"
-	"github.com/lavanet/lava/v2/protocol/common"
-	"github.com/lavanet/lava/v2/protocol/metrics"
-	"github.com/lavanet/lava/v2/utils"
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	formatter "github.com/lavanet/lava/v3/ecosystem/cache/format"
+	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/metrics"
+	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/rand"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 type ConsumerWebsocketManager struct {
@@ -85,6 +86,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 
 	webSocketCtx, cancelWebSocketCtx := context.WithCancel(context.Background())
 	guid := utils.GenerateUniqueIdentifier()
+	guidString := strconv.FormatUint(guid, 10)
 	webSocketCtx = utils.WithUniqueIdentifier(webSocketCtx, guid)
 	utils.LavaFormatDebug("consumer websocket manager started", utils.LogAttr("GUID", webSocketCtx))
 	defer func() {
@@ -110,7 +112,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 
 	for {
 		startTime := time.Now()
-		msgSeed := logger.GetMessageSeed()
+		msgSeed := guidString + "_" + strconv.Itoa(rand.Intn(10000000000)) // use message seed with original guid and new int
 
 		utils.LavaFormatTrace("listening for new message from the websocket")
 
@@ -132,7 +134,6 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			}
 		}
 
-		msgSeed = strconv.FormatUint(guid, 10)
 		userIp := websocketConn.RemoteAddr().String()
 
 		logFormattedMsg := string(msg)
@@ -151,7 +152,8 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 
 		protocolMessage, err := cwm.relaySender.ParseRelay(webSocketCtx, "", string(msg), cwm.connectionType, dappID, userIp, metricsData, nil)
 		if err != nil {
-			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not parse message", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
+			utils.LavaFormatDebug("ws manager could not parse message", utils.LogAttr("message", msg), utils.LogAttr("err", err))
+			formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), err, msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 			if formatterMsg != nil {
 				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
 			}
@@ -182,7 +184,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				continue
 			} else {
 				// Normal relay over websocket. (not subscription related)
-				relayResult, err := cwm.relaySender.SendParsedRelay(webSocketCtx, dappID, userIp, metricsData, protocolMessage)
+				relayResult, err := cwm.relaySender.SendParsedRelay(webSocketCtx, metricsData, protocolMessage)
 				if err != nil {
 					formatterMsg := logger.AnalyzeWebSocketErrorAndGetFormattedMessage(websocketConn.LocalAddr().String(), utils.LavaFormatError("could not send parsed relay", err), msgSeed, msg, cwm.apiInterface, time.Since(startTime))
 					if formatterMsg != nil {

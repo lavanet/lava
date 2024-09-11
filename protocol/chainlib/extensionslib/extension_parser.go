@@ -1,7 +1,7 @@
 package extensionslib
 
 import (
-	spectypes "github.com/lavanet/lava/v2/x/spec/types"
+	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 type ExtensionInfo struct {
@@ -69,7 +69,7 @@ func (ep *ExtensionParser) ExtensionParsing(addon string, extensionsChainMessage
 			continue
 		}
 		extensionParserRule := NewExtensionParserRule(extension)
-		if extensionParserRule.isPassingRule(extensionsChainMessage, latestBlock) {
+		if extensionParserRule != nil && extensionParserRule.isPassingRule(extensionsChainMessage, latestBlock) {
 			extensionsChainMessage.SetExtension(extension)
 		}
 	}

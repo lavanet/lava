@@ -10,13 +10,13 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
-	rpcInterfaceMessages "github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcInterfaceMessages"
-	rpcclient "github.com/lavanet/lava/v2/protocol/chainlib/chainproxy/rpcclient"
-	extensionslib "github.com/lavanet/lava/v2/protocol/chainlib/extensionslib"
-	common "github.com/lavanet/lava/v2/protocol/common"
-	metrics "github.com/lavanet/lava/v2/protocol/metrics"
-	types "github.com/lavanet/lava/v2/x/pairing/types"
-	types0 "github.com/lavanet/lava/v2/x/spec/types"
+	rpcInterfaceMessages "github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
+	rpcclient "github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcclient"
+	extensionslib "github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
+	common "github.com/lavanet/lava/v3/protocol/common"
+	metrics "github.com/lavanet/lava/v3/protocol/metrics"
+	types "github.com/lavanet/lava/v3/x/pairing/types"
+	types0 "github.com/lavanet/lava/v3/x/spec/types"
 )
 
 // MockChainParser is a mock of ChainParser interface.
@@ -692,17 +692,17 @@ func (mr *MockRelaySenderMockRecorder) CancelSubscriptionContext(subscriptionKey
 }
 
 // CreateDappKey mocks base method.
-func (m *MockRelaySender) CreateDappKey(dappID, consumerIp string) string {
+func (m *MockRelaySender) CreateDappKey(userData common.UserData) string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDappKey", dappID, consumerIp)
+	ret := m.ctrl.Call(m, "CreateDappKey", userData)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
 // CreateDappKey indicates an expected call of CreateDappKey.
-func (mr *MockRelaySenderMockRecorder) CreateDappKey(dappID, consumerIp interface{}) *gomock.Call {
+func (mr *MockRelaySenderMockRecorder) CreateDappKey(userData interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDappKey", reflect.TypeOf((*MockRelaySender)(nil).CreateDappKey), dappID, consumerIp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDappKey", reflect.TypeOf((*MockRelaySender)(nil).CreateDappKey), userData)
 }
 
 // ParseRelay mocks base method.
@@ -721,18 +721,18 @@ func (mr *MockRelaySenderMockRecorder) ParseRelay(ctx, url, req, connectionType,
 }
 
 // SendParsedRelay mocks base method.
-func (m *MockRelaySender) SendParsedRelay(ctx context.Context, dappID, consumerIp string, analytics *metrics.RelayMetrics, protocolMessage ProtocolMessage) (*common.RelayResult, error) {
+func (m *MockRelaySender) SendParsedRelay(ctx context.Context, analytics *metrics.RelayMetrics, protocolMessage ProtocolMessage) (*common.RelayResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendParsedRelay", ctx, dappID, consumerIp, analytics, protocolMessage)
+	ret := m.ctrl.Call(m, "SendParsedRelay", ctx, analytics, protocolMessage)
 	ret0, _ := ret[0].(*common.RelayResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SendParsedRelay indicates an expected call of SendParsedRelay.
-func (mr *MockRelaySenderMockRecorder) SendParsedRelay(ctx, dappID, consumerIp, analytics, protocolMessage interface{}) *gomock.Call {
+func (mr *MockRelaySenderMockRecorder) SendParsedRelay(ctx, analytics, protocolMessage interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendParsedRelay", reflect.TypeOf((*MockRelaySender)(nil).SendParsedRelay), ctx, dappID, consumerIp, analytics, protocolMessage)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendParsedRelay", reflect.TypeOf((*MockRelaySender)(nil).SendParsedRelay), ctx, analytics, protocolMessage)
 }
 
 // SendRelay mocks base method.
