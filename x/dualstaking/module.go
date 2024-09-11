@@ -116,13 +116,13 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
-	migrator := keeper.NewMigrator(am.keeper)
+	// migrator := keeper.NewMigrator(am.keeper)
 
-	// register v4 -> v5 migration
-	if err := cfg.RegisterMigration(types.ModuleName, 4, migrator.MigrateVersion4To5); err != nil {
-		// panic:ok: at start up, migration cannot proceed anyhow
-		panic(fmt.Errorf("%s: failed to register migration to v5: %w", types.ModuleName, err))
-	}
+	// // register v4 -> v5 migration
+	// if err := cfg.RegisterMigration(types.ModuleName, 4, migrator.MigrateVersion4To5); err != nil {
+	// 	// panic:ok: at start up, migration cannot proceed anyhow
+	// 	panic(fmt.Errorf("%s: failed to register migration to v5: %w", types.ModuleName, err))
+	// }
 }
 
 // RegisterInvariants registers the invariants of the module. If an invariant deviates from its predicted value, the InvariantRegistry triggers appropriate logic (most often the chain will be halted)

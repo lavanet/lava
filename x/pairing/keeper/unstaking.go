@@ -46,7 +46,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 	}
 
 	// the stake entry is removed inside UnbondFull
-	err := k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, existingEntry.GetChain(), existingEntry.Stake, true)
+	err := k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, existingEntry.Stake, true)
 	if err != nil {
 		return utils.LavaFormatWarning("can't unbond self delegation", err,
 			utils.Attribute{Key: "address", Value: existingEntry.Address},
@@ -95,7 +95,7 @@ func (k Keeper) UnstakeEntryForce(ctx sdk.Context, chainID, provider, unstakeDes
 			amount = totalAmount
 		}
 		totalAmount = totalAmount.Sub(amount)
-		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator.OperatorAddress, existingEntry.Address, existingEntry.GetChain(), sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount), true)
+		err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator.OperatorAddress, existingEntry.Address, sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), amount), true)
 		if err != nil {
 			return utils.LavaFormatWarning("can't unbond self delegation", err,
 				utils.LogAttr("provider", existingEntry.Address),

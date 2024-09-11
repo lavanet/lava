@@ -45,7 +45,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	if req.AmountDelegator != "" {
 		_, err := sdk.AccAddressFromBech32(req.AmountDelegator)
 		if err == nil {
-			d, found := k.dualstakingKeeper.GetDelegation(ctx, req.AmountDelegator, req.Provider, req.ChainId, uint64(ctx.BlockHeight()))
+			d, found := k.dualstakingKeeper.GetDelegation(ctx, req.AmountDelegator, req.Provider)
 			if !found {
 				return nil, fmt.Errorf("could not find delegator")
 			}

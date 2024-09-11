@@ -28,6 +28,7 @@ type (
 		specKeeper         types.SpecKeeper
 
 		delegations *collections.IndexedMap[collections.Pair[string, string], types.Delegation, types.DelegationIndexes]
+		rewards     *collections.Map[collections.Pair[string, string], types.DelegatorReward]
 	}
 )
 

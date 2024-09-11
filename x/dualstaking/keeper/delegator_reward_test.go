@@ -29,10 +29,8 @@ func TestDelegatorRewardGet(t *testing.T) {
 	keeper, ctx := keepertest.DualstakingKeeper(t)
 	items := createNDelegatorReward(keeper, ctx, 10)
 	for _, item := range items {
-		index := types.DelegationKey(item.Provider, item.Delegator)
 		rst, found := keeper.GetDelegatorReward(ctx,
-			index,
-		)
+			item.Provider, item.Delegator)
 		require.True(t, found)
 		require.Equal(t,
 			nullify.Fill(&item),
@@ -45,13 +43,10 @@ func TestDelegatorRewardRemove(t *testing.T) {
 	keeper, ctx := keepertest.DualstakingKeeper(t)
 	items := createNDelegatorReward(keeper, ctx, 10)
 	for _, item := range items {
-		index := types.DelegationKey(item.Provider, item.Delegator, item.ChainId)
 		keeper.RemoveDelegatorReward(ctx,
-			index,
-		)
+			item.Provider, item.Delegator)
 		_, found := keeper.GetDelegatorReward(ctx,
-			index,
-		)
+			item.Provider, item.Delegator)
 		require.False(t, found)
 	}
 }
