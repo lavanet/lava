@@ -68,6 +68,10 @@ type ChainTracker struct {
 	blockEventsGap          []time.Duration
 	blockTimeUpdatables     map[blockTimeUpdatable]struct{}
 	pmetrics                *metrics.ProviderMetricsManager
+
+	// initial config
+	averageBlockTime time.Duration
+	serverAddress    string
 }
 
 // this function returns block hashes of the blocks: [from block - to block] inclusive. an additional specific block hash can be provided. order is sorted ascending
@@ -570,6 +574,16 @@ func (ct *ChainTracker) serve(ctx context.Context, listenAddr string) error {
 	return nil
 }
 
+func (ct *ChainTracker) StartAndServe(ctx context.Context) error {
+	err := ct.start(ctx, ct.averageBlockTime)
+	if err != nil {
+		return err
+	}
+
+	err = ct.serve(ctx, ct.serverAddress)
+	return err
+}
+
 func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config ChainTrackerConfig) (chainTracker *ChainTracker, err error) {
 	if !rand.Initialized() {
 		utils.LavaFormatFatal("can't start chainTracker with nil rand source", nil)
@@ -598,16 +612,13 @@ func NewChainTracker(ctx context.Context, chainFetcher ChainFetcher, config Chai
 		startupTime:             time.Now(),
 		pmetrics:                config.Pmetrics,
 		pollingTimeMultiplier:   time.Duration(pollingTime),
+		averageBlockTime:        config.AverageBlockTime,
+		serverAddress:           config.ServerAddress,
 	}
 	if chainFetcher == nil {
 		return nil, utils.LavaFormatError("can't start chainTracker with nil chainFetcher argument", nil)
 	}
 	chainTracker.endpoint = chainFetcher.FetchEndpoint()
-	err = chainTracker.start(ctx, config.AverageBlockTime)
-	if err != nil {
-		return nil, err
-	}
 
-	err = chainTracker.serve(ctx, config.ServerAddress)
 	return chainTracker, err
 }

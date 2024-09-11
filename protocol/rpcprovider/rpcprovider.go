@@ -439,6 +439,7 @@ func (rpcp *RPCProvider) SetupEndpoint(ctx context.Context, rpcProviderEndpoint 
 		}
 
 		if !loaded { // this is the first time we are setting up the chain tracker, we need to register for spec verifications
+			chainTracker.StartAndServe(ctx)
 			utils.LavaFormatDebug("Registering for spec verifications for endpoint", utils.LogAttr("rpcEndpoint", rpcEndpoint))
 			// we register for spec verifications only once, and this triggers all chainFetchers of that specId when it triggers
 			err = rpcp.providerStateTracker.RegisterForSpecVerifications(ctx, specValidator, rpcEndpoint.ChainID)
