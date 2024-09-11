@@ -70,7 +70,7 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider string, 
 
 	delegation.SubAmount(amount)
 
-	err := k.SetDelegation(ctx, provider, delegator, delegation)
+	err := k.SetDelegation(ctx, delegation)
 	if err != nil {
 		return err
 	}
@@ -324,8 +324,17 @@ func (k Keeper) GetDelegation(ctx sdk.Context, provider, delegator string) (type
 	return delegation, err == nil
 }
 
-func (k Keeper) SetDelegation(ctx sdk.Context, provider, delegator string, delegation types.Delegation) error {
-	return k.delegations.Set(ctx, types.DelegationKey(provider, delegator), delegation)
+func (k Keeper) GetAllDelegations(ctx sdk.Context) ([]types.Delegation, error) {
+	iter, err := k.delegations.Iterate(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return iter.Values()
+}
+
+func (k Keeper) SetDelegation(ctx sdk.Context, delegation types.Delegation) error {
+	return k.delegations.Set(ctx, types.DelegationKey(delegation.Provider, delegation.Delegator), delegation)
 }
 
 func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount sdk.Coin) error {

@@ -3,7 +3,7 @@ package types
 import (
 	fmt "fmt"
 
-	fixationstoretypes "github.com/lavanet/lava/v3/x/fixationstore/types"
+	"cosmossdk.io/collections"
 )
 
 // DefaultIndex is the default global index
@@ -15,8 +15,7 @@ func DefaultGenesis() *GenesisState {
 		// this line is used by starport scaffolding # genesis/types/default
 		Params:              DefaultParams(),
 		DelegatorRewardList: []DelegatorReward{},
-		DelegationsFS:       *fixationstoretypes.DefaultGenesis(),
-		DelegatorsFS:        *fixationstoretypes.DefaultGenesis(),
+		Delegations:         []Delegation{},
 	}
 }
 
@@ -24,14 +23,23 @@ func DefaultGenesis() *GenesisState {
 // failure.
 func (gs GenesisState) Validate() error {
 	// Check for duplicated index in delegatorReward
-	delegatorRewardIndexMap := make(map[string]struct{})
+	delegatorRewardIndexMap := make(map[collections.Pair[string, string]]struct{})
 
 	for _, elem := range gs.DelegatorRewardList {
-		index := DelegationKey(elem.Provider, elem.Delegator, elem.ChainId)
+		index := DelegationKey(elem.Provider, elem.Delegator)
 		if _, ok := delegatorRewardIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for delegatorReward")
 		}
 		delegatorRewardIndexMap[index] = struct{}{}
+	}
+
+	delegationIndexMap := make(map[collections.Pair[string, string]]struct{})
+	for _, elem := range gs.Delegations {
+		index := DelegationKey(elem.Provider, elem.Delegator)
+		if _, ok := delegationIndexMap[index]; ok {
+			return fmt.Errorf("duplicated index for delegations")
+		}
+		delegationIndexMap[index] = struct{}{}
 	}
 	// this line is used by starport scaffolding # genesis/types/validate
 

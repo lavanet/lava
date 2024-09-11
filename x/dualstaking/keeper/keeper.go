@@ -74,7 +74,7 @@ func (k Keeper) ChangeDelegationTimestampForTesting(ctx sdk.Context, provider, d
 		return fmt.Errorf("cannot change delegation timestamp: delegation not found. provider: %s, delegator: %s", provider, delegator)
 	}
 	d.Timestamp = timestamp
-	return k.SetDelegation(ctx, provider, delegator, d)
+	return k.SetDelegation(ctx, d)
 }
 
 func (k Keeper) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
