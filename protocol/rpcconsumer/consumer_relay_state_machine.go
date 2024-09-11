@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/lavanet/lava/v3/protocol/chainlib"
+	"github.com/lavanet/lava/v3/protocol/chainlib/extensionslib"
 	common "github.com/lavanet/lava/v3/protocol/common"
 	lavasession "github.com/lavanet/lava/v3/protocol/lavasession"
 	"github.com/lavanet/lava/v3/protocol/metrics"
@@ -26,6 +27,7 @@ type ConsumerRelaySender interface {
 	sendRelayToProvider(ctx context.Context, protocolMessage chainlib.ProtocolMessage, relayProcessor *RelayProcessor, analytics *metrics.RelayMetrics) (errRet error)
 	getProcessingTimeout(chainMessage chainlib.ChainMessage) (processingTimeout time.Duration, relayTimeout time.Duration)
 	GetChainIdAndApiInterface() (string, string)
+	GetExtensionParser() *extensionslib.ExtensionParser
 }
 
 type tickerMetricSetterInf interface {
@@ -117,13 +119,28 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 		batchNumber := 0 // Set batch number
 		// A channel to be notified processing was done, true means we have results and can return
 		gotResults := make(chan bool, 1)
-		processingTimeout, relayTimeout := crsm.relaySender.getProcessingTimeout(crsm.GetProtocolMessage())
+		protocolMessage := crsm.GetProtocolMessage()
+		processingTimeout, relayTimeout := crsm.relaySender.getProcessingTimeout(protocolMessage)
 		if crsm.debugRelays {
 			utils.LavaFormatDebug("Relay initiated with the following timeout schedule", utils.LogAttr("processingTimeout", processingTimeout), utils.LogAttr("newRelayTimeout", relayTimeout))
 		}
 		// Create the processing timeout prior to entering the method so it wont reset every time
 		processingCtx, processingCtxCancel := context.WithTimeout(crsm.ctx, processingTimeout)
 		defer processingCtxCancel()
+
+		apiName := protocolMessage.GetApi().Name
+		resetUsedOnce := true
+		setArchiveOnSpecialApi := func() {
+			if apiName == "tx" || apiName == "chunk" {
+				archiveExtensionArray := []string{"archive"}
+				protocolMessage.OverrideExtensions(archiveExtensionArray, crsm.relaySender.GetExtensionParser())
+				protocolMessage.RelayPrivateData().Extensions = archiveExtensionArray
+				if resetUsedOnce {
+					resetUsedOnce = false
+					crsm.usedProviders = lavasession.NewUsedProviders(protocolMessage)
+				}
+			}
+		}
 
 		readResultsFromProcessor := func() {
 			// ProcessResults is reading responses while blocking until the conditions are met
@@ -133,6 +150,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 			if crsm.parentRelayProcessor.HasRequiredNodeResults() {
 				gotResults <- true
 			} else {
+				setArchiveOnSpecialApi()
 				gotResults <- false
 			}
 		}
@@ -214,6 +232,7 @@ func (crsm *ConsumerRelayStateMachine) GetRelayTaskChannel() chan RelayStateSend
 			case <-startNewBatchTicker.C:
 				// Only trigger another batch for non BestResult relays or if we didn't pass the retry limit.
 				if crsm.ShouldRetry(batchNumber) {
+					setArchiveOnSpecialApi()
 					utils.LavaFormatTrace("[StateMachine] ticker triggered", utils.LogAttr("batch", batchNumber))
 					relayTaskChannel <- RelayStateSendInstructions{protocolMessage: crsm.GetProtocolMessage()}
 					// Add ticker launch metrics
