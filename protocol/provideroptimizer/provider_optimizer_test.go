@@ -753,7 +753,6 @@ func TestProviderOptimizerTiers(t *testing.T) {
 
 // TODO: new tests we need:
 
-// check all tiers are selected
 // retries: groups getting smaller
 // no possible selections full
 // do a simulation with better and worse providers, make sure it's good
