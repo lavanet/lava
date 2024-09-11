@@ -20,7 +20,6 @@ func createNDelegatorReward(keeper *keeper.Keeper, ctx sdk.Context, n int) []typ
 	for i := range items {
 		items[i].Provider = "p" + strconv.Itoa(i)
 		items[i].Delegator = "d" + strconv.Itoa(i)
-		items[i].ChainId = "c" + strconv.Itoa(i)
 		keeper.SetDelegatorReward(ctx, items[i])
 	}
 	return items
@@ -30,7 +29,7 @@ func TestDelegatorRewardGet(t *testing.T) {
 	keeper, ctx := keepertest.DualstakingKeeper(t)
 	items := createNDelegatorReward(keeper, ctx, 10)
 	for _, item := range items {
-		index := types.DelegationKey(item.Provider, item.Delegator, item.ChainId)
+		index := types.DelegationKey(item.Provider, item.Delegator)
 		rst, found := keeper.GetDelegatorReward(ctx,
 			index,
 		)

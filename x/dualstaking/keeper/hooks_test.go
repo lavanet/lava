@@ -138,8 +138,6 @@ func TestReDelegateToProvider(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegator.Addr.String(),
 		commontypes.EMPTY_PROVIDER,
 		provider,
-		commontypes.EMPTY_PROVIDER_CHAINID,
-		entry.Chain,
 		sdk.NewCoin(ts.TokenDenom(), amount))
 
 	require.NoError(t, err)
@@ -208,8 +206,6 @@ func TestUnbondUniformProviders(t *testing.T) {
 		_, err = ts.TxDualstakingRedelegate(delegatorAcc.Addr.String(),
 			commontypes.EMPTY_PROVIDER,
 			provider,
-			commontypes.EMPTY_PROVIDER_CHAINID,
-			ts.spec.Index,
 			sdk.NewCoin(ts.TokenDenom(), redelegateAmts[i]))
 		require.NoError(t, err)
 	}
@@ -343,8 +339,6 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 		_, err = ts.TxDualstakingRedelegate(delegatorAcc.Addr.String(),
 			commontypes.EMPTY_PROVIDER,
 			provider,
-			commontypes.EMPTY_PROVIDER_CHAINID,
-			ts.spec.Index,
 			sdk.NewCoin(ts.TokenDenom(), redelegateAmts[i]))
 		require.NoError(t, err)
 		ts.AdvanceEpoch()
@@ -361,7 +355,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	ts.AdvanceBlockUntilStale()
 
 	// sanity check: redelegate from provider0 to provider1 and check delegations balance
-	_, err = ts.TxDualstakingRedelegate(delegator, providers[0], providers[1], ts.spec.Index, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), consensusPowerTokens.MulRaw(5)))
+	_, err = ts.TxDualstakingRedelegate(delegator, providers[0], providers[1], sdk.NewCoin(ts.TokenDenom(), consensusPowerTokens.MulRaw(5)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply redelegation
 	diff, _, err := ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
@@ -369,7 +363,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	require.True(t, diff.IsZero())
 
 	// sanity check: unbond some of provider2's funds and check delegations balance
-	_, err = ts.TxDualstakingUnbond(delegator, providers[2], ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), consensusPowerTokens.MulRaw(5)))
+	_, err = ts.TxDualstakingUnbond(delegator, providers[2], sdk.NewCoin(ts.TokenDenom(), consensusPowerTokens.MulRaw(5)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply unbond
 	diff, _, err = ts.Keepers.Dualstaking.VerifyDelegatorBalance(ts.Ctx, delegatorAcc.Addr)
@@ -495,7 +489,7 @@ func TestHooksRandomDelegations(t *testing.T) {
 			delegatorAcc = prevDelegatorAcc
 			delegator = prevDelegator
 		}
-		_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(int64(d))))
+		_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(int64(d))))
 		require.NoError(t, err)
 
 		_, found := ts.Keepers.StakingKeeper.GetDelegation(ts.Ctx, delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr))
@@ -533,7 +527,7 @@ func TestNotRoundedShares(t *testing.T) {
 	require.NoError(t, err)
 	ts.Keepers.StakingKeeper.SetDelegation(ts.Ctx, stakingtypes.NewDelegation(delegatorAcc.Addr, sdk.ValAddress(validatorAcc.Addr), shares))
 
-	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), delAmount))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), delAmount))
 	require.NoError(t, err)
 }
 
@@ -577,8 +571,6 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
 		commontypes.EMPTY_PROVIDER,
 		provider,
-		commontypes.EMPTY_PROVIDER_CHAINID,
-		ts.spec.Index,
 		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
 	require.Error(t, err)
 
@@ -634,8 +626,6 @@ func TestUndelegateProvider(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
 		commontypes.EMPTY_PROVIDER,
 		provider,
-		commontypes.EMPTY_PROVIDER_CHAINID,
-		ts.spec.Index,
 		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
 	require.NoError(t, err)
 
@@ -671,8 +661,6 @@ func TestUndelegateProvider(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
 		provider,
 		commontypes.EMPTY_PROVIDER,
-		ts.spec.Index,
-		commontypes.EMPTY_PROVIDER_CHAINID,
 		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)))
 	require.NoError(t, err)
 
@@ -685,8 +673,6 @@ func TestUndelegateProvider(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc2.Addr.String(),
 		commontypes.EMPTY_PROVIDER,
 		provider,
-		commontypes.EMPTY_PROVIDER_CHAINID,
-		ts.spec.Index,
 		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9998)))
 	require.NoError(t, err)
 
@@ -696,16 +682,12 @@ func TestUndelegateProvider(t *testing.T) {
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
 		provider,
 		commontypes.EMPTY_PROVIDER,
-		ts.spec.Index,
-		commontypes.EMPTY_PROVIDER_CHAINID,
 		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
 	require.Error(t, err)
 
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
 		provider,
 		commontypes.EMPTY_PROVIDER,
-		ts.spec.Index,
-		commontypes.EMPTY_PROVIDER_CHAINID,
 		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9998)))
 	require.NoError(t, err)
 }

@@ -761,7 +761,7 @@ func TestUnfreezeWithDelegations(t *testing.T) {
 	// add delegator and delegate to provider so its effective stake is MinStakeProvider+MinSelfDelegation+1
 	// provider should still be frozen
 	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.Index, ts.spec.MinStakeProvider)
+	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.MinStakeProvider)
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegation
 	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
@@ -801,7 +801,7 @@ func TestCommisionChange(t *testing.T) {
 
 	// add delegator and delegate to provider
 	_, consumer := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.Index, ts.spec.MinStakeProvider)
+	_, err = ts.TxDualstakingDelegate(consumer, provider, ts.spec.MinStakeProvider)
 	require.NoError(t, err)
 	ts.AdvanceEpoch()               // apply delegation
 	ts.AdvanceBlock(time.Hour * 25) // advance time to allow changes
@@ -1126,7 +1126,7 @@ func TestDelegatorStakesAfterProviderUnstakes(t *testing.T) {
 
 			// create delegator and delegate to provider
 			_, delegator := ts.AddAccount(common.CONSUMER, 0, testBalance)
-			_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+			_, err := ts.TxDualstakingDelegate(delegator, provider, common.NewCoin(ts.TokenDenom(), testBalance/4))
 			require.NoError(t, err)
 			ts.AdvanceEpoch()
 
@@ -1182,7 +1182,7 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 
 			// create apple apple and delegate to banana
 			_, apple := ts.AddAccount(common.CONSUMER, 0, testBalance)
-			_, err = ts.TxDualstakingDelegate(apple, banana, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+			_, err = ts.TxDualstakingDelegate(apple, banana, common.NewCoin(ts.TokenDenom(), testBalance/4))
 			require.NoError(t, err)
 			ts.AdvanceEpoch()
 
@@ -1211,7 +1211,7 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 				require.True(t, found)
 				require.NotZero(t, stakeEntry.DelegateTotal.Amount.Int64())
 
-				_, err = ts.TxDualstakingUnbond(apple, banana, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+				_, err = ts.TxDualstakingUnbond(apple, banana, common.NewCoin(ts.TokenDenom(), testBalance/4))
 				require.NoError(t, err)
 				ts.AdvanceEpoch()
 				res, err := ts.QueryDualstakingProviderDelegators(banana, false)
@@ -1229,7 +1229,7 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 				require.True(t, found)
 				require.Zero(t, stakeEntry.DelegateTotal.Amount.Int64())
 
-				_, err = ts.TxDualstakingUnbond(apple, banana, ts.spec.Index, common.NewCoin(ts.TokenDenom(), testBalance/4))
+				_, err = ts.TxDualstakingUnbond(apple, banana, common.NewCoin(ts.TokenDenom(), testBalance/4))
 				require.NoError(t, err)
 				ts.AdvanceEpoch()
 				res, err := ts.QueryDualstakingProviderDelegators(banana, false)

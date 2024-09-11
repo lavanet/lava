@@ -154,7 +154,7 @@ func TestTrackedCuWithDelegations(t *testing.T) {
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
 
-	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -493,7 +493,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 	ts.AdvanceMonths(1).AdvanceEpoch() // advance first month of delegation so it'll apply
@@ -612,7 +612,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
-	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
 	require.NoError(t, err)
 	delegationTime := ts.BlockTime()
 	ts.AdvanceEpoch()
@@ -622,7 +622,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	// now since we want to check the expected reward, before it gets transferred). So, we need to artificially
 	// change the delegations' timestamp to be a month forward
 	fakeTimestamp := ts.BlockTime().AddDate(0, -2, 0)
-	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.spec.Index, ts.BlockHeight(), ts.GetNextMonth(fakeTimestamp))
+	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.BlockHeight(), ts.GetNextMonth(fakeTimestamp))
 	require.NoError(t, err)
 
 	// send two relay payments in spec and spec1
@@ -687,7 +687,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	// advance month + blocksToSave + 1 to trigger the monthly payment
 	// (also restore delegation original timestamp)
 	oldBalance := ts.GetBalance(providerAcct.Vault.Addr)
-	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.spec.Index, ts.BlockHeight(), ts.GetNextMonth(delegationTime))
+	err = ts.ChangeDelegationTimestamp(provider, delegator, ts.BlockHeight(), ts.GetNextMonth(delegationTime))
 	require.NoError(t, err)
 
 	ts.AdvanceMonths(1)

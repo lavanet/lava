@@ -16,7 +16,7 @@ import (
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
 func (k Keeper) SetDelegatorReward(ctx sdk.Context, delegatorReward types.DelegatorReward) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.DelegatorRewardKeyPrefix))
-	index := types.DelegationKey(delegatorReward.Provider, delegatorReward.Delegator, delegatorReward.ChainId)
+	index := types.DelegationKey(delegatorReward.Provider, delegatorReward.Delegator)
 	b := k.cdc.MustMarshal(&delegatorReward)
 	store.Set(types.DelegatorRewardKey(
 		index,

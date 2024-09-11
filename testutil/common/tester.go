@@ -352,9 +352,8 @@ func (ts *Tester) VotePeriod() uint64 {
 	return ts.Keepers.Conflict.VotePeriod(ts.Ctx)
 }
 
-func (ts *Tester) ChangeDelegationTimestamp(provider, delegator, chainID string, block uint64, timestamp int64) error {
-	index := dualstakingtypes.DelegationKey(provider, delegator, chainID)
-	return ts.Keepers.Dualstaking.ChangeDelegationTimestampForTesting(ts.Ctx, index, block, timestamp)
+func (ts *Tester) ChangeDelegationTimestamp(provider, delegator string, block uint64, timestamp int64) error {
+	return ts.Keepers.Dualstaking.ChangeDelegationTimestampForTesting(ts.Ctx, provider, delegator, timestamp)
 }
 
 // proposals, transactions, queries
@@ -379,7 +378,6 @@ func (ts *Tester) TxProposalAddSpecs(specs ...spectypes.Spec) error {
 func (ts *Tester) TxDualstakingDelegate(
 	creator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgDelegateResponse, error) {
 	validator, _ := ts.GetAccount(VALIDATOR, 0)
@@ -387,7 +385,6 @@ func (ts *Tester) TxDualstakingDelegate(
 		creator,
 		sdk.ValAddress(validator.Addr).String(),
 		provider,
-		chainID,
 		amount,
 	)
 }
@@ -397,14 +394,13 @@ func (ts *Tester) TxDualstakingDelegateValidator(
 	creator string,
 	validator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgDelegateResponse, error) {
 	msg := &dualstakingtypes.MsgDelegate{
 		Creator:   creator,
 		Validator: validator,
 		Provider:  provider,
-		ChainID:   chainID,
+		ChainID:   "chainID",
 		Amount:    amount,
 	}
 	return ts.Servers.DualstakingServer.Delegate(ts.GoCtx, msg)
@@ -415,16 +411,14 @@ func (ts *Tester) TxDualstakingRedelegate(
 	creator string,
 	fromProvider string,
 	toProvider string,
-	fromChainID string,
-	toChainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgRedelegateResponse, error) {
 	msg := &dualstakingtypes.MsgRedelegate{
 		Creator:      creator,
 		FromProvider: fromProvider,
 		ToProvider:   toProvider,
-		FromChainID:  fromChainID,
-		ToChainID:    toChainID,
+		FromChainID:  "fromChainID",
+		ToChainID:    "toChainID",
 		Amount:       amount,
 	}
 	return ts.Servers.DualstakingServer.Redelegate(ts.GoCtx, msg)
@@ -434,7 +428,6 @@ func (ts *Tester) TxDualstakingRedelegate(
 func (ts *Tester) TxDualstakingUnbond(
 	creator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgUnbondResponse, error) {
 	validator, _ := ts.GetAccount(VALIDATOR, 0)
@@ -442,7 +435,6 @@ func (ts *Tester) TxDualstakingUnbond(
 		creator,
 		sdk.ValAddress(validator.Addr).String(),
 		provider,
-		chainID,
 		amount,
 	)
 }
@@ -452,14 +444,13 @@ func (ts *Tester) TxDualstakingUnbondValidator(
 	creator string,
 	validator string,
 	provider string,
-	chainID string,
 	amount sdk.Coin,
 ) (*dualstakingtypes.MsgUnbondResponse, error) {
 	msg := &dualstakingtypes.MsgUnbond{
 		Creator:   creator,
 		Validator: validator,
 		Provider:  provider,
-		ChainID:   chainID,
+		ChainID:   "chainID",
 		Amount:    amount,
 	}
 	return ts.Servers.DualstakingServer.Unbond(ts.GoCtx, msg)

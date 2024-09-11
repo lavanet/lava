@@ -24,7 +24,7 @@ func TestUnstakeAndSlashProposal(t *testing.T) {
 	for i := 0; i < delegators; i++ {
 		_, delegator := ts.GetAccount(common.CONSUMER, i)
 		beforeSlashDelegation[delegator] = sdk.NewInt(1000 * int64(i+1))
-		_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.BondDenom(), beforeSlashDelegation[delegator]))
+		_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.BondDenom(), beforeSlashDelegation[delegator]))
 		require.NoError(t, err)
 		delegatorsSlashing = append(delegatorsSlashing, types.DelegatorSlashing{Delegator: delegator, SlashingAmount: sdk.NewCoin(ts.BondDenom(), sdk.NewInt(1000/3*int64(i+1)))})
 	}

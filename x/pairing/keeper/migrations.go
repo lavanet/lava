@@ -37,7 +37,7 @@ func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
 
 		delegateTotal := sdk.ZeroInt()
 		for _, d := range delegations {
-			if e.Address == d.Delegator || e.Vault == d.Delegator || d.ChainID != e.Chain {
+			if e.Address == d.Delegator || e.Vault == d.Delegator {
 				continue
 			}
 			delegateTotal = delegateTotal.Add(d.Amount.Amount)

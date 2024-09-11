@@ -72,11 +72,11 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			if amount1.IsZero() {
 				amount1.Amount = sdk.OneInt()
 			}
-			_, err = ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, amount1)
+			_, err = ts.TxDualstakingDelegate(delegator1, provider, amount1)
 			require.NoError(t, err)
 
 			amount2 := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(tt.d2Amount*delegationAmount/100))
-			_, err = ts.TxDualstakingDelegate(delegator2, provider, ts.spec.Index, amount2)
+			_, err = ts.TxDualstakingDelegate(delegator2, provider, amount2)
 			require.NoError(t, err)
 			ts.AdvanceEpoch() // apply delegations
 
@@ -187,7 +187,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	ts.AdvanceEpoch() // to apply pairing
 
 	delegationAmount1 := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
-	_, err = ts.TxDualstakingDelegate(delegator1, provider, ts.spec.Index, delegationAmount1)
+	_, err = ts.TxDualstakingDelegate(delegator1, provider, delegationAmount1)
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -210,7 +210,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	currentTimestamp := ts.Ctx.BlockTime().UTC().Unix()
 	relevantDelegations := lavaslices.Filter(res.Delegations,
 		func(d dualstakingtypes.Delegation) bool {
-			return d.ChainID == ts.spec.Index && d.IsFirstWeekPassed(currentTimestamp)
+			return d.IsFirstWeekPassed(currentTimestamp)
 		})
 	totalReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(relayCuSum))))
 	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(ts.Ctx, stakeEntry, totalReward, relevantDelegations)
@@ -306,11 +306,11 @@ func TestQueryDelegatorRewards(t *testing.T) {
 	makeProviderCommissionZero(ts, ts.spec.Index, provider2)
 
 	delegationAmount := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
-	_, err = ts.TxDualstakingDelegate(delegator1, provider1, ts.spec.Index, delegationAmount)
+	_, err = ts.TxDualstakingDelegate(delegator1, provider1, delegationAmount)
 	require.NoError(t, err)
-	_, err = ts.TxDualstakingDelegate(delegator1, provider1, spec1.Index, delegationAmount)
+	_, err = ts.TxDualstakingDelegate(delegator1, provider1, delegationAmount)
 	require.NoError(t, err)
-	_, err = ts.TxDualstakingDelegate(delegator1, provider2, ts.spec.Index, delegationAmount)
+	_, err = ts.TxDualstakingDelegate(delegator1, provider2, delegationAmount)
 	require.NoError(t, err)
 
 	ts.AdvanceEpoch() // apply delegations
@@ -430,7 +430,7 @@ func TestDelegationTimestamp(t *testing.T) {
 
 	// delegate and check the timestamp is equal to current time + month
 	currentTimeAfterMonth := ts.GetNextMonth(ts.BlockTime())
-	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
+	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
@@ -447,7 +447,7 @@ func TestDelegationTimestamp(t *testing.T) {
 	// advance time and delegate again to verify that the timestamp hasn't changed
 	ts.AdvanceMonths(1)
 	expectedDelegation := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(2*testStake))
-	_, err = ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -481,7 +481,7 @@ func TestDelegationFirstMonthPairing(t *testing.T) {
 	// delegate and check the delegation's timestamp is equal than nowPlusMonthTime
 	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
 
-	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
+	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -523,7 +523,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	// delegate and check the delegation's timestamp is equal to nowPlusMonthTime
 	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
 
-	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
+	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -578,7 +578,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	// delegate and check the delegation's timestamp is equal to nowPlusMonthTime
 	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
 
-	_, err := ts.TxDualstakingDelegate(delegator, provider, ts.spec.Index, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
+	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
@@ -594,7 +594,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	// advance a month a redelegate some of the funds to the second provider
 	ts.AdvanceMonths(1)
 	redelegateAmount := sdk.NewCoin(ts.TokenDenom(), res.Delegations[0].Amount.Amount.QuoRaw(2))
-	_, err = ts.TxDualstakingRedelegate(delegator, provider, provider1, ts.spec.Index, ts.spec.Index, redelegateAmount)
+	_, err = ts.TxDualstakingRedelegate(delegator, provider, provider1, redelegateAmount)
 	require.NoError(t, err)
 
 	// to trigger the payment's code, we need to advance a month+blocksToSave. If we do that,
