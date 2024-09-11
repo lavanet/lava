@@ -173,11 +173,17 @@ func (st *SelectionTierInst) GetTier(tier int, numTiers int, minimumEntries int)
 		ret[len(ret)-1].Part = fracEnd
 		return ret
 	}
-	// bring in entries from better tiers if insufficient
+	// bring in entries from better tiers if insufficient, give them a handicap to weight
 	// end is > minimumEntries, and end - start < minimumEntries
 	entriesToTake := minimumEntries - len(ret)
 	entriesToTakeStart := start - entriesToTake
-	ret = append(st.scores[entriesToTakeStart:start], ret...)
+	copiedEntries := st.scores[entriesToTakeStart:start]
+	entriesToAdd := make([]Entry, len(copiedEntries))
+	copy(entriesToAdd, copiedEntries)
+	for i := range entriesToAdd {
+		entriesToAdd[i].Part = 0.5
+	}
+	ret = append(entriesToAdd, ret...)
 	return ret
 }
 

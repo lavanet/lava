@@ -346,8 +346,29 @@ func TestProviderOptimizerExploration(t *testing.T) {
 	syncBlock := uint64(requestBlock)
 
 	rand.InitRandomSeed()
-	chosenIndex := rand.Intn(providersCount - 2)
+	// start with a disabled chosen index
+	chosenIndex := -1
+	testProvidersExploration := func(iterations int) float64 {
+		exploration := 0.0
+		for i := 0; i < iterations; i++ {
+			returnedProviders, _ := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock)
+			if len(returnedProviders) > 1 {
+				exploration++
+				// check if we have a specific chosen index
+				if chosenIndex >= 0 {
+					// there's only one provider eligible for exploration it must be him
+					require.Equal(t, providersGen.providersAddresses[chosenIndex], returnedProviders[1])
+				}
+			}
+		}
+		return exploration
+	}
 
+	// make sure exploration works when providers are defaulted (no data at all)
+	exploration := testProvidersExploration(1000)
+	require.Greater(t, exploration, float64(10))
+
+	chosenIndex = rand.Intn(providersCount - 2)
 	// set chosen index with a value in the past so it can be selected for exploration
 	providerOptimizer.appendRelayData(providersGen.providersAddresses[chosenIndex], TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, time.Now().Add(-35*time.Second))
 	// set a basic state for all other provider, with a recent time (so they can't be selected for exploration)
@@ -362,24 +383,12 @@ func TestProviderOptimizerExploration(t *testing.T) {
 		}
 		time.Sleep(4 * time.Millisecond)
 	}
-	testProvidersExploration := func(iterations int) float64 {
-		exploration := 0.0
-		for i := 0; i < iterations; i++ {
-			returnedProviders, _ := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock)
-			if len(returnedProviders) > 1 {
-				exploration++
-				// there's only one provider eligible for exploration it must be him
-				require.Equal(t, providersGen.providersAddresses[chosenIndex], returnedProviders[1])
-			}
-		}
-		return exploration
-	}
 
 	// with a cost strategy we expect exploration at a 10% rate
 	providerOptimizer.strategy = STRATEGY_BALANCED        // that's the default but to be explicit
 	providerOptimizer.wantedNumProvidersInConcurrency = 2 // that's in the constructor but to be explicit
 	iterations := 10000
-	exploration := testProvidersExploration(iterations)
+	exploration = testProvidersExploration(iterations)
 	require.Less(t, exploration, float64(1.3)*float64(iterations)*DEFAULT_EXPLORATION_CHANCE)    // allow mistake buffer of 30% because of randomness
 	require.Greater(t, exploration, float64(0.7)*float64(iterations)*DEFAULT_EXPLORATION_CHANCE) // allow mistake buffer of 30% because of randomness
 
@@ -588,10 +597,127 @@ func TestPerturbationWithNormalGaussianOnConcurrentComputation(t *testing.T) {
 	fmt.Println("Test completed successfully")
 }
 
+// test low providers count 0-9
+func TestProviderOptimizerProvidersCount(t *testing.T) {
+	rand.InitRandomSeed()
+	providerOptimizer := setupProviderOptimizer(1)
+	providersCount := 10
+	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
+	requestCU := uint64(10)
+	requestBlock := spectypes.LATEST_BLOCK
+	syncBlock := uint64(1000)
+	sampleTime := time.Now()
+	for i := 0; i < 10; i++ {
+		for _, address := range providersGen.providersAddresses {
+			providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, sampleTime)
+		}
+		time.Sleep(4 * time.Millisecond)
+	}
+	playbook := []struct {
+		name      string
+		providers int
+	}{
+		{
+			name:      "one",
+			providers: 1,
+		},
+		{
+			name:      "two",
+			providers: 2,
+		},
+		{
+			name:      "three",
+			providers: 3,
+		},
+		{
+			name:      "four",
+			providers: 4,
+		},
+		{
+			name:      "five",
+			providers: 5,
+		},
+		{
+			name:      "six",
+			providers: 6,
+		},
+		{
+			name:      "seven",
+			providers: 7,
+		},
+		{
+			name:      "eight",
+			providers: 8,
+		},
+		{
+			name:      "nine",
+			providers: 9,
+		},
+	}
+	for _, play := range playbook {
+		t.Run(play.name, func(t *testing.T) {
+			for i := 0; i < 10; i++ {
+				returnedProviders, _ := providerOptimizer.ChooseProvider(providersGen.providersAddresses[:play.providers], nil, requestCU, requestBlock)
+				require.Greater(t, len(returnedProviders), 0)
+			}
+		})
+	}
+}
+
+func TestProviderOptimizerWeights(t *testing.T) {
+	rand.InitRandomSeed()
+	providerOptimizer := setupProviderOptimizer(1)
+	providersCount := 10
+	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
+	requestCU := uint64(10)
+	requestBlock := spectypes.LATEST_BLOCK
+	syncBlock := uint64(1000)
+	sampleTime := time.Now()
+	weights := map[string]int64{
+		providersGen.providersAddresses[0]: 10000000000000, // simulating 10m tokens
+	}
+	for i := 1; i < 10; i++ {
+		weights[providersGen.providersAddresses[i]] = 50000000000
+	}
+
+	normalLatency := TEST_BASE_WORLD_LATENCY * 2
+	improvedLatency := normalLatency - 5*time.Millisecond
+	improvedBlock := syncBlock + 2
+
+	providerOptimizer.UpdateWeights(weights)
+	for i := 0; i < 10; i++ {
+		for _, address := range providersGen.providersAddresses {
+			if i == 0 {
+				providerOptimizer.appendRelayData(address, normalLatency, false, true, requestCU, improvedBlock, sampleTime)
+			} else {
+				providerOptimizer.appendRelayData(address, improvedLatency, false, true, requestCU, syncBlock, sampleTime)
+			}
+			sampleTime = sampleTime.Add(5 * time.Millisecond)
+		}
+		time.Sleep(4 * time.Millisecond)
+	}
+
+	// if we pick by sync, provider 0 is in the top tier and should be selected very often
+	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, requestCU, requestBlock, 1000)
+	require.Greater(t, tierResults[0], 500, tierResults) // we should pick the best tier most often
+	// out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
+	require.Greater(t, results[providersGen.providersAddresses[0]], 400, results) // we should pick the top provider in tier 0 most times due to weight
+
+	// if we pick by latency only, provider 0 is in the worst tier and can't be selected at all
+	results, tierResults = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, requestCU, int64(syncBlock), 1000)
+	require.Greater(t, tierResults[0], 500, tierResults) // we should pick the best tier most often
+	// out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
+	require.Zero(t, results[providersGen.providersAddresses[0]])
+}
+
+// TODO: when you add others form upper tier give them a part penalty
+// TODO: add penalty if a provider is chosen too much
+
 // TODO: new tests we need:
-// test low providers count 0,1,2,3,4,5,6,7,8,9
+
 // set stake weight for providers + see selection is biased by stake
 // check all tiers are selected
 // retries: groups getting smaller
 // no possible selections full
 // do a simulation with better and worse providers, make sure it's good
+// TODO: Oren - check optimizer selection with defaults (no scores for some of the providers)
