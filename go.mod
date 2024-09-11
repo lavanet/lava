@@ -2,8 +2,6 @@ module github.com/lavanet/lava/v3
 
 go 1.21
 
-toolchain go1.23.1
-
 require (
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/cometbft/cometbft v0.37.5
