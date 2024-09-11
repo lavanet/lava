@@ -337,47 +337,61 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 // 	}
 // }
 
-func TestProviderOptimizerStrategiesProviderCount(t *testing.T) {
-	providerOptimizer := setupProviderOptimizer(3)
-	providersCount := 5
+func TestProviderOptimizerExploration(t *testing.T) {
+	providerOptimizer := setupProviderOptimizer(2)
+	providersCount := 10
 	providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
 	requestCU := uint64(10)
 	requestBlock := int64(1000)
 	syncBlock := uint64(requestBlock)
 
-	// set a basic state for all of them
+	rand.InitRandomSeed()
+	chosenIndex := rand.Intn(providersCount - 2)
+
+	// set chosen index with a value in the past so it can be selected for exploration
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[chosenIndex], TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, time.Now().Add(-35*time.Second))
+	// set a basic state for all other provider, with a recent time (so they can't be selected for exploration)
 	for i := 0; i < 10; i++ {
-		for _, address := range providersGen.providersAddresses {
-			providerOptimizer.AppendRelayData(address, TEST_BASE_WORLD_LATENCY*2, false, requestCU, syncBlock)
+		for index, address := range providersGen.providersAddresses {
+			if index == chosenIndex {
+				// we set chosenIndex with a past time so it can be selected for exploration
+				continue
+			}
+			// set samples in the future so they are never a candidate for exploration
+			providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, time.Now().Add(1*time.Second))
 		}
 		time.Sleep(4 * time.Millisecond)
 	}
-	testProvidersCount := func(iterations int) float64 {
+	testProvidersExploration := func(iterations int) float64 {
 		exploration := 0.0
 		for i := 0; i < iterations; i++ {
 			returnedProviders, _ := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock)
 			if len(returnedProviders) > 1 {
 				exploration++
+				// there's only one provider eligible for exploration it must be him
+				require.Equal(t, providersGen.providersAddresses[chosenIndex], returnedProviders[1])
 			}
 		}
 		return exploration
 	}
 
-	// with a cost strategy we expect only one provider, two with a chance of 1/100
-	providerOptimizer.strategy = STRATEGY_COST
-	providerOptimizer.wantedNumProvidersInConcurrency = 2
+	// with a cost strategy we expect exploration at a 10% rate
+	providerOptimizer.strategy = STRATEGY_BALANCED        // that's the default but to be explicit
+	providerOptimizer.wantedNumProvidersInConcurrency = 2 // that's in the constructor but to be explicit
 	iterations := 10000
-	exploration := testProvidersCount(iterations)
-	require.Less(t, exploration, float64(1.3)*float64(iterations*providersCount)*COST_EXPLORATION_CHANCE) // allow mistake buffer of 30% because of randomness
+	exploration := testProvidersExploration(iterations)
+	require.Less(t, exploration, float64(1.3)*float64(iterations)*DEFAULT_EXPLORATION_CHANCE)    // allow mistake buffer of 30% because of randomness
+	require.Greater(t, exploration, float64(0.7)*float64(iterations)*DEFAULT_EXPLORATION_CHANCE) // allow mistake buffer of 30% because of randomness
 
-	// with a cost strategy we expect only one provider, two with a chance of 10/100
-	providerOptimizer.strategy = STRATEGY_BALANCED
-	exploration = testProvidersCount(iterations)
-	require.Greater(t, exploration, float64(1.3)*float64(iterations*providersCount)/100.0)
-	require.Less(t, exploration, float64(1.3)*float64(iterations*providersCount)*DEFAULT_EXPLORATION_CHANCE) // allow mistake buffer of 30% because of randomness
+	// with a cost strategy we expect exploration to happen once in 100 samples
+	providerOptimizer.strategy = STRATEGY_COST
+	exploration = testProvidersExploration(iterations)
+	require.Less(t, exploration, float64(1.3)*float64(iterations)*COST_EXPLORATION_CHANCE)    // allow mistake buffer of 30% because of randomness
+	require.Greater(t, exploration, float64(0.7)*float64(iterations)*COST_EXPLORATION_CHANCE) // allow mistake buffer of 30% because of randomness
 
+	// privacy disables exploration
 	providerOptimizer.strategy = STRATEGY_PRIVACY
-	exploration = testProvidersCount(iterations)
+	exploration = testProvidersExploration(iterations)
 	require.Equal(t, exploration, float64(0))
 }
 

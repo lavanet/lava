@@ -184,8 +184,8 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 
 		// check if candidate for exploration
 		updateTime := providerData.Latency.Time
-		if updateTime.Add(30*time.Second).Before(time.Now()) && updateTime.Before(explorationCandidate.time) {
-			// if the provider didn't update its data for 30 seconds, it is a candidate for exploration
+		if updateTime.Add(10*time.Second).Before(time.Now()) && updateTime.Before(explorationCandidate.time) {
+			// if the provider didn't update its data for 10 seconds, it is a candidate for exploration
 			explorationCandidate = exploration{address: providerAddress, time: updateTime}
 		}
 	}
@@ -265,8 +265,7 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders, numProviders int)
 	case STRATEGY_PRIVACY:
 		return false // only one at a time
 	}
-	// Dividing the random threshold by the loop count ensures that the overall probability of success is the requirement for the entire loop not per iteration
-	return rand.Float64() < explorationChance/float64(numProviders)
+	return rand.Float64() < explorationChance
 }
 
 func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent float64) bool {
