@@ -686,22 +686,28 @@ func TestProviderOptimizerWeights(t *testing.T) {
 
 	providerOptimizer.UpdateWeights(weights)
 	for i := 0; i < 10; i++ {
-		for _, address := range providersGen.providersAddresses {
-			if i == 0 {
+		for idx, address := range providersGen.providersAddresses {
+			if idx == 0 {
 				providerOptimizer.appendRelayData(address, normalLatency, false, true, requestCU, improvedBlock, sampleTime)
 			} else {
 				providerOptimizer.appendRelayData(address, improvedLatency, false, true, requestCU, syncBlock, sampleTime)
 			}
 			sampleTime = sampleTime.Add(5 * time.Millisecond)
+			time.Sleep(4 * time.Millisecond)
 		}
-		time.Sleep(4 * time.Millisecond)
 	}
+
+	// verify 0 has the best score
+	selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	tier0 := selectionTier.GetTier(0, 4, 3)
+	require.Greater(t, len(tier0), 0) // shouldn't be empty
+	require.Equal(t, providersGen.providersAddresses[0], tier0[0].Address)
 
 	// if we pick by sync, provider 0 is in the top tier and should be selected very often
 	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, requestCU, requestBlock, 1000)
-	require.Greater(t, tierResults[0], 500, tierResults) // we should pick the best tier most often
+	require.Greater(t, tierResults[0], 600, tierResults) // we should pick the best tier most often
 	// out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
-	require.Greater(t, results[providersGen.providersAddresses[0]], 400, results) // we should pick the top provider in tier 0 most times due to weight
+	require.Greater(t, results[providersGen.providersAddresses[0]], 550, results) // we should pick the top provider in tier 0 most times due to weight
 
 	// if we pick by latency only, provider 0 is in the worst tier and can't be selected at all
 	results, tierResults = runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, requestCU, int64(syncBlock), 1000)
@@ -710,12 +716,45 @@ func TestProviderOptimizerWeights(t *testing.T) {
 	require.Zero(t, results[providersGen.providersAddresses[0]])
 }
 
-// TODO: when you add others form upper tier give them a part penalty
-// TODO: add penalty if a provider is chosen too much
+func TestProviderOptimizerTiers(t *testing.T) {
+	rand.InitRandomSeed()
+
+	providersCountList := []int{9, 10}
+	for why, providersCount := range providersCountList {
+		providerOptimizer := setupProviderOptimizer(1)
+		providersGen := (&providersGenerator{}).setupProvidersForTest(providersCount)
+		requestCU := uint64(10)
+		requestBlock := spectypes.LATEST_BLOCK
+		syncBlock := uint64(1000)
+		sampleTime := time.Now()
+		normalLatency := TEST_BASE_WORLD_LATENCY * 2
+		for i := 0; i < 10; i++ {
+			for _, address := range providersGen.providersAddresses {
+				modifierLatency := rand.Int63n(3) - 1
+				modifierSync := rand.Int63n(3) - 1
+				providerOptimizer.appendRelayData(address, normalLatency+time.Duration(modifierLatency)*time.Millisecond, false, true, requestCU, syncBlock+uint64(modifierSync), sampleTime)
+				sampleTime = sampleTime.Add(5 * time.Millisecond)
+				time.Sleep(4 * time.Millisecond)
+			}
+		}
+		selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+		shiftedChances := selectionTier.ShiftTierChance(4, map[int]float64{0: 0.75})
+		require.NotZero(t, shiftedChances[3])
+		// if we pick by sync, provider 0 is in the top tier and should be selected very often
+		_, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, requestCU, requestBlock, 1000)
+		for index := 0; index < OptimizerNumTiers; index++ {
+			if providersCount >= 2*MinimumEntries && index == OptimizerNumTiers-1 {
+				// skip last tier if there's insufficient providers
+				continue
+			}
+			require.NotZero(t, tierResults[index], "tierResults %v providersCount %s index %d why: %d", tierResults, providersCount, index, why)
+		}
+	}
+
+}
 
 // TODO: new tests we need:
 
-// set stake weight for providers + see selection is biased by stake
 // check all tiers are selected
 // retries: groups getting smaller
 // no possible selections full

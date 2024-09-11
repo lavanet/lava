@@ -211,6 +211,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	shiftedChances := selectionTier.ShiftTierChance(OptimizerNumTiers, initialChances)
 	tier = selectionTier.SelectTierRandomly(OptimizerNumTiers, shiftedChances)
 	tierProviders := selectionTier.GetTier(tier, OptimizerNumTiers, MinimumEntries)
+	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
 	if explorationCandidate.address != "" && po.shouldExplore(1, selectionTier.ScoresCount()) {
