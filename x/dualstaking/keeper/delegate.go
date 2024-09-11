@@ -25,6 +25,7 @@ import (
 	commontypes "github.com/lavanet/lava/v3/utils/common/types"
 	lavaslices "github.com/lavanet/lava/v3/utils/lavaslices"
 	"github.com/lavanet/lava/v3/x/dualstaking/types"
+	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	"golang.org/x/exp/slices"
 )
 
@@ -48,7 +49,7 @@ func (k Keeper) increaseDelegation(ctx sdk.Context, delegator, provider string, 
 
 	if provider != commontypes.EMPTY_PROVIDER {
 		// update the stake entry
-		return k.modifyStakeEntryDelegation(ctx, delegator, provider, amount, true)
+		return k.AfterDelegationModified(ctx, delegator, provider, amount, true)
 	}
 
 	return nil
@@ -76,69 +77,76 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider string, 
 	}
 
 	if provider != commontypes.EMPTY_PROVIDER {
-		return k.modifyStakeEntryDelegation(ctx, delegator, provider, amount, false)
+		return k.AfterDelegationModified(ctx, delegator, provider, amount, false)
 	}
 
 	return nil
 }
 
-// modifyStakeEntryDelegation modifies the (epochstorage) stake-entry of the provider for a chain based on the action (increase or decrease).
-func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider string, amount sdk.Coin, increase bool) (err error) {
-	// todo yarom
+func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider string, amount sdk.Coin, increase bool) (err error) {
 
-	// stakeEntry, exists := k.epochstorageKeeper.GetStakeEntryCurrent(ctx, chainID, provider)
-	// if !exists || provider != stakeEntry.Address {
-	// 	if increase {
-	// 		return epochstoragetypes.ErrProviderNotStaked
-	// 	}
-	// 	// For decrease, if the provider doesn't exist, return without error
-	// 	return nil
-	// }
+	// get all entries
+	metadata, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
+	if err != nil {
+		return err
+	}
 
-	// if delegator == stakeEntry.Vault {
-	// 	if increase {
-	// 		stakeEntry.Stake = stakeEntry.Stake.Add(amount)
-	// 	} else {
-	// 		stakeEntry.Stake, err = stakeEntry.Stake.SafeSub(amount)
-	// 		if err != nil {
-	// 			return fmt.Errorf("invalid or insufficient funds: %w", err)
-	// 		}
-	// 	}
-	// } else {
-	// 	if increase {
-	// 		stakeEntry.DelegateTotal = stakeEntry.DelegateTotal.Add(amount)
-	// 	} else {
-	// 		stakeEntry.DelegateTotal, err = stakeEntry.DelegateTotal.SafeSub(amount)
-	// 		if err != nil {
-	// 			return fmt.Errorf("invalid or insufficient funds: %w", err)
-	// 		}
-	// 	}
-	// }
+	// check if self delegation
+	selfdelegation := delegator == provider
 
-	// details := map[string]string{
-	// 	"provider_vault":    stakeEntry.Vault,
-	// 	"provider_provider": stakeEntry.Address,
-	// 	"chain_id":          stakeEntry.Chain,
-	// 	"moniker":           stakeEntry.Description.Moniker,
-	// 	"description":       stakeEntry.Description.String(),
-	// 	"stake":             stakeEntry.Stake.String(),
-	// 	"effective_stake":   stakeEntry.TotalStake().String() + stakeEntry.Stake.Denom,
-	// }
+	entries := []epochstoragetypes.StakeEntry{}
+	for _, chain := range metadata.Chains {
+		entry, found := k.epochstorageKeeper.GetStakeEntryCurrent(ctx, chain, provider)
+		if !found {
+			panic("AfterDelegationModified: entry not found ")
+		}
+		entries = append(entries, entry)
+		if !selfdelegation && entry.Vault == delegator {
+			selfdelegation = true
+		}
+	}
 
-	// if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
-	// 	k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, chainID, stakeEntry.Address)
-	// 	details["min_self_delegation"] = k.GetParams(ctx).MinSelfDelegation.String()
-	// 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeFromUnbond, details, "unstaking provider due to unbond that lowered its stake below min self delegation")
-	// 	return nil
-	// } else if stakeEntry.TotalStake().LT(k.specKeeper.GetMinStake(ctx, chainID).Amount) {
-	// 	details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, chainID).String()
-	// 	utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
-	// 	stakeEntry.Freeze()
-	// } else if delegator == stakeEntry.Vault && stakeEntry.IsFrozen() && !stakeEntry.IsJailed(ctx.BlockTime().UTC().Unix()) {
-	// 	stakeEntry.UnFreeze(k.epochstorageKeeper.GetCurrentNextEpoch(ctx) + 1)
-	// }
+	if increase {
+		if selfdelegation {
+			metadata.SelfDelegation = metadata.SelfDelegation.Add(amount)
+		} else {
+			metadata.TotalDelegations = metadata.TotalDelegations.Add(amount)
+		}
+	} else {
+		if selfdelegation {
+			metadata.SelfDelegation, err = metadata.SelfDelegation.SafeSub(amount)
+		} else {
+			metadata.TotalDelegations, err = metadata.TotalDelegations.SafeSub(amount)
+		}
+	}
+	if err != nil {
+		return err
+	}
+	k.epochstorageKeeper.SetMetadata(ctx, metadata)
 
-	// k.epochstorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
+	details := map[string]string{
+		"provider": provider,
+	}
+
+	for _, entry := range entries {
+		entry.DelegateTotal = sdk.NewCoin(amount.Denom, metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(metadata.SelfDelegation.Amount))
+		details[entry.Chain] = entry.Chain
+		if entry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
+			k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, entry.Chain, entry.Address)
+			details["min_self_delegation"] = k.GetParams(ctx).MinSelfDelegation.String()
+			utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeFromUnbond, details, "unstaking provider due to unbond that lowered its stake below min self delegation")
+			return nil
+		} else if entry.TotalStake().LT(k.specKeeper.GetMinStake(ctx, entry.Chain).Amount) {
+			details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, entry.Chain).String()
+			utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
+			entry.Freeze()
+			k.epochstorageKeeper.SetStakeEntryCurrent(ctx, entry)
+		} else if delegator == entry.Vault && entry.IsFrozen() && !entry.IsJailed(ctx.BlockTime().UTC().Unix()) {
+			entry.UnFreeze(k.epochstorageKeeper.GetCurrentNextEpoch(ctx) + 1)
+			k.epochstorageKeeper.SetStakeEntryCurrent(ctx, entry)
+		}
+
+	}
 
 	return nil
 }

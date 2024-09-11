@@ -34,6 +34,7 @@ type (
 		stakeEntries        *collections.IndexedMap[collections.Triple[uint64, string, collections.Pair[uint64, string]], types.StakeEntry, types.EpochChainIdProviderIndexes]
 		stakeEntriesCurrent *collections.IndexedMap[collections.Pair[string, string], types.StakeEntry, types.ChainIdVaultIndexes]
 		epochHashes         collections.Map[uint64, []byte]
+		providersMetaData   *collections.Map[string, types.ProviderMetadata]
 	}
 )
 
