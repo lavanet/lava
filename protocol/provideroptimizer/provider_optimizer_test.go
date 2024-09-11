@@ -441,7 +441,6 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 		// sync score doesn't matter now so the tier0 is recalculated and chosenIndex has worst latency
 		require.NotEqual(t, providersGen.providersAddresses[chosenIndex], tier0[idx].Address)
 	}
-
 }
 
 func TestProviderOptimizerStrategiesScoring(t *testing.T) {
@@ -750,7 +749,6 @@ func TestProviderOptimizerTiers(t *testing.T) {
 			require.NotZero(t, tierResults[index], "tierResults %v providersCount %s index %d why: %d", tierResults, providersCount, index, why)
 		}
 	}
-
 }
 
 // TODO: new tests we need:
