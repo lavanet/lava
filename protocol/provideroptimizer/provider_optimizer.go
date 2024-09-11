@@ -59,6 +59,11 @@ type ProviderOptimizer struct {
 	selectionWeighter               SelectionWeighter
 }
 
+type Exploration struct {
+	address string
+	time    time.Time
+}
+
 type ProviderData struct {
 	Availability score.ScoreStore // will be used to calculate the probability of error
 	Latency      score.ScoreStore // will be used to calculate the latency score
@@ -143,15 +148,11 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	)
 }
 
-// returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
+func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration) {
 	latencyScore := math.MaxFloat64 // smaller = better i.e less latency
 	syncScore := math.MaxFloat64    // smaller = better i.e less sync lag
-	type exploration struct {
-		address string
-		time    time.Time
-	}
-	explorationCandidate := exploration{address: "", time: time.Now().Add(time.Hour)}
+
+	explorationCandidate := Exploration{address: "", time: time.Now().Add(time.Hour)}
 	selectionTier := NewSelectionTier()
 	for _, providerAddress := range allAddresses {
 		if _, ok := ignoredProviders[providerAddress]; ok {
@@ -186,9 +187,15 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		updateTime := providerData.Latency.Time
 		if updateTime.Add(10*time.Second).Before(time.Now()) && updateTime.Before(explorationCandidate.time) {
 			// if the provider didn't update its data for 10 seconds, it is a candidate for exploration
-			explorationCandidate = exploration{address: providerAddress, time: updateTime}
+			explorationCandidate = Exploration{address: providerAddress, time: updateTime}
 		}
 	}
+	return selectionTier, explorationCandidate
+}
+
+// returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
+func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
+	selectionTier, explorationCandidate := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
 	if selectionTier.ScoresCount() == 0 {
 		// no providers to choose from
 		return []string{}, -1
@@ -206,7 +213,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	tierProviders := selectionTier.GetTier(tier, OptimizerNumTiers, MinimumEntries)
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
-	if explorationCandidate.address != "" && po.shouldExplore(1, len(allAddresses)) {
+	if explorationCandidate.address != "" && po.shouldExplore(1, selectionTier.ScoresCount()) {
 		returnedProviders = append(returnedProviders, explorationCandidate.address)
 	}
 	utils.LavaFormatTrace("[Optimizer] returned providers",

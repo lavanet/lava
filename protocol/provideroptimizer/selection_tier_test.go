@@ -105,7 +105,6 @@ func TestSelectionTierInst_GetTier(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestSelectionTierInstGetTierBig(t *testing.T) {
@@ -171,7 +170,6 @@ func TestSelectionTierInstGetTierBig(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestSelectionTierInstShiftTierChance(t *testing.T) {
