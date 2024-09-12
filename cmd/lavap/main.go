@@ -73,6 +73,7 @@ func main() {
 	testCmd.AddCommand(connection.CreateTestConnectionServerCobraCommand())
 	testCmd.AddCommand(connection.CreateTestConnectionProbeCobraCommand())
 	testCmd.AddCommand(monitoring.CreateHealthCobraCommand())
+	rootCmd.AddCommand(monitoring.CreateChainHeightsCommand())
 	testCmd.AddCommand(loadtest.CreateTestLoadCobraCommand())
 
 	rootCmd.AddCommand(cache.CreateCacheCobraCommand())
