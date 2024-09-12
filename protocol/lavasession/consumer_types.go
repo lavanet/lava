@@ -609,7 +609,7 @@ func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (wei
 		}
 		stakeAmount := cswp.getProviderStakeSize().Amount
 		stake := int64(10) // defaults to 10 if stake isn't set
-		if stakeAmount.IsInt64() {
+		if !stakeAmount.IsNil() && stakeAmount.IsInt64() {
 			stake = stakeAmount.Int64()
 		}
 		if stake > maxWeight {
