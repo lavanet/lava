@@ -88,7 +88,12 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 	// get all entries
 	metadata, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
 	if err != nil {
-		return err
+		if increase {
+			return err
+		} else {
+			// we want to allow decreasing if the provider does not exist
+			return nil
+		}
 	}
 
 	// check if self delegation
@@ -129,14 +134,16 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 	}
 
 	for _, entry := range entries {
-		entry.DelegateTotal = sdk.NewCoin(amount.Denom, metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(metadata.SelfDelegation.Amount))
+
 		details[entry.Chain] = entry.Chain
 		if entry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
 			k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, entry.Chain, entry.Address)
 			details["min_self_delegation"] = k.GetParams(ctx).MinSelfDelegation.String()
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeFromUnbond, details, "unstaking provider due to unbond that lowered its stake below min self delegation")
 			continue
-		} else if entry.TotalStake().LT(k.specKeeper.GetMinStake(ctx, entry.Chain).Amount) {
+		}
+		entry.DelegateTotal = sdk.NewCoin(amount.Denom, metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(metadata.SelfDelegation.Amount))
+		if entry.TotalStake().LT(k.specKeeper.GetMinStake(ctx, entry.Chain).Amount) {
 			details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, entry.Chain).String()
 			utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
 			entry.Freeze()

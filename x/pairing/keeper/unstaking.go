@@ -45,8 +45,12 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		)
 	}
 
+	amount := existingEntry.Stake
+	existingEntry.Stake.Amount = sdk.ZeroInt()
+	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)
+
 	// the stake entry is removed inside UnbondFull
-	err := k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, existingEntry.Stake, true)
+	err := k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, amount, true)
 	if err != nil {
 		return utils.LavaFormatWarning("can't unbond self delegation", err,
 			utils.Attribute{Key: "address", Value: existingEntry.Address},

@@ -45,13 +45,6 @@ func TestDelegateFail(t *testing.T) {
 			amount:    1,
 		},
 		{
-			name:      "bad chainID",
-			delegator: client1Addr,
-			provider:  provider1Addr,
-			chainID:   "invalid",
-			amount:    1,
-		},
-		{
 			name:      "bad amount",
 			delegator: client1Addr,
 			provider:  provider1Addr,
@@ -179,14 +172,6 @@ func TestRedelegateFail(t *testing.T) {
 			amount:    1,
 		},
 		{
-			name:      "bad chainID",
-			delegator: client1Addr,
-			provider1: provider1Addr,
-			provider2: provider2Addr,
-			chainID:   "invalid",
-			amount:    1,
-		},
-		{
 			name:      "bad amount",
 			delegator: client1Addr,
 			provider1: provider1Addr,
@@ -283,8 +268,7 @@ func TestRedelegate(t *testing.T) {
 
 	// redelegate from unstaking provider
 	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(5000))
-	_, err = ts.TxDualstakingRedelegate(
-		client1Addr, provider1Addr, provider2Addr, amount)
+	_, err = ts.TxDualstakingRedelegate(client1Addr, provider1Addr, provider2Addr, amount)
 	require.NoError(t, err)
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
@@ -330,13 +314,6 @@ func TestUnbondFail(t *testing.T) {
 			delegator: client1Addr,
 			provider:  "invalid",
 			chainID:   "mockspec",
-			amount:    1,
-		},
-		{
-			name:      "bad chainID",
-			delegator: client1Addr,
-			provider:  provider1Addr,
-			chainID:   "invalid",
 			amount:    1,
 		},
 		{
