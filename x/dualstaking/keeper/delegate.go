@@ -71,9 +71,16 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider string, 
 
 	delegation.SubAmount(amount)
 
-	err := k.SetDelegation(ctx, delegation)
-	if err != nil {
-		return err
+	if delegation.Amount.IsZero() {
+		err := k.RemoveDelegation(ctx, delegation)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := k.SetDelegation(ctx, delegation)
+		if err != nil {
+			return err
+		}
 	}
 
 	if provider != commontypes.EMPTY_PROVIDER {
@@ -84,7 +91,6 @@ func (k Keeper) decreaseDelegation(ctx sdk.Context, delegator, provider string, 
 }
 
 func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider string, amount sdk.Coin, increase bool) (err error) {
-
 	// get all entries
 	metadata, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
 	if err != nil {
@@ -134,7 +140,6 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 	}
 
 	for _, entry := range entries {
-
 		details[entry.Chain] = entry.Chain
 		if entry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
 			k.epochstorageKeeper.RemoveStakeEntryCurrent(ctx, entry.Chain, entry.Address)
@@ -349,6 +354,10 @@ func (k Keeper) GetAllDelegations(ctx sdk.Context) ([]types.Delegation, error) {
 
 func (k Keeper) SetDelegation(ctx sdk.Context, delegation types.Delegation) error {
 	return k.delegations.Set(ctx, types.DelegationKey(delegation.Provider, delegation.Delegator), delegation)
+}
+
+func (k Keeper) RemoveDelegation(ctx sdk.Context, delegation types.Delegation) error {
+	return k.delegations.Remove(ctx, types.DelegationKey(delegation.Provider, delegation.Delegator))
 }
 
 func (k Keeper) UnbondUniformProviders(ctx sdk.Context, delegator string, amount sdk.Coin) error {

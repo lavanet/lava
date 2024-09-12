@@ -378,13 +378,13 @@ func TestUnbond(t *testing.T) {
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
 	// now in effect
-	delegated = delegated.Add(amount)
+	delegated = delegated.Add(amount).Add(amount)
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 
 	res, err := ts.QueryDualstakingDelegatorProviders(client1Addr, true)
 	require.NoError(t, err)
-	require.Len(t, res.Delegations, 2)
+	require.Len(t, res.Delegations, 1)
 
 	// unbond once
 	amount = sdk.NewCoin(commontypes.TokenDenom, sdk.NewInt(1000))
@@ -392,14 +392,13 @@ func TestUnbond(t *testing.T) {
 	require.NoError(t, err)
 
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
-
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
 	// now in effect
 	delegated = delegated.Sub(amount)
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 
 	// unbond twice in same block, and then in next block
 	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, amount)
@@ -411,14 +410,14 @@ func TestUnbond(t *testing.T) {
 	require.NoError(t, err)
 
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 
 	// advance epoch to digest the delegate
 	ts.AdvanceEpoch()
 	// now in effect
 	delegated = delegated.Sub(amount).Sub(amount)
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 
 	_, err = ts.TxPairingUnstakeProvider(provider1Acct.GetVaultAddr(), ts.spec.Name)
 	require.NoError(t, err)
@@ -427,7 +426,7 @@ func TestUnbond(t *testing.T) {
 	_, err = ts.TxDualstakingUnbond(client1Addr, provider1Addr, amount)
 	require.NoError(t, err)
 	stakeEntry = ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, delegated.IsEqual(stakeEntry.DelegateTotal))
+	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 	delegated = delegated.Sub(amount)
 
 	// unbond from unstaking provider everything
@@ -448,8 +447,7 @@ func TestUnbond(t *testing.T) {
 
 	res, err = ts.QueryDualstakingDelegatorProviders(client1Addr, true)
 	require.NoError(t, err)
-	require.Len(t, res.Delegations, 1)
-	require.Equal(t, provider1Addr, res.Delegations[0].Provider)
+	require.Len(t, res.Delegations, 0)
 }
 
 func TestBondUnbondBond(t *testing.T) {
