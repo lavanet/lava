@@ -123,6 +123,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	if err != nil {
 		return utils.LavaFormatError("failed setting up chain tracker", err)
 	}
+	chainTracker.StartAndServe(ctx)
 	_ = chainTracker
 	select {
 	case <-ctx.Done():
