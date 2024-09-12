@@ -161,6 +161,7 @@ func TestChainTracker(t *testing.T) {
 
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
 			chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
+			chainTracker.StartAndServe(context.Background())
 			require.NoError(t, err)
 			for _, advancement := range tt.advancements {
 				for i := 0; i < int(advancement); i++ {
