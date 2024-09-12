@@ -20,8 +20,6 @@ import (
 	"golang.org/x/net/http2/h2c"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
 const (
@@ -69,7 +67,6 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 		grpc.MaxRecvMsgSize(1024 * 1024 * 32), // setting receive size to 32mb instead of 4mb default
 	}
 	grpcServer := grpc.NewServer(opts...)
-	grpc_health_v1.RegisterHealthServer(grpcServer, health.NewServer())
 	wrappedServer := grpcweb.WrapServer(grpcServer)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
