@@ -67,7 +67,6 @@ func NewProviderListener(ctx context.Context, networkAddress lavasession.Network
 		grpc.MaxRecvMsgSize(1024 * 1024 * 32), // setting receive size to 32mb instead of 4mb default
 	}
 	grpcServer := grpc.NewServer(opts...)
-
 	wrappedServer := grpcweb.WrapServer(grpcServer)
 	handler := func(resp http.ResponseWriter, req *http.Request) {
 		// Set CORS headers
