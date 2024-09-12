@@ -241,31 +241,26 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 				baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 				tempOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders)
-				optimizer, loaded, err = optimizers.LoadOrStore(chainID, tempOptimizer)
+				optimizer, _, err = optimizers.LoadOrStore(chainID, tempOptimizer)
 				if err != nil {
 					optimizer = nil
 					return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 				}
-				if !loaded { // stored, use the new one
-					optimizer = tempOptimizer
-				}
 
 				tempConsumerConsistency := NewConsumerConsistency(chainID)
-				consumerConsistency, loaded, err = consumerConsistencies.LoadOrStore(chainID, tempConsumerConsistency)
+				consumerConsistency, _, err = consumerConsistencies.LoadOrStore(chainID, tempConsumerConsistency)
 				if err != nil {
+					consumerConsistency = nil
 					return utils.LavaFormatError("failed loading consumer consistency", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
-				}
-				if !loaded { // stored, use the new one
-					consumerConsistency = tempConsumerConsistency
 				}
 
 				tempFinalizationConsensus := finalizationconsensus.NewFinalizationConsensus(rpcEndpoint.ChainID)
 				finalizationConsensus, loaded, err = finalizationConsensuses.LoadOrStore(chainID, tempFinalizationConsensus)
 				if err != nil {
+					finalizationConsensus = nil
 					return utils.LavaFormatError("failed loading finalization consensus", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
 				}
 				if !loaded { // stored, use the new one
-					finalizationConsensus = tempFinalizationConsensus
 					consumerStateTracker.RegisterFinalizationConsensusForUpdates(ctx, finalizationConsensus)
 				}
 				return nil

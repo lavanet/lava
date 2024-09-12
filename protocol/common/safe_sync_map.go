@@ -34,11 +34,12 @@ func (ssm *SafeSyncMap[K, V]) LoadOrStore(key K, value V) (ret V, loaded bool, e
 	actual, loaded := ssm.localMap.LoadOrStore(key, value)
 	if loaded {
 		// loaded from map
-		ret, loaded = actual.(V)
-		if !loaded {
+		var ok bool
+		ret, ok = actual.(V)
+		if !ok {
 			return ret, false, utils.LavaFormatError("invalid usage of syncmap, could not cast result into a PolicyUpdater", nil)
 		}
-		return ret, loaded, nil
+		return ret, true, nil
 	}
 
 	// stored in map
