@@ -26,33 +26,37 @@ func (lt *LatencyTracker) AddLatency(latency time.Duration) {
 }
 
 type ConsumerMetricsManager struct {
-	totalCURequestedMetric                      *prometheus.CounterVec
-	totalRelaysRequestedMetric                  *prometheus.CounterVec
-	totalErroredMetric                          *prometheus.CounterVec
-	totalNodeErroredMetric                      *prometheus.CounterVec
-	totalNodeErroredRecoveredSuccessfullyMetric *prometheus.CounterVec
-	totalNodeErroredRecoveryAttemptsMetric      *prometheus.CounterVec
-	totalRelaysSentToProvidersMetric            *prometheus.CounterVec
-	totalRelaysSentByNewBatchTickerMetric       *prometheus.CounterVec
-	blockMetric                                 *prometheus.GaugeVec
-	latencyMetric                               *prometheus.GaugeVec
-	qosMetric                                   *prometheus.GaugeVec
-	qosExcellenceMetric                         *prometheus.GaugeVec
-	LatestBlockMetric                           *prometheus.GaugeVec
-	LatestProviderRelay                         *prometheus.GaugeVec
-	virtualEpochMetric                          *prometheus.GaugeVec
-	apiMethodCalls                              *prometheus.GaugeVec
-	endpointsHealthChecksOkMetric               prometheus.Gauge
-	endpointsHealthChecksOk                     uint64
-	lock                                        sync.Mutex
-	protocolVersionMetric                       *prometheus.GaugeVec
-	providerRelays                              map[string]uint64
-	addMethodsApiGauge                          bool
-	averageLatencyPerChain                      map[string]*LatencyTracker // key == chain Id + api interface
-	averageLatencyMetric                        *prometheus.GaugeVec
-	relayProcessingLatencyBeforeProvider        *prometheus.GaugeVec
-	relayProcessingLatencyAfterProvider         *prometheus.GaugeVec
-	averageProcessingLatency                    map[string]*LatencyTracker
+	totalCURequestedMetric                         *prometheus.CounterVec
+	totalRelaysRequestedMetric                     *prometheus.CounterVec
+	totalErroredMetric                             *prometheus.CounterVec
+	totalNodeErroredMetric                         *prometheus.CounterVec
+	totalNodeErroredRecoveredSuccessfullyMetric    *prometheus.CounterVec
+	totalNodeErroredRecoveryAttemptsMetric         *prometheus.CounterVec
+	totalRelaysSentToProvidersMetric               *prometheus.CounterVec
+	totalRelaysSentByNewBatchTickerMetric          *prometheus.CounterVec
+	totalRelaySubscriptionRequestsMetric           *prometheus.CounterVec
+	totalFailedRelaySubscriptionRequestsMetric     *prometheus.CounterVec
+	totalRelaySubscriptionDissconnectMetric        *prometheus.CounterVec
+	totalDuplicatedRelaySubscriptionRequestsMetric *prometheus.CounterVec
+	blockMetric                                    *prometheus.GaugeVec
+	latencyMetric                                  *prometheus.GaugeVec
+	qosMetric                                      *prometheus.GaugeVec
+	qosExcellenceMetric                            *prometheus.GaugeVec
+	LatestBlockMetric                              *prometheus.GaugeVec
+	LatestProviderRelay                            *prometheus.GaugeVec
+	virtualEpochMetric                             *prometheus.GaugeVec
+	apiMethodCalls                                 *prometheus.GaugeVec
+	endpointsHealthChecksOkMetric                  prometheus.Gauge
+	endpointsHealthChecksOk                        uint64
+	lock                                           sync.Mutex
+	protocolVersionMetric                          *prometheus.GaugeVec
+	providerRelays                                 map[string]uint64
+	addMethodsApiGauge                             bool
+	averageLatencyPerChain                         map[string]*LatencyTracker // key == chain Id + api interface
+	averageLatencyMetric                           *prometheus.GaugeVec
+	relayProcessingLatencyBeforeProvider           *prometheus.GaugeVec
+	relayProcessingLatencyAfterProvider            *prometheus.GaugeVec
+	averageProcessingLatency                       map[string]*LatencyTracker
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -87,6 +91,26 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Name: "lava_consumer_total_errored",
 		Help: "The total number of errors encountered by the consumer over time.",
 	}, []string{"spec", "apiInterface"})
+
+	totalRelaySubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_relay_subscription_requests",
+		Help: "The total number of relay subscription requests by the consumer over time per chain id per api interface.",
+	}, []string{"spec", "apiInterface"})
+
+	totalFailedRelaySubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_failed_subscription_requests",
+		Help: "The total number of failed relay subscription requests by the consumer over time per chain id per api interface.",
+	}, []string{"spec", "apiInterface"})
+
+	totalDuplicatedRelaySubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_duplicated_subscription_requests",
+		Help: "The total number of duplicated relay subscription requests by the consumer over time per chain id per api interface.",
+	}, []string{"spec", "apiInterface"})
+
+	totalRelaySubscriptionDissconnectMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "lava_consumer_total_subscription_dissconnect",
+		Help: "The total number of relay subscription dissconnets over time per chain id per api interface per dissconnect reason.",
+	}, []string{"spec", "apiInterface", "dissconectReason"})
 
 	blockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_latest_block",
@@ -196,34 +220,42 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(totalNodeErroredRecoveryAttemptsMetric)
 	prometheus.MustRegister(relayProcessingLatencyBeforeProvider)
 	prometheus.MustRegister(relayProcessingLatencyAfterProvider)
+	prometheus.MustRegister(totalRelaySubscriptionRequestsMetric)
+	prometheus.MustRegister(totalFailedRelaySubscriptionRequestsMetric)
+	prometheus.MustRegister(totalDuplicatedRelaySubscriptionRequestsMetric)
+	prometheus.MustRegister(totalRelaySubscriptionDissconnectMetric)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
-		totalCURequestedMetric:                      totalCURequestedMetric,
-		totalRelaysRequestedMetric:                  totalRelaysRequestedMetric,
-		totalErroredMetric:                          totalErroredMetric,
-		blockMetric:                                 blockMetric,
-		latencyMetric:                               latencyMetric,
-		qosMetric:                                   qosMetric,
-		qosExcellenceMetric:                         qosExcellenceMetric,
-		LatestBlockMetric:                           latestBlockMetric,
-		LatestProviderRelay:                         latestProviderRelay,
-		providerRelays:                              map[string]uint64{},
-		averageLatencyPerChain:                      map[string]*LatencyTracker{},
-		virtualEpochMetric:                          virtualEpochMetric,
-		endpointsHealthChecksOkMetric:               endpointsHealthChecksOkMetric,
-		endpointsHealthChecksOk:                     1,
-		protocolVersionMetric:                       protocolVersionMetric,
-		averageLatencyMetric:                        averageLatencyMetric,
-		totalRelaysSentByNewBatchTickerMetric:       totalRelaysSentByNewBatchTickerMetric,
-		apiMethodCalls:                              apiSpecificsMetric,
-		addMethodsApiGauge:                          options.AddMethodsApiGauge,
-		totalNodeErroredMetric:                      totalNodeErroredMetric,
-		totalNodeErroredRecoveredSuccessfullyMetric: totalNodeErroredRecoveredSuccessfullyMetric,
-		totalNodeErroredRecoveryAttemptsMetric:      totalNodeErroredRecoveryAttemptsMetric,
-		totalRelaysSentToProvidersMetric:            totalRelaysSentToProvidersMetric,
-		relayProcessingLatencyBeforeProvider:        relayProcessingLatencyBeforeProvider,
-		relayProcessingLatencyAfterProvider:         relayProcessingLatencyAfterProvider,
-		averageProcessingLatency:                    map[string]*LatencyTracker{},
+		totalCURequestedMetric:                         totalCURequestedMetric,
+		totalRelaysRequestedMetric:                     totalRelaysRequestedMetric,
+		totalRelaySubscriptionRequestsMetric:           totalRelaySubscriptionRequestsMetric,
+		totalFailedRelaySubscriptionRequestsMetric:     totalFailedRelaySubscriptionRequestsMetric,
+		totalDuplicatedRelaySubscriptionRequestsMetric: totalDuplicatedRelaySubscriptionRequestsMetric,
+		totalRelaySubscriptionDissconnectMetric:        totalRelaySubscriptionDissconnectMetric,
+		totalErroredMetric:                             totalErroredMetric,
+		blockMetric:                                    blockMetric,
+		latencyMetric:                                  latencyMetric,
+		qosMetric:                                      qosMetric,
+		qosExcellenceMetric:                            qosExcellenceMetric,
+		LatestBlockMetric:                              latestBlockMetric,
+		LatestProviderRelay:                            latestProviderRelay,
+		providerRelays:                                 map[string]uint64{},
+		averageLatencyPerChain:                         map[string]*LatencyTracker{},
+		virtualEpochMetric:                             virtualEpochMetric,
+		endpointsHealthChecksOkMetric:                  endpointsHealthChecksOkMetric,
+		endpointsHealthChecksOk:                        1,
+		protocolVersionMetric:                          protocolVersionMetric,
+		averageLatencyMetric:                           averageLatencyMetric,
+		totalRelaysSentByNewBatchTickerMetric:          totalRelaysSentByNewBatchTickerMetric,
+		apiMethodCalls:                                 apiSpecificsMetric,
+		addMethodsApiGauge:                             options.AddMethodsApiGauge,
+		totalNodeErroredMetric:                         totalNodeErroredMetric,
+		totalNodeErroredRecoveredSuccessfullyMetric:    totalNodeErroredRecoveredSuccessfullyMetric,
+		totalNodeErroredRecoveryAttemptsMetric:         totalNodeErroredRecoveryAttemptsMetric,
+		totalRelaysSentToProvidersMetric:               totalRelaysSentToProvidersMetric,
+		relayProcessingLatencyBeforeProvider:           relayProcessingLatencyBeforeProvider,
+		relayProcessingLatencyAfterProvider:            relayProcessingLatencyAfterProvider,
+		averageProcessingLatency:                       map[string]*LatencyTracker{},
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -459,4 +491,32 @@ func SetVersionInner(protocolVersionMetric *prometheus.GaugeVec, version string)
 	}
 	combined := major*1000000 + minor*1000 + patch
 	protocolVersionMetric.WithLabelValues("version").Set(float64(combined))
+}
+
+func (pme *ConsumerMetricsManager) SetRelaySubscriptionRequestMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalRelaySubscriptionRequestsMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetFailedRelaySubscriptionRequestMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalFailedRelaySubscriptionRequestsMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetDuplicatedRelaySubscriptionRequestMetric(chainId string, apiInterface string) {
+	if pme == nil {
+		return
+	}
+	pme.totalDuplicatedRelaySubscriptionRequestsMetric.WithLabelValues(chainId, apiInterface).Inc()
+}
+
+func (pme *ConsumerMetricsManager) SetRelaySubscriptioDisconnectRequestMetric(chainId string, apiInterface string, dissconnectReason string) {
+	if pme == nil {
+		return
+	}
+	pme.totalRelaySubscriptionDissconnectMetric.WithLabelValues(chainId, apiInterface, dissconnectReason).Inc()
 }

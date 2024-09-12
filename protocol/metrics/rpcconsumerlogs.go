@@ -263,3 +263,18 @@ func (rpccl *RPCConsumerLogs) LogTestMode(fiberCtx *fiber.Ctx) {
 	}
 	utils.LavaFormatInfo(st)
 }
+
+func (rpccl *RPCConsumerLogs) SetRelaySubscriptionRequestMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetRelaySubscriptionRequestMetric(chainId, apiInterface)
+}
+
+func (rpccl *RPCConsumerLogs) SetFailedRelaySubscriptionRequestMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetFailedRelaySubscriptionRequestMetric(chainId, apiInterface)
+}
+
+func (rpccl *RPCConsumerLogs) SetDuplicatedRelaySubscriptionRequestMetric(chainId string, apiInterface string) {
+	rpccl.consumerMetricsManager.SetDuplicatedRelaySubscriptionRequestMetric(chainId, apiInterface)
+}
+func (rpccl *RPCConsumerLogs) SetRelaySubscriptioDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason string) {
+	rpccl.consumerMetricsManager.SetRelaySubscriptioDisconnectRequestMetric(chainId, apiInterface, disconnectReason)
+}

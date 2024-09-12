@@ -136,7 +136,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage())
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 			uniqueIdentifiers := make([]string, numberOfParallelSubscriptions)
 			wg := sync.WaitGroup{}
 			wg.Add(numberOfParallelSubscriptions)
@@ -293,7 +293,7 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage())
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 
 			wg := sync.WaitGroup{}
 			wg.Add(10)
@@ -538,7 +538,7 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage())
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), nil)
 
 			// Start a new subscription for the first time, called SendParsedRelay once
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())

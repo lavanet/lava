@@ -18,6 +18,15 @@ import (
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
+// is there a place to declare enums etc?
+type RelayDisconnectReasonEnum string
+
+const (
+	ConsumerDisconnect RelayDisconnectReasonEnum = "ConsumerDisconnect"
+	ProviderDisconnect RelayDisconnectReasonEnum = "ProviderDisconnect"
+	UserDisconnect     RelayDisconnectReasonEnum = "UserDisconnect"
+)
+
 type unsubscribeRelayData struct {
 	protocolMessage ProtocolMessage
 }
@@ -56,6 +65,7 @@ type ConsumerWSSubscriptionManager struct {
 	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage
 	currentlyPendingSubscriptions      map[string]*pendingSubscriptionsBroadcastManager
 	lock                               sync.RWMutex
+	rpcConsumerLogs                    *metrics.RPCConsumerLogs
 }
 
 func NewConsumerWSSubscriptionManager(
@@ -65,6 +75,7 @@ func NewConsumerWSSubscriptionManager(
 	connectionType string,
 	chainParser ChainParser,
 	activeSubscriptionProvidersStorage *lavasession.ActiveSubscriptionProvidersStorage,
+	rpcConsumerLogs *metrics.RPCConsumerLogs,
 ) *ConsumerWSSubscriptionManager {
 	return &ConsumerWSSubscriptionManager{
 		connectedDapps:                     make(map[string]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
@@ -76,6 +87,7 @@ func NewConsumerWSSubscriptionManager(
 		relaySender:                        relaySender,
 		connectionType:                     connectionType,
 		activeSubscriptionProvidersStorage: activeSubscriptionProvidersStorage,
+		rpcConsumerLogs:                    rpcConsumerLogs,
 	}
 }
 
@@ -190,6 +202,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	webSocketConnectionUniqueId string,
 	metricsData *metrics.RelayMetrics,
 ) (firstReply *pairingtypes.RelayReply, repliesChan <-chan *pairingtypes.RelayReply, err error) {
+	go cwsm.rpcConsumerLogs.SetRelaySubscriptionRequestMetric(metricsData.ChainID, metricsData.APIType)
 	hashedParams, _, err := cwsm.getHashedParams(protocolMessage)
 	if err != nil {
 		return nil, nil, utils.LavaFormatError("could not marshal params", err)
@@ -217,6 +230,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 
 	// called after send relay failure or parsing failure afterwards
 	onSubscriptionFailure := func() {
+		go cwsm.rpcConsumerLogs.SetFailedRelaySubscriptionRequestMetric(metricsData.ChainID, metricsData.APIType)
 		cwsm.failedPendingSubscription(hashedParams)
 		closeWebsocketRepliesChannel()
 	}
@@ -256,6 +270,7 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 	// Validated there are no active subscriptions that we can use.
 	firstSubscriptionReply, returnWebsocketRepliesChan := cwsm.checkForActiveSubscriptionWithLock(webSocketCtx, hashedParams, protocolMessage, dappKey, websocketRepliesSafeChannelSender, closeWebsocketRepliesChannel)
 	if firstSubscriptionReply != nil {
+		go cwsm.rpcConsumerLogs.SetDuplicatedRelaySubscriptionRequestMetric(metricsData.ChainID, metricsData.APIType)
 		if returnWebsocketRepliesChan {
 			return firstSubscriptionReply, websocketRepliesChan, nil
 		}
@@ -525,12 +540,14 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				utils.LogAttr("GUID", webSocketCtx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
+			go cwsm.rpcConsumerLogs.SetRelaySubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, string(UserDisconnect))
 			return
 		case <-replyServer.Context().Done():
 			utils.LavaFormatTrace("reply server context canceled",
 				utils.LogAttr("GUID", webSocketCtx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
+			go cwsm.rpcConsumerLogs.SetRelaySubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, string(ConsumerDisconnect))
 			return
 		default:
 			var reply pairingtypes.RelayReply
@@ -538,6 +555,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			if err != nil {
 				// The connection was closed by the provider
 				utils.LavaFormatTrace("error reading from subscription stream", utils.LogAttr("original error", err.Error()))
+				go cwsm.rpcConsumerLogs.SetRelaySubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, string(ProviderDisconnect))
 				return
 			}
 			err = cwsm.handleIncomingSubscriptionNodeMessage(hashedParams, &reply, providerAddr)
@@ -546,6 +564,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 					utils.LogAttr("hashedParams", hashedParams),
 					utils.LogAttr("reply", reply),
 				)
+				go cwsm.rpcConsumerLogs.SetFailedRelaySubscriptionRequestMetric(metricsData.ChainID, metricsData.APIType)
 				return
 			}
 		}
