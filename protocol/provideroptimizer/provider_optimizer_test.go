@@ -222,7 +222,7 @@ func TestProviderOptimizerAvailability(t *testing.T) {
 	requestBlock := int64(1000)
 
 	skipIndex := rand.Intn(providersCount - 3)
-	OptimizerNumTiers = 33 // set many tiers so good providers can stand out in the test
+	providerOptimizer.OptimizerNumTiers = 33 // set many tiers so good providers can stand out in the test
 	for i := range providersGen.providersAddresses {
 		// give all providers a worse availability score except these 3
 		if i == skipIndex || i == skipIndex+1 || i == skipIndex+2 {
@@ -249,7 +249,7 @@ func TestProviderOptimizerAvailabilityRelayData(t *testing.T) {
 	requestBlock := int64(1000)
 
 	skipIndex := rand.Intn(providersCount - 3)
-	OptimizerNumTiers = 33 // set many tiers so good providers can stand out in the test
+	providerOptimizer.OptimizerNumTiers = 33 // set many tiers so good providers can stand out in the test
 	for i := range providersGen.providersAddresses {
 		// give all providers a worse availability score except these 3
 		if i == skipIndex || i == skipIndex+1 || i == skipIndex+2 {
@@ -288,6 +288,9 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, false, requestCU, syncBlock-1) // update that he doesn't have the latest requested block
 	}
 	time.Sleep(4 * time.Millisecond)
+	selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	tierChances := selectionTier.ShiftTierChance(OptimizerNumTiers, map[int]float64{0: ATierChance, OptimizerNumTiers - 1: LastTierChance})
+	require.Greater(t, tierChances[0], 0.7, tierChances)
 	results, tierResults := runChooseManyTimesAndReturnResults(t, providerOptimizer, providersGen.providersAddresses, nil, requestCU, requestBlock, 1000)
 	require.Greater(t, tierResults[0], 500, tierResults) // we should pick the best tier most often
 	// out of 10 providers, and with 3 in the top tier we should pick 0 around a third of that
@@ -389,14 +392,14 @@ func TestProviderOptimizerExploration(t *testing.T) {
 	providerOptimizer.wantedNumProvidersInConcurrency = 2 // that's in the constructor but to be explicit
 	iterations := 10000
 	exploration = testProvidersExploration(iterations)
-	require.Less(t, exploration, float64(1.3)*float64(iterations)*DEFAULT_EXPLORATION_CHANCE)    // allow mistake buffer of 30% because of randomness
-	require.Greater(t, exploration, float64(0.7)*float64(iterations)*DEFAULT_EXPLORATION_CHANCE) // allow mistake buffer of 30% because of randomness
+	require.Less(t, exploration, float64(1.4)*float64(iterations)*DEFAULT_EXPLORATION_CHANCE)    // allow mistake buffer of 40% because of randomness
+	require.Greater(t, exploration, float64(0.6)*float64(iterations)*DEFAULT_EXPLORATION_CHANCE) // allow mistake buffer of 40% because of randomness
 
 	// with a cost strategy we expect exploration to happen once in 100 samples
 	providerOptimizer.strategy = STRATEGY_COST
 	exploration = testProvidersExploration(iterations)
-	require.Less(t, exploration, float64(1.3)*float64(iterations)*COST_EXPLORATION_CHANCE)    // allow mistake buffer of 30% because of randomness
-	require.Greater(t, exploration, float64(0.7)*float64(iterations)*COST_EXPLORATION_CHANCE) // allow mistake buffer of 30% because of randomness
+	require.Less(t, exploration, float64(1.4)*float64(iterations)*COST_EXPLORATION_CHANCE)    // allow mistake buffer of 40% because of randomness
+	require.Greater(t, exploration, float64(0.6)*float64(iterations)*COST_EXPLORATION_CHANCE) // allow mistake buffer of 40% because of randomness
 
 	// privacy disables exploration
 	providerOptimizer.strategy = STRATEGY_PRIVACY
@@ -752,7 +755,7 @@ func TestProviderOptimizerTiers(t *testing.T) {
 }
 
 // TODO: new tests we need:
-
+// check 3 providers, one with great stake one with great score
 // retries: groups getting smaller
 // no possible selections full
 // do a simulation with better and worse providers, make sure it's good

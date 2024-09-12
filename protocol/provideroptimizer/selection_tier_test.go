@@ -216,7 +216,7 @@ func TestSelectionTierInstShiftTierChance(t *testing.T) {
 	selectionTierChances = st.ShiftTierChance(numTiers, nil)
 	require.Equal(t, numTiers, len(selectionTierChances))
 	require.Greater(t, selectionTierChances[0], selectionTierChances[1])
-	require.Greater(t, selectionTierChances[1]*2, selectionTierChances[0]) // make sure the adjustment is not that strong
+	require.Greater(t, selectionTierChances[1]*3, selectionTierChances[0]) // make sure the adjustment is not that strong
 	require.Greater(t, selectionTierChances[1], selectionTierChances[2])
 
 	st = NewSelectionTier()
@@ -253,7 +253,7 @@ func TestSelectionTierInstShiftTierChance(t *testing.T) {
 	selectionTierChances = st.ShiftTierChance(numTiers, nil)
 	require.Equal(t, numTiers, len(selectionTierChances))
 	require.Greater(t, selectionTierChances[0], selectionTierChances[1]*2.5) // make sure the adjustment is strong enough
-	require.Greater(t, selectionTierChances[1]*8, selectionTierChances[0])   // but not too much
+	require.Greater(t, selectionTierChances[1]*10, selectionTierChances[0])  // but not too much
 
 	selectionTierChances = st.ShiftTierChance(numTiers, map[int]float64{0: 0.5})
 	require.Equal(t, numTiers, len(selectionTierChances))

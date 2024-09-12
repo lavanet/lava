@@ -57,6 +57,7 @@ type ProviderOptimizer struct {
 	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
 	selectionWeighter               SelectionWeighter
+	OptimizerNumTiers               int
 }
 
 type Exploration struct {
@@ -201,16 +202,16 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		return []string{}, -1
 	}
 	initialChances := map[int]float64{0: ATierChance}
-	if selectionTier.ScoresCount() < OptimizerNumTiers {
-		OptimizerNumTiers = selectionTier.ScoresCount()
+	if selectionTier.ScoresCount() < po.OptimizerNumTiers {
+		po.OptimizerNumTiers = selectionTier.ScoresCount()
 	}
 	if selectionTier.ScoresCount() >= MinimumEntries*2 {
 		// if we have more than 2*MinimumEntries we set the LastTierChance configured
-		initialChances[(OptimizerNumTiers - 1)] = LastTierChance
+		initialChances[(po.OptimizerNumTiers - 1)] = LastTierChance
 	}
-	shiftedChances := selectionTier.ShiftTierChance(OptimizerNumTiers, initialChances)
-	tier = selectionTier.SelectTierRandomly(OptimizerNumTiers, shiftedChances)
-	tierProviders := selectionTier.GetTier(tier, OptimizerNumTiers, MinimumEntries)
+	shiftedChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
+	tier = selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
+	tierProviders := selectionTier.GetTier(tier, po.OptimizerNumTiers, MinimumEntries)
 	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
@@ -513,6 +514,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 		providerRelayStats:              relayCache,
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
 		selectionWeighter:               NewSelectionWeighter(),
+		OptimizerNumTiers:               OptimizerNumTiers,
 	}
 }
 

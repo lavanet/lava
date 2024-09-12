@@ -112,6 +112,9 @@ func (st *SelectionTierInst) averageScoreForTier(tier int, numTiers int) float64
 }
 
 func (st *SelectionTierInst) ShiftTierChance(numTiers int, initialTierChances map[int]float64) map[int]float64 {
+	if len(st.scores) == 0 {
+		return initialTierChances
+	}
 	chanceForDefaultTiers := st.calcChanceForDefaultTiers(initialTierChances, numTiers)
 
 	// shift the chances
