@@ -393,7 +393,6 @@ jobs:
       contents: write
       packages: write
       id-token: write
-    needs: [test-consensus, test-protocol]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -423,6 +422,9 @@ jobs:
         uses: docker/build-push-action@v5
         continue-on-error: true
         with:
+          provenance: false
+          sbom: false
+          context: .
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           file: cmd/${{ matrix.binary }}/Dockerfile
