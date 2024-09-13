@@ -98,18 +98,18 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	}, []string{"spec", "apiInterface"})
 
 	totalFailedRelaySubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_consumer_total_failed_subscription_requests",
+		Name: "lava_consumer_total_failed_relay_subscription_requests",
 		Help: "The total number of failed relay subscription requests by the consumer over time per chain id per api interface.",
 	}, []string{"spec", "apiInterface"})
 
 	totalDuplicatedRelaySubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_consumer_total_duplicated_subscription_requests",
+		Name: "lava_consumer_total_duplicated_relay_subscription_requests",
 		Help: "The total number of duplicated relay subscription requests by the consumer over time per chain id per api interface.",
 	}, []string{"spec", "apiInterface"})
 
 	totalRelaySubscriptionDissconnectMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "lava_consumer_total_subscription_dissconnect",
-		Help: "The total number of relay subscription dissconnets over time per chain id per api interface per dissconnect reason.",
+		Name: "lava_consumer_total_relay_subscription_disconnect",
+		Help: "The total number of relay subscription disconnets over time per chain id per api interface per dissconnect reason.",
 	}, []string{"spec", "apiInterface", "dissconectReason"})
 
 	blockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -514,9 +514,9 @@ func (pme *ConsumerMetricsManager) SetDuplicatedRelaySubscriptionRequestMetric(c
 	pme.totalDuplicatedRelaySubscriptionRequestsMetric.WithLabelValues(chainId, apiInterface).Inc()
 }
 
-func (pme *ConsumerMetricsManager) SetRelaySubscriptioDisconnectRequestMetric(chainId string, apiInterface string, dissconnectReason string) {
+func (pme *ConsumerMetricsManager) SetRelaySubscriptioDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason string) {
 	if pme == nil {
 		return
 	}
-	pme.totalRelaySubscriptionDissconnectMetric.WithLabelValues(chainId, apiInterface, dissconnectReason).Inc()
+	pme.totalRelaySubscriptionDissconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReason).Inc()
 }
