@@ -282,7 +282,7 @@ func TestQoS(t *testing.T) {
 				currentLatency := time.Millisecond
 				expectedLatency := time.Millisecond
 				latestServicedBlock := expectedBH
-				singleConsumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1)
+				singleConsumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1, false)
 				require.Equal(t, uint64(1), singleConsumerSession.QoSInfo.AnsweredRelays)
 				require.Equal(t, uint64(1), singleConsumerSession.QoSInfo.TotalRelays)
 				require.Equal(t, int64(1), singleConsumerSession.QoSInfo.SyncScoreSum)
@@ -292,7 +292,7 @@ func TestQoS(t *testing.T) {
 				require.Equal(t, sdk.OneDec(), singleConsumerSession.QoSInfo.LastQoSReport.Latency)
 
 				latestServicedBlock = expectedBH + 1
-				singleConsumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1)
+				singleConsumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1, false)
 				require.Equal(t, uint64(2), singleConsumerSession.QoSInfo.AnsweredRelays)
 				require.Equal(t, uint64(2), singleConsumerSession.QoSInfo.TotalRelays)
 				require.Equal(t, int64(2), singleConsumerSession.QoSInfo.SyncScoreSum)
@@ -302,7 +302,7 @@ func TestQoS(t *testing.T) {
 				require.Equal(t, sdk.OneDec(), singleConsumerSession.QoSInfo.LastQoSReport.Latency)
 
 				singleConsumerSession.QoSInfo.TotalRelays++ // this is how we add a failure
-				singleConsumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1)
+				singleConsumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, 1, false)
 				require.Equal(t, uint64(3), singleConsumerSession.QoSInfo.AnsweredRelays)
 				require.Equal(t, uint64(4), singleConsumerSession.QoSInfo.TotalRelays)
 				require.Equal(t, int64(3), singleConsumerSession.QoSInfo.SyncScoreSum)
@@ -313,7 +313,7 @@ func TestQoS(t *testing.T) {
 				require.Equal(t, sdk.OneDec(), singleConsumerSession.QoSInfo.LastQoSReport.Latency)
 
 				latestServicedBlock = expectedBH - 1 // is one block below threshold
-				singleConsumerSession.CalculateQoS(currentLatency, expectedLatency*2, expectedBH-latestServicedBlock, numOfProviders, 1)
+				singleConsumerSession.CalculateQoS(currentLatency, expectedLatency*2, expectedBH-latestServicedBlock, numOfProviders, 1, false)
 				require.Equal(t, uint64(4), singleConsumerSession.QoSInfo.AnsweredRelays)
 				require.Equal(t, uint64(5), singleConsumerSession.QoSInfo.TotalRelays)
 				require.Equal(t, int64(3), singleConsumerSession.QoSInfo.SyncScoreSum)
@@ -325,7 +325,7 @@ func TestQoS(t *testing.T) {
 				latestServicedBlock = expectedBH + 1
 				// add in a loop so availability goes above 95%
 				for i := 5; i < 100; i++ {
-					singleConsumerSession.CalculateQoS(currentLatency, expectedLatency*2, expectedBH-latestServicedBlock, numOfProviders, 1)
+					singleConsumerSession.CalculateQoS(currentLatency, expectedLatency*2, expectedBH-latestServicedBlock, numOfProviders, 1, false)
 				}
 				require.Equal(t, sdk.MustNewDecFromStr("0.8"), singleConsumerSession.QoSInfo.LastQoSReport.Availability) // because availability below 95% is 0
 				require.Equal(t, sdk.MustNewDecFromStr("0.989898989898989898"), singleConsumerSession.QoSInfo.LastQoSReport.Sync)

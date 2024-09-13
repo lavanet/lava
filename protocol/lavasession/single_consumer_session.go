@@ -48,11 +48,12 @@ func (cs *SingleConsumerSession) getQosComputedResultOrZero() sdk.Dec {
 	return sdk.ZeroDec()
 }
 
-func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64) {
+func (cs *SingleConsumerSession) CalculateQoS(latency, expectedLatency time.Duration, blockHeightDiff int64, numOfProviders int, servicersToCount int64, reduceAvailability bool) {
 	// Add current Session QoS
-	cs.QoSInfo.TotalRelays++    // increase total relays
-	cs.QoSInfo.AnsweredRelays++ // increase answered relays
-
+	cs.QoSInfo.TotalRelays++ // increase total relays
+	if !reduceAvailability {
+		cs.QoSInfo.AnsweredRelays++ // increase answered relays
+	}
 	if cs.QoSInfo.LastQoSReport == nil {
 		cs.QoSInfo.LastQoSReport = &pairingtypes.QualityOfServiceReport{}
 	}
