@@ -344,7 +344,7 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParamsAndNo
 		t.Run(play.name, func(t *testing.T) {
 			ts := SetupForTests(t, 1, play.specId, "../../")
 
-			wg := sync.WaitGroup{}
+			sentMessageToNodeChannel := make(chan bool, 1)
 			// msgCount := 0
 			upgrader := websocket.Upgrader{}
 			first := true
@@ -373,7 +373,12 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParamsAndNo
 						return
 					}
 					utils.LavaFormatDebug("write message")
-					wg.Done()
+					select {
+					case sentMessageToNodeChannel <- true:
+						utils.LavaFormatDebug("sent message to node")
+					default:
+						utils.LavaFormatDebug("unable to communicate with the test")
+					}
 
 					// Write the first reply
 					err = conn.WriteMessage(messageType, play.subscriptionFirstReply)
@@ -405,7 +410,6 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParamsAndNo
 			mockRpcProvider := &RelayFinalizationBlocksHandlerMock{}
 			pnsm := NewProviderNodeSubscriptionManager(chainRouter, chainParser, mockRpcProvider, ts.Providers[0].SK)
 
-			wg.Add(1)
 			wgAllIds := sync.WaitGroup{}
 			wgAllIds.Add(9)
 			errors := []error{}
@@ -429,7 +433,11 @@ func TestSubscriptionManager_MultipleParallelSubscriptionsWithTheSameParamsAndNo
 
 			utils.LavaFormatDebug("Waiting wait group")
 			wgAllIds.Wait()
-			wg.Wait() // Make sure the subscription manager sent a message to the node
+			select {
+			case <-sentMessageToNodeChannel: // Make sure the subscription manager sent a message to the node
+			case <-time.After(time.Second * 10):
+				require.Fail(t, "timeout waiting for message to node")
+			}
 			// make sure we had only one error, on the first subscription attempt
 			require.Len(t, errors, 1)
 
