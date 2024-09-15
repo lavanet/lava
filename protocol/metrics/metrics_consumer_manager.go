@@ -109,7 +109,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 
 	totalRelaySubscriptionDissconnectMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_relay_subscription_disconnect",
-		Help: "The total number of relay subscription disconnets over time per chain id per api interface per dissconnect reason.",
+		Help: "The total number of relay subscription disconnects over time per chain id per api interface per dissconnect reason.",
 	}, []string{"spec", "apiInterface", "dissconectReason"})
 
 	blockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
