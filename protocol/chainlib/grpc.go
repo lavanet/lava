@@ -451,7 +451,10 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
 
-	// check if we have method descriptor already cached.
+	// Check if we have method descriptor already cached.
+	// The reason we do Load and then Store here, instead of LoadOrStore:
+	// On the worst case scenario, where 2 threads are accessing the map at the same time, the same descriptor will be stored twice.
+	// It is better than the alternative, which is always creating the descriptor, since the outcome is the same.
 	methodDescriptor, found, _ := cp.descriptorsCache.Load(methodName)
 	if !found { // method descriptor not cached yet, need to fetch it and add to cache
 		var descriptor desc.Descriptor
