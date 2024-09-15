@@ -11,7 +11,6 @@ import (
 	"sync/atomic"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/lavanet/lava/v3/protocol/chainlib"
 	"github.com/lavanet/lava/v3/protocol/common"
 	"github.com/lavanet/lava/v3/protocol/lavaprotocol"
 	"github.com/lavanet/lava/v3/protocol/lavasession"
@@ -47,7 +46,6 @@ type RelayProcessor struct {
 	responses                    chan *relayResponse
 	requiredSuccesses            int
 	lock                         sync.RWMutex
-	protocolMessage              chainlib.ProtocolMessage
 	guid                         uint64
 	selection                    Selection
 	consumerConsistency          *ConsumerConsistency
@@ -58,41 +56,38 @@ type RelayProcessor struct {
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter
 	relayRetriesManager          *lavaprotocol.RelayRetriesManager
 	ResultsManager
+	RelayStateMachine
 }
 
 func NewRelayProcessor(
 	ctx context.Context,
-	usedProviders *lavasession.UsedProviders,
 	requiredSuccesses int,
-	protocolMessage chainlib.ProtocolMessage,
 	consumerConsistency *ConsumerConsistency,
-	debugRelay bool,
 	metricsInf MetricsInterface,
 	chainIdAndApiInterfaceGetter chainIdAndApiInterfaceGetter,
 	relayRetriesManager *lavaprotocol.RelayRetriesManager,
+	relayStateMachine RelayStateMachine,
 ) *RelayProcessor {
 	guid, _ := utils.GetUniqueIdentifier(ctx)
-	selection := Quorum // select the majority of node responses
-	if chainlib.GetStateful(protocolMessage) == common.CONSISTENCY_SELECT_ALL_PROVIDERS {
-		selection = BestResult // select the majority of node successes
-	}
 	if requiredSuccesses <= 0 {
 		utils.LavaFormatFatal("invalid requirement, successes count must be greater than 0", nil, utils.LogAttr("requiredSuccesses", requiredSuccesses))
 	}
-	return &RelayProcessor{
-		usedProviders:                usedProviders,
+	relayProcessor := &RelayProcessor{
 		requiredSuccesses:            requiredSuccesses,
 		responses:                    make(chan *relayResponse, MaxCallsPerRelay), // we set it as buffered so it is not blocking
 		ResultsManager:               NewResultsManager(guid),
-		protocolMessage:              protocolMessage,
 		guid:                         guid,
-		selection:                    selection,
 		consumerConsistency:          consumerConsistency,
-		debugRelay:                   debugRelay,
+		debugRelay:                   relayStateMachine.GetDebugState(),
 		metricsInf:                   metricsInf,
 		chainIdAndApiInterfaceGetter: chainIdAndApiInterfaceGetter,
 		relayRetriesManager:          relayRetriesManager,
+		RelayStateMachine:            relayStateMachine,
+		selection:                    relayStateMachine.GetSelection(),
+		usedProviders:                relayStateMachine.GetUsedProviders(),
 	}
+	relayProcessor.RelayStateMachine.SetRelayProcessor(relayProcessor)
+	return relayProcessor
 }
 
 // true if we never got an extension. (default value)
@@ -115,13 +110,6 @@ func (rp *RelayProcessor) getSkipDataReliability() bool {
 	rp.lock.RLock()
 	defer rp.lock.RUnlock()
 	return rp.skipDataReliability
-}
-
-func (rp *RelayProcessor) ShouldRetry(numberOfRetriesLaunched int) bool {
-	if numberOfRetriesLaunched >= MaximumNumberOfTickerRelayRetries {
-		return false
-	}
-	return rp.selection != BestResult
 }
 
 func (rp *RelayProcessor) String() string {
@@ -181,7 +169,7 @@ func (rp *RelayProcessor) checkEndProcessing(responsesCount int) bool {
 }
 
 func (rp *RelayProcessor) getInputMsgInfoHashString() (string, error) {
-	hash, err := rp.protocolMessage.GetRawRequestHash()
+	hash, err := rp.RelayStateMachine.GetProtocolMessage().GetRawRequestHash()
 	hashString := ""
 	if err == nil {
 		hashString = string(hash)
@@ -213,8 +201,8 @@ func (rp *RelayProcessor) shouldRetryRelay(resultsCount int, hashErr error, node
 			// We failed enough times. we need to add this to our hash map so we don't waste time on it again.
 			chainId, apiInterface := rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface()
 			utils.LavaFormatWarning("Failed to recover retries on node errors, might be an invalid input", nil,
-				utils.LogAttr("api", rp.protocolMessage.GetApi().Name),
-				utils.LogAttr("params", rp.protocolMessage.GetRPCMessage().GetParams()),
+				utils.LogAttr("api", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name),
+				utils.LogAttr("params", rp.RelayStateMachine.GetProtocolMessage().GetRPCMessage().GetParams()),
 				utils.LogAttr("chainId", chainId),
 				utils.LogAttr("apiInterface", apiInterface),
 				utils.LogAttr("hash", hash),
@@ -262,17 +250,17 @@ func (rp *RelayProcessor) HasRequiredNodeResults() bool {
 }
 
 func (rp *RelayProcessor) handleResponse(response *relayResponse) {
-	nodeError := rp.ResultsManager.SetResponse(response, rp.protocolMessage)
+	nodeError := rp.ResultsManager.SetResponse(response, rp.RelayStateMachine.GetProtocolMessage())
 	// send relay error metrics only on non stateful queries, as stateful queries always return X-1/X errors.
 	if nodeError != nil && rp.selection != BestResult {
 		go rp.metricsInf.SetRelayNodeErrorMetric(rp.chainIdAndApiInterfaceGetter.GetChainIdAndApiInterface())
-		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.relayResult.ProviderInfo), utils.LogAttr("Request", rp.protocolMessage.GetApi().Name))
+		utils.LavaFormatInfo("Relay received a node error", utils.LogAttr("Error", nodeError), utils.LogAttr("provider", response.relayResult.ProviderInfo), utils.LogAttr("Request", rp.RelayStateMachine.GetProtocolMessage().GetApi().Name))
 	}
 
 	if response != nil && response.relayResult.GetReply().GetLatestBlock() > 0 {
 		// set consumer consistency when possible
 		blockSeen := response.relayResult.GetReply().GetLatestBlock()
-		rp.consumerConsistency.SetSeenBlock(blockSeen, rp.protocolMessage.GetUserData())
+		rp.consumerConsistency.SetSeenBlock(blockSeen, rp.RelayStateMachine.GetProtocolMessage().GetUserData())
 	}
 }
 
@@ -305,7 +293,7 @@ func (rp *RelayProcessor) WaitForResults(ctx context.Context) error {
 				return nil
 			}
 		case <-ctx.Done():
-			return utils.LavaFormatWarning("cancelled relay processor", nil, utils.LogAttr("total responses", responsesCount))
+			return utils.LavaFormatDebug("cancelled relay processor", utils.LogAttr("total responses", responsesCount))
 		}
 	}
 }
@@ -315,7 +303,7 @@ func (rp *RelayProcessor) responsesQuorum(results []common.RelayResult, quorumSi
 		return nil, errors.New("quorumSize must be greater than zero")
 	}
 	countMap := make(map[string]int) // Map to store the count of each unique result.Reply.Data
-	deterministic := rp.protocolMessage.GetApi().Category.Deterministic
+	deterministic := rp.RelayStateMachine.GetProtocolMessage().GetApi().Category.Deterministic
 	var bestQosResult common.RelayResult
 	bestQos := sdktypes.ZeroDec()
 	nilReplies := 0
