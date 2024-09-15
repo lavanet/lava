@@ -32,12 +32,10 @@ const (
 )
 
 var (
-	OptimizerNumTiers                      = 4
-	MinimumEntries                         = 5
-	ATierChance                            = 0.75
-	LastTierChance                         = 0.0
-	CollectOptimizerProvidersScore         = false
-	CollectOptimizerProvidersScoreFlagName = "collect-optimizer-providers-score"
+	OptimizerNumTiers = 4
+	MinimumEntries    = 5
+	ATierChance       = 0.75
+	LastTierChance    = 0.0
 )
 
 type ConcurrentBlockStore struct {
@@ -63,8 +61,6 @@ type ProviderOptimizer struct {
 	OptimizerNumTiers               int
 	consumerOptimizerDataCollector  *metrics.ConsumerOptimizerDataCollector
 	metrics                         *metrics.ConsumerMetricsManager
-	chainId                         string
-	apiInterface                    string
 }
 
 type Exploration struct {
@@ -159,7 +155,7 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	)
 }
 
-func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (SelectionTier, Exploration) {
+func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration) {
 	latencyScore := math.MaxFloat64 // smaller = better i.e less latency
 	syncScore := math.MaxFloat64    // smaller = better i.e less sync lag
 
@@ -206,7 +202,7 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
 func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string, tier int) {
-	selectionTier, explorationCandidate := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock, epoch)
+	selectionTier, explorationCandidate := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
 	if selectionTier.ScoresCount() == 0 {
 		// no providers to choose from
 		return []string{}, -1
@@ -222,28 +218,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	shiftedChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
 	tier = selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
 
-	var tierProviders []Entry
-	if CollectOptimizerProvidersScore {
-		metricsTiers := []metrics.ProviderTierEntry{}
-		for i := 0; i < po.OptimizerNumTiers; i++ {
-			tierEntries := selectionTier.GetTier(i, po.OptimizerNumTiers, MinimumEntries)
-			if i == tier {
-				tierProviders = tierEntries
-			}
-
-			for _, entry := range tierEntries {
-				metricsTiers = append(metricsTiers, metrics.ProviderTierEntry{
-					Address: entry.Address,
-					Score:   entry.Score,
-					Tier:    i,
-				})
-			}
-		}
-
-		go po.metrics.UpdateOptimizerProvidersScore(po.chainId, po.apiInterface, epoch, metricsTiers)
-	} else {
-		tierProviders = selectionTier.GetTier(tier, po.OptimizerNumTiers, MinimumEntries)
-	}
+	tierProviders := selectionTier.GetTier(tier, po.OptimizerNumTiers, MinimumEntries)
 
 	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
@@ -539,7 +514,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(chainId, apiInterface string, strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector, metrics *metrics.ConsumerMetricsManager) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector, metrics *metrics.ConsumerMetricsManager) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -564,8 +539,6 @@ func NewProviderOptimizer(chainId, apiInterface string, strategy Strategy, avera
 		OptimizerNumTiers:               OptimizerNumTiers,
 		metrics:                         metrics,
 		consumerOptimizerDataCollector:  consumerOptimizerDataCollector,
-		chainId:                         chainId,
-		apiInterface:                    apiInterface,
 	}
 }
 

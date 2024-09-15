@@ -77,6 +77,7 @@ type ProviderOptimizer interface {
 	GetExcellenceQoSReportForProvider(string) (*pairingtypes.QualityOfServiceReport, *pairingtypes.QualityOfServiceReport)
 	Strategy() provideroptimizer.Strategy
 	UpdateWeights(map[string]int64)
+	CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (provideroptimizer.SelectionTier, provideroptimizer.Exploration)
 }
 
 type ignoredProviders struct {

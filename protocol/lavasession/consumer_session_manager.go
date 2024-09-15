@@ -27,8 +27,12 @@ const (
 )
 
 var (
-	retrySecondChanceAfter = time.Minute * 3
-	DebugProbes            = false
+	retrySecondChanceAfter                     = time.Minute * 3
+	DebugProbes                                = false
+	CollectOptimizerProvidersScore             = false
+	CollectOptimizerProvidersScoreFlagName     = "collect-optimizer-providers-score"
+	CollectOptimizerProvidersScoreInterval     = time.Second * 1
+	CollectOptimizerProvidersScoreIntervalFlag = "collect-optimizer-providers-score-interval"
 )
 
 // created with NewConsumerSessionManager
@@ -1138,7 +1142,32 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage) *ConsumerSessionManager {
+func (csm *ConsumerSessionManager) periodicCollectOptimizerProvidersScore(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(CollectOptimizerProvidersScoreInterval):
+			// collect optimizer providers score
+			selectionTier, _ := csm.providerOptimizer.CalculateSelectionTiers(csm.validAddresses, nil, 10, spectypes.LATEST_BLOCK)
+			metricsTiers := []metrics.ProviderTierEntry{}
+			for i := 0; i < provideroptimizer.OptimizerNumTiers; i++ {
+				tierEntries := selectionTier.GetTier(i, provideroptimizer.OptimizerNumTiers, 1)
+				for _, entry := range tierEntries {
+					metricsTiers = append(metricsTiers, metrics.ProviderTierEntry{
+						Address: entry.Address,
+						Score:   entry.Score,
+						Tier:    i,
+					})
+				}
+			}
+
+			go csm.consumerMetricsManager.UpdateOptimizerProvidersScore(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, csm.currentEpoch, metricsTiers)
+		}
+	}
+}
+
+func NewConsumerSessionManager(ctx context.Context, rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter, rpcEndpoint.ChainID),
 		consumerMetricsManager: consumerMetricsManager,
@@ -1147,5 +1176,9 @@ func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer Provi
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
 	csm.activeSubscriptionProvidersStorage = activeSubscriptionProvidersStorage
+
+	if CollectOptimizerProvidersScore {
+		go csm.periodicCollectOptimizerProvidersScore(ctx)
+	}
 	return csm
 }
