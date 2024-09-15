@@ -5,6 +5,7 @@
         "specs": [
             {
                 "index": "LAV1",
+                "identity": "327af7338affeb1f0d0e2ec3b95d802571fbff4d",
                 "name": "lava testnet",
                 "enabled": true,
                 "imports": [

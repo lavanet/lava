@@ -46,7 +46,7 @@ func (m Migrator) MigrateVersion3To4(ctx sdk.Context) error {
 			fmt.Println("fixing delegate total for", e.Address, e.Chain)
 
 			e.DelegateTotal.Amount = delegateTotal
-			if e.EffectiveStake().LT(m.keeper.specKeeper.GetMinStake(ctx, e.Chain).Amount) {
+			if e.TotalStake().LT(m.keeper.specKeeper.GetMinStake(ctx, e.Chain).Amount) {
 				e.Freeze()
 			}
 			m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, e)

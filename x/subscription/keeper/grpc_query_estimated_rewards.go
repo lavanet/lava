@@ -29,7 +29,7 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 	var entry epochstoragetypes.StakeEntry
 	found := false
 	for _, e := range storage {
-		totalStake = totalStake.Add(e.EffectiveStake())
+		totalStake = totalStake.Add(e.TotalStake())
 		if e.Address == req.Provider {
 			found = true
 			entry = e
@@ -60,15 +60,8 @@ func (k Keeper) EstimatedRewards(goCtx context.Context, req *types.QueryEstimate
 		}
 
 		delegatorPart = sdk.NewDecFromInt(delegationAmount.Amount).QuoInt(totalStake).MulInt64(int64(100 - entry.DelegateCommission)).QuoInt64(100)
-		// calculate existing delegator rewards
-		if entry.DelegateLimit.Amount.LT(entry.DelegateTotal.Amount) {
-			delegatorPart = delegatorPart.MulInt(entry.DelegateLimit.Amount).QuoInt(entry.DelegateTotal.Amount)
-		}
 	} else {
 		totalDelegations := entry.DelegateTotal.Amount
-		if entry.DelegateLimit.Amount.LT(entry.DelegateTotal.Amount) {
-			totalDelegations = entry.DelegateLimit.Amount
-		}
 		commission := sdk.NewDecFromInt(totalDelegations).QuoInt(totalStake).MulInt64(int64(entry.DelegateCommission)).QuoInt64(100)
 		delegatorPart = delegatorPart.Add(commission)
 	}

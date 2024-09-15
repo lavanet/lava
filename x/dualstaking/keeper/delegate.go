@@ -212,7 +212,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		"moniker":           stakeEntry.Description.Moniker,
 		"description":       stakeEntry.Description.String(),
 		"stake":             stakeEntry.Stake.String(),
-		"effective_stake":   stakeEntry.EffectiveStake().String() + stakeEntry.Stake.Denom,
+		"effective_stake":   stakeEntry.TotalStake().String() + stakeEntry.Stake.Denom,
 	}
 
 	if stakeEntry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
@@ -220,7 +220,7 @@ func (k Keeper) modifyStakeEntryDelegation(ctx sdk.Context, delegator, provider,
 		details["min_self_delegation"] = k.GetParams(ctx).MinSelfDelegation.String()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.UnstakeFromUnbond, details, "unstaking provider due to unbond that lowered its stake below min self delegation")
 		return nil
-	} else if stakeEntry.EffectiveStake().LT(k.specKeeper.GetMinStake(ctx, chainID).Amount) {
+	} else if stakeEntry.TotalStake().LT(k.specKeeper.GetMinStake(ctx, chainID).Amount) {
 		details["min_spec_stake"] = k.specKeeper.GetMinStake(ctx, chainID).String()
 		utils.LogLavaEvent(ctx, k.Logger(ctx), types.FreezeFromUnbond, details, "freezing provider due to stake below min spec stake")
 		stakeEntry.Freeze()
