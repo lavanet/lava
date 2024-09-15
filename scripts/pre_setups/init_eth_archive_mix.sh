@@ -39,11 +39,11 @@ if [ $# -eq 0 ]; then
 
     lavad tx project set-policy $(lavad keys show user1 -a)-admin ./cookbook/projects/policy_all_chains_with_extension.yml -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
-    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 --delegate-limit $PROVIDERSTAKE
-    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER2_LISTENER,2" 2 $(operator_address) -y --from servicer2 --provider-moniker "servicer2" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 --delegate-limit $PROVIDERSTAKE
-    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER3_LISTENER,2" 2 $(operator_address) -y --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 --delegate-limit $PROVIDERSTAKE
-    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER4_LISTENER,2,archive" 2 $(operator_address) -y --from servicer4 --provider-moniker "servicer4" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 --delegate-limit $PROVIDERSTAKE
-    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER5_LISTENER,1,archive" 1 $(operator_address) -y --from servicer5 --provider-moniker "servicer5" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 --delegate-limit $PROVIDERSTAKE
+    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER1_LISTENER,1" 1 $(operator_address) -y --from servicer1 --provider-moniker "servicer1" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 
+    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER2_LISTENER,2" 2 $(operator_address) -y --from servicer2 --provider-moniker "servicer2" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 
+    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER3_LISTENER,2" 2 $(operator_address) -y --from servicer3 --provider-moniker "servicer3" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 
+    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER4_LISTENER,2,archive" 2 $(operator_address) -y --from servicer4 --provider-moniker "servicer4" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 
+    lavad tx pairing stake-provider "ETH1" $PROVIDERSTAKE "$PROVIDER5_LISTENER,1,archive" 1 $(operator_address) -y --from servicer5 --provider-moniker "servicer5" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE --delegate-commission 50 
 
     sleep_until_next_epoch
     lavad q pairing effective-policy ETH1 $(lavad keys show user1 -a)

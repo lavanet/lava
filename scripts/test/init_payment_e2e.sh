@@ -27,8 +27,8 @@ sleep 6
 STAKE="500000000000ulava"
 
 # Lava tendermint/rest providers
-lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2261,1" 1 $(operator_address) -y --from servicer1 --delegate-limit $STAKE --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
-lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2262,1" 1 $(operator_address) -y --from servicer2 --delegate-limit $STAKE --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2261,1" 1 $(operator_address) -y --from servicer1  --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2262,1" 1 $(operator_address) -y --from servicer2  --provider-moniker "dummyMoniker" --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
 
 # subscribed clients
 lavad tx subscription buy "DefaultPlan" $(lavad keys show user1 -a) 10 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
