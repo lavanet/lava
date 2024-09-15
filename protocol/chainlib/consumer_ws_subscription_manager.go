@@ -214,7 +214,6 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		utils.LogAttr("dappKey", dappKey),
-		utils.LogAttr("connectedDapps", cwsm.connectedDapps),
 	)
 
 	websocketRepliesChan := make(chan *pairingtypes.RelayReply)
