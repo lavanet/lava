@@ -18,25 +18,6 @@ const (
 	TEST_BASE_WORLD_LATENCY = 150 * time.Millisecond
 )
 
-type providerOptimizerSyncCache struct {
-	value map[interface{}]interface{}
-	lock  sync.RWMutex
-}
-
-func (posc *providerOptimizerSyncCache) Get(key interface{}) (interface{}, bool) {
-	posc.lock.RLock()
-	defer posc.lock.RUnlock()
-	ret, ok := posc.value[key]
-	return ret, ok
-}
-
-func (posc *providerOptimizerSyncCache) Set(key, value interface{}, cost int64) bool {
-	posc.lock.Lock()
-	defer posc.lock.Unlock()
-	posc.value[key] = value
-	return true
-}
-
 func setupProviderOptimizer(maxProvidersCount int) *ProviderOptimizer {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
 	baseWorldLatency := TEST_BASE_WORLD_LATENCY
