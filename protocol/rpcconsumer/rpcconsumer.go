@@ -211,7 +211,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			newPolicyUpdater := updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint)
 			policyUpdater, ok, err := policyUpdaters.LoadOrStore(chainID, newPolicyUpdater)
 			if err != nil {
-				utils.LavaFormatFatal("failed loading or storing policy updater", err, utils.LogAttr("endpoint", rpcEndpoint))
+				errCh <- err
+				return utils.LavaFormatError("failed loading or storing policy updater", err, utils.LogAttr("endpoint", rpcEndpoint))
 			}
 			if ok {
 				err := policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
