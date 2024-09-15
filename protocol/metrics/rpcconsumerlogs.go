@@ -275,6 +275,7 @@ func (rpccl *RPCConsumerLogs) SetFailedRelaySubscriptionRequestMetric(chainId st
 func (rpccl *RPCConsumerLogs) SetDuplicatedRelaySubscriptionRequestMetric(chainId string, apiInterface string) {
 	rpccl.consumerMetricsManager.SetDuplicatedRelaySubscriptionRequestMetric(chainId, apiInterface)
 }
+
 func (rpccl *RPCConsumerLogs) SetRelaySubscriptioDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason string) {
 	rpccl.consumerMetricsManager.SetRelaySubscriptioDisconnectRequestMetric(chainId, apiInterface, disconnectReason)
 }
