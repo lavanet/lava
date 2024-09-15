@@ -161,6 +161,7 @@ func TestChainTracker(t *testing.T) {
 
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
 			chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
+			chainTracker.StartAndServe(context.Background())
 			require.NoError(t, err)
 			for _, advancement := range tt.advancements {
 				for i := 0; i < int(advancement); i++ {
@@ -218,6 +219,7 @@ func TestChainTrackerRangeOnly(t *testing.T) {
 
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(tt.fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(tt.mockBlocks)}
 			chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
+			chainTracker.StartAndServe(context.Background())
 			require.NoError(t, err)
 			for _, advancement := range tt.advancements {
 				for i := 0; i < int(advancement); i++ {
@@ -302,6 +304,7 @@ func TestChainTrackerCallbacks(t *testing.T) {
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback, NewLatestCallback: newBlockCallback}
 	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
+	chainTracker.StartAndServe(context.Background())
 	totalAdvancement := 0
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
@@ -368,6 +371,7 @@ func TestChainTrackerFetchSpreadAcrossPollingTime(t *testing.T) {
 		chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: localTimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
 		tracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 		require.NoError(t, err)
+		tracker.StartAndServe(context.Background())
 		// fool the tracker so it thinks blocks will come every localTimeForPollingMock (ms), and not adjust it's polling timers
 		for i := 0; i < 50; i++ {
 			tracker.AddBlockGap(localTimeForPollingMock, 1)
@@ -491,6 +495,7 @@ func TestChainTrackerPollingTimeUpdate(t *testing.T) {
 			mockChainFetcher.AdvanceBlock()
 			chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: play.localTimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
 			tracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
+			tracker.StartAndServe(context.Background())
 			tracker.RegisterForBlockTimeUpdates(&mockTimeUpdater)
 			require.NoError(t, err)
 			// initial delay
@@ -555,6 +560,7 @@ func TestChainTrackerMaintainMemory(t *testing.T) {
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks), ForkCallback: forkCallback}
 	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
+	chainTracker.StartAndServe(context.Background())
 	t.Run("one long test", func(t *testing.T) {
 		for _, tt := range tests {
 			utils.LavaFormatInfo(startedTestStr + tt.name)
@@ -607,6 +613,7 @@ func TestFindRequestedBlockHash(t *testing.T) {
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{BlocksToSave: uint64(fetcherBlocks), AverageBlockTime: TimeForPollingMock, ServerBlockMemory: uint64(mockBlocks)}
 	chainTracker, err := chaintracker.NewChainTracker(context.Background(), mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
+	chainTracker.StartAndServe(context.Background())
 	latestBlock, onlyLatestBlockData, _, err := chainTracker.GetLatestBlockData(spectypes.LATEST_BLOCK, spectypes.LATEST_BLOCK, spectypes.NOT_APPLICABLE)
 	require.NoError(t, err)
 	require.Equal(t, currentLatestBlockInMock, latestBlock)

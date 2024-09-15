@@ -130,6 +130,7 @@ func NewStateTracker(ctx context.Context, txFactory tx.Factory, clientCtx client
 	}
 	cst.AverageBlockTime = chainTrackerConfig.AverageBlockTime
 	cst.chainTracker, err = chaintracker.NewChainTracker(ctx, chainFetcher, chainTrackerConfig)
+	cst.chainTracker.StartAndServe(ctx)
 	cst.chainTracker.RegisterForBlockTimeUpdates(cst) // registering for block time updates.
 	return cst, err
 }
