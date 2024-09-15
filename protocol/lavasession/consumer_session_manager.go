@@ -120,9 +120,13 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
 	stakeEntriesForMetrics := map[string]uint64{}
 	for _, provider := range pairingList {
-		stake := provider.getProviderStakeSize().Amount.Uint64()
-		if provider.StaticProvider {
-			stake *= WeightMultiplierForStaticProviders
+		providerStakeEntry := provider.getProviderStakeSize()
+		stake := uint64(0)
+		if providerStakeEntry.IsValid() {
+			stake = providerStakeEntry.Amount.Uint64()
+			if provider.StaticProvider {
+				stake *= WeightMultiplierForStaticProviders
+			}
 		}
 		stakeEntriesForMetrics[provider.PublicLavaAddress] = stake
 	}
