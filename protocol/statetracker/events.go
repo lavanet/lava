@@ -24,6 +24,7 @@ import (
 	"github.com/lavanet/lava/v3/app"
 	"github.com/lavanet/lava/v3/protocol/chainlib"
 	"github.com/lavanet/lava/v3/protocol/chaintracker"
+	"github.com/lavanet/lava/v3/protocol/common"
 	"github.com/lavanet/lava/v3/protocol/rpcprovider/rewardserver"
 	updaters "github.com/lavanet/lava/v3/protocol/statetracker/updaters"
 	"github.com/lavanet/lava/v3/utils"
@@ -122,6 +123,7 @@ func eventsLookup(ctx context.Context, clientCtx client.Context, blocks, fromBlo
 	if err != nil {
 		return utils.LavaFormatError("failed setting up chain tracker", err)
 	}
+	chainTracker.StartAndServe(ctx)
 	_ = chainTracker
 	select {
 	case <-ctx.Done():
@@ -666,7 +668,7 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 	// j are blocks in that day
 	// starting from current day and going backwards
 	var wg sync.WaitGroup
-	totalTxPerDay := sync.Map{}
+	totalTxPerDay := &common.SafeSyncMap[int64, int]{}
 
 	// Process each day from the earliest to the latest
 	for i := int64(1); i <= numberOfDays; i++ {
@@ -703,14 +705,13 @@ func countTransactionsPerDay(ctx context.Context, clientCtx client.Context, bloc
 					transactionResults := blockResults.TxsResults
 					utils.LavaFormatInfo("Number of tx for block", utils.LogAttr("_routine", end-k), utils.LogAttr("block_number", k), utils.LogAttr("number_of_tx", len(transactionResults)))
 					// Update totalTxPerDay safely
-					actual, _ := totalTxPerDay.LoadOrStore(i, len(transactionResults))
-					if actual != nil {
-						val, ok := actual.(int)
-						if !ok {
-							utils.LavaFormatError("Failed converting int", nil)
-							return
-						}
-						totalTxPerDay.Store(i, val+len(transactionResults))
+					actual, loaded, err := totalTxPerDay.LoadOrStore(i, len(transactionResults))
+					if err != nil {
+						utils.LavaFormatError("failed to load or store", err)
+						return
+					}
+					if loaded {
+						totalTxPerDay.Store(i, actual+len(transactionResults))
 					}
 				}(k)
 			}
