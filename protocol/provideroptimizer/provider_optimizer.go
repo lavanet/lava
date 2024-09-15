@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	NumTiers                               = 4
+	OptimizerNumTiers                      = 4
 	MinimumEntries                         = 5
 	ATierChance                            = 0.75
 	LastTierChance                         = 0.0
@@ -60,10 +60,16 @@ type ProviderOptimizer struct {
 	wantedNumProvidersInConcurrency uint
 	latestSyncData                  ConcurrentBlockStore
 	selectionWeighter               SelectionWeighter
+	OptimizerNumTiers               int
 	consumerOptimizerDataCollector  *metrics.ConsumerOptimizerDataCollector
 	metrics                         *metrics.ConsumerMetricsManager
 	chainId                         string
 	apiInterface                    string
+}
+
+type Exploration struct {
+	address string
+	time    time.Time
 }
 
 type ProviderData struct {
@@ -153,15 +159,11 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	)
 }
 
-// returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string) {
+func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (SelectionTier, Exploration) {
 	latencyScore := math.MaxFloat64 // smaller = better i.e less latency
 	syncScore := math.MaxFloat64    // smaller = better i.e less sync lag
-	type exploration struct {
-		address string
-		time    time.Time
-	}
-	explorationCandidate := exploration{address: "", time: time.Now().Add(time.Hour)}
+
+	explorationCandidate := Exploration{address: "", time: time.Now().Add(time.Hour)}
 	selectionTier := NewSelectionTier()
 	for _, providerAddress := range allAddresses {
 		if _, ok := ignoredProviders[providerAddress]; ok {
@@ -194,28 +196,37 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 
 		// check if candidate for exploration
 		updateTime := providerData.Latency.Time
-		if updateTime.Add(30*time.Second).Before(time.Now()) && updateTime.Before(explorationCandidate.time) {
-			// if the provider didn't update its data for 30 seconds, it is a candidate for exploration
-			explorationCandidate = exploration{address: providerAddress, time: updateTime}
+		if updateTime.Add(10*time.Second).Before(time.Now()) && updateTime.Before(explorationCandidate.time) {
+			// if the provider didn't update its data for 10 seconds, it is a candidate for exploration
+			explorationCandidate = Exploration{address: providerAddress, time: updateTime}
 		}
 	}
+	return selectionTier, explorationCandidate
+}
+
+// returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
+func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string, tier int) {
+	selectionTier, explorationCandidate := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock, epoch)
 	if selectionTier.ScoresCount() == 0 {
 		// no providers to choose from
-		return []string{}
+		return []string{}, -1
 	}
 	initialChances := map[int]float64{0: ATierChance}
-	if len(allAddresses) > MinimumEntries*2 {
-		// if we have more than 2*MinimumEntries we set the LastTierChance configured
-		initialChances[(NumTiers - 1)] = LastTierChance
+	if selectionTier.ScoresCount() < po.OptimizerNumTiers {
+		po.OptimizerNumTiers = selectionTier.ScoresCount()
 	}
-	shiftedChances := selectionTier.ShiftTierChance(NumTiers, initialChances)
-	tier := selectionTier.SelectTierRandomly(NumTiers, shiftedChances)
+	if selectionTier.ScoresCount() >= MinimumEntries*2 {
+		// if we have more than 2*MinimumEntries we set the LastTierChance configured
+		initialChances[(po.OptimizerNumTiers - 1)] = LastTierChance
+	}
+	shiftedChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
+	tier = selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
 
 	var tierProviders []Entry
 	if CollectOptimizerProvidersScore {
 		metricsTiers := []metrics.ProviderTierEntry{}
-		for i := 0; i < NumTiers; i++ {
-			tierEntries := selectionTier.GetTier(i, NumTiers, MinimumEntries)
+		for i := 0; i < po.OptimizerNumTiers; i++ {
+			tierEntries := selectionTier.GetTier(i, po.OptimizerNumTiers, MinimumEntries)
 			if i == tier {
 				tierProviders = tierEntries
 			}
@@ -231,12 +242,13 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 
 		go po.metrics.UpdateOptimizerProvidersScore(po.chainId, po.apiInterface, epoch, metricsTiers)
 	} else {
-		tierProviders = selectionTier.GetTier(tier, NumTiers, MinimumEntries)
+		tierProviders = selectionTier.GetTier(tier, po.OptimizerNumTiers, MinimumEntries)
 	}
 
+	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
-	if explorationCandidate.address != "" && po.shouldExplore(1, len(allAddresses)) {
+	if explorationCandidate.address != "" && po.shouldExplore(1, selectionTier.ScoresCount()) {
 		returnedProviders = append(returnedProviders, explorationCandidate.address)
 	}
 	utils.LavaFormatTrace("[Optimizer] returned providers",
@@ -259,7 +271,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, chosen, availabilityScore, syncScore, latencyScore)
 	}
 
-	return returnedProviders
+	return returnedProviders, tier
 }
 
 // calculate the expected average time until this provider catches up with the given latestSync block
@@ -308,8 +320,7 @@ func (po *ProviderOptimizer) shouldExplore(currentNumProvders, numProviders int)
 	case STRATEGY_PRIVACY:
 		return false // only one at a time
 	}
-	// Dividing the random threshold by the loop count ensures that the overall probability of success is the requirement for the entire loop not per iteration
-	return rand.Float64() < explorationChance/float64(numProviders)
+	return rand.Float64() < explorationChance
 }
 
 func (po *ProviderOptimizer) isBetterProviderScore(latencyScore, latencyScoreCurrent, syncScore, syncScoreCurrent float64) bool {
@@ -550,6 +561,7 @@ func NewProviderOptimizer(chainId, apiInterface string, strategy Strategy, avera
 		providerRelayStats:              relayCache,
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
 		selectionWeighter:               NewSelectionWeighter(),
+		OptimizerNumTiers:               OptimizerNumTiers,
 		metrics:                         metrics,
 		consumerOptimizerDataCollector:  consumerOptimizerDataCollector,
 		chainId:                         chainId,

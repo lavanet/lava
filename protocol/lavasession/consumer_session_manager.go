@@ -118,7 +118,7 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	for _, provider := range pairingList {
 		stake := provider.getProviderStakeSize().Amount.Uint64()
 		if provider.StaticProvider {
-			stake *= StaticProviderStakeMultiplier
+			stake *= WeightMultiplierForStaticProviders
 		}
 		stakeEntriesForMetrics[provider.PublicLavaAddress] = stake
 	}
@@ -648,7 +648,7 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else {
-		providers = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, csm.currentEpoch)
+		providers, _ = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, csm.currentEpoch)
 		for _, chosenProvider := range providers {
 			go csm.consumerMetricsManager.UpdateProviderChosenByOptimizerCount(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, chosenProvider, csm.currentEpoch)
 		}

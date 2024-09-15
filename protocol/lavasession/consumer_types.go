@@ -42,7 +42,7 @@ const (
 	AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
 	AllowGRPCCompressionFlag               = "allow-grpc-compression-for-consumer-provider-communication"
 	maximumStreamsOverASingleConnection    = 100
-	StaticProviderStakeMultiplier          = 10
+	WeightMultiplierForStaticProviders     = 10
 )
 
 var (
@@ -73,7 +73,7 @@ type ProviderOptimizer interface {
 	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
 	AppendRelayFailure(providerAddress string)
 	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64)
-	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string)
+	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string, tier int)
 	GetExcellenceQoSReportForProvider(string) (*pairingtypes.QualityOfServiceReport, *pairingtypes.QualityOfServiceReport)
 	Strategy() provideroptimizer.Strategy
 	UpdateWeights(map[string]int64)
@@ -607,14 +607,18 @@ func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (wei
 			staticProviders = append(staticProviders, cswp)
 			continue
 		}
-		stake := cswp.getProviderStakeSize().Amount.Int64()
+		stakeAmount := cswp.getProviderStakeSize().Amount
+		stake := int64(10) // defaults to 10 if stake isn't set
+		if !stakeAmount.IsNil() && stakeAmount.IsInt64() {
+			stake = stakeAmount.Int64()
+		}
 		if stake > maxWeight {
 			maxWeight = stake
 		}
 		weights[cswp.PublicLavaAddress] = stake
 	}
 	for _, cswp := range staticProviders {
-		weights[cswp.PublicLavaAddress] = maxWeight * StaticProviderStakeMultiplier
+		weights[cswp.PublicLavaAddress] = maxWeight * WeightMultiplierForStaticProviders
 	}
 	return weights
 }

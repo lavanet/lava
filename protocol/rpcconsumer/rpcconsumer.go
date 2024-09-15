@@ -209,14 +209,13 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			}
 			chainID := rpcEndpoint.ChainID
 			// create policyUpdaters per chain
-			if policyUpdater, ok := policyUpdaters.Load(rpcEndpoint.ChainID); ok {
+			newPolicyUpdater := updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint)
+			if policyUpdater, ok := policyUpdaters.LoadOrStore(chainID, newPolicyUpdater); ok {
 				err := policyUpdater.AddPolicySetter(chainParser, *rpcEndpoint)
 				if err != nil {
 					errCh <- err
 					return utils.LavaFormatError("failed adding policy setter", err)
 				}
-			} else {
-				policyUpdaters.Store(rpcEndpoint.ChainID, updaters.NewPolicyUpdater(chainID, consumerStateTracker, consumerAddr.String(), chainParser, *rpcEndpoint))
 			}
 
 			err = statetracker.RegisterForSpecUpdatesOrSetStaticSpec(ctx, chainParser, options.cmdFlags.StaticSpecPath, *rpcEndpoint, rpcc.consumerStateTracker)
@@ -631,7 +630,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().IntVar(&relayCountOnNodeError, common.SetRelayCountOnNodeErrorFlag, 2, "set the number of retries attempt on node errors")
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.ATierChance, common.SetProviderOptimizerBestTierPickChance, 0.75, "set the chances for picking a provider from the best group, default is 75% -> 0.75")
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.LastTierChance, common.SetProviderOptimizerWorstTierPickChance, 0.0, "set the chances for picking a provider from the worse group, default is 0% -> 0.0")
-	cmdRPCConsumer.Flags().IntVar(&provideroptimizer.NumTiers, common.SetProviderOptimizerNumberOfTiersToCreate, 4, "set the number of groups to create, default is 4")
+	cmdRPCConsumer.Flags().IntVar(&provideroptimizer.OptimizerNumTiers, common.SetProviderOptimizerNumberOfTiersToCreate, 4, "set the number of groups to create, default is 4")
 	// optimizer metrics
 	cmdRPCConsumer.Flags().BoolVar(&CollectOptimizerProviderDataFlag, CollectOptimizerProviderDataFlagName, CollectOptimizerProviderDataFlag, "enables collection of data from the provider optimizer")
 	cmdRPCConsumer.Flags().DurationVar(&OptimizerProviderDataCollectionIntervalFlag, OptimizerProviderDataCollectionIntervalFlagNam, OptimizerProviderDataCollectionIntervalFlag, "sets the interval for collecting data from the provider optimizer")
