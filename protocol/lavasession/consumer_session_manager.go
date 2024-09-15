@@ -1018,6 +1018,7 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	numOfProviders int,
 	providersCount uint64,
 	isHangingApi bool,
+	reduceAvailability bool,
 ) error {
 	// release locks, update CU, relaynum etc..
 	if err := consumerSession.VerifyLock(); err != nil {
@@ -1040,8 +1041,8 @@ func (csm *ConsumerSessionManager) OnSessionDone(
 	consumerSession.ConsecutiveErrors = []error{}
 	consumerSession.LatestBlock = latestServicedBlock // update latest serviced block
 	// calculate QoS
-	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount))
-	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock))
+	consumerSession.CalculateQoS(currentLatency, expectedLatency, expectedBH-latestServicedBlock, numOfProviders, int64(providersCount), reduceAvailability)
+	go csm.providerOptimizer.AppendRelayData(consumerSession.Parent.PublicLavaAddress, currentLatency, isHangingApi, specComputeUnits, uint64(latestServicedBlock), reduceAvailability)
 	csm.updateMetricsManager(consumerSession, currentLatency, !isHangingApi) // apply latency only for non hanging apis
 	return nil
 }

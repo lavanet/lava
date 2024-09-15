@@ -282,10 +282,10 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 		time.Sleep(4 * time.Millisecond)
 		if i == chosenIndex || i == chosenIndex+1 || i == chosenIndex+2 {
 			// give better syncBlock, worse latency by a little
-			providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY+10*time.Millisecond, false, requestCU, syncBlock)
+			providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY+10*time.Millisecond, false, requestCU, syncBlock, false)
 			continue
 		}
-		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, false, requestCU, syncBlock-1) // update that he doesn't have the latest requested block
+		providerOptimizer.AppendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY, false, requestCU, syncBlock-1, false) // update that he doesn't have the latest requested block
 	}
 	time.Sleep(4 * time.Millisecond)
 	selectionTier, _ := providerOptimizer.CalculateSelectionTiers(providersGen.providersAddresses, nil, requestCU, requestBlock)
@@ -423,10 +423,10 @@ func TestProviderOptimizerSyncScore(t *testing.T) {
 			time.Sleep(4 * time.Millisecond)
 			if i == chosenIndex {
 				// give better syncBlock, latency is a tiny bit worse for the second check
-				providerOptimizer.appendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2+1*time.Microsecond, false, true, requestCU, syncBlock+5, sampleTime)
+				providerOptimizer.appendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2+1*time.Microsecond, false, true, requestCU, syncBlock+5, sampleTime, false)
 				continue
 			}
-			providerOptimizer.appendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, sampleTime) // update that he doesn't have the latest requested block
+			providerOptimizer.appendRelayData(providersGen.providersAddresses[i], TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, sampleTime, false) // update that he doesn't have the latest requested block
 		}
 		sampleTime = sampleTime.Add(time.Millisecond * 5)
 	}
@@ -484,21 +484,21 @@ func TestProviderOptimizerStrategiesScoring(t *testing.T) {
 	normalLatency := TEST_BASE_WORLD_LATENCY * 2
 	improvedBlock := syncBlock + 1
 	// provider 0 gets a good latency
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[0], improvedLatency, false, true, requestCU, syncBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[0], improvedLatency, false, true, requestCU, syncBlock, sampleTime, false)
 
 	// providers 3,4 get a regular entry
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[3], normalLatency, false, true, requestCU, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[4], normalLatency, false, true, requestCU, syncBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[3], normalLatency, false, true, requestCU, syncBlock, sampleTime, false)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[4], normalLatency, false, true, requestCU, syncBlock, sampleTime, false)
 
 	// provider 1 gets a good sync
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], normalLatency, false, true, requestCU, improvedBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], normalLatency, false, true, requestCU, improvedBlock, sampleTime, false)
 
 	sampleTime = sampleTime.Add(10 * time.Millisecond)
 	// now repeat to modify all providers scores across sync calculation
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[0], improvedLatency, false, true, requestCU, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[3], normalLatency, false, true, requestCU, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[4], normalLatency, false, true, requestCU, syncBlock, sampleTime)
-	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], normalLatency, false, true, requestCU, improvedBlock, sampleTime)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[0], improvedLatency, false, true, requestCU, syncBlock, sampleTime, false)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[3], normalLatency, false, true, requestCU, syncBlock, sampleTime, false)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[4], normalLatency, false, true, requestCU, syncBlock, sampleTime, false)
+	providerOptimizer.appendRelayData(providersGen.providersAddresses[1], normalLatency, false, true, requestCU, improvedBlock, sampleTime, false)
 
 	time.Sleep(4 * time.Millisecond)
 	providerOptimizer.strategy = STRATEGY_BALANCED
@@ -554,7 +554,7 @@ func TestExcellence(t *testing.T) {
 	sampleTime := time.Now()
 	for i := 0; i < 10; i++ {
 		for _, address := range providersGen.providersAddresses {
-			providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, sampleTime)
+			providerOptimizer.appendRelayData(address, TEST_BASE_WORLD_LATENCY*2, false, true, requestCU, syncBlock, sampleTime, false)
 		}
 		time.Sleep(4 * time.Millisecond)
 	}
