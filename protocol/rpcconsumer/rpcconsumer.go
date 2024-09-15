@@ -321,11 +321,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	utils.LavaFormatDebug("Starting Policy Updaters for all chains")
 	for chainId := range chainMutexes {
 		policyUpdater, ok, err := policyUpdaters.Load(chainId)
-		if err != nil {
-			utils.LavaFormatFatal("could not load policy Updater for chain", err, utils.LogAttr("chain", chainId))
-		}
-		if !ok {
-			utils.LavaFormatError("could not load policy Updater for chain", nil, utils.LogAttr("chain", chainId))
+		if !ok || err != nil {
+			utils.LavaFormatError("could not load policy Updater for chain", err, utils.LogAttr("chain", chainId))
 			continue
 		}
 		consumerStateTracker.RegisterForPairingUpdates(ctx, policyUpdater, chainId)
