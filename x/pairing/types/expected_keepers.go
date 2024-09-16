@@ -32,6 +32,7 @@ type SpecKeeper interface {
 type EpochstorageKeeper interface {
 	// Methods imported from epochStorage should be defined here
 	// Methods imported from bank should be defined here
+	GetParamForBlock(ctx sdk.Context, fixationKey string, block uint64, param any) error
 	GetEpochStart(ctx sdk.Context) uint64
 	GetEarliestEpochStart(ctx sdk.Context) uint64
 	IsEpochStart(ctx sdk.Context) (res bool)
@@ -40,6 +41,7 @@ type EpochstorageKeeper interface {
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
 	GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error)
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
+	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
 	GetDeletedEpochs(ctx sdk.Context) []uint64
 	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
