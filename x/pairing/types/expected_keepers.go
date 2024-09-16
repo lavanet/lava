@@ -32,7 +32,6 @@ type SpecKeeper interface {
 type EpochstorageKeeper interface {
 	// Methods imported from epochStorage should be defined here
 	// Methods imported from bank should be defined here
-	GetParamForBlock(ctx sdk.Context, fixationKey string, block uint64, param any) error
 	GetEpochStart(ctx sdk.Context) uint64
 	GetEarliestEpochStart(ctx sdk.Context) uint64
 	IsEpochStart(ctx sdk.Context) (res bool)
@@ -41,7 +40,6 @@ type EpochstorageKeeper interface {
 	GetEpochStartForBlock(ctx sdk.Context, block uint64) (epochStart, blockInEpoch uint64, err error)
 	GetPreviousEpochStartForBlock(ctx sdk.Context, block uint64) (previousEpochStart uint64, erro error)
 	GetNextEpoch(ctx sdk.Context, block uint64) (nextEpoch uint64, erro error)
-	GetCurrentNextEpoch(ctx sdk.Context) (nextEpoch uint64)
 	AddFixationRegistry(fixationKey string, getParamFunction func(sdk.Context) any)
 	GetDeletedEpochs(ctx sdk.Context) []uint64
 	EpochBlocks(ctx sdk.Context, block uint64) (res uint64, err error)
@@ -53,6 +51,8 @@ type EpochstorageKeeper interface {
 	GetAllStakeEntriesCurrent(ctx sdk.Context) []epochstoragetypes.StakeEntry
 	RemoveStakeEntryCurrent(ctx sdk.Context, chainID string, provider string)
 	GetEpochHash(ctx sdk.Context, epoch uint64) []byte
+	GetMetadata(ctx sdk.Context, provider string) (epochstoragetypes.ProviderMetadata, error)
+	SetMetadata(ctx sdk.Context, metadata epochstoragetypes.ProviderMetadata)
 }
 
 type AccountKeeper interface {
@@ -103,10 +103,11 @@ type DowntimeKeeper interface {
 
 type DualstakingKeeper interface {
 	RewardProvidersAndDelegators(ctx sdk.Context, providerAddr string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, totalRewards sdk.Coins, err error)
-	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin) error
-	UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin, unstake bool) error
+	DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin, stake bool) error
+	UnbondFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin, stake bool) error
 	GetProviderDelegators(ctx sdk.Context, provider string) ([]dualstakingtypes.Delegation, error)
 	MinSelfDelegation(ctx sdk.Context) sdk.Coin
+	GetDelegation(ctx sdk.Context, provider, delegator string) (dualstakingtypes.Delegation, bool)
 }
 
 type FixationStoreKeeper interface {

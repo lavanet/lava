@@ -36,7 +36,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 		)
 	}
 
-	if creator != existingEntry.Vault {
+	if creator != existingEntry.Vault && creator != existingEntry.Address {
 		return utils.LavaFormatWarning("can't unstake entry with provider address, only vault address is allowed to unstake", fmt.Errorf("provider unstake failed"),
 			utils.LogAttr("creator", creator),
 			utils.LogAttr("provider", existingEntry.Address),
@@ -46,16 +46,39 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 	}
 
 	amount := existingEntry.Stake
-	existingEntry.Stake.Amount = sdk.ZeroInt()
-	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)
+	k.epochStorageKeeper.RemoveStakeEntryCurrent(ctx, existingEntry.Chain, existingEntry.Address)
 
-	// the stake entry is removed inside UnbondFull
-	err := k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, amount, true)
-	if err != nil {
-		return utils.LavaFormatWarning("can't unbond self delegation", err,
-			utils.Attribute{Key: "address", Value: existingEntry.Address},
-			utils.Attribute{Key: "spec", Value: chainID},
-		)
+	if existingEntry.Vault == creator {
+		// remove delegation
+		err := k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, amount, true)
+		if err != nil {
+			return utils.LavaFormatWarning("can't unbond self delegation", err,
+				utils.Attribute{Key: "address", Value: existingEntry.Address},
+				utils.Attribute{Key: "spec", Value: chainID},
+			)
+		}
+	} else {
+		// provider is not vault so delegation stays.
+		// distribute stake between other chains
+		metadata, err := k.epochStorageKeeper.GetMetadata(ctx, existingEntry.Address)
+		if err == nil {
+			total := amount.Amount
+			count := int64(len(metadata.Chains))
+			for _, chain := range metadata.Chains {
+				entry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chain, existingEntry.Address)
+				if !found {
+					utils.LavaFormatError("did not find stake entry that exists in metadata", nil,
+						utils.LogAttr("provider", existingEntry.Address),
+						utils.LogAttr("chain", chain),
+					)
+					continue
+				}
+				part := total.QuoRaw(count)
+				entry.Stake = entry.Stake.AddAmount(part)
+				total = total.Sub(part)
+				count--
+			}
+		}
 	}
 
 	details := map[string]string{

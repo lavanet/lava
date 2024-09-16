@@ -25,6 +25,7 @@ func (k msgServer) Redelegate(goCtx context.Context, msg *types.MsgRedelegate) (
 		msg.FromProvider,
 		msg.ToProvider,
 		msg.Amount,
+		false,
 	)
 
 	if err == nil {

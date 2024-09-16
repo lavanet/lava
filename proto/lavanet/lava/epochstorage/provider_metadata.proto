@@ -8,7 +8,7 @@ import "amino/amino.proto";
 
 message ProviderMetadata {
   string provider = 1;
-  cosmos.base.v1beta1.Coin SelfDelegation = 2 [(gogoproto.nullable) = false]; 
+  string vault = 2;
   cosmos.base.v1beta1.Coin TotalDelegations = 3 [(gogoproto.nullable) = false]; 
   repeated string chains = 4;
 }

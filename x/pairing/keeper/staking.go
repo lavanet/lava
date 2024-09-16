@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 
@@ -23,6 +24,28 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	logger := k.Logger(ctx)
 	specChainID := chainID
 
+	metadata, err := k.epochStorageKeeper.GetMetadata(ctx, provider)
+	if err != nil {
+		metadata = epochstoragetypes.ProviderMetadata{
+			Provider:         provider,
+			Vault:            creator,
+			Chains:           []string{chainID},
+			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
+		}
+	}
+
+	if creator != metadata.Vault {
+		return utils.LavaFormatWarning("creator does not match the provider vault", err,
+			utils.Attribute{Key: "vault", Value: metadata.Vault},
+			utils.Attribute{Key: "creator", Value: creator},
+		)
+	}
+
+	if !slices.Contains(metadata.Chains, chainID) {
+		metadata.Chains = append(metadata.Chains, chainID)
+	}
+	k.epochStorageKeeper.SetMetadata(ctx, metadata)
+
 	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)
 	if err != nil || !spec.Enabled {
 		return utils.LavaFormatWarning("spec not found or not active", err,
@@ -31,14 +54,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 	}
 
 	// if we get here, the spec is active and supported
-	if amount.IsLT(k.dualstakingKeeper.MinSelfDelegation(ctx)) { // we count on this to also check the denom
-		return utils.LavaFormatWarning("insufficient stake amount", fmt.Errorf("stake amount smaller than MinSelfDelegation"),
-			utils.Attribute{Key: "spec", Value: specChainID},
-			utils.Attribute{Key: "provider", Value: creator},
-			utils.Attribute{Key: "stake", Value: amount},
-			utils.Attribute{Key: "minSelfDelegation", Value: k.dualstakingKeeper.MinSelfDelegation(ctx).String()},
-		)
-	}
 	senderAddr, err := sdk.AccAddressFromBech32(creator)
 	if err != nil {
 		return utils.LavaFormatWarning("invalid address", err,
@@ -148,6 +163,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		}
 
 		// we dont change stakeAppliedBlocks and chain once they are set, if they need to change, unstake first
+		beforeAmount := existingEntry.Stake
+		increase := amount.Amount.GT(existingEntry.Stake.Amount)
+		decrease := amount.Amount.LT(existingEntry.Stake.Amount)
 		existingEntry.Geolocation = geolocation
 		existingEntry.Endpoints = endpointsVerified
 		existingEntry.Description = description
@@ -157,23 +175,23 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)
 
-		if amount.Amount.GT(existingEntry.Stake.Amount) {
+		if increase {
 			// delegate the difference
-			diffAmount := amount.Sub(existingEntry.Stake)
-			err = k.dualstakingKeeper.DelegateFull(ctx, existingEntry.Vault, validator, existingEntry.Address, diffAmount)
+			diffAmount := amount.Sub(beforeAmount)
+			err = k.dualstakingKeeper.DelegateFull(ctx, existingEntry.Vault, validator, existingEntry.Address, diffAmount, true)
 			if err != nil {
 				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
-				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
+				return utils.LavaFormatWarning("failed to increase stake", err,
 					details...,
 				)
 			}
-		} else if amount.Amount.LT(existingEntry.Stake.Amount) {
+		} else if decrease {
 			// unbond the difference
-			diffAmount := existingEntry.Stake.Sub(amount)
-			err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, diffAmount, false)
+			diffAmount := beforeAmount.Sub(amount)
+			err = k.dualstakingKeeper.UnbondFull(ctx, existingEntry.Vault, validator, existingEntry.Address, diffAmount, true)
 			if err != nil {
 				details = append(details, utils.Attribute{Key: "neededStake", Value: amount.Sub(existingEntry.Stake).String()})
-				return utils.LavaFormatWarning("insufficient funds to pay for difference in stake", err,
+				return utils.LavaFormatWarning("failed to decrease stake", err,
 					details...,
 				)
 			}
@@ -221,8 +239,25 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
+	stakeAmount := amount
+	if len(metadata.Chains) == 1 {
+		delegation, found := k.dualstakingKeeper.GetDelegation(ctx, creator, provider)
+		if found {
+			stakeAmount = stakeAmount.Add(delegation.Amount)
+		}
+	}
+
+	if stakeAmount.IsLT(k.dualstakingKeeper.MinSelfDelegation(ctx)) { // we count on this to also check the denom
+		return utils.LavaFormatWarning("insufficient stake amount", fmt.Errorf("stake amount smaller than MinSelfDelegation"),
+			utils.Attribute{Key: "spec", Value: specChainID},
+			utils.Attribute{Key: "provider", Value: creator},
+			utils.Attribute{Key: "stake", Value: amount},
+			utils.Attribute{Key: "minSelfDelegation", Value: k.dualstakingKeeper.MinSelfDelegation(ctx).String()},
+		)
+	}
+
 	stakeEntry := epochstoragetypes.StakeEntry{
-		Stake:              amount,
+		Stake:              stakeAmount,
 		Address:            provider,
 		StakeAppliedBlock:  stakeAppliedBlock,
 		Endpoints:          endpointsVerified,
@@ -237,7 +272,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
 
-	err = k.dualstakingKeeper.DelegateFull(ctx, stakeEntry.Vault, validator, stakeEntry.Address, amount)
+	err = k.dualstakingKeeper.DelegateFull(ctx, stakeEntry.Vault, validator, stakeEntry.Address, amount, true)
 	if err != nil {
 		return utils.LavaFormatWarning("provider self delegation failed", err,
 			details...,

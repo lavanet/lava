@@ -32,5 +32,7 @@ func DelegationKey(provider, delegator string) collections.Pair[string, string] 
 	return collections.Join(provider, delegator)
 }
 
-var DelegationsPrefix = collections.NewPrefix([]byte("Delegations/"))
-var RewardPrefix = collections.NewPrefix([]byte("Rewards/"))
+var (
+	DelegationsPrefix = collections.NewPrefix([]byte("Delegations/"))
+	RewardPrefix      = collections.NewPrefix([]byte("Rewards/"))
+)

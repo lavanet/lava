@@ -12,11 +12,11 @@ import (
 
 func (k msgServer) Delegate(goCtx context.Context, msg *types.MsgDelegate) (*types.MsgDelegateResponse, error) {
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	return &types.MsgDelegateResponse{}, k.Keeper.DelegateFull(ctx, msg.Creator, msg.Validator, msg.Provider, msg.Amount)
+	return &types.MsgDelegateResponse{}, k.Keeper.DelegateFull(ctx, msg.Creator, msg.Validator, msg.Provider, msg.Amount, false)
 }
 
 // DelegateFull uses staking module for to delegate with hooks
-func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin) error {
+func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string, provider string, amount sdk.Coin, stake bool) error {
 	valAddr, valErr := sdk.ValAddressFromBech32(validator)
 	if valErr != nil {
 		return valErr
@@ -61,6 +61,7 @@ func (k Keeper) DelegateFull(ctx sdk.Context, delegator string, validator string
 		commontypes.EMPTY_PROVIDER,
 		provider,
 		amount,
+		stake,
 	)
 
 	if err == nil {

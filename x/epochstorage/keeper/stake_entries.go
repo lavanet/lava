@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"fmt"
-	"slices"
 	"sort"
 	"strconv"
 
@@ -180,21 +179,6 @@ func (k Keeper) SetStakeEntryCurrent(ctx sdk.Context, stakeEntry types.StakeEntr
 	if err != nil {
 		panic(fmt.Errorf("SetStakeEntryCurrent: Failed to set entry for key %v, error: %w", key, err))
 	}
-
-	metadata, err := k.GetMetadata(ctx, stakeEntry.Address)
-	if err != nil {
-		// init metadata
-		metadata = types.ProviderMetadata{
-			Provider:         stakeEntry.Address,
-			Chains:           []string{},
-			SelfDelegation:   sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
-			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
-		}
-	}
-	if !slices.Contains(metadata.Chains, stakeEntry.Chain) {
-		metadata.Chains = append(metadata.Chains, stakeEntry.Chain)
-	}
-	k.SetMetadata(ctx, metadata)
 }
 
 // RemoveStakeEntryCurrent deletes a current stake entry from the store
