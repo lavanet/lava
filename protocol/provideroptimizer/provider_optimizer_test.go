@@ -302,21 +302,21 @@ func TestProviderOptimizerAvailabilityBlockError(t *testing.T) {
 // 	// in this test we are repeatedly adding better results, and latency score should improve
 // 	for i := 0; i < 10; i++ {
 // 		providerData, _ := providerOptimizer.getProviderData(providerAddress)
-// 		currentLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock, uint64(requestBlock))
+// 		currentLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
 // 		providerOptimizer.AppendProbeRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, true)
 // 		providerData, found := providerOptimizer.getProviderData(providerAddress)
 // 		require.True(t, found)
-// 		newLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock, uint64(requestBlock))
+// 		newLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
 // 		require.Greater(t, currentLatencyScore, newLatencyScore, i)
 // 	}
 // 	providerAddress = providersGen.providersAddresses[1]
 // 	for i := 0; i < 10; i++ {
 // 		providerData, _ := providerOptimizer.getProviderData(providerAddress)
-// 		currentLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock, uint64(requestBlock))
+// 		currentLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
 // 		providerOptimizer.AppendRelayData(providerAddress, TEST_BASE_WORLD_LATENCY, false, requestCU, syncBlock)
 // 		providerData, found := providerOptimizer.getProviderData(providerAddress)
 // 		require.True(t, found)
-// 		newLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock, uint64(requestBlock))
+// 		newLatencyScore := providerOptimizer.calculateLatencyScore(providerData, requestCU, requestBlock)
 // 		require.Greater(t, currentLatencyScore, newLatencyScore, i)
 // 	}
 // }
