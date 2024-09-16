@@ -102,11 +102,9 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 		}
 	}
 
-	entries := []*epochstoragetypes.StakeEntry{}
-	selfEntries := []*epochstoragetypes.StakeEntry{}
-
 	// get all entries
 	TotalSelfDelegation := sdk.ZeroInt()
+	entries := []*epochstoragetypes.StakeEntry{}
 	for _, chain := range metadata.Chains {
 		entry, found := k.epochstorageKeeper.GetStakeEntryCurrent(ctx, chain, provider)
 		if !found {
@@ -114,14 +112,11 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 		}
 
 		entries = append(entries, &entry)
-		if entry.Vault == delegator {
-			selfEntries = append(selfEntries, &entry)
-		}
 		TotalSelfDelegation = TotalSelfDelegation.Add(entry.Stake.Amount)
 	}
 
 	// regular delegation
-	if len(selfEntries) == 0 {
+	if delegator != metadata.Vault {
 		if increase {
 			metadata.TotalDelegations = metadata.TotalDelegations.Add(amount)
 		} else {
@@ -141,8 +136,8 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 	// distribute self delegations if done through the dualstaking tx
 	if !stake {
 		total := amount.Amount
-		count := int64(len(selfEntries))
-		for _, entry := range selfEntries {
+		count := int64(len(entries))
+		for _, entry := range entries {
 			part := total.QuoRaw(count)
 			if increase {
 				entry.Stake = entry.Stake.AddAmount(part)
