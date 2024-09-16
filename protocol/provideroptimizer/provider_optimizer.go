@@ -95,12 +95,10 @@ func (po *ProviderOptimizer) UpdateWeights(weights map[string]int64) {
 
 func (po *ProviderOptimizer) AppendRelayFailure(providerAddress string) {
 	po.appendRelayData(providerAddress, 0, false, false, 0, 0, time.Now())
-	// Add to prometheus
 }
 
 func (po *ProviderOptimizer) AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64) {
 	po.appendRelayData(providerAddress, latency, isHangingApi, true, cu, syncBlock, time.Now())
-	// Add to prometheus
 }
 
 func (po *ProviderOptimizer) appendRelayData(providerAddress string, latency time.Duration, isHangingApi, success bool, cu, syncBlock uint64, sampleTime time.Time) {
@@ -147,7 +145,6 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 	}
 	po.providersStorage.Set(providerAddress, providerData, 1)
 
-	// Add to prometheus
 	utils.LavaFormatTrace("probe update",
 		utils.LogAttr("providerAddress", providerAddress),
 		utils.LogAttr("latency", latency),
