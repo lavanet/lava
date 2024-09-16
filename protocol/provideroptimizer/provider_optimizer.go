@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/metrics"
 	"github.com/lavanet/lava/v3/utils"
 	"github.com/lavanet/lava/v3/utils/lavaslices"
 	"github.com/lavanet/lava/v3/utils/rand"
@@ -58,6 +59,8 @@ type ProviderOptimizer struct {
 	latestSyncData                  ConcurrentBlockStore
 	selectionWeighter               SelectionWeighter
 	OptimizerNumTiers               int
+	consumerOptimizerDataCollector  *metrics.ConsumerOptimizerDataCollector
+	metrics                         *metrics.ConsumerMetricsManager
 }
 
 type Exploration struct {
@@ -195,7 +198,7 @@ func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, igno
 }
 
 // returns a sub set of selected providers according to their scores, perturbation factor will be added to each score in order to randomly select providers that are not always on top
-func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int) {
+func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, epoch uint64) (addresses []string, tier int) {
 	selectionTier, explorationCandidate := po.CalculateSelectionTiers(allAddresses, ignoredProviders, cu, requestedBlock)
 	if selectionTier.ScoresCount() == 0 {
 		// no providers to choose from
@@ -212,6 +215,7 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	shiftedChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
 	tier = selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
 	tierProviders := selectionTier.GetTier(tier, po.OptimizerNumTiers, MinimumEntries)
+
 	// TODO: add penalty if a provider is chosen too much
 	selectedProvider := po.selectionWeighter.WeightedChoice(tierProviders)
 	returnedProviders := []string{selectedProvider}
@@ -224,6 +228,21 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 		utils.LogAttr("shiftedChances", shiftedChances),
 		utils.LogAttr("tier", tier),
 	)
+
+	for _, providerAddress := range allAddresses {
+		providerData, found := po.getProviderData(providerAddress)
+		if !found {
+			utils.LavaFormatWarning("provider data was not found for address", nil, utils.LogAttr("providerAddress", providerAddress))
+			continue
+		}
+
+		// TODO: Make sure that this is true
+		availabilityScore := providerData.Availability.Num / providerData.Availability.Denom
+		syncScore := providerData.Sync.Num / providerData.Sync.Denom
+		latencyScore := providerData.Latency.Num / providerData.Latency.Denom
+		chosen := lavaslices.Contains(returnedProviders, providerAddress)
+		go po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, chosen, availabilityScore, syncScore, latencyScore)
+	}
 
 	return returnedProviders, tier
 }
@@ -399,9 +418,9 @@ func (po *ProviderOptimizer) getProviderData(providerAddress string) (providerDa
 		}
 	} else {
 		providerData = ProviderData{
-			Availability: score.NewScoreStore(0.99, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of 99%
+			Availability: score.NewScoreStore(99, 100, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)), // default value of 99%
 			Latency:      score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of 1 score (encourage exploration)
-			Sync:         score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of half score (encourage exploration)
+			Sync:         score.NewScoreStore(1, 1, time.Now().Add(-1*INITIAL_DATA_STALENESS*time.Hour)),    // default value of 1 score (encourage exploration)
 			SyncBlock:    0,
 		}
 	}
@@ -493,7 +512,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -506,6 +525,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 		// overwrite
 		wantedNumProvidersInConcurrency = 1
 	}
+
 	return &ProviderOptimizer{
 		strategy:                        strategy,
 		providersStorage:                cache,
@@ -515,6 +535,7 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
 		selectionWeighter:               NewSelectionWeighter(),
 		OptimizerNumTiers:               OptimizerNumTiers,
+		consumerOptimizerDataCollector:  consumerOptimizerDataCollector,
 	}
 }
 

@@ -18,29 +18,10 @@ const (
 	TEST_BASE_WORLD_LATENCY = 150 * time.Millisecond
 )
 
-type providerOptimizerSyncCache struct {
-	value map[interface{}]interface{}
-	lock  sync.RWMutex
-}
-
-func (posc *providerOptimizerSyncCache) Get(key interface{}) (interface{}, bool) {
-	posc.lock.RLock()
-	defer posc.lock.RUnlock()
-	ret, ok := posc.value[key]
-	return ret, ok
-}
-
-func (posc *providerOptimizerSyncCache) Set(key, value interface{}, cost int64) bool {
-	posc.lock.Lock()
-	defer posc.lock.Unlock()
-	posc.value[key] = value
-	return true
-}
-
 func setupProviderOptimizer(maxProvidersCount int) *ProviderOptimizer {
 	averageBlockTIme := TEST_AVERAGE_BLOCK_TIME
 	baseWorldLatency := TEST_BASE_WORLD_LATENCY
-	return NewProviderOptimizer(STRATEGY_BALANCED, averageBlockTIme, baseWorldLatency, uint(maxProvidersCount))
+	return NewProviderOptimizer(STRATEGY_BALANCED, averageBlockTIme, baseWorldLatency, uint(maxProvidersCount), nil)
 }
 
 type providersGenerator struct {
@@ -140,7 +121,7 @@ func TestProviderOptimizerBasic(t *testing.T) {
 	requestCU := uint64(10)
 	requestBlock := int64(1000)
 
-	returnedProviders, tier := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	returnedProviders, tier := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, uint64(requestBlock))
 	require.Equal(t, 1, len(returnedProviders))
 	require.NotEqual(t, 4, tier)
 	// damage their chance to be selected by placing them in the worst tier
@@ -148,7 +129,7 @@ func TestProviderOptimizerBasic(t *testing.T) {
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[6], TEST_BASE_WORLD_LATENCY*3, true)
 	providerOptimizer.AppendProbeRelayData(providersGen.providersAddresses[7], TEST_BASE_WORLD_LATENCY*3, true)
 	time.Sleep(4 * time.Millisecond)
-	returnedProviders, _ = providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	returnedProviders, _ = providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, uint64(requestBlock))
 	require.Equal(t, 1, len(returnedProviders))
 	require.NotEqual(t, 4, tier)
 	require.NotEqual(t, returnedProviders[0], providersGen.providersAddresses[5]) // we shouldn't pick the worst provider
@@ -169,7 +150,7 @@ func runChooseManyTimesAndReturnResults(t *testing.T, providerOptimizer *Provide
 	tierResults := make(map[int]int)
 	results := make(map[string]int)
 	for i := 0; i < times; i++ {
-		returnedProviders, tier := providerOptimizer.ChooseProvider(providers, ignoredProviders, requestCU, requestBlock)
+		returnedProviders, tier := providerOptimizer.ChooseProvider(providers, ignoredProviders, requestCU, requestBlock, uint64(requestBlock))
 		require.Equal(t, 1, len(returnedProviders))
 		results[returnedProviders[0]]++
 		tierResults[tier]++
@@ -190,7 +171,7 @@ func TestProviderOptimizerBasicRelayData(t *testing.T) {
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[6], TEST_BASE_WORLD_LATENCY*4, false, requestCU, syncBlock)
 	providerOptimizer.AppendRelayData(providersGen.providersAddresses[7], TEST_BASE_WORLD_LATENCY*4, false, requestCU, syncBlock)
 	time.Sleep(4 * time.Millisecond)
-	returnedProviders, tier := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock)
+	returnedProviders, tier := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, uint64(requestBlock))
 	require.Equal(t, 1, len(returnedProviders))
 	// we shouldn't pick the low tier providers
 	require.NotEqual(t, tier, 3)
@@ -354,7 +335,7 @@ func TestProviderOptimizerExploration(t *testing.T) {
 	testProvidersExploration := func(iterations int) float64 {
 		exploration := 0.0
 		for i := 0; i < iterations; i++ {
-			returnedProviders, _ := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock)
+			returnedProviders, _ := providerOptimizer.ChooseProvider(providersGen.providersAddresses, nil, requestCU, requestBlock, uint64(requestBlock))
 			if len(returnedProviders) > 1 {
 				exploration++
 				// check if we have a specific chosen index
@@ -659,7 +640,7 @@ func TestProviderOptimizerProvidersCount(t *testing.T) {
 	for _, play := range playbook {
 		t.Run(play.name, func(t *testing.T) {
 			for i := 0; i < 10; i++ {
-				returnedProviders, _ := providerOptimizer.ChooseProvider(providersGen.providersAddresses[:play.providers], nil, requestCU, requestBlock)
+				returnedProviders, _ := providerOptimizer.ChooseProvider(providersGen.providersAddresses[:play.providers], nil, requestCU, requestBlock, uint64(requestBlock))
 				require.Greater(t, len(returnedProviders), 0)
 			}
 		})

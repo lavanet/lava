@@ -27,8 +27,12 @@ const (
 )
 
 var (
-	retrySecondChanceAfter = time.Minute * 3
-	DebugProbes            = false
+	retrySecondChanceAfter                     = time.Minute * 3
+	DebugProbes                                = false
+	CollectOptimizerProvidersScore             = false
+	CollectOptimizerProvidersScoreFlagName     = "collect-optimizer-providers-score"
+	CollectOptimizerProvidersScoreInterval     = time.Second * 1
+	CollectOptimizerProvidersScoreIntervalFlag = "collect-optimizer-providers-score-interval"
 )
 
 // created with NewConsumerSessionManager
@@ -114,6 +118,19 @@ func (csm *ConsumerSessionManager) UpdateAllProviders(epoch uint64, pairingList 
 	csm.setValidAddressesToDefaultValue("", nil) // the starting point is that valid addresses are equal to pairing addresses.
 	// reset session related metrics
 	csm.consumerMetricsManager.ResetSessionRelatedMetrics()
+	stakeEntriesForMetrics := map[string]uint64{}
+	for _, provider := range pairingList {
+		providerStakeEntry := provider.getProviderStakeSize()
+		stake := uint64(0)
+		if providerStakeEntry.IsValid() {
+			stake = providerStakeEntry.Amount.Uint64()
+			if provider.StaticProvider {
+				stake *= WeightMultiplierForStaticProviders
+			}
+		}
+		stakeEntriesForMetrics[provider.PublicLavaAddress] = stake
+	}
+	go csm.consumerMetricsManager.UpdateProvidersStake(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, csm.currentEpoch, stakeEntriesForMetrics)
 	csm.providerOptimizer.UpdateWeights(CalcWeightsByStake(pairingList))
 	utils.LavaFormatDebug("updated providers", utils.Attribute{Key: "epoch", Value: epoch}, utils.Attribute{Key: "spec", Value: csm.rpcEndpoint.Key()})
 	return nil
@@ -639,7 +656,10 @@ func (csm *ConsumerSessionManager) getValidProviderAddresses(ignoredProvidersLis
 	if stateful == common.CONSISTENCY_SELECT_ALL_PROVIDERS && csm.providerOptimizer.Strategy() != provideroptimizer.STRATEGY_COST {
 		providers = csm.getTopTenProvidersForStatefulCalls(validAddresses, ignoredProvidersList)
 	} else {
-		providers, _ = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock)
+		providers, _ = csm.providerOptimizer.ChooseProvider(validAddresses, ignoredProvidersList, cu, requestedBlock, csm.currentEpoch)
+		for _, chosenProvider := range providers {
+			go csm.consumerMetricsManager.UpdateProviderChosenByOptimizerCount(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, chosenProvider, csm.currentEpoch)
+		}
 	}
 
 	utils.LavaFormatTrace("Choosing providers",
@@ -1068,7 +1088,7 @@ func (csm *ConsumerSessionManager) updateMetricsManager(consumerSession *SingleC
 	publicProviderAddress := consumerSession.Parent.PublicLavaAddress
 
 	go func() {
-		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful)
+		csm.consumerMetricsManager.SetQOSMetrics(chainId, apiInterface, publicProviderAddress, lastQos, lastQosExcellence, consumerSession.LatestBlock, consumerSession.RelayNum, relayLatency, sessionSuccessful, csm.currentEpoch)
 	}()
 }
 
@@ -1126,7 +1146,32 @@ func (csm *ConsumerSessionManager) GenerateReconnectCallback(consumerSessionsWit
 	}
 }
 
-func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage) *ConsumerSessionManager {
+func (csm *ConsumerSessionManager) periodicCollectOptimizerProvidersScore(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(CollectOptimizerProvidersScoreInterval):
+			// collect optimizer providers score
+			selectionTier, _ := csm.providerOptimizer.CalculateSelectionTiers(csm.validAddresses, nil, 10, spectypes.LATEST_BLOCK)
+			metricsTiers := []metrics.ProviderTierEntry{}
+			for i := 0; i < provideroptimizer.OptimizerNumTiers; i++ {
+				tierEntries := selectionTier.GetTier(i, provideroptimizer.OptimizerNumTiers, 1)
+				for _, entry := range tierEntries {
+					metricsTiers = append(metricsTiers, metrics.ProviderTierEntry{
+						Address: entry.Address,
+						Score:   entry.Score,
+						Tier:    i,
+					})
+				}
+			}
+
+			go csm.consumerMetricsManager.UpdateOptimizerProvidersScore(csm.rpcEndpoint.ChainID, csm.rpcEndpoint.ApiInterface, csm.currentEpoch, metricsTiers)
+		}
+	}
+}
+
+func NewConsumerSessionManager(ctx context.Context, rpcEndpoint *RPCEndpoint, providerOptimizer ProviderOptimizer, consumerMetricsManager *metrics.ConsumerMetricsManager, reporter metrics.Reporter, consumerPublicAddress string, activeSubscriptionProvidersStorage *ActiveSubscriptionProvidersStorage) *ConsumerSessionManager {
 	csm := &ConsumerSessionManager{
 		reportedProviders:      NewReportedProviders(reporter, rpcEndpoint.ChainID),
 		consumerMetricsManager: consumerMetricsManager,
@@ -1135,5 +1180,9 @@ func NewConsumerSessionManager(rpcEndpoint *RPCEndpoint, providerOptimizer Provi
 	csm.rpcEndpoint = rpcEndpoint
 	csm.providerOptimizer = providerOptimizer
 	csm.activeSubscriptionProvidersStorage = activeSubscriptionProvidersStorage
+
+	if CollectOptimizerProvidersScore {
+		go csm.periodicCollectOptimizerProvidersScore(ctx)
+	}
 	return csm
 }

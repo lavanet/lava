@@ -3,6 +3,7 @@ package metrics
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,6 +13,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+type ProviderTierEntry struct {
+	Address string
+	Tier    int
+	Score   float64
+}
 
 type LatencyTracker struct {
 	AverageLatency time.Duration // in nano seconds (time.Since result)
@@ -38,6 +45,7 @@ type ConsumerMetricsManager struct {
 	latencyMetric                               *prometheus.GaugeVec
 	qosMetric                                   *prometheus.GaugeVec
 	qosExcellenceMetric                         *prometheus.GaugeVec
+	qosMetricPerChoosing                        *prometheus.GaugeVec
 	LatestBlockMetric                           *prometheus.GaugeVec
 	LatestProviderRelay                         *prometheus.GaugeVec
 	virtualEpochMetric                          *prometheus.GaugeVec
@@ -53,6 +61,9 @@ type ConsumerMetricsManager struct {
 	relayProcessingLatencyBeforeProvider        *prometheus.GaugeVec
 	relayProcessingLatencyAfterProvider         *prometheus.GaugeVec
 	averageProcessingLatency                    map[string]*LatencyTracker
+	providerChosenByOptimizerCount              *prometheus.GaugeVec
+	providersStake                              *prometheus.GaugeVec
+	optimizerProvidersScore                     *prometheus.GaugeVec
 }
 
 type ConsumerMetricsManagerOptions struct {
@@ -101,12 +112,17 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	qosMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_qos_metrics",
 		Help: "The QOS metrics per provider for current epoch for the session with the most relays.",
-	}, []string{"spec", "apiInterface", "provider_address", "qos_metric"})
+	}, []string{"spec", "apiInterface", "provider_address", "epoch", "qos_metric"})
 
 	qosExcellenceMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_qos_excellence_metrics",
 		Help: "The QOS metrics per provider excellence",
-	}, []string{"spec", "provider_address", "qos_metric"})
+	}, []string{"spec", "provider_address", "epoch", "qos_metric"})
+
+	qosMetricPerChoosing := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_qos_metrics_per_choosing",
+		Help: "The QOS metrics per provider, per each time we choose a provider",
+	}, []string{"spec", "apiInterface", "provider_address", "epoch", "chosen", "qos_metric"})
 
 	latestBlockMetric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "lava_consumer_latest_provider_block",
@@ -174,6 +190,21 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		Help: "average latency of processing a successful relay after it is received from the provider in µs (10^6)",
 	}, []string{"spec", "apiInterface"})
 
+	providerChosenByOptimizerCount := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_provider_chosen_by_optimizer_count",
+		Help: "The total number of times a provider was chosen by the optimizer",
+	}, []string{"spec", "apiInterface", "provider_address", "epoch"})
+
+	providersStake := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_consumer_provider_stake",
+		Help: "The stake size of the provider",
+	}, []string{"spec", "apiInterface", "provider_address", "epoch"})
+
+	optimizerProvidersScore := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "lava_optimizer_providers_score",
+		Help: "The scores and tiers of the providers, calculated by the optimizer",
+	}, []string{"spec", "apiInterface", "provider_address", "epoch", "tier"})
+
 	// Register the metrics with the Prometheus registry.
 	prometheus.MustRegister(totalCURequestedMetric)
 	prometheus.MustRegister(totalRelaysRequestedMetric)
@@ -182,6 +213,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(latencyMetric)
 	prometheus.MustRegister(qosMetric)
 	prometheus.MustRegister(qosExcellenceMetric)
+	prometheus.MustRegister(qosMetricPerChoosing)
 	prometheus.MustRegister(latestBlockMetric)
 	prometheus.MustRegister(latestProviderRelay)
 	prometheus.MustRegister(virtualEpochMetric)
@@ -196,6 +228,9 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 	prometheus.MustRegister(totalNodeErroredRecoveryAttemptsMetric)
 	prometheus.MustRegister(relayProcessingLatencyBeforeProvider)
 	prometheus.MustRegister(relayProcessingLatencyAfterProvider)
+	prometheus.MustRegister(providerChosenByOptimizerCount)
+	prometheus.MustRegister(providersStake)
+	prometheus.MustRegister(optimizerProvidersScore)
 
 	consumerMetricsManager := &ConsumerMetricsManager{
 		totalCURequestedMetric:                      totalCURequestedMetric,
@@ -205,6 +240,7 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		latencyMetric:                               latencyMetric,
 		qosMetric:                                   qosMetric,
 		qosExcellenceMetric:                         qosExcellenceMetric,
+		qosMetricPerChoosing:                        qosMetricPerChoosing,
 		LatestBlockMetric:                           latestBlockMetric,
 		LatestProviderRelay:                         latestProviderRelay,
 		providerRelays:                              map[string]uint64{},
@@ -224,6 +260,9 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 		relayProcessingLatencyBeforeProvider:        relayProcessingLatencyBeforeProvider,
 		relayProcessingLatencyAfterProvider:         relayProcessingLatencyAfterProvider,
 		averageProcessingLatency:                    map[string]*LatencyTracker{},
+		providerChosenByOptimizerCount:              providerChosenByOptimizerCount,
+		providersStake:                              providersStake,
+		optimizerProvidersScore:                     optimizerProvidersScore,
 	}
 
 	http.Handle("/metrics", promhttp.Handler())
@@ -349,7 +388,7 @@ func (pme *ConsumerMetricsManager) getKeyForProcessingLatency(chainId string, ap
 	return header + "_" + chainId + "_" + apiInterface
 }
 
-func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos *pairingtypes.QualityOfServiceReport, qosExcellence *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool) {
+func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface string, providerAddress string, qos *pairingtypes.QualityOfServiceReport, qosExcellence *pairingtypes.QualityOfServiceReport, latestBlock int64, relays uint64, relayLatency time.Duration, sessionSuccessful bool, epoch uint64) {
 	if pme == nil {
 		return
 	}
@@ -377,6 +416,7 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 	pme.LatestProviderRelay.WithLabelValues(chainId, providerAddress, apiInterface).SetToCurrentTime()
 	// update existing relays
 	pme.providerRelays[providerRelaysKey] = relays
+	epochAsString := strconv.FormatUint(epoch, 10)
 	setMetricsForQos := func(qosArg *pairingtypes.QualityOfServiceReport, metric *prometheus.GaugeVec, apiInterfaceArg string) {
 		if qosArg == nil {
 			return
@@ -384,25 +424,25 @@ func (pme *ConsumerMetricsManager) SetQOSMetrics(chainId string, apiInterface st
 		availability, err := qosArg.Availability.Float64()
 		if err == nil {
 			if apiInterfaceArg == "" {
-				metric.WithLabelValues(chainId, providerAddress, AvailabilityLabel).Set(availability)
+				metric.WithLabelValues(chainId, providerAddress, epochAsString, AvailabilityLabel).Set(availability)
 			} else {
-				metric.WithLabelValues(chainId, apiInterface, providerAddress, AvailabilityLabel).Set(availability)
+				metric.WithLabelValues(chainId, apiInterface, providerAddress, epochAsString, AvailabilityLabel).Set(availability)
 			}
 		}
 		sync, err := qosArg.Sync.Float64()
 		if err == nil {
 			if apiInterfaceArg == "" {
-				metric.WithLabelValues(chainId, providerAddress, SyncLabel).Set(sync)
+				metric.WithLabelValues(chainId, providerAddress, epochAsString, SyncLabel).Set(sync)
 			} else {
-				metric.WithLabelValues(chainId, apiInterface, providerAddress, SyncLabel).Set(sync)
+				metric.WithLabelValues(chainId, apiInterface, providerAddress, epochAsString, SyncLabel).Set(sync)
 			}
 		}
 		latency, err := qosArg.Latency.Float64()
 		if err == nil {
 			if apiInterfaceArg == "" {
-				metric.WithLabelValues(chainId, providerAddress, LatencyLabel).Set(latency)
+				metric.WithLabelValues(chainId, providerAddress, epochAsString, LatencyLabel).Set(latency)
 			} else {
-				metric.WithLabelValues(chainId, apiInterface, providerAddress, LatencyLabel).Set(latency)
+				metric.WithLabelValues(chainId, apiInterface, providerAddress, epochAsString, LatencyLabel).Set(latency)
 			}
 		}
 	}
@@ -440,6 +480,7 @@ func (pme *ConsumerMetricsManager) ResetSessionRelatedMetrics() {
 	pme.qosMetric.Reset()
 	pme.qosExcellenceMetric.Reset()
 	pme.providerRelays = map[string]uint64{}
+	pme.providerChosenByOptimizerCount.Reset()
 }
 
 func (pme *ConsumerMetricsManager) SetVersion(version string) {
@@ -447,6 +488,52 @@ func (pme *ConsumerMetricsManager) SetVersion(version string) {
 		return
 	}
 	SetVersionInner(pme.protocolVersionMetric, version)
+}
+
+func (pme *ConsumerMetricsManager) UpdateProviderChosenByOptimizerCount(chainId string, apiInterface string, providerAddress string, epoch uint64) {
+	if pme == nil {
+		return
+	}
+	pme.providerChosenByOptimizerCount.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10)).Inc()
+}
+
+func (pme *ConsumerMetricsManager) UpdateOptimizerChoosingProviderWithData(
+	chainId string,
+	apiInterface string,
+	providerAddress string,
+	epoch uint64,
+	chosen bool,
+	providerDataScore ProviderDataScore,
+) {
+	if pme == nil {
+		return
+	}
+
+	pme.qosMetricPerChoosing.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10), strconv.FormatBool(chosen), AvailabilityLabel).Set(providerDataScore.Availability)
+	pme.qosMetricPerChoosing.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10), strconv.FormatBool(chosen), SyncLabel).Set(providerDataScore.Sync)
+	pme.qosMetricPerChoosing.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10), strconv.FormatBool(chosen), LatencyLabel).Set(providerDataScore.Latency)
+}
+
+func (pme *ConsumerMetricsManager) UpdateProvidersStake(chainId, apiInterface string, epoch uint64, stakeEntries map[string]uint64) {
+	if pme == nil {
+		return
+	}
+
+	for providerAddress, stake := range stakeEntries {
+		pme.providersStake.WithLabelValues(chainId, apiInterface, providerAddress, strconv.FormatUint(epoch, 10)).Set(float64(stake))
+	}
+}
+
+func (pme *ConsumerMetricsManager) UpdateOptimizerProvidersScore(chainId, apiInterface string, epoch uint64, tiers []ProviderTierEntry) {
+	if pme == nil {
+		return
+	}
+
+	for _, tierEntry := range tiers {
+		epochStr := strconv.FormatUint(epoch, 10)
+		tierStr := strconv.FormatInt(int64(tierEntry.Tier), 10)
+		pme.optimizerProvidersScore.WithLabelValues(chainId, apiInterface, tierEntry.Address, epochStr, tierStr).Set(tierEntry.Score)
+	}
 }
 
 func SetVersionInner(protocolVersionMetric *prometheus.GaugeVec, version string) {

@@ -49,9 +49,13 @@ const (
 )
 
 var (
-	Yaml_config_properties         = []string{"network-address", "chain-id", "api-interface"}
-	RelaysHealthEnableFlagDefault  = true
-	RelayHealthIntervalFlagDefault = 5 * time.Minute
+	Yaml_config_properties                         = []string{"network-address", "chain-id", "api-interface"}
+	RelaysHealthEnableFlagDefault                  = true
+	RelayHealthIntervalFlagDefault                 = 5 * time.Minute
+	CollectOptimizerProviderDataFlag               = false
+	CollectOptimizerProviderDataFlagName           = "collect-optimizer-provider-data"
+	OptimizerProviderDataCollectionIntervalFlag    = 5 * time.Second
+	OptimizerProviderDataCollectionIntervalFlagNam = "optimizer-provider-data-collection-interval"
 )
 
 type strategyValue struct {
@@ -243,10 +247,18 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 				baseLatency := common.AverageWorldLatency / 2 // we want performance to be half our timeout or better
 
 				// Create / Use existing optimizer
-				newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders)
-				optimizer, _, err = optimizers.LoadOrStore(chainID, newOptimizer)
+				var consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector
+				if CollectOptimizerProviderDataFlag {
+					consumerOptimizerDataCollector = metrics.NewConsumerOptimizerDataCollector(chainID, rpcEndpoint.ApiInterface, OptimizerProviderDataCollectionIntervalFlag, consumerMetricsManager)
+				}
+
+				newOptimizer := provideroptimizer.NewProviderOptimizer(options.strategy, averageBlockTime, baseLatency, options.maxConcurrentProviders, consumerOptimizerDataCollector)
+				optimizer, loaded, err = optimizers.LoadOrStore(chainID, newOptimizer)
 				if err != nil {
 					return utils.LavaFormatError("failed loading optimizer", err, utils.LogAttr("endpoint", rpcEndpoint.Key()))
+				}
+				if !loaded {
+					consumerOptimizerDataCollector.Start(ctx)
 				}
 
 				// Create / Use existing ConsumerConsistency
@@ -281,7 +293,7 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 
 			// Create active subscription provider storage for each unique chain
 			activeSubscriptionProvidersStorage := lavasession.NewActiveSubscriptionProvidersStorage()
-			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
+			consumerSessionManager := lavasession.NewConsumerSessionManager(ctx, rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
 			// Register For Updates
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList)
 
@@ -618,6 +630,11 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.ATierChance, common.SetProviderOptimizerBestTierPickChance, 0.75, "set the chances for picking a provider from the best group, default is 75% -> 0.75")
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.LastTierChance, common.SetProviderOptimizerWorstTierPickChance, 0.0, "set the chances for picking a provider from the worse group, default is 0% -> 0.0")
 	cmdRPCConsumer.Flags().IntVar(&provideroptimizer.OptimizerNumTiers, common.SetProviderOptimizerNumberOfTiersToCreate, 4, "set the number of groups to create, default is 4")
+	// optimizer metrics
+	cmdRPCConsumer.Flags().BoolVar(&CollectOptimizerProviderDataFlag, CollectOptimizerProviderDataFlagName, CollectOptimizerProviderDataFlag, "enables collection of data from the provider optimizer")
+	cmdRPCConsumer.Flags().DurationVar(&OptimizerProviderDataCollectionIntervalFlag, OptimizerProviderDataCollectionIntervalFlagNam, OptimizerProviderDataCollectionIntervalFlag, "sets the interval for collecting data from the provider optimizer")
+	cmdRPCConsumer.Flags().BoolVar(&lavasession.CollectOptimizerProvidersScore, lavasession.CollectOptimizerProvidersScoreFlagName, lavasession.CollectOptimizerProvidersScore, "enables collection of provider scores from the provider optimizer")
+	cmdRPCConsumer.Flags().DurationVar(&lavasession.CollectOptimizerProvidersScoreInterval, lavasession.CollectOptimizerProvidersScoreIntervalFlag, lavasession.CollectOptimizerProvidersScoreInterval, "sets the interval for collecting provider scores from the provider optimizer")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }
