@@ -217,7 +217,6 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 	}
 	shiftedChances := selectionTier.ShiftTierChance(po.OptimizerNumTiers, initialChances)
 	tier = selectionTier.SelectTierRandomly(po.OptimizerNumTiers, shiftedChances)
-
 	tierProviders := selectionTier.GetTier(tier, po.OptimizerNumTiers, MinimumEntries)
 
 	// TODO: add penalty if a provider is chosen too much
@@ -239,11 +238,13 @@ func (po *ProviderOptimizer) ChooseProvider(allAddresses []string, ignoredProvid
 			utils.LavaFormatWarning("provider data was not found for address", nil, utils.LogAttr("providerAddress", providerAddress))
 			continue
 		}
+
+		// TODO: Make sure that this is true
 		availabilityScore := providerData.Availability.Num / providerData.Availability.Denom
 		syncScore := providerData.Sync.Num / providerData.Sync.Denom
 		latencyScore := providerData.Latency.Num / providerData.Latency.Denom
 		chosen := lavaslices.Contains(returnedProviders, providerAddress)
-		po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, chosen, availabilityScore, syncScore, latencyScore)
+		go po.consumerOptimizerDataCollector.SetProviderData(providerAddress, epoch, chosen, availabilityScore, syncScore, latencyScore)
 	}
 
 	return returnedProviders, tier
@@ -514,7 +515,7 @@ func (po *ProviderOptimizer) getRelayStatsTimes(providerAddress string) []time.T
 	return nil
 }
 
-func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector, metrics *metrics.ConsumerMetricsManager) *ProviderOptimizer {
+func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency time.Duration, wantedNumProvidersInConcurrency uint, consumerOptimizerDataCollector *metrics.ConsumerOptimizerDataCollector) *ProviderOptimizer {
 	cache, err := ristretto.NewCache(&ristretto.Config{NumCounters: CacheNumCounters, MaxCost: CacheMaxCost, BufferItems: 64, IgnoreInternalCost: true})
 	if err != nil {
 		utils.LavaFormatFatal("failed setting up cache for queries", err)
@@ -537,7 +538,6 @@ func NewProviderOptimizer(strategy Strategy, averageBlockTIme, baseWorldLatency 
 		wantedNumProvidersInConcurrency: wantedNumProvidersInConcurrency,
 		selectionWeighter:               NewSelectionWeighter(),
 		OptimizerNumTiers:               OptimizerNumTiers,
-		metrics:                         metrics,
 		consumerOptimizerDataCollector:  consumerOptimizerDataCollector,
 	}
 }

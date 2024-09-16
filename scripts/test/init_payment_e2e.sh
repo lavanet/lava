@@ -32,6 +32,7 @@ lavad tx pairing stake-provider "LAV1" $STAKE "127.0.0.1:2262,1" 1 $(operator_ad
 
 # subscribed clients
 lavad tx subscription buy "DefaultPlan" $(lavad keys show user1 -a) 10 -y --from user1 --gas-adjustment "1.5" --gas "auto" --gas-prices $GASPRICE
+wait_next_block
 sleep_until_next_epoch
 
 # the end
