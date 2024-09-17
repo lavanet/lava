@@ -58,7 +58,6 @@ type ConsumerWSSubscriptionManager struct {
 	connectedDapps                     map[string]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply] // first key is dapp key, second key is hashed params
 	activeSubscriptions                map[string]*activeSubscriptionHolder                                      // key is params hash
 	relaySender                        RelaySender
-	consumerSessionManager             *lavasession.ConsumerSessionManager
 	chainParser                        ChainParser
 	refererData                        *RefererData
 	connectionType                     string
@@ -69,7 +68,6 @@ type ConsumerWSSubscriptionManager struct {
 }
 
 func NewConsumerWSSubscriptionManager(
-	consumerSessionManager *lavasession.ConsumerSessionManager,
 	relaySender RelaySender,
 	refererData *RefererData,
 	connectionType string,
@@ -81,7 +79,6 @@ func NewConsumerWSSubscriptionManager(
 		connectedDapps:                     make(map[string]map[string]*common.SafeChannelSender[*pairingtypes.RelayReply]),
 		activeSubscriptions:                make(map[string]*activeSubscriptionHolder),
 		currentlyPendingSubscriptions:      make(map[string]*pendingSubscriptionsBroadcastManager),
-		consumerSessionManager:             consumerSessionManager,
 		chainParser:                        chainParser,
 		refererData:                        refererData,
 		relaySender:                        relaySender,
