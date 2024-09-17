@@ -12,6 +12,7 @@ import (
 
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
 	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
@@ -32,6 +33,17 @@ type RPCInput interface {
 	GetHeaders() []pairingtypes.Metadata
 	GetMethod() string
 	GetID() json.RawMessage
+}
+
+type ParserOptions struct {
+	WarnLogOnFailedParsing bool
+}
+
+func (po *ParserOptions) shouldWarnLogOnFailedParsing() bool {
+	if po == nil {
+		return true
+	}
+	return po.WarnLogOnFailedParsing
 }
 
 func ParseDefaultBlockParameter(block string) (int64, error) {
@@ -131,9 +143,15 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, 
 		parsedBlockInfo = NewParsedInput()
 	}
 
+	var parserOptions *ParserOptions
+	_, err := parsedBlockInfo.GetBlockHashes()
+	if err == nil {
+		// found a hash, no need to log warning later
+		parserOptions = &ParserOptions{WarnLogOnFailedParsing: false}
+	}
 	parsedBlockInfo.parsedBlock = func() int64 {
 		// first we try to parse the value with the block parser
-		result, err := parse(rpcInput, blockParser, PARSE_PARAMS)
+		result, err := parse(rpcInput, blockParser, PARSE_PARAMS, parserOptions)
 		if err != nil || result == nil {
 			utils.LavaFormatDebug("ParseBlockFromParams - parse failed",
 				utils.LogAttr("error", err),
@@ -176,7 +194,7 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, 
 
 // This returns the parsed response without decoding
 func ParseFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser) (string, error) {
-	result, err := parse(rpcInput, blockParser, PARSE_RESULT)
+	result, err := parse(rpcInput, blockParser, PARSE_RESULT, nil)
 	if err != nil || result == nil {
 		utils.LavaFormatDebug("ParseBlockFromParams - parse failed",
 			utils.LogAttr("error", err),
@@ -220,7 +238,7 @@ func ParseFromReplyAndDecode(rpcInput RPCInput, resultParser spectypes.BlockPars
 	return parseResponseByEncoding([]byte(response), resultParser.Encoding)
 }
 
-func parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int) ([]interface{}, error) {
+func parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int, parserOptions *ParserOptions) ([]interface{}, error) {
 	var retval []interface{}
 	var err error
 
@@ -228,12 +246,14 @@ func parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int)
 	case spectypes.PARSER_FUNC_EMPTY:
 		return nil, nil
 	case spectypes.PARSER_FUNC_PARSE_BY_ARG:
-		retval, err = parseByArg(rpcInput, blockParser.ParserArg, dataSource)
+		retval, err = parseByArg(rpcInput, blockParser.ParserArg, dataSource, parserOptions)
 	case spectypes.PARSER_FUNC_PARSE_CANONICAL:
-		retval, err = parseCanonical(rpcInput, blockParser.ParserArg, dataSource)
+		retval, err = parseCanonical(rpcInput, blockParser.ParserArg, dataSource, parserOptions)
 	case spectypes.PARSER_FUNC_PARSE_DICTIONARY:
+		// currently, parseDictionary does not log warnings. If it ever will, we need to pass parserOptions
 		retval, err = parseDictionary(rpcInput, blockParser.ParserArg, dataSource)
 	case spectypes.PARSER_FUNC_PARSE_DICTIONARY_OR_ORDERED:
+		// currently, parseDictionaryOrOrdered does not log warnings. If it ever will, we need to pass parserOptions
 		retval, err = parseDictionaryOrOrdered(rpcInput, blockParser.ParserArg, dataSource)
 	case spectypes.PARSER_FUNC_DEFAULT:
 		retval = parseDefault(blockParser.ParserArg)
@@ -510,21 +530,28 @@ func blockInterfaceToString(block interface{}) string {
 	}
 }
 
-func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
+func parseByArg(rpcInput RPCInput, input []string, dataSource int, parserOptions *ParserOptions) ([]interface{}, error) {
+	var lavaLogSeverity uint = utils.LAVA_LOG_PRODUCTION
+	if !parserOptions.shouldWarnLogOnFailedParsing() {
+		lavaLogSeverity = utils.LAVA_LOG_DEBUG
+	}
+
 	// specified block is one of the direct parameters, input should be one string defining the location of the block
 	if len(input) != 1 {
-		return nil, utils.LavaFormatProduction("invalid input format, input length", nil, utils.LogAttr("input_len", strconv.Itoa(len(input))))
+		utils.LavaFormatLog("invalid input format, input length", nil, lavaslices.Slice(utils.LogAttr("input_len", len(input))), lavaLogSeverity)
 	}
+
 	inp := input[0]
 	param_index, err := strconv.ParseUint(inp, 10, 32)
 	if err != nil {
-		return nil, utils.LavaFormatProduction("invalid input format, input isn't an unsigned index", err, utils.LogAttr("input", inp))
+		return nil, utils.LavaFormatLog("invalid input format, input isn't an unsigned index", err, lavaslices.Slice(utils.LogAttr("input", inp)), lavaLogSeverity)
 	}
 
 	unmarshalledData, err := getDataToParse(rpcInput, dataSource)
 	if err != nil {
-		return nil, utils.LavaFormatProduction("invalid input format, data is not json", err, utils.LogAttr("data", unmarshalledData))
+		return nil, utils.LavaFormatLog("invalid input format, data is not json", err, lavaslices.Slice(utils.LogAttr("data", unmarshalledData)), lavaLogSeverity)
 	}
+
 	switch unmarshaledDataTyped := unmarshalledData.(type) {
 	case []interface{}:
 		if uint64(len(unmarshaledDataTyped)) <= param_index {
@@ -537,10 +564,13 @@ func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 		retArr = append(retArr, blockInterfaceToString(block))
 		return retArr, nil
 	default:
-		// Parse by arg can be only list as we dont have the name of the height property.
-		return nil, utils.LavaFormatProduction("Parse type unsupported in parse by arg, only list parameters are currently supported", nil,
-			utils.LogAttr("params", rpcInput.GetParams()),
-			utils.LogAttr("request", unmarshaledDataTyped),
+		// Parse by arg can be only list as we don't have the name of the height property.
+		return nil, utils.LavaFormatLog("Parse type unsupported in parse by arg, only list parameters are currently supported", nil,
+			lavaslices.Slice(
+				utils.LogAttr("params", rpcInput.GetParams()),
+				utils.LogAttr("request", unmarshaledDataTyped),
+			),
+			lavaLogSeverity,
 		)
 	}
 }
@@ -556,7 +586,12 @@ func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 //	}
 //
 // should output an interface array with "wanted result" in first index 0
-func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
+func parseCanonical(rpcInput RPCInput, input []string, dataSource int, parserOptions *ParserOptions) ([]interface{}, error) {
+	var lavaLogSeverity uint = utils.LAVA_LOG_WARN
+	if !parserOptions.shouldWarnLogOnFailedParsing() {
+		lavaLogSeverity = utils.LAVA_LOG_DEBUG
+	}
+
 	unmarshalledData, err := getDataToParse(rpcInput, dataSource)
 	if err != nil {
 		return nil, fmt.Errorf("invalid input format, data is not json: %s, error: %s", unmarshalledData, err)
@@ -574,14 +609,17 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		}
 		blockContainer := unmarshalledDataTyped[param_index]
 		for _, key := range input[1:] {
-			// type assertion for blockcontainer
+			// type assertion for blockContainer
 			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is not map[string]interface{}", ValueNotSetError,
-					utils.LogAttr("params", rpcInput.GetParams()),
-					utils.LogAttr("method", rpcInput.GetMethod()),
-					utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
-					utils.LogAttr("key", key),
-					utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
+				return nil, utils.LavaFormatLog("invalid parser input format, blockContainer is not map[string]interface{}", ValueNotSetError,
+					lavaslices.Slice(
+						utils.LogAttr("params", rpcInput.GetParams()),
+						utils.LogAttr("method", rpcInput.GetMethod()),
+						utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
+						utils.LogAttr("key", key),
+						utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
+					),
+					lavaLogSeverity,
 				)
 			}
 
@@ -589,12 +627,15 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
 				blockContainer = container
 			} else {
-				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError,
-					utils.LogAttr("params", rpcInput.GetParams()),
-					utils.LogAttr("method", rpcInput.GetMethod()),
-					utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
-					utils.LogAttr("key", key),
-					utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
+				return nil, utils.LavaFormatLog("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError,
+					lavaslices.Slice(
+						utils.LogAttr("params", rpcInput.GetParams()),
+						utils.LogAttr("method", rpcInput.GetMethod()),
+						utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
+						utils.LogAttr("key", key),
+						utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
+					),
+					lavaLogSeverity,
 				)
 			}
 		}
