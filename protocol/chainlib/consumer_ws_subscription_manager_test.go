@@ -137,8 +137,10 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptionsOnSameDappIdIp(t *tes
 				Return(relayResult1, nil).
 				Times(1) // Should call SendParsedRelay, because it is the first time we subscribe
 
+			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
+
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), rpcconsumerLogs)
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), rpcconsumerLogs)
 			uniqueIdentifiers := make([]string, numberOfParallelSubscriptions)
 			wg := sync.WaitGroup{}
 			wg.Add(numberOfParallelSubscriptions)
@@ -291,10 +293,11 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 				Return(relayResult1, nil).
 				Times(1) // Should call SendParsedRelay, because it is the first time we subscribe
 
+			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
 			rpcconsumerLogs, _ := metrics.NewRPCConsumerLogs(nil, nil)
 			metricsData := metrics.NewRelayAnalytics(projectHashTest, chainIdTest, apiTypeTest)
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), rpcconsumerLogs)
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), rpcconsumerLogs)
 
 			wg := sync.WaitGroup{}
 			wg.Add(10)
@@ -538,8 +541,10 @@ func TestConsumerWSSubscriptionManager(t *testing.T) {
 				Return(relayResult1, nil).
 				Times(1) // Should call SendParsedRelay, because it is the first time we subscribe
 
+			consumerSessionManager := CreateConsumerSessionManager(play.specId, play.apiInterface, ts.Consumer.Addr.String())
+
 			// Create a new ConsumerWSSubscriptionManager
-			manager := NewConsumerWSSubscriptionManager(relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), rpcconsumerLogs)
+			manager := NewConsumerWSSubscriptionManager(consumerSessionManager, relaySender, nil, play.connectionType, chainParser, lavasession.NewActiveSubscriptionProvidersStorage(), rpcconsumerLogs)
 
 			// Start a new subscription for the first time, called SendParsedRelay once
 			ctx = utils.WithUniqueIdentifier(ctx, utils.GenerateUniqueIdentifier())
