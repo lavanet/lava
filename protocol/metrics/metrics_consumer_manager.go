@@ -21,6 +21,12 @@ const (
 	UserDisconnect     WsDisconnectReasonEnum = iota
 )
 
+var disconnectReasonMap = map[WsDisconnectReasonEnum]string{
+	ConsumerDisconnect: "ConsumerDisconnect",
+	ProviderDisconnect: "ProviderDisconnect",
+	UserDisconnect:     "UserDisconnect",
+}
+
 type LatencyTracker struct {
 	AverageLatency time.Duration // in nano seconds (time.Since result)
 	TotalRequests  int
@@ -525,11 +531,6 @@ func (pme *ConsumerMetricsManager) SetDuplicatedWsSubscriptionRequestMetric(chai
 func (pme *ConsumerMetricsManager) SetWsSubscriptioDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason WsDisconnectReasonEnum) {
 	if pme == nil {
 		return
-	}
-	disconnectReasonMap := map[WsDisconnectReasonEnum]string{
-		ConsumerDisconnect: "ConsumerDisconnect",
-		ProviderDisconnect: "ProviderDisconnect",
-		UserDisconnect:     "UserDisconnect",
 	}
 	pme.totalWsSubscriptionDissconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReasonMap[disconnectReason]).Inc()
 }
