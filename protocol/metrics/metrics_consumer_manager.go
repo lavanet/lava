@@ -526,7 +526,7 @@ func (pme *ConsumerMetricsManager) SetWsSubscriptioDisconnectRequestMetric(chain
 	if pme == nil {
 		return
 	}
-	var disconnectReasonMap = map[WsDisconnectReasonEnum]string{
+	disconnectReasonMap := map[WsDisconnectReasonEnum]string{
 		ConsumerDisconnect: "ConsumerDisconnect",
 		ProviderDisconnect: "ProviderDisconnect",
 		UserDisconnect:     "UserDisconnect",
