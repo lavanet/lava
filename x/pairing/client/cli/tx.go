@@ -134,12 +134,10 @@ func NewSubmitUnstakeProposalTxCmd() *cobra.Command {
 				content.ProvidersInfo = []types.ProviderUnstakeInfo{{Provider: providerEntry.Address, ChainId: providerEntry.Chain}}
 				content.DelegatorsSlashing = []types.DelegatorSlashing{}
 				for _, delegator := range delegators.Delegations {
-					// if delegator.ChainID == providerEntry.Chain { // fix yarom
 					content.DelegatorsSlashing = append(content.DelegatorsSlashing, types.DelegatorSlashing{
 						Delegator:      delegator.Delegator,
 						SlashingAmount: sdk.NewCoin(commontypes.TokenDenom, delegator.Amount.Amount.MulRaw(int64(slashfactor)).QuoRaw(100)),
 					})
-					// }
 				}
 			}
 

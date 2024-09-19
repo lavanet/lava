@@ -166,7 +166,7 @@ func RunHealth(ctx context.Context,
 				}
 
 				for _, chain := range response.MetaData[0].Chains {
-					healthResults.setSpec(&spectypes.Spec{Index: chain}) // fix yarom
+					healthResults.setSpec(&spectypes.Spec{Index: chain})
 					for _, apiInterface := range chainIdToApiInterfaces[chain] {
 						healthResults.SetProviderData(LavaEntity{
 							Address:      providerAddress,
