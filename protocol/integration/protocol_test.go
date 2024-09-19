@@ -322,7 +322,7 @@ func TestConsumerProviderBasic(t *testing.T) {
 	ctx := context.Background()
 	// can be any spec and api interface
 	specId := "LAV1"
-	apiInterface := spectypes.APIInterfaceTendermintRPC
+	apiInterface := spectypes.APIInterfaceRest
 	epoch := uint64(100)
 	lavaChainID := "lava"
 
