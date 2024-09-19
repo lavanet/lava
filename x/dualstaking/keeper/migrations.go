@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/x/dualstaking/types"
 	fixationtypes "github.com/lavanet/lava/v3/x/fixationstore/types"
+	timerstoretypes "github.com/lavanet/lava/v3/x/timerstore/types"
 )
 
 type Migrator struct {
@@ -29,7 +30,8 @@ func (m Migrator) MigrateVersion5To6(ctx sdk.Context) error {
 	)
 
 	// set delegations
-	delegationFS := fixationtypes.NewFixationStore(m.keeper.storeKey, m.keeper.cdc, DelegationPrefix, nil, nil)
+	ts := timerstoretypes.NewTimerStore(m.keeper.storeKey, m.keeper.cdc, DelegationPrefix)
+	delegationFS := fixationtypes.NewFixationStore(m.keeper.storeKey, m.keeper.cdc, DelegationPrefix, ts, nil)
 	incisec := delegationFS.GetAllEntryIndices(ctx)
 	for _, index := range incisec {
 		var oldDelegation types.Delegation
