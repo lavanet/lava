@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	v2 "github.com/lavanet/lava/v3/x/pairing/migrations/v2"
 )
@@ -85,7 +86,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 
 		// calculate delegate total and update the entry
 		for _, entry := range entries {
-			metadata.Chains = append(metadata.Chains, entry.Chain)
+			metadata.Chains = lavaslices.AddUnique(metadata.Chains, entry.Chain)
 			entry.DelegateTotal = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
 			m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, *entry)
 		}

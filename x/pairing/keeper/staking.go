@@ -8,7 +8,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	"github.com/lavanet/lava/v3/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v3/x/plans/types"
@@ -26,12 +25,14 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	metadata, err := k.epochStorageKeeper.GetMetadata(ctx, provider)
 	if err != nil {
+		// first provider with this address
 		metadata = epochstoragetypes.ProviderMetadata{
 			Provider:         provider,
 			Vault:            creator,
 			Chains:           []string{chainID},
 			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
 		}
+		k.epochStorageKeeper.SetMetadata(ctx, metadata)
 	}
 
 	if creator != metadata.Vault {
@@ -40,11 +41,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			utils.Attribute{Key: "creator", Value: creator},
 		)
 	}
-
-	if !lavaslices.Contains(metadata.Chains, chainID) {
-		metadata.Chains = append(metadata.Chains, chainID)
-	}
-	k.epochStorageKeeper.SetMetadata(ctx, metadata)
 
 	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)
 	if err != nil || !spec.Enabled {
