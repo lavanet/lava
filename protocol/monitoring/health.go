@@ -171,14 +171,14 @@ func RunHealth(ctx context.Context,
 				delegations := response.GetDelegations()
 				for _, delegation := range delegations {
 					if delegation.Provider == providerAddress {
-						healthResults.setSpec(&spectypes.Spec{Index: delegation.ChainID})
-						for _, apiInterface := range chainIdToApiInterfaces[delegation.ChainID] {
-							healthResults.SetProviderData(LavaEntity{
-								Address:      providerAddress,
-								SpecId:       delegation.ChainID,
-								ApiInterface: apiInterface,
-							}, ReplyData{})
-						}
+						// healthResults.setSpec(&spectypes.Spec{Index: delegation.ChainID}) // fix yarom
+						// for _, apiInterface := range chainIdToApiInterfaces[delegation.ChainID] {
+						// 	healthResults.SetProviderData(LavaEntity{
+						// 		Address:      providerAddress,
+						// 		SpecId:       delegation.ChainID,
+						// 		ApiInterface: apiInterface,
+						// 	}, ReplyData{})
+						// }
 					}
 				}
 				return
