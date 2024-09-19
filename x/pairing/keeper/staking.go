@@ -2,15 +2,13 @@ package keeper
 
 import (
 	"fmt"
-
-	slices "github.com/lavanet/lava/v3/utils/lavaslices"
-
 	"strconv"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	"github.com/lavanet/lava/v3/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v3/x/plans/types"
@@ -43,7 +41,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		)
 	}
 
-	if !slices.Contains(metadata.Chains, chainID) {
+	if !lavaslices.Contains(metadata.Chains, chainID) {
 		metadata.Chains = append(metadata.Chains, chainID)
 	}
 	k.epochStorageKeeper.SetMetadata(ctx, metadata)
