@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/dgraph-io/ristretto"
 	"github.com/lavanet/lava/v3/protocol/common"
+	"github.com/lavanet/lava/v3/protocol/metrics"
 	"github.com/lavanet/lava/v3/utils"
 	"github.com/lavanet/lava/v3/utils/lavaslices"
 	"github.com/lavanet/lava/v3/utils/rand"
@@ -147,6 +148,41 @@ func (po *ProviderOptimizer) AppendProbeRelayData(providerAddress string, latenc
 		utils.LogAttr("latency", latency),
 		utils.LogAttr("success", success),
 	)
+}
+
+func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) []metrics.OptimizerQoSReport {
+	reports := []metrics.OptimizerQoSReport{}
+	for _, providerAddress := range allAddresses {
+		if _, ok := ignoredProviders[providerAddress]; ok {
+			// ignored provider, skip it
+			continue
+		}
+		providerData, found := po.getProviderData(providerAddress)
+		if !found {
+			utils.LavaFormatTrace("provider data was not found for address", utils.LogAttr("providerAddress", providerAddress))
+		}
+		// latency score
+		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
+
+		// sync score
+		syncScoreCurrent := float64(0)
+		if requestedBlock < 0 {
+			// means user didn't ask for a specific block and we want to give him the best
+			syncScoreCurrent = po.calculateSyncScore(providerData.Sync) // smaller == better i.e less sync lag
+		}
+
+		providerScore := po.calcProviderScore(latencyScoreCurrent, syncScoreCurrent)
+		providerReport := metrics.OptimizerQoSReport{
+			ProviderAddress:   providerAddress,
+			SyncScore:         syncScoreCurrent,
+			AvailabilityScore: providerData.Availability.Num / providerData.Availability.Denom,
+			LatencyScore:      latencyScoreCurrent,
+			GenericScore:      providerScore,
+		}
+		reports = append(reports, providerReport)
+	}
+
+	return reports
 }
 
 func (po *ProviderOptimizer) CalculateSelectionTiers(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (SelectionTier, Exploration) {

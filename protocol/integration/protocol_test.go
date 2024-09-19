@@ -191,7 +191,7 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 
 	consumerConsistency := rpcconsumer.NewConsumerConsistency(specId)
 	consumerCmdFlags := common.ConsumerCmdFlags{}
-	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil)
+	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil, nil)
 	require.NoError(t, err)
 	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, account.SK, lavaChainID, nil, rpcconsumerLogs, account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)

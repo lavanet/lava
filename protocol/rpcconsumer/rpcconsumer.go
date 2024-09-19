@@ -40,12 +40,15 @@ import (
 )
 
 const (
-	DefaultRPCConsumerFileName    = "rpcconsumer.yml"
-	DebugRelaysFlagName           = "debug-relays"
-	DebugProbesFlagName           = "debug-probes"
-	refererBackendAddressFlagName = "referer-be-address"
-	refererMarkerFlagName         = "referer-marker"
-	reportsSendBEAddress          = "reports-be-address"
+	DefaultRPCConsumerFileName         = "rpcconsumer.yml"
+	DebugRelaysFlagName                = "debug-relays"
+	DebugProbesFlagName                = "debug-probes"
+	refererBackendAddressFlagName      = "referer-be-address"
+	refererMarkerFlagName              = "referer-marker"
+	reportsSendBEAddress               = "reports-be-address"
+	optimizerQosServerAddress          = "optimizer-qos-server-address"
+	optimizerQosServerPushInterval     = "optimizer-qos-push-interval"
+	optimizerQosServerSamplingInterval = "optimizer-qos-sampling-interval"
 )
 
 var (
@@ -100,29 +103,32 @@ type ConsumerStateTrackerInf interface {
 	GetLatestVirtualEpoch() uint64
 }
 
-type AnalyticsServerAddressess struct {
+type AnalyticsServerAddresses struct {
 	AddApiMethodCallsMetrics bool
 	MetricsListenAddress     string
 	RelayServerAddress       string
 	ReportsAddressFlag       string
+	OptimizerQoSAddress      string
 }
 type RPCConsumer struct {
 	consumerStateTracker ConsumerStateTrackerInf
 }
 
 type rpcConsumerStartOptions struct {
-	txFactory                 tx.Factory
-	clientCtx                 client.Context
-	rpcEndpoints              []*lavasession.RPCEndpoint
-	requiredResponses         int
-	cache                     *performance.Cache
-	strategy                  provideroptimizer.Strategy
-	maxConcurrentProviders    uint
-	analyticsServerAddressess AnalyticsServerAddressess
-	cmdFlags                  common.ConsumerCmdFlags
-	stateShare                bool
-	refererData               *chainlib.RefererData
-	staticProvidersList       []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
+	txFactory                                  tx.Factory
+	clientCtx                                  client.Context
+	rpcEndpoints                               []*lavasession.RPCEndpoint
+	requiredResponses                          int
+	cache                                      *performance.Cache
+	strategy                                   provideroptimizer.Strategy
+	maxConcurrentProviders                     uint
+	analyticsServerAddresses                   AnalyticsServerAddresses
+	cmdFlags                                   common.ConsumerCmdFlags
+	stateShare                                 bool
+	refererData                                *chainlib.RefererData
+	staticProvidersList                        []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
+	consumerOptimizerQoSClientPushInterval     time.Duration
+	consumerOptimizerQoSClientSamplingInterval time.Duration
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -131,10 +137,13 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 		testModeWarn("RPCConsumer running tests")
 	}
 	options.refererData.ReferrerClient = metrics.NewConsumerReferrerClient(options.refererData.Address)
-	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddressess.ReportsAddressFlag)
-	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{NetworkAddress: options.analyticsServerAddressess.MetricsListenAddress, AddMethodsApiGauge: options.analyticsServerAddressess.AddApiMethodCallsMetrics}) // start up prometheus metrics
-	consumerUsageserveManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddressess.RelayServerAddress)                                                                                                                                    // start up relay server reporting
-	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageserveManager)
+	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
+	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{NetworkAddress: options.analyticsServerAddresses.MetricsListenAddress, AddMethodsApiGauge: options.analyticsServerAddresses.AddApiMethodCallsMetrics}) // start up prometheus metrics
+	consumerUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress)                                                                                                                                   // start up relay server reporting
+	consumerOptimizerQoSClient := metrics.NewConsumerOptimizerQoSClient(options.analyticsServerAddresses.OptimizerQoSAddress, options.consumerOptimizerQoSClientPushInterval)                                                                                // start up optimizer qos client
+	consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, options.consumerOptimizerQoSClientSamplingInterval)                                                                                                                                  // start up optimizer qos client
+
+	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageServeManager, consumerOptimizerQoSClient)
 	if err != nil {
 		utils.LavaFormatFatal("failed creating RPCConsumer logs", err)
 	}
@@ -284,6 +293,9 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 			consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, consumerMetricsManager, consumerReportsManager, consumerAddr.String(), activeSubscriptionProvidersStorage)
 			// Register For Updates
 			rpcc.consumerStateTracker.RegisterConsumerSessionManagerForPairingUpdates(ctx, consumerSessionManager, options.staticProvidersList)
+			consumerStateTracker.RegisterForPairingStakeEntriesUpdates(ctx, consumerOptimizerQoSClient, chainID)
+
+			consumerOptimizerQoSClient.RegisterOptimizer(optimizer, chainID)
 
 			var relaysMonitor *metrics.RelaysMonitor
 			if options.cmdFlags.RelaysHealthEnableFlag {
@@ -539,11 +551,12 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				utils.LavaFormatInfo("Working with selection strategy: " + strategyFlag.String())
 			}
 
-			analyticsServerAddressess := AnalyticsServerAddressess{
+			analyticsServerAddresses := AnalyticsServerAddresses{
 				AddApiMethodCallsMetrics: viper.GetBool(metrics.AddApiMethodCallsMetrics),
 				MetricsListenAddress:     viper.GetString(metrics.MetricsListenFlagName),
 				RelayServerAddress:       viper.GetString(metrics.RelayServerFlagName),
 				ReportsAddressFlag:       viper.GetString(reportsSendBEAddress),
+				OptimizerQoSAddress:      viper.GetString(optimizerQosServerAddress),
 			}
 
 			var refererData *chainlib.RefererData
@@ -574,7 +587,22 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 			}
 
 			rpcConsumerSharedState := viper.GetBool(common.SharedStateFlag)
-			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{txFactory, clientCtx, rpcEndpoints, requiredResponses, cache, strategyFlag.Strategy, maxConcurrentProviders, analyticsServerAddressess, consumerPropagatedFlags, rpcConsumerSharedState, refererData, staticProviderEndpoints})
+			err = rpcConsumer.Start(ctx, &rpcConsumerStartOptions{
+				txFactory,
+				clientCtx,
+				rpcEndpoints,
+				requiredResponses,
+				cache,
+				strategyFlag.Strategy,
+				maxConcurrentProviders,
+				analyticsServerAddresses,
+				consumerPropagatedFlags,
+				rpcConsumerSharedState,
+				refererData,
+				staticProviderEndpoints,
+				viper.GetDuration(optimizerQosServerPushInterval),
+				viper.GetDuration(optimizerQosServerSamplingInterval),
+			})
 			return err
 		},
 	}
@@ -618,6 +646,10 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.ATierChance, common.SetProviderOptimizerBestTierPickChance, 0.75, "set the chances for picking a provider from the best group, default is 75% -> 0.75")
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.LastTierChance, common.SetProviderOptimizerWorstTierPickChance, 0.0, "set the chances for picking a provider from the worse group, default is 0% -> 0.0")
 	cmdRPCConsumer.Flags().IntVar(&provideroptimizer.OptimizerNumTiers, common.SetProviderOptimizerNumberOfTiersToCreate, 4, "set the number of groups to create, default is 4")
+	// optimizer qos reports
+	cmdRPCConsumer.Flags().String(optimizerQosServerAddress, "", "address to send optimizer qos reports to")
+	cmdRPCConsumer.Flags().Duration(optimizerQosServerPushInterval, time.Minute*5, "interval to push optimizer qos reports")
+	cmdRPCConsumer.Flags().Duration(optimizerQosServerSamplingInterval, time.Second*1, "interval to sample optimizer qos reports")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }
