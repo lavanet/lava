@@ -2,7 +2,9 @@ package keeper
 
 import (
 	"fmt"
-	"slices"
+
+	slices "github.com/lavanet/lava/v3/utils/lavaslices"
+
 	"strconv"
 	"time"
 
