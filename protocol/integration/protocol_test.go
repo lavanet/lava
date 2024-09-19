@@ -22,6 +22,7 @@ import (
 	"github.com/lavanet/lava/v3/protocol/lavaprotocol/finalizationconsensus"
 	"github.com/lavanet/lava/v3/protocol/lavasession"
 	"github.com/lavanet/lava/v3/protocol/metrics"
+	"github.com/lavanet/lava/v3/protocol/performance"
 	"github.com/lavanet/lava/v3/protocol/provideroptimizer"
 	"github.com/lavanet/lava/v3/protocol/rpcconsumer"
 	"github.com/lavanet/lava/v3/protocol/rpcprovider"
@@ -171,6 +172,7 @@ type rpcConsumerOptions struct {
 	pairingList           map[uint64]*lavasession.ConsumerSessionsWithProvider
 	requiredResponses     int
 	lavaChainID           string
+	cacheListenAddress    string
 }
 
 func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpcConsumerOptions) (*rpcconsumer.RPCConsumerServer, *mockConsumerStateTracker) {
@@ -204,7 +206,14 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	consumerCmdFlags := common.ConsumerCmdFlags{}
 	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil)
 	require.NoError(t, err)
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, nil, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	var cache *performance.Cache = nil
+	if rpcConsumerOptions.cacheListenAddress != "" {
+		cache, err = performance.InitCache(ctx, rpcConsumerOptions.cacheListenAddress)
+		if err != nil {
+			t.Fatalf("Failed To Connect to cache at address %s: %v", rpcConsumerOptions.cacheListenAddress, err)
+		}
+	}
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
 
 	// wait for consumer to finish initialization
