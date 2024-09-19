@@ -162,21 +162,32 @@ func createInMemoryRewardDb(specs []string) (*rewardserver.RewardDB, error) {
 	return rewardDB, nil
 }
 
-func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInterface string, account sigs.Account, consumerListenAddress string, epoch uint64, pairingList map[uint64]*lavasession.ConsumerSessionsWithProvider, requiredResponses int, lavaChainID string) (*rpcconsumer.RPCConsumerServer, *mockConsumerStateTracker) {
+type rpcConsumerOptions struct {
+	specId                string
+	apiInterface          string
+	account               sigs.Account
+	consumerListenAddress string
+	epoch                 uint64
+	pairingList           map[uint64]*lavasession.ConsumerSessionsWithProvider
+	requiredResponses     int
+	lavaChainID           string
+}
+
+func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpcConsumerOptions) (*rpcconsumer.RPCConsumerServer, *mockConsumerStateTracker) {
 	serverHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Handle the incoming request and provide the desired response
 		w.WriteHeader(http.StatusOK)
 	})
-	chainParser, _, chainFetcher, _, _, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, nil, "../../", nil)
+	chainParser, _, chainFetcher, _, _, err := chainlib.CreateChainLibMocks(ctx, rpcConsumerOptions.specId, rpcConsumerOptions.apiInterface, serverHandler, nil, "../../", nil)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainFetcher)
 
 	rpcConsumerServer := &rpcconsumer.RPCConsumerServer{}
 	rpcEndpoint := &lavasession.RPCEndpoint{
-		NetworkAddress:  consumerListenAddress,
-		ChainID:         specId,
-		ApiInterface:    apiInterface,
+		NetworkAddress:  rpcConsumerOptions.consumerListenAddress,
+		ChainID:         rpcConsumerOptions.specId,
+		ApiInterface:    rpcConsumerOptions.apiInterface,
 		TLSEnabled:      false,
 		HealthCheckPath: "",
 		Geolocation:     1,
@@ -187,13 +198,13 @@ func createRpcConsumer(t *testing.T, ctx context.Context, specId string, apiInte
 	baseLatency := common.AverageWorldLatency / 2
 	optimizer := provideroptimizer.NewProviderOptimizer(provideroptimizer.STRATEGY_BALANCED, averageBlockTime, baseLatency, 2)
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
-	consumerSessionManager.UpdateAllProviders(epoch, pairingList)
+	consumerSessionManager.UpdateAllProviders(rpcConsumerOptions.epoch, rpcConsumerOptions.pairingList)
 
-	consumerConsistency := rpcconsumer.NewConsumerConsistency(specId)
+	consumerConsistency := rpcconsumer.NewConsumerConsistency(rpcConsumerOptions.specId)
 	consumerCmdFlags := common.ConsumerCmdFlags{}
 	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil)
 	require.NoError(t, err)
-	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, requiredResponses, account.SK, lavaChainID, nil, rpcconsumerLogs, account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
+	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, nil, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
 
 	// wait for consumer to finish initialization
@@ -313,7 +324,6 @@ func TestConsumerProviderBasic(t *testing.T) {
 	specId := "LAV1"
 	apiInterface := spectypes.APIInterfaceTendermintRPC
 	epoch := uint64(100)
-	requiredResponses := 1
 	lavaChainID := "lava"
 
 	numProviders := 1
@@ -357,7 +367,18 @@ func TestConsumerProviderBasic(t *testing.T) {
 			PairingEpoch:     epoch,
 		}
 	}
-	rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+
+	rpcConsumerOptions := rpcConsumerOptions{
+		specId:                specId,
+		apiInterface:          apiInterface,
+		account:               consumerAccount,
+		consumerListenAddress: consumerListenAddress,
+		epoch:                 epoch,
+		pairingList:           pairingList,
+		requiredResponses:     1,
+		lavaChainID:           lavaChainID,
+	}
+	rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
 	require.NotNil(t, rpcconsumerServer)
 	client := http.Client{}
 	resp, err := client.Get("http://" + consumerListenAddress + "/status")
@@ -390,7 +411,6 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 			specId := "LAV1"
 			apiInterface := spectypes.APIInterfaceTendermintRPC
 			epoch := uint64(100)
-			requiredResponses := 1
 			lavaChainID := "lava"
 			numProviders := 5
 
@@ -434,7 +454,18 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 					PairingEpoch:     epoch,
 				}
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+
+			rpcConsumerOptions := rpcConsumerOptions{
+				specId:                specId,
+				apiInterface:          apiInterface,
+				account:               consumerAccount,
+				consumerListenAddress: consumerListenAddress,
+				epoch:                 epoch,
+				pairingList:           pairingList,
+				requiredResponses:     1,
+				lavaChainID:           lavaChainID,
+			}
+			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
 			require.NotNil(t, rpcconsumerServer)
 			if play.scenario != 1 {
 				counter := map[int]int{}
@@ -524,7 +555,6 @@ func TestConsumerProviderTx(t *testing.T) {
 			specId := "LAV1"
 			apiInterface := spectypes.APIInterfaceRest
 			epoch := uint64(100)
-			requiredResponses := 1
 			lavaChainID := "lava"
 			numProviders := 5
 
@@ -569,7 +599,18 @@ func TestConsumerProviderTx(t *testing.T) {
 					PairingEpoch:     epoch,
 				}
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+
+			rpcConsumerOptions := rpcConsumerOptions{
+				specId:                specId,
+				apiInterface:          apiInterface,
+				account:               consumerAccount,
+				consumerListenAddress: consumerListenAddress,
+				epoch:                 epoch,
+				pairingList:           pairingList,
+				requiredResponses:     1,
+				lavaChainID:           lavaChainID,
+			}
+			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
 			require.NotNil(t, rpcconsumerServer)
 
 			for i := 0; i < numProviders; i++ {
@@ -631,7 +672,6 @@ func TestConsumerProviderJsonRpcWithNullID(t *testing.T) {
 			specId := play.specId
 			apiInterface := play.apiInterface
 			epoch := uint64(100)
-			requiredResponses := 1
 			lavaChainID := "lava"
 			numProviders := 5
 
@@ -675,7 +715,18 @@ func TestConsumerProviderJsonRpcWithNullID(t *testing.T) {
 					PairingEpoch:     epoch,
 				}
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+
+			rpcConsumerOptions := rpcConsumerOptions{
+				specId:                specId,
+				apiInterface:          apiInterface,
+				account:               consumerAccount,
+				consumerListenAddress: consumerListenAddress,
+				epoch:                 epoch,
+				pairingList:           pairingList,
+				requiredResponses:     1,
+				lavaChainID:           lavaChainID,
+			}
+			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
 			require.NotNil(t, rpcconsumerServer)
 
 			for i := 0; i < numProviders; i++ {
@@ -741,7 +792,6 @@ func TestConsumerProviderSubscriptionsHappyFlow(t *testing.T) {
 			specId := play.specId
 			apiInterface := play.apiInterface
 			epoch := uint64(100)
-			requiredResponses := 1
 			lavaChainID := "lava"
 			numProviders := 5
 
@@ -785,7 +835,18 @@ func TestConsumerProviderSubscriptionsHappyFlow(t *testing.T) {
 					PairingEpoch:     epoch,
 				}
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+
+			rpcConsumerOptions := rpcConsumerOptions{
+				specId:                specId,
+				apiInterface:          apiInterface,
+				account:               consumerAccount,
+				consumerListenAddress: consumerListenAddress,
+				epoch:                 epoch,
+				pairingList:           pairingList,
+				requiredResponses:     1,
+				lavaChainID:           lavaChainID,
+			}
+			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
 			require.NotNil(t, rpcconsumerServer)
 
 			for i := 0; i < numProviders; i++ {
@@ -855,7 +916,6 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 			specId := "LAV1"
 			apiInterface := spectypes.APIInterfaceRest
 			epoch := uint64(100)
-			requiredResponses := 1
 			lavaChainID := "lava"
 			numProviders := play.numOfProviders
 
@@ -903,7 +963,18 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 					PairingEpoch:     epoch,
 				}
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+
+			rpcConsumerOptions := rpcConsumerOptions{
+				specId:                specId,
+				apiInterface:          apiInterface,
+				account:               consumerAccount,
+				consumerListenAddress: consumerListenAddress,
+				epoch:                 epoch,
+				pairingList:           pairingList,
+				requiredResponses:     1,
+				lavaChainID:           lavaChainID,
+			}
+			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
 			require.NotNil(t, rpcconsumerServer)
 
 			// Set first provider as a "liar", to return wrong block hashes
@@ -991,7 +1062,6 @@ func TestArchiveProvidersRetry(t *testing.T) {
 			specId := "LAV1"
 			apiInterface := spectypes.APIInterfaceRest
 			epoch := uint64(100)
-			requiredResponses := 1
 			lavaChainID := "lava"
 			numProviders := play.numOfProviders
 
@@ -1047,7 +1117,18 @@ func TestArchiveProvidersRetry(t *testing.T) {
 					PairingEpoch:     epoch,
 				}
 			}
-			rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+
+			rpcConsumerOptions := rpcConsumerOptions{
+				specId:                specId,
+				apiInterface:          apiInterface,
+				account:               consumerAccount,
+				consumerListenAddress: consumerListenAddress,
+				epoch:                 epoch,
+				pairingList:           pairingList,
+				requiredResponses:     1,
+				lavaChainID:           lavaChainID,
+			}
+			rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
 			require.NotNil(t, rpcconsumerServer)
 
 			client := http.Client{Timeout: 1000 * time.Millisecond}
@@ -1129,7 +1210,6 @@ func TestSameProviderConflictReport(t *testing.T) {
 		specId := "LAV1"
 		apiInterface := spectypes.APIInterfaceRest
 		epoch := uint64(100)
-		requiredResponses := 1
 		lavaChainID := "lava"
 		numProviders := 1
 
@@ -1140,8 +1220,17 @@ func TestSameProviderConflictReport(t *testing.T) {
 
 		initProvidersData(consumerAccount, providers, specId, apiInterface, lavaChainID)
 
-		pairingList := initPairingList(providers, epoch)
-		rpcconsumerServer, mockConsumerStateTracker := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+		rpcConsumerOptions := rpcConsumerOptions{
+			specId:                specId,
+			apiInterface:          apiInterface,
+			account:               consumerAccount,
+			consumerListenAddress: consumerListenAddress,
+			epoch:                 epoch,
+			pairingList:           initPairingList(providers, epoch),
+			requiredResponses:     1,
+			lavaChainID:           lavaChainID,
+		}
+		rpcconsumerServer, mockConsumerStateTracker := createRpcConsumer(t, ctx, rpcConsumerOptions)
 
 		conflictSent := false
 		wg := sync.WaitGroup{}
@@ -1202,7 +1291,6 @@ func TestSameProviderConflictReport(t *testing.T) {
 		specId := "LAV1"
 		apiInterface := spectypes.APIInterfaceRest
 		epoch := uint64(100)
-		requiredResponses := 1
 		lavaChainID := "lava"
 		numProviders := 2
 
@@ -1212,8 +1300,17 @@ func TestSameProviderConflictReport(t *testing.T) {
 
 		initProvidersData(consumerAccount, providers, specId, apiInterface, lavaChainID)
 
-		pairingList := initPairingList(providers, epoch)
-		rpcconsumerServer, mockConsumerStateTracker := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+		rpcConsumerOptions := rpcConsumerOptions{
+			specId:                specId,
+			apiInterface:          apiInterface,
+			account:               consumerAccount,
+			consumerListenAddress: consumerListenAddress,
+			epoch:                 epoch,
+			pairingList:           initPairingList(providers, epoch),
+			requiredResponses:     1,
+			lavaChainID:           lavaChainID,
+		}
+		rpcconsumerServer, mockConsumerStateTracker := createRpcConsumer(t, ctx, rpcConsumerOptions)
 
 		twoProvidersConflictSent := false
 		sameProviderConflictSent := false
@@ -1285,7 +1382,6 @@ func TestConsumerProviderStatic(t *testing.T) {
 	specId := "LAV1"
 	apiInterface := spectypes.APIInterfaceTendermintRPC
 	epoch := uint64(100)
-	requiredResponses := 1
 	lavaChainID := "lava"
 
 	numProviders := 1
@@ -1331,7 +1427,18 @@ func TestConsumerProviderStatic(t *testing.T) {
 			StaticProvider:   true,
 		}
 	}
-	rpcconsumerServer, _ := createRpcConsumer(t, ctx, specId, apiInterface, consumerAccount, consumerListenAddress, epoch, pairingList, requiredResponses, lavaChainID)
+
+	rpcConsumerOptions := rpcConsumerOptions{
+		specId:                specId,
+		apiInterface:          apiInterface,
+		account:               consumerAccount,
+		consumerListenAddress: consumerListenAddress,
+		epoch:                 epoch,
+		pairingList:           pairingList,
+		requiredResponses:     1,
+		lavaChainID:           lavaChainID,
+	}
+	rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
 	require.NotNil(t, rpcconsumerServer)
 	client := http.Client{}
 	// consumer sends the relay to a provider with an address BANANA+%d so the provider needs to skip validations for this to work
