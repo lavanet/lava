@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	"github.com/lavanet/lava/v3/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v3/x/plans/types"
@@ -32,8 +33,10 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			Chains:           []string{chainID},
 			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
 		}
-		k.epochStorageKeeper.SetMetadata(ctx, metadata)
 	}
+
+	metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
+	k.epochStorageKeeper.SetMetadata(ctx, metadata)
 
 	if creator != metadata.Vault {
 		return utils.LavaFormatWarning("creator does not match the provider vault", err,
