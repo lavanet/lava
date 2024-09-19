@@ -19,7 +19,6 @@ import (
 	"github.com/lavanet/lava/v3/protocol/rpcprovider"
 	"github.com/lavanet/lava/v3/utils"
 	"github.com/lavanet/lava/v3/utils/rand"
-	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	pairingtypes "github.com/lavanet/lava/v3/x/pairing/types"
 	protocoltypes "github.com/lavanet/lava/v3/x/protocol/types"
@@ -128,7 +127,7 @@ func RunHealth(ctx context.Context,
 	errCh := make(chan error, 1)
 
 	// get a list of all necessary specs for the test
-	dualStakingQuerier := dualstakingtypes.NewQueryClient(clientCtx)
+	epochstorageQuerier := epochstoragetypes.NewQueryClient(clientCtx)
 	if getAllProviders {
 		// var specResp *spectypes.QueryGetSpecResponse
 		var specsResp *spectypes.QueryShowAllChainsResponse
@@ -157,28 +156,23 @@ func RunHealth(ctx context.Context,
 			defer wgproviders.Done()
 			var err error
 			for i := 0; i < BasicQueryRetries; i++ {
-				var response *dualstakingtypes.QueryDelegatorProvidersResponse
+				var response *epochstoragetypes.QueryProviderMetaDataResponse
 				queryCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-				response, err = dualStakingQuerier.DelegatorProviders(queryCtx, &dualstakingtypes.QueryDelegatorProvidersRequest{
-					Delegator:   providerAddress,
-					WithPending: false,
-				})
+				response, err = epochstorageQuerier.ProviderMetaData(queryCtx, &epochstoragetypes.QueryProviderMetaDataRequest{Provider: providerAddress})
 				cancel()
 				if err != nil || response == nil {
 					time.Sleep(QuerySleepTime)
 					continue
 				}
-				delegations := response.GetDelegations()
-				for _, delegation := range delegations {
-					if delegation.Provider == providerAddress {
-						// healthResults.setSpec(&spectypes.Spec{Index: delegation.ChainID}) // fix yarom
-						// for _, apiInterface := range chainIdToApiInterfaces[delegation.ChainID] {
-						// 	healthResults.SetProviderData(LavaEntity{
-						// 		Address:      providerAddress,
-						// 		SpecId:       delegation.ChainID,
-						// 		ApiInterface: apiInterface,
-						// 	}, ReplyData{})
-						// }
+
+				for _, chain := range response.MetaData[0].Chains {
+					healthResults.setSpec(&spectypes.Spec{Index: chain}) // fix yarom
+					for _, apiInterface := range chainIdToApiInterfaces[chain] {
+						healthResults.SetProviderData(LavaEntity{
+							Address:      providerAddress,
+							SpecId:       chain,
+							ApiInterface: apiInterface,
+						}, ReplyData{})
 					}
 				}
 				return
