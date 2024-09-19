@@ -10,11 +10,13 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/lavanet/lava/v3/ecosystem/cache"
 	"github.com/lavanet/lava/v3/protocol/chainlib"
 	"github.com/lavanet/lava/v3/protocol/chainlib/chainproxy/rpcInterfaceMessages"
 	"github.com/lavanet/lava/v3/protocol/chaintracker"
@@ -325,6 +327,16 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 	providerUp := checkGrpcServerStatusWithTimeout(rpcProviderEndpoint.NetworkAddress.Address, time.Millisecond*261)
 	require.True(t, providerUp)
 	return rpcProviderServer, endpoint, &replySetter, mockChainFetcher, mockReliabilityManager
+}
+
+func createCacheServer(t *testing.T, ctx context.Context, listenAddress string) {
+	go func() {
+		cs := cache.CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024} // taken from max-items default value
+		cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DefaultExpirationNodeErrors, cache.DefaultExpirationBlocksHashesToHeights, "", cache.DefaultExpirationTimeFinalizedMultiplier, cache.DefaultExpirationTimeNonFinalizedMultiplier)
+		cs.Serve(ctx, listenAddress)
+	}()
+	consumerUp := checkServerStatusWithTimeout("http://"+listenAddress, time.Millisecond*61)
+	require.True(t, consumerUp)
 }
 
 func TestConsumerProviderBasic(t *testing.T) {
@@ -1466,4 +1478,124 @@ func TestConsumerProviderStatic(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, providers[0].replySetter.replyDataBuf, bodyBytes)
 	resp.Body.Close()
+}
+
+func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
+	ctx := context.Background()
+	// can be any spec and api interface
+	specId := "LAV1"
+	apiInterface := spectypes.APIInterfaceTendermintRPC
+	epoch := uint64(100)
+	lavaChainID := "lava"
+
+	numProviders := 1
+
+	consumerListenAddress := addressGen.GetAddress()
+	cacheListenAddress := addressGen.GetAddress()
+	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+	type providerData struct {
+		account          sigs.Account
+		endpoint         *lavasession.RPCProviderEndpoint
+		server           *rpcprovider.RPCProviderServer
+		replySetter      *ReplySetter
+		mockChainFetcher *MockChainFetcher
+	}
+	providers := []providerData{}
+
+	for i := 0; i < numProviders; i++ {
+		account := sigs.GenerateDeterministicFloatingKey(randomizer)
+		providerDataI := providerData{account: account}
+		providers = append(providers, providerDataI)
+	}
+
+	consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+	for i := 0; i < numProviders; i++ {
+		ctx := context.Background()
+		providerDataI := providers[i]
+		listenAddress := addressGen.GetAddress()
+		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil), fmt.Sprintf("provider%d", i))
+		providers[i].replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
+			var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+			err := json.Unmarshal(req, &jsonRpcMessage)
+			require.NoError(t, err, req)
+
+			response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %v}`, string(jsonRpcMessage.ID))
+			return []byte(response), http.StatusOK
+		}
+	}
+
+	for i := 0; i < numProviders; i++ {
+		pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
+			PublicLavaAddress: providers[i].account.Addr.String(),
+			Endpoints: []*lavasession.Endpoint{
+				{
+					NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
+					Enabled:        true,
+					Geolocation:    1,
+				},
+			},
+			Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+			MaxComputeUnits:  10000,
+			UsedComputeUnits: 0,
+			PairingEpoch:     epoch,
+		}
+	}
+
+	createCacheServer(t, ctx, cacheListenAddress)
+
+	rpcConsumerOptions := rpcConsumerOptions{
+		specId:                specId,
+		apiInterface:          apiInterface,
+		account:               consumerAccount,
+		consumerListenAddress: consumerListenAddress,
+		epoch:                 epoch,
+		pairingList:           pairingList,
+		requiredResponses:     1,
+		lavaChainID:           lavaChainID,
+		cacheListenAddress:    cacheListenAddress,
+	}
+	rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
+	require.NotNil(t, rpcconsumerServer)
+
+	client := http.Client{}
+	id := 0
+	sendMessage := func(method string, params []string) http.Header {
+		// Get latest block
+		body := fmt.Sprintf(`{"jsonrpc":"2.0","method":"%v","params": [%v], "id":%v}`, method, strings.Join(params, ","), id)
+		resp, err := client.Post("http://"+consumerListenAddress, "application/json", bytes.NewBuffer([]byte(body)))
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+		err = json.Unmarshal(bodyBytes, &jsonRpcMessage)
+		require.NoError(t, err)
+
+		respId, idErr := rpcInterfaceMessages.IdFromRawMessage(jsonRpcMessage.ID)
+		if idErr != nil {
+			require.NoError(t, idErr)
+		}
+
+		require.Equal(t, rpcInterfaceMessages.JSONRPCIntID(id), respId)
+		resp.Body.Close()
+		id++
+
+		return resp.Header
+	}
+
+	// Get latest for sanity check
+	providerAddr := providers[0].account.Addr.String()
+	headers := sendMessage("status", []string{})
+	fmt.Println(headers)
+	require.Equal(t, providerAddr, headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
+
+	// Get block, this should be cached for next time
+	headers = sendMessage("block", []string{"1000"})
+	require.Equal(t, providerAddr, headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
+
+	// Get block again, this time it should be from cache
+	headers = sendMessage("block", []string{"1000"})
+	require.Equal(t, "Cached", headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
 }
