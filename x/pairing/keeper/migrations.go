@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	v2 "github.com/lavanet/lava/v3/x/pairing/migrations/v2"
@@ -24,39 +26,73 @@ func (m Migrator) MigrateVersion2To3(ctx sdk.Context) error {
 
 func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 	entries := m.keeper.epochStorageKeeper.GetAllStakeEntriesCurrent(ctx)
-	providerMap := map[string][]epochstoragetypes.StakeEntry{}
+	providerMap := map[string][]*epochstoragetypes.StakeEntry{}
 
-	for _, e := range entries {
-		providerMap[e.Address] = append(providerMap[e.Address], e)
+	// map the providers
+	for i := range entries {
+		providerMap[entries[i].Address] = append(providerMap[entries[i].Address], &entries[i])
 	}
 
-	for _, entries := range providerMap {
-		metadata := epochstoragetypes.ProviderMetadata{}
-		for i, e := range entries {
-			if i == 0 {
-				metadata.Provider = e.Address
-				metadata.Vault = e.Vault
-			}
-			metadata.Chains = append(metadata.Chains, e.Chain)
+	// iterate over each provider
+	for address, entries := range providerMap {
+		metadata := epochstoragetypes.ProviderMetadata{Provider: address}
 
-			if e.Vault != metadata.Vault {
-				panic("ahahahaha")
-			}
-		}
-		delegations, err := m.keeper.dualstakingKeeper.GetProviderDelegators(ctx, metadata.Provider)
-		if err != nil {
-			panic("ahahahaha")
-		}
-		for _, d := range delegations {
-			if d.Delegator != metadata.Vault {
-				if metadata.TotalDelegations.Denom == "" {
-					metadata.TotalDelegations = d.Amount
+		// find the bigest vault
+		var biggestVault *epochstoragetypes.StakeEntry
+		for i := range entries {
+			e := entries[i]
+			if e.Vault != e.Address {
+				if biggestVault == nil {
+					biggestVault = e
 				} else {
-					metadata.TotalDelegations = metadata.TotalDelegations.Add(d.Amount)
+					if biggestVault.Stake.Amount.LT(e.Stake.Amount) {
+						biggestVault = e
+					}
 				}
 			}
 		}
 
+		// if no vault was found the vault is the address
+		if biggestVault != nil {
+			metadata.Vault = biggestVault.Vault
+		} else {
+			metadata.Vault = address
+		}
+
+		// get all delegations and sum
+		delegations, err := m.keeper.dualstakingKeeper.GetProviderDelegators(ctx, metadata.Provider)
+		if err != nil {
+			panic("ahahahaha")
+		}
+
+		metadata.TotalDelegations = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), sdk.ZeroInt())
+		for _, d := range delegations {
+			if d.Delegator != metadata.Vault {
+				metadata.TotalDelegations = metadata.TotalDelegations.Add(d.Amount)
+			}
+		}
+
+		// fix entries with different vaults
+		// count self delegations
+		TotalSelfDelegation := sdk.ZeroInt()
+		for _, e := range entries {
+			if e.Vault != metadata.Vault {
+				fmt.Println(address)
+				biggestVault.Stake = biggestVault.Stake.SubAmount(sdk.NewInt(1))
+				e.Stake.Amount = sdk.OneInt()
+			} else {
+				TotalSelfDelegation = TotalSelfDelegation.Add(e.Stake.Amount)
+			}
+		}
+
+		// calculate delegate total and update the entry
+		for _, entry := range entries {
+			metadata.Chains = append(metadata.Chains, entry.Chain)
+			entry.DelegateTotal = sdk.NewCoin(m.keeper.stakingKeeper.BondDenom(ctx), metadata.TotalDelegations.Amount.Mul(entry.Stake.Amount).Quo(TotalSelfDelegation))
+			m.keeper.epochStorageKeeper.SetStakeEntryCurrent(ctx, *entry)
+		}
+
+		// set the metadata
 		m.keeper.epochStorageKeeper.SetMetadata(ctx, metadata)
 	}
 	return nil
