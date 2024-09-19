@@ -45,8 +45,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 				if biggestVault == nil {
 					biggestVault = e
 				} else if biggestVault.Stake.Amount.LT(e.Stake.Amount) {
-						biggestVault = e
-					}
+					biggestVault = e
 				}
 			}
 		}
@@ -94,5 +93,6 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 		// set the metadata
 		m.keeper.epochStorageKeeper.SetMetadata(ctx, metadata)
 	}
+
 	return nil
 }
