@@ -204,7 +204,6 @@ func (cwsm *ConsumerWSSubscriptionManager) StartSubscription(
 		utils.LogAttr("GUID", webSocketCtx),
 		utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 		utils.LogAttr("dappKey", dappKey),
-		utils.LogAttr("connectedDapps", cwsm.connectedDapps),
 	)
 
 	websocketRepliesChan := make(chan *pairingtypes.RelayReply)
@@ -530,14 +529,14 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 				utils.LogAttr("GUID", webSocketCtx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
-			go cwsm.consumerMetricsManager.SetWsSubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.UserDisconnect)
+			go cwsm.consumerMetricsManager.SetWsSubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.WS_DISCONNECTION_REASON_USER)
 			return
 		case <-replyServer.Context().Done():
 			utils.LavaFormatTrace("reply server context canceled",
 				utils.LogAttr("GUID", webSocketCtx),
 				utils.LogAttr("hashedParams", utils.ToHexString(hashedParams)),
 			)
-			go cwsm.consumerMetricsManager.SetWsSubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.ConsumerDisconnect)
+			go cwsm.consumerMetricsManager.SetWsSubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.WS_DISCONNECTION_REASON_CONSUMER)
 			return
 		default:
 			var reply pairingtypes.RelayReply
@@ -545,7 +544,7 @@ func (cwsm *ConsumerWSSubscriptionManager) listenForSubscriptionMessages(
 			if err != nil {
 				// The connection was closed by the provider
 				utils.LavaFormatTrace("error reading from subscription stream", utils.LogAttr("original error", err.Error()))
-				go cwsm.consumerMetricsManager.SetWsSubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.ProviderDisconnect)
+				go cwsm.consumerMetricsManager.SetWsSubscriptioDisconnectRequestMetric(metricsData.ChainID, metricsData.APIType, metrics.WS_DISCONNECTION_REASON_PROVIDER)
 				return
 			}
 			err = cwsm.handleIncomingSubscriptionNodeMessage(hashedParams, &reply, providerAddr)

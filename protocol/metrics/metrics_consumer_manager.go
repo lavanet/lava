@@ -16,15 +16,15 @@ import (
 type WsDisconnectReasonEnum int
 
 const (
-	ConsumerDisconnect WsDisconnectReasonEnum = iota
-	ProviderDisconnect WsDisconnectReasonEnum = iota
-	UserDisconnect     WsDisconnectReasonEnum = iota
+	WS_DISCONNECTION_REASON_CONSUMER WsDisconnectReasonEnum = iota
+	WS_DISCONNECTION_REASON_PROVIDER
+	WS_DISCONNECTION_REASON_USER
 )
 
 var disconnectReasonMap = map[WsDisconnectReasonEnum]string{
-	ConsumerDisconnect: "ConsumerDisconnect",
-	ProviderDisconnect: "ProviderDisconnect",
-	UserDisconnect:     "UserDisconnect",
+	WS_DISCONNECTION_REASON_CONSUMER: "consumer-disconnect",
+	WS_DISCONNECTION_REASON_PROVIDER: "provider-disconnect",
+	WS_DISCONNECTION_REASON_USER:     "user-disconnect",
 }
 
 type LatencyTracker struct {
@@ -108,17 +108,17 @@ func NewConsumerMetricsManager(options ConsumerMetricsManagerOptions) *ConsumerM
 
 	totalWsSubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_ws_subscription_requests",
-		Help: "The total number of websocket subscription requests by the consumer over time per chain id per api interface.",
+		Help: "The total number of websocket subscription requests over time per chain id per api interface.",
 	}, []string{"spec", "apiInterface"})
 
 	totalFailedWsSubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_failed_ws_subscription_requests",
-		Help: "The total number of failed websocket subscription requests by the consumer over time per chain id per api interface.",
+		Help: "The total number of failed websocket subscription requests over time per chain id per api interface.",
 	}, []string{"spec", "apiInterface"})
 
 	totalDuplicatedWsSubscriptionRequestsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "lava_consumer_total_duplicated_ws_subscription_requests",
-		Help: "The total number of duplicated webscket subscription requests by the consumer over time per chain id per api interface.",
+		Help: "The total number of duplicated webscket subscription requests over time per chain id per api interface.",
 	}, []string{"spec", "apiInterface"})
 
 	totalWsSubscriptionDissconnectMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
