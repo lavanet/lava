@@ -44,8 +44,7 @@ func (m Migrator) MigrateVersion4To5(ctx sdk.Context) error {
 			if e.Vault != e.Address {
 				if biggestVault == nil {
 					biggestVault = e
-				} else {
-					if biggestVault.Stake.Amount.LT(e.Stake.Amount) {
+				} else if biggestVault.Stake.Amount.LT(e.Stake.Amount) {
 						biggestVault = e
 					}
 				}
