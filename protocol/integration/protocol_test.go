@@ -236,7 +236,18 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	return rpcConsumerServer, consumerStateTracker
 }
 
-func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string, specId string, apiInterface string, listenAddress string, account sigs.Account, lavaChainID string, addons []string, providerUniqueId string) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockReliabilityManager) {
+type rpcProviderOptions struct {
+	consumerAddress  string
+	specId           string
+	apiInterface     string
+	listenAddress    string
+	account          sigs.Account
+	lavaChainID      string
+	addons           []string
+	providerUniqueId string
+}
+
+func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpcProviderOptions) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockReliabilityManager) {
 	replySetter := ReplySetter{
 		status:       http.StatusOK,
 		replyDataBuf: []byte(`{"reply": "REPLY-STUB"}`),
@@ -256,16 +267,16 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 		fmt.Fprint(w, string(data))
 	})
 
-	chainParser, chainRouter, chainFetcher, _, endpoint, err := chainlib.CreateChainLibMocks(ctx, specId, apiInterface, serverHandler, nil, "../../", addons)
+	chainParser, chainRouter, chainFetcher, _, endpoint, err := chainlib.CreateChainLibMocks(ctx, rpcProviderOptions.specId, rpcProviderOptions.apiInterface, serverHandler, nil, "../../", rpcProviderOptions.addons)
 	require.NoError(t, err)
 	require.NotNil(t, chainParser)
 	require.NotNil(t, chainFetcher)
 	require.NotNil(t, chainRouter)
-	endpoint.NetworkAddress.Address = listenAddress
+	endpoint.NetworkAddress.Address = rpcProviderOptions.listenAddress
 
 	rpcProviderServer := &rpcprovider.RPCProviderServer{}
-	if providerUniqueId != "" {
-		rpcProviderServer.SetProviderUniqueId(providerUniqueId)
+	if rpcProviderOptions.providerUniqueId != "" {
+		rpcProviderServer.SetProviderUniqueId(rpcProviderOptions.providerUniqueId)
 	}
 
 	rpcProviderEndpoint := &lavasession.RPCProviderEndpoint{
@@ -275,8 +286,8 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 			CertPem:    "",
 			DisableTLS: false,
 		},
-		ChainID:      specId,
-		ApiInterface: apiInterface,
+		ChainID:      rpcProviderOptions.specId,
+		ApiInterface: rpcProviderOptions.apiInterface,
 		Geolocation:  1,
 		NodeUrls: []common.NodeUrl{
 			{
@@ -285,22 +296,22 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 				AuthConfig:        common.AuthConfig{},
 				IpForwarding:      false,
 				Timeout:           0,
-				Addons:            addons,
+				Addons:            rpcProviderOptions.addons,
 				SkipVerifications: []string{},
 			},
 		},
 	}
-	rewardDB, err := createInMemoryRewardDb([]string{specId})
+	rewardDB, err := createInMemoryRewardDb([]string{rpcProviderOptions.specId})
 	require.NoError(t, err)
 	_, averageBlockTime, blocksToFinalization, blocksInFinalizationData := chainParser.ChainBlockStats()
-	mockProviderStateTracker := mockProviderStateTracker{consumerAddressForPairing: consumerAddress, averageBlockTime: averageBlockTime}
+	mockProviderStateTracker := mockProviderStateTracker{consumerAddressForPairing: rpcProviderOptions.consumerAddress, averageBlockTime: averageBlockTime}
 	rws := rewardserver.NewRewardServer(&mockProviderStateTracker, nil, rewardDB, "badger_test", 1, 10, nil)
 
 	blockMemorySize, err := mockProviderStateTracker.GetEpochSizeMultipliedByRecommendedEpochNumToCollectPayment(ctx)
 	require.NoError(t, err)
 	providerSessionManager := lavasession.NewProviderSessionManager(rpcProviderEndpoint, blockMemorySize)
 	providerPolicy := rpcprovider.GetAllAddonsAndExtensionsFromNodeUrlSlice(rpcProviderEndpoint.NodeUrls)
-	chainParser.SetPolicy(providerPolicy, specId, apiInterface)
+	chainParser.SetPolicy(providerPolicy, rpcProviderOptions.specId, rpcProviderOptions.apiInterface)
 
 	blocksToSaveChainTracker := uint64(blocksToFinalization + blocksInFinalizationData)
 	chainTrackerConfig := chaintracker.ChainTrackerConfig{
@@ -316,9 +327,9 @@ func createRpcProvider(t *testing.T, ctx context.Context, consumerAddress string
 	chainTracker, err := chaintracker.NewChainTracker(ctx, mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	chainTracker.StartAndServe(ctx)
-	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, account.Addr.String(), chainRouter, chainParser)
+	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, rpcProviderOptions.account.Addr.String(), chainRouter, chainParser)
 	mockReliabilityManager := NewMockReliabilityManager(reliabilityManager)
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, account.SK, nil, chainRouter, &mockProviderStateTracker, account.Addr, lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, nil, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
 	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	require.NoError(t, err)
@@ -370,7 +381,17 @@ func TestConsumerProviderBasic(t *testing.T) {
 		ctx := context.Background()
 		providerDataI := providers[i]
 		listenAddress := addressGen.GetAddress()
-		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil), fmt.Sprintf("provider%d", i))
+		rpcProviderOptions := rpcProviderOptions{
+			consumerAddress:  consumerAccount.Addr.String(),
+			specId:           specId,
+			apiInterface:     apiInterface,
+			listenAddress:    listenAddress,
+			account:          providerDataI.account,
+			lavaChainID:      lavaChainID,
+			addons:           []string(nil),
+			providerUniqueId: fmt.Sprintf("provider%d", i),
+		}
+		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, rpcProviderOptions)
 	}
 	for i := 0; i < numProviders; i++ {
 		pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
@@ -456,7 +477,17 @@ func TestConsumerProviderWithProviders(t *testing.T) {
 				ctx := context.Background()
 				providerDataI := providers[i]
 				listenAddress := addressGen.GetAddress()
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil), fmt.Sprintf("provider%d", i))
+				rpcProviderOptions := rpcProviderOptions{
+					consumerAddress:  consumerAccount.Addr.String(),
+					specId:           specId,
+					apiInterface:     apiInterface,
+					listenAddress:    listenAddress,
+					account:          providerDataI.account,
+					lavaChainID:      lavaChainID,
+					addons:           []string(nil),
+					providerUniqueId: fmt.Sprintf("provider%d", i),
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"reply": %d}`, i+1))
 			}
 			for i := 0; i < numProviders; i++ {
@@ -601,7 +632,17 @@ func TestConsumerProviderTx(t *testing.T) {
 				ctx := context.Background()
 				providerDataI := providers[i]
 				listenAddress := addressGen.GetAddress()
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil), fmt.Sprintf("provider%d", i))
+				rpcProviderOptions := rpcProviderOptions{
+					consumerAddress:  consumerAccount.Addr.String(),
+					specId:           specId,
+					apiInterface:     apiInterface,
+					listenAddress:    listenAddress,
+					account:          providerDataI.account,
+					lavaChainID:      lavaChainID,
+					addons:           []string(nil),
+					providerUniqueId: fmt.Sprintf("provider%d", i),
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
 			}
 			for i := 0; i < numProviders; i++ {
@@ -717,7 +758,17 @@ func TestConsumerProviderJsonRpcWithNullID(t *testing.T) {
 				ctx := context.Background()
 				providerDataI := providers[i]
 				listenAddress := addressGen.GetAddress()
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil), fmt.Sprintf("provider%d", i))
+				rpcProviderOptions := rpcProviderOptions{
+					consumerAddress:  consumerAccount.Addr.String(),
+					specId:           specId,
+					apiInterface:     apiInterface,
+					listenAddress:    listenAddress,
+					account:          providerDataI.account,
+					lavaChainID:      lavaChainID,
+					addons:           []string(nil),
+					providerUniqueId: fmt.Sprintf("provider%d", i),
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
 			}
 			for i := 0; i < numProviders; i++ {
@@ -837,7 +888,17 @@ func TestConsumerProviderSubscriptionsHappyFlow(t *testing.T) {
 				ctx := context.Background()
 				providerDataI := providers[i]
 				listenAddress := addressGen.GetAddress()
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil), fmt.Sprintf("provider%d", i))
+				rpcProviderOptions := rpcProviderOptions{
+					consumerAddress:  consumerAccount.Addr.String(),
+					specId:           specId,
+					apiInterface:     apiInterface,
+					listenAddress:    listenAddress,
+					account:          providerDataI.account,
+					lavaChainID:      lavaChainID,
+					addons:           []string(nil),
+					providerUniqueId: fmt.Sprintf("provider%d", i),
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
 			}
 			for i := 0; i < numProviders; i++ {
@@ -964,7 +1025,17 @@ func TestSameProviderConflictBasicResponseCheck(t *testing.T) {
 				ctx := context.Background()
 				providerDataI := providers[i]
 				listenAddress := addressGen.GetAddress()
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil), fmt.Sprintf("provider%d", i))
+				rpcProviderOptions := rpcProviderOptions{
+					consumerAddress:  consumerAccount.Addr.String(),
+					specId:           specId,
+					apiInterface:     apiInterface,
+					listenAddress:    listenAddress,
+					account:          providerDataI.account,
+					lavaChainID:      lavaChainID,
+					addons:           []string(nil),
+					providerUniqueId: fmt.Sprintf("provider%d", i),
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
 			}
 
@@ -1114,7 +1185,18 @@ func TestArchiveProvidersRetry(t *testing.T) {
 				if i+1 <= play.archiveProviders {
 					addons = []string{"archive"}
 				}
-				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, addons, fmt.Sprintf("provider%d", i))
+
+				rpcProviderOptions := rpcProviderOptions{
+					consumerAddress:  consumerAccount.Addr.String(),
+					specId:           specId,
+					apiInterface:     apiInterface,
+					listenAddress:    listenAddress,
+					account:          providerDataI.account,
+					lavaChainID:      lavaChainID,
+					addons:           addons,
+					providerUniqueId: fmt.Sprintf("provider%d", i),
+				}
+				providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
 				providers[i].replySetter.replyDataBuf = []byte(`{"result": "success"}`)
 				if i+1 <= play.nodeErrorProviders {
 					providers[i].replySetter.replyDataBuf = []byte(`{"error": "failure", "message": "test", "code": "-32132"}`)
@@ -1197,7 +1279,17 @@ func TestSameProviderConflictReport(t *testing.T) {
 			ctx := context.Background()
 			providerDataI := providers[i]
 			listenAddress := addressGen.GetAddress()
-			providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil), fmt.Sprintf("provider%d", i))
+			rpcProviderOptions := rpcProviderOptions{
+				consumerAddress:  consumerAccount.Addr.String(),
+				specId:           specId,
+				apiInterface:     apiInterface,
+				listenAddress:    listenAddress,
+				account:          providerDataI.account,
+				lavaChainID:      lavaChainID,
+				addons:           []string(nil),
+				providerUniqueId: fmt.Sprintf("provider%d", i),
+			}
+			providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, providers[i].mockReliabilityManager = createRpcProvider(t, ctx, rpcProviderOptions)
 			providers[i].replySetter.replyDataBuf = []byte(fmt.Sprintf(`{"result": %d}`, i+1))
 		}
 	}
@@ -1428,7 +1520,17 @@ func TestConsumerProviderStatic(t *testing.T) {
 		ctx := context.Background()
 		providerDataI := providers[i]
 		listenAddress := addressGen.GetAddress()
-		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil), fmt.Sprintf("provider%d", i))
+		rpcProviderOptions := rpcProviderOptions{
+			consumerAddress:  consumerAccount.Addr.String(),
+			specId:           specId,
+			apiInterface:     apiInterface,
+			listenAddress:    listenAddress,
+			account:          providerDataI.account,
+			lavaChainID:      lavaChainID,
+			addons:           []string(nil),
+			providerUniqueId: fmt.Sprintf("provider%d", i),
+		}
+		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, rpcProviderOptions)
 	}
 	// provider is static
 	for i := 0; i < numProviders; i++ {
@@ -1501,8 +1603,17 @@ func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 	providerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
 	provider := providerData{account: providerAccount}
 	listenAddress := addressGen.GetAddress()
-
-	_, provider.endpoint, provider.replySetter, _, _ = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, provider.account, lavaChainID, []string(nil), "provider")
+	rpcProviderOptions := rpcProviderOptions{
+		consumerAddress:  consumerAccount.Addr.String(),
+		specId:           specId,
+		apiInterface:     apiInterface,
+		listenAddress:    listenAddress,
+		account:          provider.account,
+		lavaChainID:      lavaChainID,
+		addons:           []string(nil),
+		providerUniqueId: "provider",
+	}
+	_, provider.endpoint, provider.replySetter, _, _ = createRpcProvider(t, ctx, rpcProviderOptions)
 	provider.replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
 		var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
 		err := json.Unmarshal(req, &jsonRpcMessage)
