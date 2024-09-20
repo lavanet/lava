@@ -238,14 +238,15 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 }
 
 type rpcProviderOptions struct {
-	consumerAddress  string
-	specId           string
-	apiInterface     string
-	listenAddress    string
-	account          sigs.Account
-	lavaChainID      string
-	addons           []string
-	providerUniqueId string
+	consumerAddress    string
+	specId             string
+	apiInterface       string
+	listenAddress      string
+	account            sigs.Account
+	lavaChainID        string
+	addons             []string
+	providerUniqueId   string
+	cacheListenAddress string
 }
 
 func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpcProviderOptions) (*rpcprovider.RPCProviderServer, *lavasession.RPCProviderEndpoint, *ReplySetter, *MockChainFetcher, *MockReliabilityManager) {
@@ -324,13 +325,21 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 		Pmetrics:            nil,
 	}
 
+	var cache *performance.Cache = nil
+	if rpcProviderOptions.cacheListenAddress != "" {
+		cache, err = performance.InitCache(ctx, rpcProviderOptions.cacheListenAddress)
+		if err != nil {
+			t.Fatalf("Failed To Connect to cache at address %s: %v", rpcProviderOptions.cacheListenAddress, err)
+		}
+	}
+
 	mockChainFetcher := NewMockChainFetcher(1000, int64(blocksToSaveChainTracker), nil)
 	chainTracker, err := chaintracker.NewChainTracker(ctx, mockChainFetcher, chainTrackerConfig)
 	require.NoError(t, err)
 	chainTracker.StartAndServe(ctx)
 	reliabilityManager := reliabilitymanager.NewReliabilityManager(chainTracker, &mockProviderStateTracker, rpcProviderOptions.account.Addr.String(), chainRouter, chainParser)
 	mockReliabilityManager := NewMockReliabilityManager(reliabilityManager)
-	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, nil, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false)
+	rpcProviderServer.ServeRPCRequests(ctx, rpcProviderEndpoint, chainParser, rws, providerSessionManager, mockReliabilityManager, rpcProviderOptions.account.SK, cache, chainRouter, &mockProviderStateTracker, rpcProviderOptions.account.Addr, rpcProviderOptions.lavaChainID, rpcprovider.DEFAULT_ALLOWED_MISSING_CU, nil, nil, nil, false)
 	listener := rpcprovider.NewProviderListener(ctx, rpcProviderEndpoint.NetworkAddress, "/health")
 	err = listener.RegisterReceiver(rpcProviderServer, rpcProviderEndpoint)
 	require.NoError(t, err)
@@ -1701,4 +1710,116 @@ func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 	// Get block again, this time it should be from cache
 	headers = sendMessage("block", []string{"1000"})
 	require.Equal(t, "Cached", headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
+}
+
+func TestConsumerProviderWithProviderSideCache(t *testing.T) {
+	ctx := context.Background()
+	// can be any spec and api interface
+	specId := "LAV1"
+	apiInterface := spectypes.APIInterfaceTendermintRPC
+	epoch := uint64(100)
+	lavaChainID := "lava"
+
+	consumerListenAddress := addressGen.GetAddress()
+	cacheListenAddress := addressGen.GetAddress()
+	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
+	type providerData struct {
+		account     sigs.Account
+		endpoint    *lavasession.RPCProviderEndpoint
+		replySetter *ReplySetter
+	}
+
+	consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+	providerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+	provider := providerData{account: providerAccount}
+	providerListenAddress := addressGen.GetAddress()
+
+	createCacheServer(t, ctx, cacheListenAddress)
+	testJsonRpcId := 42
+	nodeRequestsCounter := 0
+	rpcProviderOptions := rpcProviderOptions{
+		consumerAddress:    consumerAccount.Addr.String(),
+		specId:             specId,
+		apiInterface:       apiInterface,
+		listenAddress:      providerListenAddress,
+		account:            provider.account,
+		lavaChainID:        lavaChainID,
+		addons:             []string(nil),
+		providerUniqueId:   "provider",
+		cacheListenAddress: cacheListenAddress,
+	}
+	_, provider.endpoint, provider.replySetter, _, _ = createRpcProvider(t, ctx, rpcProviderOptions)
+	provider.replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
+		var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+		err := json.Unmarshal(req, &jsonRpcMessage)
+		require.NoError(t, err, req)
+
+		reqId := jsonRpcIdToInt(t, jsonRpcMessage.ID)
+		if reqId == testJsonRpcId {
+			nodeRequestsCounter++
+		}
+
+		response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %v}`, string(jsonRpcMessage.ID))
+		return []byte(response), http.StatusOK
+	}
+
+	pairingList[0] = &lavasession.ConsumerSessionsWithProvider{
+		PublicLavaAddress: provider.account.Addr.String(),
+		Endpoints: []*lavasession.Endpoint{
+			{
+				NetworkAddress: provider.endpoint.NetworkAddress.Address,
+				Enabled:        true,
+				Geolocation:    1,
+			},
+		},
+		Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+		MaxComputeUnits:  10000,
+		UsedComputeUnits: 0,
+		PairingEpoch:     epoch,
+	}
+
+	rpcConsumerOptions := rpcConsumerOptions{
+		specId:                specId,
+		apiInterface:          apiInterface,
+		account:               consumerAccount,
+		consumerListenAddress: consumerListenAddress,
+		epoch:                 epoch,
+		pairingList:           pairingList,
+		requiredResponses:     1,
+		lavaChainID:           lavaChainID,
+	}
+	rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
+	require.NotNil(t, rpcconsumerServer)
+
+	client := http.Client{}
+	sendMessage := func(method string, params []string) http.Header {
+		body := fmt.Sprintf(`{"jsonrpc":"2.0","method":"%v","params": [%v], "id":%v}`, method, strings.Join(params, ","), testJsonRpcId)
+		resp, err := client.Post("http://"+consumerListenAddress, "application/json", bytes.NewBuffer([]byte(body)))
+		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+
+		var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+		err = json.Unmarshal(bodyBytes, &jsonRpcMessage)
+		require.NoError(t, err)
+
+		respId := jsonRpcIdToInt(t, jsonRpcMessage.ID)
+		require.Equal(t, testJsonRpcId, respId)
+		resp.Body.Close()
+
+		return resp.Header
+	}
+
+	// Get latest for sanity check
+	sendMessage("status", []string{})
+
+	for i := 0; i < 5; i++ {
+		// Get block, this should be cached for next time
+		sendMessage("block", []string{"1000"})
+	}
+
+	// Verify node was called to only twice
+	require.Equal(t, 2, nodeRequestsCounter)
 }
