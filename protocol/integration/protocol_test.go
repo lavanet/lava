@@ -1488,57 +1488,43 @@ func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 	epoch := uint64(100)
 	lavaChainID := "lava"
 
-	numProviders := 1
-
 	consumerListenAddress := addressGen.GetAddress()
 	cacheListenAddress := addressGen.GetAddress()
 	pairingList := map[uint64]*lavasession.ConsumerSessionsWithProvider{}
 	type providerData struct {
-		account          sigs.Account
-		endpoint         *lavasession.RPCProviderEndpoint
-		server           *rpcprovider.RPCProviderServer
-		replySetter      *ReplySetter
-		mockChainFetcher *MockChainFetcher
-	}
-	providers := []providerData{}
-
-	for i := 0; i < numProviders; i++ {
-		account := sigs.GenerateDeterministicFloatingKey(randomizer)
-		providerDataI := providerData{account: account}
-		providers = append(providers, providerDataI)
+		account     sigs.Account
+		endpoint    *lavasession.RPCProviderEndpoint
+		replySetter *ReplySetter
 	}
 
 	consumerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
-	for i := 0; i < numProviders; i++ {
-		ctx := context.Background()
-		providerDataI := providers[i]
-		listenAddress := addressGen.GetAddress()
-		providers[i].server, providers[i].endpoint, providers[i].replySetter, providers[i].mockChainFetcher, _ = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, providerDataI.account, lavaChainID, []string(nil), fmt.Sprintf("provider%d", i))
-		providers[i].replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
-			var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
-			err := json.Unmarshal(req, &jsonRpcMessage)
-			require.NoError(t, err, req)
+	providerAccount := sigs.GenerateDeterministicFloatingKey(randomizer)
+	provider := providerData{account: providerAccount}
+	listenAddress := addressGen.GetAddress()
 
-			response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %v}`, string(jsonRpcMessage.ID))
-			return []byte(response), http.StatusOK
-		}
+	_, provider.endpoint, provider.replySetter, _, _ = createRpcProvider(t, ctx, consumerAccount.Addr.String(), specId, apiInterface, listenAddress, provider.account, lavaChainID, []string(nil), "provider")
+	provider.replySetter.handler = func(req []byte, header http.Header) (data []byte, status int) {
+		var jsonRpcMessage rpcInterfaceMessages.JsonrpcMessage
+		err := json.Unmarshal(req, &jsonRpcMessage)
+		require.NoError(t, err, req)
+
+		response := fmt.Sprintf(`{"jsonrpc":"2.0","result": {}, "id": %v}`, string(jsonRpcMessage.ID))
+		return []byte(response), http.StatusOK
 	}
 
-	for i := 0; i < numProviders; i++ {
-		pairingList[uint64(i)] = &lavasession.ConsumerSessionsWithProvider{
-			PublicLavaAddress: providers[i].account.Addr.String(),
-			Endpoints: []*lavasession.Endpoint{
-				{
-					NetworkAddress: providers[i].endpoint.NetworkAddress.Address,
-					Enabled:        true,
-					Geolocation:    1,
-				},
+	pairingList[0] = &lavasession.ConsumerSessionsWithProvider{
+		PublicLavaAddress: provider.account.Addr.String(),
+		Endpoints: []*lavasession.Endpoint{
+			{
+				NetworkAddress: provider.endpoint.NetworkAddress.Address,
+				Enabled:        true,
+				Geolocation:    1,
 			},
-			Sessions:         map[int64]*lavasession.SingleConsumerSession{},
-			MaxComputeUnits:  10000,
-			UsedComputeUnits: 0,
-			PairingEpoch:     epoch,
-		}
+		},
+		Sessions:         map[int64]*lavasession.SingleConsumerSession{},
+		MaxComputeUnits:  10000,
+		UsedComputeUnits: 0,
+		PairingEpoch:     epoch,
 	}
 
 	createCacheServer(t, ctx, cacheListenAddress)
@@ -1586,7 +1572,7 @@ func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 	}
 
 	// Get latest for sanity check
-	providerAddr := providers[0].account.Addr.String()
+	providerAddr := provider.account.Addr.String()
 	headers := sendMessage("status", []string{})
 	fmt.Println(headers)
 	require.Equal(t, providerAddr, headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
