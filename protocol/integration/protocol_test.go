@@ -204,10 +204,6 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 	consumerSessionManager := lavasession.NewConsumerSessionManager(rpcEndpoint, optimizer, nil, nil, "test", lavasession.NewActiveSubscriptionProvidersStorage())
 	consumerSessionManager.UpdateAllProviders(rpcConsumerOptions.epoch, rpcConsumerOptions.pairingList)
 
-	consumerConsistency := rpcconsumer.NewConsumerConsistency(rpcConsumerOptions.specId)
-	consumerCmdFlags := common.ConsumerCmdFlags{}
-	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil)
-	require.NoError(t, err)
 	var cache *performance.Cache = nil
 	if rpcConsumerOptions.cacheListenAddress != "" {
 		cache, err = performance.InitCache(ctx, rpcConsumerOptions.cacheListenAddress)
@@ -215,6 +211,11 @@ func createRpcConsumer(t *testing.T, ctx context.Context, rpcConsumerOptions rpc
 			t.Fatalf("Failed To Connect to cache at address %s: %v", rpcConsumerOptions.cacheListenAddress, err)
 		}
 	}
+
+	consumerConsistency := rpcconsumer.NewConsumerConsistency(rpcConsumerOptions.specId)
+	consumerCmdFlags := common.ConsumerCmdFlags{}
+	rpcconsumerLogs, err := metrics.NewRPCConsumerLogs(nil, nil)
+	require.NoError(t, err)
 	err = rpcConsumerServer.ServeRPCRequests(ctx, rpcEndpoint, consumerStateTracker, chainParser, finalizationConsensus, consumerSessionManager, rpcConsumerOptions.requiredResponses, rpcConsumerOptions.account.SK, rpcConsumerOptions.lavaChainID, cache, rpcconsumerLogs, rpcConsumerOptions.account.Addr, consumerConsistency, nil, consumerCmdFlags, false, nil, nil, nil)
 	require.NoError(t, err)
 
@@ -1582,6 +1583,16 @@ func TestConsumerProviderStatic(t *testing.T) {
 	resp.Body.Close()
 }
 
+func jsonRpcIdToInt(t *testing.T, rawID json.RawMessage) int {
+	var idInterface interface{}
+	err := json.Unmarshal(rawID, &idInterface)
+	require.NoError(t, err)
+
+	id, ok := idInterface.(float64)
+	require.True(t, ok, idInterface)
+	return int(id)
+}
+
 func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 	ctx := context.Background()
 	// can be any spec and api interface
@@ -1670,12 +1681,8 @@ func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 		err = json.Unmarshal(bodyBytes, &jsonRpcMessage)
 		require.NoError(t, err)
 
-		respId, idErr := rpcInterfaceMessages.IdFromRawMessage(jsonRpcMessage.ID)
-		if idErr != nil {
-			require.NoError(t, idErr)
-		}
-
-		require.Equal(t, rpcInterfaceMessages.JSONRPCIntID(id), respId)
+		respId := jsonRpcIdToInt(t, jsonRpcMessage.ID)
+		require.Equal(t, id, respId)
 		resp.Body.Close()
 		id++
 
@@ -1685,7 +1692,6 @@ func TestConsumerProviderWithConsumerSideCache(t *testing.T) {
 	// Get latest for sanity check
 	providerAddr := provider.account.Addr.String()
 	headers := sendMessage("status", []string{})
-	fmt.Println(headers)
 	require.Equal(t, providerAddr, headers.Get(common.PROVIDER_ADDRESS_HEADER_NAME))
 
 	// Get block, this should be cached for next time
