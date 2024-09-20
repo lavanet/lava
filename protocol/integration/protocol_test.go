@@ -353,7 +353,7 @@ func createRpcProvider(t *testing.T, ctx context.Context, rpcProviderOptions rpc
 func createCacheServer(t *testing.T, ctx context.Context, listenAddress string) {
 	go func() {
 		cs := cache.CacheServer{CacheMaxCost: 2 * 1024 * 1024 * 1024} // taken from max-items default value
-		cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DefaultExpirationNodeErrors, cache.DefaultExpirationBlocksHashesToHeights, "", cache.DefaultExpirationTimeFinalizedMultiplier, cache.DefaultExpirationTimeNonFinalizedMultiplier)
+		cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DefaultExpirationNodeErrors, cache.DefaultExpirationBlocksHashesToHeights, "disabled", cache.DefaultExpirationTimeFinalizedMultiplier, cache.DefaultExpirationTimeNonFinalizedMultiplier)
 		cs.Serve(ctx, listenAddress)
 	}()
 	consumerUp := checkServerStatusWithTimeout("http://"+listenAddress, time.Millisecond*61)
@@ -1816,7 +1816,7 @@ func TestConsumerProviderWithProviderSideCache(t *testing.T) {
 	sendMessage("status", []string{})
 
 	for i := 0; i < 5; i++ {
-		// Get block, this should be cached for next time
+		// Get block
 		sendMessage("block", []string{"1000"})
 	}
 
