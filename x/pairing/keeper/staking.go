@@ -2,13 +2,13 @@ package keeper
 
 import (
 	"fmt"
-	"slices"
 	"strconv"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/lavanet/lava/v3/utils"
+	"github.com/lavanet/lava/v3/utils/lavaslices"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	"github.com/lavanet/lava/v3/x/pairing/types"
 	planstypes "github.com/lavanet/lava/v3/x/plans/types"
@@ -26,6 +26,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	metadata, err := k.epochStorageKeeper.GetMetadata(ctx, provider)
 	if err != nil {
+		// first provider with this address
 		metadata = epochstoragetypes.ProviderMetadata{
 			Provider:         provider,
 			Vault:            creator,
@@ -34,17 +35,15 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		}
 	}
 
+	metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
+	k.epochStorageKeeper.SetMetadata(ctx, metadata)
+
 	if creator != metadata.Vault {
 		return utils.LavaFormatWarning("creator does not match the provider vault", err,
 			utils.Attribute{Key: "vault", Value: metadata.Vault},
 			utils.Attribute{Key: "creator", Value: creator},
 		)
 	}
-
-	if !slices.Contains(metadata.Chains, chainID) {
-		metadata.Chains = append(metadata.Chains, chainID)
-	}
-	k.epochStorageKeeper.SetMetadata(ctx, metadata)
 
 	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)
 	if err != nil || !spec.Enabled {
