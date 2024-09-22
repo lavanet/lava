@@ -144,17 +144,17 @@ func TestTrackedCuWithDelegations(t *testing.T) {
 	clientAcct, _ := ts.GetAccount(common.CONSUMER, 0)
 	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
 
-	// change the provider's delegation limit and commission
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
-	require.True(t, found)
-	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
+	// change the provider's and commission
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err)
+	metadata.DelegateCommission = 0
+	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
 	_, delegator := ts.AddAccount(common.CONSUMER, 1, testBalance)
 
-	_, err := ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
+	_, err = ts.TxDualstakingDelegate(delegator, provider, sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake/2)))
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
@@ -484,11 +484,11 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
-	// change the provider's delegation limit and commission
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
-	require.True(t, found)
-	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
+	// change the provider's  and commission
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err)
+	metadata.DelegateCommission = 0
+	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward
@@ -515,12 +515,12 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-	// check for expected balance: credit*100/200 (from spec1) + credit*(100/200)*(2/3) (from spec, considering delegations)
-	// for credit=100 (first month there was no use, so no credit was spent), expected monthly payout is 50+33
-	expectedTotalPayout := uint64(83)
+	// check for expected balance: (credit*100/200 (from spec1) + credit*(100/200))*(4/5) (from spec, considering delegations)
+	// for credit=100 (first month there was no use, so no credit was spent), expected monthly payout is 90
+	expectedTotalPayout := uint64(90)
 	expectedPayouts := []types.SubscriptionPayout{
-		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 33},
-		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 50},
+		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 45},
+		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 45},
 	}
 	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
 	require.NoError(t, err)
@@ -603,11 +603,11 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
-	// change the provider's delegation limit and commission
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
-	require.True(t, found)
-	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
+	// change the provider's and commission
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err)
+	metadata.DelegateCommission = 0
+	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 	ts.AdvanceEpoch()
 
 	// delegate testStake/2 (with commission=0) -> provider should get 66% of the reward

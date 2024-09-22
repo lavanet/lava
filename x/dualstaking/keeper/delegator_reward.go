@@ -6,9 +6,7 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/utils"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
 	"github.com/lavanet/lava/v3/x/dualstaking/types"
-	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
 )
 
@@ -66,18 +64,19 @@ func (k Keeper) GetAllDelegatorReward(ctx sdk.Context) (list []types.DelegatorRe
 // CalcRewards calculates the provider reward and the total reward for delegators
 // providerReward = totalReward * ((effectiveDelegations*commission + providerStake) / effectiveStake)
 // delegatorsReward = totalReward - providerReward
-func (k Keeper) CalcRewards(ctx sdk.Context, stakeEntry epochstoragetypes.StakeEntry, totalReward sdk.Coins, delegations []types.Delegation) (providerReward sdk.Coins, delegatorsReward sdk.Coins) {
+func (k Keeper) CalcRewards(ctx sdk.Context, totalReward sdk.Coins, totalDelegations math.Int, selfdelegation types.Delegation, delegations []types.Delegation, commission uint64) (providerReward sdk.Coins, delegatorsReward sdk.Coins) {
 	zeroCoins := sdk.NewCoins()
+	totalDelegationsWithSelf := totalDelegations.Add(selfdelegation.Amount.Amount)
 
 	// Sanity check - effectiveStake != 0
-	if stakeEntry.DelegateTotal.IsZero() && stakeEntry.Stake.IsZero() {
+	if totalDelegationsWithSelf.IsZero() {
 		return zeroCoins, zeroCoins
 	}
 
-	providerReward = totalReward.MulInt(stakeEntry.Stake.Amount).QuoInt(stakeEntry.TotalStake())
-	if !stakeEntry.DelegateTotal.IsZero() && stakeEntry.DelegateCommission != 0 {
-		rawDelegatorsReward := totalReward.MulInt(stakeEntry.DelegateTotal.Amount).QuoInt(stakeEntry.TotalStake())
-		providerCommission := rawDelegatorsReward.MulInt(sdk.NewIntFromUint64(stakeEntry.DelegateCommission)).QuoInt(sdk.NewInt(100))
+	providerReward = totalReward.MulInt(selfdelegation.Amount.Amount).QuoInt(totalDelegationsWithSelf)
+	if !totalDelegations.IsZero() && commission != 0 {
+		rawDelegatorsReward := totalReward.MulInt(totalDelegations).QuoInt(totalDelegationsWithSelf)
+		providerCommission := rawDelegatorsReward.MulInt(sdk.NewIntFromUint64(commission)).QuoInt(sdk.NewInt(100))
 		providerReward = providerReward.Add(providerCommission...)
 	}
 
@@ -175,18 +174,25 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 		}
 	}
 
-	relevantDelegations := lavaslices.Filter(delegations,
-		func(d types.Delegation) bool {
-			return d.IsFirstWeekPassed(ctx.BlockTime().UTC().Unix()) && d.Delegator != stakeEntry.Vault
-		})
-
-	providerReward, delegatorsReward := k.CalcRewards(ctx, stakeEntry, claimableRewards, relevantDelegations)
+	relevantDelegations := []types.Delegation{}
+	totalDelegations := sdk.ZeroInt()
+	var selfdelegation types.Delegation
+	for _, d := range delegations {
+		if d.Delegator == stakeEntry.Vault {
+			selfdelegation = d
+		} else if d.IsFirstWeekPassed(ctx.BlockTime().UTC().Unix()) {
+			relevantDelegations = append(relevantDelegations, d)
+			totalDelegations = totalDelegations.Add(d.Amount.Amount)
+		}
+	}
 
 	metadata, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
 	if err != nil {
 		return zeroCoins, zeroCoins, err
 	}
-	leftoverRewards := k.updateDelegatorsReward(ctx, metadata.TotalDelegations.Amount, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
+	providerReward, delegatorsReward := k.CalcRewards(ctx, claimableRewards, totalDelegations, selfdelegation, relevantDelegations, metadata.DelegateCommission)
+
+	leftoverRewards := k.updateDelegatorsReward(ctx, totalDelegations, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
 	fullProviderReward := providerReward.Add(leftoverRewards...)
 
 	if !calcOnlyProvider {

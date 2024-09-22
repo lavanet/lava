@@ -11,4 +11,6 @@ message ProviderMetadata {
   string vault = 2;
   cosmos.base.v1beta1.Coin total_delegations = 3 [(gogoproto.nullable) = false]; 
   repeated string chains = 4;
+  uint64 delegate_commission = 11; // delegation commission (precentage 0-100)
+  uint64 last_change = 12;
 }

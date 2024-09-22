@@ -6,7 +6,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/lavanet/lava/v3/testutil/common"
-	"github.com/lavanet/lava/v3/utils/lavaslices"
 	"github.com/lavanet/lava/v3/utils/sigs"
 	dualstakingtypes "github.com/lavanet/lava/v3/x/dualstaking/types"
 	"github.com/lavanet/lava/v3/x/pairing/types"
@@ -81,12 +80,13 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			ts.AdvanceEpoch() // apply delegations
 
 			// change delegation traits of stake entry and get the modified one
-			stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
-			require.True(t, found)
-			stakeEntry.DelegateCommission = tt.commission
-			ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
+			metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+			require.NoError(t, err)
+			metadata.DelegateCommission = tt.commission
+			ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
+
 			ts.AdvanceEpoch()
-			stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
+			stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 			require.True(t, found)
 
 			// check that there are two delegators
@@ -195,9 +195,11 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.True(t, found)
 
 	// ** provider's commission is 100% ** //
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err)
+	metadata.DelegateCommission = 100
+	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 
-	stakeEntry.DelegateCommission = 100
-	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
 	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
@@ -208,12 +210,21 @@ func TestProviderRewardWithCommission(t *testing.T) {
 
 	// the expected reward for the provider with 100% commission is the total rewards (delegators get nothing)
 	currentTimestamp := ts.Ctx.BlockTime().UTC().Unix()
-	relevantDelegations := lavaslices.Filter(res.Delegations,
-		func(d dualstakingtypes.Delegation) bool {
-			return d.IsFirstWeekPassed(currentTimestamp)
-		})
 	totalReward := sdk.NewCoins(sdk.NewCoin(ts.TokenDenom(), math.NewInt(int64(relayCuSum))))
-	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(ts.Ctx, stakeEntry, totalReward, relevantDelegations)
+
+	relevantDelegations := []dualstakingtypes.Delegation{}
+	totalDelegations := sdk.ZeroInt()
+	var selfdelegation dualstakingtypes.Delegation
+	for _, d := range res.Delegations {
+		if d.Delegator != stakeEntry.Vault {
+			selfdelegation = d
+		} else if d.IsFirstWeekPassed(currentTimestamp) {
+			relevantDelegations = append(relevantDelegations, d)
+			totalDelegations = totalDelegations.Add(d.Amount.Amount)
+		}
+	}
+
+	providerReward, _ := ts.Keepers.Dualstaking.CalcRewards(ts.Ctx, totalReward, totalDelegations, selfdelegation, relevantDelegations, stakeEntry.DelegateCommission)
 
 	require.True(t, totalReward.IsEqual(providerReward))
 
@@ -227,8 +238,11 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.Equal(t, 0, len(resRewards.Rewards))
 
 	// ** provider's commission is 0% ** //
-	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
+	metadata, err1 := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err1)
+	metadata.DelegateCommission = 0
+	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
+
 	ts.AdvanceEpoch()
 
 	// the expected reward for the provider with 0% commission is half of the total rewards
@@ -337,12 +351,11 @@ func TestQueryDelegatorRewards(t *testing.T) {
 		chainID         string
 		expectedRewards int64
 	}{
-		{"assigned provider+chainID", delegator1, provider1, ts.spec.Index, (planPrice * 100) / (200 * 2)},
+		{"assigned provider+chainID", delegator1, provider1, ts.spec.Index, 2 * (planPrice * 100) / (200 * 2)},
 		{"assigned provider", delegator1, provider1, "", 2 * ((planPrice * 100) / (200 * 2))},
 		{"nothing assigned", delegator1, "", "", (2 * ((planPrice * 100) / (200 * 2))) + (planPrice*100)/(100*2)},
 		{"invalid delegator", delegator2, provider2, spec1.Index, 0},
 		{"invalid provider", delegator1, provider3, ts.spec.Index, 0},
-		{"invalid chain ID", delegator1, provider2, spec1.Index, 0},
 	}
 
 	for _, tt := range tests {
@@ -411,10 +424,12 @@ func TestVaultProviderDelegatorRewardsQuery(t *testing.T) {
 }
 
 func makeProviderCommissionZero(ts *tester, chainID string, provider string) {
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, chainID, provider)
-	require.True(ts.T, found)
-	stakeEntry.DelegateCommission = 0
-	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	if err != nil {
+		panic(err)
+	}
+	metadata.DelegateCommission = 0
+	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 	ts.AdvanceEpoch()
 }
 

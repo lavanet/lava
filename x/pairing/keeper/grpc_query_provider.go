@@ -22,6 +22,10 @@ func (k Keeper) Provider(goCtx context.Context, req *types.QueryProviderRequest)
 		chains = k.specKeeper.GetAllChainIDs(ctx)
 	}
 
+	metadata, err := k.epochStorageKeeper.GetMetadata(ctx, req.Address)
+	if err != nil {
+		return nil, err
+	}
 	stakeEntries := []epochstoragetypes.StakeEntry{}
 	for _, chain := range chains {
 		stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chain, req.Address)
@@ -29,6 +33,7 @@ func (k Keeper) Provider(goCtx context.Context, req *types.QueryProviderRequest)
 			continue
 		}
 		stakeEntry.Moniker = stakeEntry.Description.Moniker
+		stakeEntry.DelegateCommission = metadata.DelegateCommission
 		stakeEntries = append(stakeEntries, stakeEntry)
 	}
 

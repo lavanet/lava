@@ -34,16 +34,9 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
 		}
 	}
-
+	defer k.epochStorageKeeper.SetMetadata(ctx, metadata)
 	metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
 	k.epochStorageKeeper.SetMetadata(ctx, metadata)
-
-	if creator != metadata.Vault {
-		return utils.LavaFormatWarning("creator does not match the provider vault", err,
-			utils.Attribute{Key: "vault", Value: metadata.Vault},
-			utils.Attribute{Key: "creator", Value: creator},
-		)
-	}
 
 	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)
 	if err != nil || !spec.Enabled {
@@ -108,7 +101,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			// verify that the provider only tries to change non-stake related traits of the stake entry
 			// a provider can be the same as the vault, so we verify it's not the case
 			if isProvider {
-				if delegationCommission != existingEntry.DelegateCommission ||
+				if delegationCommission != metadata.DelegateCommission ||
 					!amount.Equal(existingEntry.Stake) {
 					return utils.LavaFormatWarning("only vault address can change stake/delegation related properties of the stake entry", fmt.Errorf("invalid modification request for stake entry"),
 						utils.LogAttr("creator", creator),
@@ -116,7 +109,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 						utils.LogAttr("provider", provider),
 						utils.LogAttr("description", description.String()),
 						utils.LogAttr("req_delegation_limit", delegationLimit),
-						utils.LogAttr("current_delegation_commission", existingEntry.DelegateCommission),
+						utils.LogAttr("current_delegation_commission", metadata.DelegateCommission),
 						utils.LogAttr("req_delegation_commission", delegationCommission),
 						utils.LogAttr("current_stake", existingEntry.Stake.String()),
 						utils.LogAttr("req_stake", amount.String()),
@@ -145,17 +138,17 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		// if the provider has no delegations then we dont limit the changes
 		if !existingEntry.DelegateTotal.IsZero() {
 			// if there was a change in the last 24h than we dont allow changes
-			if ctx.BlockTime().UTC().Unix()-int64(existingEntry.LastChange) < int64(CHANGE_WINDOW.Seconds()) {
-				if delegationCommission != existingEntry.DelegateCommission {
+			if ctx.BlockTime().UTC().Unix()-int64(metadata.LastChange) < int64(CHANGE_WINDOW.Seconds()) {
+				if delegationCommission != metadata.DelegateCommission {
 					return utils.LavaFormatWarning(fmt.Sprintf("stake entry commmision or delegate limit can only be changes once in %s", CHANGE_WINDOW), nil,
-						utils.LogAttr("last_change_time", existingEntry.LastChange))
+						utils.LogAttr("last_change_time", metadata.LastChange))
 				}
 			}
 
 			// check that the change is not mode than MAX_CHANGE_RATE
-			if int64(delegationCommission)-int64(existingEntry.DelegateCommission) > MAX_CHANGE_RATE {
+			if int64(delegationCommission)-int64(metadata.DelegateCommission) > MAX_CHANGE_RATE {
 				return utils.LavaFormatWarning("stake entry commission increase too high", fmt.Errorf("commission change cannot increase by more than %d at a time", MAX_CHANGE_RATE),
-					utils.LogAttr("original_commission", existingEntry.DelegateCommission),
+					utils.LogAttr("original_commission", metadata.DelegateCommission),
 					utils.LogAttr("wanted_commission", delegationCommission),
 				)
 			}
@@ -168,8 +161,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		existingEntry.Geolocation = geolocation
 		existingEntry.Endpoints = endpointsVerified
 		existingEntry.Description = description
-		existingEntry.DelegateCommission = delegationCommission
-		existingEntry.LastChange = uint64(ctx.BlockTime().UTC().Unix())
+		metadata.DelegateCommission = delegationCommission
+		metadata.LastChange = uint64(ctx.BlockTime().UTC().Unix())
 		existingEntry.Stake = amount
 
 		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)
@@ -219,6 +212,13 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		}
 	}
 
+	if creator != metadata.Vault {
+		return utils.LavaFormatWarning("creator does not match the provider vault", err,
+			utils.Attribute{Key: "vault", Value: metadata.Vault},
+			utils.Attribute{Key: "creator", Value: creator},
+		)
+	}
+
 	// entry isn't staked so add him
 	details := []utils.Attribute{
 		{Key: "spec", Value: specChainID},
@@ -250,7 +250,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 				}
 			}
 		}
-		k.epochStorageKeeper.SetMetadata(ctx, metadata)
 	}
 
 	if stakeAmount.IsLT(k.dualstakingKeeper.MinSelfDelegation(ctx)) { // we count on this to also check the denom
@@ -271,9 +270,8 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		Chain:              chainID,
 		Description:        description,
 		DelegateTotal:      sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), delegateTotal),
-		DelegateCommission: delegationCommission,
+		DelegateCommission: 0,
 		Vault:              creator, // the stake-provider TX creator is always regarded as the vault address
-		LastChange:         uint64(ctx.BlockTime().UTC().Unix()),
 	}
 
 	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
