@@ -22,6 +22,11 @@ func (k Keeper) Providers(goCtx context.Context, req *types.QueryProvidersReques
 	if !req.ShowFrozen {
 		stakeEntriesNoFrozen := []epochstoragetypes.StakeEntry{}
 		for i := range stakeEntries {
+			metadata, err := k.epochStorageKeeper.GetMetadata(ctx, stakeEntries[i].Address)
+			if err != nil {
+				return nil, err
+			}
+			stakeEntries[i].DelegateCommission = metadata.DelegateCommission
 			stakeEntries[i].Moniker = stakeEntries[i].Description.Moniker
 
 			// show providers with valid stakeAppliedBlock (frozen providers have stakeAppliedBlock = MaxUint64)
