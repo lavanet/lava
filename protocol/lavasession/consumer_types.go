@@ -42,6 +42,7 @@ const (
 	AllowInsecureConnectionToProvidersFlag = "allow-insecure-provider-dialing"
 	AllowGRPCCompressionFlag               = "allow-grpc-compression-for-consumer-provider-communication"
 	maximumStreamsOverASingleConnection    = 100
+	WeightMultiplierForStaticProviders     = 10
 )
 
 var (
@@ -72,9 +73,10 @@ type ProviderOptimizer interface {
 	AppendProbeRelayData(providerAddress string, latency time.Duration, success bool)
 	AppendRelayFailure(providerAddress string)
 	AppendRelayData(providerAddress string, latency time.Duration, isHangingApi bool, cu, syncBlock uint64)
-	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64, perturbationPercentage float64) (addresses []string)
+	ChooseProvider(allAddresses []string, ignoredProviders map[string]struct{}, cu uint64, requestedBlock int64) (addresses []string, tier int)
 	GetExcellenceQoSReportForProvider(string) (*pairingtypes.QualityOfServiceReport, *pairingtypes.QualityOfServiceReport)
 	Strategy() provideroptimizer.Strategy
+	UpdateWeights(map[string]int64)
 }
 
 type ignoredProviders struct {
@@ -594,4 +596,29 @@ func CalculateAvailabilityScore(qosReport *QoSReport) (downtimePercentageRet, sc
 	downtimePercentage := sdk.NewDecWithPrec(int64(qosReport.TotalRelays-qosReport.AnsweredRelays), 0).Quo(sdk.NewDecWithPrec(int64(qosReport.TotalRelays), 0))
 	scaledAvailabilityScore := sdk.MaxDec(sdk.ZeroDec(), AvailabilityPercentage.Sub(downtimePercentage).Quo(AvailabilityPercentage))
 	return downtimePercentage, scaledAvailabilityScore
+}
+
+func CalcWeightsByStake(providers map[uint64]*ConsumerSessionsWithProvider) (weights map[string]int64) {
+	weights = make(map[string]int64)
+	staticProviders := make([]*ConsumerSessionsWithProvider, 0)
+	maxWeight := int64(1)
+	for _, cswp := range providers {
+		if cswp.StaticProvider {
+			staticProviders = append(staticProviders, cswp)
+			continue
+		}
+		stakeAmount := cswp.getProviderStakeSize().Amount
+		stake := int64(10) // defaults to 10 if stake isn't set
+		if !stakeAmount.IsNil() && stakeAmount.IsInt64() {
+			stake = stakeAmount.Int64()
+		}
+		if stake > maxWeight {
+			maxWeight = stake
+		}
+		weights[cswp.PublicLavaAddress] = stake
+	}
+	for _, cswp := range staticProviders {
+		weights[cswp.PublicLavaAddress] = maxWeight * WeightMultiplierForStaticProviders
+	}
+	return weights
 }

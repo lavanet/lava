@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -48,25 +47,6 @@ const GRPCStatusCodeOnFailedMessages = 32
 type GrpcNodeErrorResponse struct {
 	ErrorMessage string `json:"error_message"`
 	ErrorCode    uint32 `json:"error_code"`
-}
-
-type grpcDescriptorCache struct {
-	cachedDescriptors sync.Map // method name is the key, method descriptor is the value
-}
-
-func (gdc *grpcDescriptorCache) getDescriptor(methodName string) *desc.MethodDescriptor {
-	if descriptor, ok := gdc.cachedDescriptors.Load(methodName); ok {
-		converted, success := descriptor.(*desc.MethodDescriptor) // convert to a descriptor
-		if success {
-			return converted
-		}
-		utils.LavaFormatError("Failed Converting method descriptor", nil, utils.Attribute{Key: "Method", Value: methodName})
-	}
-	return nil
-}
-
-func (gdc *grpcDescriptorCache) setDescriptor(methodName string, descriptor *desc.MethodDescriptor) {
-	gdc.cachedDescriptors.Store(methodName, descriptor)
 }
 
 type GrpcChainParser struct {
@@ -388,7 +368,7 @@ func (apil *GrpcChainListener) GetListeningAddress() string {
 type GrpcChainProxy struct {
 	BaseChainProxy
 	conn             grpcConnectorInterface
-	descriptorsCache *grpcDescriptorCache
+	descriptorsCache *common.SafeSyncMap[string, *desc.MethodDescriptor]
 }
 type grpcConnectorInterface interface {
 	Close()
@@ -413,7 +393,7 @@ func NewGrpcChainProxy(ctx context.Context, nConns uint, rpcProviderEndpoint lav
 func newGrpcChainProxy(ctx context.Context, averageBlockTime time.Duration, parser ChainParser, conn grpcConnectorInterface, rpcProviderEndpoint lavasession.RPCProviderEndpoint) (ChainProxy, error) {
 	cp := &GrpcChainProxy{
 		BaseChainProxy:   BaseChainProxy{averageBlockTime: averageBlockTime, ErrorHandler: &GRPCErrorHandler{}, ChainID: rpcProviderEndpoint.ChainID, HashedNodeUrl: chainproxy.HashURL(rpcProviderEndpoint.NodeUrls[0].Url)},
-		descriptorsCache: &grpcDescriptorCache{},
+		descriptorsCache: &common.SafeSyncMap[string, *desc.MethodDescriptor]{},
 	}
 	cp.conn = conn
 	if cp.conn == nil {
@@ -471,9 +451,12 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 	descriptorSource := rpcInterfaceMessages.DescriptorSourceFromServer(cl)
 	svc, methodName := rpcInterfaceMessages.ParseSymbol(nodeMessage.Path)
 
-	// check if we have method descriptor already cached.
-	methodDescriptor := cp.descriptorsCache.getDescriptor(methodName)
-	if methodDescriptor == nil { // method descriptor not cached yet, need to fetch it and add to cache
+	// Check if we have method descriptor already cached.
+	// The reason we do Load and then Store here, instead of LoadOrStore:
+	// On the worst case scenario, where 2 threads are accessing the map at the same time, the same descriptor will be stored twice.
+	// It is better than the alternative, which is always creating the descriptor, since the outcome is the same.
+	methodDescriptor, found, _ := cp.descriptorsCache.Load(methodName)
+	if !found { // method descriptor not cached yet, need to fetch it and add to cache
 		var descriptor desc.Descriptor
 		if descriptor, err = descriptorSource.FindSymbol(svc); err != nil {
 			return nil, "", nil, utils.LavaFormatError("descriptorSource.FindSymbol", err, utils.Attribute{Key: "GUID", Value: ctx})
@@ -488,7 +471,7 @@ func (cp *GrpcChainProxy) SendNodeMsg(ctx context.Context, ch chan interface{}, 
 		}
 
 		// add the descriptor to the chainProxy cache
-		cp.descriptorsCache.setDescriptor(methodName, methodDescriptor)
+		cp.descriptorsCache.Store(methodName, methodDescriptor)
 	}
 
 	msgFactory := dynamic.NewMessageFactoryWithDefaults()
