@@ -515,7 +515,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-	// check for expected balance: (credit*100/200 (from spec1) + credit*(100/200))*(4/5+1/5*commision(10%) (from spec, considering delegations)
+	// check for expected balance: (credit*100/200 (from spec1) + credit*(100/200))*(4/5+1/5*commission(10%) (from spec, considering delegations)
 	// for credit=100 (first month there was no use, so no credit was spent), expected monthly payout is 90
 	expectedTotalPayout := uint64(82)
 	expectedPayouts := []types.SubscriptionPayout{

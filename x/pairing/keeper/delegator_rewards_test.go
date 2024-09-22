@@ -191,9 +191,6 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
-	require.True(t, found)
-
 	// ** provider's commission is 100% ** //
 	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
 	require.NoError(t, err)
@@ -201,7 +198,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 
 	ts.AdvanceEpoch()
-	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
+	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 
 	res, err := ts.QueryDualstakingProviderDelegators(provider)
@@ -315,9 +312,9 @@ func TestQueryDelegatorRewards(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	makeProviderCommissionZero(ts, ts.spec.Index, provider1)
-	makeProviderCommissionZero(ts, spec1.Index, provider1)
-	makeProviderCommissionZero(ts, ts.spec.Index, provider2)
+	makeProviderCommissionZero(ts, provider1)
+	makeProviderCommissionZero(ts, provider1)
+	makeProviderCommissionZero(ts, provider2)
 
 	delegationAmount := sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(testStake))
 	_, err = ts.TxDualstakingDelegate(delegator1, provider1, delegationAmount)
@@ -423,7 +420,7 @@ func TestVaultProviderDelegatorRewardsQuery(t *testing.T) {
 	}
 }
 
-func makeProviderCommissionZero(ts *tester, chainID string, provider string) {
+func makeProviderCommissionZero(ts *tester, provider string) {
 	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
 	if err != nil {
 		panic(err)
@@ -533,7 +530,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	require.True(t, found)
 	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
-	makeProviderCommissionZero(ts, ts.spec.Index, provider)
+	makeProviderCommissionZero(ts, provider)
 
 	// delegate and check the delegation's timestamp is equal to nowPlusMonthTime
 	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
@@ -587,8 +584,8 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	require.True(t, found)
 	ts.Keepers.Epochstorage.SetStakeEntryCurrent(ts.Ctx, stakeEntry)
 	ts.AdvanceEpoch()
-	makeProviderCommissionZero(ts, ts.spec.Index, provider1)
-	makeProviderCommissionZero(ts, ts.spec.Index, provider)
+	makeProviderCommissionZero(ts, provider1)
+	makeProviderCommissionZero(ts, provider)
 
 	// delegate and check the delegation's timestamp is equal to nowPlusMonthTime
 	nowPlusMonthTime := ts.GetNextMonth(ts.BlockTime())
