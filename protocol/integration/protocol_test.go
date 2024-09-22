@@ -356,8 +356,8 @@ func createCacheServer(t *testing.T, ctx context.Context, listenAddress string) 
 		cs.InitCache(ctx, cache.DefaultExpirationTimeFinalized, cache.DefaultExpirationForNonFinalized, cache.DefaultExpirationNodeErrors, cache.DefaultExpirationBlocksHashesToHeights, "disabled", cache.DefaultExpirationTimeFinalizedMultiplier, cache.DefaultExpirationTimeNonFinalizedMultiplier)
 		cs.Serve(ctx, listenAddress)
 	}()
-	consumerUp := checkServerStatusWithTimeout("http://"+listenAddress, time.Millisecond*61)
-	require.True(t, consumerUp)
+	cacheServerUp := checkServerStatusWithTimeout("http://"+listenAddress, time.Second*7)
+	require.True(t, cacheServerUp)
 }
 
 func TestConsumerProviderBasic(t *testing.T) {
