@@ -884,7 +884,7 @@ func TestVaultProviderNewStakeEntry(t *testing.T) {
 				require.True(t, found) // should be found because provider is registered in a vaild stake entry
 
 				// delegations
-				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String())
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 0)
 			} else {
@@ -905,7 +905,7 @@ func TestVaultProviderNewStakeEntry(t *testing.T) {
 				require.Equal(t, int64(0), stakeEntry.DelegateTotal.Amount.Int64())
 
 				// delegations
-				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String())
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 1)
 				require.Equal(t, tt.provider.String(), res.Delegations[0].Provider)
@@ -963,7 +963,7 @@ func TestVaultProviderExistingStakeEntry(t *testing.T) {
 				require.True(t, found) // should be found because provider is registered in a vaild stake entry
 
 				// delegations
-				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String())
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 0)
 			} else {
@@ -984,7 +984,7 @@ func TestVaultProviderExistingStakeEntry(t *testing.T) {
 				require.Equal(t, int64(0), stakeEntry.DelegateTotal.Amount.Int64())
 
 				// delegations
-				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String(), false)
+				res, err := ts.QueryDualstakingDelegatorProviders(tt.vault.String())
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 1)
 				require.Equal(t, tt.provider.String(), res.Delegations[0].Provider)
@@ -1134,7 +1134,7 @@ func TestDelegatorStakesAfterProviderUnstakes(t *testing.T) {
 			_, err = ts.TxPairingUnstakeProvider(vault, ts.spec.Index)
 			require.NoError(t, err)
 
-			res, err := ts.QueryDualstakingDelegatorProviders(delegator, false)
+			res, err := ts.QueryDualstakingDelegatorProviders(delegator)
 			require.NoError(t, err)
 			require.Len(t, res.Delegations, 1)
 			require.Equal(t, delegator, res.Delegations[0].Delegator)
@@ -1191,7 +1191,7 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 			require.NoError(t, err)
 			ts.AdvanceEpoch()
 
-			res, err := ts.QueryDualstakingDelegatorProviders(apple, false)
+			res, err := ts.QueryDualstakingDelegatorProviders(apple)
 			require.NoError(t, err)
 			require.Len(t, res.Delegations, 1)
 			require.Equal(t, apple, res.Delegations[0].Delegator)
@@ -1214,7 +1214,7 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 				_, err = ts.TxDualstakingUnbond(apple, banana, common.NewCoin(ts.TokenDenom(), testBalance/4))
 				require.NoError(t, err)
 				ts.AdvanceEpoch()
-				res, err := ts.QueryDualstakingProviderDelegators(banana, false)
+				res, err := ts.QueryDualstakingProviderDelegators(banana)
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 1)
 				require.Equal(t, banana, res.Delegations[0].Provider)
@@ -1232,7 +1232,7 @@ func TestDelegatorAfterProviderUnstakeAndStake(t *testing.T) {
 				_, err = ts.TxDualstakingUnbond(apple, banana, common.NewCoin(ts.TokenDenom(), testBalance/4))
 				require.NoError(t, err)
 				ts.AdvanceEpoch()
-				res, err := ts.QueryDualstakingProviderDelegators(banana, false)
+				res, err := ts.QueryDualstakingProviderDelegators(banana)
 				require.NoError(t, err)
 				require.Len(t, res.Delegations, 0)
 			}

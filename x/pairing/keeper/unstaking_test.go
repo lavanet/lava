@@ -38,7 +38,7 @@ func TestUnstakeAndSlashProposal(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	result, err := ts.QueryDualstakingProviderDelegators(provider, true)
+	result, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	for _, d := range result.Delegations {
 		for _, s := range delegatorsSlashing {

@@ -90,7 +90,7 @@ func TestProviderDelegatorsRewards(t *testing.T) {
 			require.True(t, found)
 
 			// check that there are two delegators
-			res, err := ts.QueryDualstakingProviderDelegators(provider, false)
+			res, err := ts.QueryDualstakingProviderDelegators(provider)
 			require.NoError(t, err)
 			require.Equal(t, 3, len(res.Delegations))
 
@@ -202,7 +202,7 @@ func TestProviderRewardWithCommission(t *testing.T) {
 	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
 
-	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 
@@ -435,7 +435,7 @@ func TestDelegationTimestamp(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
-	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
@@ -451,7 +451,7 @@ func TestDelegationTimestamp(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
-	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err = ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
@@ -485,7 +485,7 @@ func TestDelegationFirstMonthPairing(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
-	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
@@ -527,7 +527,7 @@ func TestDelegationFirstMonthReward(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
-	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {
@@ -582,7 +582,7 @@ func TestRedelegationFirstMonthReward(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch() // apply delegations
 
-	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations)) // expect two because of provider self delegation + delegator
 	for _, d := range res.Delegations {

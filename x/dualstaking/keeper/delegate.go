@@ -130,8 +130,10 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 			part := total.QuoRaw(count)
 			if increase {
 				entry.Stake = entry.Stake.AddAmount(part)
+				TotalSelfDelegation = TotalSelfDelegation.Add(part)
 			} else {
 				entry.Stake = entry.Stake.SubAmount(part)
+				TotalSelfDelegation = TotalSelfDelegation.Sub(part)
 				if entry.Stake.IsLT(k.GetParams(ctx).MinSelfDelegation) {
 					return utils.LavaFormatError("self delegation below minimum, use unstake tx", nil, utils.LogAttr("chainID", entry.Chain))
 				}

@@ -876,19 +876,17 @@ func (ts *Tester) QueryPairingSubscriptionMonthlyPayout(consumer string) (*pairi
 }
 
 // QueryPairingVerifyPairing implements 'q dualstaking delegator-providers'
-func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string, withPending bool) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
+func (ts *Tester) QueryDualstakingDelegatorProviders(delegator string) (*dualstakingtypes.QueryDelegatorProvidersResponse, error) {
 	msg := &dualstakingtypes.QueryDelegatorProvidersRequest{
-		Delegator:   delegator,
-		WithPending: withPending,
+		Delegator: delegator,
 	}
 	return ts.Keepers.Dualstaking.DelegatorProviders(ts.GoCtx, msg)
 }
 
 // QueryDualstakingProviderDelegators implements 'q dualstaking provider-delegators'
-func (ts *Tester) QueryDualstakingProviderDelegators(provider string, withPending bool) (*dualstakingtypes.QueryProviderDelegatorsResponse, error) {
+func (ts *Tester) QueryDualstakingProviderDelegators(provider string) (*dualstakingtypes.QueryProviderDelegatorsResponse, error) {
 	msg := &dualstakingtypes.QueryProviderDelegatorsRequest{
-		Provider:    provider,
-		WithPending: withPending,
+		Provider: provider,
 	}
 	return ts.Keepers.Dualstaking.ProviderDelegators(ts.GoCtx, msg)
 }

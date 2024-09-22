@@ -28,7 +28,7 @@ func TestCreateValidator(t *testing.T) {
 	amount := sdk.NewIntFromUint64(100)
 	ts.TxCreateValidator(validator, amount)
 
-	res, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER, true)
+	res, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER)
 	require.NoError(t, err)
 	require.Equal(t, res.Delegations[0].Delegator, validator.Addr.String())
 }
@@ -43,7 +43,7 @@ func TestDelegateToValidator(t *testing.T) {
 	amount := sdk.NewIntFromUint64(100)
 	ts.TxCreateValidator(validator, amount)
 
-	res, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER, true)
+	res, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER)
 	require.NoError(t, err)
 	require.Equal(t, res.Delegations[0].Delegator, validator.Addr.String())
 
@@ -52,7 +52,7 @@ func TestDelegateToValidator(t *testing.T) {
 	_, err = ts.TxDelegateValidator(delegator, validator, amount)
 	require.NoError(t, err)
 
-	res, err = ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER, true)
+	res, err = ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	require.True(t, res.Delegations[0].Delegator == validator.Addr.String() || res.Delegations[0].Delegator == delegator.Addr.String())
@@ -71,7 +71,7 @@ func TestReDelegateToValidator(t *testing.T) {
 	ts.TxCreateValidator(validator1, amount)
 	ts.TxCreateValidator(validator2, amount)
 
-	delegatorsRes, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER, true)
+	delegatorsRes, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(delegatorsRes.Delegations))
 
@@ -80,11 +80,11 @@ func TestReDelegateToValidator(t *testing.T) {
 	_, err = ts.TxDelegateValidator(delegator, validator1, amount)
 	require.NoError(t, err)
 
-	delegatorsRes, err = ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER, true)
+	delegatorsRes, err = ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(delegatorsRes.Delegations))
 
-	providersRes, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
+	providersRes, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String())
 	require.NoError(t, err)
 	require.Equal(t, 1, len(providersRes.Delegations))
 	require.Equal(t, delegator.Addr.String(), providersRes.Delegations[0].Delegator)
@@ -92,11 +92,11 @@ func TestReDelegateToValidator(t *testing.T) {
 	_, err = ts.TxReDelegateValidator(delegator, validator1, validator2, amount)
 	require.NoError(t, err)
 
-	delegatorsRes1, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER, true)
+	delegatorsRes1, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER)
 	require.NoError(t, err)
 	require.Equal(t, delegatorsRes, delegatorsRes1)
 
-	providersRes1, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
+	providersRes1, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String())
 	require.NoError(t, err)
 	require.Equal(t, providersRes, providersRes1)
 }
@@ -128,7 +128,7 @@ func TestReDelegateToProvider(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, amount, entry.Stake.Amount)
 
-	providersRes, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
+	providersRes, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String())
 	require.NoError(t, err)
 	require.Equal(t, 1, len(providersRes.Delegations))
 	require.Equal(t, commontypes.EMPTY_PROVIDER, providersRes.Delegations[0].Provider)
@@ -142,11 +142,11 @@ func TestReDelegateToProvider(t *testing.T) {
 
 	require.NoError(t, err)
 
-	providersRes1, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), false)
+	providersRes1, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String())
 	require.NoError(t, err)
 	require.Equal(t, providersRes, providersRes1)
 
-	providersRes1, err = ts.QueryDualstakingDelegatorProviders(delegator.Addr.String(), true)
+	providersRes1, err = ts.QueryDualstakingDelegatorProviders(delegator.Addr.String())
 	require.NoError(t, err)
 	require.Equal(t, provider, providersRes1.Delegations[0].Provider)
 
@@ -214,7 +214,7 @@ func TestUnbondUniformProviders(t *testing.T) {
 	_, err = ts.TxUnbondValidator(delegatorAcc, validator, sdk.NewInt(25*5))
 	require.NoError(t, err)
 
-	res, err := ts.QueryDualstakingDelegatorProviders(delegator, true)
+	res, err := ts.QueryDualstakingDelegatorProviders(delegator)
 	require.Len(t, res.Delegations, 3)
 	require.NoError(t, err)
 	for _, d := range res.Delegations {
@@ -250,7 +250,7 @@ func TestValidatorSlash(t *testing.T) {
 	require.Equal(t, amount, val.Tokens)
 
 	// sanity check: empty provider should have delegation of 1000000000 tokens
-	resQ, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER, false)
+	resQ, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(resQ.Delegations))
 	require.Equal(t, amount, resQ.Delegations[0].Amount.Amount)
@@ -264,7 +264,7 @@ func TestValidatorSlash(t *testing.T) {
 
 	// check: the only delegation should be validator delegated to empty provider
 	// the delegation amount should be original_amount(=1000000000) - expectedTokensToBurn
-	res, err := ts.QueryDualstakingDelegatorProviders(valAcc.Addr.String(), true)
+	res, err := ts.QueryDualstakingDelegatorProviders(valAcc.Addr.String())
 	require.NoError(t, err)
 	require.Equal(t, 1, len(res.Delegations)) // empty provider
 	require.Equal(t, amount.Sub(expectedTokensToBurn), res.Delegations[0].Amount.Amount)
@@ -318,7 +318,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	ts.AdvanceEpoch() // advance epoch to apply the empty provider delegation (that happens automatically when delegating to the validator)
 
 	// sanity check: empty provider should have val_stake(=1000000000) + 250*consensusPowerTokens tokens in two delegations
-	resQ, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER, false)
+	resQ, err := ts.QueryDualstakingProviderDelegators(commontypes.EMPTY_PROVIDER)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(resQ.Delegations))
 	require.Equal(t, stake.Add(consensusPowerTokens.MulRaw(250)), resQ.Delegations[0].Amount.Amount.Add(resQ.Delegations[1].Amount.Amount))
@@ -344,7 +344,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 		ts.AdvanceEpoch()
 
 		// verify delegation is applied (should be 2 delegations: self delegation + redelegate amount)
-		resQ, err = ts.QueryDualstakingProviderDelegators(provider, false)
+		resQ, err = ts.QueryDualstakingProviderDelegators(provider)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(resQ.Delegations))
 		require.Equal(t, redelegateAmts[i].Add(stake), resQ.Delegations[0].Amount.Amount.Add(resQ.Delegations[1].Amount.Amount))
@@ -372,7 +372,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 	expectedValidatorTokens = expectedValidatorTokens.Sub(consensusPowerTokens.MulRaw(5))
 
 	// get the delegator's provider delegations before the slash
-	res, err := ts.QueryDualstakingDelegatorProviders(delegator, true)
+	res, err := ts.QueryDualstakingDelegatorProviders(delegator)
 	require.NoError(t, err)
 	delegationsBeforeSlash := res.Delegations
 	slices.SortFunc(delegationsBeforeSlash, func(i, j dualstakingtypes.Delegation) bool {
@@ -390,13 +390,13 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 
 	// both the validator and providers have a single delegation that was created by their
 	// self delegation. Check that the new amount after slash is (1-fraction) * old_amount
-	res, err = ts.QueryDualstakingDelegatorProviders(valAcc.Addr.String(), true)
+	res, err = ts.QueryDualstakingDelegatorProviders(valAcc.Addr.String())
 	require.NoError(t, err)
 	require.Len(t, res.Delegations, 1)
 	require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(stake).RoundInt(), res.Delegations[0].Amount.Amount)
 
 	for _, p := range providersAccs {
-		res, err = ts.QueryDualstakingDelegatorProviders(p.GetVaultAddr(), true)
+		res, err = ts.QueryDualstakingDelegatorProviders(p.GetVaultAddr())
 		require.NoError(t, err)
 		require.Len(t, res.Delegations, 1)
 		require.Equal(t, sdk.OneDec().Sub(fraction).MulInt(stake).RoundInt(), res.Delegations[0].Amount.Amount)
@@ -404,7 +404,7 @@ func TestValidatorAndProvidersSlash(t *testing.T) {
 
 	// the total token to deduct from the delegator's provider delegations is:
 	// total_providers_delegations * fraction = (245 * consensus_power_tokens) * fraction
-	res, err = ts.QueryDualstakingDelegatorProviders(delegator, true)
+	res, err = ts.QueryDualstakingDelegatorProviders(delegator)
 	require.NoError(t, err)
 	require.Len(t, res.Delegations, 5) // 5 providers from redelegations
 	totalDelegations := math.ZeroInt()
@@ -578,7 +578,7 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 	_, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.False(t, found)
 
-	_, err = ts.QueryDualstakingProviderDelegators(provider, true)
+	_, err = ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 }
 
@@ -631,7 +631,7 @@ func TestUndelegateProvider(t *testing.T) {
 
 	ts.AdvanceEpoch()
 
-	res2, err := ts.QueryDualstakingProviderDelegators(provider, true)
+	res2, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	fmt.Println("Delegation of Provider before provider is removed", res2)
 
@@ -643,9 +643,9 @@ func TestUndelegateProvider(t *testing.T) {
 
 	// delegation of the removed provider
 	// the provider is removed but the delegation is still remained
-	res2, err = ts.QueryDualstakingProviderDelegators(provider, true)
+	res2, err = ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
-	fmt.Println("Delegation of Provider after provider is removed", res2)
+	require.Equal(t, int64(9999), res2.Delegations[0].Amount.Amount.Int64())
 
 	ts.AdvanceEpochUntilStale()
 
@@ -653,9 +653,8 @@ func TestUndelegateProvider(t *testing.T) {
 	err = ts.StakeProvider(providerAcct.GetVaultAddr(), providerAcct.Addr.String(), ts.spec, sdk.NewIntFromUint64(1000).Int64())
 	require.NoError(t, err)
 
-	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
+	_, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
-	fmt.Println("Stake entry of re-staked provider", stakeEntry.String())
 
 	// delegator1 should be able to redelegate back to the empty provider
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
@@ -664,9 +663,8 @@ func TestUndelegateProvider(t *testing.T) {
 		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(1)))
 	require.NoError(t, err)
 
-	stakeEntry, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
+	_, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
-	fmt.Println("Stake entry of re-staked provider after del1 9999 redelegation", stakeEntry.String())
 
 	// another one delegates to provider
 	// delegator2 delegates 9998 to the provider

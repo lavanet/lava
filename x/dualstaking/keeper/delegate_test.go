@@ -382,7 +382,7 @@ func TestUnbond(t *testing.T) {
 	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
 	require.True(t, delegated.Amount.QuoRaw(2).Equal(stakeEntry.DelegateTotal.Amount))
 
-	res, err := ts.QueryDualstakingDelegatorProviders(client1Addr, true)
+	res, err := ts.QueryDualstakingDelegatorProviders(client1Addr)
 	require.NoError(t, err)
 	require.Len(t, res.Delegations, 1)
 
@@ -445,7 +445,7 @@ func TestUnbond(t *testing.T) {
 
 	ts.verifyDelegatorsBalance()
 
-	res, err = ts.QueryDualstakingDelegatorProviders(client1Addr, true)
+	res, err = ts.QueryDualstakingDelegatorProviders(client1Addr)
 	require.NoError(t, err)
 	require.Len(t, res.Delegations, 0)
 }
@@ -523,7 +523,7 @@ func TestDualstakingUnbondStakeIsLowerThanMinStakeCausesFreeze(t *testing.T) {
 	require.True(t, stakeEntry.IsFrozen())
 }
 
-func TestDualstakingUnbondStakeIsLowerThanMinSelfDelegationCausesUnstake(t *testing.T) {
+func TestDualstakingUnbondStakeIsLowerThanMinSelfDelegationCausesError(t *testing.T) {
 	ts := newTester(t)
 
 	// 0 delegator, 1 provider staked, 0 provider unstaked, 0 provider unstaking
@@ -536,15 +536,7 @@ func TestDualstakingUnbondStakeIsLowerThanMinSelfDelegationCausesUnstake(t *test
 
 	// unbond once (not unstaking completely but still below min stake)
 	_, err := ts.TxDualstakingUnbond(provider1Acct.GetVaultAddr(), provider, amountToUnbond)
-	require.NoError(t, err)
-
-	stakeEntry := ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name)
-	require.True(t, staked.IsEqual(stakeEntry.Stake))
-
-	// advance epoch to digest the delegate
-	ts.AdvanceEpoch()
-	// provider should be unstaked -> getStakeEntry should panic
-	require.Panics(t, func() { ts.getStakeEntry(provider1Acct.Addr.String(), ts.spec.Name) })
+	require.Error(t, err)
 }
 
 func TestDualstakingBondStakeIsGreaterThanMinStakeCausesUnFreeze(t *testing.T) {
@@ -584,7 +576,7 @@ func TestDualstakingRedelegateFreezeOneUnFreezeOther(t *testing.T) {
 
 	// redelegate once
 	minSelfDelegation := ts.Keepers.Dualstaking.MinSelfDelegation(ts.Ctx)
-	amountToUnbond := stake.Sub(stake.Sub(minSelfDelegation.AddAmount(math.OneInt())))
+	amountToUnbond := minSelfDelegation.AddAmount(math.OneInt())
 	_, err := ts.TxDualstakingRedelegate(provider1Acct.GetVaultAddr(), provider1Addr, provider2Addr, stake.Sub(amountToUnbond))
 	require.NoError(t, err)
 

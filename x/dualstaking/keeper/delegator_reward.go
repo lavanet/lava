@@ -14,7 +14,7 @@ import (
 
 // SetDelegatorReward set a specific DelegatorReward in the store from its index
 func (k Keeper) SetDelegatorReward(ctx sdk.Context, delegatorReward types.DelegatorReward) {
-	err := k.rewards.Set(ctx, types.DelegationKey(delegatorReward.Provider, delegatorReward.Provider), delegatorReward)
+	err := k.rewards.Set(ctx, types.DelegationKey(delegatorReward.Provider, delegatorReward.Delegator), delegatorReward)
 	if err != nil {
 		panic(err)
 	}

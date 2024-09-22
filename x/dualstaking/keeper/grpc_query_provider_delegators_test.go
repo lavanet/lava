@@ -28,7 +28,7 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 	delegation := types.NewDelegation(delegator, provider, ts.Ctx.BlockTime(), ts.TokenDenom())
 	delegation.Amount = amount
 
-	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	var delegationRes types.Delegation
@@ -48,7 +48,7 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 	bondedAmount := amount.Sub(unbondAmount)
 	delegation.Amount = bondedAmount
 
-	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err = ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	for _, d := range res.Delegations {
@@ -63,7 +63,7 @@ func TestQueryProviderDelegatorsWithUnbonding(t *testing.T) {
 	require.NoError(t, err)
 	ts.AdvanceEpoch()
 
-	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err = ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(res.Delegations))
 }
@@ -88,7 +88,7 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	require.NoError(t, err)
 
 	// query pending delegators
-	res, err := ts.QueryDualstakingProviderDelegators(provider, true)
+	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	var delegationRes types.Delegation
@@ -100,14 +100,14 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	require.True(t, delegationRes.Equal(&delegation1))
 
 	// query current delegators
-	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err = ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(res.Delegations))
 
 	// advance epoch, delegator1 should show in both flag values
 	ts.AdvanceEpoch()
 
-	res, err = ts.QueryDualstakingProviderDelegators(provider, true)
+	res, err = ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	for _, d := range res.Delegations {
@@ -117,7 +117,7 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	}
 	require.True(t, delegationRes.Equal(&delegation1))
 
-	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err = ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	for _, d := range res.Delegations {
@@ -134,7 +134,7 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 	require.NoError(t, err)
 
 	// delegator2 should show when quering with showPending=true and not show when showPending=false
-	res, err = ts.QueryDualstakingProviderDelegators(provider, true)
+	res, err = ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(res.Delegations))
 	for _, d := range res.Delegations {
@@ -145,7 +145,7 @@ func TestQueryProviderDelegatorsWithPendingDelegations(t *testing.T) {
 		}
 	}
 
-	res, err = ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err = ts.QueryDualstakingProviderDelegators(provider)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(res.Delegations))
 	for _, d := range res.Delegations {
@@ -188,7 +188,7 @@ func TestQueryProviderDelegatorsProviderMultipleDelegators(t *testing.T) {
 	}
 
 	ts.AdvanceEpoch()
-	res, err := ts.QueryDualstakingProviderDelegators(provider, false)
+	res, err := ts.QueryDualstakingProviderDelegators(provider)
 	require.Equal(t, 4, len(res.Delegations))
 	require.NoError(t, err)
 	for _, d := range delegations {
@@ -228,7 +228,7 @@ func TestQueryProviderDelegatorsDelegatorMultipleProviders(t *testing.T) {
 	ts.AdvanceEpoch()
 
 	for i := 0; i < len(providers); i++ {
-		res, err := ts.QueryDualstakingProviderDelegators(providers[i], false)
+		res, err := ts.QueryDualstakingProviderDelegators(providers[i])
 		require.NoError(t, err)
 		require.Equal(t, 2, len(res.Delegations))
 		var delegationRes types.Delegation

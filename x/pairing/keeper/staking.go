@@ -240,10 +240,17 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 
 	stakeAmount := amount
 	if len(metadata.Chains) == 1 {
-		delegation, found := k.dualstakingKeeper.GetDelegation(ctx, creator, provider)
-		if found {
-			stakeAmount = stakeAmount.Add(delegation.Amount)
+		delegations, err := k.dualstakingKeeper.GetProviderDelegators(ctx, provider)
+		if err == nil {
+			for _, d := range delegations {
+				if d.Delegator == creator {
+					stakeAmount = stakeAmount.Add(d.Amount)
+				} else {
+					metadata.TotalDelegations = metadata.TotalDelegations.Add(d.Amount)
+				}
+			}
 		}
+		k.epochStorageKeeper.SetMetadata(ctx, metadata)
 	}
 
 	if stakeAmount.IsLT(k.dualstakingKeeper.MinSelfDelegation(ctx)) { // we count on this to also check the denom
