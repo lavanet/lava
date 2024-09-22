@@ -855,11 +855,12 @@ func TestVaultProviderNewStakeEntry(t *testing.T) {
 		provider sdk.AccAddress
 		spec     spectypes.Spec
 		valid    bool
+		fail     bool
 	}{
-		{"stake provider = vault", p1Acc.Addr, p1Acc.Addr, ts.spec, true},
-		{"stake provider != vault", p2Acc.Vault.Addr, p2Acc.Addr, ts.spec, true},
-		{"stake existing provider", p1Acc.Vault.Addr, p1Acc.Addr, ts.spec, false},
-		{"stake existing provider different chain", p1Acc.Vault.Addr, p1Acc.Addr, spec1, true},
+		{"stake provider = vault", p1Acc.Addr, p1Acc.Addr, ts.spec, true, false},
+		{"stake provider != vault", p2Acc.Vault.Addr, p2Acc.Addr, ts.spec, true, false},
+		{"stake existing provider", p1Acc.Vault.Addr, p1Acc.Addr, ts.spec, false, false},
+		{"stake existing provider different chain", p1Acc.Vault.Addr, p1Acc.Addr, spec1, false, true},
 	}
 
 	for _, tt := range tests {
@@ -881,6 +882,10 @@ func TestVaultProviderNewStakeEntry(t *testing.T) {
 
 				// stake entry
 				_, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, tt.spec.Index, tt.provider.String())
+				if tt.fail {
+					require.False(t, found)
+					return
+				}
 				require.True(t, found) // should be found because provider is registered in a vaild stake entry
 
 				// delegations
@@ -1013,6 +1018,9 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 	stakeEntry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, acc.Addr.String())
 	require.True(t, found)
 
+	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
+	require.NoError(t, err)
+
 	// consts for stake entry changes
 	const (
 		STAKE = iota + 1
@@ -1052,7 +1060,7 @@ func TestVaultProviderModifyStakeEntry(t *testing.T) {
 				Amount:             stakeEntry.Stake,
 				Geolocation:        stakeEntry.Geolocation,
 				Endpoints:          stakeEntry.Endpoints,
-				DelegateCommission: stakeEntry.DelegateCommission,
+				DelegateCommission: metadata.DelegateCommission,
 				Address:            stakeEntry.Address,
 				Description:        stakeEntry.Description,
 			}

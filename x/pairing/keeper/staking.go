@@ -34,9 +34,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 			TotalDelegations: sdk.NewCoin(k.stakingKeeper.BondDenom(ctx), sdk.ZeroInt()),
 		}
 	}
-	defer k.epochStorageKeeper.SetMetadata(ctx, metadata)
 	metadata.Chains = lavaslices.AddUnique(metadata.Chains, chainID)
-	k.epochStorageKeeper.SetMetadata(ctx, metadata)
 
 	spec, err := k.specKeeper.GetExpandedSpec(ctx, specChainID)
 	if err != nil || !spec.Enabled {
@@ -108,7 +106,6 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 						utils.LogAttr("vault", existingEntry.Vault),
 						utils.LogAttr("provider", provider),
 						utils.LogAttr("description", description.String()),
-						utils.LogAttr("req_delegation_limit", delegationLimit),
 						utils.LogAttr("current_delegation_commission", metadata.DelegateCommission),
 						utils.LogAttr("req_delegation_commission", delegationCommission),
 						utils.LogAttr("current_stake", existingEntry.Stake.String()),
@@ -166,7 +163,7 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		existingEntry.Stake = amount
 
 		k.epochStorageKeeper.SetStakeEntryCurrent(ctx, existingEntry)
-
+		k.epochStorageKeeper.SetMetadata(ctx, metadata)
 		if increase {
 			// delegate the difference
 			diffAmount := amount.Sub(beforeAmount)
@@ -274,6 +271,10 @@ func (k Keeper) StakeNewEntry(ctx sdk.Context, validator, creator, chainID strin
 		Vault:              creator, // the stake-provider TX creator is always regarded as the vault address
 	}
 
+	metadata.DelegateCommission = delegationCommission
+	metadata.LastChange = uint64(ctx.BlockTime().UTC().Unix())
+
+	k.epochStorageKeeper.SetMetadata(ctx, metadata)
 	k.epochStorageKeeper.SetStakeEntryCurrent(ctx, stakeEntry)
 
 	err = k.dualstakingKeeper.DelegateFull(ctx, stakeEntry.Vault, validator, stakeEntry.Address, amount, true)
