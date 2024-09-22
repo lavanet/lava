@@ -487,7 +487,7 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	// change the provider's  and commission
 	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
 	require.NoError(t, err)
-	metadata.DelegateCommission = 0
+	metadata.DelegateCommission = 10
 	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 	ts.AdvanceEpoch()
 
@@ -515,12 +515,12 @@ func TestProviderMonthlyPayoutQuery(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-	// check for expected balance: (credit*100/200 (from spec1) + credit*(100/200))*(4/5) (from spec, considering delegations)
+	// check for expected balance: (credit*100/200 (from spec1) + credit*(100/200))*(4/5+1/5*commision(10%) (from spec, considering delegations)
 	// for credit=100 (first month there was no use, so no credit was spent), expected monthly payout is 90
-	expectedTotalPayout := uint64(90)
+	expectedTotalPayout := uint64(82)
 	expectedPayouts := []types.SubscriptionPayout{
-		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 45},
-		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 45},
+		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 41},
+		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 41},
 	}
 	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
 	require.NoError(t, err)
@@ -606,7 +606,7 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	// change the provider's and commission
 	metadata, err := ts.Keepers.Epochstorage.GetMetadata(ts.Ctx, provider)
 	require.NoError(t, err)
-	metadata.DelegateCommission = 0
+	metadata.DelegateCommission = 10
 	ts.Keepers.Epochstorage.SetMetadata(ts.Ctx, metadata)
 	ts.AdvanceEpoch()
 
@@ -641,13 +641,13 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-	// check for expected balance: planPrice*100/200 (from spec1) + planPrice*(100/200)*(2/3) (from spec, considering delegations)
+	// check for expected balance: planPrice*(100/200 (from spec1) + planPrice*(100/200))*(4/5 + 1/5*0.1) (from spec, considering delegations)
 	// for planPrice=100, expected monthly payout is 50 (spec1 with contributor) + 33 (normal spec no contributor)
 	expectedContributorPay := uint64(12) // half the plan payment for spec1:25 then divided between contributors half half rounded down
-	expectedTotalPayout := uint64(83) - expectedContributorPay*2
+	expectedTotalPayout := uint64(85) - expectedContributorPay*2
 	expectedPayouts := []types.SubscriptionPayout{
-		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 33},
-		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 26}, // 50 - 26 for contributors (each contributor gets 12)
+		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 41},
+		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 20}, // 50 - 26 for contributors (each contributor gets 12)
 	}
 	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
 	require.NoError(t, err)
