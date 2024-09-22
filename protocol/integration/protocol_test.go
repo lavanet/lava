@@ -433,7 +433,7 @@ func TestConsumerProviderBasic(t *testing.T) {
 	rpcconsumerServer, _ := createRpcConsumer(t, ctx, rpcConsumerOptions)
 	require.NotNil(t, rpcconsumerServer)
 	client := http.Client{}
-	resp, err := client.Get("http://" + consumerListenAddress + "/status")
+	resp, err := client.Get("http://" + consumerListenAddress + "/cosmos/base/tendermint/v1beta1/blocks/latest")
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	bodyBytes, err := io.ReadAll(resp.Body)
