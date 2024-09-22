@@ -182,7 +182,11 @@ func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, c
 
 	providerReward, delegatorsReward := k.CalcRewards(ctx, stakeEntry, claimableRewards, relevantDelegations)
 
-	leftoverRewards := k.updateDelegatorsReward(ctx, stakeEntry.DelegateTotal.Amount, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
+	metadata, err := k.epochstorageKeeper.GetMetadata(ctx, provider)
+	if err != nil {
+		return zeroCoins, zeroCoins, err
+	}
+	leftoverRewards := k.updateDelegatorsReward(ctx, metadata.TotalDelegations.Amount, relevantDelegations, delegatorsReward, senderModule, calcOnlyDelegators)
 	fullProviderReward := providerReward.Add(leftoverRewards...)
 
 	if !calcOnlyProvider {
