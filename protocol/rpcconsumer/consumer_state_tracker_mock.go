@@ -103,7 +103,7 @@ func (mr *MockConsumerStateTrackerInfMockRecorder) RegisterConsumerSessionManage
 }
 
 // RegisterFinalizationConsensusForUpdates mocks base method.
-func (m *MockConsumerStateTrackerInf) RegisterFinalizationConsensusForUpdates(arg0 context.Context, arg1 *finalizationconsensus.FinalizationConsensus) {
+func (m *MockConsumerStateTrackerInf) RegisterFinalizationConsensusForUpdates(arg0 context.Context, arg1 *finalizationconsensus.FinalizationConsensus, arg2 bool) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "RegisterFinalizationConsensusForUpdates", arg0, arg1)
 }
