@@ -556,6 +556,20 @@ func parseByArg(rpcInput RPCInput, input []string, dataSource int) ([]interface{
 //	}
 //
 // should output an interface array with "wanted result" in first index 0
+//
+// also supports array of objects, for example, on the given input ["a","b","0", "c"] and the canonical object
+//
+//	{
+//	  "a": {
+//	    "b": [
+//	      {
+//	        "c": "wanted result"
+//	      }
+//	    ]
+//	  }
+//	}
+//
+// should output an interface array with "wanted result" in first index 0
 func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interface{}, error) {
 	unmarshalledData, err := getDataToParse(rpcInput, dataSource)
 	if err != nil {
@@ -575,27 +589,43 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 		blockContainer := unmarshalledDataTyped[param_index]
 		for _, key := range input[1:] {
 			// type assertion for blockcontainer
-			if blockContainer, ok := blockContainer.(map[string]interface{}); !ok {
-				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is not map[string]interface{}", ValueNotSetError,
-					utils.LogAttr("params", rpcInput.GetParams()),
-					utils.LogAttr("method", rpcInput.GetMethod()),
-					utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
-					utils.LogAttr("key", key),
-					utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
-				)
-			}
+			switch blockContainerTyped := blockContainer.(type) {
+			case map[string]interface{}:
+				// assertion for key
+				if container, ok := blockContainerTyped[key]; ok {
+					blockContainer = container
+				} else {
+					return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError,
+						utils.LogAttr("params", rpcInput.GetParams()),
+						utils.LogAttr("method", rpcInput.GetMethod()),
+						utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
+						utils.LogAttr("key", key),
+						utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
+					)
+				}
+			case []interface{}:
+				param_index, err := strconv.ParseUint(key, 10, 32)
+				if err != nil {
+					return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is a slice, but given key is not an index", nil,
+						utils.LogAttr("params", rpcInput.GetParams()),
+						utils.LogAttr("method", rpcInput.GetMethod()),
+						utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
+						utils.LogAttr("key", key),
+						utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
+					)
+				}
+				if uint64(len(blockContainerTyped)) <= param_index {
+					return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is a slice, but given index is larger than the slice length", ValueNotSetError,
+						utils.LogAttr("params", rpcInput.GetParams()),
+						utils.LogAttr("method", rpcInput.GetMethod()),
+						utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
+						utils.LogAttr("index", param_index),
+						utils.LogAttr("length", len(blockContainerTyped)),
+						utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
+					)
+				}
 
-			// assertion for key
-			if container, ok := blockContainer.(map[string]interface{})[key]; ok {
-				blockContainer = container
-			} else {
-				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer does not have the field searched inside", ValueNotSetError,
-					utils.LogAttr("params", rpcInput.GetParams()),
-					utils.LogAttr("method", rpcInput.GetMethod()),
-					utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
-					utils.LogAttr("key", key),
-					utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
-				)
+				blockContainer = blockContainerTyped[param_index]
 			}
 		}
 		retArr := make([]interface{}, 0)
