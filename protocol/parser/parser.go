@@ -626,6 +626,14 @@ func parseCanonical(rpcInput RPCInput, input []string, dataSource int) ([]interf
 				}
 
 				blockContainer = blockContainerTyped[param_index]
+			default:
+				return nil, utils.LavaFormatWarning("invalid parser input format, blockContainer is not map[string]interface{} nor []interface{}", ValueNotSetError,
+					utils.LogAttr("params", rpcInput.GetParams()),
+					utils.LogAttr("method", rpcInput.GetMethod()),
+					utils.LogAttr("blockContainer", fmt.Sprintf("%v", blockContainer)),
+					utils.LogAttr("key", key),
+					utils.LogAttr("unmarshaledDataTyped", unmarshalledDataTyped),
+				)
 			}
 		}
 		retArr := make([]interface{}, 0)
