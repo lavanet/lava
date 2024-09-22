@@ -164,14 +164,14 @@ func TestQueryDelegatorMultipleProviders(t *testing.T) {
 	amountUint64 := uint64(100)
 	amount := sdk.NewCoin(ts.TokenDenom(), sdk.NewIntFromUint64(amountUint64))
 
-	delegations := []types.Delegation{}
+	delegations := map[string]types.Delegation{}
 	for i := 0; i < len(providers); i++ {
 		_, err := ts.TxDualstakingDelegate(delegator, providers[i], amount)
 		require.NoError(t, err)
 
 		delegation := types.NewDelegation(delegator, providers[i], ts.Ctx.BlockTime(), ts.TokenDenom())
 		delegation.Amount = amount
-		delegations = append(delegations, delegation)
+		delegations[providers[i]] = delegation
 	}
 
 	ts.AdvanceEpoch()
@@ -181,7 +181,8 @@ func TestQueryDelegatorMultipleProviders(t *testing.T) {
 	require.Equal(t, 3, len(res.Delegations))
 	for i := 0; i < len(delegations); i++ {
 		resDelegation := res.Delegations[i]
-		require.True(t, resDelegation.Equal(&delegations[i]))
+		delegation := delegations[resDelegation.Provider]
+		require.True(t, resDelegation.Equal(&delegation))
 	}
 }
 

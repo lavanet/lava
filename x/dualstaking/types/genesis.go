@@ -2,8 +2,6 @@ package types
 
 import (
 	fmt "fmt"
-
-	"cosmossdk.io/collections"
 )
 
 // DefaultIndex is the default global index
@@ -23,19 +21,21 @@ func DefaultGenesis() *GenesisState {
 // failure.
 func (gs GenesisState) Validate() error {
 	// Check for duplicated index in delegatorReward
-	delegatorRewardIndexMap := make(map[collections.Pair[string, string]]struct{})
+	delegatorRewardIndexMap := make(map[string]struct{})
 
 	for _, elem := range gs.DelegatorRewardList {
-		index := DelegationKey(elem.Provider, elem.Delegator)
+		key := DelegationKey(elem.Provider, elem.Delegator)
+		index := key.K1() + key.K2()
 		if _, ok := delegatorRewardIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for delegatorReward")
 		}
 		delegatorRewardIndexMap[index] = struct{}{}
 	}
 
-	delegationIndexMap := make(map[collections.Pair[string, string]]struct{})
+	delegationIndexMap := make(map[string]struct{})
 	for _, elem := range gs.Delegations {
-		index := DelegationKey(elem.Provider, elem.Delegator)
+		key := DelegationKey(elem.Provider, elem.Delegator)
+		index := key.K1() + key.K2()
 		if _, ok := delegationIndexMap[index]; ok {
 			return fmt.Errorf("duplicated index for delegations")
 		}

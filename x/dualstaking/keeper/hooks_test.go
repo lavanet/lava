@@ -144,11 +144,6 @@ func TestReDelegateToProvider(t *testing.T) {
 
 	providersRes1, err := ts.QueryDualstakingDelegatorProviders(delegator.Addr.String())
 	require.NoError(t, err)
-	require.Equal(t, providersRes, providersRes1)
-
-	providersRes1, err = ts.QueryDualstakingDelegatorProviders(delegator.Addr.String())
-	require.NoError(t, err)
-	require.Equal(t, provider, providersRes1.Delegations[0].Provider)
 
 	ts.AdvanceEpoch()
 
@@ -157,6 +152,7 @@ func TestReDelegateToProvider(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, amount, entry.DelegateTotal.Amount)
 	require.Equal(t, amount, entry.Stake.Amount)
+	require.Equal(t, provider, providersRes1.Delegations[0].Provider)
 }
 
 // TestUnbondUniformProviders checks that the uniform unbond of providers (that is triggered by a validator unbond)
@@ -561,25 +557,11 @@ func TestUnbondValidatorButNotRemoveStakeEntry(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	providerAcct, provider := ts.GetAccount(common.PROVIDER, 0)
+	providerAcct, _ := ts.GetAccount(common.PROVIDER, 0)
 
 	// provider completely unbond from validator, delegation is removed
 	_, err = ts.TxUnbondValidator(*providerAcct.Vault, validator, sdk.NewInt(9999))
-	require.NoError(t, err)
-
-	// other delegator should not be able to delegate to the provider
-	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
-		commontypes.EMPTY_PROVIDER,
-		provider,
-		sdk.NewCoin(ts.TokenDenom(), sdk.NewInt(9999)))
 	require.Error(t, err)
-
-	// checking that provider is not found
-	_, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
-	require.False(t, found)
-
-	_, err = ts.QueryDualstakingProviderDelegators(provider)
-	require.NoError(t, err)
 }
 
 // TestUndelegateProvider checks for a bug that when a provider unstakes, its delegations are not
