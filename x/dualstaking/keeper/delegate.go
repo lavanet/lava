@@ -122,19 +122,8 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 		} else {
 			metadata.TotalDelegations, err = metadata.TotalDelegations.SafeSub(amount)
 		}
-	}
-
-	if err != nil {
-		return err
-	}
-	k.epochstorageKeeper.SetMetadata(ctx, metadata)
-
-	details := map[string]string{
-		"provider": provider,
-	}
-
-	// distribute self delegations if done through the dualstaking tx
-	if !stake {
+	} else if !stake {
+		// distribute self delegations if done through the dualstaking tx
 		total := amount.Amount
 		count := int64(len(entries))
 		for _, entry := range entries {
@@ -150,6 +139,15 @@ func (k Keeper) AfterDelegationModified(ctx sdk.Context, delegator, provider str
 			total = total.Sub(part)
 			count--
 		}
+	}
+
+	if err != nil {
+		return err
+	}
+	k.epochstorageKeeper.SetMetadata(ctx, metadata)
+
+	details := map[string]string{
+		"provider": provider,
 	}
 
 	for _, entry := range entries {
