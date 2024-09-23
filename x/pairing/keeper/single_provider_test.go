@@ -162,3 +162,42 @@ func TestDelegations(t *testing.T) {
 		require.Equal(t, int64(0), res.StakeEntries[0].DelegateTotal.Amount.Int64())
 	}
 }
+
+func TestUnstakeWithOperator(t *testing.T) {
+	ts := newTester(t)
+	SetupForSingleProviderTests(ts, 1, 5, 0)
+
+	// delegator, _ := ts.AddAccount("del", 1, 1000000000)
+	provider, _ := ts.GetAccount(common.PROVIDER, 0)
+
+	// unstake one chain
+	_, err := ts.TxPairingUnstakeProvider(provider.Addr.String(), SpecName(0))
+	require.NoError(t, err)
+
+	// check the entries got the stake of spec0
+	for i := 1; i < 5; i++ {
+		res, err := ts.QueryPairingProvider(provider.Addr.String(), SpecName(i))
+		require.NoError(t, err)
+		require.Equal(t, testStake*5/4, res.StakeEntries[0].Stake.Amount.Int64())
+	}
+
+	// unstake everything
+	for i := 1; i < 5; i++ {
+		_, err := ts.TxPairingUnstakeProvider(provider.Addr.String(), SpecName(i))
+		require.NoError(t, err)
+	}
+
+	res, err := ts.QueryPairingProvider(provider.Addr.String(), "")
+	require.NoError(t, err)
+	require.Len(t, res.StakeEntries, 0)
+
+	// stake again
+	d := common.MockDescription()
+	err = ts.StakeProviderExtra(provider.GetVaultAddr(), provider.Addr.String(), ts.Spec(SpecName(0)), 1, nil, 0, d.Moniker, d.Identity, d.Website, d.SecurityContact, d.Details)
+	require.NoError(ts.T, err)
+
+	// check we got all the self delegations
+	res, err = ts.QueryPairingProvider(provider.Addr.String(), SpecName(0))
+	require.NoError(t, err)
+	require.Equal(t, testStake*5+1, res.StakeEntries[0].Stake.Amount.Int64())
+}

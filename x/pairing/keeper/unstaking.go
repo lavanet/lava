@@ -77,6 +77,7 @@ func (k Keeper) UnstakeEntry(ctx sdk.Context, validator, chainID, creator, unsta
 				entry.Stake = entry.Stake.AddAmount(part)
 				total = total.Sub(part)
 				count--
+				k.epochStorageKeeper.SetStakeEntryCurrent(ctx, entry)
 			}
 		}
 	}

@@ -17,15 +17,16 @@ func (k Keeper) Provider(goCtx context.Context, req *types.QueryProviderRequest)
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
-	chains := []string{req.ChainID}
-	if req.ChainID == "" {
-		chains = k.specKeeper.GetAllChainIDs(ctx)
-	}
-
 	metadata, err := k.epochStorageKeeper.GetMetadata(ctx, req.Address)
 	if err != nil {
-		return nil, err
+		return &types.QueryProviderResponse{}, nil
 	}
+
+	chains := []string{req.ChainID}
+	if req.ChainID == "" {
+		chains = metadata.Chains
+	}
+
 	stakeEntries := []epochstoragetypes.StakeEntry{}
 	for _, chain := range chains {
 		stakeEntry, found := k.epochStorageKeeper.GetStakeEntryCurrent(ctx, chain, req.Address)
