@@ -635,8 +635,9 @@ func TestUndelegateProvider(t *testing.T) {
 	err = ts.StakeProvider(providerAcct.GetVaultAddr(), providerAcct.Addr.String(), ts.spec, sdk.NewIntFromUint64(1000).Int64())
 	require.NoError(t, err)
 
-	_, found = ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
+	entry, found := ts.Keepers.Epochstorage.GetStakeEntryCurrent(ts.Ctx, ts.spec.Index, provider)
 	require.True(t, found)
+	require.Equal(t, int64(9999), entry.DelegateTotal.Amount.Int64())
 
 	// delegator1 should be able to redelegate back to the empty provider
 	_, err = ts.TxDualstakingRedelegate(delegatorAcc1.Addr.String(),
