@@ -641,13 +641,16 @@ func TestProviderMonthlyPayoutQueryWithContributor(t *testing.T) {
 	}
 	ts.relayPaymentWithoutPay(relayPaymentMessage, true)
 
-	// check for expected balance: planPrice*100/200 (from spec1) + planPrice*(100/200)*(2/3) (from spec, considering delegations)
-	// for planPrice=100, expected monthly payout is 50 (spec1 with contributor) + 33 (normal spec no contributor)
-	expectedContributorPay := uint64(12) // half the plan payment for spec1:25 then divided between contributors half half rounded down
-	expectedTotalPayout := uint64(83) - expectedContributorPay*2
+	// half the plan payment for spec1 is 25. Then it's divided between 2 contributors equally rounded down
+	expectedContributorPay := uint64(12)
+
+	// for planPrice=100, and equal CU usage for both specs, the expected provider monthly payout is:
+	//  spec (delegator is 33% of stake): planPrice * specUsedCu/totalUsedCu * providerStake/totalStake = 100*0.5*(2/3) = 33
+	// 	spec1 (contributors with commission=50%): planPrice * specUsedCu/totalUsedCu - contributorsPart = 100*0.5 - 24 = 26
+	expectedTotalPayout := uint64(59)
 	expectedPayouts := []types.SubscriptionPayout{
 		{Subscription: clientAcc.Addr.String(), ChainId: ts.spec.Index, Amount: 33},
-		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 26}, // 50 - 26 for contributors (each contributor gets 12)
+		{Subscription: clientAcc.Addr.String(), ChainId: spec1.Index, Amount: 26},
 	}
 	res, err := ts.QueryPairingProviderMonthlyPayout(provider)
 	require.NoError(t, err)

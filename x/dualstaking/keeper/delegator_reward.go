@@ -159,7 +159,9 @@ func (k Keeper) ClaimRewards(ctx sdk.Context, delegator string, provider string)
 
 // RewardProvidersAndDelegators is the main function handling provider rewards with delegations
 // it returns the provider reward amount and updates the delegatorReward map with the reward portion for each delegator
-// it also returns the "claimable reward amount" which is the leftover rewards due to int division or errors
+// since this function does not actually send rewards to the providers and delegator (but only allocates rewards to be claimed)
+// it returns a "claimableRewards" output which is all the rewards that can now be claimed (a sum of the provider and the delegators
+// rewards)
 func (k Keeper) RewardProvidersAndDelegators(ctx sdk.Context, provider string, chainID string, totalReward sdk.Coins, senderModule string, calcOnlyProvider bool, calcOnlyDelegators bool, calcOnlyContributor bool) (providerReward sdk.Coins, claimableRewards sdk.Coins, err error) {
 	block := uint64(ctx.BlockHeight())
 	zeroCoins := sdk.NewCoins()
