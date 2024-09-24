@@ -189,7 +189,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	}
 
 	parsedInput := parser.ParseBlockFromReply(parserInput, parsing.ResultParsing, parsing.Parsers)
-	if err != nil {
+	if parsedInput.GetBlockRaw() == "" {
 		return utils.LavaFormatWarning("[-] verify failed to parse result", err,
 			utils.LogAttr("chainId", chainId),
 			utils.LogAttr("nodeUrl", proxyUrl.Url),
