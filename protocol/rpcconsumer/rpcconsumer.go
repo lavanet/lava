@@ -140,8 +140,11 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	consumerReportsManager := metrics.NewConsumerReportsClient(options.analyticsServerAddresses.ReportsAddressFlag)
 	consumerMetricsManager := metrics.NewConsumerMetricsManager(metrics.ConsumerMetricsManagerOptions{NetworkAddress: options.analyticsServerAddresses.MetricsListenAddress, AddMethodsApiGauge: options.analyticsServerAddresses.AddApiMethodCallsMetrics}) // start up prometheus metrics
 	consumerUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress)                                                                                                                                   // start up relay server reporting
-	consumerOptimizerQoSClient := metrics.NewConsumerOptimizerQoSClient(options.analyticsServerAddresses.OptimizerQoSAddress, options.consumerOptimizerQoSClientPushInterval)                                                                                // start up optimizer qos client
-	consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, options.consumerOptimizerQoSClientSamplingInterval)                                                                                                                                  // start up optimizer qos client
+	var consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
+	if options.analyticsServerAddresses.OptimizerQoSAddress != "" {
+		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(options.analyticsServerAddresses.OptimizerQoSAddress, options.consumerOptimizerQoSClientPushInterval) // start up optimizer qos client
+		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, options.consumerOptimizerQoSClientSamplingInterval)                                                  // start up optimizer qos client
+	}
 
 	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageServeManager, consumerOptimizerQoSClient)
 	if err != nil {
