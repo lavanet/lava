@@ -14,6 +14,11 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+var (
+	OptimizerQosServerPushInterval     time.Duration
+	OptimizerQosServerSamplingInterval time.Duration
+)
+
 type ConsumerOptimizerQoSClient struct {
 	consumerOrigin string
 	queueSender    *QueueSender

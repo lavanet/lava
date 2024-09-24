@@ -40,15 +40,12 @@ import (
 )
 
 const (
-	DefaultRPCConsumerFileName         = "rpcconsumer.yml"
-	DebugRelaysFlagName                = "debug-relays"
-	DebugProbesFlagName                = "debug-probes"
-	refererBackendAddressFlagName      = "referer-be-address"
-	refererMarkerFlagName              = "referer-marker"
-	reportsSendBEAddress               = "reports-be-address"
-	optimizerQosServerAddress          = "optimizer-qos-server-address"
-	optimizerQosServerPushInterval     = "optimizer-qos-push-interval"
-	optimizerQosServerSamplingInterval = "optimizer-qos-sampling-interval"
+	DefaultRPCConsumerFileName    = "rpcconsumer.yml"
+	DebugRelaysFlagName           = "debug-relays"
+	DebugProbesFlagName           = "debug-probes"
+	refererBackendAddressFlagName = "referer-be-address"
+	refererMarkerFlagName         = "referer-marker"
+	reportsSendBEAddress          = "reports-be-address"
 )
 
 var (
@@ -115,20 +112,18 @@ type RPCConsumer struct {
 }
 
 type rpcConsumerStartOptions struct {
-	txFactory                                  tx.Factory
-	clientCtx                                  client.Context
-	rpcEndpoints                               []*lavasession.RPCEndpoint
-	requiredResponses                          int
-	cache                                      *performance.Cache
-	strategy                                   provideroptimizer.Strategy
-	maxConcurrentProviders                     uint
-	analyticsServerAddresses                   AnalyticsServerAddresses
-	cmdFlags                                   common.ConsumerCmdFlags
-	stateShare                                 bool
-	refererData                                *chainlib.RefererData
-	staticProvidersList                        []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
-	consumerOptimizerQoSClientPushInterval     time.Duration
-	consumerOptimizerQoSClientSamplingInterval time.Duration
+	txFactory                tx.Factory
+	clientCtx                client.Context
+	rpcEndpoints             []*lavasession.RPCEndpoint
+	requiredResponses        int
+	cache                    *performance.Cache
+	strategy                 provideroptimizer.Strategy
+	maxConcurrentProviders   uint
+	analyticsServerAddresses AnalyticsServerAddresses
+	cmdFlags                 common.ConsumerCmdFlags
+	stateShare               bool
+	refererData              *chainlib.RefererData
+	staticProvidersList      []*lavasession.RPCProviderEndpoint // define static providers as backup to lava providers
 }
 
 // spawns a new RPCConsumer server with all it's processes and internals ready for communications
@@ -142,8 +137,8 @@ func (rpcc *RPCConsumer) Start(ctx context.Context, options *rpcConsumerStartOpt
 	consumerUsageServeManager := metrics.NewConsumerRelayServerClient(options.analyticsServerAddresses.RelayServerAddress)                                                                                                                                   // start up relay server reporting
 	var consumerOptimizerQoSClient *metrics.ConsumerOptimizerQoSClient
 	if options.analyticsServerAddresses.OptimizerQoSAddress != "" {
-		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(options.analyticsServerAddresses.OptimizerQoSAddress, options.consumerOptimizerQoSClientPushInterval) // start up optimizer qos client
-		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, options.consumerOptimizerQoSClientSamplingInterval)                                                  // start up optimizer qos client
+		consumerOptimizerQoSClient = metrics.NewConsumerOptimizerQoSClient(options.analyticsServerAddresses.OptimizerQoSAddress, metrics.OptimizerQosServerPushInterval) // start up optimizer qos client
+		consumerOptimizerQoSClient.StartOptimizersQoSReportsCollecting(ctx, metrics.OptimizerQosServerSamplingInterval)                                                  // start up optimizer qos client
 	}
 
 	rpcConsumerMetrics, err := metrics.NewRPCConsumerLogs(consumerMetricsManager, consumerUsageServeManager, consumerOptimizerQoSClient)
@@ -559,7 +554,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				MetricsListenAddress:     viper.GetString(metrics.MetricsListenFlagName),
 				RelayServerAddress:       viper.GetString(metrics.RelayServerFlagName),
 				ReportsAddressFlag:       viper.GetString(reportsSendBEAddress),
-				OptimizerQoSAddress:      viper.GetString(optimizerQosServerAddress),
+				OptimizerQoSAddress:      viper.GetString(common.OptimizerQosServerAddressFlag),
 			}
 
 			var refererData *chainlib.RefererData
@@ -603,8 +598,6 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 				rpcConsumerSharedState,
 				refererData,
 				staticProviderEndpoints,
-				viper.GetDuration(optimizerQosServerPushInterval),
-				viper.GetDuration(optimizerQosServerSamplingInterval),
 			})
 			return err
 		},
@@ -650,9 +643,9 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().Float64Var(&provideroptimizer.LastTierChance, common.SetProviderOptimizerWorstTierPickChance, 0.0, "set the chances for picking a provider from the worse group, default is 0% -> 0.0")
 	cmdRPCConsumer.Flags().IntVar(&provideroptimizer.OptimizerNumTiers, common.SetProviderOptimizerNumberOfTiersToCreate, 4, "set the number of groups to create, default is 4")
 	// optimizer qos reports
-	cmdRPCConsumer.Flags().String(optimizerQosServerAddress, "", "address to send optimizer qos reports to")
-	cmdRPCConsumer.Flags().Duration(optimizerQosServerPushInterval, time.Minute*5, "interval to push optimizer qos reports")
-	cmdRPCConsumer.Flags().Duration(optimizerQosServerSamplingInterval, time.Second*1, "interval to sample optimizer qos reports")
+	cmdRPCConsumer.Flags().String(common.OptimizerQosServerAddressFlag, "", "address to send optimizer qos reports to")
+	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerPushInterval, common.OptimizerQosServerPushIntervalFlag, time.Minute*5, "interval to push optimizer qos reports")
+	cmdRPCConsumer.Flags().DurationVar(&metrics.OptimizerQosServerSamplingInterval, common.OptimizerQosServerSamplingIntervalFlag, time.Second*1, "interval to sample optimizer qos reports")
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer
 }

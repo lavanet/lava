@@ -38,6 +38,11 @@ const (
 	SetProviderOptimizerBestTierPickChance    = "set-provider-optimizer-best-tier-pick-chance"
 	SetProviderOptimizerWorstTierPickChance   = "set-provider-optimizer-worst-tier-pick-chance"
 	SetProviderOptimizerNumberOfTiersToCreate = "set-provider-optimizer-number-of-tiers-to-create"
+
+	// optimizer qos server flags
+	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
+	OptimizerQosServerPushIntervalFlag     = "optimizer-qos-push-interval"     // interval to push the qos reports to the optimizer qos server
+	OptimizerQosServerSamplingIntervalFlag = "optimizer-qos-sampling-interval" // interval to sample the qos reports
 )
 
 const (
