@@ -159,7 +159,8 @@ func (po *ProviderOptimizer) CalculateQoSScoresForMetrics(allAddresses []string,
 		}
 		providerData, found := po.getProviderData(providerAddress)
 		if !found {
-			utils.LavaFormatTrace("provider data was not found for address", utils.LogAttr("providerAddress", providerAddress))
+			utils.LavaFormatDebug("provider data was not found for address", utils.LogAttr("providerAddress", providerAddress))
+			continue
 		}
 		// latency score
 		latencyScoreCurrent := po.calculateLatencyScore(providerData, cu, requestedBlock) // smaller == better i.e less latency
