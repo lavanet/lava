@@ -18,8 +18,8 @@ type ConsumerOptimizerQoSClient struct {
 	queueSender    *QueueSender
 	optimizers     map[string]OptimizerInf // keys are chain ids
 	// keys are provider addresses
-	providerToChainIdToRelaysCount     map[string]map[string]*atomic.Uint64
-	providerToChainIdToNodeErrorsCount map[string]map[string]*atomic.Uint64
+	providerToChainIdToRelaysCount     map[string]map[string]uint64
+	providerToChainIdToNodeErrorsCount map[string]map[string]uint64
 	providerToChainIdToEpochToStake    map[string]map[string]map[uint64]uint64
 	atomicCurrentEpoch                 uint64
 	lock                               sync.RWMutex
@@ -70,18 +70,16 @@ func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Dura
 		consumerOrigin:                     hostname,
 		queueSender:                        NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
 		optimizers:                         map[string]OptimizerInf{},
-		providerToChainIdToRelaysCount:     map[string]map[string]*atomic.Uint64{},
-		providerToChainIdToNodeErrorsCount: map[string]map[string]*atomic.Uint64{},
+		providerToChainIdToRelaysCount:     map[string]map[string]uint64{},
+		providerToChainIdToNodeErrorsCount: map[string]map[string]uint64{},
 		providerToChainIdToEpochToStake:    map[string]map[string]map[uint64]uint64{},
 	}
 }
 
-func (coqc *ConsumerOptimizerQoSClient) getProviderChainMapCounterValue(counterStore map[string]map[string]*atomic.Uint64, providerAddress, chainId string) uint64 {
+func (coqc *ConsumerOptimizerQoSClient) getProviderChainMapCounterValue(counterStore map[string]map[string]uint64, providerAddress, chainId string) uint64 {
 	// must be called under read lock
 	if counterChainsMap, found := counterStore[providerAddress]; found {
-		if atomicRelaysCount, found := counterChainsMap[chainId]; found {
-			return atomicRelaysCount.Load()
-		}
+		return counterChainsMap[chainId]
 	}
 	return 0
 }
@@ -213,13 +211,7 @@ func (coqc *ConsumerOptimizerQoSClient) RegisterOptimizer(optimizer OptimizerInf
 	coqc.optimizers[chainId] = optimizer
 }
 
-func (coqc *ConsumerOptimizerQoSClient) initAtomicUint64() *atomic.Uint64 {
-	newAtomic := &atomic.Uint64{}
-	newAtomic.Add(1)
-	return newAtomic
-}
-
-func (coqc *ConsumerOptimizerQoSClient) incrementStoreCounter(store map[string]map[string]*atomic.Uint64, providerAddress, chainId string) {
+func (coqc *ConsumerOptimizerQoSClient) incrementStoreCounter(store map[string]map[string]uint64, providerAddress, chainId string) {
 	// must be called under write lock
 	if coqc == nil {
 		return
@@ -227,17 +219,17 @@ func (coqc *ConsumerOptimizerQoSClient) incrementStoreCounter(store map[string]m
 
 	chainMap, found := store[providerAddress]
 	if !found {
-		store[providerAddress] = map[string]*atomic.Uint64{chainId: coqc.initAtomicUint64()}
+		store[providerAddress] = map[string]uint64{chainId: 1}
 		return
 	}
 
 	count, found := chainMap[chainId]
 	if !found {
-		store[providerAddress][chainId] = coqc.initAtomicUint64()
+		store[providerAddress][chainId] = 1
 		return
 	}
 
-	count.Add(1)
+	store[providerAddress][chainId] = count + 1
 }
 
 func (coqc *ConsumerOptimizerQoSClient) SetRelaySentToProvider(providerAddress string, chainId string) {
