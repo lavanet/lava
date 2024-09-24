@@ -3,11 +3,11 @@ package metrics
 import (
 	"context"
 	"os"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/goccy/go-json"
-	"github.com/lavanet/lava/v3/protocol/common"
 	"github.com/lavanet/lava/v3/utils"
 	epochstoragetypes "github.com/lavanet/lava/v3/x/epochstorage/types"
 	spectypes "github.com/lavanet/lava/v3/x/spec/types"
@@ -16,12 +16,13 @@ import (
 type ConsumerOptimizerQoSClient struct {
 	consumerOrigin string
 	queueSender    *QueueSender
-	optimizers     *common.SafeSyncMap[string, OptimizerInf] // keys are chain ids
+	optimizers     map[string]OptimizerInf // keys are chain ids
 	// keys are provider addresses
-	providerToChainIdToRelaysCount     *common.SafeSyncMap[string, *common.SafeSyncMap[string, *atomic.Uint64]]
-	providerToChainIdToNodeErrorsCount *common.SafeSyncMap[string, *common.SafeSyncMap[string, *atomic.Uint64]]
-	providerToChainIdToEpochToStake    *common.SafeSyncMap[string, *common.SafeSyncMap[string, *common.SafeSyncMap[uint64, uint64]]]
+	providerToChainIdToRelaysCount     map[string]map[string]*atomic.Uint64
+	providerToChainIdToNodeErrorsCount map[string]map[string]*atomic.Uint64
+	providerToChainIdToEpochToStake    map[string]map[string]map[uint64]uint64
 	atomicCurrentEpoch                 uint64
+	lock                               sync.RWMutex
 }
 
 type OptimizerQoSReport struct {
@@ -68,18 +69,17 @@ func NewConsumerOptimizerQoSClient(endpointAddress string, interval ...time.Dura
 	return &ConsumerOptimizerQoSClient{
 		consumerOrigin:                     hostname,
 		queueSender:                        NewQueueSender(endpointAddress, "ConsumerOptimizerQoS", nil, interval...),
-		optimizers:                         &common.SafeSyncMap[string, OptimizerInf]{},
-		providerToChainIdToRelaysCount:     &common.SafeSyncMap[string, *common.SafeSyncMap[string, *atomic.Uint64]]{},
-		providerToChainIdToNodeErrorsCount: &common.SafeSyncMap[string, *common.SafeSyncMap[string, *atomic.Uint64]]{},
-		providerToChainIdToEpochToStake:    &common.SafeSyncMap[string, *common.SafeSyncMap[string, *common.SafeSyncMap[uint64, uint64]]]{},
+		optimizers:                         map[string]OptimizerInf{},
+		providerToChainIdToRelaysCount:     map[string]map[string]*atomic.Uint64{},
+		providerToChainIdToNodeErrorsCount: map[string]map[string]*atomic.Uint64{},
+		providerToChainIdToEpochToStake:    map[string]map[string]map[uint64]uint64{},
 	}
 }
 
-func (coqc *ConsumerOptimizerQoSClient) getProviderChainMapCounterValue(counterStore *common.SafeSyncMap[string, *common.SafeSyncMap[string, *atomic.Uint64]], providerAddress, chainId string) uint64 {
-	counterChainsMap, loaded, _ := counterStore.Load(providerAddress)
-	if loaded {
-		atomicRelaysCount, loaded, _ := counterChainsMap.Load(chainId)
-		if loaded {
+func (coqc *ConsumerOptimizerQoSClient) getProviderChainMapCounterValue(counterStore map[string]map[string]*atomic.Uint64, providerAddress, chainId string) uint64 {
+	// must be called under read lock
+	if counterChainsMap, found := counterStore[providerAddress]; found {
+		if atomicRelaysCount, found := counterChainsMap[chainId]; found {
 			return atomicRelaysCount.Load()
 		}
 	}
@@ -87,20 +87,20 @@ func (coqc *ConsumerOptimizerQoSClient) getProviderChainMapCounterValue(counterS
 }
 
 func (coqc *ConsumerOptimizerQoSClient) getProviderChainRelaysCount(providerAddress, chainId string) uint64 {
+	// must be called under read lock
 	return coqc.getProviderChainMapCounterValue(coqc.providerToChainIdToRelaysCount, providerAddress, chainId)
 }
 
 func (coqc *ConsumerOptimizerQoSClient) getProviderChainNodeErrorsCount(providerAddress, chainId string) uint64 {
+	// must be called under read lock
 	return coqc.getProviderChainMapCounterValue(coqc.providerToChainIdToNodeErrorsCount, providerAddress, chainId)
 }
 
 func (coqc *ConsumerOptimizerQoSClient) getProviderChainStake(providerAddress, chainId string, epoch uint64) uint64 {
-	chainMap, loaded, _ := coqc.providerToChainIdToEpochToStake.Load(providerAddress)
-	if loaded {
-		epochMap, loaded, _ := chainMap.Load(chainId)
-		if loaded {
-			stake, loaded, _ := epochMap.Load(epoch)
-			if loaded {
+	// must be called under read lock
+	if chainMap, found := coqc.providerToChainIdToEpochToStake[providerAddress]; found {
+		if epochMap, found := chainMap[chainId]; found {
+			if stake, found := epochMap[epoch]; found {
 				return stake
 			}
 		}
@@ -109,6 +109,7 @@ func (coqc *ConsumerOptimizerQoSClient) getProviderChainStake(providerAddress, c
 }
 
 func (coqc *ConsumerOptimizerQoSClient) calculateNodeErrorRate(providerAddress, chainId string) float64 {
+	// must be called under read lock
 	relaysCount := coqc.getProviderChainRelaysCount(providerAddress, chainId)
 	if relaysCount > 0 {
 		errorsCount := coqc.getProviderChainNodeErrorsCount(providerAddress, chainId)
@@ -119,6 +120,7 @@ func (coqc *ConsumerOptimizerQoSClient) calculateNodeErrorRate(providerAddress, 
 }
 
 func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report OptimizerQoSReport, chainId string, epoch uint64) {
+	// must be called under read lock
 	if coqc == nil {
 		return
 	}
@@ -141,23 +143,25 @@ func (coqc *ConsumerOptimizerQoSClient) appendOptimizerQoSReport(report Optimize
 }
 
 func (coqc *ConsumerOptimizerQoSClient) createChainToProvidersMap() map[string][]string {
+	// must be called under read lock
 	chainIdToProviderAddresses := map[string][]string{}
-	coqc.providerToChainIdToEpochToStake.Range(func(providerAddr string, chainsMap *common.SafeSyncMap[string, *common.SafeSyncMap[uint64, uint64]]) bool {
-		chainsMap.Range(func(chainId string, _ *common.SafeSyncMap[uint64, uint64]) bool {
+	for providerAddr, chainsMap := range coqc.providerToChainIdToEpochToStake {
+		for chainId := range chainsMap {
 			if _, ok := chainIdToProviderAddresses[chainId]; !ok {
 				chainIdToProviderAddresses[chainId] = []string{}
 			}
 
 			chainIdToProviderAddresses[chainId] = append(chainIdToProviderAddresses[chainId], providerAddr)
-			return true
-		})
-		return true
-	})
+		}
+	}
 
 	return chainIdToProviderAddresses
 }
 
 func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
+	coqc.lock.RLock() // we only read from the maps here
+	defer coqc.lock.RUnlock()
+
 	ignoredProviders := map[string]struct{}{}
 	cu := uint64(10)
 	requestedBlock := spectypes.LATEST_BLOCK
@@ -165,19 +169,17 @@ func (coqc *ConsumerOptimizerQoSClient) getReportsFromOptimizers() {
 	chainIdToProviders := coqc.createChainToProvidersMap()
 	currentEpoch := atomic.LoadUint64(&coqc.atomicCurrentEpoch)
 
-	coqc.optimizers.Range(func(chainId string, optimizer OptimizerInf) bool {
+	for chainId, optimizer := range coqc.optimizers {
 		providersAddresses, ok := chainIdToProviders[chainId]
 		if !ok {
-			return true
+			continue
 		}
 
 		reports := optimizer.CalculateQoSScoresForMetrics(providersAddresses, ignoredProviders, cu, requestedBlock)
 		for _, report := range reports {
 			coqc.appendOptimizerQoSReport(report, chainId, currentEpoch)
 		}
-
-		return true
-	})
+	}
 }
 
 func (coqc *ConsumerOptimizerQoSClient) StartOptimizersQoSReportsCollecting(ctx context.Context, samplingInterval time.Duration) {
@@ -200,7 +202,15 @@ func (coqc *ConsumerOptimizerQoSClient) RegisterOptimizer(optimizer OptimizerInf
 		return
 	}
 
-	coqc.optimizers.Store(chainId, optimizer)
+	coqc.lock.Lock()
+	defer coqc.lock.Unlock()
+
+	if _, found := coqc.optimizers[chainId]; found {
+		utils.LavaFormatWarning("Optimizer already registered for chain", nil, utils.LogAttr("chainId", chainId))
+		return
+	}
+
+	coqc.optimizers[chainId] = optimizer
 }
 
 func (coqc *ConsumerOptimizerQoSClient) initAtomicUint64() *atomic.Uint64 {
@@ -209,37 +219,34 @@ func (coqc *ConsumerOptimizerQoSClient) initAtomicUint64() *atomic.Uint64 {
 	return newAtomic
 }
 
-func (coqc *ConsumerOptimizerQoSClient) incrementStoreCounter(store *common.SafeSyncMap[string, *common.SafeSyncMap[string, *atomic.Uint64]], providerAddress, chainId string) {
+func (coqc *ConsumerOptimizerQoSClient) incrementStoreCounter(store map[string]map[string]*atomic.Uint64, providerAddress, chainId string) {
+	// must be called under write lock
 	if coqc == nil {
 		return
 	}
 
-	atomicRelaysCount := coqc.initAtomicUint64()
-	newChainMap := &common.SafeSyncMap[string, *atomic.Uint64]{}
-	newChainMap.Store(chainId, atomicRelaysCount)
-
-	chainMap, loaded, err := store.LoadOrStore(providerAddress, newChainMap)
-	if err != nil {
-		utils.LavaFormatWarning("Error while loading or storing chain map", err)
+	chainMap, found := store[providerAddress]
+	if !found {
+		store[providerAddress] = map[string]*atomic.Uint64{chainId: coqc.initAtomicUint64()}
 		return
 	}
 
-	if loaded {
-		count, loaded, err := chainMap.LoadOrStore(chainId, atomicRelaysCount)
-		if err != nil {
-			utils.LavaFormatWarning("Error while loading counter", err)
-			return
-		}
-		if loaded {
-			count.Add(1)
-		}
+	count, found := chainMap[chainId]
+	if !found {
+		store[providerAddress][chainId] = coqc.initAtomicUint64()
+		return
 	}
+
+	count.Add(1)
 }
 
 func (coqc *ConsumerOptimizerQoSClient) SetRelaySentToProvider(providerAddress string, chainId string) {
 	if coqc == nil {
 		return
 	}
+
+	coqc.lock.Lock()
+	defer coqc.lock.Unlock()
 
 	coqc.incrementStoreCounter(coqc.providerToChainIdToRelaysCount, providerAddress, chainId)
 }
@@ -249,39 +256,29 @@ func (coqc *ConsumerOptimizerQoSClient) SetNodeErrorToProvider(providerAddress s
 		return
 	}
 
+	coqc.lock.Lock()
+	defer coqc.lock.Unlock()
+
 	coqc.incrementStoreCounter(coqc.providerToChainIdToNodeErrorsCount, providerAddress, chainId)
 }
 
-func (coqc *ConsumerOptimizerQoSClient) SetProviderStake(providerAddress, chainId string, epoch, stake uint64) {
-	if coqc == nil {
-		return
-	}
-
+func (coqc *ConsumerOptimizerQoSClient) setProviderStake(providerAddress, chainId string, epoch, stake uint64) {
+	// must be called under write lock
 	atomic.StoreUint64(&coqc.atomicCurrentEpoch, epoch)
 
-	newEpochMap := &common.SafeSyncMap[uint64, uint64]{}
-	newEpochMap.Store(epoch, stake)
-
-	newChainMap := &common.SafeSyncMap[string, *common.SafeSyncMap[uint64, uint64]]{}
-	newChainMap.Store(chainId, newEpochMap)
-
-	chainMap, loaded, err := coqc.providerToChainIdToEpochToStake.LoadOrStore(providerAddress, newChainMap)
-	if err != nil {
-		utils.LavaFormatWarning("Error while loading or storing chain map", err)
+	chainMap, found := coqc.providerToChainIdToEpochToStake[providerAddress]
+	if !found {
+		coqc.providerToChainIdToEpochToStake[providerAddress] = map[string]map[uint64]uint64{chainId: {epoch: stake}}
 		return
 	}
 
-	if loaded {
-		epochMap, loaded, err := chainMap.LoadOrStore(chainId, newEpochMap)
-		if err != nil {
-			utils.LavaFormatWarning("Error while loading or storing epoch map", err)
-			return
-		}
-
-		if loaded {
-			epochMap.Store(epoch, stake)
-		}
+	epochMap, found := chainMap[chainId]
+	if !found {
+		coqc.providerToChainIdToEpochToStake[providerAddress][chainId] = map[uint64]uint64{epoch: stake}
+		return
 	}
+
+	epochMap[epoch] = stake
 }
 
 func (coqc *ConsumerOptimizerQoSClient) UpdatePairingStakeEntries(pairingList []epochstoragetypes.StakeEntry, epoch uint64) {
@@ -289,7 +286,10 @@ func (coqc *ConsumerOptimizerQoSClient) UpdatePairingStakeEntries(pairingList []
 		return
 	}
 
+	coqc.lock.Lock()
+	defer coqc.lock.Unlock()
+
 	for _, pairing := range pairingList {
-		coqc.SetProviderStake(pairing.Address, pairing.Chain, epoch, pairing.Stake.Amount.Uint64())
+		coqc.setProviderStake(pairing.Address, pairing.Chain, epoch, pairing.Stake.Amount.Uint64())
 	}
 }
