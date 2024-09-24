@@ -50,12 +50,7 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 		// try to parse a number
 	}
 
-	if strings.Contains(block, "\"") {
-		responseUnquoted, err := strconv.Unquote(block)
-		if err == nil {
-			block = responseUnquoted
-		}
-	}
+	block = unquoteString(block)
 
 	hashNoPrefix, found := strings.CutPrefix(block, "0x")
 	if len(block) >= 64 && found {
@@ -209,6 +204,18 @@ func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser, g
 	parsedInput := parseBlock(rpcInput, blockParser, genericParsers, PARSE_RESULT)
 	ParseRawBlock(rpcInput, parsedInput, blockParser.DefaultValue)
 	return parsedInput
+}
+
+func unquoteString(str string) string {
+	if !strings.Contains(str, "\"") {
+		return str
+	}
+
+	unquoted, err := strconv.Unquote(str)
+	if err != nil {
+		return str
+	}
+	return unquoted
 }
 
 // This returns the parsed response after decoding
