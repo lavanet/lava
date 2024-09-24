@@ -285,7 +285,6 @@ func NewParsedInput() *ParsedInput {
 
 func (p *ParsedInput) SetBlock(block int64) {
 	p.parsedBlock = block
-	p.parsedBlockRaw = strconv.FormatInt(block, 10)
 }
 
 func (p *ParsedInput) GetBlockRaw() string {
