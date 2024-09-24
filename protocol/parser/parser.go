@@ -176,13 +176,15 @@ func parseInputWithBlockParser(rpcInput RPCInput, blockParser spectypes.BlockPar
 func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser, source int) *ParsedInput {
 	parsedBlockInfo, parsedSuccessfully := parseInputWithGenericParsers(rpcInput, genericParsers)
 	if parsedSuccessfully {
+		parsedBlockInfo.parsedBlockRaw = unquoteString(parsedBlockInfo.parsedBlockRaw)
 		return parsedBlockInfo
 	}
 	if parsedBlockInfo == nil {
 		parsedBlockInfo = NewParsedInput()
 	}
 
-	parsedBlockInfo.parsedBlockRaw, _ = parseInputWithBlockParser(rpcInput, blockParser, source)
+	parsedRawBlock, _ := parseInputWithBlockParser(rpcInput, blockParser, source)
+	parsedBlockInfo.parsedBlockRaw = unquoteString(parsedRawBlock)
 	return parsedBlockInfo
 }
 
