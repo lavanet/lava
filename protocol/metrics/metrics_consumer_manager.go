@@ -13,19 +13,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-type WsDisconnectReasonEnum int
-
 const (
-	WS_DISCONNECTION_REASON_CONSUMER WsDisconnectReasonEnum = iota
-	WS_DISCONNECTION_REASON_PROVIDER
-	WS_DISCONNECTION_REASON_USER
+	WsDisconnectionReasonConsumer = "consumer-disconnect"
+	WsDisconnectionReasonProvider = "provider-disconnect"
+	WsDisconnectionReasonUser     = "user-disconnect"
 )
-
-var disconnectReasonMap = map[WsDisconnectReasonEnum]string{
-	WS_DISCONNECTION_REASON_CONSUMER: "consumer-disconnect",
-	WS_DISCONNECTION_REASON_PROVIDER: "provider-disconnect",
-	WS_DISCONNECTION_REASON_USER:     "user-disconnect",
-}
 
 type LatencyTracker struct {
 	AverageLatency time.Duration // in nano seconds (time.Since result)
@@ -528,9 +520,9 @@ func (pme *ConsumerMetricsManager) SetDuplicatedWsSubscriptionRequestMetric(chai
 	pme.totalDuplicatedWsSubscriptionRequestsMetric.WithLabelValues(chainId, apiInterface).Inc()
 }
 
-func (pme *ConsumerMetricsManager) SetWsSubscriptioDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason WsDisconnectReasonEnum) {
+func (pme *ConsumerMetricsManager) SetWsSubscriptioDisconnectRequestMetric(chainId string, apiInterface string, disconnectReason string) {
 	if pme == nil {
 		return
 	}
-	pme.totalWsSubscriptionDissconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReasonMap[disconnectReason]).Inc()
+	pme.totalWsSubscriptionDissconnectMetric.WithLabelValues(chainId, apiInterface, disconnectReason).Inc()
 }
