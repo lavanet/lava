@@ -437,7 +437,27 @@
                                 "api_name": "/api/v3/blocks"
                             }
                         ],
-                        "verifications": [],
+                        "verifications": [
+                            {
+                                "name": "chain-id",
+                                "parse_directive": {
+                                    "function_template": "/api/v3/masterchainInfo",
+                                    "function_tag": "VERIFICATION",
+                                    "result_parsing": {
+                                        "parser_arg": [
+                                            "0"
+                                        ],
+                                        "parser_func": "PARSE_CANONICAL"
+                                    },
+                                    "api_name": "/api/v3/masterchainInfo"
+                                },
+                                "values": [
+                                    {
+                                        "expected_value": "*"
+                                    }
+                                ]
+                            }
+                        ],
                         "extensions": []
                     },
                     {
