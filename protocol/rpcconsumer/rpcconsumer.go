@@ -642,6 +642,7 @@ rpcconsumer consumer_examples/full_consumer_example.yml --cache-be "127.0.0.1:77
 	cmdRPCConsumer.Flags().DurationVar(&updaters.TimeOutForFetchingLavaBlocks, common.TimeOutForFetchingLavaBlocksFlag, time.Second*5, "setting the timeout for fetching lava blocks")
 	cmdRPCConsumer.Flags().Bool(common.DisableRetryOnNodeErrorsFlag, false, "Disable relay retries on node errors, prevent the rpcconsumer trying a different provider")
 	cmdRPCConsumer.Flags().String(common.UseOfflineSpecFlag, "", "load offline spec provided path to spec file, used to test specs before they are proposed on chain")
+	cmdRPCConsumer.Flags().BoolVar(&chainlib.SkipPolicyVerification, common.SkipPolicyVerificationFlag, chainlib.SkipPolicyVerification, "skip policy verifications, this flag will skip onchain policy verification and will use the static provider list")
 
 	common.AddRollingLogConfig(cmdRPCConsumer)
 	return cmdRPCConsumer

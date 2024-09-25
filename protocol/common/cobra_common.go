@@ -33,6 +33,7 @@ const (
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
 	DisableRetryOnNodeErrorsFlag = "disable-retry-on-node-error"
 	UseOfflineSpecFlag           = "use-offline-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+	SkipPolicyVerificationFlag   = "skip-policy-verification"
 )
 
 const (
