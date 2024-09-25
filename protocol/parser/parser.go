@@ -229,8 +229,9 @@ func ParseBlockHashFromReplyAndDecode(rpcInput RPCInput, resultParser spectypes.
 		return "", err
 	}
 
-	if len(parsedBlockHashes) == 0 {
-		return "", utils.LavaFormatError("[ParseBlockHashFromReplyAndDecode] failed to fetch block hashes from parsed input, len(parsedBlockHashes) == 0", nil, utils.LogAttr("rpcInput.GetResult()", rpcInput.GetResult()))
+	numberOfParsedHashes := len(parsedBlockHashes)
+	if numberOfParsedHashes != 1 {
+		return "", utils.LavaFormatError("[ParseBlockHashFromReplyAndDecode] expected parsed hashes length 1", nil, utils.LogAttr("rpcInput.GetResult()", rpcInput.GetResult()), utils.LogAttr("hashes_length", numberOfParsedHashes))
 	}
 	return parseResponseByEncoding([]byte(parsedBlockHashes[0]), resultParser.Encoding)
 }
