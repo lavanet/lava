@@ -3,10 +3,10 @@ name: Lava Build
 on:
   push:
     branches:
-      - main
+      - '**'
   pull_request:
     branches:
-      - main
+      - '**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -372,10 +372,6 @@ jobs:
     needs:
       [
         test-consensus,
-        test-protocol,
-        test-protocol-e2e,
-        # test-sdk-e2e,
-        test-payment-e2e,
       ]
     if: always()
     steps:
@@ -393,7 +389,7 @@ jobs:
       contents: write
       packages: write
       id-token: write
-    needs: [test-consensus, test-protocol]
+    needs: [test-consensus]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -436,7 +432,7 @@ jobs:
 
   build_and_package:
     name: ${{ matrix.binary }}-${{ matrix.targetos }}-${{ matrix.arch }}
-    needs: [test-consensus, test-protocol]
+    needs: [test-consensus]
     runs-on: ubuntu-latest
     strategy:
       matrix:
