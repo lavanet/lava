@@ -2,9 +2,11 @@ package chainlib
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -322,6 +324,11 @@ func TestConsumerWSSubscriptionManagerParallelSubscriptions(t *testing.T) {
 			wg.Wait()
 		})
 	}
+}
+
+func TestRateLimit(t *testing.T) {
+	numberOfRequests := &atomic.Uint64{}
+	fmt.Println(numberOfRequests.Load())
 }
 
 func TestConsumerWSSubscriptionManager(t *testing.T) {
