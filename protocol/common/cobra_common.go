@@ -31,30 +31,9 @@ const (
 	DisableConflictTransactionsFlag = "disable-conflict-transactions" // disable conflict transactions, this will hard the network's data reliability and therefore will harm the service.
 	// Disable relay retries when we get node errors.
 	// This feature is suppose to help with successful relays in some chains that return node errors on rare race conditions on the serviced chains.
-	SetRelayCountOnNodeErrorFlag = "set-retry-count-on-node-error"
-	UseStaticSpecFlag            = "use-static-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
-
-	// optimizer flags
-	SetProviderOptimizerBestTierPickChance       = "set-provider-optimizer-best-tier-pick-chance"
-	SetProviderOptimizerWorstTierPickChance      = "set-provider-optimizer-worst-tier-pick-chance"
-	SetProviderOptimizerNumberOfTiersToCreate    = "set-provider-optimizer-number-of-tiers-to-create"
-	SetProviderOptimizerNumberOfProvidersPerTier = "set-provider-optimizer-number-of-providers-per-tier"
-	// If we have 4 providers for a specific chain, we will put 1 provider in each tier, so we wont have all 4 in tier 1 (which makes no sense.)
-	SetProviderOptimizerAutoAdjustTiers = "enable-provider-optimizer-auto-adjustment-of-tiers" // will auto adjust the tiers based on the number of providers in pairing
-
-	// optimizer qos server flags
-	OptimizerQosServerAddressFlag          = "optimizer-qos-server-address"    // address of the optimizer qos server to send the qos reports
-	OptimizerQosListenFlag                 = "optimizer-qos-listen"            // enable listening for qos reports on metrics endpoint
-	OptimizerQosServerPushIntervalFlag     = "optimizer-qos-push-interval"     // interval to push the qos reports to the optimizer qos server
-	OptimizerQosServerSamplingIntervalFlag = "optimizer-qos-sampling-interval" // interval to sample the qos reports
-	// websocket flags
-	RateLimitWebSocketFlag                       = "rate-limit-websocket-requests-per-connection"
-	BanDurationForWebsocketRateLimitExceededFlag = "ban-duration-for-websocket-rate-limit-exceeded"
-	LimitParallelWebsocketConnectionsPerIpFlag   = "limit-parallel-websocket-connections-per-ip"
-	LimitWebsocketIdleTimeFlag                   = "limit-websocket-connection-idle-time"
-	RateLimitRequestPerSecondFlag                = "rate-limit-requests-per-second"
-	// specification default flags
-	ShowProviderEndpointInMetricsFlagName = "show-provider-address-in-metrics"
+	DisableRetryOnNodeErrorsFlag = "disable-retry-on-node-error"
+	UseOfflineSpecFlag           = "use-offline-spec" // allows the user to manually load a spec providing a path, this is useful to test spec changes before they hit the blockchain
+	SkipPolicyVerificationFlag   = "skip-policy-verification"
 )
 
 const (

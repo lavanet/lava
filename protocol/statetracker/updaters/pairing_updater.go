@@ -265,7 +265,6 @@ func (pu *PairingUpdater) createProviderSessionsFromConfig(
 			for _, extension := range url.Addons {
 				extensions[extension] = struct{}{}
 			}
-
 			// TODO might be problematic adding both addons and extensions with same map.
 			endpoint := &lavasession.Endpoint{
 				NetworkAddress: url.Url,

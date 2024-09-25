@@ -20,7 +20,7 @@ import (
 	spectypes "github.com/lavanet/lava/v5/x/spec/types"
 )
 
-var DefaultApiName = "Default-"
+var SkipPolicyVerification = false
 
 type PolicyInf interface {
 	GetSupportedAddons(specID string) (addons []string, err error)
@@ -107,12 +107,15 @@ func (bcp *BaseChainParser) isAddon(addon string) bool {
 }
 
 func (bcp *BaseChainParser) isExtension(extension string) bool {
-	return bcp.extensionParser.AllowedExtension(extension)
+	return bcp.extensionParser.AllowedExtension(extension, SkipPolicyVerification)
 }
 
 // use while bcp locked.
 func (bcp *BaseChainParser) validateAddons(nodeMessage *baseChainMessageContainer) error {
 	var addon string
+	if SkipPolicyVerification {
+		return nil
+	}
 	if addon = GetAddon(nodeMessage); addon != "" { // check we have an addon
 		if allowed := bcp.allowedAddons[addon]; !allowed { // check addon is allowed
 			return utils.LavaFormatError("consumer policy does not allow addon", nil,
