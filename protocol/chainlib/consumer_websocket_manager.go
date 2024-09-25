@@ -184,7 +184,6 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			if formatterMsg != nil {
 				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: formatterMsg}
 			}
-			continue
 		}
 
 		userIp := websocketConn.RemoteAddr().String()
