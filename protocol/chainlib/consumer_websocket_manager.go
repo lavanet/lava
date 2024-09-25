@@ -160,7 +160,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			continue
 		}
 
-		// check whether its a normal relay / unsubscribe / unsubscribe_all otherwise its a subscription flow.
+		// check whether it's a normal relay / unsubscribe / unsubscribe_all otherwise its a subscription flow.
 		if !IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_SUBSCRIBE) {
 			if IsFunctionTagOfType(protocolMessage, spectypes.FUNCTION_TAG_UNSUBSCRIBE) {
 				err := cwm.consumerWsSubscriptionManager.Unsubscribe(webSocketCtx, protocolMessage, dappID, userIp, cwm.WebsocketConnectionUID, metricsData)
