@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
-	gojson "github.com/goccy/go-json"
 	"github.com/gofiber/websocket/v2"
 	formatter "github.com/lavanet/lava/v3/ecosystem/cache/format"
 	"github.com/lavanet/lava/v3/protocol/common"
@@ -173,7 +172,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 		if WebSocketRateLimit > 0 && requestsPerSecond.Add(1) > uint64(WebSocketRateLimit) {
 			rateLimitResponse, err := cwm.handleRateLimitReached(msg)
 			if err == nil {
-				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: []byte(rateLimitResponse)}
+				websocketConnWriteChan <- webSocketMsgWithType{messageType: messageType, msg: rateLimitResponse}
 			}
 			continue
 		}
@@ -221,7 +220,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 				if err != nil {
 					utils.LavaFormatWarning("error unsubscribing from subscription", err, utils.LogAttr("GUID", webSocketCtx))
 					if err == common.SubscriptionNotFoundError {
-						msgData, err := gojson.Marshal(common.JsonRpcSubscriptionNotFoundError)
+						msgData, err := json.Marshal(common.JsonRpcSubscriptionNotFoundError)
 						if err != nil {
 							continue
 						}
@@ -278,7 +277,7 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 
 			// Handle the case when the error is a method not found error
 			if common.APINotSupportedError.Is(err) {
-				msgData, err := gojson.Marshal(common.JsonRpcMethodNotFoundError)
+				msgData, err := json.Marshal(common.JsonRpcMethodNotFoundError)
 				if err != nil {
 					continue
 				}
