@@ -151,8 +151,8 @@ func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue str
 	parsedInput.SetBlock(parsedBlock)
 }
 
-func parseInputWithBlockParser(rpcInput RPCInput, blockParser spectypes.BlockParser, source int) (string, error) {
-	result, err := parse(rpcInput, blockParser, source)
+func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.BlockParser, source int) (string, error) {
+	result, err := legacyParse(rpcInput, blockParser, source)
 	if err != nil || result == nil {
 		return "", utils.LavaFormatDebug("blockParsing - parse failed",
 			utils.LogAttr("error", err),
@@ -180,7 +180,7 @@ func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericPar
 		parsedBlockInfo = NewParsedInput()
 	}
 
-	parsedRawBlock, _ := parseInputWithBlockParser(rpcInput, blockParser, source)
+	parsedRawBlock, _ := parseInputWithLegacyBlockParser(rpcInput, blockParser, source)
 	parsedBlockInfo.parsedBlockRaw = unquoteString(parsedRawBlock)
 	return parsedBlockInfo
 }
@@ -217,7 +217,7 @@ func unquoteString(str string) string {
 func ParseBlockHashFromReplyAndDecode(rpcInput RPCInput, resultParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) (string, error) {
 	parsedInput, _ := parseInputWithGenericParsers(rpcInput, genericParsers)
 	if parsedInput == nil {
-		parsedBlockHashFromBlockParser, err := parseInputWithBlockParser(rpcInput, resultParser, PARSE_RESULT)
+		parsedBlockHashFromBlockParser, err := parseInputWithLegacyBlockParser(rpcInput, resultParser, PARSE_RESULT)
 		if err != nil {
 			return "", err
 		}
@@ -229,10 +229,13 @@ func ParseBlockHashFromReplyAndDecode(rpcInput RPCInput, resultParser spectypes.
 		return "", err
 	}
 
+	if len(parsedBlockHashes) == 0 {
+		return "", utils.LavaFormatError("[ParseBlockHashFromReplyAndDecode] failed to fetch block hashes from parsed input, len(parsedBlockHashes) == 0", nil, utils.LogAttr("rpcInput.GetResult()", rpcInput.GetResult()))
+	}
 	return parseResponseByEncoding([]byte(parsedBlockHashes[0]), resultParser.Encoding)
 }
 
-func parse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int) ([]interface{}, error) {
+func legacyParse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSource int) ([]interface{}, error) {
 	var retval []interface{}
 	var err error
 
