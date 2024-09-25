@@ -192,6 +192,9 @@ func (k Keeper) verifySubscriptionBuyInputAndGetPlan(ctx sdk.Context, block uint
 func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, creator, consumer string,
 	block uint64, autoRenewalFlag bool,
 ) (types.Subscription, error) {
+	if plan == nil {
+		return types.Subscription{}, utils.LavaFormatError("plan is nil", fmt.Errorf("createNewSubscription: cannot create new subscription"))
+	}
 	autoRenewalNextPlan := types.AUTO_RENEWAL_PLAN_NONE
 	if autoRenewalFlag {
 		// On subscription creation, auto renewal is set to the subscription's plan
@@ -223,6 +226,13 @@ func (k Keeper) createNewSubscription(ctx sdk.Context, plan *planstypes.Plan, cr
 }
 
 func (k Keeper) upgradeSubscriptionPlan(ctx sdk.Context, sub *types.Subscription, newPlan *planstypes.Plan) error {
+	if newPlan == nil {
+		return utils.LavaFormatError("new plan is nil", fmt.Errorf("upgradeSubscriptionPlan: cannot upgrade subscription plan"))
+	}
+	if sub == nil {
+		return utils.LavaFormatError("subscription is nil", fmt.Errorf("upgradeSubscriptionPlan: cannot upgrade subscription plan"))
+	}
+
 	block := uint64(ctx.BlockHeight())
 
 	nextEpoch, err := k.epochstorageKeeper.GetNextEpoch(ctx, block)
