@@ -830,7 +830,7 @@ func TestParseGeneric(t *testing.T) {
 		Rule:      "=final || =optimistic",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "latest", parsedInput.GetBlockRaw())
+	require.Equal(t, "latest", parsedInput.GetRawParsedData())
 }
 
 func TestHashLengthValidation(t *testing.T) {

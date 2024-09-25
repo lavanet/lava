@@ -189,7 +189,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	}
 
 	parsedInput := parser.ParseBlockFromReply(parserInput, parsing.ResultParsing, parsing.Parsers)
-	if parsedInput.GetBlockRaw() == "" {
+	if parsedInput.GetRawParsedData() == "" {
 		return utils.LavaFormatWarning("[-] verify failed to parse result", err,
 			utils.LogAttr("chainId", chainId),
 			utils.LogAttr("nodeUrl", proxyUrl.Url),
@@ -205,7 +205,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 				utils.LogAttr("nodeUrl", proxyUrl.Url),
 				utils.LogAttr("Method", parsing.GetApiName()),
 				utils.LogAttr("Response", string(reply.RelayReply.Data)),
-				utils.LogAttr("rawParsedBlock", parsedInput.GetBlockRaw()),
+				utils.LogAttr("rawParsedData", parsedInput.GetRawParsedData()),
 			)
 		}
 		uint64ParsedResultAsNumber := uint64(parsedResultAsNumber)
@@ -231,12 +231,12 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 	}
 	// some verifications only want the response to be valid, and don't care about the value
 	if verification.Value != "*" && verification.Value != "" && verification.ParseDirective.FunctionTag != spectypes.FUNCTION_TAG_GET_BLOCK_BY_NUM {
-		rawBlock := parsedInput.GetBlockRaw()
-		if rawBlock != verification.Value {
+		rawData := parsedInput.GetRawParsedData()
+		if rawData != verification.Value {
 			return utils.LavaFormatWarning("[-] verify failed expected and received are different", err,
 				utils.LogAttr("chainId", chainId),
 				utils.LogAttr("nodeUrl", proxyUrl.Url),
-				utils.LogAttr("rawParsedBlock", rawBlock),
+				utils.LogAttr("rawParsedBlock", rawData),
 				utils.LogAttr("verification.Value", verification.Value),
 				utils.LogAttr("Method", parsing.GetApiName()),
 				utils.LogAttr("Extension", verification.Extension),
@@ -250,7 +250,7 @@ func (cf *ChainFetcher) Verify(ctx context.Context, verification VerificationCon
 		utils.LogAttr("nodeUrl", proxyUrl.Url),
 		utils.LogAttr("verification", verification.Name),
 		utils.LogAttr("block", parsedInput.GetBlock()),
-		utils.LogAttr("rawBlock", parsedInput.GetBlockRaw()),
+		utils.LogAttr("rawData", parsedInput.GetRawParsedData()),
 		utils.LogAttr("verificationKey", verification.VerificationKey),
 		utils.LogAttr("apiInterface", cf.endpoint.ApiInterface),
 	)

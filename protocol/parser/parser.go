@@ -109,10 +109,10 @@ func parseInputWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.
 	}
 
 	parsed := NewParsedInput()
-	parsedBlock := genericParserResult.GetBlockRaw()
+	parsedBlock := genericParserResult.GetRawParsedData()
 	if parsedBlock != "" {
 		parsedSuccessfully = true
-		parsed.parsedBlockRaw = parsedBlock
+		parsed.parsedDataRaw = parsedBlock
 	}
 
 	parsedBlockHashes, err := genericParserResult.GetBlockHashes()
@@ -124,7 +124,7 @@ func parseInputWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.
 }
 
 func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue string) {
-	rawBlock := parsedInput.GetBlockRaw()
+	rawBlock := parsedInput.GetRawParsedData()
 	var parsedBlock int64
 	var err error
 	if rawBlock != "" {
@@ -173,7 +173,7 @@ func parseInputWithLegacyBlockParser(rpcInput RPCInput, blockParser spectypes.Bl
 func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser, source int) *ParsedInput {
 	parsedBlockInfo, parsedSuccessfully := parseInputWithGenericParsers(rpcInput, genericParsers)
 	if parsedSuccessfully {
-		parsedBlockInfo.parsedBlockRaw = unquoteString(parsedBlockInfo.parsedBlockRaw)
+		parsedBlockInfo.parsedDataRaw = unquoteString(parsedBlockInfo.parsedDataRaw)
 		return parsedBlockInfo
 	}
 	if parsedBlockInfo == nil {
@@ -181,7 +181,7 @@ func parseBlock(rpcInput RPCInput, blockParser spectypes.BlockParser, genericPar
 	}
 
 	parsedRawBlock, _ := parseInputWithLegacyBlockParser(rpcInput, blockParser, source)
-	parsedBlockInfo.parsedBlockRaw = unquoteString(parsedRawBlock)
+	parsedBlockInfo.parsedDataRaw = unquoteString(parsedRawBlock)
 	return parsedBlockInfo
 }
 
@@ -270,15 +270,15 @@ func legacyParse(rpcInput RPCInput, blockParser spectypes.BlockParser, dataSourc
 }
 
 type ParsedInput struct {
-	parsedBlockRaw string
-	parsedBlock    int64
-	parsedHashes   []string
+	parsedDataRaw string
+	parsedBlock   int64
+	parsedHashes  []string
 }
 
 func NewParsedInput() *ParsedInput {
 	return &ParsedInput{
-		parsedBlockRaw: "",
-		parsedHashes:   make([]string, 0),
+		parsedDataRaw: "",
+		parsedHashes:  make([]string, 0),
 	}
 }
 
@@ -286,8 +286,8 @@ func (p *ParsedInput) SetBlock(block int64) {
 	p.parsedBlock = block
 }
 
-func (p *ParsedInput) GetBlockRaw() string {
-	return p.parsedBlockRaw
+func (p *ParsedInput) GetRawParsedData() string {
+	return p.parsedDataRaw
 }
 
 func (p *ParsedInput) GetBlock() int64 {
@@ -389,14 +389,14 @@ func parseGeneric(input interface{}, genericParser spectypes.GenericParser) (*Pa
 	// regardless of the value provided by the user. for example .finality: final
 	case spectypes.PARSER_TYPE_DEFAULT_VALUE:
 		parsed := NewParsedInput()
-		parsed.parsedBlockRaw = genericParser.Value
+		parsed.parsedDataRaw = genericParser.Value
 		return parsed, nil
 	// Case Block Latest, setting the value set by the user given a json path hit.
 	// Example: block_id: 100, will result in requested block 100.
 	case spectypes.PARSER_TYPE_BLOCK_LATEST:
 		parsed := NewParsedInput()
 		block := blockInterfaceToString(value)
-		parsed.parsedBlockRaw = block
+		parsed.parsedDataRaw = block
 		return parsed, nil
 	case spectypes.PARSER_TYPE_BLOCK_HASH:
 		return parseGenericParserBlockHash(value)
