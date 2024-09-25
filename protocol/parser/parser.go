@@ -51,7 +51,6 @@ func ParseDefaultBlockParameter(block string) (int64, error) {
 	}
 
 	block = unquoteString(block)
-
 	hashNoPrefix, found := strings.CutPrefix(block, "0x")
 	if len(block) >= 64 && found {
 		if len(hashNoPrefix)%64 == 0 {
@@ -126,13 +125,12 @@ func parseInputWithGenericParsers(rpcInput RPCInput, genericParsers []spectypes.
 
 func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue string) {
 	rawBlock := parsedInput.GetBlockRaw()
-	if rawBlock == "" {
-		parsedInput.SetBlock(spectypes.NOT_APPLICABLE)
-		return
+	var parsedBlock int64
+	var err error
+	if rawBlock != "" {
+		parsedBlock, err = rpcInput.ParseBlock(rawBlock)
 	}
-
-	parsedBlock, err := rpcInput.ParseBlock(rawBlock)
-	if err != nil {
+	if rawBlock == "" || err != nil {
 		if defaultValue != "" {
 			utils.LavaFormatDebug("Failed parsing block from string, assuming default value",
 				utils.LogAttr("params", rpcInput.GetParams()),
@@ -150,7 +148,6 @@ func ParseRawBlock(rpcInput RPCInput, parsedInput *ParsedInput, defaultValue str
 			parsedBlock = spectypes.NOT_APPLICABLE
 		}
 	}
-
 	parsedInput.SetBlock(parsedBlock)
 }
 
@@ -196,10 +193,6 @@ func ParseBlockFromParams(rpcInput RPCInput, blockParser spectypes.BlockParser, 
 	parsedInput := parseBlock(rpcInput, blockParser, genericParsers, PARSE_PARAMS)
 	ParseRawBlock(rpcInput, parsedInput, blockParser.DefaultValue)
 	return parsedInput
-}
-
-func ParseRawBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) *ParsedInput {
-	return parseBlock(rpcInput, blockParser, genericParsers, PARSE_RESULT)
 }
 
 func ParseBlockFromReply(rpcInput RPCInput, blockParser spectypes.BlockParser, genericParsers []spectypes.GenericParser) *ParsedInput {
