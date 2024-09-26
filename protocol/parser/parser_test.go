@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -838,4 +839,69 @@ func TestHashLengthValidation(t *testing.T) {
 	require.Error(t, err)
 	_, err = parseGenericParserBlockHash("123456789,123456789,123456789,12")
 	require.NoError(t, err)
+}
+
+func TestParseRawBlock(t *testing.T) {
+	defaultValue := "defaultValue"
+	defaultBlock := int64(1)
+	rawBlock := "123"
+	expectedBlock := int64(123)
+
+	t.Run("with raw block parsed", func(t *testing.T) {
+		parsedInput := &ParsedInput{
+			parsedDataRaw: rawBlock,
+		}
+
+		rpcInput := RPCInputTest{
+			ParseBlockFunc: func(block string) (int64, error) {
+				require.Equal(t, parsedInput.parsedDataRaw, block)
+				return expectedBlock, nil
+			},
+		}
+
+		ParseRawBlock(&rpcInput, parsedInput, defaultValue)
+		require.Equal(t, expectedBlock, parsedInput.GetBlock())
+	})
+
+	t.Run("without raw block parsed, with default value", func(t *testing.T) {
+		parsedInput := &ParsedInput{}
+
+		rpcInput := RPCInputTest{
+			ParseBlockFunc: func(block string) (int64, error) {
+				require.Equal(t, defaultValue, block)
+				return defaultBlock, nil
+			},
+		}
+
+		ParseRawBlock(&rpcInput, parsedInput, defaultValue)
+		require.Equal(t, defaultBlock, parsedInput.GetBlock())
+	})
+
+	t.Run("without raw block parsed, with default value parse error", func(t *testing.T) {
+		parsedInput := &ParsedInput{}
+
+		rpcInput := RPCInputTest{
+			ParseBlockFunc: func(block string) (int64, error) {
+				require.Equal(t, defaultValue, block)
+				return 0, fmt.Errorf("parse error")
+			},
+		}
+
+		ParseRawBlock(&rpcInput, parsedInput, defaultValue)
+		require.Equal(t, spectypes.NOT_APPLICABLE, parsedInput.GetBlock())
+	})
+
+	t.Run("without raw block parsed, without default value", func(t *testing.T) {
+		parsedInput := &ParsedInput{}
+
+		rpcInput := RPCInputTest{
+			ParseBlockFunc: func(block string) (int64, error) {
+				require.Fail(t, "should not be called")
+				return 0, nil
+			},
+		}
+
+		ParseRawBlock(&rpcInput, parsedInput, "")
+		require.Equal(t, spectypes.NOT_APPLICABLE, parsedInput.GetBlock())
+	})
 }
