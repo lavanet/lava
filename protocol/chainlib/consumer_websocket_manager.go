@@ -17,7 +17,8 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-var WebSocketRateLimit = -1 // rate limit requests per second on websocket connection
+var WebSocketRateLimit = -1                 // rate limit requests per second on websocket connection
+var WebSocketBanDuration = time.Duration(0) // once rate limit is reached, will not allow new incoming message for a duration
 
 type ConsumerWebsocketManager struct {
 	websocketConn                 *websocket.Conn
@@ -148,6 +149,15 @@ func (cwm *ConsumerWebsocketManager) ListenToMessages() {
 			case <-webSocketCtx.Done():
 				return
 			case <-ticker.C:
+				// check if rate limit reached, and ban is required
+				if WebSocketBanDuration > 0 && requestsPerSecond.Load() > uint64(WebSocketRateLimit) {
+					// wait the ban duration before resetting the store.
+					select {
+					case <-webSocketCtx.Done():
+						return
+					case <-time.After(WebSocketBanDuration): // just continue
+					}
+				}
 				requestsPerSecond.Store(0)
 			}
 		}
