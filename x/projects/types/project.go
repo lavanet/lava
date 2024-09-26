@@ -82,6 +82,9 @@ func (project *Project) GetKey(key string) ProjectKey {
 }
 
 func (project *Project) AppendKey(key ProjectKey) bool {
+	if project == nil {
+		return false
+	}
 	for i, projectKey := range project.ProjectKeys {
 		if projectKey.Key == key.Key {
 			project.ProjectKeys[i].Kinds |= key.Kinds

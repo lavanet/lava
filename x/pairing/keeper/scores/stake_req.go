@@ -17,6 +17,9 @@ func (sr *StakeReq) Init(policy planstypes.Policy) bool {
 
 // Score calculates the the provider score as the normalized stake
 func (sr *StakeReq) Score(score PairingScore) math.Uint {
+	if sr == nil {
+		return math.OneUint()
+	}
 	effectiveStake := score.Provider.TotalStake()
 	if !effectiveStake.IsPositive() {
 		return math.OneUint()
